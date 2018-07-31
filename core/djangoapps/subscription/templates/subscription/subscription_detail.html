@@ -1,0 +1,175 @@
+{% extends "templates/base.html" %} 
+{% load settings %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Subscription Detail
+{% endblock %}
+
+
+{% block content %}
+
+<div class="mb-3">
+<h1>Subscription Detail</h1> <hr>
+</div>
+
+
+<div class="card mb-3">
+  <div class="card-header">
+  <h4><i class="fas fa-list"></i> Subscription Information</h4>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-bordered table-sm">
+        <tr>
+          <th style="white-space:nowrap;">Project:</th>
+          <td><a href="{% url 'project-detail' subscription.project.pk %}">{{ subscription.project }}</a></td>
+        </tr>
+        <tr>
+          <th style="white-space:nowrap;">Resource:</th>
+          <td>{{ subscription.resources.first }}</td>
+        </tr>
+        <tr>
+          <th style="white-space:nowrap;">Justification:</th>
+          <td>{{ subscription.justification }}</td>
+        </tr>
+        <tr>
+          <th style="white-space:nowrap;">Status:</th>
+          <td>{{ subscription.status.name }}</td>
+        </tr>
+        <tr>
+          <th style="white-space:nowrap;">Active Until:</th>
+          <td>{{ subscription.active_until }}</td>
+        </tr>
+        <tr>
+          <th style="white-space:nowrap;">Created:</th>
+          <td>{{ subscription.created }}</td>
+        </tr>
+        <tr>
+          <th style="white-space:nowrap;">Last Modified:</th>
+          <td>{{ subscription.modified }}</td>
+        </tr>
+      </table>
+    </div>
+    
+  </div>
+</div>
+
+{% if attributes_without_usage or attributes_with_usage%}
+<div class="card mb-3">
+  <div class="card-header">
+    <h4><i class="fas fa-info-circle"></i> Subscription Attributes</h4>
+  </div>
+  <div class="card-body">
+    {% if attributes_without_usage %}
+    <div class="table-responsive">
+      <table class="table table-bordered table-sm">
+        <thead>
+          <tr>
+            <th>Attribute</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for attribute in attributes_without_usage %}
+          <tr>
+            <td>{{attribute}}</td>
+            <td>{{attribute.value}}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <hr> 
+    {% endif %} 
+    {% for attribute in attributes_with_usage %}
+      <div class="card mb-3 mr-1">
+        <div class="card-body">
+           <h4 class="card-title">{{attribute}}</h4>
+          <div id="gauge-{{forloop.counter0}}"></div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+
+<!-- Start Project Users -->
+<div class="card mb-3">
+  <div class="card-header">
+  <h4 class="d-inline"><i class="fas fa-users"></i> Users in Subscription </h4> <span class="badge badge-secondary">{{subscription_users.count}}</span>
+    <div class="float-right">
+      {% if subscription.project.status.name != 'Archived' and is_allowed_to_update_project%}
+        <a class="btn btn-primary" href="{% url 'subscription-add-users' subscription.pk %}" role="button"><i class="fas fa-user-plus"></i> Add Users</a>
+        <a class="btn btn-primary" href="{% url 'subscription-delete-users' subscription.pk %}" role="button"><i class="fas fa-user-times"></i></i> Delete Users</a>    
+      {% endif %}
+    </div>
+
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Status</th>
+            <th>Last Modified</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in subscription_users %}
+          <tr>
+            <td>{{ user.user.username }}</td>
+            <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
+            <td>{{ user.user.email }}</td>
+            {% if user.status.name == 'Active' %}
+              <td class="text-success">{{ user.status.name }}</td>
+            {% elif user.status.name == 'Denied' %}
+              <td class="text-danger">{{ user.status.name }}</td>
+            {% else %}
+              <td class="text-info">{{ user.status.name }}</td>
+            {% endif %}
+            <td>{{ user.modified }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    
+  </div>
+</div>
+
+
+
+<script>
+
+$(document).ready(function() {
+    var guage_data = {{guage_data |safe}};
+    drawGauges(guage_data);
+  });
+
+
+function drawGauges(guage_data) {
+  var arrayLength = guage_data.length;
+  for (var i = 0; i < arrayLength; i++) {
+      c3.generate({
+          bindto: '#gauge-'+i,
+          data: guage_data[i],
+          legend: {
+              item: {
+                  onclick: function(id) {}
+              }
+          }
+      });
+
+    }
+}
+
+</script>
+
+{% endblock %}

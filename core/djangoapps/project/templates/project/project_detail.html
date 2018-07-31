@@ -1,0 +1,243 @@
+{% extends "templates/base.html" %} 
+{% load settings %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Project Detail
+{% endblock %}
+
+
+{% block content %}
+
+
+<div id="alert_div">
+  
+</div>
+
+
+<div class="mb-3">
+<h1 class="text-justify">{{ project.title }}</h1> <hr>
+</div>
+
+{% if project.status.name != 'Archived' and is_allowed_to_update_project %}
+  <div class="card mb-3 bg-light">
+    <div class="card-body">
+      {% if project.status.name != 'Archived' %}
+        <a class="btn btn-primary" href="{% url 'project-add-users-search' project.pk %}" role="button"><i class="fas fa-user-plus"></i> Add Users</a>
+        <a class="btn btn-primary" href="#" role="button"><i class="far fa-newspaper"></i> Add Publications</a>
+        <a class="btn btn-primary" href="#" role="button"><i class="fas fa-trophy"></i> Add Grants</a>
+        <a class="btn btn-primary" href="{% url 'project-update' project.pk %}" role="button"><i class="far fa-edit"></i> Update Project Information</a>
+      {% endif %}
+
+      <div class="float-right">
+          {% if project.status.name == 'Active' %}
+            <a class="btn btn-primary" href="{% url 'project-archive' project.id %}" role="button"><i class="fas fa-file-archive"></i> Archive Project</a>
+          {% endif %}
+      </div>
+    </div>
+</div>
+
+{% endif %}
+
+
+
+<!-- Start Project Heading -->
+<div class="card mb-3">
+  <div class="card-body">
+    <h4 class="card-title">
+      Principal Investigator: 
+      {{ project.pi.first_name }}
+      {{ project.pi.last_name }}
+      ({{ project.pi.username }})
+      <a href="mailto:{{ project.pi.email }} "><i class="far fa-envelope"></i></a></h4>
+    <p class="card-text text-justify"><strong>Description: </strong>{{ project.description }}</p>
+    <p class="card-text text-justify"><strong>Field of Science: </strong>{{ project.field_of_science }}</p>
+    <p class="card-text text-justify"><strong>Status: </strong>{{ project.status }}</p>
+  </div>
+</div>
+
+<!-- End Project Heading -->
+
+
+<!-- Start Project Users -->
+<div class="card mb-3">
+  <div class="card-header">
+  <h4 class="d-inline"><i class="fas fa-users"></i> Users</h4> <span class="badge badge-secondary">{{project_users.count}}</span>
+    <div class="float-right">
+      {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
+        <a class="btn btn-primary" href="#" role="button"><i class="far fa-envelope"></i> Email Project Users</a>
+        <a class="btn btn-primary" href="{% url 'project-add-users-search' project.id %}" role="button"><i class="fas fa-user-plus"></i> Add Users</a>
+        <a class="btn btn-primary" href="{% url 'project-delete-users' project.id %}" role="button"><i class="fas fa-user-times"></i></i> Delete Users</a>    
+      {% endif %}
+    </div>
+
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role <a href="#" data-toggle="popover" title="Role" data-trigger="hover" data-content="Manager role grants user access to add/remove users, subscriptions, grants, and publications to the project."><i class="fas fa-info-circle"></i></a></th>
+            <th>Status</th>
+            <th>Enable Notifications <a href="#" title="Enable Notifications" data-toggle="popover" data-trigger="hover" data-content="When disabled, user will not receive notifications for subscription requests and expirations or cloud usage (if applicable)."><i class="fas fa-info-circle"></i></a></th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in project_users %}
+          <tr>
+            <td>{{ user.user.username }}</td>
+            <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
+            <td>{{ user.user.email }}</td>
+            <td>{{ user.role.name }}</td>
+            {% if user.status.name == 'Active' %}
+              <td class="text-success">{{ user.status.name }}</td>
+            {% else %}
+              <td class="text-info">{{ user.status.name }}</td>
+            {% endif %}
+            <td>  
+              {% if is_allowed_to_update_project %}
+                <input type="checkbox" 
+                id="email_notifications_for_user_id_{{user.id}}" 
+                name="email_notifications_checkbox" 
+                value="{{ user.enable_notifications }}" 
+                {% if user.enable_notifications %} checked {% endif %}
+                {% if user.role.name == "Manager" %} disabled {% endif %}
+                {% if not request.user.is_superuser and user.role.name == "User" and request.user == user.user %} disabled {% endif %}>
+              {% else %}
+                <input type="checkbox" 
+                id="email_notifications_for_user_id_{{user.id}}" 
+                name="email_notifications_checkbox" 
+                value="{{ user.enable_notifications }}" 
+                {% if user.enable_notifications %} checked {% endif %}
+                disabled>
+              {% endif %}
+            </td>
+            <td>
+              {% if is_allowed_to_update_project %}
+                <a href="{% url 'project-user-detail' project.pk user.id %}"><i class="fas fa-user-edit"></i></a>
+              {% endif %}
+            </td>
+
+
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    
+  </div>
+</div>
+<!-- End Project Users -->
+
+
+<!-- Start Project Subscriptions -->
+<div class="card mb-3">
+  <div class="card-header">
+  <h4 class="d-inline"><i class="fas fa-server"></i> Subscriptions </h4> <span class="badge badge-secondary">{{subscriptions.count}}</span>
+    <div class="float-right">
+      {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
+        <a class="btn btn-primary" href="{% url 'subscription-create' project.pk %}" role="button"><i class="fas fa-plus"></i> Request Resource Subscription</a>
+      {% endif %}
+    </div>
+
+  </div>
+  <div class="card-body">
+    {% if subscriptions %}
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Resource Name</th>
+            <th>Resource Type</th>
+            <th>Information</th>
+            <th>Status</th>
+            <th>Active Until</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for subscription in subscriptions %}
+          <tr>
+            <td>{{ subscription.resources.first.name }}</td>
+            <td>{{ subscription.resources.first.resource_type.name }}</td>
+            <td style="white-space:nowrap;">{{subscription.get_usage}}</td>
+            {% if subscription.status.name == 'Active' %}
+              <td class="text-success">{{ subscription.status.name }}</td>
+            {% elif  subscription.status.name == 'Expired' or subscription.status.name == 'Denied' %}
+              <td class="text-danger">{{ subscription.status.name }}</td>
+            {% else %} 
+              <td class="text-info">{{ subscription.status.name }}</td>
+            {% endif %}
+            <td>{{subscription.active_until}}</td>
+            <td>
+              <a href="{% url 'subscription-detail' subscription.pk %}"><i class="far fa-folder-open"></i></a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+     <div class="alert alert-info" role="alert"><i class="fa fa-info-circle"></i> There are no subscriptions to display.</div>
+    {% endif %}
+  </div>
+</div>
+<!-- End Project Users -->
+
+
+<script>
+
+function getCookie(name) {
+  var cookieValue = null;
+  if (document.cookie && document.cookie != '') {
+    var cookies = document.cookie.split(';');
+    for (var i = 0; i < cookies.length; i++) {
+      var cookie = jQuery.trim(cookies[i]);
+      // Does this cookie string begin with the name we want?
+      if (cookie.substring(0, name.length + 1) == (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+$(document).ready(function(){
+    $('[data-toggle="popover"]').popover();   
+});
+
+
+$("[id^=email_notifications_for_user_id_]").change(function() {
+  var checked = $(this).prop('checked');
+  var user_project_id = Number($(this).attr('id').split("_").pop());
+
+  $.ajax({
+    headers: { 'X-CSRFToken': getCookie('csrftoken') },
+    type: "POST",
+    url: "/project/project-user-update-email-notification/",
+    data: {
+      user_project_id: user_project_id,
+      checked: checked
+    },
+    success: function (data) {
+      $("#alert_div").html('<div class="alert alert-success alert-dismissible"><button type="button" class="close" data-dismiss="alert">&times;</button><strong>Success!</strong> Email notification updated.</div>')
+    },
+    error: function (xhr, status, error) {
+      $("#alert_div").html('<div class="alert alert-danger alert-dismissible"><button type="button" class="close" data-dismiss="alert">&times;</button><strong>Error!</strong> Failed updating email notification.</div>')
+    }
+  });
+
+
+
+});
+
+</script>
+
+{% endblock %}

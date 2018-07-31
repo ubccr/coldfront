@@ -1,0 +1,40 @@
+{% load static %}
+{% load staticfiles %}
+{% load hijack_tags %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title> {% block title %}Welcome to Coldfront {% endblock %} </title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://bootswatch.com/4/litera/bootstrap.min.css">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.13/css/all.css">
+  <link rel="stylesheet" href="{% static 'common/css/common.css' %}">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.0/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js"></script>
+  <!-- Load c3.css -->
+  <link href="{% static 'c3js/c3.min.css' %}" rel="stylesheet">
+  <!-- Load d3.js and c3.js -->
+  <script src="{% static 'd3/d3.min.js' %}" charset="utf-8"></script>
+  <script src="{% static 'c3js/c3.min.js' %}"></script>
+  <!-- select2 -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="{% static 'hijack/hijack-styles.css' %}" />
+</head>
+
+<body>
+  {% if user.is_authenticated %} {% include 'templates/authorized_navbar.html' %} {% else %} {% include 'templates/nonauthorized_navbar.html' %} {% endif %}
+  <div class="container" style="margin-top:30px">
+    {% include 'templates/messages.html' %} {% block content %} Content goes here! {% endblock %}
+  </div>
+  {% block javascript %} {% endblock %}
+</body>
+{% hijack_notification %}
+
+</html>

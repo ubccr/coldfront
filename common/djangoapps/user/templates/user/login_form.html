@@ -1,0 +1,9 @@
+{% load settings %}
+{% load crispy_forms_tags %}
+
+
+<form method="post" action="{% url 'login' %}">
+  {% csrf_token %}
+  {{ form|crispy }}
+  <button type="submit" class="btn btn-primary btn-block"><i class="fas fa-sign-in-alt"></i> Log In</button>
+</form>

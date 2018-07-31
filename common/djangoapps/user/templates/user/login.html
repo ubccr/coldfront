@@ -1,0 +1,42 @@
+{% extends "templates/base.html" %}
+{% load staticfiles %} 
+{% load settings %} 
+
+{% block title %} 
+Log In 
+{% endblock %} 
+
+{% block content %}
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-login").addClass("active");
+</script>
+
+<div class="col-sm-6 offset-sm-3">
+  {% if form.errors %}
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+      {% autoescape off %} {% settings_value 'LOGIN_FAIL_MESSAGE' %} {% endautoescape %}
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+  {% endif %}
+
+  <div class="card border-primary">
+    <div class="card-header bg-primary text-white">
+      <h5><i class="fas fa-lock"></i> Log In </h5>
+    </div>
+    <div class="card-body">
+      {% include "user/login_form.html" %} 
+      {% if 'extra.djangoapps.mokey_oidc' in EXTRA_APPS %}
+        <hr/>
+        <center><strong>OR</strong></center>
+        <br>
+        <a class="btn btn-primary btn-block" role="button" href="{% url 'social:begin' 'mokey_oidc' %}">
+          <i class="fab fa-openid"></i> Log in via Mokey OpenID Connect
+        </a> 
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "templates/base.html" %} 
+{% load settings %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Request New Subscription
+{% endblock %}
+
+
+{% block content %}
+
+<h2>Request New Subscription <br><small> Project: {{ project.title }} </small> </h2>
+
+
+<p class="text-justify">The following CCR resources are available to request for this project. If you need access to more than one of these, please submit a separate subscription request for each resource. For each request you must provide the justification for how you intend to use the resource to further the research goals of your project.</p>
+
+
+
+<form method="post">
+    {% csrf_token %}
+    {{form |crispy}}
+    <input class="btn btn-primary" type="submit" value="Submit" />
+    <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button">Back to Project</a><br>
+</form>
+
+
+
+<script>
+  var resources_form_default_quantities = {{resources_form_default_quantities |safe }};
+  var resources_form_label_texts = {{resources_form_label_texts |safe }};
+  $(document).ready(function() {
+     $("#id_resource").trigger('change');
+});
+
+$("#id_resource").change(function () {
+  var resource_id = $("#id_resource option:selected").val();
+  if (resources_form_default_quantities[resource_id]) {
+    var label = $('label[for="id_quantity"]');
+    if (resources_form_label_texts[resource_id]) {
+      label.html(resources_form_label_texts[resource_id])
+    } else {
+      label.html('<strong>Quantity*</strong>')
+    }    
+    $('#id_quantity').val(resources_form_default_quantities[resource_id])
+    $('#div_id_quantity').show();
+  } else {
+    $('#div_id_quantity').hide();
+    $('#id_quantity').val(1)
+  }
+});
+
+</script>
+
+
+{% endblock %}

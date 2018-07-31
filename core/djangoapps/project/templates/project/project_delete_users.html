@@ -1,0 +1,74 @@
+{% extends "templates/base.html" %} 
+{% load settings %} 
+{% load crispy_forms_tags %} 
+{% load static %} 
+
+{% block title %} Delete Users from Project {% endblock %} 
+
+{% block content %}
+<h1>Delete users from project: {{project.title}}</h1>
+<hr>
+{% if formset %}
+<div class="card border-light">
+  <div class="card-body">
+
+    <form action="{% url 'project-delete-users' project.pk %}" method="post">
+      {% csrf_token %}
+      <div class="mb-3">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-user-minus"></i> Delete Selected Users From Project</button>
+        <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left"></i> Back to Project</a>
+        <br>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover">
+          <thead>
+            <tr>
+              <th>
+                <input type="checkbox" class="check" id="selectAll">
+              </th>
+              <th>#</th>
+              <th>Username</th>
+              <th>First Name</th>
+              <th>Last Name</th>
+              <th>Email</th>
+              <th>Role</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for form in formset %}
+            <tr>
+              <td>{{ form.selected }}</td>
+              <td>{{ forloop.counter }}</td>
+              <td>{{ form.username.value }}</td>
+              <td>{{ form.first_name.value }}</td>
+              <td>{{ form.last_name.value }}</td>
+              <td>{{ form.email.value }}</td>
+              <td>{{ form.role.value }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {{ formset.management_form }}
+    </form>
+  </div>
+</div>
+{% else %} 
+  <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left"></i> Back to Project</a> 
+  <div class="alert alert-info">
+    No users to delete!
+  </div>
+{% endif %}
+<script>
+$("#selectAll").click(function() {
+  $("input[name^='userform-']").prop('checked', $(this).prop('checked'));
+});
+
+$("input[name^='userform-']").click(function(ele) {
+  var id = $(this).attr('id');
+  if (id != "selectAll") {
+    $("#selectAll").prop('checked', false);
+  }
+});
+</script>
+{% endblock %}

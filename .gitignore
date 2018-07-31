@@ -1,0 +1,11 @@
+*.py[cod]
+dist
+*._*
+*.DS_Store
+env/
+venv/
+static_root/
+db.sqlite3
+local_data/
+local_settings.py
+local_strings.py

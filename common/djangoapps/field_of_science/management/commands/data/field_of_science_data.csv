@@ -1,0 +1,158 @@
+1	self	False	Mathematical and Physical Sciences	100	MPS	1
+2	1	False	Mathematical Sciences	110	DMS	1
+3	2	True	Classical Analysis	111		1
+4	2	True	Modern Analysis	112		1
+5	2	True	Geometric Analysis	113		1
+6	2	True	Topology and Foundations	114		1
+7	2	True	Algebra and Number Theory	115		1
+8	2	True	Applied Mathematics	116		1
+9	2	True	Statistics and Probability	117		1
+10	2	True	Computational Mathematics	118		1
+11	1	False	Astronomical Sciences	120	AST	1
+12	11	True	Extragalactic Astronomy and Cosmology	121		1
+13	11	True	Planetary Astronomy	122		1
+14	11	True	Stellar Astronomy and Astrophysics	123		1
+15	11	True	Galactic Astronomy	124		1
+16	1	False	Physics	130	PHY	1
+17	16	True	Elementary Particle Physics	131		1
+18	16	True	Nuclear Physics	132		1
+19	16	True	Atomic, Molecular, and Optical Physics	133		1
+20	16	True	Theoretical Physics	134		1
+21	16	True	Gravitational Physics	135		1
+22	1	False	Chemistry	140	CHE	1
+23	22	True	Analytical and Surface Chemistry	141		1
+24	22	True	Inorganic, Bioinorganic, and Organometallic Chemistry	142		1
+25	22	True	Organic and Macromolecular Chemistry	143		1
+26	22	True	Physical Chemistry	144		1
+27	1	False	Materials Research	150	DMR	1
+28	27	True	Solid State Chemistry and Polymers	152		1
+29	27	True	Condensed Matter Physics	154		1
+30	27	True	Metals, Ceramics, and Electronic Materials	156		1
+31	self	False	Computer and Information Science and Engineering	300	CIE	31
+32	31	False	Computer and Computation Research	310	CCR	31
+33	32	True	Computer and Computation Theory	311		31
+34	32	True	Numeric and Symbolic Computation	312		31
+35	32	True	Computer Systems Architecture	313		31
+36	32	True	Software Systems	314		31
+37	32	True	Software Engineering	315		31
+38	31	False	Information, Robotics, and Intelligent Systems	320	IRI	31
+39	38	True	Knowledge Models and Cognitive Systems	321		31
+40	38	True	Robotics and Machine Intelligence	322		31
+41	38	True	Interactive Systems	323		31
+42	38	True	Information Technology and Organizations	324		31
+43	31	False	Microelectronic Information Processing Systems	330	MIP	31
+44	43	True	Microelectronic Systems Architecture	331		31
+45	43	True	Circuits and Signal Processing	332		31
+46	43	True	Experimental Systems	333		31
+47	43	True	Systems Prototyping and Fabrication	334		31
+48	43	True	Design, Tools, and Test	335		31
+49	31	False	Advanced Scientific Computing	340	ASC	31
+50	49	True	Performance Evaluation and Benchmarking	341		31
+51	49	True	Algorithm Development	342		31
+52	49	True	Visualization, Graphics, and Image Processing	343		31
+53	49	True	Software Development	344		31
+54	49	True	Distributed and Parallel Processing, Vectorization	345		31
+55	31	True	Networking and Communications Research	350	NCR	31
+56	31	False	Cross-Disciplinary Activities	360	CDA	31
+57	56	True	Research Instrumentation	361		31
+58	56	True	Institutional Infrastructure	362		31
+59	56	True	Educational Infrastructure	363		31
+60	56	True	Cross-Directorate Activities	364		31
+61	56	True	Special Projects	365		31
+62	self	False	Biological Sciences	401	BIO	62
+63	self	False	Social, Behavioral, and Economic Sciences	402	SBE	63
+64	62	False	Molecular Biosciences	410	MCB	62
+65	64	True	Biochemistry and Molecular Structure and Function	411		62
+66	64	True	Biophysics	412		62
+67	64	True	Genetics and Nucleic Acids	413		62
+68	64	True	Cell Biology	414		62
+69	62	False	Environmental Biology	430	DEB	62
+70	69	True	Ecological Studies	431		62
+71	69	True	Systematic and Population Biology	433		62
+72	63	False	Behavioral and Neural Sciences	440	BNS	63
+73	72	True	Anthropology	441		63
+74	72	True	Language, Cognition, and Social Behavior	442		63
+75	63	False	Social and Economic Science	450	SES	63
+76	75	True	Economics	451		63
+77	75	True	Geography and Regional Science	452		63
+78	75	True	Sociology	453		63
+79	75	True	Methodology, Measurement, and Statistics	454		63
+80	75	True	Political Science	455		63
+81	75	True	Law and Social Sciences	456		63
+82	75	True	Decision, Risk, and Management Science	457		63
+83	62	True	Biological Instrumentation and Resources	460	BIR	62
+84	62	False	Integrative Biology and Neuroscience	470	IBN	62
+85	84	True	Developmental Biology	471		62
+86	84	True	Neuroscience Biology	472		62
+87	84	True	Physiology and Behavior	473		62
+88	63	True	Science Resources Studies	480	SRS	63
+89	63	True	International Programs	490	INT	63
+90	self	False	Geosciences	500	GEO	90
+91	90	False	Atmospheric Sciences	510	ATM	90
+92	91	True	Meteorology	511		90
+93	91	True	Atmospheric Chemistry	512		90
+94	91	True	Climate Dynamics	514		90
+95	91	True	Global Atmospheric Research	515		90
+96	91	True	Aeronomy	516		90
+97	91	True	Magnetospheric Physics	517		90
+98	91	True	Solar Terrestrial Research	518		90
+99	90	False	Earth Sciences	520	EAR	90
+100	99	True	Geology and Paleontology	521		90
+101	99	True	Surficial Processes	522		90
+102	99	True	Tectonics	523		90
+103	99	True	Seismology	524		90
+104	99	True	Geophysics	525		90
+105	99	True	Petrogenesis and Mineral Resources	526		90
+106	99	True	Volcanology and Mantle Geochemistry	527		90
+107	99	True	Experimental and Theoretical Geochemistry	528		90
+108	90	False	Ocean Sciences	530	OCE	90
+109	108	True	Biological Oceanography	531		90
+110	108	True	Chemical Oceanography	532		90
+111	108	True	Physical Oceanography	533		90
+112	108	True	Marine Geology and Geophysics	534		90
+113	90	False	Polar Programs	540	DPP	90
+114	113	True	Polar Glaciology	541		90
+115	113	True	Polar Aeronomy and Astrophysics	542		90
+116	113	True	Polar Biology and Medicine	543		90
+117	113	True	Polar Earth Sciences	544		90
+118	113	True	Polar Meteorology	545		90
+119	113	True	Polar Ocean and Climate Systems	546		90
+120	self	False	Engineering	600	ENG	120
+121	120	False	Chemical, Thermal Systems	610	CTS	120
+122	121	True	Chemical and Reaction Processes	611		120
+123	121	True	Interfacial, Transport, and Separations Processes	612		120
+124	121	True	Thermal Systems	613		120
+125	121	True	Fluid, Particulate, and Hydraulic Systems	614		120
+126	120	False	Mechanical and Structural Systems	620	MSS	120
+127	126	True	Dynamic Systems and Control	621		120
+128	126	True	Structures and Building Systems	622		120
+129	126	True	Mechanics and Materials	623		120
+130	126	True	Surface Engineering and Tribology	625		120
+131	120	False	Electrical and Communication Systems	630	ECS	120
+132	131	True	Quantum Electronics, Waves, and Beams	631		120
+133	131	True	Solid-State and Microstructures	632		120
+134	131	True	Communications and Computational Systems	633		120
+135	131	True	Engineering Systems	634		120
+136	131	True	Emerging Technologies Initiation	635		120
+137	120	False	Design and Manufacturing Systems	640	DDM	120
+138	137	True	Operations Research and Production Systems	641		120
+139	137	True	Design and Computer-Integrated Engineering	642		120
+140	137	True	Manufacturing Processes and Equipment	643		120
+141	120	False	Biological and Critical Systems	650	BCS	120
+142	141	True	Bioengineering Aiding the Disabled	651		120
+143	141	True	Environmental and Ocean Systems	652		120
+144	141	True	Earthquake Hazard Mitigation	653		120
+145	141	True	Natural and Man-Made Hazard Mitigation	654		120
+146	120	True	Engineering Centers	660	ECD	120
+147	120	True	Engineering Infrastructure Development	670	EID	120
+148	120	True	Industrial Science and Technological Innovation	680	ISI	120
+149	self	True	Other	900		149
+150	149	True	Science and Engineering Education	910	SEE	149
+151	149	True	Small Business Innovation Research	920	SBR	149
+152	149	True	Industrial Partners Research	930	IND	149
+153	149	True	Center Systems Staff	940	STA	149
+154	149	True	Training	950	TRA	149
+155	149	True	Block Grants	960		149
+156	self	False	Humanities/Arts	700	HUA	156
+157	156	True	Humanities	710	HUM	156
+158	156	True	Arts	720	ART	156

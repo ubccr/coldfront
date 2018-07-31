@@ -1,0 +1,39 @@
+{% extends "templates/base.html" %} 
+{% load settings %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Archive Project
+{% endblock %}
+
+
+
+{% block content %}
+<h1> Archiving Project </h1>
+
+  <!-- Start Project Heading -->
+<div class="card mb-3">
+  <div class="card-body">
+    <h4 class="card-title">
+      Principal Investigator: 
+      {{ project.pi.first_name }}
+      {{ project.pi.last_name }}
+      ({{ project.pi.username }})
+      <a href="mailto:{{ project.pi.email }} "><i class="far fa-envelope"></i></a></h4>
+    <p class="card-text text-justify"><strong>Description: </strong>{{ project.description }}</p>
+    <p class="card-text text-justify"><strong>Field of Science: </strong>{{ project.field_of_science }}</p>
+    <p class="card-text text-justify"><strong>Status: </strong>{{ project.status }}</p>
+  </div>
+</div>
+
+
+  <form method="post">{% csrf_token %}
+    Are you sure you want to archive this project? <br>
+    <input class="btn btn-primary" type="submit" value="Yes" />
+    <a class="btn btn-secondary" href="{% url 'project-detail' project.id %}" role="button">Cancel</a><br>
+</form>
+
+{% endblock %}
+

@@ -1,0 +1,33 @@
+{% extends "templates/base.html" %} 
+
+{% load settings %} 
+
+{% block content %} 
+
+{% include "portal/generic_carousel.html" %}
+
+<div class="row">
+    <div class="col">
+        <h3 class="text-center">Log In to Coldfront</h3>
+        <hr>
+        <p><a class="btn btn-primary btn-block" href="{% url 'login' %}" role="button"><i class="fas fa-sign-in-alt"></i> Log In</a></p>
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5 class="card-title">Do not have an Account?</h5>
+                <p class="card-text" style="text-align: justify;text-justify: inter-word;">{% settings_value 'ACCOUNT_CREATION_TEXT' %}</p>
+            </div>
+        </div>
+    </div>
+    {% include "portal/extra_app_templates.html" %}
+</div>
+
+{% endblock %} 
+
+
+{% block javascript %} 
+  {{ block.super }}
+  <script>
+    $("#navbar-main > ul > li.active").removeClass("active");
+    $("#navbar-home").addClass("active");
+  </script>
+{% endblock %}

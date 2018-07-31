@@ -1,0 +1,189 @@
+"""
+Local Coldfront settings
+"""
+
+#------------------------------------------------------------------------------
+# These should be set to false in production
+#------------------------------------------------------------------------------
+DEBUG = True
+DEVELOP = True
+
+# ------------------------------------------------------------------------------
+# Locale settings
+# ------------------------------------------------------------------------------
+LANGUAGE_CODE = 'en-us'
+TIME_ZONE = 'America/New_York'
+
+#------------------------------------------------------------------------------
+# Secret Key
+#------------------------------------------------------------------------------
+SECRET_KEY = 'secret'
+
+#------------------------------------------------------------------------------
+# Override with custom authentication backends (example ldap)
+#------------------------------------------------------------------------------
+AUTHENTICATION_BACKENDS = (
+    'django_auth_ldap.backend.LDAPBackend',
+    'django.contrib.auth.backends.ModelBackend',
+)
+#------------------------------------------------------------------------------
+# Custom Database settings (example postgres)
+#------------------------------------------------------------------------------
+DATABASES = {
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.mysql',
+    #     'NAME': '<DATABASE_NAME>',
+    #     'USER': '<DATABASE_USER>',
+    #     'PASSWORD': '<DATABASE_PASSWORD>',
+    #     'HOST': 'localhost',
+    #     'PORT': '',
+    # },
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.postgresql_psycopg2',
+    #     'NAME': '<DATABASE_NAME>',
+    #     'USER': '<DATABASE_USER>',
+    #     'PASSWORD': '<DATABASE_PASSWORD>',
+    #     'HOST': 'localhost',
+    #     'PORT': '5432',
+    # }
+}
+
+import os
+
+#------------------------------------------------------------------------------
+# LDAP Authentication Settings -- used by django-auth-ldap
+#------------------------------------------------------------------------------
+import ldap
+from django_auth_ldap.config import GroupOfNamesType, LDAPSearch
+
+AUTH_LDAP_SERVER_URI = 'ldap:/example.com'
+AUTH_LDAP_USER_SEARCH_BASE = 'cn=users,cn=accounts,dc=<DC1>,dc=<DC2>,dc=<DC3>,dc=<DC4>'
+AUTH_LDAP_USER_SEARCH = LDAPSearch(
+    AUTH_LDAP_USER_SEARCH_BASE, ldap.SCOPE_ONELEVEL, '(uid=%(user)s)')
+AUTH_LDAP_BIND_DN = 'uid=<USERNAME>,cn=users,cn=accounts,dc=<DC1>,dc=<DC2>,dc=<DC3>,dc=<DC4>'
+AUTH_LDAP_BIND_PASSWORD = '<PASSWORD>'
+AUTH_LDAP_START_TLS = True
+AUTH_LDAP_GROUP_SEARCH_BASE = 'cn=groups,cn=accounts,dc=<DC1>,dc=<DC2>,dc=<DC3>,dc=<DC4>'
+AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
+    AUTH_LDAP_GROUP_SEARCH_BASE, ldap.SCOPE_ONELEVEL, '(objectClass=groupOfNames)')
+AUTH_LDAP_GROUP_TYPE = GroupOfNamesType()
+AUTH_LDAP_USER_ATTR_MAP = {
+    'username': 'uid',
+    'first_name': 'givenName',
+    'last_name': 'sn',
+    'email': 'mail',
+}
+AUTH_LDAP_MIRROR_GROUPS = True
+
+
+#------------------------------------------------------------------------------
+# Email/Notification settings
+#------------------------------------------------------------------------------
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'localhost'
+EMAIL_PORT = 25
+EMAIL_HOST_USER = ''
+EMAIL_HOST_PASSWORD = ''
+EMAIL_USE_TLS = False
+EMAIL_TIMEOUT = 3
+EMAIL_SUBJECT_PREFIX = '[Coldfront]'
+EMAIL_ADMIN_LIST = []
+EMAIL_SENDER = 'coldfront@example.com'
+EMAIL_TICKET_SYSTEM_ADDRESS = 'coldfront-help@example.com'
+EMAIL_PROCUREMENT = 'procurement@example.com'
+EMAIL_DIRECTOR_EMAIL = 'director@example.com'
+EMAIL_DEVELOPMENT_EMAIL_LIST = ['admin@example.com'] # If debug and development are set to True, all email will be sent to this list
+
+
+# # Uncomment to turn on error and broken link notifications
+# # ADMINS = [('Admins', 'admins@listserv.example.com')]
+# # MANAGERS = [('Admins', 'admins@listserv.example.com')]
+
+
+# #------------------------------------------------------------------------------
+# # Settings for SLURM Web Service
+# #------------------------------------------------------------------------------
+# # SLURM_WEB_SERVICE_URL = 'localhost'
+# # SLURM_WEB_SERVICE_PORT = '8001'
+
+# ------------------------------------------------------------------------------
+# Extra apps
+# ------------------------------------------------------------------------------
+EXTRA_APPS = []
+
+#------------------------------------------------------------------------------
+# Extra authentication backends
+#------------------------------------------------------------------------------
+EXTRA_AUTHENTICATION_BACKENDS = []
+
+
+# #------------------------------------------------------------------------------
+# # Enable reporting quotas from Isilon.
+# #------------------------------------------------------------------------------
+EXTRA_APPS += [
+    'extra.djangoapps.iquota'
+]
+
+IQUOTA_KEYTAB = '</path/to/keytab>'
+os.environ['KRB5_CLIENT_KTNAME'] = IQUOTA_KEYTAB
+IQUOTA_CA_CERT = '</path/to/ca.crt'
+IQUOTA_API_HOST = 'example.com'
+IQUOTA_API_PORT = '8080'
+IQUOTA_USER_PATH = '/ifs/user'
+IQUOTA_GROUP_PATH = '/ifs/projects'
+
+#------------------------------------------------------------------------------
+# Enable Mokey OpenID Connect.
+#------------------------------------------------------------------------------
+EXTRA_APPS += [
+    'extra.djangoapps.mokey_oidc'
+]
+
+EXTRA_AUTHENTICATION_BACKENDS += [
+    'extra.djangoapps.mokey_oidc.backend.Mokey_Oidc',
+]
+
+SOCIAL_AUTH_MOKEY_OIDC_ENDPOINT = 'https://example.edu/'
+SOCIAL_AUTH_MOKEY_OIDC_DEFAULT_SCOPE = ['openid']
+SOCIAL_AUTH_MOKEY_OIDC_KEY = 'coldfront-8000'
+SOCIAL_AUTH_MOKEY_OIDC_SECRET = 'SECRET'
+SOCIAL_AUTH_MOKEY_OIDC_VERIFY_SSL = '</path/to/ca.crt'
+
+
+SOCIAL_AUTH_PIPELINE = (
+    'social_core.pipeline.social_auth.social_details',
+    'social_core.pipeline.social_auth.social_uid',
+    'social_core.pipeline.social_auth.social_user',
+    'social_core.pipeline.user.create_user',
+    'extra.djangoapps.mokey_oidc.pipelines.mirror_groups',
+    'social_core.pipeline.social_auth.associate_user',
+    'social_core.pipeline.social_auth.load_extra_data',
+    'social_core.pipeline.user.user_details',
+)
+
+
+#------------------------------------------------------------------------------
+# Enable system monitor reporting
+#------------------------------------------------------------------------------
+EXTRA_APPS += [
+    'extra.djangoapps.system_monitor'
+]
+SYSTEM_MONITOR_PANEL_TITLE = 'Cluster Status'
+SYSTEM_MONITOR_ENDPOINT = 'http://example.com/status.html'
+SYSTEM_MONITOR_DISPLAY_MORE_STATUS_INFO_LINK = 'http://example.com/machine-status.html'
+SYSTEM_MONITOR_DISPLAY_XDMOD_LINK = 'https://metrics.example.com/'
+
+
+#------------------------------------------------------------------------------
+# User Search Classes  --- Order is IMPORTANT
+#------------------------------------------------------------------------------
+ADDITIONAL_USER_SEARCH_CLASSES = ['extra.djangoapps.ldap_user_search.utils.LDAPUserSearch',]
+
+
+#------------------------------------------------------------------------------
+# Enable slum app
+#------------------------------------------------------------------------------
+EXTRA_APPS += [
+    'extra.djangoapps.slurm',
+]
+SLRUM_DISABLE_SIGNAL_PROCESSING = True
