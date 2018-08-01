@@ -335,10 +335,10 @@ class SubscriptionAddUsersView(LoginRequiredMixin, UserPassesTestMixin, Template
 
         subscription_obj = get_object_or_404(Subscription, pk=self.kwargs.get('pk'))
 
-        if subscription_obj.project_obj.pi == self.request.user:
+        if subscription_obj.project.pi == self.request.user:
             return True
 
-        if subscription_obj.project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if subscription_obj.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
             return True
 
         messages.error(self.request, 'You do not have permission to add users to the subscription.')
@@ -434,7 +434,7 @@ class SubscriptionDeleteUsersView(LoginRequiredMixin, UserPassesTestMixin, Templ
 
         subscription_obj = get_object_or_404(Subscription, pk=self.kwargs.get('pk'))
 
-        if subscription_obj.project_obj.pi == self.request.user:
+        if subscription_obj.project.pi == self.request.user:
             return True
 
         if subscription_obj.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
