@@ -159,12 +159,12 @@ class SubscriptionListView(LoginRequiredMixin, ListView):
 
             # Active Until
             if data.get('active_until'):
-                subscriptions = subscriptions.filter(active_until__lt=data.get('active_until'))
+                subscriptions = subscriptions.filter(active_until__lt=data.get('active_until'), status__name='Active')
 
             # Active from now until date
             if data.get('active_from_now_until_date'):
                 subscriptions = subscriptions.filter(active_until__gte=date.today())
-                subscriptions = subscriptions.filter(active_until__lt=data.get('active_from_now_until_date'))
+                subscriptions = subscriptions.filter(active_until__lt=data.get('active_from_now_until_date'), status__name='Active')
 
             # Status
             if data.get('status'):
@@ -195,9 +195,9 @@ class SubscriptionListView(LoginRequiredMixin, ListView):
                 if value:
                     if isinstance(value, QuerySet):
                         for ele in value:
-                            filter_parameters += '{}={}'.format(key, ele.pk)
+                            filter_parameters += '{}={}&'.format(key, ele.pk)
                     else:
-                        filter_parameters += '{}={}'.format(key, value)
+                        filter_parameters += '{}={}&'.format(key, value)
             context['subscription_search_form'] = subscription_search_form
         else:
             filter_parameters = ''
