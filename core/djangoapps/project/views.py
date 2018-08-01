@@ -72,8 +72,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         if self.request.user.is_superuser or self.request.user.has_perm('subscription.can_view_all_subscriptions'):
             subscriptions = Subscription.objects.prefetch_related('resources').filter(project=self.object)
         else:
-            subscriptions = Subscription.objects.prefetch_related('resources').filter(project=self.object, status__name__in=['Active', 'Pending', 'New', 'Approved'])
-
+            subscriptions = Subscription.objects.prefetch_related('resources').filter(project=self.object, status__name__in=['Active', 'Pending', 'New', 'Approved', ])
         context['subscriptions'] = subscriptions
         context['project_users'] = project_users
         return context
