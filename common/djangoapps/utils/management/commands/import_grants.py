@@ -118,7 +118,10 @@ class Command(BaseCommand):
 
                 if funding_agency in agency_mapping:
                     funding_agency_obj = GrantFundingAgency.objects.get(name=agency_mapping[funding_agency])
-                    other_funding_agency = ''
+                    if agency_mapping[funding_agency] == 'Other':
+                        other_funding_agency = funding_agency
+                    else:
+                        other_funding_agency = ''
                 else:
                     funding_agency_obj = GrantFundingAgency.objects.get(name='Other')
                     other_funding_agency = funding_agency
@@ -157,5 +160,3 @@ class Command(BaseCommand):
                     total_amount_awarded=total_amount_awarded,
                     status=status.title()
                     )
-
-                print(grant_obj)
