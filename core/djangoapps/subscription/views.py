@@ -73,14 +73,18 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # subscription_obj = self.get_object()
-        subscription_users = self.object.subscriptionuser_set.filter(status__name__in=['Active', 'Pending - Add']).order_by('user__username')
+        subscription_users = self.object.subscriptionuser_set.filter(
+            status__name__in=['Active', 'Pending - Add']).order_by('user__username')
 
-        attributes_with_usage = [attribute for attribute in self.object.subscriptionattribute_set.all() if hasattr(attribute, 'subscriptionattributeusage') ]
+        attributes_with_usage = [attribute for attribute in self.object.subscriptionattribute_set.all(
+        ) if hasattr(attribute, 'subscriptionattributeusage')]
 
-        attributes_without_usage = [attribute for attribute in self.object.subscriptionattribute_set.all() if not hasattr(attribute, 'subscriptionattributeusage') ]
+        attributes_without_usage = [attribute for attribute in self.object.subscriptionattribute_set.all(
+        ) if not hasattr(attribute, 'subscriptionattributeusage')]
         guage_data = []
         for attribute in attributes_with_usage:
-            guage_data.append(generate_guauge_data_from_usage(attribute.subscription_attribute_type.name, int(attribute.value), int(attribute.subscriptionattributeusage.value)))
+            guage_data.append(generate_guauge_data_from_usage(attribute.subscription_attribute_type.name,
+                                                              int(attribute.value), int(attribute.subscriptionattributeusage.value)))
 
         context['guage_data'] = guage_data
 
@@ -122,19 +126,20 @@ class SubscriptionListView(LoginRequiredMixin, ListView):
         else:
             order_by = 'id'
 
-        if self.request.user.is_superuser or self.request.user.has_perm('subscription.can_view_all_subscriptions'):
-            subscriptions = Subscription.objects.prefetch_related('project', 'project__pi', 'status',).all().order_by(order_by)
-        else:
-            subscriptions = Subscription.objects.prefetch_related('project', 'project__pi', 'status',).filter(
-                Q(status__name__in=['Active', ]) &
-                Q(subscriptionuser__user=self.request.user) &
-                Q(subscriptionuser__status__name='Active')
-            ).order_by(order_by)
-
         subscription_search_form = SubscriptionSearchForm(self.request.GET)
 
         if subscription_search_form.is_valid():
             data = subscription_search_form.cleaned_data
+
+            if data.get('show_all_subscriptions') and (self.request.user.is_superuser or self.request.user.has_perm('subscription.can_view_all_subscriptions')):
+                subscriptions = Subscription.objects.prefetch_related(
+                    'project', 'project__pi', 'status',).all().order_by(order_by)
+            else:
+                subscriptions = Subscription.objects.prefetch_related('project', 'project__pi', 'status',).filter(
+                    Q(status__name__in=['Active', ]) &
+                    Q(subscriptionuser__user=self.request.user) &
+                    Q(subscriptionuser__status__name='Active')
+                ).order_by(order_by)
 
             # Project Title
             if data.get('project'):
@@ -165,13 +170,20 @@ class SubscriptionListView(LoginRequiredMixin, ListView):
             if data.get('status'):
                 subscriptions = subscriptions.filter(status__in=data.get('status'))
 
+        else:
+            subscriptions = Subscription.objects.prefetch_related('project', 'project__pi', 'status',).filter(
+                Q(status__name__in=['Active', ]) &
+                Q(subscriptionuser__user=self.request.user) &
+                Q(subscriptionuser__status__name='Active')
+            ).order_by(order_by)
+
         return subscriptions
 
     def get_context_data(self, **kwargs):
 
         context = super().get_context_data(**kwargs)
-        subscription_count = self.get_queryset().count()
-        context['subscription_count'] = subscription_count
+        subscriptions_count = self.get_queryset().count()
+        context['subscriptions_count'] = subscriptions_count
 
         subscription_search_form = SubscriptionSearchForm(self.request.GET)
 
@@ -256,7 +268,8 @@ class SubscriptionCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         resources_form_label_texts = {}
         for resource in user_resources:
             if resource.resourceattribute_set.filter(resource_attribute_type__name='quantity_default_value').exists():
-                value = resource.resourceattribute_set.get(resource_attribute_type__name='quantity_default_value').value
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='quantity_default_value').value
                 resources_form_default_quantities[resource.id] = int(value)
             if resource.resourceattribute_set.filter(resource_attribute_type__name='quantity_label').exists():
                 value = resource.resourceattribute_set.get(resource_attribute_type__name='quantity_label').value
@@ -314,7 +327,6 @@ class SubscriptionCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 class SubscriptionAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'subscription/subscription_add_users.html'
     login_url = "/"  # redirect URL if fail test_func
-
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
