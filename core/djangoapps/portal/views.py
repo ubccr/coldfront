@@ -30,9 +30,9 @@ def home(request):
         ).order_by('-created').distinct()[:5]
 
         subscription_list = Subscription.objects.filter(
-            Q(status__name__in=['Active', 'Pending', 'Approved', ]) &
+            Q(status__name__in=['Active', 'Pending', 'Approved', 'New', ]) &
             Q(subscriptionuser__user=request.user) &
-            Q(subscriptionuser__status__name__in=['Active', 'Expired', 'Pending'])
+            Q(subscriptionuser__status__name__in=['Active', 'Expired', 'Pending', ])
         )
         context['project_list'] = project_list
         context['subscription_list'] = subscription_list

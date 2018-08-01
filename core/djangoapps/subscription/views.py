@@ -74,7 +74,7 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
         context = super().get_context_data(**kwargs)
         # subscription_obj = self.get_object()
         subscription_users = self.object.subscriptionuser_set.filter(
-            status__name__in=['Active', 'Pending - Add']).order_by('user__username')
+            status__name__in=['Active', 'Pending - Add', 'New', ]).order_by('user__username')
 
         attributes_with_usage = [attribute for attribute in self.object.subscriptionattribute_set.all(
         ) if hasattr(attribute, 'subscriptionattributeusage')]
@@ -136,7 +136,7 @@ class SubscriptionListView(LoginRequiredMixin, ListView):
                     'project', 'project__pi', 'status',).all().order_by(order_by)
             else:
                 subscriptions = Subscription.objects.prefetch_related('project', 'project__pi', 'status',).filter(
-                    Q(status__name__in=['Active', ]) &
+                    Q(status__name__in=['Active', 'Pending', 'New', 'Approved']) &
                     Q(subscriptionuser__user=self.request.user) &
                     Q(subscriptionuser__status__name='Active')
                 ).order_by(order_by)
@@ -172,7 +172,7 @@ class SubscriptionListView(LoginRequiredMixin, ListView):
 
         else:
             subscriptions = Subscription.objects.prefetch_related('project', 'project__pi', 'status',).filter(
-                Q(status__name__in=['Active', ]) &
+                Q(status__name__in=['Active', 'Pending', 'New', 'Approved']) &
                 Q(subscriptionuser__user=self.request.user) &
                 Q(subscriptionuser__status__name='Active')
             ).order_by(order_by)
