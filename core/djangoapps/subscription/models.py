@@ -35,9 +35,9 @@ class Subscription(TimeStampedModel):
         )
 
     def save(self, *args, **kwargs):
-        if self.active_until < datetime.datetime.now().date():
+        if self.active_until.date() < datetime.datetime.now().date():
             self.status = SubscriptionStatusChoice.objects.get(name='Expired')
-        elif self.active_until > datetime.datetime.now().date():
+        elif self.active_until.date() > datetime.datetime.now().date():
             self.status = SubscriptionStatusChoice.objects.get(name='Active')
 
         super().save(*args, **kwargs)

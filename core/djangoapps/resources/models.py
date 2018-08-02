@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from django.contrib.auth.models import Group, User
 from django.core.exceptions import ValidationError
 from django.db import models
 from model_utils.models import TimeStampedModel
@@ -43,6 +44,10 @@ class Resource(TimeStampedModel):
     resource_type = models.ForeignKey(ResourceType, on_delete=models.CASCADE)
     name = models.CharField(max_length=128, unique=True)
     description = models.CharField(max_length=255)
+    is_available = models.BooleanField(default=True)
+    is_public = models.BooleanField(default=True)
+    allowed_groups = models.ManyToManyField(Group)
+    allowed_users = models.ManyToManyField(User)
 
     def get_missing_resource_attributes(self, required=False):
         """

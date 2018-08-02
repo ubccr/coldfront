@@ -32,6 +32,7 @@ class ResourceAttributeInline(admin.TabularInline):
     model = ResourceAttribute
     readonly_fields_change = ('resource_attribute_type', )
     fields_change = ('resource_attribute_type', 'value',)
+    extra = 0
 
     def get_fields(self, request, obj):
         if obj is None:
@@ -46,14 +47,18 @@ class ResourceAttributeInline(admin.TabularInline):
         else:
             return self.readonly_fields_change
 
+
 @admin.register(Resource)
 class ResourceAdmin(admin.ModelAdmin):
     readonly_fields_change = ('resource_type', )
-    fields_change = ('resource_type', 'name', 'description', )
-    list_display = ('pk', 'name', 'description', 'resource_type_name', 'created', 'modified', )
+    fields_change = ('resource_type', 'name', 'description', 'is_available',
+                     'is_public', 'allowed_groups', 'allowed_users', )
+    list_display = ('pk', 'name', 'description', 'resource_type_name',
+                    'is_available', 'is_public', 'created', 'modified', )
     search_fields = ('name', 'description', 'resource_type__name')
-    list_filter = ('resource_type__name',)
+    list_filter = ('resource_type__name', 'is_available', 'is_public', )
     inlines = [ResourceAttributeInline, ]
+    filter_horizontal = ['allowed_groups', 'allowed_users', ]
 
     def resource_type_name(self, obj):
         return obj.resource_type.name
@@ -70,6 +75,7 @@ class ResourceAdmin(admin.ModelAdmin):
             return super().get_readonly_fields(request)
         else:
             return self.readonly_fields_change
+
 
 @admin.register(ResourceAttribute)
 class ResourceAttributeAdmin(admin.ModelAdmin):

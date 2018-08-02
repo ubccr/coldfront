@@ -1,7 +1,7 @@
 from core.djangoapps.resources.models import Resource
 from core.djangoapps.subscription.models import (SubscriptionUser,
                                                  SubscriptionUserStatusChoice)
-
+from django.db.models import Q
 
 def set_subscription_user_status_to_error(subscription_user_pk):
     subscription_user_obj = SubscriptionUser.objects.get(pk=subscription_user_pk)
@@ -41,6 +41,9 @@ def get_user_resources(user_obj):
     if user_obj.is_superuser:
         resources = Resource.objects.all()
     else:
-        resources = Resource.objects.all()
+        resources = Resource.objects.filter(
+            Q(is_available=True) &
+            (Q(is_public=True) | Q(allowed_groups__in=user_obj.groups.all()))
+        ).distinct()
 
     return resources

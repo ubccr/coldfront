@@ -91,8 +91,8 @@ class Command(BaseCommand):
                 active_until_datetime_obj = datetime.datetime.strptime(active_util, '%Y-%m-%d')
 
 
-                created = datetime.datetime.strptime(created.strip(), '%Y-%m-%d %H:%M:%S')
-                modified = datetime.datetime.strptime(modified.strip(), '%Y-%m-%d %H:%M:%S')
+                created = datetime.datetime.strptime(created.strip(), '%Y-%m-%d %H:%M:%S').date()
+                modified = datetime.datetime.strptime(modified.strip(), '%Y-%m-%d %H:%M:%S').date()
                 subscription_obj = Subscription.objects.create(
                     created=created,
                     modified=modified,
