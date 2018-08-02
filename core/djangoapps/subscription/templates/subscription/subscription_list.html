@@ -5,10 +5,10 @@
 {% if expand_accordion == "show" or subscription_list %}
 <div class="mb-3" id="accordion">
   <div class="card">
-    <div class="card-header">
-      <i class="fas fa-filter"></i> Filter
-      <a id="expand_button" role="button" class="card-link float-right" data-toggle="collapse" href="#collapseOne"> 
-        <i class="fas fa-plus"></i>  
+    <div class="card-header"> 
+      <a id="expand_button" role="button" class="card-link " data-toggle="collapse" href="#collapseOne"> 
+        <i class="fas fa-filter"></i> Filter
+        <i id="plus_minus" class="fas fa-plus float-right"></i>  
 
       </a>
     </div>
@@ -116,7 +116,7 @@ function resetForm($form) {
 $("#expand_button").click(function() {
 
   $('#collapseOne').collapse();
-  icon = $(this).find("i");
+  icon = $("#plus_minus");
   icon.toggleClass("fa-plus fa-minus");
 
 });

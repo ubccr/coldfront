@@ -24,7 +24,10 @@ def get_role_and_pi_mapping():
 
             PROJECT_TITLE, GRANT_TITLE, RF_Award_Number, ROLE, PI = line.strip().split(delimiter)
 
-            unique_key = PROJECT_TITLE+GRANT_TITLE
+            if ROLE == 'coPI':
+                ROLE = 'CoPI'
+
+            unique_key = PROJECT_TITLE + GRANT_TITLE
             mapping[unique_key] = {
                 'role': ROLE,
                 'pi': PI,
@@ -100,6 +103,7 @@ class Command(BaseCommand):
         }
 
         role_pi_mapping = get_role_and_pi_mapping()
+        pprint.pprint(role_pi_mapping)
 
         with open(file_path, 'r') as fp:
             for line in fp:
@@ -114,7 +118,10 @@ class Command(BaseCommand):
 
                 if funding_agency in agency_mapping:
                     funding_agency_obj = GrantFundingAgency.objects.get(name=agency_mapping[funding_agency])
-                    other_funding_agency = ''
+                    if agency_mapping[funding_agency] == 'Other':
+                        other_funding_agency = funding_agency
+                    else:
+                        other_funding_agency = ''
                 else:
                     funding_agency_obj = GrantFundingAgency.objects.get(name='Other')
                     other_funding_agency = funding_agency
@@ -122,11 +129,11 @@ class Command(BaseCommand):
                 unique_key = project__title + title
                 if unique_key in role_pi_mapping:
                     role = role_pi_mapping[unique_key].get('role')
-                    pi_full_name = role_pi_mapping[unique_key].get('pi')
+                    grant_pi_full_name = role_pi_mapping[unique_key].get('pi')
                     rf_award_number = role_pi_mapping[unique_key].get('rf_award_number')
                 else:
                     role = 'PI'
-                    pi_full_name = ''
+                    grant_pi_full_name = ''
                     rf_award_number = 0
 
                 try:
@@ -142,7 +149,7 @@ class Command(BaseCommand):
                     project_number=project_number,
                     title=title,
                     role=role,
-                    pi_full_name=pi_full_name,
+                    grant_pi_full_name=grant_pi_full_name,
                     funding_agency=funding_agency_obj,
                     other_funding_agency=other_funding_agency,
                     rf_award_number=rf_award_number,
@@ -153,5 +160,3 @@ class Command(BaseCommand):
                     total_amount_awarded=total_amount_awarded,
                     status=status.title()
                     )
-
-                print(grant_obj)

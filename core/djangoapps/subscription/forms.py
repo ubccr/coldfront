@@ -1,5 +1,4 @@
 from django import forms
-from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 
 from common.djangolibs.utils import import_from_settings
@@ -73,6 +72,7 @@ class SubscriptionSearchForm(forms.Form):
         widget=forms.CheckboxSelectMultiple,
         queryset=SubscriptionStatusChoice.objects.all().order_by('name'),
         required=False)
+    show_all_subscriptions = forms.BooleanField(initial=False, required=False)
 
 
 class SubscriptionEmailForm(forms.Form):

@@ -2,7 +2,7 @@
 <div class="row">
   
   <div class="col-lg-6">
-    <a href="#"><h3>Projects &raquo;</h3></a>
+    <a href="{% url 'project-list' %}"><h3>Projects &raquo;</h3></a>
     <hr> 
     {% if project_list %}
       <ul class="list-group">
@@ -21,7 +21,7 @@
 
 
   <div class="col-lg-6">
-    <a href="#"><h3>Subscriptions &raquo;</h3></a>
+    <a href="{% url 'subscription-list' %}"><h3>Subscriptions &raquo;</h3></a>
     <hr> 
     {% if subscription_list %}
     <table class="table">
@@ -39,9 +39,9 @@
               <td>{{subscription.project.title}}</td>
               <td>{{subscription.resources.first}}</td>
               {%  if subscription.expires_in < 0 %}
-                  <td><a href=""  class="btn btn-danger btn-block">Expired</a></td>
+                  <td><a href="{% url 'subscription-detail' subscription.id %}"  class="btn btn-danger btn-block">Expired</a></td>
               {%  elif subscription.expires_in >= 0 and  subscription.expires_in <= 30 %}
-                  <td><a href=""  class="btn btn-danger btn-block">Expires in <span class="badge badge-light">{{subscription.expires_in}}</span> day{{subscription.expires_in|pluralize }}</a></td>
+                  <td><a href="{% url 'subscription-detail' subscription.id %}"  class="btn btn-danger btn-block">Expires in <span class="badge badge-light">{{subscription.expires_in}}</span> day{{subscription.expires_in|pluralize }}</a></td>
               {% elif subscription.expires_in > 30 and subscription.expires_in <= 90 %}
                   <td><a href=""  class="btn btn-warning btn-block">Expires in <span class="badge badge-light">{{subscription.expires_in}}</span> day{{subscription.expires_in|pluralize }}</a></td>
               {% elif subscription.status.name == "Pending" %}

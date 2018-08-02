@@ -73,14 +73,18 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # subscription_obj = self.get_object()
-        subscription_users = self.object.subscriptionuser_set.filter(status__name__in=['Active', 'Pending - Add']).order_by('user__username')
+        subscription_users = self.object.subscriptionuser_set.filter(
+            status__name__in=['Active', 'Pending - Add', 'New', ]).order_by('user__username')
 
-        attributes_with_usage = [attribute for attribute in self.object.subscriptionattribute_set.all() if hasattr(attribute, 'subscriptionattributeusage') ]
+        attributes_with_usage = [attribute for attribute in self.object.subscriptionattribute_set.all(
+        ) if hasattr(attribute, 'subscriptionattributeusage')]
 
-        attributes_without_usage = [attribute for attribute in self.object.subscriptionattribute_set.all() if not hasattr(attribute, 'subscriptionattributeusage') ]
+        attributes_without_usage = [attribute for attribute in self.object.subscriptionattribute_set.all(
+        ) if not hasattr(attribute, 'subscriptionattributeusage')]
         guage_data = []
         for attribute in attributes_with_usage:
-            guage_data.append(generate_guauge_data_from_usage(attribute.subscription_attribute_type.name, int(attribute.value), int(attribute.subscriptionattributeusage.value)))
+            guage_data.append(generate_guauge_data_from_usage(attribute.subscription_attribute_type.name,
+                                                              int(attribute.value), int(attribute.subscriptionattributeusage.value)))
 
         context['guage_data'] = guage_data
 
@@ -122,19 +126,20 @@ class SubscriptionListView(LoginRequiredMixin, ListView):
         else:
             order_by = 'id'
 
-        if self.request.user.is_superuser or self.request.user.has_perm('subscription.can_view_all_subscriptions'):
-            subscriptions = Subscription.objects.prefetch_related('project', 'project__pi', 'status',).all().order_by(order_by)
-        else:
-            subscriptions = Subscription.objects.prefetch_related('project', 'project__pi', 'status',).filter(
-                Q(status__name__in=['Active', ]) &
-                Q(subscriptionuser__user=self.request.user) &
-                Q(subscriptionuser__status__name='Active')
-            ).order_by(order_by)
-
         subscription_search_form = SubscriptionSearchForm(self.request.GET)
 
         if subscription_search_form.is_valid():
             data = subscription_search_form.cleaned_data
+
+            if data.get('show_all_subscriptions') and (self.request.user.is_superuser or self.request.user.has_perm('subscription.can_view_all_subscriptions')):
+                subscriptions = Subscription.objects.prefetch_related(
+                    'project', 'project__pi', 'status',).all().order_by(order_by)
+            else:
+                subscriptions = Subscription.objects.prefetch_related('project', 'project__pi', 'status',).filter(
+                    Q(status__name__in=['Active', 'Pending', 'New', 'Approved']) &
+                    Q(subscriptionuser__user=self.request.user) &
+                    Q(subscriptionuser__status__name='Active')
+                ).order_by(order_by)
 
             # Project Title
             if data.get('project'):
@@ -154,24 +159,31 @@ class SubscriptionListView(LoginRequiredMixin, ListView):
 
             # Active Until
             if data.get('active_until'):
-                subscriptions = subscriptions.filter(active_until__lt=data.get('active_until'))
+                subscriptions = subscriptions.filter(active_until__lt=data.get('active_until'), status__name='Active')
 
             # Active from now until date
             if data.get('active_from_now_until_date'):
                 subscriptions = subscriptions.filter(active_until__gte=date.today())
-                subscriptions = subscriptions.filter(active_until__lt=data.get('active_from_now_until_date'))
+                subscriptions = subscriptions.filter(active_until__lt=data.get('active_from_now_until_date'), status__name='Active')
 
             # Status
             if data.get('status'):
                 subscriptions = subscriptions.filter(status__in=data.get('status'))
+
+        else:
+            subscriptions = Subscription.objects.prefetch_related('project', 'project__pi', 'status',).filter(
+                Q(status__name__in=['Active', 'Pending', 'New', 'Approved']) &
+                Q(subscriptionuser__user=self.request.user) &
+                Q(subscriptionuser__status__name='Active')
+            ).order_by(order_by)
 
         return subscriptions
 
     def get_context_data(self, **kwargs):
 
         context = super().get_context_data(**kwargs)
-        subscription_count = self.get_queryset().count()
-        context['subscription_count'] = subscription_count
+        subscriptions_count = self.get_queryset().count()
+        context['subscriptions_count'] = subscriptions_count
 
         subscription_search_form = SubscriptionSearchForm(self.request.GET)
 
@@ -183,9 +195,9 @@ class SubscriptionListView(LoginRequiredMixin, ListView):
                 if value:
                     if isinstance(value, QuerySet):
                         for ele in value:
-                            filter_parameters += '{}={}'.format(key, ele.pk)
+                            filter_parameters += '{}={}&'.format(key, ele.pk)
                     else:
-                        filter_parameters += '{}={}'.format(key, value)
+                        filter_parameters += '{}={}&'.format(key, value)
             context['subscription_search_form'] = subscription_search_form
         else:
             filter_parameters = ''
@@ -256,7 +268,8 @@ class SubscriptionCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         resources_form_label_texts = {}
         for resource in user_resources:
             if resource.resourceattribute_set.filter(resource_attribute_type__name='quantity_default_value').exists():
-                value = resource.resourceattribute_set.get(resource_attribute_type__name='quantity_default_value').value
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='quantity_default_value').value
                 resources_form_default_quantities[resource.id] = int(value)
             if resource.resourceattribute_set.filter(resource_attribute_type__name='quantity_label').exists():
                 value = resource.resourceattribute_set.get(resource_attribute_type__name='quantity_label').value
@@ -315,7 +328,6 @@ class SubscriptionAddUsersView(LoginRequiredMixin, UserPassesTestMixin, Template
     template_name = 'subscription/subscription_add_users.html'
     login_url = "/"  # redirect URL if fail test_func
 
-
     def test_func(self):
         """ UserPassesTestMixin Tests"""
         if self.request.user.is_superuser:
@@ -323,10 +335,10 @@ class SubscriptionAddUsersView(LoginRequiredMixin, UserPassesTestMixin, Template
 
         subscription_obj = get_object_or_404(Subscription, pk=self.kwargs.get('pk'))
 
-        if subscription_obj.project_obj.pi == self.request.user:
+        if subscription_obj.project.pi == self.request.user:
             return True
 
-        if subscription_obj.project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if subscription_obj.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
             return True
 
         messages.error(self.request, 'You do not have permission to add users to the subscription.')
@@ -422,7 +434,7 @@ class SubscriptionDeleteUsersView(LoginRequiredMixin, UserPassesTestMixin, Templ
 
         subscription_obj = get_object_or_404(Subscription, pk=self.kwargs.get('pk'))
 
-        if subscription_obj.project_obj.pi == self.request.user:
+        if subscription_obj.project.pi == self.request.user:
             return True
 
         if subscription_obj.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():

@@ -34,6 +34,14 @@ class Subscription(TimeStampedModel):
             ('can_review_pending_subscriptions', 'Can review pending subscriptions'),
         )
 
+    def save(self, *args, **kwargs):
+        if self.active_until < datetime.datetime.now().date():
+            self.status = SubscriptionStatusChoice.objects.get(name='Expired')
+        elif self.active_until > datetime.datetime.now().date():
+            self.status = SubscriptionStatusChoice.objects.get(name='Active')
+
+        super().save(*args, **kwargs)
+
     @property
     def expires_in(self):
         return (self.active_until - datetime.date.today()).days
@@ -43,13 +51,14 @@ class Subscription(TimeStampedModel):
         html_string = ''
         for attribute in self.subscriptionattribute_set.all():
             if hasattr(attribute, 'subscriptionattributeusage'):
-                percent = round(float(attribute.subscriptionattributeusage.value)/float(attribute.value)*10000)/100
+                percent = round(float(attribute.subscriptionattributeusage.value) /
+                                float(attribute.value) * 10000) / 100
                 string = '{}: {}/{} ({} %) <br>'.format(
                     attribute.subscription_attribute_type.name,
                     attribute.subscriptionattributeusage.value,
                     attribute.value,
                     percent
-                    )
+                )
                 html_string += string
 
         return mark_safe(html_string)
@@ -98,7 +107,7 @@ class SubscriptionAttribute(TimeStampedModel):
             raise ValidationError('Invalid Value "%s". Allowed inputs are "Yes" or "No".' % (self.value))
 
     def __str__(self):
-        return '%s: %s ' % (self.subscription_attribute_type.name, self.value )
+        return '%s: %s ' % (self.subscription_attribute_type.name, self.value)
 
 
 class SubscriptionAttributeUsage(TimeStampedModel):

@@ -33,9 +33,8 @@ class Grant(TimeStampedModel):
     role = models.CharField(
         max_length=10,
         choices=ROLE_CHOICES,
-        default='PI',
     )
-    pi_full_name = models.CharField(max_length=255, blank=True)
+    grant_pi_full_name = models.CharField(max_length=255, blank=True)
     funding_agency = models.ForeignKey(GrantFundingAgency, on_delete=models.CASCADE)
     other_funding_agency = models.CharField(max_length=255, blank=True)
     rf_award_number = models.CharField(max_length=255, blank=True)

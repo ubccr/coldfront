@@ -30,7 +30,7 @@ class ProjectUserAdmin(admin.ModelAdmin):
     list_display = ('pk', 'project_title', 'PI', 'User', 'role', 'status',
                     'created', 'modified',)
     list_filter = ('role', 'status')
-    search_fields = ['project__title', 'user__username', 'user__first_name', 'user__last_name']
+    search_fields = ['user__username', 'user__first_name', 'user__last_name']
     inlines_change = [CommentInline, ]
     raw_id_fields = ('user', 'project')
 
@@ -66,8 +66,8 @@ class ProjectUserAdmin(admin.ModelAdmin):
 
 class ProjectUserInline(admin.TabularInline):
     model = ProjectUser
-    fields = ['user', 'project', 'role', 'status', 'enable_notifications',]
-    readonly_fields = ['user', 'project',]
+    fields = ['user', 'project', 'role', 'status', 'enable_notifications', ]
+    readonly_fields = ['user', 'project', ]
     extra = 0
 
     def has_add_permission(self, request):
@@ -79,13 +79,13 @@ class ProjectAdmin(admin.ModelAdmin):
     fields_change = ('title', 'pi', 'description', 'status', 'created', 'modified', )
     readonly_fields_change = ('pi', 'created', 'modified', )
     list_display = ('pk', 'title', 'PI', 'created', 'modified', 'status')
-    search_fields = ['title', 'pi__username', 'description', 'field_of_science__description', 'projectuser__user__username', 'projectuser__user__last_name', 'projectuser__user__last_name']
+    search_fields = ['pi__username', 'projectuser__user__username',
+                     'projectuser__user__last_name', 'projectuser__user__last_name']
     list_filter = ('status',)
     inlines_change = [ProjectUserInline, CommentInline]
 
     def PI(self, obj):
         return '{} {} ({})'.format(obj.pi.first_name, obj.pi.last_name, obj.pi.username)
-
 
     def get_fields(self, request, obj):
         if obj is None:
