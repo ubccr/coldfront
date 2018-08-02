@@ -107,7 +107,7 @@ class SubscriptionAttribute(TimeStampedModel):
             raise ValidationError('Invalid Value "%s". Allowed inputs are "Yes" or "No".' % (self.value))
 
     def __str__(self):
-        return '%s: %s ' % (self.subscription_attribute_type.name, self.value)
+        return '%s' % (self.subscription_attribute_type.name)
 
 
 class SubscriptionAttributeUsage(TimeStampedModel):
