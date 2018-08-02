@@ -31,7 +31,6 @@ LOGGING = {
             'class': 'logging.StreamHandler',
         },
         # 'file': {
-        #     'level': 'DEBUG',
         #     'class': 'logging.FileHandler',
         #     'filename': '/tmp/debug.log',
         # },
@@ -44,7 +43,7 @@ LOGGING = {
         },
         'django': {
             'handlers': ['console'],
-            'level': 'DEBUG',
+            'level': 'WARNING',
         },
     },
 }
@@ -54,7 +53,6 @@ LOGGING = {
 # Override with custom authentication backends (example ldap)
 #------------------------------------------------------------------------------
 AUTHENTICATION_BACKENDS = (
-    'django_auth_ldap.backend.LDAPBackend',
     'django.contrib.auth.backends.ModelBackend',
 )
 #------------------------------------------------------------------------------
@@ -79,13 +77,23 @@ DATABASES = {
     # }
 }
 
-import os
+
+
+#------------------------------------------------------------------------------
+# Extra authentication backends
+#------------------------------------------------------------------------------
+EXTRA_AUTHENTICATION_BACKENDS = []
+
+
 
 #------------------------------------------------------------------------------
 # LDAP Authentication Settings -- used by django-auth-ldap
 #------------------------------------------------------------------------------
 import ldap
 from django_auth_ldap.config import GroupOfNamesType, LDAPSearch
+
+
+EXTRA_AUTHENTICATION_BACKENDS += ['django_auth_ldap.backend.LDAPBackend',]
 
 AUTH_LDAP_SERVER_URI = 'ldap:/example.com'
 AUTH_LDAP_USER_SEARCH_BASE = 'cn=users,cn=accounts,dc=<DC1>,dc=<DC2>,dc=<DC3>,dc=<DC4>'
@@ -142,15 +150,12 @@ EMAIL_DEVELOPMENT_EMAIL_LIST = ['admin@example.com'] # If debug and development 
 # ------------------------------------------------------------------------------
 EXTRA_APPS = []
 
-#------------------------------------------------------------------------------
-# Extra authentication backends
-#------------------------------------------------------------------------------
-EXTRA_AUTHENTICATION_BACKENDS = []
-
 
 # #------------------------------------------------------------------------------
 # # Enable reporting quotas from Isilon.
 # #------------------------------------------------------------------------------
+import os
+
 EXTRA_APPS += [
     'extra.djangoapps.iquota'
 ]
