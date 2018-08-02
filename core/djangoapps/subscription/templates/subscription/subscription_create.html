@@ -31,7 +31,7 @@ Request New Subscription
   var resources_form_label_texts = {{resources_form_label_texts |safe }};
 
   $(document).ready(function() {
-      $('<br><input id="selectAll" class="check" type="checkbox"> <strong>Select All</strong>').insertAfter($("#div_id_users > label"))
+      $('<br><input id="selectAll" class="check" type="checkbox"> <strong>Select All Users</strong>').insertAfter($("#div_id_users > label"))
       $("#id_resource").trigger('change');
 
       $("#selectAll").click(function() {
