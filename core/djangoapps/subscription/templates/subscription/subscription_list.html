@@ -1,4 +1,4 @@
-{% extends "templates/base.html" %} {% load settings %} {% load crispy_forms_tags %} {% load static %} {% block title %} Subscription List {% endblock %} {% block content %}
+{% extends "templates/base.html" %} {% load common_tags %} {% load crispy_forms_tags %} {% load static %} {% block title %} Subscription List {% endblock %} {% block content %}
 
 
 <h1>Subscriptions</h1><hr>
@@ -8,7 +8,7 @@
     <div class="card-header"> 
       <a id="expand_button" role="button" class="card-link " data-toggle="collapse" href="#collapseOne"> 
         <i class="fas fa-filter"></i> Filter
-        <i id="plus_minus" class="fas fa-plus float-right"></i>  
+        <i id="plus_minus" class="fas {{expand_accordion|get_icon}} float-right"></i>  
 
       </a>
     </div>
