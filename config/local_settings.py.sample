@@ -20,6 +20,37 @@ TIME_ZONE = 'America/New_York'
 SECRET_KEY = 'secret'
 
 #------------------------------------------------------------------------------
+# Logging
+#------------------------------------------------------------------------------
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+        # 'file': {
+        #     'level': 'DEBUG',
+        #     'class': 'logging.FileHandler',
+        #     'filename': '/tmp/debug.log',
+        # },
+    },
+    'loggers': {
+         'django_auth_ldap': {
+            'level': 'DEBUG',
+            # 'handlers': ['console', 'file'],
+             'handlers': ['console', ],
+        },
+        'django': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+    },
+}
+
+
+#------------------------------------------------------------------------------
 # Override with custom authentication backends (example ldap)
 #------------------------------------------------------------------------------
 AUTHENTICATION_BACKENDS = (
