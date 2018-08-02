@@ -293,7 +293,6 @@ class SubscriptionCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         quantity = form_data.get('quantity', 1)
 
         usernames = form_data.get('users')
-        usernames.append(self.request.user.username)
         usernames.append(project_obj.pi.username)
         usernames = list(set(usernames))
 

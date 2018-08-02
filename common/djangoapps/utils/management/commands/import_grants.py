@@ -3,7 +3,6 @@ import os
 import pprint
 
 from django.conf import settings
-from django.contrib.auth.models import Group, User
 from django.core.management.base import BaseCommand
 
 from core.djangoapps.grant.models import Grant, GrantFundingAgency

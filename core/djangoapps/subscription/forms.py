@@ -23,7 +23,7 @@ class SubscriptionForm(forms.Form):
         self.fields['resource'].queryset = get_user_resources(request_user)
         self.fields['quantity'].initial = 1
         user_query_set = project_obj.projectuser_set.select_related('user').filter(
-            status__name__in=['Active', 'Pending Add']).exclude(user=request_user)
+            status__name__in=['Active', 'Pending Add'])
         if user_query_set:
             self.fields['users'].choices = ((user.user.username, "%s %s (%s)" % (user.user.first_name, user.user.last_name, user.user.username)) for user in user_query_set)
             self.fields['users'].help_text = '<br/>Select users in your project to add to this subscription.'

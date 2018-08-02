@@ -47,3 +47,8 @@ def get_user_resources(user_obj):
         ).distinct()
 
     return resources
+
+
+def update_subscription_status():
+    print('hello!')
+

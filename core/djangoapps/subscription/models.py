@@ -34,13 +34,12 @@ class Subscription(TimeStampedModel):
             ('can_review_pending_subscriptions', 'Can review pending subscriptions'),
         )
 
-    def save(self, *args, **kwargs):
-        if self.active_until.date() < datetime.datetime.now().date():
-            self.status = SubscriptionStatusChoice.objects.get(name='Expired')
-        elif self.active_until.date() > datetime.datetime.now().date():
-            self.status = SubscriptionStatusChoice.objects.get(name='Active')
+    def clean(self):
+        if self.status.name == 'Expired' and self.active_until > datetime.datetime.now().date():
+            raise ValidationError('You cannot set the status of this subscription to expired without changing the active until date.')
 
-        super().save(*args, **kwargs)
+        elif self.status.name == 'Active' and self.active_until < datetime.datetime.now().date():
+            raise ValidationError('You cannot set the status of this subscription to active without changing the active until date.')
 
     @property
     def expires_in(self):
