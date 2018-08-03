@@ -96,7 +96,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
     template_name = 'project/project_list.html'
     prefetch_related = ['pi', 'status', 'field_of_science', ]
     context_object_name = 'project_list'
-    paginate_by = 10
+    paginate_by = 25
 
     def get_queryset(self):
 

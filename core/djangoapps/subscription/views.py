@@ -108,7 +108,7 @@ class SubscriptionListView(LoginRequiredMixin, ListView):
     model = Subscription
     template_name = 'subscription/subscription_list.html'
     context_object_name = 'subscription_list'
-    paginate_by = 10
+    paginate_by = 25
 
     def get_queryset(self):
 
@@ -159,13 +159,13 @@ class SubscriptionListView(LoginRequiredMixin, ListView):
 
             # Active Until
             if data.get('active_until'):
-                subscriptions = subscriptions.filter(active_until__lt=data.get('active_until'), status__name='Active')
+                subscriptions = subscriptions.filter(active_until__lt=data.get('active_until'), status__name='Active').order_by('active_until')
 
             # Active from now until date
             if data.get('active_from_now_until_date'):
                 subscriptions = subscriptions.filter(active_until__gte=date.today())
                 subscriptions = subscriptions.filter(active_until__lt=data.get(
-                    'active_from_now_until_date'), status__name='Active')
+                    'active_from_now_until_date'), status__name='Active').order_by('active_until')
 
             # Status
             if data.get('status'):

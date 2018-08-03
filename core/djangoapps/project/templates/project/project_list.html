@@ -20,7 +20,6 @@
       <a id="expand_button" role="button" class="card-link " data-toggle="collapse" href="#collapseOne"> 
         <i class="fas fa-filter"></i> Filter
         <i id="plus_minus" class="fas {{expand_accordion|get_icon}} float-right"></i>  
-
       </a>
     </div>
     <div id="collapseOne" class="collapse {{expand_accordion}}" data-parent="#accordion">
@@ -52,7 +51,7 @@
           <a href="?order_by=pi__username&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
           <a href="?order_by=pi__username&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
         </th>
-        <th>Title and Description</th>
+        <th>Title</th>
         <th style="white-space:nowrap;">
           Field of Science
           <a href="?order_by=field_of_science&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
@@ -70,8 +69,7 @@
       <tr>
         <td><a href="/project/{{project.id}}/">{{ project.id }}</a></td>
         <td>{{ project.pi.username }}</td>
-        <td style="text-align: justify; text-justify: inter-word;"><strong>Title: </strong> {{ project.title }}
-          <br> <strong>Description: </strong>{{ project.description }}</td>
+        <td style="text-align: justify; text-justify: inter-word;">{{ project.title }}
         <td>{{ project.field_of_science.description }}</td>
         <td>{{ project.status.name }}</td>
       </tr>

@@ -14,9 +14,9 @@ def settings_value(name):
     ]
     return mark_safe(getattr(settings, name, '') if name in allowed_names else '')
 
+
 @register.filter
 def get_icon(expand_accordion):
-    print(expand_accordion)
     if expand_accordion == 'show':
         return 'fa-minus'
     else:
