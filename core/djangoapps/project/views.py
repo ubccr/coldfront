@@ -4,7 +4,6 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.contrib.messages.views import SuccessMessageMixin
-from django.core.exceptions import PermissionDenied
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.forms import formset_factory
@@ -36,6 +35,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     model = Project
     template_name = 'project/project_detail.html'
     context_object_name = 'project'
+    login_url = "/"  # redirect URL if fail test_func
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -50,10 +50,11 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         if project_obj.projectuser_set.filter(user=self.request.user, status__name='Active').exists():
             return True
 
+        messages.error(self.request, 'You do not have permission to view the previous page.')
+
     def get_context_data(self, **kwargs):
 
         context = super().get_context_data(**kwargs)
-
         # Can the user update the project?
         if self.request.user.is_superuser:
             context['is_allowed_to_update_project'] = True
@@ -66,13 +67,24 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         else:
             context['is_allowed_to_update_project'] = False
 
-        # Only show users 'Active' and 'Pending Add'
+        # Only show 'Active Users'
         project_users = self.object.projectuser_set.filter(status__name='Active').order_by('user__username')
 
         if self.request.user.is_superuser or self.request.user.has_perm('subscription.can_view_all_subscriptions'):
             subscriptions = Subscription.objects.prefetch_related('resources').filter(project=self.object)
         else:
-            subscriptions = Subscription.objects.prefetch_related('resources').filter(project=self.object, status__name__in=['Active', 'Pending', 'New', 'Approved', ])
+            if self.object.status.name == 'Active':
+                subscriptions = Subscription.objects.filter(
+                    Q(status__name__in=['Active', 'Approved', 'Denied', 'New', 'Pending', ]) &
+                    Q(project=self.object) &
+                    Q(project__projectuser__user=self.request.user) &
+                    Q(project__projectuser__status__name='Active') &
+                    Q(subscriptionuser__user=self.request.user) &
+                    Q(subscriptionuser__status__name__in=['Active', 'Pending', ])
+                ).distinct().order_by('-created')
+            else:
+                subscriptions = Subscription.objects.prefetch_related('resources').filter(project=self.object)
+
         context['subscriptions'] = subscriptions
         context['project_users'] = project_users
         return context
@@ -240,7 +252,6 @@ class ProjectArchivedListView(LoginRequiredMixin, ListView):
                 Q(projectuser__status__name='Active')
             ).order_by(order_by)
 
-
         return projects
 
     def get_context_data(self, **kwargs):
@@ -324,7 +335,7 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
         pk = self.kwargs.get('pk')
         project = get_object_or_404(Project, pk=pk)
         project_status_archive = ProjectStatusChoice.objects.get(name='Archived')
-        project.status=project_status_archive
+        project.status = project_status_archive
         project.save()
         return redirect(reverse('project-detail', kwargs={'pk': project.pk}))
 
@@ -341,6 +352,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
         if self.request.user.userprofile.is_pi:
             return True
+
     def form_valid(self, form):
         project_obj = form.save(commit=False)
         form.instance.pi = self.request.user

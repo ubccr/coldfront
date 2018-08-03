@@ -10,6 +10,12 @@ Subscription Detail
 
 {% block content %}
 
+{% if subscription.project.status.name == 'Archived' %}
+<div class="alert alert-warning" role="alert">
+  This is a subscription from an archived project! You cannot make any changes.
+</div>
+{% endif %}
+
 <div class="mb-3">
 <h1>Subscription Detail</h1> <hr>
 </div>

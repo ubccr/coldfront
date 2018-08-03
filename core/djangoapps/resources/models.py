@@ -55,8 +55,8 @@ class Resource(TimeStampedModel):
     description = models.CharField(max_length=255)
     is_available = models.BooleanField(default=True)
     is_public = models.BooleanField(default=True)
-    allowed_groups = models.ManyToManyField(Group, blank=True,)
-    allowed_users = models.ManyToManyField(User, blank=True,)
+    allowed_groups = models.ManyToManyField(Group, blank=True)
+    allowed_users = models.ManyToManyField(User, blank=True)
 
     def get_missing_resource_attributes(self, required=False):
         """

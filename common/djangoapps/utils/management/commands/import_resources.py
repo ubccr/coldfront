@@ -1,7 +1,7 @@
 import os
 
-from django.contrib.auth.models import Group
 from django.conf import settings
+from django.contrib.auth.models import Group
 from django.core.management.base import BaseCommand
 
 from core.djangoapps.resources.models import (AttributeType, Resource,
@@ -83,4 +83,3 @@ class Command(BaseCommand):
                         resource_attribute_type=ResourceAttributeType.objects.get(name=resource_attribute_type_name, attribute_type__name=resource_attribute_type_type_name),
                         resource=Resource.objects.get(name=resource_name),
                         value=value.strip())
-
