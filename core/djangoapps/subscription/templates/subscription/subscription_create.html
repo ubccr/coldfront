@@ -1,5 +1,4 @@
 {% extends "templates/base.html" %} 
-{% load settings %}
 {% load crispy_forms_tags %}
 {% load static %}
 
@@ -30,26 +29,44 @@ Request New Subscription
 <script>
   var resources_form_default_quantities = {{resources_form_default_quantities |safe }};
   var resources_form_label_texts = {{resources_form_label_texts |safe }};
-  $(document).ready(function() {
-     $("#id_resource").trigger('change');
-});
 
-$("#id_resource").change(function () {
-  var resource_id = $("#id_resource option:selected").val();
-  if (resources_form_default_quantities[resource_id]) {
-    var label = $('label[for="id_quantity"]');
-    if (resources_form_label_texts[resource_id]) {
-      label.html(resources_form_label_texts[resource_id])
-    } else {
-      label.html('<strong>Quantity*</strong>')
-    }    
-    $('#id_quantity').val(resources_form_default_quantities[resource_id])
-    $('#div_id_quantity').show();
-  } else {
-    $('#div_id_quantity').hide();
-    $('#id_quantity').val(1)
-  }
-});
+  $(document).ready(function() {
+      $('<br><input id="selectAll" class="check" type="checkbox"> <strong>Select All Users</strong>').insertAfter($("#div_id_users > label"))
+      $("#id_resource").trigger('change');
+
+      $("#selectAll").click(function() {
+          $("input[name^='users']").prop('checked', $(this).prop('checked'));
+      });
+
+      $("input[name^='users']").click(function(ele) {
+          var id = $(this).attr('id');
+          if (id != "selectAll") {
+              $("#selectAll").prop('checked', false);
+          }
+      });
+
+
+      $("#id_resource").change(function() {
+          var resource_id = $("#id_resource option:selected").val();
+          if (resources_form_default_quantities[resource_id]) {
+              var label = $('label[for="id_quantity"]');
+              if (resources_form_label_texts[resource_id]) {
+                  label.html(resources_form_label_texts[resource_id])
+              } else {
+                  label.html('<strong>Quantity*</strong>')
+              }
+              $('#id_quantity').val(resources_form_default_quantities[resource_id])
+              $('#div_id_quantity').show();
+          } else {
+              $('#div_id_quantity').hide();
+              $('#id_quantity').val(1)
+          }
+      });
+
+  });
+
+
+
 
 </script>
 

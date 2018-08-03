@@ -1,5 +1,6 @@
 import os
 
+from django.contrib.auth.models import Group
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
@@ -9,6 +10,7 @@ from core.djangoapps.resources.models import (AttributeType, Resource,
                                               ResourceType)
 
 base_dir = settings.BASE_DIR
+
 
 class Command(BaseCommand):
 
@@ -48,8 +50,37 @@ class Command(BaseCommand):
         with open(os.path.join(base_dir, 'local_data/R5_resource_attributes.tsv')) as file:
             for line in file:
                 resource_type_name, resource_attribute_type_name, resource_attribute_type_type_name, resource_name, value = line.strip().split('\t')
-                resource_attribute_obj, created = ResourceAttribute.objects.get_or_create(
-                    resource_attribute_type=ResourceAttributeType.objects.get(name=resource_attribute_type_name, attribute_type__name=resource_attribute_type_type_name),
-                    resource=Resource.objects.get(name=resource_name),
-                    value=value.strip())
-                print(resource_attribute_obj, created)
+
+                if resource_attribute_type_name == 'Access':
+                    if value == 'Public':
+                        is_public = True
+                    else:
+                        is_public = False
+                    resource_obj = Resource.objects.get(name=resource_name)
+                    resource_obj.is_public=is_public
+                    resource_obj.save()
+
+                elif resource_attribute_type_name == 'Status':
+                    if value == 'Active':
+                        is_available = True
+                    else:
+                        is_available = False
+                    resource_obj = Resource.objects.get(name=resource_name)
+                    resource_obj.is_available = is_available
+                    resource_obj.save()
+
+                elif resource_attribute_type_name == 'AllowedGroups':
+                    resource_obj = Resource.objects.get(name=resource_name)
+                    for group in value.split(','):
+                        group_obj, _ = Group.objects.get_or_create(name=group.strip())
+
+                        resource_obj.allowed_groups.add(group_obj)
+                    resource_obj.save()
+
+                else:
+
+                    resource_attribute_obj, created = ResourceAttribute.objects.get_or_create(
+                        resource_attribute_type=ResourceAttributeType.objects.get(name=resource_attribute_type_name, attribute_type__name=resource_attribute_type_type_name),
+                        resource=Resource.objects.get(name=resource_name),
+                        value=value.strip())
+
