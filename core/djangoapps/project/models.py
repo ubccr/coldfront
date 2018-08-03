@@ -71,6 +71,9 @@ class ProjectUserRoleChoice(TimeStampedModel):
     def __str__(self):
         return self.name
 
+    class Meta:
+        ordering = ['name', ]
+
 
 class ProjectUserStatusChoice(TimeStampedModel):
     name = models.CharField(max_length=64)
@@ -78,6 +81,8 @@ class ProjectUserStatusChoice(TimeStampedModel):
     def __str__(self):
         return self.name
 
+    class Meta:
+        ordering = ['name', ]
 
 class ProjectUser(TimeStampedModel):
 

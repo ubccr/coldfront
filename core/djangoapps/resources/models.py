@@ -12,6 +12,9 @@ class AttributeType(TimeStampedModel):
     def __str__(self):
         return self.name
 
+    class Meta:
+        ordering = ['name', ]
+
 
 class ResourceType(TimeStampedModel):
     name = models.CharField(max_length=128, unique=True)
@@ -30,6 +33,9 @@ class ResourceType(TimeStampedModel):
     def __str__(self):
         return self.name
 
+    class Meta:
+        ordering = ['name', ]
+
 
 class ResourceAttributeType(TimeStampedModel):
     attribute_type = models.ForeignKey(AttributeType, on_delete=models.CASCADE)
@@ -39,6 +45,9 @@ class ResourceAttributeType(TimeStampedModel):
     def __str__(self):
         return self.name
 
+    class Meta:
+        ordering = ['name', ]
+
 
 class Resource(TimeStampedModel):
     resource_type = models.ForeignKey(ResourceType, on_delete=models.CASCADE)
@@ -46,8 +55,8 @@ class Resource(TimeStampedModel):
     description = models.CharField(max_length=255)
     is_available = models.BooleanField(default=True)
     is_public = models.BooleanField(default=True)
-    allowed_groups = models.ManyToManyField(Group)
-    allowed_users = models.ManyToManyField(User)
+    allowed_groups = models.ManyToManyField(Group, blank=True,)
+    allowed_users = models.ManyToManyField(User, blank=True,)
 
     def get_missing_resource_attributes(self, required=False):
         """

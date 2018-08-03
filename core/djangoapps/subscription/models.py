@@ -16,6 +16,9 @@ class SubscriptionStatusChoice(TimeStampedModel):
     def __str__(self):
         return self.name
 
+    class Meta:
+        ordering = ['name', ]
+
 
 class Subscription(TimeStampedModel):
     """ Subscription to a system Resource. """
@@ -73,6 +76,8 @@ class AttributeType(TimeStampedModel):
     def __str__(self):
         return self.name
 
+    class Meta:
+        ordering = ['name', ]
 
 class SubscriptionAttributeType(TimeStampedModel):
     """ SubscriptionAttributeType. """
@@ -83,6 +88,8 @@ class SubscriptionAttributeType(TimeStampedModel):
     def __str__(self):
         return self.name
 
+    class Meta:
+        ordering = ['name', ]
 
 class SubscriptionAttribute(TimeStampedModel):
     """ SubscriptionAttribute. """
@@ -124,6 +131,8 @@ class SubscriptionUserStatusChoice(TimeStampedModel):
     def __str__(self):
         return self.name
 
+    class Meta:
+        ordering = ['name', ]
 
 class SubscriptionUser(TimeStampedModel):
     """ SubscriptionUserStatus. """
