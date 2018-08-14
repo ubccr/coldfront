@@ -1,28 +1,28 @@
-# SLURM integration for Coldfront
+# Slurm integration for Coldfront
 
-Coldfront django extra app providing SLURM integration for Coldfront.
-Subscriptions in Coldfront are marshalled out to SLURM associations in the
-SLURM flat file format and can be loaded with sacctmgr. For more information on
-the SLURM flat file format see [here](https://slurm.schedmd.com/sacctmgr.html).
+Coldfront django extra app providing Slurm integration for Coldfront.
+Subscriptions in Coldfront are marshalled out to Slurm associations in the
+Slurm flat file format and can be loaded with sacctmgr. For more information on
+the Slurm flat file format see [here](https://slurm.schedmd.com/sacctmgr.html).
 
 ## Design
 
 Resources in Coldfront map to Clusters (or partitions within a cluster) in
-SLURM. The name of the SLURM cluster is taken from a resource attribute in
-Coldfront named "SLURM cluster name".  You can optionally provide SLURM
-specifications for a cluster using a resource attribute named "SLURM
-specifications". The value of this attribute must conform to the SLURM
+Slurm. The name of the Slurm cluster is taken from a resource attribute in
+Coldfront named "Slurm cluster name".  You can optionally provide Slurm
+specifications for a cluster using a resource attribute named "Slurm
+specifications". The value of this attribute must conform to the Slurm
 specification format and are colon separated.
 
-Subscriptions in Coldfront map to Accounts in SLURM. The name of the SLURM
-account is taken from a subscription attribute in Coldfront named "SLURM
-account name". You can optionally provide SLURM specifications for the account
-using a subscription attribute named "SLURM specifications". The value of this
-attribute must conform to the SLURM specification format and are colon
+Subscriptions in Coldfront map to Accounts in Slurm. The name of the Slurm
+account is taken from a subscription attribute in Coldfront named "Slurm
+account name". You can optionally provide Slurm specifications for the account
+using a subscription attribute named "Slurm specifications". The value of this
+attribute must conform to the Slurm specification format and are colon
 separated.
 
-Subscription users in Coldfront map to Users in SLURM. It is assumed all users
-inherit any SLURM specifications on the account. Adding SLURM specificatins per
+Subscription users in Coldfront map to Users in Slurm. It is assumed all users
+inherit any Slurm specifications on the account. Adding Slurm specificatins per
 user is not currently supported.
 
 ## Usage
@@ -36,13 +36,13 @@ local\_settings.py file:
     ]
 ```
 
-To generate SLURM association data from Coldfront run the following command:
+To generate Slurm association data from Coldfront run the following command:
 
 ```
     $ python manage.py sacctmgr_dump -o tux.cfg
 ```
 
-You can then load this file into SLURM with the following command:
+You can then load this file into Slurm with the following command:
 
 ```
     $ sacctmgr load file=tux.cfg
