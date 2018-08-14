@@ -2,6 +2,7 @@
 dist
 *._*
 *.DS_Store
+*.swp
 env/
 venv/
 static_root/
