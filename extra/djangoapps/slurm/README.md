@@ -21,9 +21,12 @@ using a subscription attribute named "Slurm specifications". The value of this
 attribute must conform to the Slurm specification format and are colon
 separated.
 
-Subscription users in Coldfront map to Users in Slurm. It is assumed all users
-inherit any Slurm specifications on the account. Adding Slurm specificatins per
-user is not currently supported.
+Subscription users in Coldfront map to Users in Slurm. You can optionally
+provide Slurm specifications for each user in a subscription using a
+subscription attribute named "Slurm user specifications". The value of this
+attribute must conform to the Slurm specification format and are colon
+separated. Setting specifications on an individual user basis is not currently
+supported.
 
 ## Usage
 
@@ -39,12 +42,12 @@ local\_settings.py file:
 To generate Slurm association data from Coldfront run the following command:
 
 ```
-    $ python manage.py sacctmgr_dump -o tux.cfg
+    $ python manage.py sacctmgr_dump -o /output_dir
 ```
 
 You can then load this file into Slurm with the following command:
 
 ```
-    $ sacctmgr load file=tux.cfg
+    $ sacctmgr load file=/output_dir/tux.cfg
 
 ```
