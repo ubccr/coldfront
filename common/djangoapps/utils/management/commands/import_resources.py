@@ -41,11 +41,6 @@ class Command(BaseCommand):
             for line in file:
                 attribute_type_name, resource_type_name, name, required = line.strip().split('\t')
 
-                if name.strip() == 'slurm_qos':
-                    name = 'slurm_specs'
-                    # print('*'*50, name)
-
-
                 resource_attribute_type_obj, created = ResourceAttributeType.objects.get_or_create(
                     attribute_type=AttributeType.objects.get(
                         name=attribute_type_name),
@@ -73,6 +68,10 @@ class Command(BaseCommand):
                 if not line.strip():
                     continue
                 resource_type_name, resource_attribute_type_name, resource_attribute_type_type_name, resource_name, value = line.strip().split('\t')
+
+                if resource_attribute_type_name == 'slurm_specs':
+                    value = 'QOS=' + value
+                    print(value)
 
                 if resource_attribute_type_name == 'Access':
                     if value == 'Public':
