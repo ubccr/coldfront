@@ -30,17 +30,25 @@ class SubscriptionUserInline(admin.TabularInline):
         return False
 
 
+class SubscriptionAttributeInline(admin.TabularInline):
+    model = SubscriptionAttribute
+    extra = 0
+    fields = ('subscription_attribute_type', 'value', )
+
+
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
-    readonly_fields_change = ('project', 'resources', 'justification', 'created', 'modified',)
+    readonly_fields_change = ('project', 'justification', 'created', 'modified',)
     fields_change = ('project', 'resources', 'quantity', 'justification',
                      'status', 'active_until', 'created', 'modified',)
     list_display = ('pk', 'project_title', 'project_pi', 'resource', 'quantity',
                     'justification', 'active_until', 'status', 'created', 'modified', )
-    inlines_change = [SubscriptionUserInline, CommentInline]
+    inlines = [SubscriptionUserInline, SubscriptionAttributeInline, CommentInline]
     list_filter = ('resources__resource_type__name', 'status', 'resources__name', )
     search_fields = ['project__pi__username', 'project__pi__first_name', 'project__pi__last_name', 'resources__name',
                      'subscriptionuser__user__first_name', 'subscriptionuser__user__last_name', 'subscriptionuser__user__username']
+    filter_horizontal = ['resources', ]
+    raw_id_fields = ('project',)
 
     def resource(self, obj):
         return obj.resources.first()
@@ -67,9 +75,9 @@ class SubscriptionAdmin(admin.ModelAdmin):
     def get_inline_instances(self, request, obj=None):
         if obj is None:
             # We are adding an object
-            return super().get_inline_instances(request)
+            return []
         else:
-            return [inline(self.model, self.admin_site) for inline in self.inlines_change]
+            return super().get_inline_instances(request)
 
 
 @admin.register(AttributeType)
@@ -130,7 +138,7 @@ class SubscriptionAttributeAdmin(admin.ModelAdmin):
     fields_change = ('project_title', 'subscription', 'subscription_attribute_type', 'value', 'created', 'modified',)
     list_display = ('pk', 'project', 'pi', 'resource', 'subscription_status',
                     'subscription_attribute_type', 'value', 'usage', 'is_private', 'created', 'modified',)
-    inlines_change = [SubscriptionAttributeUsageInline, ]
+    inline = [SubscriptionAttributeUsageInline, ]
     list_filter = (UsageValueFilter, 'subscription_attribute_type',)
     search_fields = (
         'subscription__project__pi__first_name',
@@ -178,9 +186,9 @@ class SubscriptionAttributeAdmin(admin.ModelAdmin):
     def get_inline_instances(self, request, obj=None):
         if obj is None:
             # We are adding an object
-            return super().get_inline_instances(request)
+            return []
         else:
-            return [inline(self.model, self.admin_site) for inline in self.inlines_change]
+            return super().get_inline_instances(request)
 
 
 @admin.register(SubscriptionUserStatusChoice)
@@ -233,9 +241,9 @@ class SubscriptionUserAdmin(admin.ModelAdmin):
     def get_inline_instances(self, request, obj=None):
         if obj is None:
             # We are adding an object
-            return super().get_inline_instances(request)
+            return []
         else:
-            return [inline(self.model, self.admin_site) for inline in self.inlines_change]
+            return super().get_inline_instances(request)
 
 
 class ValueFilter(admin.SimpleListFilter):

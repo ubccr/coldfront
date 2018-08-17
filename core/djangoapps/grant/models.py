@@ -13,6 +13,16 @@ class GrantFundingAgency(TimeStampedModel):
         return self.name
 
 
+class GrantStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ('name',)
+
+
 class Grant(TimeStampedModel):
     """ Grant model """
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
@@ -37,21 +47,13 @@ class Grant(TimeStampedModel):
     grant_pi_full_name = models.CharField(max_length=255, blank=True)
     funding_agency = models.ForeignKey(GrantFundingAgency, on_delete=models.CASCADE)
     other_funding_agency = models.CharField(max_length=255, blank=True)
-    rf_award_number = models.CharField(max_length=255, blank=True)
+    other_award_number = models.CharField(max_length=255, blank=True)
     project_start = models.DateField('Project Start Date')
     project_end = models.DateField('Project End Date')
     percent_credit = models.FloatField(validators=[MaxValueValidator(100)])
     direct_funding = models.FloatField()
     total_amount_awarded = models.FloatField()
-    GRANT_STATUS_CHOICES = (
-        ('Active', 'Active'),
-        ('Archived', 'Archived'),
-    )
-    status = models.CharField(
-        max_length=10,
-        choices=GRANT_STATUS_CHOICES,
-        default='Active',
-    )
+    status = models.ForeignKey(GrantStatusChoice, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.title

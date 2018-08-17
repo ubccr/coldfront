@@ -345,7 +345,7 @@ class SubscriptionAddUsersView(LoginRequiredMixin, UserPassesTestMixin, Template
 
     def dispatch(self, request, *args, **kwargs):
         subscription_obj = get_object_or_404(Subscription, pk=self.kwargs.get('pk'))
-        if subscription_obj.status.name not in ['Active', 'New', 'Pending', 'Approved', ]:
+        if subscription_obj.status.name not in ['Active', 'Approved', 'New', 'Pending', ]:
             messages.error(request, 'You cannot add users to a subscription with status {}.'.format(
                 subscription_obj.status.name))
             return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': subscription_obj.pk}))

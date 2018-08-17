@@ -5,7 +5,7 @@ import pprint
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-from core.djangoapps.grant.models import Grant, GrantFundingAgency
+from core.djangoapps.grant.models import Grant, GrantFundingAgency, GrantStatusChoice
 from core.djangoapps.project.models import Project
 
 base_dir = settings.BASE_DIR
@@ -141,7 +141,9 @@ class Command(BaseCommand):
                 except:
                     print(project__title, project__pi__username)
 
-                grant_obj = Grant.objects.get_or_create(
+
+                grant_status_choice_obj = GrantStatusChoice.objects.get(name=status.title())
+                grant_obj, created = Grant.objects.get_or_create(
                     created=created,
                     modified=modified,
                     project=project_obj,
@@ -151,11 +153,11 @@ class Command(BaseCommand):
                     grant_pi_full_name=grant_pi_full_name,
                     funding_agency=funding_agency_obj,
                     other_funding_agency=other_funding_agency,
-                    rf_award_number=rf_award_number,
+                    other_award_number=rf_award_number,
                     project_start=project_start,
                     project_end=project_end,
                     percent_credit=percent_credit,
                     direct_funding=direct_funding,
                     total_amount_awarded=total_amount_awarded,
-                    status=status.title()
+                    status=grant_status_choice_obj
                     )

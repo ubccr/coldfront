@@ -93,6 +93,8 @@ DATABASES = {
 }
 
 
+SESSION_COOKIE_AGE = 60 * 60
+
 WSGI_APPLICATION = 'config.wsgi.application'
 
 USE_I18N = True
