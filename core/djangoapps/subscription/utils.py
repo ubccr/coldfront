@@ -1,7 +1,9 @@
+from django.db.models import Q
+
 from core.djangoapps.resources.models import Resource
 from core.djangoapps.subscription.models import (SubscriptionUser,
                                                  SubscriptionUserStatusChoice)
-from django.db.models import Q
+
 
 def set_subscription_user_status_to_error(subscription_user_pk):
     subscription_user_obj = SubscriptionUser.objects.get(pk=subscription_user_pk)
@@ -51,4 +53,3 @@ def get_user_resources(user_obj):
 
 def update_subscription_status():
     print('hello!')
-

@@ -10,10 +10,16 @@ Project Detail
 
 {% block content %}
 
-
 <div id="alert_div">
   
 </div>
+
+{% if project.status.name == 'Archived' %}
+<div class="alert alert-warning" role="alert">
+  This is an archived project!  You cannot make any changes.
+</div>
+{% endif %}
+
 
 
 <div class="mb-3">

@@ -12,6 +12,9 @@ class AttributeType(TimeStampedModel):
     def __str__(self):
         return self.name
 
+    class Meta:
+        ordering = ['name', ]
+
 
 class ResourceType(TimeStampedModel):
     name = models.CharField(max_length=128, unique=True)
@@ -30,24 +33,34 @@ class ResourceType(TimeStampedModel):
     def __str__(self):
         return self.name
 
+    class Meta:
+        ordering = ['name', ]
+
 
 class ResourceAttributeType(TimeStampedModel):
     attribute_type = models.ForeignKey(AttributeType, on_delete=models.CASCADE)
     name = models.CharField(max_length=128)
-    required = models.BooleanField(default=False)
+    is_required = models.BooleanField(default=False)
+    is_unique = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
 
+    class Meta:
+        ordering = ['name', ]
+
 
 class Resource(TimeStampedModel):
+    parent_resource = models.ForeignKey('self', on_delete=models.CASCADE, blank=True, null=True)
     resource_type = models.ForeignKey(ResourceType, on_delete=models.CASCADE)
     name = models.CharField(max_length=128, unique=True)
-    description = models.CharField(max_length=255)
+    description = models.TextField()
     is_available = models.BooleanField(default=True)
     is_public = models.BooleanField(default=True)
-    allowed_groups = models.ManyToManyField(Group)
-    allowed_users = models.ManyToManyField(User)
+    is_subscribable = models.BooleanField(default=True)
+    allowed_groups = models.ManyToManyField(Group, blank=True)
+    allowed_users = models.ManyToManyField(User, blank=True)
+    linked_resources = models.ManyToManyField('self', blank=True)
 
     def get_missing_resource_attributes(self, required=False):
         """

@@ -1,7 +1,7 @@
 {% extends "templates/base.html" %} {% load common_tags %} {% block content %}
 <div class="row">
   
-  <div class="col-lg-6">
+  <div class="col-lg-6 mt-2">
     <a href="{% url 'project-list' %}"><h3>Projects &raquo;</h3></a>
     <hr> 
     {% if project_list %}
@@ -20,7 +20,7 @@
   </div>
 
 
-  <div class="col-lg-6">
+  <div class="col-lg-6 mt-2">
     <a href="{% url 'subscription-list' %}"><h3>Subscriptions &raquo;</h3></a>
     <hr> 
     {% if subscription_list %}

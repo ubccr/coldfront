@@ -6,18 +6,17 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
-from django.core.exceptions import PermissionDenied
 from django.core.mail import send_mail
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
+from django.db.models.query import QuerySet
 from django.forms import formset_factory
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils.html import mark_safe
 from django.views import View
-from django.views.generic import (CreateView, DetailView, ListView,
-                                  TemplateView, UpdateView)
+from django.views.generic import DetailView, ListView, TemplateView
 from django.views.generic.edit import FormView
 
 from common.djangolibs.utils import import_from_settings
@@ -35,8 +34,6 @@ from core.djangoapps.subscription.signals import (subscription_activate_user,
                                                   subscription_remove_user)
 from core.djangoapps.subscription.utils import (generate_guauge_data_from_usage,
                                                 get_user_resources)
-
-from django.db.models.query import QuerySet
 
 EMAIL_DIRECTOR_EMAIL = import_from_settings('EMAIL_DIRECTOR_EMAIL')
 EMAIL_DEVELOPMENT_EMAIL_LIST = import_from_settings('EMAIL_DEVELOPMENT_EMAIL_LIST')
@@ -111,7 +108,7 @@ class SubscriptionListView(LoginRequiredMixin, ListView):
     model = Subscription
     template_name = 'subscription/subscription_list.html'
     context_object_name = 'subscription_list'
-    paginate_by = 10
+    paginate_by = 25
 
     def get_queryset(self):
 
@@ -136,10 +133,13 @@ class SubscriptionListView(LoginRequiredMixin, ListView):
                     'project', 'project__pi', 'status',).all().order_by(order_by)
             else:
                 subscriptions = Subscription.objects.prefetch_related('project', 'project__pi', 'status',).filter(
-                    Q(status__name__in=['Active', 'Pending', 'New', 'Approved']) &
+                    Q(status__name__in=['Active', 'Approved', 'Denied', 'New', 'Pending', ]) &
+                    Q(project__status__name='Active') &
+                    Q(project__projectuser__user=self.request.user) &
+                    Q(project__projectuser__status__name='Active') &
                     Q(subscriptionuser__user=self.request.user) &
                     Q(subscriptionuser__status__name='Active')
-                ).order_by(order_by)
+                ).distinct().order_by(order_by)
 
             # Project Title
             if data.get('project'):
@@ -159,12 +159,13 @@ class SubscriptionListView(LoginRequiredMixin, ListView):
 
             # Active Until
             if data.get('active_until'):
-                subscriptions = subscriptions.filter(active_until__lt=data.get('active_until'), status__name='Active')
+                subscriptions = subscriptions.filter(active_until__lt=data.get('active_until'), status__name='Active').order_by('active_until')
 
             # Active from now until date
             if data.get('active_from_now_until_date'):
                 subscriptions = subscriptions.filter(active_until__gte=date.today())
-                subscriptions = subscriptions.filter(active_until__lt=data.get('active_from_now_until_date'), status__name='Active')
+                subscriptions = subscriptions.filter(active_until__lt=data.get(
+                    'active_from_now_until_date'), status__name='Active').order_by('active_until')
 
             # Status
             if data.get('status'):
@@ -344,7 +345,7 @@ class SubscriptionAddUsersView(LoginRequiredMixin, UserPassesTestMixin, Template
 
     def dispatch(self, request, *args, **kwargs):
         subscription_obj = get_object_or_404(Subscription, pk=self.kwargs.get('pk'))
-        if subscription_obj.status.name not in ['Active', 'New', 'Pending', 'Approved', ]:
+        if subscription_obj.status.name not in ['Active', 'Approved', 'New', 'Pending', ]:
             messages.error(request, 'You cannot add users to a subscription with status {}.'.format(
                 subscription_obj.status.name))
             return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': subscription_obj.pk}))
