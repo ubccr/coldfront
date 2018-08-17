@@ -19,28 +19,38 @@ class Command(BaseCommand):
         # Fetch all resources for given cluster
         resources = Resource.objects.filter(
                 is_available=True,
-                resourceattribute__resource_attribute_type__name='Slurm cluster name',
+                parent_resource=None,
+                resourceattribute__resource_attribute_type__name='slurm_cluster',
                 resourceattribute__value=cluster,
             )
 
         for r in resources:
-            specs = r.resourceattribute_set.filter(resource_attribute_type__name='Slurm specifications').first()
+            specs = r.resourceattribute_set.filter(resource_attribute_type__name='slurm_specs').first()
             out.write("Cluster - '{}':{}\n".format(
                 cluster,
                 specs.value if specs else '',
             ))
             out.write("Parent - 'root'\n")
+            self.write_accounts(out, r)
 
-            subs = r.subscription_set.prefetch_related(
-                    'project',
-                    'subscriptionattribute_set',
-                    'subscriptionuser_set'
-                ).filter(
-                    status__name='Active'
+            children = Resource.objects.filter(
+                    is_available=True,
+                    parent_resource=r,
                 )
+            for c in children:
+                self.write_accounts(out, c)
 
-            for s in subs:
-                self.write_account_from_subscription(out, r, s)
+    def write_accounts(self, out, resource):
+        subs = resource.subscription_set.prefetch_related(
+                'project',
+                'subscriptionattribute_set',
+                'subscriptionuser_set'
+            ).filter(
+                status__name='Active'
+            )
+
+        for s in subs:
+            self.write_account_from_subscription(out, resource, s)
 
     def write_account_user(self, out, username, specs):
         """Write out user assocation"""
@@ -51,7 +61,7 @@ class Command(BaseCommand):
 
     def write_account_from_subscription(self, out, resource, sub):
         """Write out account assocation"""
-        specs = sub.subscriptionattribute_set.filter(subscription_attribute_type__name='Slurm specifications').first()
+        specs = sub.subscriptionattribute_set.filter(subscription_attribute_type__name='slurm_specs').first()
         user_specs = sub.subscriptionattribute_set.filter(subscription_attribute_type__name='Slurm user specifications').first()
         slurm_account = sub.subscriptionattribute_set.filter(subscription_attribute_type__name='Slurm Account Name').first()
         if slurm_account is None:
@@ -80,7 +90,7 @@ class Command(BaseCommand):
 
         # Fetch list of SLURM clusters
         clusters = ResourceAttribute.objects.filter(
-                resource_attribute_type__name='Slurm cluster name'
+                resource_attribute_type__name='slurm_cluster'
             )
 
         for cluster in clusters.distinct():
