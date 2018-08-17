@@ -1,9 +1,12 @@
-from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
 import datetime
-from core.djangoapps.subscription.models import Subscription, SubscriptionStatusChoice
 # import the logging library
 import logging
+
+from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
+
+from core.djangoapps.subscription.models import (Subscription,
+                                                 SubscriptionStatusChoice)
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)

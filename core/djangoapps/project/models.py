@@ -21,10 +21,7 @@ class ProjectStatusChoice(TimeStampedModel):
 class Project(TimeStampedModel):
 
     DEFAULT_DESCRIPTION = '''
-        We do not have information about your research.
-        Please provide a detailed description of your work
-        and update your field of science.
-        Thank you!
+We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!
         '''
 
     title = models.CharField(
@@ -38,7 +35,6 @@ class Project(TimeStampedModel):
     )
 
     pi = models.ForeignKey(User, on_delete=models.CASCADE,)
-
     description = models.TextField(
         default=DEFAULT_DESCRIPTION,
         validators=[
@@ -49,10 +45,9 @@ class Project(TimeStampedModel):
         ],
     )
 
-    field_of_science = models.ForeignKey(FieldOfScience,
-                                         on_delete=models.CASCADE,
-                                         default=FieldOfScience.DEFAULT_PK)
+    field_of_science = models.ForeignKey(FieldOfScience, on_delete=models.CASCADE, default=FieldOfScience.DEFAULT_PK)
     status = models.ForeignKey(ProjectStatusChoice, on_delete=models.CASCADE)
+    force_project_review = models.BooleanField(default=False)
 
     def __str__(self):
         return self.title
@@ -65,11 +60,29 @@ class Project(TimeStampedModel):
         )
 
 
+class ProjectReviewStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]
+
+
+class ProjectReviewInformation(TimeStampedModel):
+    status = models.ForeignKey(ProjectReviewStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
+    reason_for_not_updating_project = models.TextField(blank=True, null=True)
+
+
 class ProjectUserRoleChoice(TimeStampedModel):
     name = models.CharField(max_length=64)
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        ordering = ['name', ]
 
 
 class ProjectUserStatusChoice(TimeStampedModel):
@@ -77,6 +90,9 @@ class ProjectUserStatusChoice(TimeStampedModel):
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        ordering = ['name', ]
 
 
 class ProjectUser(TimeStampedModel):

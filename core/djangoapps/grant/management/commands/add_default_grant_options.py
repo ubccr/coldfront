@@ -2,7 +2,7 @@ import os
 
 from django.core.management.base import BaseCommand
 
-from core.djangoapps.grant.models import GrantFundingAgency
+from core.djangoapps.grant.models import GrantFundingAgency, GrantStatusChoice
 
 app_dir = os.path.dirname(__file__)
 
@@ -25,3 +25,7 @@ class Command(BaseCommand):
                 'Other'
             ]:
             GrantFundingAgency.objects.get_or_create(name=choice)
+
+        GrantStatusChoice.objects.all().delete()
+        for choice in ['Active', 'Archived', 'Pending', ]:
+            GrantStatusChoice.objects.get_or_create(name=choice)

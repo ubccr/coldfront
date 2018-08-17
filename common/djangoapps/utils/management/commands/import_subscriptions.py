@@ -22,6 +22,7 @@ base_dir = settings.BASE_DIR
 class Command(BaseCommand):
 
     def handle(self, *args, **options):
+        print('Adding subscriptions ...')
         AttributeType.objects.all().delete()
         filepath = os.path.join(base_dir, 'local_data', 's_atttriute_type.tsv')
         with open(filepath, 'r') as fp:
@@ -30,7 +31,7 @@ class Command(BaseCommand):
 
         SubscriptionAttributeType.objects.all().delete()
         filepath = os.path.join(base_dir, 'local_data', 'subscription_attribute_type.tsv')
-        print(filepath)
+        # print(filepath)
         with open(filepath, 'r') as fp:
             for line in fp:
                 attribute_type, name, has_usage = line.strip().split('\t')
@@ -38,13 +39,13 @@ class Command(BaseCommand):
                     has_usage = True
                 else:
                     has_usage = False
-                print(attribute_type, name, has_usage)
+                # print(attribute_type, name, has_usage)
                 subscription_attribute_type_obj = SubscriptionAttributeType.objects.create(
                     attribute_type=AttributeType.objects.get(name=attribute_type),
                     name=name,
                     has_usage=has_usage
                 )
-                print(subscription_attribute_type_obj)
+                # print(subscription_attribute_type_obj)
 
         Subscription.objects.all().delete()
         SubscriptionUser.objects.all().delete()
@@ -153,3 +154,6 @@ class Command(BaseCommand):
                 # row.append(subscription_user_array_joined)
                 # print(row)
                 # csvfile.writerow(row)
+
+
+        print('Finished adding subscriptions.')

@@ -10,6 +10,12 @@ Subscription Detail
 
 {% block content %}
 
+{% if subscription.project.status.name == 'Archived' %}
+<div class="alert alert-warning" role="alert">
+  This is a subscription from an archived project! You cannot make any changes.
+</div>
+{% endif %}
+
 <div class="mb-3">
 <h1>Subscription Detail</h1> <hr>
 </div>
@@ -81,8 +87,10 @@ Subscription Detail
         </tbody>
       </table>
     </div>
-    <hr> 
-    {% endif %} 
+    {% endif %}
+  
+    {% if attributes_with_usage %}
+      <hr>
     {% for attribute in attributes_with_usage %}
       <div class="card mb-3 mr-1">
         <div class="card-body">
@@ -91,6 +99,7 @@ Subscription Detail
         </div>
       </div>
     {% endfor %}
+    {% endif %}
   </div>
 </div>
 {% endif %}
@@ -101,7 +110,7 @@ Subscription Detail
   <div class="card-header">
   <h4 class="d-inline"><i class="fas fa-users"></i> Users in Subscription </h4> <span class="badge badge-secondary">{{subscription_users.count}}</span>
     <div class="float-right">
-      {% if subscription.project.status.name != 'Archived' and is_allowed_to_update_project%}
+      {% if subscription.project.status.name != 'Archived' and is_allowed_to_update_project and subscription.status.name in 'Active,Approved,New,Pending' %}%}
         <a class="btn btn-primary" href="{% url 'subscription-add-users' subscription.pk %}" role="button"><i class="fas fa-user-plus"></i> Add Users</a>
         <a class="btn btn-primary" href="{% url 'subscription-delete-users' subscription.pk %}" role="button"><i class="fas fa-user-times"></i></i> Delete Users</a>    
       {% endif %}

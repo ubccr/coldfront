@@ -1,24 +1,23 @@
-{% extends "templates/base.html" %} {% load crispy_forms_tags %} {% load static %} {% block title %} Project List {% endblock %} {% block content %}
+{% extends "templates/base.html" %} {% load crispy_forms_tags %} {% load common_tags %}  {% load static %} {% block title %} Project List {% endblock %} {% block content %}
 
 
 
 <div class="card mb-3 bg-light">
   <div class="card-body">
     <div class="float-left">
-      <a class="btn btn-primary" href="{% url 'project-list' %}" role="button">View active projects</a>
+      <a class="btn btn-primary" href="{% url 'project-list' %}" role="button"><i class="fas fa-arrow-left"></i> Back to active projects</a>
     </div>
   </div>
 </div>
 <h1>Archived Projects</h1><hr>
 
-{% if expand_accordion == "show" or project_list %}
+{% if expand_accordion == "show" or project_list or user.is_superuser %}
 <div class="mb-3" id="accordion">
   <div class="card">
     <div class="card-header">
-      <i class="fas fa-filter"></i> Filter
-      <a id="expand_button" role="button" class="card-link float-right" data-toggle="collapse" href="#collapseOne"> 
-        <i class="fas fa-plus"></i>  
-
+      <a id="expand_button" role="button" class="card-link " data-toggle="collapse" href="#collapseOne"> 
+        <i class="fas fa-filter"></i> Filter
+        <i id="plus_minus" class="fas {{expand_accordion|get_icon}} float-right"></i>  
       </a>
     </div>
     <div id="collapseOne" class="collapse {{expand_accordion}}" data-parent="#accordion">
