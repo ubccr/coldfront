@@ -38,7 +38,7 @@ def get_role_and_pi_mapping():
 class Command(BaseCommand):
 
     def handle(self, *args, **options):
-
+        print('Adding grants ...')
         Grant.objects.all().delete()
 
         delimiter = '\t'
@@ -102,7 +102,6 @@ class Command(BaseCommand):
         }
 
         role_pi_mapping = get_role_and_pi_mapping()
-        pprint.pprint(role_pi_mapping)
 
         with open(file_path, 'r') as fp:
             for line in fp:
@@ -161,3 +160,6 @@ class Command(BaseCommand):
                     total_amount_awarded=total_amount_awarded,
                     status=grant_status_choice_obj
                     )
+
+
+        print('Finished adding grants.')

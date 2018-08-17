@@ -16,6 +16,7 @@ base_dir = settings.BASE_DIR
 class Command(BaseCommand):
 
     def handle(self, *args, **options):
+        print('Adding projects ...')
         delimiter = chr(255)
         file_path = os.path.join(base_dir, 'local_data', 'project_and_associated_users.tsv')
         Project.objects.all().delete()
@@ -97,4 +98,6 @@ class Command(BaseCommand):
                         enable_notifications=True
                     )
 
-                    print(project_obj)
+                    # print(project_obj)
+
+        print('Finished adding projects')

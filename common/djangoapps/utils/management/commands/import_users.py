@@ -10,6 +10,7 @@ base_dir = settings.BASE_DIR
 class Command(BaseCommand):
 
     def handle(self, *args, **options):
+        print('Adding users ...')
         file_path = os.path.join(base_dir, 'local_data', 'users.tsv')
         User.objects.all().delete()
         Group.objects.all().delete()
@@ -45,3 +46,5 @@ class Command(BaseCommand):
                 user_obj.save()
 
                 # print(user_obj)
+
+        print('Finished adding users.')
