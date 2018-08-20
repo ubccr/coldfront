@@ -5,7 +5,7 @@ from django.contrib import admin
 
 from core.djangoapps.project.models import (Project, ProjectStatusChoice,
                                             ProjectUser, ProjectUserRoleChoice,
-                                            ProjectUserStatusChoice)
+                                            ProjectUserStatusChoice, ProjectReview)
 
 
 @admin.register(ProjectStatusChoice)
@@ -76,12 +76,12 @@ class ProjectUserInline(admin.TabularInline):
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-    fields_change = ('title', 'pi', 'description', 'status', 'created', 'modified', )
+    fields_change = ('title', 'pi', 'description', 'status', 'force_project_review', 'created', 'modified', )
     readonly_fields_change = ('pi', 'created', 'modified', )
     list_display = ('pk', 'title', 'PI', 'created', 'modified', 'status')
     search_fields = ['pi__username', 'projectuser__user__username',
-                     'projectuser__user__last_name', 'projectuser__user__last_name']
-    list_filter = ('status',)
+                     'projectuser__user__last_name', 'projectuser__user__last_name', 'title']
+    list_filter = ('status', 'force_project_review')
     inlines_change = [ProjectUserInline, CommentInline]
 
     def PI(self, obj):
@@ -106,3 +106,9 @@ class ProjectAdmin(admin.ModelAdmin):
             return super().get_inline_instances(request)
         else:
             return [inline(self.model, self.admin_site) for inline in self.inlines_change]
+
+
+@admin.register(ProjectReview)
+class ProjectReviewAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'project', 'reason_for_not_updating_project', 'created', 'status')
+    list_filter = ('status', )

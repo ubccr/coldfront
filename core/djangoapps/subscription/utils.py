@@ -41,9 +41,10 @@ def generate_guauge_data_from_usage(name, value, usage):
 def get_user_resources(user_obj):
 
     if user_obj.is_superuser:
-        resources = Resource.objects.all()
+        resources = Resource.objects.filter(is_subscribable=True)
     else:
         resources = Resource.objects.filter(
+            Q(is_subscribable=True) &
             Q(is_available=True) &
             (Q(is_public=True) | Q(allowed_groups__in=user_obj.groups.all()))
         ).distinct()

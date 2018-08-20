@@ -20,15 +20,18 @@ from core.djangoapps.project.forms import (ProjectAddUserForm,
                                            ProjectAddUsersToSubscriptionForm,
                                            ProjectDeleteUserForm,
                                            ProjectSearchForm,
-                                           ProjectUserUpdateForm)
+                                           ProjectUserUpdateForm,
+                                           ProjectReviewForm)
 from core.djangoapps.project.models import (Project, ProjectStatusChoice,
                                             ProjectUser, ProjectUserRoleChoice,
-                                            ProjectUserStatusChoice)
+                                            ProjectUserStatusChoice, ProjectReview, ProjectReviewStatusChoice)
 from core.djangoapps.subscription.models import (Subscription,
                                                  SubscriptionUser,
                                                  SubscriptionUserStatusChoice)
 from core.djangoapps.subscription.signals import (subscription_activate_user,
                                                   subscription_remove_user)
+from core.djangoapps.grant.models import Grant
+from core.djangoapps.publication.models import Publication
 
 
 class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
@@ -85,6 +88,8 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             else:
                 subscriptions = Subscription.objects.prefetch_related('resources').filter(project=self.object)
 
+        context['publications'] = Publication.objects.filter(project=self.object, status='Active')
+        context['grants'] = Grant.objects.filter(project=self.object, status__name__in=['Active', 'Pending'])
         context['subscriptions'] = subscriptions
         context['project_users'] = project_users
         return context
@@ -775,3 +780,64 @@ def project_update_email_notification(request):
             return HttpResponse('', status=400)
     else:
         return HttpResponse('', status=400)
+
+class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'project/project_review.html'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+
+        if project_obj.pi == self.request.user:
+            return True
+
+        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+            return True
+
+    def dispatch(self, request, *args, **kwargs):
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+
+        if not project_obj.project_needs_review and not project_obj.force_project_review:
+            messages.error(request, 'You do not need to review this project.')
+            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+        else:
+            return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        project_review_form = ProjectReviewForm(project_obj.pk)
+
+        context = {}
+        context['project'] = project_obj
+        context['project_review_form'] = project_review_form
+
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        project_review_form = ProjectReviewForm(project_obj.pk, request.POST)
+
+        project_review_status_choice = ProjectReviewStatusChoice.objects.get(name='Pending')
+
+        if project_review_form.is_valid():
+            form_data = project_review_form.cleaned_data
+            project_review_obj = ProjectReview.objects.create(
+                project=project_obj,
+                reason_for_not_updating_project=form_data.get('reason'),
+                status=project_review_status_choice)
+
+            if project_obj.force_project_review:
+                project_obj.force_project_review = False
+                project_obj.save()
+
+            messages.success(request, 'Project reviewed successfully.')
+            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+        else:
+            messages.error(request, 'There was an error in your project review.')
+            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+
+
+

@@ -52,6 +52,7 @@ class Subscription(TimeStampedModel):
     def get_usage(self):
         html_string = ''
         for attribute in self.subscriptionattribute_set.all():
+
             if hasattr(attribute, 'subscriptionattributeusage'):
                 percent = round(float(attribute.subscriptionattributeusage.value) /
                                 float(attribute.value) * 10000) / 100
@@ -64,6 +65,17 @@ class Subscription(TimeStampedModel):
                 html_string += string
 
         return mark_safe(html_string)
+
+
+    @property
+    def get_resources_as_string(self):
+        return ', '.join([ele.name for ele in self.resources.all()])
+
+
+    @property
+    def get_parent_resource(self):
+        return self.resources.filter(is_subscribable=True).first()
+
 
     def __str__(self):
         return "%s (%s)" % (self.resources.first().name, self.project.pi)

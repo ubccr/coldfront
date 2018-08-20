@@ -10,6 +10,14 @@ Project Detail
 
 {% block content %}
 
+
+{% if project.project_needs_review or project.force_project_review %}
+<div class="alert alert-warning">
+  <strong>WARNING!</strong> You need to review this project. <a href="{% url 'project-review' project.pk %}">Review Project</a>
+</div>
+{% endif %}
+
+
 <div id="alert_div">
   
 </div>
@@ -169,7 +177,7 @@ Project Detail
         <tbody>
           {% for subscription in subscriptions %}
           <tr>
-            <td>{{ subscription.resources.first.name }}</td>
+            <td>{{ subscription.get_parent_resource.name }}</td>
             <td>{{ subscription.resources.first.resource_type.name }}</td>
             <td style="white-space:nowrap;">{{subscription.get_usage}}</td>
             {% if subscription.status.name == 'Active' %}
@@ -193,8 +201,104 @@ Project Detail
     {% endif %}
   </div>
 </div>
-<!-- End Project Users -->
+<!-- End Project Subscriptions -->
 
+
+
+<!-- Start Project Grants -->
+<div class="card mb-3">
+  <div class="card-header">
+  <h4 class="d-inline"><i class="fas fa-trophy"></i> Grants </h4> <span class="badge badge-secondary">{{grants.count}}</span>
+    <div class="float-right">
+      {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
+        <a class="btn btn-primary" href="#" role="button"><i class="fas fa-plus"></i> Add Grants</a>
+        {% if grants %}
+          <a class="btn btn-primary" href="#" role="button"><i class="fas fa-minus"></i> Remove Grants</a>
+        {% endif %}
+      {% endif %}
+    </div>
+
+  </div>
+  <div class="card-body">
+    {% if grants %}
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th style="white-space:nowrap;">Grant PI</th>
+            <th style="white-space:nowrap;">Project PI Role</th>
+            <th style="white-space:nowrap;">Grant Start Date</th>
+            <th style="white-space:nowrap;">Grant End Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for grant in grants %}
+          <tr>
+            <td>{{ grant.title }}</td>
+            <td style="white-space:nowrap;">{{ grant.grant_pi }}</td>
+            <td>{{ grant.role}}</td>
+            <td>{{ grant.grant_start }}</td>
+            <td>{{ grant.grant_end }}</td>
+            <td></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+     <div class="alert alert-info" role="alert"><i class="fa fa-info-circle"></i> There are no grants to display.</div>
+    {% endif %}
+  </div>
+</div>
+<!-- End Project Grants -->
+
+
+<!-- Start Project Publications -->
+<div class="card mb-3">
+  <div class="card-header">
+  <h4 class="d-inline"><i class="fas fa-newspaper"></i> Publications </h4> <span class="badge badge-secondary">{{publications.count}}</span>
+    <div class="float-right">
+      {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
+        <a class="btn btn-primary" href="#" role="button"><i class="fas fa-plus"></i> Add Publications</a>
+        {% if grants %}
+          <a class="btn btn-primary" href="#" role="button"><i class="fas fa-minus"></i> Remove Publications</a>
+        {% endif %}
+      {% endif %}
+    </div>
+
+  </div>
+  <div class="card-body">
+    {% if publications %}
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Author</th>
+            <th>Year</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for publication in publications %}
+          <tr>
+            <td>{{ publication.title }}</td>
+            <td>{{ publication.author}}</td>
+            <td style="white-space:nowrap;">{{ publication.publication_date }}</td>
+            <td></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+     <div class="alert alert-info" role="alert"><i class="fa fa-info-circle"></i> There are no publications to display.</div>
+    {% endif %}
+  </div>
+</div>
+<!-- End Project Grants -->
 
 <script>
 

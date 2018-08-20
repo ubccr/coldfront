@@ -79,7 +79,7 @@ class Command(BaseCommand):
                     else:
                         is_public = False
                     resource_obj = Resource.objects.get(name=resource_name)
-                    resource_obj.is_public=is_public
+                    resource_obj.is_public = is_public
                     resource_obj.save()
 
                 elif resource_attribute_type_name == 'Status':

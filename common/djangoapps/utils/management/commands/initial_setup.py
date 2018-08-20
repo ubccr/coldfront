@@ -10,7 +10,6 @@ base_dir = settings.BASE_DIR
 class Command(BaseCommand):
 
     def handle(self, *args, **options):
-
         call_command('import_field_of_science_data')
         call_command('add_default_grant_options')
         call_command('add_default_project_choices')
@@ -20,3 +19,4 @@ class Command(BaseCommand):
         call_command('import_resources')
         call_command('import_subscriptions')
         call_command('import_grants')
+        call_command('import_publications')
