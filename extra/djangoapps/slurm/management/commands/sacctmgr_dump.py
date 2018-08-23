@@ -1,6 +1,7 @@
 import sys
 import os
 import logging
+from django.db.models import Q
 from django.core.management.base import BaseCommand, CommandError
 from core.djangoapps.subscription.models import Subscription
 from core.djangoapps.resources.models import Resource,ResourceAttribute
@@ -16,16 +17,15 @@ class Command(BaseCommand):
     def write_cluster(self, out, cluster):
         """Write out Slurm assocations for the given cluster
         """
-        # Fetch resource for given cluster
-        r = Resource.objects.filter(
-                is_available=True,
-                parent_resource=None,
-                resourceattribute__resource_attribute_type__name='slurm_cluster',
-                resourceattribute__value=cluster,
-            ).first()
-
-        if not r:
-            logger.warn("No parent resource found for cluster: %s", cluster)
+        # Fetch resource for given Slurm cluster
+        try:
+            r = Resource.objects.get(
+                    is_available=True,
+                    resourceattribute__resource_attribute_type__name='slurm_cluster',
+                    resourceattribute__value=cluster,
+                )
+        except:
+            logger.warn("No resource found for Slurm cluster: %s", cluster)
             return
 
         specs = r.resourceattribute_set.filter(resource_attribute_type__name='slurm_specs').first()
@@ -34,10 +34,6 @@ class Command(BaseCommand):
             specs.value if specs else '',
         ))
         out.write("Parent - 'root'\n")
-
-    def write_accounts(self, out, subs):
-        for s in subs:
-            self.write_account_from_subscription(out, resource, s)
 
     def write_account_user(self, out, username, specs):
         """Write out user assocation"""
@@ -48,9 +44,14 @@ class Command(BaseCommand):
 
     def write_account_from_subscription(self, out, sub, specs=[]):
         """Write out account assocation"""
-        sub_specs = sub.subscriptionattribute_set.filter(subscription_attribute_type__name='slurm_specs').first()
+        try:
+            slurm_account = sub.subscriptionattribute_set.get(subscription_attribute_type__name='slurm_account_name')
+        except:
+            logger.warn("No slurm account name found for subscription: %s", sub)
+            return
+            
         user_specs = sub.subscriptionattribute_set.filter(subscription_attribute_type__name='slurm_user_specs').first()
-        slurm_account = sub.subscriptionattribute_set.filter(subscription_attribute_type__name='slurm_account_name').first()
+        sub_specs = sub.subscriptionattribute_set.filter(subscription_attribute_type__name='slurm_specs').first()
         if sub_specs:
             specs.append(sub_specs.value)
 
@@ -64,8 +65,14 @@ class Command(BaseCommand):
             self.write_account_user(out, u.user.username, user_specs)
 
     def process_subscriptions(self):
+        """Process all active subscriptions with a 'slurm_account_name'
+           attribute and organize them by cluster. The name of the Slurm
+           cluster is stored in a resource attribute named 'slurm_cluster' on
+           the resource or it's parent
+        """
         cluster_map = {}
 
+        # Fetch all active subscriptions with a 'slurm_account_name' attribute
         subs = Subscription.objects.prefetch_related(
                 'project',
                 'resources',
@@ -75,11 +82,29 @@ class Command(BaseCommand):
                 status__name='Active',
                 subscriptionattribute__subscription_attribute_type__name='slurm_account_name',
             )
+
+        # For each subscription, fetch the subscribed resources that have a
+        # slurm_cluster attribute on itself or it's parent.
         for s in subs:
-            for r in s.resources.filter(resourceattribute__resource_attribute_type__name='slurm_cluster'):
+
+            slurm_resources = s.resources.filter(
+                    Q(resourceattribute__resource_attribute_type__name='slurm_cluster') | 
+                    Q(parent_resource__resourceattribute__resource_attribute_type__name='slurm_cluster'))
+
+            for r in slurm_resources.distinct():
                 specs = []
-                cname = r.resourceattribute_set.filter(resource_attribute_type__name='slurm_cluster').first()
-                if r.parent_resource:
+                cname = None
+                try:
+                    cname = r.resourceattribute_set.get(resource_attribute_type__name='slurm_cluster')
+                except:
+                    cname = r.parent_resource.resourceattribute_set.get(resource_attribute_type__name='slurm_cluster')
+
+                if not cname:
+                    logger.error("Could not find cluster name from resource {} for subscription {}", r, s)
+                    continue
+
+                # If resource_type is a slurm parition we merge the specs into the Slurm account association
+                if r.resource_type.name == 'Partition':
                     rspecs = r.resourceattribute_set.filter(resource_attribute_type__name='slurm_specs').first()
                     if rspecs:
                         specs.append(rspecs.value) 
@@ -103,20 +128,12 @@ class Command(BaseCommand):
         cluster_map = self.process_subscriptions()
 
         if len(cluster_map) == 0:
-            logger.warn("No subscriptions found to any SLURM resources. Nothing to do.")
+            logger.warn("No subscriptions found to any Slurm resources. Nothing to do.")
             sys.exit(1)
 
+        # Write out one file per Slurm cluster
         for cluster, subs in cluster_map.items():
             with open(os.path.join(self.slurm_out, '{}.cfg'.format(cluster)), 'w') as fh:
                 self.write_cluster(fh, cluster)
-                for s, rspecs in subs.items():
-                    self.write_account_from_subscription(fh, s, specs=rspecs)
-
-        # Fetch list of SLURM clusters
-#        clusters = ResourceAttribute.objects.filter(
-#                resource_attribute_type__name='slurm_cluster'
-#            )
-
-#        for cluster in clusters.distinct():
-#            with open(os.path.join(self.slurm_out, '{}.cfg'.format(cluster.value)), 'w') as fh:
-#                self.write_cluster(fh, cluster.value)
+                for sub, rspecs in subs.items():
+                    self.write_account_from_subscription(fh, sub, specs=rspecs)
