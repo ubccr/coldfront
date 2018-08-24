@@ -1,5 +1,5 @@
 from django.dispatch import receiver
-from django_q.tasks import async
+from django_q.tasks import async_task
 
 from common.djangolibs.utils import import_from_settings
 from core.djangoapps.project.views import (ProjectAddUsersView,
@@ -33,9 +33,9 @@ def apply_slurm_signal_setting(func):
 @receiver(subscription_activate_user, sender=SubscriptionAddUsersView)
 def activate_user(sender, **kwargs):
     subscription_user_pk = kwargs.get('subscription_user_pk')
-    async('extra.djangoapps.slurm.tasks.activate_user_account_task1', subscription_user_pk)
-    async('extra.djangoapps.slurm.tasks.activate_user_account_task2', subscription_user_pk)
-    async('extra.djangoapps.slurm.tasks.activate_user_account_task3', subscription_user_pk)
+    async_task('extra.djangoapps.slurm.tasks.activate_user_account_task1', subscription_user_pk)
+    async_task('extra.djangoapps.slurm.tasks.activate_user_account_task2', subscription_user_pk)
+    async_task('extra.djangoapps.slurm.tasks.activate_user_account_task3', subscription_user_pk)
 
 
 @apply_slurm_signal_setting
@@ -43,5 +43,5 @@ def activate_user(sender, **kwargs):
 @receiver(subscription_remove_user, sender=SubscriptionDeleteUsersView)
 def remove_user(sender, **kwargs):
     subscription_user_pk = kwargs.get('subscription_user_pk')
-    async('extra.djangoapps.slurm.tasks.remove_user_account_task1', subscription_user_pk)
-    async('extra.djangoapps.slurm.tasks.remove_user_account_task2', subscription_user_pk)
+    async_task('extra.djangoapps.slurm.tasks.remove_user_account_task1', subscription_user_pk)
+    async_task('extra.djangoapps.slurm.tasks.remove_user_account_task2', subscription_user_pk)

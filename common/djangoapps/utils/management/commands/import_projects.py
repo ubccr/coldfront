@@ -94,9 +94,13 @@ class Command(BaseCommand):
                         user=pi_user_obj,
                         project=project_obj,
                         role=project_user_role_choices['PI'],
-                        status=project_user_status_choices['Active'],
+                        status=project_user_status_choices['ACT'],
                         enable_notifications=True
                     )
+                elif project_obj.projectuser_set.filter(user=pi_user_obj).exists():
+                    project_user_obj = ProjectUser.objects.get(project=project_obj, user=pi_user_obj)
+                    project_user_obj.status=project_user_status_choices['ACT']
+                    project_user_obj.save()
 
                     # print(project_obj)
 

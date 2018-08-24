@@ -11,9 +11,9 @@ Project Detail
 {% block content %}
 
 
-{% if project.project_needs_review or project.force_project_review %}
+{% if is_allowed_to_update_project and project.project_needs_review or project.force_project_review %}
 <div class="alert alert-warning">
-  <strong>WARNING!</strong> You need to review this project. <a href="{% url 'project-review' project.pk %}">Review Project</a>
+  <strong>Warning!</strong> You need to review this project. <a href="{% url 'project-review' project.pk %}">Review Project</a>
 </div>
 {% endif %}
 
@@ -38,15 +38,15 @@ Project Detail
   <div class="card mb-3 bg-light">
     <div class="card-body">
       {% if project.status.name != 'Archived' %}
-        <a class="btn btn-primary" href="{% url 'project-add-users-search' project.pk %}" role="button"><i class="fas fa-user-plus"></i> Add Users</a>
-        <a class="btn btn-primary" href="#" role="button"><i class="far fa-newspaper"></i> Add Publications</a>
-        <a class="btn btn-primary" href="#" role="button"><i class="fas fa-trophy"></i> Add Grants</a>
-        <a class="btn btn-primary" href="{% url 'project-update' project.pk %}" role="button"><i class="far fa-edit"></i> Update Project Information</a>
+        <a class="btn btn-success" href="{% url 'project-add-users-search' project.pk %}" role="button"><i class="fas fa-user-plus"></i> Add Users</a>
+        <a class="btn btn-success" href="#" role="button"><i class="far fa-newspaper"></i> Add Publications</a>
+        <a class="btn btn-success" href="#" role="button"><i class="fas fa-trophy"></i> Add Grants</a>
+        <a class="btn btn-info" href="{% url 'project-update' project.pk %}" role="button"><i class="far fa-edit"></i> Update Project Information</a>
       {% endif %}
 
       <div class="float-right">
           {% if project.status.name == 'Active' %}
-            <a class="btn btn-primary" href="{% url 'project-archive' project.id %}" role="button"><i class="fas fa-file-archive"></i> Archive Project</a>
+            <a class="btn btn-info" href="{% url 'project-archive' project.id %}" role="button"><i class="fas fa-file-archive"></i> Archive Project</a>
           {% endif %}
       </div>
     </div>
@@ -81,8 +81,8 @@ Project Detail
     <div class="float-right">
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
         <a class="btn btn-primary" href="#" role="button"><i class="far fa-envelope"></i> Email Project Users</a>
-        <a class="btn btn-primary" href="{% url 'project-add-users-search' project.id %}" role="button"><i class="fas fa-user-plus"></i> Add Users</a>
-        <a class="btn btn-primary" href="{% url 'project-delete-users' project.id %}" role="button"><i class="fas fa-user-times"></i></i> Delete Users</a>    
+        <a class="btn btn-success" href="{% url 'project-add-users-search' project.id %}" role="button"><i class="fas fa-user-plus"></i> Add Users</a>
+        <a class="btn btn-danger" href="{% url 'project-delete-users' project.id %}" role="button"><i class="fas fa-user-times"></i></i> Delete Users</a>    
       {% endif %}
     </div>
 
@@ -155,7 +155,7 @@ Project Detail
   <h4 class="d-inline"><i class="fas fa-server"></i> Subscriptions </h4> <span class="badge badge-secondary">{{subscriptions.count}}</span>
     <div class="float-right">
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
-        <a class="btn btn-primary" href="{% url 'subscription-create' project.pk %}" role="button"><i class="fas fa-plus"></i> Request Resource Subscription</a>
+        <a class="btn btn-success" href="{% url 'subscription-create' project.pk %}" role="button"><i class="fas fa-plus"></i> Request Resource Subscription</a>
       {% endif %}
     </div>
 
@@ -211,9 +211,9 @@ Project Detail
   <h4 class="d-inline"><i class="fas fa-trophy"></i> Grants </h4> <span class="badge badge-secondary">{{grants.count}}</span>
     <div class="float-right">
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
-        <a class="btn btn-primary" href="#" role="button"><i class="fas fa-plus"></i> Add Grants</a>
+        <a class="btn btn-success" href="#" role="button"><i class="fas fa-plus"></i> Add Grants</a>
         {% if grants %}
-          <a class="btn btn-primary" href="#" role="button"><i class="fas fa-minus"></i> Remove Grants</a>
+          <a class="btn btn-danger" href="#" role="button"><i class="fas fa-minus"></i> Remove Grants</a>
         {% endif %}
       {% endif %}
     </div>
@@ -261,9 +261,9 @@ Project Detail
   <h4 class="d-inline"><i class="fas fa-newspaper"></i> Publications </h4> <span class="badge badge-secondary">{{publications.count}}</span>
     <div class="float-right">
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
-        <a class="btn btn-primary" href="#" role="button"><i class="fas fa-plus"></i> Add Publications</a>
+        <a class="btn btn-success" href="#" role="button"><i class="fas fa-plus"></i> Add Publications</a>
         {% if grants %}
-          <a class="btn btn-primary" href="#" role="button"><i class="fas fa-minus"></i> Remove Publications</a>
+          <a class="btn btn-danger" href="#" role="button"><i class="fas fa-minus"></i> Remove Publications</a>
         {% endif %}
       {% endif %}
     </div>
@@ -275,8 +275,7 @@ Project Detail
       <table class="table table-hover">
         <thead>
           <tr>
-            <th>Title</th>
-            <th>Author</th>
+            <th>Title and Author</th>
             <th>Year</th>
             <th>Actions</th>
           </tr>
@@ -284,9 +283,9 @@ Project Detail
         <tbody>
           {% for publication in publications %}
           <tr>
-            <td>{{ publication.title }}</td>
-            <td>{{ publication.author}}</td>
-            <td style="white-space:nowrap;">{{ publication.publication_date }}</td>
+            <td><strong>Title: </strong>{{ publication.title }} <a target="_blank" href="{{publication.source.url}}/{{publication.unique_id}}"><i class="fas fa-external-link-alt"></i></a> 
+              <br><strong>Author: </strong>{{ publication.author}}</td>
+            <td style="white-space:nowrap;">{{ publication.year }}</td>
             <td></td>
           </tr>
           {% endfor %}

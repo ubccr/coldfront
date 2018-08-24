@@ -543,7 +543,7 @@ class SubscriptionReviewPendingRequestsView(LoginRequiredMixin, UserPassesTestMi
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        subscription_list = Subscription.objects.filter(status__name='Pending')
+        subscription_list = Subscription.objects.filter(status__name__in=['New', 'Pending'])
         context['subscription_list'] = subscription_list
         return context
 

@@ -76,7 +76,7 @@ class ProjectUserInline(admin.TabularInline):
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-    fields_change = ('title', 'pi', 'description', 'status', 'force_project_review', 'created', 'modified', )
+    fields_change = ('title', 'pi', 'description', 'status', 'project_requires_review', 'force_project_review', 'created', 'modified', )
     readonly_fields_change = ('pi', 'created', 'modified', )
     list_display = ('pk', 'title', 'PI', 'created', 'modified', 'status')
     search_fields = ['pi__username', 'projectuser__user__username',

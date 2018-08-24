@@ -60,9 +60,7 @@ class Grant(TimeStampedModel):
         if self.role == 'PI':
             return '{} {}'.format(self.project.pi.first_name, self.project.pi.last_name)
         else:
-            return self.grant_pi
-
-
+            return self.grant_pi_full_name
 
     def __str__(self):
         return self.title

@@ -40,6 +40,7 @@ We do not have information about your research. Please provide a detailed descri
     field_of_science = models.ForeignKey(FieldOfScience, on_delete=models.CASCADE, default=FieldOfScience.DEFAULT_PK)
     status = models.ForeignKey(ProjectStatusChoice, on_delete=models.CASCADE)
     force_project_review = models.BooleanField(default=False)
+    project_requires_review = models.BooleanField(default=True)
 
 
     @property
@@ -61,6 +62,9 @@ We do not have information about your research. Please provide a detailed descri
     def project_needs_review(self):
         now = datetime.datetime.now(datetime.timezone.utc)
 
+        if self.project_requires_review == False:
+            return False
+
         if self.grant_set.exists():
             latest_grant = self.grant_set.order_by('-created')[0]
             grant_over_365_days = (now - latest_grant.created).days > 365
@@ -80,12 +84,15 @@ We do not have information about your research. Please provide a detailed descri
             latest_review_over_365_days = None
             latest_review = None
 
-        print(latest_review, latest_review_over_365_days)
+        print(latest_review, latest_review_over_365_days, grant_over_365_days, publication_over_365_days)
+
         if latest_review and not latest_review_over_365_days:
             return False
         elif latest_review_over_365_days:
             return True
         elif grant_over_365_days and publication_over_365_days:
+            return True
+        elif not latest_review and not grant_over_365_days and not publication_over_365_days:
             return True
         else:
             return False

@@ -70,27 +70,27 @@ class Command(BaseCommand):
         subscription_user_status_choices['DEN'] = SubscriptionUserStatusChoice.objects.get(name='Pending - Remove')
         subscription_user_status_choices['REM'] = SubscriptionUserStatusChoice.objects.get(name='Removed')
 
-
         filepath = os.path.join(base_dir, 'local_data', 'subscriptions.tsv')
         with open(filepath, 'r') as fp:
             lines = fp.read().split('$$$$$$$$$$-new-line-$$$$$$$$$$')
             for line in lines:
                 if not line.strip():
                     continue
-                created, modified, title, pi_username, project_status, quantity, resource_name, status, active_util, justification, attributes, users = line.split('\t')
+                created, modified, title, pi_username, project_status, quantity, resource_name, status, active_util, justification, attributes, users = line.split(
+                    '\t')
 
                 # print(title, pi_username, project_status, quantity, resource_name, status, active_util, justification, attributes, users)
 
                 # print(title, pi_username, project_status)
                 pi_user = User.objects.get(username=pi_username)
                 try:
-                    project_obj = Project.objects.get(title=title.strip(), pi__username=pi_username.strip(), status__name=project_status)
+                    project_obj = Project.objects.get(
+                        title=title.strip(), pi__username=pi_username.strip(), status__name=project_status)
                 except:
                     print(title.strip(), pi_username.strip())
 
                 resource_obj = Resource.objects.get(name=resource_name)
                 active_until_datetime_obj = datetime.datetime.strptime(active_util, '%Y-%m-%d')
-
 
                 created = datetime.datetime.strptime(created.strip(), '%Y-%m-%d %H:%M:%S').date()
                 modified = datetime.datetime.strptime(modified.strip(), '%Y-%m-%d %H:%M:%S').date()
@@ -104,7 +104,17 @@ class Command(BaseCommand):
                     justification=justification.strip()
                 )
                 subscription_obj.resources.add(resource_obj)
-                subscription_obj.save()
+
+                for linked_resource in resource_obj.linked_resources.all():
+                    subscription_obj.resources.add(linked_resource)
+
+                subscription_attribute_type_obj = SubscriptionAttributeType.objects.get(name='slurm_user_specs')
+                subscription_attribute_obj = SubscriptionAttribute.objects.create(
+                    subscription=subscription_obj,
+                    subscription_attribute_type=subscription_attribute_type_obj,
+                    value='Fairshare=parent',
+                    is_private=True
+                )
 
                 if attributes != 'N/A':
                     for subscription_attribute in attributes.split(';'):
@@ -140,11 +150,8 @@ class Command(BaseCommand):
                                 status=subscription_user_status_choices[user_status]
                             )
                 except:
-                    print(title, pi_username, project_status, quantity, resource_name, status, active_util, justification, attributes, users)
-
-
-
-
+                    print(title, pi_username, project_status, quantity, resource_name,
+                          status, active_util, justification, attributes, users)
 
                 # subscription_user_array = []
                 # for subscription_user in subscription.subscriptionuserstatus_set.all():
@@ -154,6 +161,5 @@ class Command(BaseCommand):
                 # row.append(subscription_user_array_joined)
                 # print(row)
                 # csvfile.writerow(row)
-
 
         print('Finished adding subscriptions.')

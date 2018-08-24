@@ -88,7 +88,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             else:
                 subscriptions = Subscription.objects.prefetch_related('resources').filter(project=self.object)
 
-        context['publications'] = Publication.objects.filter(project=self.object, status='Active')
+        context['publications'] = Publication.objects.filter(project=self.object, status='Active').order_by('-year')
         context['grants'] = Grant.objects.filter(project=self.object, status__name__in=['Active', 'Pending'])
         context['subscriptions'] = subscriptions
         context['project_users'] = project_users
@@ -783,6 +783,7 @@ def project_update_email_notification(request):
 
 class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'project/project_review.html'
+    login_url = "/"  # redirect URL if fail test_func
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -797,10 +798,12 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
             return True
 
+        messages.error(self.request, 'You do not have permissions to review this project.')
+
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
 
-        if not project_obj.project_needs_review and not project_obj.force_project_review:
+        if not project_obj.project_needs_review and not project_obj.force_project_review and not project_obj.project_requires_review:
             messages.error(request, 'You do not need to review this project.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:

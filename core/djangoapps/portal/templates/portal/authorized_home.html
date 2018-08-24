@@ -47,7 +47,7 @@
               {% elif subscription.status.name == "Pending" %}
                   <td><a href="{% url 'subscription-detail' subscription.id %}"  class="btn btn-info btn-block">{{subscription.status}}</a></td>
               {% elif subscription.status.name == "Active" %}
-                  <td><a href="{% url 'subscription-detail' subscription.id %}"  class="btn btn-primary btn-block">{{subscription.status}}</a></td>
+                  <td><a href="{% url 'subscription-detail' subscription.id %}"  class="btn btn-success btn-block">{{subscription.status}}</a></td>
               {% else %}
                   <td><a href="{% url 'subscription-detail' subscription.id %}"  class="btn btn-info btn-block">{{subscription.status}}</a></td>
               {% endif %}        

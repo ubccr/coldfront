@@ -70,4 +70,4 @@ class ProjectReviewForm(forms.Form):
         if not project_obj.project_needs_review:
             self.fields['reason'].widget = forms.HiddenInput()
 
-        self.fields['reason'].help_text = '<br/>Reason for not adding new grants and publications.'
+        self.fields['reason'].help_text = '<br/>Reason for not adding new grants and publications in the past year.'
