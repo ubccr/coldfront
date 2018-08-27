@@ -104,7 +104,7 @@ class Command(BaseCommand):
                     continue
 
                 # If resource_type is a slurm parition we merge the specs into the Slurm account association
-                if r.resource_type.name == 'Partition':
+                if r.resource_type.name == 'Cluster Partition':
                     rspecs = r.resourceattribute_set.filter(resource_attribute_type__name='slurm_specs').first()
                     if rspecs:
                         specs.append(rspecs.value) 
