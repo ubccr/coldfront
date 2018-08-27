@@ -8,6 +8,7 @@ from model_utils.models import TimeStampedModel
 
 from core.djangoapps.project.models import Project
 from core.djangoapps.resources.models import Resource
+from simple_history.models import HistoricalRecords
 
 
 class SubscriptionStatusChoice(TimeStampedModel):
@@ -28,6 +29,7 @@ class Subscription(TimeStampedModel):
     quantity = models.IntegerField(default=1)
     active_until = models.DateField(blank=True, null=True)
     justification = models.TextField()
+    history = HistoricalRecords()
 
     class Meta:
         ordering = ['active_until']
@@ -98,6 +100,7 @@ class SubscriptionAttributeType(TimeStampedModel):
     has_usage = models.BooleanField(default=False)
     is_required = models.BooleanField(default=False)
     is_unique = models.BooleanField(default=False)
+    history = HistoricalRecords()
 
     def __str__(self):
         return self.name
@@ -111,6 +114,7 @@ class SubscriptionAttribute(TimeStampedModel):
     subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
     value = models.CharField(max_length=128)
     is_private = models.BooleanField(default=True)
+    history = HistoricalRecords()
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -134,6 +138,7 @@ class SubscriptionAttributeUsage(TimeStampedModel):
     """ SubscriptionAttributeUsage. """
     subscription_attribute = models.OneToOneField(SubscriptionAttribute, on_delete=models.CASCADE, primary_key=True)
     value = models.FloatField(default=0)
+    history = HistoricalRecords()
 
     def __str__(self):
         return '{}: {}'.format(self.subscription_attribute.subscription_attribute_type.name, self.value)
@@ -154,6 +159,8 @@ class SubscriptionUser(TimeStampedModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     status = models.ForeignKey(SubscriptionUserStatusChoice, on_delete=models.CASCADE,
                                verbose_name='Subscription User Status')
+    history = HistoricalRecords()
+
 
     def __str__(self):
         return '%s (%s)' % (self.user, self.subscription.resources.first().name)

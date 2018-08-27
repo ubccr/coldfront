@@ -8,23 +8,25 @@ from core.djangoapps.project.models import (Project, ProjectStatusChoice,
                                             ProjectUserStatusChoice, ProjectReview)
 
 
+from simple_history.admin import SimpleHistoryAdmin
+
 @admin.register(ProjectStatusChoice)
-class ProjectStatusChoiceAdmin(admin.ModelAdmin):
+class ProjectStatusChoiceAdmin(SimpleHistoryAdmin):
     list_display = ('name',)
 
 
 @admin.register(ProjectUserRoleChoice)
-class ProjectUserRoleChoiceAdmin(admin.ModelAdmin):
+class ProjectUserRoleChoiceAdmin(SimpleHistoryAdmin):
     list_display = ('name',)
 
 
 @admin.register(ProjectUserStatusChoice)
-class ProjectUserStatusChoiceAdmin(admin.ModelAdmin):
+class ProjectUserStatusChoiceAdmin(SimpleHistoryAdmin):
     list_display = ('name',)
 
 
 @admin.register(ProjectUser)
-class ProjectUserAdmin(admin.ModelAdmin):
+class ProjectUserAdmin(SimpleHistoryAdmin):
     fields_change = ('user', 'project', 'role', 'status', 'created', 'modified', )
     readonly_fields_change = ('user', 'project', 'created', 'modified', )
     list_display = ('pk', 'project_title', 'PI', 'User', 'role', 'status',
@@ -75,7 +77,7 @@ class ProjectUserInline(admin.TabularInline):
 
 
 @admin.register(Project)
-class ProjectAdmin(admin.ModelAdmin):
+class ProjectAdmin(SimpleHistoryAdmin):
     fields_change = ('title', 'pi', 'description', 'status', 'project_requires_review', 'force_project_review', 'created', 'modified', )
     readonly_fields_change = ('pi', 'created', 'modified', )
     list_display = ('pk', 'title', 'PI', 'created', 'modified', 'status')
@@ -109,6 +111,6 @@ class ProjectAdmin(admin.ModelAdmin):
 
 
 @admin.register(ProjectReview)
-class ProjectReviewAdmin(admin.ModelAdmin):
+class ProjectReviewAdmin(SimpleHistoryAdmin):
     list_display = ('pk', 'project', 'reason_for_not_updating_project', 'created', 'status')
     list_filter = ('status', )

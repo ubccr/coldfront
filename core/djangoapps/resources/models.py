@@ -4,7 +4,7 @@ from django.contrib.auth.models import Group, User
 from django.core.exceptions import ValidationError
 from django.db import models
 from model_utils.models import TimeStampedModel
-
+from simple_history.models import HistoricalRecords
 
 class AttributeType(TimeStampedModel):
     name = models.CharField(max_length=128, unique=True)
@@ -19,6 +19,7 @@ class AttributeType(TimeStampedModel):
 class ResourceType(TimeStampedModel):
     name = models.CharField(max_length=128, unique=True)
     description = models.CharField(max_length=255)
+    history = HistoricalRecords()
 
     @property
     def active_count(self):
@@ -43,6 +44,7 @@ class ResourceAttributeType(TimeStampedModel):
     is_required = models.BooleanField(default=False)
     is_unique_per_resource = models.BooleanField(default=False)
     is_value_unique = models.BooleanField(default=False)
+    history = HistoricalRecords()
 
     def __str__(self):
         return self.name
@@ -62,6 +64,7 @@ class Resource(TimeStampedModel):
     allowed_groups = models.ManyToManyField(Group, blank=True)
     allowed_users = models.ManyToManyField(User, blank=True)
     linked_resources = models.ManyToManyField('self', blank=True)
+    history = HistoricalRecords()
 
     def get_missing_resource_attributes(self, required=False):
         """
@@ -95,6 +98,7 @@ class ResourceAttribute(TimeStampedModel):
     resource_attribute_type = models.ForeignKey(ResourceAttributeType, on_delete=models.CASCADE)
     resource = models.ForeignKey(Resource, on_delete=models.CASCADE)
     value = models.CharField(max_length=512)
+    history = HistoricalRecords()
 
     def clean(self):
 

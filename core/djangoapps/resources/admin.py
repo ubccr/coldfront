@@ -1,5 +1,8 @@
 from django.contrib import admin
 
+from simple_history.admin import SimpleHistoryAdmin
+
+
 from core.djangoapps.resources.models import (AttributeType, Resource,
                                               ResourceAttribute,
                                               ResourceAttributeType,
@@ -7,19 +10,19 @@ from core.djangoapps.resources.models import (AttributeType, Resource,
 
 
 @admin.register(AttributeType)
-class AttributeTypeAdmin(admin.ModelAdmin):
+class AttributeTypeAdmin(SimpleHistoryAdmin):
     list_display = ('name', 'created', 'modified', )
     search_fields = ('name', )
 
 
 @admin.register(ResourceType)
-class ResourceTypeAdmin(admin.ModelAdmin):
+class ResourceTypeAdmin(SimpleHistoryAdmin):
     list_display = ('name', 'description', 'created', 'modified', )
     search_fields = ('name', 'description',)
 
 
 @admin.register(ResourceAttributeType)
-class ResourceAttributeTypeAdmin(admin.ModelAdmin):
+class ResourceAttributeTypeAdmin(SimpleHistoryAdmin):
     list_display = ('pk', 'name', 'attribute_type_name', 'is_required', 'created', 'modified', )
     search_fields = ('name', 'attribute_type__name', 'resource_type__name',)
     list_filter = ('is_required', 'attribute_type__name', 'name')
@@ -49,7 +52,7 @@ class ResourceAttributeInline(admin.TabularInline):
 
 
 @admin.register(Resource)
-class ResourceAdmin(admin.ModelAdmin):
+class ResourceAdmin(SimpleHistoryAdmin):
     # readonly_fields_change = ('resource_type', )
     fields_change = ('resource_type', 'parent_resource', 'is_subscribable', 'name', 'description', 'is_available',
                      'is_public', 'allowed_groups', 'allowed_users', 'linked_resources')
@@ -69,16 +72,9 @@ class ResourceAdmin(admin.ModelAdmin):
         else:
             return self.fields_change
 
-    # def get_readonly_fields(self, request, obj):
-    #     if obj is None:
-    #         # We are adding an object
-    #         return super().get_readonly_fields(request)
-    #     else:
-    #         return self.readonly_fields_change
-
 
 @admin.register(ResourceAttribute)
-class ResourceAttributeAdmin(admin.ModelAdmin):
+class ResourceAttributeAdmin(SimpleHistoryAdmin):
     list_display = ('pk', 'resource_name', 'value', 'resource_attribute_type_name', 'created', 'modified', )
     search_fields = ('resource__name', 'resource_attribute_type__name', 'value')
     list_filter = ('resource_attribute_type__name', )

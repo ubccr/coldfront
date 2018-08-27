@@ -3,7 +3,7 @@ from django.db import models
 from model_utils.models import TimeStampedModel
 
 from core.djangoapps.project.models import Project
-
+from simple_history.models import HistoricalRecords
 
 class PublicationSource(TimeStampedModel):
     name = models.CharField(max_length=255)
@@ -25,6 +25,8 @@ class Publication(TimeStampedModel):
         ('Archived', 'Archived'),
     )
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='Active')
+    history = HistoricalRecords()
+
 
     class Meta:
         unique_together = ('project', 'unique_id')
