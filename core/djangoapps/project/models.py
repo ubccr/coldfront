@@ -84,8 +84,6 @@ We do not have information about your research. Please provide a detailed descri
             latest_review_over_365_days = None
             latest_review = None
 
-        print(latest_review, latest_review_over_365_days, grant_over_365_days, publication_over_365_days)
-
         if latest_review and not latest_review_over_365_days:
             return False
         elif latest_review_over_365_days:
