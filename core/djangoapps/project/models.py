@@ -8,6 +8,8 @@ from model_utils.models import TimeStampedModel
 
 from common.djangoapps.field_of_science.models import FieldOfScience
 
+from simple_history.models import HistoricalRecords
+
 
 class ProjectStatusChoice(TimeStampedModel):
     name = models.CharField(max_length=64)
@@ -41,7 +43,7 @@ We do not have information about your research. Please provide a detailed descri
     status = models.ForeignKey(ProjectStatusChoice, on_delete=models.CASCADE)
     force_project_review = models.BooleanField(default=False)
     project_requires_review = models.BooleanField(default=True)
-
+    history = HistoricalRecords()
 
     @property
     def lastest_grant(self):
@@ -56,7 +58,6 @@ We do not have information about your research. Please provide a detailed descri
             return self.publication_set.order_by('-created')[0]
         else:
             return None
-
 
     @property
     def project_needs_review(self):
@@ -108,6 +109,8 @@ We do not have information about your research. Please provide a detailed descri
 
 class ProjectReviewStatusChoice(TimeStampedModel):
     name = models.CharField(max_length=64)
+    history = HistoricalRecords()
+
 
     def __str__(self):
         return self.name
@@ -120,6 +123,8 @@ class ProjectReview(TimeStampedModel):
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     status = models.ForeignKey(ProjectReviewStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
     reason_for_not_updating_project = models.TextField(blank=True, null=True)
+    history = HistoricalRecords()
+
 
 
 class ProjectUserRoleChoice(TimeStampedModel):
@@ -149,6 +154,8 @@ class ProjectUser(TimeStampedModel):
     role = models.ForeignKey(ProjectUserRoleChoice, on_delete=models.CASCADE)
     status = models.ForeignKey(ProjectUserStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
     enable_notifications = models.BooleanField(default=True)
+    history = HistoricalRecords()
+
 
     def __str__(self):
         return '%s %s (%s)' % (self.user.first_name, self.user.last_name, self.user.username)
