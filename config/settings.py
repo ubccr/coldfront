@@ -54,6 +54,7 @@ DEFAULT_INSTALLED_APPS += [
     'core.djangoapps.resources',
     'core.djangoapps.subscription',
     'core.djangoapps.grant',
+    'core.djangoapps.publication',
 ]
 
 

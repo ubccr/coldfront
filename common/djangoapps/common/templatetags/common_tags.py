@@ -21,3 +21,11 @@ def get_icon(expand_accordion):
         return 'fa-minus'
     else:
         return 'fa-plus'
+
+
+@register.filter
+def convert_boolean_to_icon(boolean):
+    if boolean == False:
+        return mark_safe('<i class="fas fa-check"></i>')
+    else:
+        return mark_safe('<i class="fas fa-times"></i>')

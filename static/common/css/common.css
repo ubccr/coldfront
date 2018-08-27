@@ -39,3 +39,9 @@ main {
   height: 150px;
   background-color: #4582EC;
 }
+
+.banner-logo {
+    margin-top: 5px;
+    max-height: 58px !important;
+    margin-bottom: 5px;
+}

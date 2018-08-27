@@ -50,7 +50,7 @@ class ResourceAttributeInline(admin.TabularInline):
 
 @admin.register(Resource)
 class ResourceAdmin(admin.ModelAdmin):
-    readonly_fields_change = ('resource_type', )
+    # readonly_fields_change = ('resource_type', )
     fields_change = ('resource_type', 'parent_resource', 'is_subscribable', 'name', 'description', 'is_available',
                      'is_public', 'allowed_groups', 'allowed_users', 'linked_resources')
     list_display = ('pk', 'name', 'description', 'parent_resource', 'is_subscribable', 'resource_type_name',
@@ -69,12 +69,12 @@ class ResourceAdmin(admin.ModelAdmin):
         else:
             return self.fields_change
 
-    def get_readonly_fields(self, request, obj):
-        if obj is None:
-            # We are adding an object
-            return super().get_readonly_fields(request)
-        else:
-            return self.readonly_fields_change
+    # def get_readonly_fields(self, request, obj):
+    #     if obj is None:
+    #         # We are adding an object
+    #         return super().get_readonly_fields(request)
+    #     else:
+    #         return self.readonly_fields_change
 
 
 @admin.register(ResourceAttribute)

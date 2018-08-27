@@ -1,6 +1,7 @@
 import datetime
 import os
 import pprint
+import pytz
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -146,15 +147,15 @@ class Command(BaseCommand):
                     created=created,
                     modified=modified,
                     project=project_obj,
-                    project_number=project_number,
+                    grant_number=project_number,
                     title=title,
                     role=role,
                     grant_pi_full_name=grant_pi_full_name,
                     funding_agency=funding_agency_obj,
                     other_funding_agency=other_funding_agency,
                     other_award_number=rf_award_number,
-                    project_start=project_start,
-                    project_end=project_end,
+                    grant_start=project_start,
+                    grant_end=project_end,
                     percent_credit=percent_credit,
                     direct_funding=direct_funding,
                     total_amount_awarded=total_amount_awarded,

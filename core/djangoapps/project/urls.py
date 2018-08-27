@@ -14,5 +14,7 @@ urlpatterns = [
     path('<int:pk>/add-users-search-results/', project_views.ProjectAddUsersSearchResultsView.as_view(), name='project-add-users-search-results'),
     path('<int:pk>/add-users/', project_views.ProjectAddUsersView.as_view(), name='project-add-users'),
     path('<int:pk>/delete-users/', project_views.ProjectDeleteUsersView.as_view(), name='project-delete-users'),
-    path('<int:pk>/user-detail/<int:project_user_pk>', project_views.ProjectUserDetail.as_view(), name='project-user-detail')
+    path('<int:pk>/user-detail/<int:project_user_pk>', project_views.ProjectUserDetail.as_view(), name='project-user-detail'),
+    path('<int:pk>/review/', project_views.ProjectReviewView.as_view(), name='project-review'),
+
 ]

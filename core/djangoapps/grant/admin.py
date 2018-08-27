@@ -10,9 +10,11 @@ class GrantFundingAgencyChoiceAdmin(admin.ModelAdmin):
 
 @admin.register(Grant)
 class GrantAdmin(admin.ModelAdmin):
-    readonly_fields = ('created', 'modified')
-    list_display = ['title', 'Project_PI', 'role', 'grant_pi_full_name', 'Funding_Agency', 'status', 'project_end', ]
-    list_filter = ('funding_agency', 'role', 'status', 'project_end')
+    readonly_fields = ('project', 'created', 'modified',)
+    fields = ('project', 'title', 'grant_number', 'role', 'grant_pi_full_name', 'funding_agency', 'other_funding_agency', 'other_award_number', 'grant_start',
+        'grant_end', 'percent_credit', 'direct_funding', 'total_amount_awarded', 'status', 'created', 'modified')
+    list_display = ['title', 'Project_PI', 'role', 'grant_pi_full_name', 'Funding_Agency', 'status', 'grant_end', ]
+    list_filter = ('funding_agency', 'role', 'status', 'grant_end')
     search_fields = ['project__title',
                      'project__pi__username',
                      'project__pi__first_name',

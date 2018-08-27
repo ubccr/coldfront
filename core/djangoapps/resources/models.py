@@ -41,7 +41,8 @@ class ResourceAttributeType(TimeStampedModel):
     attribute_type = models.ForeignKey(AttributeType, on_delete=models.CASCADE)
     name = models.CharField(max_length=128)
     is_required = models.BooleanField(default=False)
-    is_unique = models.BooleanField(default=False)
+    is_unique_per_resource = models.BooleanField(default=False)
+    is_value_unique = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name

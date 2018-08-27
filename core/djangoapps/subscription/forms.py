@@ -85,3 +85,17 @@ class SubscriptionEmailForm(forms.Form):
         super().__init__(*args, **kwargs)
         subscription_obj = get_object_or_404(Subscription, pk=int(pk))
         self.fields['email_body'].initial = 'Dear {} {} \n{}'.format(subscription_obj.project.pi.first_name, subscription_obj.project.pi.last_name, EMAIL_DIRECTOR_PENDING_SUBSCRIPTION_EMAIL)
+
+class SubscriptionReviewUserForm(forms.Form):
+    SUBSCRIPTION_REVIEW_USER_CHOICES = (
+        ('keep_in_subscription_and_project', 'Keep in subscription and project'),
+        ('keep_in_project_only', 'Keep in project only'),
+        ('remove_from_project', 'Remove from project'),
+    )
+
+    username = forms.CharField(max_length=150, disabled=True)
+    first_name = forms.CharField(max_length=30, required=False, disabled=True)
+    last_name = forms.CharField(max_length=150, required=False, disabled=True)
+    email = forms.EmailField(max_length=100, required=False, disabled=True)
+    user_status = forms.ChoiceField(choices=SUBSCRIPTION_REVIEW_USER_CHOICES)
+

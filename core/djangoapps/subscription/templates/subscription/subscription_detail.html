@@ -33,8 +33,8 @@ Subscription Detail
           <td><a href="{% url 'project-detail' subscription.project.pk %}">{{ subscription.project }}</a></td>
         </tr>
         <tr>
-          <th style="white-space:nowrap;">Resource:</th>
-          <td>{{ subscription.resources.first }}</td>
+          <th style="white-space:nowrap;">Resource{{ subscription.resources.all|pluralize }} in subscription:</th>
+          <td>{{ subscription.get_resources_as_string }}</td>
         </tr>
         <tr>
           <th style="white-space:nowrap;">Justification:</th>
@@ -110,7 +110,7 @@ Subscription Detail
   <div class="card-header">
   <h4 class="d-inline"><i class="fas fa-users"></i> Users in Subscription </h4> <span class="badge badge-secondary">{{subscription_users.count}}</span>
     <div class="float-right">
-      {% if subscription.project.status.name != 'Archived' and is_allowed_to_update_project and subscription.status.name in 'Active,Approved,New,Pending' %}%}
+      {% if subscription.project.status.name != 'Archived' and is_allowed_to_update_project and subscription.status.name in 'Active,Approved,New,Pending' %}
         <a class="btn btn-primary" href="{% url 'subscription-add-users' subscription.pk %}" role="button"><i class="fas fa-user-plus"></i> Add Users</a>
         <a class="btn btn-primary" href="{% url 'subscription-delete-users' subscription.pk %}" role="button"><i class="fas fa-user-times"></i></i> Delete Users</a>    
       {% endif %}

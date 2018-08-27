@@ -26,12 +26,12 @@ class GrantStatusChoice(TimeStampedModel):
 class Grant(TimeStampedModel):
     """ Grant model """
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    project_number = models.CharField(
-        'Project Number from funding agency',
+    title = models.CharField(
         validators=[MinLengthValidator(3), MaxLengthValidator(255)],
         max_length=255,
     )
-    title = models.CharField(
+    grant_number = models.CharField(
+        'Grant Number from funding agency',
         validators=[MinLengthValidator(3), MaxLengthValidator(255)],
         max_length=255,
     )
@@ -48,12 +48,19 @@ class Grant(TimeStampedModel):
     funding_agency = models.ForeignKey(GrantFundingAgency, on_delete=models.CASCADE)
     other_funding_agency = models.CharField(max_length=255, blank=True)
     other_award_number = models.CharField(max_length=255, blank=True)
-    project_start = models.DateField('Project Start Date')
-    project_end = models.DateField('Project End Date')
+    grant_start = models.DateField('Grant Start Date')
+    grant_end = models.DateField('Grant End Date')
     percent_credit = models.FloatField(validators=[MaxValueValidator(100)])
     direct_funding = models.FloatField()
     total_amount_awarded = models.FloatField()
     status = models.ForeignKey(GrantStatusChoice, on_delete=models.CASCADE)
+
+    @property
+    def grant_pi(self):
+        if self.role == 'PI':
+            return '{} {}'.format(self.project.pi.first_name, self.project.pi.last_name)
+        else:
+            return self.grant_pi_full_name
 
     def __str__(self):
         return self.title
