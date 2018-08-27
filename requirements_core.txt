@@ -1,5 +1,6 @@
 beautifulsoup4
 Django
+django-admin-comments
 django_auth_ldap
 django-crispy-forms
 django-extensions

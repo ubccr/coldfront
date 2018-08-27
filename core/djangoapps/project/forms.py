@@ -55,5 +55,19 @@ class ProjectDeleteUserForm(forms.Form):
 
 
 class ProjectUserUpdateForm(forms.Form):
-    role = forms.ModelChoiceField(queryset = ProjectUserRoleChoice.objects.all(), empty_label=None)
+    role = forms.ModelChoiceField(queryset=ProjectUserRoleChoice.objects.all(), empty_label=None)
     enable_notifications = forms.BooleanField(initial=False, required=False)
+
+
+class ProjectReviewForm(forms.Form):
+    reason = forms.CharField(widget=forms.Textarea, required=False)
+    acknowledgement = forms.BooleanField(label='By checking this box I acknowledge that I have updated my project to the best of my knowledge', initial=False, required=True)
+
+    def __init__(self, project_pk, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        project_obj = get_object_or_404(Project, pk=project_pk)
+
+        if not project_obj.project_needs_review:
+            self.fields['reason'].widget = forms.HiddenInput()
+
+        self.fields['reason'].help_text = '<br/>Reason for not adding new grants and publications in the past year.'

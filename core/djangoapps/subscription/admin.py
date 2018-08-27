@@ -51,7 +51,7 @@ class SubscriptionAdmin(admin.ModelAdmin):
     raw_id_fields = ('project',)
 
     def resource(self, obj):
-        return obj.resources.first()
+        return obj.get_parent_resource
 
     def project_pi(self, obj):
         return obj.project.pi.username
@@ -279,7 +279,7 @@ class SubscriptionAttributeUsageAdmin(admin.ModelAdmin):
     list_display = ('subscription_attribute', 'resource', 'value',)
     readonly_fields = ('subscription_attribute',)
     fields = ('subscription_attribute', 'value',)
-    list_filter = ('subscription_attribute__subscription__resources', ValueFilter, )
+    list_filter = ('subscription_attribute__subscription_attribute_type', 'subscription_attribute__subscription__resources', ValueFilter, )
 
     def resource(self, obj):
         return obj.subscription_attribute.subscription.resources.first().name

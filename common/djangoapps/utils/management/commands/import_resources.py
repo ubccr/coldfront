@@ -70,8 +70,7 @@ class Command(BaseCommand):
                 resource_type_name, resource_attribute_type_name, resource_attribute_type_type_name, resource_name, value = line.strip().split('\t')
 
                 if resource_attribute_type_name == 'slurm_specs':
-                    value = 'QOS=' + value
-                    print(value)
+                    value = 'QOS+=' + value + ':Fairshare=100'
 
                 if resource_attribute_type_name == 'Access':
                     if value == 'Public':
@@ -79,7 +78,7 @@ class Command(BaseCommand):
                     else:
                         is_public = False
                     resource_obj = Resource.objects.get(name=resource_name)
-                    resource_obj.is_public=is_public
+                    resource_obj.is_public = is_public
                     resource_obj.save()
 
                 elif resource_attribute_type_name == 'Status':
@@ -106,5 +105,19 @@ class Command(BaseCommand):
                         resource_attribute_type=ResourceAttributeType.objects.get(name=resource_attribute_type_name, attribute_type__name=resource_attribute_type_type_name),
                         resource=Resource.objects.get(name=resource_name),
                         value=value.strip())
+
+
+        resource_obj = Resource.objects.get(name='UB-HPC')
+        for children_resource in ['Industry-scavenger', 'Chemistry-scavenger', 'Physics-scavenger', 'MAE-scavenger']:
+            children_resource_obj = Resource.objects.get(name=children_resource)
+            resource_obj.linked_resources.add(children_resource_obj)
+
+
+        for unsubscribable in ['Industry-scavenger', 'Chemistry-scavenger', 'Physics-scavenger', 'MAE-scavenger', 'Physics', 'Chemistry', 'MAE']:
+            resource_obj = Resource.objects.get(name=unsubscribable)
+            resource_obj.is_subscribable = False
+            resource_obj.save()
+
+
 
         print('Finished adding resources.')

@@ -1,0 +1,48 @@
+{% extends "templates/base.html" %} 
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Review Project
+{% endblock %}
+
+
+
+{% block content %}
+<h1>Reviewing Project: {{project.title}}</h1> <hr>
+
+
+<div class="card-body">
+  <div class="table-responsive">
+    <table class="table table-bordered table-sm">
+      <tr>
+        <th style="white-space:nowrap;">Grants Last Updated:</th>
+        <td>{% if project.lastest_grant %} {{project.lastest_grant.created}} {% else %} Never {% endif %}</td>
+      </tr>
+      <tr>
+        <th style="white-space:nowrap;">Publications Last Updated:</th>
+        <td>{% if project.lastest_publication %} {{project.lastest_publication.created}} {% else %} Never {% endif %}</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+
+<form method="post">
+    {% csrf_token %}
+    {{project_review_form|crispy}}
+    <input class="btn btn-primary" type="submit" value="Submit" />
+    <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button">Back to Project</a><br>
+</form>
+
+
+
+
+
+
+
+{% endblock %}
+
+
+
