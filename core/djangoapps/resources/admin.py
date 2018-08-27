@@ -10,13 +10,13 @@ from core.djangoapps.resources.models import (AttributeType, Resource,
 
 
 @admin.register(AttributeType)
-class AttributeTypeAdmin(SimpleHistoryAdmin):
+class AttributeTypeAdmin(admin.ModelAdmin):
     list_display = ('name', 'created', 'modified', )
     search_fields = ('name', )
 
 
 @admin.register(ResourceType)
-class ResourceTypeAdmin(SimpleHistoryAdmin):
+class ResourceTypeAdmin(admin.ModelAdmin):
     list_display = ('name', 'description', 'created', 'modified', )
     search_fields = ('name', 'description',)
 

@@ -14,6 +14,7 @@ urlpatterns = [
     path('user/', include('common.djangoapps.user.urls')),
     path('project/', include('core.djangoapps.project.urls')),
     path('subscription/', include('core.djangoapps.subscription.urls')),
+    path('grant/', include('core.djangoapps.grant.urls')),
 ]
 
 
