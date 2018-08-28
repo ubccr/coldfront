@@ -1,5 +1,6 @@
 {% extends "templates/base.html" %} 
 {% load crispy_forms_tags %}
+{% load humanize %}
 {% load static %}
 
 
@@ -228,6 +229,7 @@ Project Detail
             <th>Title</th>
             <th style="white-space:nowrap;">Grant PI</th>
             <th style="white-space:nowrap;">Project PI Role</th>
+             <th style="white-space:nowrap;">Award Amount</th>
             <th style="white-space:nowrap;">Grant Start Date</th>
             <th style="white-space:nowrap;">Grant End Date</th>
             <th>Actions</th>
@@ -239,6 +241,7 @@ Project Detail
             <td>{{ grant.title }}</td>
             <td style="white-space:nowrap;">{{ grant.grant_pi }}</td>
             <td>{{ grant.role}}</td>
+            <td>{{ grant.total_amount_awarded|intcomma}}</td>
             <td>{{ grant.grant_start }}</td>
             <td>{{ grant.grant_end }}</td>
             <td><a href="{% url 'grant-update' grant.id %}"><i class="far fa-edit"></i></a></td>
@@ -261,9 +264,9 @@ Project Detail
   <h4 class="d-inline"><i class="fas fa-newspaper"></i> Publications </h4> <span class="badge badge-secondary">{{publications.count}}</span>
     <div class="float-right">
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
-        <a class="btn btn-success" href="#" role="button"><i class="fas fa-plus"></i> Add Publications</a>
+        <a class="btn btn-success" href="{% url 'publication-search' project.pk %}" role="button"><i class="fas fa-plus"></i> Add Publication</a>
         {% if grants %}
-          <a class="btn btn-danger" href="#" role="button"><i class="fas fa-minus"></i> Remove Publications</a>
+          <a class="btn btn-danger" href="{% url 'publication-delete-publications' project.pk %}" role="button"><i class="fas fa-minus"></i> Remove Publications</a>
         {% endif %}
       {% endif %}
     </div>
@@ -277,7 +280,6 @@ Project Detail
           <tr>
             <th>Title and Author</th>
             <th>Year</th>
-            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -286,7 +288,6 @@ Project Detail
             <td><strong>Title: </strong>{{ publication.title }} <a target="_blank" href="{{publication.source.url}}/{{publication.unique_id}}"><i class="fas fa-external-link-alt"></i></a> 
               <br><strong>Author: </strong>{{ publication.author}}</td>
             <td style="white-space:nowrap;">{{ publication.year }}</td>
-            <td></td>
           </tr>
           {% endfor %}
         </tbody>

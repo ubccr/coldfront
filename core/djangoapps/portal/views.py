@@ -6,7 +6,12 @@ from core.djangoapps.project.models import Project
 from core.djangoapps.subscription.models import Subscription
 from extra.djangoapps.system_monitor.utils import get_system_monitor_context
 
+from core.djangoapps.portal.utils import generate_publication_by_year_chart_data, generate_total_grants_by_agency_chart_data
+from core.djangoapps.publication.models import Publication
+from core.djangoapps.grant.models import Grant
+from django.contrib.humanize.templatetags.humanize import intcomma
 
+from django.db.models import Count, Sum
 def home(request):
 
     context = {}
@@ -38,3 +43,39 @@ def home(request):
         context.update(get_system_monitor_context())
 
     return render(request, template_name, context)
+
+
+def center_summary(request):
+    context = {}
+
+
+    # Publications Card
+    publications_by_year = list(Publication.objects.filter(year__gte=1999).values('year').annotate(num_pub=Count('year')).order_by('-year'))
+
+    publications_by_year = [(ele['year'], ele['num_pub']) for ele in publications_by_year]
+
+    publication_by_year_bar_chart_data = generate_publication_by_year_chart_data(publications_by_year)
+    context['publication_by_year_bar_chart_data'] = publication_by_year_bar_chart_data
+    context['total_publications_count'] = Publication.objects.filter(year__gte=1999).count()
+
+    # Grants Card
+    total_grants_by_agency_sum = list(Grant.objects.values('funding_agency__name').annotate(total_amount=Sum('total_amount_awarded')))
+
+
+    total_grants_by_agency_count = list(Grant.objects.values('funding_agency__name').annotate(count=Count('total_amount_awarded')))
+
+    total_grants_by_agency_count = {ele['funding_agency__name']: ele['count'] for ele in total_grants_by_agency_count}
+
+    total_grants_by_agency = [['{}: ${} ({})'.format(
+        ele['funding_agency__name'],
+        intcomma(int(ele['total_amount'])),
+        total_grants_by_agency_count[ele['funding_agency__name']]
+        ), ele['total_amount']] for ele in total_grants_by_agency_sum]
+
+
+    grants_agency_chart_data = generate_total_grants_by_agency_chart_data(total_grants_by_agency)
+    context['grants_agency_chart_data'] = grants_agency_chart_data
+    context['grants_total'] = intcomma(int(sum(list(Grant.objects.values_list('total_amount_awarded', flat=True)))))
+    context['grants_total_pi_only'] = intcomma(int(sum(list(Grant.objects.filter(role='PI').values_list('total_amount_awarded', flat=True)))))
+
+    return render(request, 'portal/center_summary.html', context)

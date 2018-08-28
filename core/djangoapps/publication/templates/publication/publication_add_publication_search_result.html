@@ -1,0 +1,46 @@
+{% load crispy_forms_tags %}
+
+
+{% if title %}
+<form action="{% url 'add-publication' project_pk %}" method="post">
+  {% csrf_token %}
+  <div class="table-responsive-sm">          
+  <table class="table"> 
+      <tr>
+        <th>Title</th>
+        <td>{{title}}</td>
+      </tr>
+      <tr>
+        <th>Author</th>
+        <td>{{author}}</td>
+      </tr>
+      <tr>
+        <th>Year</th>
+        <td>{{year}}</td>
+      </tr> 
+      <tr>
+        <th>Link</th>
+        <td><a target="_blank" href="{{source_obj.url}}/{{unique_id}}">{{unique_id}}</a></td>
+      </tr>           
+    </tbody>
+  </table>
+  </div>
+  
+  <br>
+  <button type="submit" class="btn btn-success"><i class="fas fa-plus"></i> Add Publication to Project</button>
+  <a class="btn btn-secondary" href="{% url 'project-detail' project_pk %}" role="button">Back to Project</a><br>
+
+  <input id="title" type="hidden" name="title" value="{{title}}">
+  <input id="author" type="hidden" name="author" value="{{author}}">
+  <input id="year" type="hidden" name="year" value="{{year}}">
+  <input id="source" type="hidden" name="source" value="{{source}}">
+  <input id="unique_id" type="hidden" name="unique_id" value="{{unique_id}}">
+</form>
+
+{% else %}
+    <div class="alert alert-info text-center">
+    No results!
+    </div>
+
+{% endif %}
+
