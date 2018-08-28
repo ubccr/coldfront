@@ -86,6 +86,7 @@ class SubscriptionEmailForm(forms.Form):
         subscription_obj = get_object_or_404(Subscription, pk=int(pk))
         self.fields['email_body'].initial = 'Dear {} {} \n{}'.format(subscription_obj.project.pi.first_name, subscription_obj.project.pi.last_name, EMAIL_DIRECTOR_PENDING_SUBSCRIPTION_EMAIL)
 
+
 class SubscriptionReviewUserForm(forms.Form):
     SUBSCRIPTION_REVIEW_USER_CHOICES = (
         ('keep_in_subscription_and_project', 'Keep in subscription and project'),
@@ -98,4 +99,3 @@ class SubscriptionReviewUserForm(forms.Form):
     last_name = forms.CharField(max_length=150, required=False, disabled=True)
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     user_status = forms.ChoiceField(choices=SUBSCRIPTION_REVIEW_USER_CHOICES)
-

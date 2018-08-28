@@ -11,17 +11,17 @@ from core.djangoapps.project.models import (Project, ProjectStatusChoice,
 from simple_history.admin import SimpleHistoryAdmin
 
 @admin.register(ProjectStatusChoice)
-class ProjectStatusChoiceAdmin(SimpleHistoryAdmin):
+class ProjectStatusChoiceAdmin(admin.ModelAdmin):
     list_display = ('name',)
 
 
 @admin.register(ProjectUserRoleChoice)
-class ProjectUserRoleChoiceAdmin(SimpleHistoryAdmin):
+class ProjectUserRoleChoiceAdmin(admin.ModelAdmin):
     list_display = ('name',)
 
 
 @admin.register(ProjectUserStatusChoice)
-class ProjectUserStatusChoiceAdmin(SimpleHistoryAdmin):
+class ProjectUserStatusChoiceAdmin(admin.ModelAdmin):
     list_display = ('name',)
 
 

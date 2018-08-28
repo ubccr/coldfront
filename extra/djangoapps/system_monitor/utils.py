@@ -39,18 +39,17 @@ class SystemMonitor:
 
     def fetch_data(self):
         try:
-            r = requests.get(self.SYSTEM_MONITOR_ENDPOINT)
-        except requests.exceptions.RequestException as e:
-            raise requests.HTTPError
+            r = requests.get(self.SYSTEM_MONITOR_ENDPOINT, timeout=5)
+        except Exception as e:
+            r = None
 
-        if r.status_code == 200:
+        if r and r.status_code == 200:
             self.response = r
 
     def parse_html_using_beautiful_soup(self):
         try:
             soup = BeautifulSoup(self.response.text, 'html.parser')
         except Exception as e:
-            print(e)
             print('Error in parsing HTML response')
             return
 
