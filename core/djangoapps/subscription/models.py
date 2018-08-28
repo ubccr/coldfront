@@ -41,10 +41,12 @@ class Subscription(TimeStampedModel):
 
     def clean(self):
         if self.status.name == 'Expired' and self.active_until > datetime.datetime.now().date():
-            raise ValidationError('You cannot set the status of this subscription to expired without changing the active until date.')
+            raise ValidationError(
+                'You cannot set the status of this subscription to expired without changing the active until date.')
 
         elif self.status.name == 'Active' and self.active_until < datetime.datetime.now().date():
-            raise ValidationError('You cannot set the status of this subscription to active without changing the active until date.')
+            raise ValidationError(
+                'You cannot set the status of this subscription to active without changing the active until date.')
 
     @property
     def expires_in(self):
@@ -68,16 +70,13 @@ class Subscription(TimeStampedModel):
 
         return mark_safe(html_string)
 
-
     @property
     def get_resources_as_string(self):
         return ', '.join([ele.name for ele in self.resources.all()])
 
-
     @property
     def get_parent_resource(self):
         return self.resources.filter(is_subscribable=True).first()
-
 
     def __str__(self):
         return "%s (%s)" % (self.resources.first().name, self.project.pi)
@@ -93,6 +92,7 @@ class AttributeType(TimeStampedModel):
     class Meta:
         ordering = ['name', ]
 
+
 class SubscriptionAttributeType(TimeStampedModel):
     """ SubscriptionAttributeType. """
     attribute_type = models.ForeignKey(AttributeType, on_delete=models.CASCADE)
@@ -107,6 +107,7 @@ class SubscriptionAttributeType(TimeStampedModel):
 
     class Meta:
         ordering = ['name', ]
+
 
 class SubscriptionAttribute(TimeStampedModel):
     """ SubscriptionAttribute. """
@@ -153,6 +154,7 @@ class SubscriptionUserStatusChoice(TimeStampedModel):
     class Meta:
         ordering = ['name', ]
 
+
 class SubscriptionUser(TimeStampedModel):
     """ SubscriptionUserStatus. """
     subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
@@ -160,7 +162,6 @@ class SubscriptionUser(TimeStampedModel):
     status = models.ForeignKey(SubscriptionUserStatusChoice, on_delete=models.CASCADE,
                                verbose_name='Subscription User Status')
     history = HistoricalRecords()
-
 
     def __str__(self):
         return '%s (%s)' % (self.user, self.subscription.resources.first().name)

@@ -18,7 +18,7 @@ from core.djangoapps.subscription.models import (AttributeType, Subscription,
 
 
 @admin.register(SubscriptionStatusChoice)
-class SubscriptionStatusChoiceAdmin(SimpleHistoryAdmin):
+class SubscriptionStatusChoiceAdmin(admin.ModelAdmin):
     list_display = ('name', )
 
 
@@ -80,12 +80,12 @@ class SubscriptionAdmin(SimpleHistoryAdmin):
 
 
 @admin.register(AttributeType)
-class AttributeTypeAdmin(SimpleHistoryAdmin):
+class AttributeTypeAdmin(admin.ModelAdmin):
     list_display = ('name', )
 
 
 @admin.register(SubscriptionAttributeType)
-class SubscriptionAttributeTypeAdmin(SimpleHistoryAdmin):
+class SubscriptionAttributeTypeAdmin(admin.ModelAdmin):
     list_display = ('pk', 'name', 'has_usage')
 
 
@@ -130,7 +130,7 @@ class SubscriptionAttributeAdmin(SimpleHistoryAdmin):
     list_display = ('pk', 'project', 'pi', 'resource', 'subscription_status',
                     'subscription_attribute_type', 'value', 'usage', 'is_private', 'created', 'modified',)
     inlines = [SubscriptionAttributeUsageInline, ]
-    list_filter = (UsageValueFilter, 'subscription_attribute_type',)
+    list_filter = (UsageValueFilter, 'subscription_attribute_type', 'is_private')
     search_fields = (
         'subscription__project__pi__first_name',
         'subscription__project__pi__last_name',
@@ -183,7 +183,7 @@ class SubscriptionAttributeAdmin(SimpleHistoryAdmin):
 
 
 @admin.register(SubscriptionUserStatusChoice)
-class SubscriptionUserStatusChoiceAdmin(SimpleHistoryAdmin):
+class SubscriptionUserStatusChoiceAdmin(admin.ModelAdmin):
     list_display = ('name',)
 
 

@@ -109,8 +109,6 @@ We do not have information about your research. Please provide a detailed descri
 
 class ProjectReviewStatusChoice(TimeStampedModel):
     name = models.CharField(max_length=64)
-    history = HistoricalRecords()
-
 
     def __str__(self):
         return self.name

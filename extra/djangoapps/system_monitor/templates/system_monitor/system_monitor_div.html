@@ -4,7 +4,8 @@
 
 <div class="col mt-3">
   <h3 class="text-center">{{system_monitor_panel_title}}</h3>
-  <hr> {% if last_updated %}
+  <hr> 
+  {% if last_updated %}
   <div class="row">
       <div class="col-lg-6">
         <div id="chartUtilization" style="min-height: 270px;width: 100%;"></div>
@@ -40,7 +41,6 @@
 <script>
     
     $(document).ready(function() {
-        $("#quota-button").trigger( "click");
         drawUtilization();
         drawJobs();
     });

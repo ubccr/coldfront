@@ -10,13 +10,13 @@ from core.djangoapps.resources.models import (AttributeType, Resource,
 
 
 @admin.register(AttributeType)
-class AttributeTypeAdmin(SimpleHistoryAdmin):
+class AttributeTypeAdmin(admin.ModelAdmin):
     list_display = ('name', 'created', 'modified', )
     search_fields = ('name', )
 
 
 @admin.register(ResourceType)
-class ResourceTypeAdmin(SimpleHistoryAdmin):
+class ResourceTypeAdmin(admin.ModelAdmin):
     list_display = ('name', 'description', 'created', 'modified', )
     search_fields = ('name', 'description',)
 
@@ -33,7 +33,6 @@ class ResourceAttributeTypeAdmin(SimpleHistoryAdmin):
 
 class ResourceAttributeInline(admin.TabularInline):
     model = ResourceAttribute
-    readonly_fields_change = ('resource_attribute_type', )
     fields_change = ('resource_attribute_type', 'value',)
     extra = 0
 
@@ -43,12 +42,6 @@ class ResourceAttributeInline(admin.TabularInline):
         else:
             return self.fields_change
 
-    def get_readonly_fields(self, request, obj):
-        if obj is None:
-            # We are adding an object
-            return super().get_readonly_fields(request)
-        else:
-            return self.readonly_fields_change
 
 
 @admin.register(Resource)

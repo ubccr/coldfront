@@ -2,6 +2,8 @@ from django.contrib import admin
 
 from core.djangoapps.grant.models import Grant, GrantFundingAgency
 
+from simple_history.admin import SimpleHistoryAdmin
+
 
 @admin.register(GrantFundingAgency)
 class GrantFundingAgencyChoiceAdmin(admin.ModelAdmin):
@@ -9,7 +11,7 @@ class GrantFundingAgencyChoiceAdmin(admin.ModelAdmin):
 
 
 @admin.register(Grant)
-class GrantAdmin(admin.ModelAdmin):
+class GrantAdmin(SimpleHistoryAdmin):
     readonly_fields = ('project', 'created', 'modified',)
     fields = ('project', 'title', 'grant_number', 'role', 'grant_pi_full_name', 'funding_agency', 'other_funding_agency', 'other_award_number', 'grant_start',
         'grant_end', 'percent_credit', 'direct_funding', 'total_amount_awarded', 'status', 'created', 'modified')

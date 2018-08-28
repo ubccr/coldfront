@@ -37,7 +37,7 @@
         {% for subscription in subscription_list %}
             <tr>
               <td>{{subscription.project.title}}</td>
-              <td>{{subscription.resources.first}}</td>
+              <td>{{subscription.get_parent_resource}}</td>
               {%  if subscription.status.name == "Expired" and subscription.expires_in < 0 %}
                   <td><a href="{% url 'subscription-detail' subscription.id %}"  class="btn btn-danger btn-block">Expired</a></td>
               {%  elif subscription.expires_in >= 0 and  subscription.expires_in <= 30 %}
