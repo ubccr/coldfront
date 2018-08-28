@@ -11,6 +11,10 @@ from core.djangoapps.publication.models import Publication
 from core.djangoapps.grant.models import Grant
 from django.contrib.humanize.templatetags.humanize import intcomma
 
+import operator
+
+
+
 from django.db.models import Count, Sum
 def home(request):
 
@@ -72,10 +76,12 @@ def center_summary(request):
         total_grants_by_agency_count[ele['funding_agency__name']]
         ), ele['total_amount']] for ele in total_grants_by_agency_sum]
 
-
+    total_grants_by_agency = sorted(total_grants_by_agency, key=operator.itemgetter(1), reverse=True)
     grants_agency_chart_data = generate_total_grants_by_agency_chart_data(total_grants_by_agency)
     context['grants_agency_chart_data'] = grants_agency_chart_data
     context['grants_total'] = intcomma(int(sum(list(Grant.objects.values_list('total_amount_awarded', flat=True)))))
     context['grants_total_pi_only'] = intcomma(int(sum(list(Grant.objects.filter(role='PI').values_list('total_amount_awarded', flat=True)))))
+    context['grants_total_copi_only'] = intcomma(int(sum(list(Grant.objects.filter(role='CoPI').values_list('total_amount_awarded', flat=True)))))
+    context['grants_total_sp_only'] = intcomma(int(sum(list(Grant.objects.filter(role='SP').values_list('total_amount_awarded', flat=True)))))
 
     return render(request, 'portal/center_summary.html', context)

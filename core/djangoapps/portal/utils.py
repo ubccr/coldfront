@@ -30,5 +30,4 @@ def generate_total_grants_by_agency_chart_data(total_grants_by_agency):
     }
 
 
-    print(grants_agency_chart_data)
     return grants_agency_chart_data

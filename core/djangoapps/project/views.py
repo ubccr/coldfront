@@ -781,6 +781,7 @@ def project_update_email_notification(request):
     else:
         return HttpResponse('', status=400)
 
+
 class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'project/project_review.html'
     login_url = "/"  # redirect URL if fail test_func
@@ -806,6 +807,9 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         if not project_obj.project_needs_review and not project_obj.force_project_review and not project_obj.project_requires_review:
             messages.error(request, 'You do not need to review this project.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+        elif 'Auto-Import Project'.lower() in project_obj.title.lower():
+            messages.error(request, 'You must update the project title before reviewing your project. You cannot have "Auto-Import Project" in the title.')
+            return HttpResponseRedirect(reverse('project-update', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
 

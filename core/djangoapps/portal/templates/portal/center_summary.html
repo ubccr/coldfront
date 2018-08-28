@@ -14,9 +14,9 @@ Center Summary
 
 
 <!-- Start  Publications -->
-<div class="card mb-3">
-  <div class="card-header">
-    <h4 class="d-inline"><i class="fas fa-newspaper"></i> User Entered Publications </h4>
+<div class="card mb-3 border-primary">
+  <div class="card-header bg-primary text-white">
+    <i class="fas fa-newspaper"></i> User Entered Publications
   </div>
   <div class="card-body">
     <div id="chartPublications"></div>
@@ -28,14 +28,17 @@ Center Summary
 
 
 <!-- Start  Grants -->
-<div class="card mb-3">
-  <div class="card-header">
-    <h4 class="d-inline"><i class="fas fa-newspaper"></i> Grants </h4>
+<div class="card mb-3 border-primary">
+  <div class="card-header bg-primary text-white">
+    <i class="fas fa-trophy"></i> User Grants Summary
   </div>
   <div class="card-body">
     <div id="chartGrants"></div>
+    <hr>
     <strong> Grants Total:</strong> ${{grants_total}} <br>
-    <strong> Grants Total PI Only:</strong> ${{grants_total_pi_only}}
+    <strong> Grants Total PI Only:</strong> ${{grants_total_pi_only}} <br>
+    <strong> Grants Total CoPI Only:</strong> ${{grants_total_copi_only}} <br>
+    <strong> Grants Total Senior Personnel Only:</strong> ${{grants_total_sp_only}}
   </div>
   </div>
 </div>

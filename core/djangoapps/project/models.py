@@ -2,6 +2,7 @@ import textwrap
 
 from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator
+from django.core.exceptions import ValidationError
 from django.db import models
 import datetime
 from model_utils.models import TimeStampedModel
@@ -44,6 +45,10 @@ We do not have information about your research. Please provide a detailed descri
     force_project_review = models.BooleanField(default=False)
     project_requires_review = models.BooleanField(default=True)
     history = HistoricalRecords()
+
+    def clean(self):
+        if 'Auto-Import Project'.lower() in self.title.lower():
+            raise ValidationError('You must update the project title. You cannot have "Auto-Import Project" in the title.')
 
     @property
     def lastest_grant(self):
