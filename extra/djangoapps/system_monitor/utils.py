@@ -39,7 +39,7 @@ class SystemMonitor:
 
     def fetch_data(self):
         try:
-            r = requests.get(self.SYSTEM_MONITOR_ENDPOINT, timeout=0.001)
+            r = requests.get(self.SYSTEM_MONITOR_ENDPOINT, timeout=5)
         except Exception as e:
             r = None
 
