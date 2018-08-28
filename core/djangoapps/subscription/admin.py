@@ -130,7 +130,7 @@ class SubscriptionAttributeAdmin(SimpleHistoryAdmin):
     list_display = ('pk', 'project', 'pi', 'resource', 'subscription_status',
                     'subscription_attribute_type', 'value', 'usage', 'is_private', 'created', 'modified',)
     inlines = [SubscriptionAttributeUsageInline, ]
-    list_filter = (UsageValueFilter, 'subscription_attribute_type',)
+    list_filter = (UsageValueFilter, 'subscription_attribute_type', 'is_private')
     search_fields = (
         'subscription__project__pi__first_name',
         'subscription__project__pi__last_name',
