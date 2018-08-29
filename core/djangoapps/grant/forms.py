@@ -11,7 +11,7 @@ class GrantForm(ModelForm):
         exclude = ['project', ]
 
 
-class GrantDeleteUserForm(forms.Form):
+class GrantDeleteForm(forms.Form):
     title = forms.CharField(max_length=150, disabled=True)
     grant_number = forms.CharField(max_length=30, required=False, disabled=True)
     grant_end = forms.CharField(max_length=150, required=False, disabled=True)

@@ -1,0 +1,110 @@
+{% extends "templates/base.html" %}
+{% load crispy_forms_tags %}
+{% load staticfiles %}
+{% load humanize %}
+
+{% block title %}
+Center Summary
+{% endblock %}
+
+
+
+
+{% block content %}
+
+
+<!-- Start  Publications -->
+<div class="card mb-3 border-primary">
+  <div class="card-header bg-primary text-white">
+    <i class="fas fa-newspaper"></i> User Entered Publications
+  </div>
+  <div class="card-body">
+    <div id="chartPublications"></div>
+    <strong>Total Publications:</strong> {{total_publications_count}}
+  </div>
+</div>
+<!-- End Publications -->
+
+
+
+<!-- Start  Grants -->
+<div class="card mb-3 border-primary">
+  <div class="card-header bg-primary text-white">
+    <i class="fas fa-trophy"></i> User Grants Summary
+  </div>
+  <div class="card-body">
+    <div id="chartGrants"></div>
+    <hr>
+    <strong> Grants Total:</strong> ${{grants_total}} <br>
+    <strong> Grants Total PI Only:</strong> ${{grants_total_pi_only}} <br>
+    <strong> Grants Total CoPI Only:</strong> ${{grants_total_copi_only}} <br>
+    <strong> Grants Total Senior Personnel Only:</strong> ${{grants_total_sp_only}}
+  </div>
+  </div>
+</div>
+<!-- End Grants -->
+
+
+
+
+
+
+
+ <script>
+  $("#navbar-main > ul > li.active").removeClass("active")
+  $("#navbar-dashboard").addClass("active")
+
+
+
+    $(document).ready(function() { 
+    console.log('test!')
+     
+    drawPublications();
+    drawGrantsByAgency();
+
+    });
+  function drawPublications() {
+          var chart = c3.generate({
+              bindto: '#chartPublications',
+              data: publication_by_year_bar_chart_data,
+              legend: {
+                  show: false,
+                  item: {
+                      onclick: function(id) {}
+                  }
+              },
+              axis: {
+                  x: {
+                  label: {
+                    text: 'Year',
+                    position: 'outer-center'
+                  }
+                },
+                y: {
+                  label: 'Number of Publications',
+                  position: 'outer-middle'
+                }
+              }
+          });
+      }
+
+      function drawGrantsByAgency() {
+        var chart = c3.generate({
+            bindto: '#chartGrants',
+            data: grants_agency_chart_data,
+            donut: {
+                title: "Grants"
+            },
+            legend: {
+                item: {
+                    onclick: function(id) {}
+                }
+            }
+        });
+    }
+
+    var grants_agency_chart_data = {{ grants_agency_chart_data | safe }}
+    var publication_by_year_bar_chart_data = {{ publication_by_year_bar_chart_data | safe }}
+
+</script>
+{% endblock %}

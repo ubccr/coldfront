@@ -45,3 +45,14 @@ main {
     max-height: 58px !important;
     margin-bottom: 5px;
 }
+
+
+body > main > form > div.alert.alert-block.alert-danger > ul > li {
+
+}
+
+body > main > div > div.card.border-primary > div.card-body > form > div.alert.alert-block.alert-danger > ul > li {
+  list-style: none;
+  margin-top: 14px;
+  
+}

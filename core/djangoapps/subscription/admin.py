@@ -130,7 +130,7 @@ class SubscriptionAttributeAdmin(SimpleHistoryAdmin):
     list_display = ('pk', 'project', 'pi', 'resource', 'subscription_status',
                     'subscription_attribute_type', 'value', 'usage', 'is_private', 'created', 'modified',)
     inlines = [SubscriptionAttributeUsageInline, ]
-    list_filter = (UsageValueFilter, 'subscription_attribute_type', 'is_private')
+    list_filter = (UsageValueFilter, 'subscription_attribute_type', 'is_private', 'subscription__status')
     search_fields = (
         'subscription__project__pi__first_name',
         'subscription__project__pi__last_name',
@@ -147,7 +147,7 @@ class SubscriptionAttributeAdmin(SimpleHistoryAdmin):
             return 'N/A'
 
     def resource(self, obj):
-        return obj.subscription.resources.first()
+        return obj.subscription.get_parent_resource
 
     def subscription_status(self, obj):
         return obj.subscription.status

@@ -43,11 +43,11 @@ Subscription Review New Requests
         </tr>
         <tr>
           <th style="white-space:nowrap;">Grants Last Updated:</th>
-          <td>{{subscription.project.lastest_grant.created}}</td>
+          <td>{{subscription.project.latest_grant.created|date:"M-d-Y"|default:"No grants"}}</td>
         </tr>
         <tr>
           <th style="white-space:nowrap;">Publications Last Updated:</th>
-          <td>{{subscription.project.lastest_publication.created}}</td>
+          <td>{{subscription.project.latest_publication.created|date:"M-d-Y"|default:"No publications"}}</td>
         </tr>
       </table>
     </div>

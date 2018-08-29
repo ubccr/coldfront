@@ -4,21 +4,21 @@
 
 
 {% block title %}
-Delete Grants from Project
+Delete Publications from Project
 {% endblock %}
 
 
 
 {% block content %}
-<h1>Delete grants from project: {{project.title}}</h1> <hr>
+<h1>Delete publications from project: {{project.title}}</h1> <hr>
 {% if formset %}
 <div class="card border-light">
   <div class="card-body">
   
-    <form action="{% url 'grant-delete-grants' project.pk %}" method="post">
+    <form action="{% url 'publication-delete-publications' project.pk %}" method="post">
       {% csrf_token %}
       <div class="mb-3">
-        <button type="submit" class="btn btn-danger"><i class="fas fa-minus"></i> Delete Selected Grants from Project</button>
+        <button type="submit" class="btn btn-danger"><i class="fas fa-minus"></i> Delete Selected Publications from Project</button>
         <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left"></i> Back to Project</a>
         <br>
       </div>
@@ -30,8 +30,7 @@ Delete Grants from Project
                 <input type="checkbox" class="check" id="selectAll">
               </th>
               <th>Title</th>
-              <th>Grant Number</th>
-              <th>Grant End Date</th>
+              <th>Year</th>
             </tr>
           </thead>
           <tbody>
@@ -39,8 +38,7 @@ Delete Grants from Project
             <tr>
               <td>{{ form.selected }}</td>
               <td>{{ form.title.value }}</td>
-              <td>{{ form.grant_number.value }}</td>
-              <td>{{ form.grant_end.value }}</td>
+              <td>{{ form.year.value }}</td>
             </tr>
             {% endfor %}
           </tbody>
@@ -53,16 +51,14 @@ Delete Grants from Project
 {% else %} 
   <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left"></i> Back to project</a> 
   <div class="alert alert-info">
-    No grants to delete!
+    No publications to delete!
   </div>
 {% endif %}
 
 <script>
-$("#selectAll").click(function () {
-    $("input[name^='grantform-']").prop('checked', $(this).prop('checked'));
-});
 
-$("input[name^='grantform-']").click(function (ele) {
+
+$("input[name^='publicationform-']").click(function (ele) {
     var id = $(this).attr('id');
     if ( id != "selectAll") {
       $("#selectAll").prop('checked', false);

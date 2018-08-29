@@ -14,15 +14,22 @@ Review Project
 
 
 <div class="card-body">
+<p class="text-justify">CCR requires faculty to review their project information annually in order to renew their group’s accounts.  The information provided by researchers is compiled and used to help make the case to the University for continued investment in CCR.  Up-to-date and accurate information is crucial to our success.  Please review and, if necessary, update your project description, publication and grant information.  Please verify the user accounts in your group and remove any that should no longer have access to CCR resources.  Thank you!
+ </p>
+
   <div class="table-responsive">
     <table class="table table-bordered table-sm">
       <tr>
         <th style="white-space:nowrap;">Grants Last Updated:</th>
-        <td>{% if project.lastest_grant %} {{project.lastest_grant.created}} {% else %} Never {% endif %}</td>
+        <td>{{project.latest_grant.created|date:"M-d-Y"|default:"No grants"}}</td>
       </tr>
       <tr>
         <th style="white-space:nowrap;">Publications Last Updated:</th>
-        <td>{% if project.lastest_publication %} {{project.lastest_publication.created}} {% else %} Never {% endif %}</td>
+        <td>{{project.latest_publication.created|date:"M-d-Y"|default:"No publications"}}</td>
+      </tr>
+      <tr>
+        <th style="white-space:nowrap;">Users in project:</th>
+        <td>{{project_users}}</td>
       </tr>
     </table>
   </div>

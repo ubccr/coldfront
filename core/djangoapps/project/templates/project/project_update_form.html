@@ -10,6 +10,7 @@ Update Project
 
 
 {% block content %}
+
   <form method="post">{% csrf_token %}
     {{ form|crispy }}
     <input class="btn btn-primary" type="submit" value="Save" />
