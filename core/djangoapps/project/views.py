@@ -815,11 +815,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
 
-        if not project_obj.project_requires_review:
-            messages.error(request, 'You do not need to review this project.')
-            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
-
-        if not project_obj.project_needs_review and not project_obj.force_project_review :
+        if not project_obj.project_needs_review:
             messages.error(request, 'You do not need to review this project.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
@@ -853,14 +849,13 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 reason_for_not_updating_project=form_data.get('reason'),
                 status=project_review_status_choice)
 
-            if project_obj.force_project_review:
-                project_obj.force_project_review = False
-                project_obj.save()
+            project_obj.project_needs_review = False
+            project_obj.save()
 
             messages.success(request, 'Project reviewed successfully.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
-            messages.error(request, 'There was an error in your project review.')
+            messages.error(request, 'There was an error in processing  your project review.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
 
@@ -870,7 +865,6 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     template_name = 'project/project_review_list.html'
     prefetch_related = ['project', ]
     context_object_name = 'project_review_list'
-
 
     def get_queryset(self):
         return ProjectReview.objects.filter(status__name='Pending')

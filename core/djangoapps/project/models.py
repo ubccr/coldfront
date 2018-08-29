@@ -42,7 +42,7 @@ We do not have information about your research. Please provide a detailed descri
 
     field_of_science = models.ForeignKey(FieldOfScience, on_delete=models.CASCADE, default=FieldOfScience.DEFAULT_PK)
     status = models.ForeignKey(ProjectStatusChoice, on_delete=models.CASCADE)
-    force_project_review = models.BooleanField(default=False)
+    project_needs_review = models.BooleanField(default=False)
     project_requires_review = models.BooleanField(default=True)
     history = HistoricalRecords()
 
@@ -51,7 +51,7 @@ We do not have information about your research. Please provide a detailed descri
             raise ValidationError('You must update the project title. You cannot have "Auto-Import Project" in the title.')
 
     @property
-    def latest_project_review(self):
+    def last_project_review(self):
         if self.projectreview_set.exists():
             return self.projectreview_set.order_by('-created')[0]
         else:
@@ -72,47 +72,28 @@ We do not have information about your research. Please provide a detailed descri
             return None
 
     @property
-    def project_needs_review(self):
+    def get_project_review_status(self):
         now = datetime.datetime.now(datetime.timezone.utc)
+
+        if self.project_needs_review is True:
+            return True
 
         if self.project_requires_review is False:
             return False
 
-        if self.grant_set.exists():
-            latest_grant = self.grant_set.order_by('-created')[0]
-            grant_over_365_days = (now - latest_grant.created).days > 365
-        else:
-            grant_over_365_days = None
-            latest_grant = None
-
-        if self.publication_set.exists():
-            latest_publication = self.publication_set.order_by('-created')[0]
-            publication_over_365_days = (now - latest_publication.created).days > 365
-        else:
-            publication_over_365_days = None
-            latest_publication = None
-
         if self.projectreview_set.exists():
-            latest_review = self.projectreview_set.order_by('-created')[0]
-            latest_review_over_365_days = (now - latest_review.created).days > 365
+            last_review = self.projectreview_set.order_by('-created')[0]
+            last_review_over_365_days = (now - last_review.created).days > 365
         else:
-            latest_review_over_365_days = None
-            latest_review = None
+            last_review = None
 
         days_since_project_creation = (now - self.created).days
 
-        if latest_review and not latest_review_over_365_days:
-            return False
-        elif latest_review_over_365_days:
+        if days_since_project_creation > 365 and last_review is None:
             return True
-        elif grant_over_365_days and publication_over_365_days:
+
+        if last_review_over_365_days:
             return True
-        elif latest_review is None and latest_grant is None and latest_publication is None:
-            return True
-        elif days_since_project_creation > 365 and latest_review is None:
-            return True
-        else:
-            return False
 
     def __str__(self):
         return self.title
@@ -171,7 +152,6 @@ class ProjectUser(TimeStampedModel):
     status = models.ForeignKey(ProjectUserStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
     enable_notifications = models.BooleanField(default=True)
     history = HistoricalRecords()
-
 
     def __str__(self):
         return '%s %s (%s)' % (self.user.first_name, self.user.last_name, self.user.username)

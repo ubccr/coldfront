@@ -191,6 +191,7 @@ Project Detail
             <td>{{subscription.active_until}}</td>
             <td>
               <a href="{% url 'subscription-detail' subscription.pk %}"><i class="far fa-folder-open"></i></a>
+              {% if subscription.expires_in <= 60 and subscription.expires_in >= 0 %} <a href="{% url 'subscription-renew' subscription.pk %}"><span class="badge badge-warning"><i class="fas fa-redo-alt"></i> Expires in {{subscription.expires_in}} days</span></a>{% endif %}
             </td>
           </tr>
           {% endfor %}

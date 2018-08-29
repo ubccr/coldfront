@@ -147,7 +147,7 @@ class SubscriptionAttributeAdmin(SimpleHistoryAdmin):
             return 'N/A'
 
     def resource(self, obj):
-        return obj.subscription.resources.first()
+        return obj.subscription.get_parent_resource
 
     def subscription_status(self, obj):
         return obj.subscription.status

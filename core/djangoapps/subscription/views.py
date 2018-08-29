@@ -641,8 +641,12 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
             messages.error(request, 'You cannot renew a subscription with status {}.'.format(
                 subscription_obj.status.name))
             return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': subscription_obj.pk}))
-        else:
-            return super().dispatch(request, *args, **kwargs)
+
+        if subscription_obj.expires_in > 60:
+            messages.error(request, 'It is too soon to review your subscription.')
+            return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': subscription_obj.pk}))
+
+        return super().dispatch(request, *args, **kwargs)
 
     def get_users_in_subscription(self, subscription_obj):
         users_in_subscription = subscription_obj.subscriptionuser_set.exclude(

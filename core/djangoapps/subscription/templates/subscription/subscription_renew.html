@@ -10,7 +10,7 @@ Renew Subscription
 
 
 {% block content %}
-<h1>Renew subscription for project: {{subscription.project.title}}</h1> <hr>
+<h1>Renew subscription to {{subscription.get_parent_resource }} for project: {{subscription.project.title}}</h1> <hr>
 {% if formset %}
 <div class="card border-light">
   <div class="card-body">
