@@ -1,7 +1,11 @@
 from django import forms
 from django.shortcuts import get_object_or_404
 
-from core.djangoapps.project.models import Project, ProjectUserRoleChoice
+from core.djangoapps.project.models import Project, ProjectUserRoleChoice, ProjectReview
+import datetime
+from common.djangolibs.utils import import_from_settings
+
+EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL = import_from_settings('EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL')
 
 
 class ProjectSearchForm(forms.Form):
@@ -66,8 +70,35 @@ class ProjectReviewForm(forms.Form):
     def __init__(self, project_pk, *args, **kwargs):
         super().__init__(*args, **kwargs)
         project_obj = get_object_or_404(Project, pk=project_pk)
+        now = datetime.datetime.now(datetime.timezone.utc)
 
-        if not project_obj.project_needs_review:
+        if project_obj.grant_set.exists():
+            latest_grant = project_obj.grant_set.order_by('-created')[0]
+            grant_over_365_days = (now - latest_grant.created).days > 365
+        else:
+            grant_over_365_days = None
+            latest_grant = None
+
+        if project_obj.publication_set.exists():
+            latest_publication = project_obj.publication_set.order_by('-created')[0]
+            publication_over_365_days = (now - latest_publication.created).days > 365
+        else:
+            publication_over_365_days = None
+            latest_publication = None
+
+        if not (grant_over_365_days or publication_over_365_days):
             self.fields['reason'].widget = forms.HiddenInput()
 
-        self.fields['reason'].help_text = '<br/>Reason for not adding new grants and publications in the past year.'
+        self.fields['reason'].help_text = '<br/>Reason for not adding new grants and/or publications in the past year.'
+
+
+class ProjectReviewEmailForm(forms.Form):
+    email_body = forms.CharField(
+        required=True,
+        widget=forms.Textarea
+    )
+
+    def __init__(self, pk, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        project_review_obj = get_object_or_404(ProjectReview, pk=int(pk))
+        self.fields['email_body'].initial = 'Dear {} {} \n{}'.format(project_review_obj.project.pi.first_name, project_review_obj.project.pi.last_name, EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL)

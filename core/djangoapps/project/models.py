@@ -51,14 +51,21 @@ We do not have information about your research. Please provide a detailed descri
             raise ValidationError('You must update the project title. You cannot have "Auto-Import Project" in the title.')
 
     @property
-    def lastest_grant(self):
+    def latest_project_review(self):
+        if self.projectreview_set.exists():
+            return self.projectreview_set.order_by('-created')[0]
+        else:
+            return None
+
+    @property
+    def latest_grant(self):
         if self.grant_set.exists():
             return self.grant_set.order_by('-created')[0]
         else:
             return None
 
     @property
-    def lastest_publication(self):
+    def latest_publication(self):
         if self.publication_set.exists():
             return self.publication_set.order_by('-created')[0]
         else:
@@ -68,7 +75,7 @@ We do not have information about your research. Please provide a detailed descri
     def project_needs_review(self):
         now = datetime.datetime.now(datetime.timezone.utc)
 
-        if self.project_requires_review == False:
+        if self.project_requires_review is False:
             return False
 
         if self.grant_set.exists():
@@ -76,12 +83,14 @@ We do not have information about your research. Please provide a detailed descri
             grant_over_365_days = (now - latest_grant.created).days > 365
         else:
             grant_over_365_days = None
+            latest_grant = None
 
         if self.publication_set.exists():
             latest_publication = self.publication_set.order_by('-created')[0]
             publication_over_365_days = (now - latest_publication.created).days > 365
         else:
             publication_over_365_days = None
+            latest_publication = None
 
         if self.projectreview_set.exists():
             latest_review = self.projectreview_set.order_by('-created')[0]
@@ -90,13 +99,17 @@ We do not have information about your research. Please provide a detailed descri
             latest_review_over_365_days = None
             latest_review = None
 
+        days_since_project_creation = (now - self.created).days
+
         if latest_review and not latest_review_over_365_days:
             return False
         elif latest_review_over_365_days:
             return True
         elif grant_over_365_days and publication_over_365_days:
             return True
-        elif not latest_review and not grant_over_365_days and not publication_over_365_days:
+        elif latest_review is None and latest_grant is None and latest_publication is None:
+            return True
+        elif days_since_project_creation > 365 and latest_review is None:
             return True
         else:
             return False
@@ -109,6 +122,7 @@ We do not have information about your research. Please provide a detailed descri
 
         permissions = (
             ("can_view_all_projects", "Can see all projects"),
+            ("can_review_pending_project_reviews", "Can review pending project reviews"),
         )
 
 
@@ -127,7 +141,6 @@ class ProjectReview(TimeStampedModel):
     status = models.ForeignKey(ProjectReviewStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
     reason_for_not_updating_project = models.TextField(blank=True, null=True)
     history = HistoricalRecords()
-
 
 
 class ProjectUserRoleChoice(TimeStampedModel):
