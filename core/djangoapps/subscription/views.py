@@ -69,11 +69,17 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
         subscription_users = self.object.subscriptionuser_set.filter(
             status__name__in=['Active', 'Pending - Add', 'New', ]).order_by('user__username')
 
-        attributes_with_usage = [attribute for attribute in self.object.subscriptionattribute_set.all(
-        ) if hasattr(attribute, 'subscriptionattributeusage')]
 
-        attributes_without_usage = [attribute for attribute in self.object.subscriptionattribute_set.all(
-        ) if not hasattr(attribute, 'subscriptionattributeusage')]
+        if self.request.user.is_superuser:
+            attributes_with_usage = [attribute for attribute in self.object.subscriptionattribute_set.all() if hasattr(attribute, 'subscriptionattributeusage')]
+
+            attributes_without_usage = [attribute for attribute in self.object.subscriptionattribute_set.all() if not hasattr(attribute, 'subscriptionattributeusage')]
+
+        else:
+            attributes_with_usage = [attribute for attribute in self.object.subscriptionattribute_set.filter(is_private=False) if hasattr(attribute, 'subscriptionattributeusage')]
+
+            attributes_without_usage = [attribute for attribute in self.object.subscriptionattribute_set.filter(is_private=False) if not hasattr(attribute, 'subscriptionattributeusage')]
+
         guage_data = []
         for attribute in attributes_with_usage:
             guage_data.append(generate_guauge_data_from_usage(attribute.subscription_attribute_type.name,
@@ -251,7 +257,7 @@ class SubscriptionCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
 
-        if project_obj.project_needs_review or project_obj.force_project_review:
+        if project_obj.project_needs_review:
             messages.error(request, 'You cannot request a new subscription because you have to review your project first.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
