@@ -74,17 +74,17 @@ class ProjectReviewForm(forms.Form):
 
         if project_obj.grant_set.exists():
             latest_grant = project_obj.grant_set.order_by('-modified')[0]
-            grant_updated_over_365_days = (now - latest_grant.created).days > 365
+            grant_updated_in_last_year = (now - latest_grant.created).days < 365
         else:
-            grant_updated_over_365_days = None
+            grant_updated_in_last_year = None
 
         if project_obj.publication_set.exists():
             latest_publication = project_obj.publication_set.order_by('-created')[0]
-            publication_over_365_days = (now - latest_publication.created).days > 365
+            publication_updated_in_last_year = (now - latest_publication.created).days < 365
         else:
-            publication_over_365_days = None
+            publication_updated_in_last_year = None
 
-        if not (grant_updated_over_365_days or publication_over_365_days):
+        if grant_updated_in_last_year and publication_updated_in_last_year:
             self.fields['reason'].widget = forms.HiddenInput()
 
         self.fields['reason'].help_text = '<br/>Reason for not adding new grants and/or publications in the past year.'

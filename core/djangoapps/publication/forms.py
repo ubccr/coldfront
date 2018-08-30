@@ -3,8 +3,11 @@ from core.djangoapps.publication.models import PublicationSource
 
 
 class PublicationSearchForm(forms.Form):
-    source = forms.ModelChoiceField(queryset=PublicationSource.objects.all(), empty_label=None)
-    unique_id = forms.CharField(max_length=100, required=True)
+    unique_id = forms.CharField(label='Unique ID', max_length=100, required=True)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['unique_id'].help_text = '<br/>Enter unique ID such as DOI or Bibliographic Code'
 
 
 class PublicationDeleteForm(forms.Form):

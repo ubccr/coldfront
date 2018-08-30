@@ -257,11 +257,11 @@ class SubscriptionCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
 
-        if project_obj.project_needs_review:
+        if project_obj.get_project_needs_review:
             messages.error(request, 'You cannot request a new subscription because you have to review your project first.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
-        if project_obj.latest_project_review and project_obj.latest_project_review.status.name == 'Pending':
+        if project_obj.last_project_review and project_obj.last_project_review.status.name == 'Pending':
             messages.error(request, 'You cannot request a new subscription because your project review is in pending state.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
@@ -688,7 +688,7 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         formset = formset_factory(SubscriptionReviewUserForm, max_num=len(users_in_subscription))
         formset = formset(request.POST, initial=users_in_subscription, prefix='userform')
 
-        if formset.is_valid():
+        if not users_in_subscription or formset.is_valid():
             subscription_pending_status = SubscriptionStatusChoice.objects.get(name='Pending')
             subscription_inactive_status_choice = SubscriptionStatusChoice.objects.get(name='Inactive (Renewed)')
 
@@ -716,33 +716,34 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
                 status=subscription_user_active_status_choice)
             subscription_activate_user.send(sender=self.__class__, subscription_user_pk=subscription_user_obj.pk)
 
-            for form in formset:
-                user_form_data = form.cleaned_data
+            if users_in_subscription:
+                for form in formset:
+                    user_form_data = form.cleaned_data
 
-                user_obj = User.objects.get(username=user_form_data.get('username'))
+                    user_obj = User.objects.get(username=user_form_data.get('username'))
 
-                user_status = user_form_data.get('user_status')
+                    user_status = user_form_data.get('user_status')
 
-                if user_status == 'keep_in_subscription_and_project':
-                    subscription_user_obj = SubscriptionUser.objects.create(
-                        subscription=new_subscription_obj,
-                        user=user_obj,
-                        status=subscription_user_active_status_choice)
-                    subscription_activate_user.send(
-                        sender=self.__class__, subscription_user_pk=subscription_user_obj.pk)
+                    if user_status == 'keep_in_subscription_and_project':
+                        subscription_user_obj = SubscriptionUser.objects.create(
+                            subscription=new_subscription_obj,
+                            user=user_obj,
+                            status=subscription_user_active_status_choice)
+                        subscription_activate_user.send(
+                            sender=self.__class__, subscription_user_pk=subscription_user_obj.pk)
 
-                elif user_status == 'keep_in_project_only':
-                    continue
+                    elif user_status == 'keep_in_project_only':
+                        continue
 
-                elif user_status == 'remove_from_project':
-                    project_user_obj = ProjectUser.objects.get(
-                        project=old_subscription_obj.project,
-                        user=user_obj)
-                    project_user_obj.status = project_user_remove_status_choice
-                    project_user_obj.save()
+                    elif user_status == 'remove_from_project':
+                        project_user_obj = ProjectUser.objects.get(
+                            project=old_subscription_obj.project,
+                            user=user_obj)
+                        project_user_obj.status = project_user_remove_status_choice
+                        project_user_obj.save()
 
-                old_subscription_obj.status = subscription_inactive_status_choice
-                old_subscription_obj.save()
+            old_subscription_obj.status = subscription_inactive_status_choice
+            old_subscription_obj.save()
 
             messages.success(request, 'Subscription renewed successfully')
-            return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': new_subscription_obj.pk}))
+            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': new_subscription_obj.project.pk}))

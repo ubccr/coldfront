@@ -11,8 +11,7 @@ Project Detail
 
 {% block content %}
 
-
-{% if is_allowed_to_update_project and project.project_needs_review or project.force_project_review %}
+{% if is_allowed_to_update_project and project.get_project_needs_review %}
 <div class="alert alert-warning">
   <strong>Warning!</strong> You need to review this project. <a href="{% url 'project-review' project.pk %}">Review Project</a>
 </div>
@@ -69,6 +68,7 @@ Project Detail
     <p class="card-text text-justify"><strong>Description: </strong>{{ project.description }}</p>
     <p class="card-text text-justify"><strong>Field of Science: </strong>{{ project.field_of_science }}</p>
     <p class="card-text text-justify"><strong>Status: </strong>{{ project.status }}</p>
+    <p class="card-text text-justify"><strong>Created: </strong>{{ project.created|date:"M. d, Y" }}</p>
   </div>
 </div>
 
@@ -188,10 +188,10 @@ Project Detail
             {% else %} 
               <td class="text-info">{{ subscription.status.name }}</td>
             {% endif %}
-            <td>{{subscription.active_until}}</td>
+            <td>{{subscription.active_until|date:"M. d, Y"}}</td>
             <td>
               <a href="{% url 'subscription-detail' subscription.pk %}"><i class="far fa-folder-open"></i></a>
-              {% if subscription.expires_in <= 60 and subscription.expires_in >= 0 %} <a href="{% url 'subscription-renew' subscription.pk %}"><span class="badge badge-warning"><i class="fas fa-redo-alt"></i> Expires in {{subscription.expires_in}} days</span></a>{% endif %}
+              {% if subscription.status.name == 'Active' and subscription.expires_in <= 60 and subscription.expires_in >= 0 %} <a href="{% url 'subscription-renew' subscription.pk %}"><span class="badge badge-warning"><i class="fas fa-redo-alt"></i> Expires in {{subscription.expires_in}} day{{subscription.expires_in|pluralize}}</span></a>{% endif %}
             </td>
           </tr>
           {% endfor %}
@@ -243,8 +243,8 @@ Project Detail
             <td style="white-space:nowrap;">{{ grant.grant_pi }}</td>
             <td>{{ grant.role}}</td>
             <td>{{ grant.total_amount_awarded|intcomma}}</td>
-            <td>{{ grant.grant_start }}</td>
-            <td>{{ grant.grant_end }}</td>
+            <td>{{ grant.grant_start|date:"M. d, Y" }}</td>
+            <td>{{ grant.grant_end|date:"M. d, Y" }}</td>
             <td><a href="{% url 'grant-update' grant.id %}"><i class="far fa-edit"></i></a></td>
           </tr>
           {% endfor %}

@@ -12,7 +12,7 @@ Add Publication to Project
 {% block content %}
 <h1>Add publication to project: {{project.title}}</h1> <hr>
 
-<div class="row">
+
 
 <div class="col">
   <form id="post-form">
@@ -22,25 +22,16 @@ Add Publication to Project
   </form>
 </div>
 
-</div>
+
 
 <br>
-<div class="row">
+
 <div class="col" id="search_results" >
     <div class="card border-light">
       <div class="card-body">
-        <div id="search_results_inner"></div>
+        <div id="search_results_inner"><a class="btn btn-secondary" href="{% url 'project-detail' project_pk %}" role="button">Back to Project</a></div>
       </div>
     </div>
-</div>
-</div>
-<div class="row">
-<div class="col" id="selected_users" >
-    <div class="card border-light">
-      <div class="card-body">
-      </div>
-    </div>
-</div>
 </div>
 
 
@@ -62,15 +53,13 @@ Add Publication to Project
 
   function create_post() {
 
-    source = $('#id_source').val().trim();
     unique_id = $('#id_unique_id').val().trim();
   
     var pk = "{{ project.pk }}"
     $.ajax({
         url : "/publication/publication-search-result/" + pk +"/", // the endpoint
         type : "POST", // http method
-        data : { 
-          source : source, 
+        data : {
           unique_id : unique_id, 
           csrfmiddlewaretoken: "{{ csrf_token }}"
         }, // data sent with the post request
@@ -92,7 +81,6 @@ Add Publication to Project
 };
 
 $(document).ready(function(){
-  $('#search_results').hide();
   $('[data-toggle="popover"]').popover(); 
 });
 </script>

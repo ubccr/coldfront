@@ -72,7 +72,7 @@ We do not have information about your research. Please provide a detailed descri
             return None
 
     @property
-    def get_project_review_status(self):
+    def get_project_needs_review(self):
         now = datetime.datetime.now(datetime.timezone.utc)
 
         if self.project_needs_review is True:
@@ -92,7 +92,7 @@ We do not have information about your research. Please provide a detailed descri
         if days_since_project_creation > 365 and last_review is None:
             return True
 
-        if last_review_over_365_days:
+        if last_review and last_review_over_365_days:
             return True
 
     def __str__(self):

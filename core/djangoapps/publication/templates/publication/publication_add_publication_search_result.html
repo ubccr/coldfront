@@ -20,7 +20,7 @@
       </tr> 
       <tr>
         <th>Link</th>
-        <td><a target="_blank" href="{{source_obj.url}}/{{unique_id}}">{{unique_id}}</a></td>
+        <td><a target="_blank" href="{{source.url}}/{{unique_id}}">{{unique_id}}</a></td>
       </tr>           
     </tbody>
   </table>
@@ -33,7 +33,7 @@
   <input id="title" type="hidden" name="title" value="{{title}}">
   <input id="author" type="hidden" name="author" value="{{author}}">
   <input id="year" type="hidden" name="year" value="{{year}}">
-  <input id="source" type="hidden" name="source" value="{{source}}">
+  <input id="source_pk" type="hidden" name="source" value="{{source.pk}}">
   <input id="unique_id" type="hidden" name="unique_id" value="{{unique_id}}">
 </form>
 

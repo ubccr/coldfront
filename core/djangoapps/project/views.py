@@ -815,12 +815,16 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
 
-        if not project_obj.project_needs_review:
+        if not project_obj.get_project_needs_review:
             messages.error(request, 'You do not need to review this project.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
         if 'Auto-Import Project'.lower() in project_obj.title.lower():
             messages.error(request, 'You must update the project title before reviewing your project. You cannot have "Auto-Import Project" in the title.')
+            return HttpResponseRedirect(reverse('project-update', kwargs={'pk': project_obj.pk}))
+
+        if 'We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!' in project_obj.description:
+            messages.error(request, 'You must update the project description before reviewing your project.')
             return HttpResponseRedirect(reverse('project-update', kwargs={'pk': project_obj.pk}))
 
         return super().dispatch(request, *args, **kwargs)
@@ -900,6 +904,7 @@ class ProjectReviewCompleteView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         project_review_status_completed_obj = ProjectReviewStatusChoice.objects.get(name='Completed')
         project_review_obj.status = project_review_status_completed_obj
+        project_review_obj.project.project_needs_review = False
         project_review_obj.save()
 
         messages.success(request, 'Project review for {} has been completed'.format(
