@@ -5,7 +5,7 @@ from django.contrib import admin
 
 from core.djangoapps.project.models import (Project, ProjectStatusChoice,
                                             ProjectUser, ProjectUserRoleChoice,
-                                            ProjectUserStatusChoice, ProjectReview)
+                                            ProjectUserStatusChoice, ProjectReview, ProjectUserMessage, ProjectAdminComment)
 
 
 from simple_history.admin import SimpleHistoryAdmin
@@ -72,15 +72,30 @@ class ProjectUserInline(admin.TabularInline):
     readonly_fields = ['user', 'project', ]
     extra = 0
 
+
+class ProjectAdminCommentInline(admin.TabularInline):
+    model = ProjectAdminComment
+    extra = 0
+    fields = ('comment', 'author', 'created'),
+    readonly_fields = ('author', 'created')
+
+
+class ProjectUserMessageInline(admin.TabularInline):
+    model = ProjectUserMessage
+    extra = 0
+    fields = ('message', 'author', 'created'),
+    readonly_fields = ('author', 'created')
+
+
 @admin.register(Project)
 class ProjectAdmin(SimpleHistoryAdmin):
-    fields_change = ('title', 'pi', 'description', 'status', 'project_requires_review', 'project_needs_review', 'created', 'modified', )
+    fields_change = ('title', 'pi', 'description', 'status', 'requires_review', 'force_review', 'created', 'modified', )
     readonly_fields_change = ('pi', 'created', 'modified', )
     list_display = ('pk', 'title', 'PI', 'created', 'modified', 'status')
     search_fields = ['pi__username', 'projectuser__user__username',
                      'projectuser__user__last_name', 'projectuser__user__last_name', 'title']
-    list_filter = ('status', 'project_needs_review')
-    inlines_change = [ProjectUserInline, CommentInline]
+    list_filter = ('status', 'force_review')
+    inlines = [ProjectUserInline, ProjectAdminCommentInline, ProjectUserMessageInline]
 
     def PI(self, obj):
         return '{} {} ({})'.format(obj.pi.first_name, obj.pi.last_name, obj.pi.username)
@@ -101,9 +116,18 @@ class ProjectAdmin(SimpleHistoryAdmin):
     def get_inline_instances(self, request, obj=None):
         if obj is None:
             # We are adding an object
-            return super().get_inline_instances(request)
+            return []
         else:
-            return [inline(self.model, self.admin_site) for inline in self.inlines_change]
+            return super().get_inline_instances(request)
+
+    def save_formset(self, request, form, formset, change):
+        if formset.model in [ProjectAdminComment, ProjectUserMessage]:
+            instances = formset.save(commit=False)
+            for instance in instances:
+                instance.author = request.user
+                instance.save()
+        else:
+            formset.save()
 
 
 @admin.register(ProjectReview)

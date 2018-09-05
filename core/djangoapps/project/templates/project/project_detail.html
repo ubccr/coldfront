@@ -11,7 +11,7 @@ Project Detail
 
 {% block content %}
 
-{% if is_allowed_to_update_project and project.get_project_needs_review %}
+{% if is_allowed_to_update_project and project.needs_review %}
 <div class="alert alert-warning">
   <strong>Warning!</strong> You need to review this project. <a href="{% url 'project-review' project.pk %}">Review Project</a>
 </div>
@@ -300,6 +300,40 @@ Project Detail
   </div>
 </div>
 <!-- End Project Grants -->
+
+
+<!-- Start Admin Messages -->
+<div class="card mb-3">
+  <div class="card-header">
+  <h4 class="d-inline"><i class="fas fa-users"></i> Messages from System Administrators </h4> <span class="badge badge-secondary">{{project.projectusermessage_set.count}}</span>
+  </div>
+  <div class="card-body">
+    {% if project.projectusermessage_set.all %}
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Comment</th>
+              <th>Administrator</th>
+              <th>Last Modified</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for message in project.projectusermessage_set.all %}
+            <tr>
+              <td>{{ message.message }}</td>
+              <td>{{ message.author.first_name }} {{ message.author.last_name }}</td>
+              <td>{{ message.modified }}</td>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %} 
+      <div class="alert alert-info" role="alert"><i class="fa fa-info-circle"></i> There are no messages from system administrators.</div>
+    {% endif %}
+    
+  </div>
+</div>
 
 <script>
 

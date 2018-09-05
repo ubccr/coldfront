@@ -29,6 +29,15 @@ User Profile
           <td>{{user.email}}</td>
         </tr>  
         <tr>
+          <th>PI Status:</th>
+          <td>  {% if user.userprofile.is_pi %}
+                  <span class="badge badge-success"> <i class="fas fa-check"></i> 
+                {% else %} 
+                  <span class="badge badge-danger"><i class="fas fa-times"></i></span>
+                {% endif %}
+          </td>
+        </tr>  
+        <tr>
           <th>Last Login:</th>
           <td>{{user.last_login}}</td>
         </tr>    

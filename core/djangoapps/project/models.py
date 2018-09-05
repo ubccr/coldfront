@@ -42,13 +42,16 @@ We do not have information about your research. Please provide a detailed descri
 
     field_of_science = models.ForeignKey(FieldOfScience, on_delete=models.CASCADE, default=FieldOfScience.DEFAULT_PK)
     status = models.ForeignKey(ProjectStatusChoice, on_delete=models.CASCADE)
-    project_needs_review = models.BooleanField(default=False)
-    project_requires_review = models.BooleanField(default=True)
+    force_review = models.BooleanField(default=False)
+    requires_review = models.BooleanField(default=True)
     history = HistoricalRecords()
 
     def clean(self):
         if 'Auto-Import Project'.lower() in self.title.lower():
             raise ValidationError('You must update the project title. You cannot have "Auto-Import Project" in the title.')
+
+        if 'We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!' in self.description:
+            raise ValidationError('You must update the project description.')
 
     @property
     def last_project_review(self):
@@ -72,13 +75,13 @@ We do not have information about your research. Please provide a detailed descri
             return None
 
     @property
-    def get_project_needs_review(self):
+    def needs_review(self):
         now = datetime.datetime.now(datetime.timezone.utc)
 
-        if self.project_needs_review is True:
+        if self.force_review is True:
             return True
 
-        if self.project_requires_review is False:
+        if self.requires_review is False:
             return False
 
         if self.projectreview_set.exists():
@@ -87,13 +90,15 @@ We do not have information about your research. Please provide a detailed descri
         else:
             last_review = None
 
-        days_since_project_creation = (now - self.created).days
+        days_since_creation = (now - self.created).days
 
-        if days_since_project_creation > 365 and last_review is None:
+        if days_since_creation > 365 and last_review is None:
             return True
 
         if last_review and last_review_over_365_days:
             return True
+
+        return False
 
     def __str__(self):
         return self.title
@@ -105,6 +110,24 @@ We do not have information about your research. Please provide a detailed descri
             ("can_view_all_projects", "Can see all projects"),
             ("can_review_pending_project_reviews", "Can review pending project reviews"),
         )
+
+
+class ProjectAdminComment(TimeStampedModel):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    comment = models.TextField()
+
+    def __str__(self):
+        return self.comment
+
+
+class ProjectUserMessage(TimeStampedModel):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    message = models.TextField()
+
+    def __str__(self):
+        return self.message
 
 
 class ProjectReviewStatusChoice(TimeStampedModel):

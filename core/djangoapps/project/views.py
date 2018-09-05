@@ -7,13 +7,16 @@ from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.forms import formset_factory
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
+
+
+from common.djangolibs.utils import get_domain_url
 
 from django.conf import settings
 from common.djangolibs.utils import import_from_settings
@@ -39,10 +42,13 @@ from core.djangoapps.subscription.signals import (subscription_activate_user,
                                                   subscription_remove_user)
 from core.djangoapps.grant.models import Grant
 from core.djangoapps.publication.models import Publication
+from django.template.loader import render_to_string
 
 
 EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings('EMAIL_DIRECTOR_EMAIL_ADDRESS')
 EMAIL_DEVELOPMENT_EMAIL_LIST = import_from_settings('EMAIL_DEVELOPMENT_EMAIL_LIST')
+EMAIL_SUBJECT_PREFIX = import_from_settings('EMAIL_SUBJECT_PREFIX')
+EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
 
 
 class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
@@ -65,9 +71,9 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             return True
 
         messages.error(self.request, 'You do not have permission to view the previous page.')
+        return False
 
     def get_context_data(self, **kwargs):
-
         context = super().get_context_data(**kwargs)
         # Can the user update the project?
         if self.request.user.is_superuser:
@@ -815,7 +821,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
 
-        if not project_obj.get_project_needs_review:
+        if not project_obj.needs_review:
             messages.error(request, 'You do not need to review this project.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
@@ -853,8 +859,23 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 reason_for_not_updating_project=form_data.get('reason'),
                 status=project_review_status_choice)
 
-            project_obj.project_needs_review = False
+            project_obj.force_review = False
             project_obj.save()
+
+            domain_url = get_domain_url(self.request)
+            url = '{}{}'.format(domain_url, reverse('project-review-list'))
+            template_context = {'url': url}
+
+            email_subject = EMAIL_SUBJECT_PREFIX + ' New project review has been submitted'
+            email_body = render_to_string('email_templates/new_project_review.txt', template_context)
+            email_sender = EMAIL_SENDER
+
+            if settings.DEBUG and settings.DEVELOP:
+                email_receiver_list = EMAIL_DEVELOPMENT_EMAIL_LIST
+            else:
+                email_receiver_list = [EMAIL_DIRECTOR_EMAIL_ADDRESS, ]
+
+            send_mail(email_subject, email_body, email_sender, email_receiver_list, fail_silently=False)
 
             messages.success(request, 'Project reviewed successfully.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))

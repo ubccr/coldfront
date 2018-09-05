@@ -1,0 +1,2 @@
+A subscription has been renewed for {{pi}} - {{resource}}. Please activate the subscription:
+{{url}}
