@@ -86,8 +86,12 @@ class ProjectReviewForm(forms.Form):
 
         if grant_updated_in_last_year and publication_updated_in_last_year:
             self.fields['reason'].widget = forms.HiddenInput()
+        else:
+            self.fields['reason'].required = True
+
 
         self.fields['reason'].help_text = '<br/>Reason for not adding new grants and/or publications in the past year.'
+
 
 
 class ProjectReviewEmailForm(forms.Form):
