@@ -67,7 +67,11 @@ Project Detail
       <a href="mailto:{{ project.pi.email }} "><i class="far fa-envelope"></i></a></h4>
     <p class="card-text text-justify"><strong>Description: </strong>{{ project.description }}</p>
     <p class="card-text text-justify"><strong>Field of Science: </strong>{{ project.field_of_science }}</p>
-    <p class="card-text text-justify"><strong>Status: </strong>{{ project.status }}</p>
+    <p class="card-text text-justify"><strong>Project Status: </strong>{{ project.status }} 
+        {% if project.last_project_review and  project.last_project_review.status.name == 'Pending'%} 
+          <span class="badge badge-pill badge-info">project review pending</span> 
+        {% endif %}
+    </p> 
     <p class="card-text text-justify"><strong>Created: </strong>{{ project.created|date:"M. d, Y" }}</p>
   </div>
 </div>
@@ -83,7 +87,7 @@ Project Detail
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
         <a class="btn btn-primary" href="#" role="button"><i class="far fa-envelope"></i> Email Project Users</a>
         <a class="btn btn-success" href="{% url 'project-add-users-search' project.id %}" role="button"><i class="fas fa-user-plus"></i> Add Users</a>
-        <a class="btn btn-danger" href="{% url 'project-delete-users' project.id %}" role="button"><i class="fas fa-user-times"></i></i> Delete Users</a>    
+        <a class="btn btn-danger" href="{% url 'project-delete-users' project.id %}" role="button"><i class="fas fa-user-times"></i></i> Remove Users</a>    
       {% endif %}
     </div>
 
