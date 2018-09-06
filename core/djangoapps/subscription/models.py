@@ -58,8 +58,12 @@ class Subscription(TimeStampedModel):
         for attribute in self.subscriptionattribute_set.all():
 
             if hasattr(attribute, 'subscriptionattributeusage'):
-                percent = round(float(attribute.subscriptionattributeusage.value) /
-                                float(attribute.value) * 10000) / 100
+                try:
+                    percent = round(float(attribute.subscriptionattributeusage.value) /
+                                    float(attribute.value) * 10000) / 100
+                except ValueError:
+                    percent = 'Invalid Value'
+
                 string = '{}: {}/{} ({} %) <br>'.format(
                     attribute.subscription_attribute_type.name,
                     attribute.subscriptionattributeusage.value,

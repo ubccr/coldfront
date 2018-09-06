@@ -361,7 +361,7 @@ class SubscriptionCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         }
 
         email_subject = EMAIL_SUBJECT_PREFIX + ' New subscription request: {} - {}'.format(pi_name, resource_name)
-        email_body = render_to_string('email_templates/new_subscription_request.txt', template_context)
+        email_body = render_to_string('email/new_subscription_request.txt', template_context)
         email_sender = EMAIL_SENDER
 
         if settings.DEBUG and settings.DEVELOP:
@@ -635,7 +635,7 @@ class SubscriptionApproveRequestView(LoginRequiredMixin, UserPassesTestMixin, Vi
         }
 
         email_subject = EMAIL_SUBJECT_PREFIX + ' Subscription Activated'
-        email_body = render_to_string('email_templates/subscription_activated.txt', template_context)
+        email_body = render_to_string('email/subscription_activated.txt', template_context)
         email_sender = EMAIL_SENDER
 
         if settings.DEBUG and settings.DEVELOP:
@@ -693,7 +693,7 @@ class SubscriptionDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View)
         }
 
         email_subject = EMAIL_SUBJECT_PREFIX + ' Subscription Denied'
-        email_body = render_to_string('email_templates/subscription_denied.txt', template_context)
+        email_body = render_to_string('email/subscription_denied.txt', template_context)
         email_sender = EMAIL_SENDER
 
         if settings.DEBUG and settings.DEVELOP:
@@ -859,7 +859,7 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
             }
 
             email_subject = EMAIL_SUBJECT_PREFIX + ' Subscription renewed: {} - {}'.format(pi_name, resource_name)
-            email_body = render_to_string('email_templates/subscription_renewed.txt', template_context)
+            email_body = render_to_string('email/subscription_renewed.txt', template_context)
             email_sender = EMAIL_SENDER
 
             if settings.DEBUG and settings.DEVELOP:

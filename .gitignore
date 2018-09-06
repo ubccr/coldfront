@@ -1,4 +1,5 @@
 *.py[cod]
+*.swp
 dist
 *._*
 *.DS_Store
@@ -7,5 +8,6 @@ venv/
 static_root/
 db.sqlite3
 local_data/
+site/
 local_settings.py
 local_strings.py
