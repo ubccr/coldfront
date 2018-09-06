@@ -1,4 +1,5 @@
 import datetime
+import logging
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -10,6 +11,7 @@ from core.djangoapps.project.models import Project
 from core.djangoapps.resources.models import Resource
 from simple_history.models import HistoricalRecords
 
+logger = logging.getLogger(__name__)
 
 class SubscriptionStatusChoice(TimeStampedModel):
     name = models.CharField(max_length=64)
@@ -63,6 +65,7 @@ class Subscription(TimeStampedModel):
                                     float(attribute.value) * 10000) / 100
                 except ValueError:
                     percent = 'Invalid Value'
+                    logger.error("Subscription attribute '%s' is not an int but has a usage", attribute.subscription_attribute_type.name)
 
                 string = '{}: {}/{} ({} %) <br>'.format(
                     attribute.subscription_attribute_type.name,

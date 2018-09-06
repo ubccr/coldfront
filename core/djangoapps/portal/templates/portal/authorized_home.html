@@ -43,7 +43,7 @@
               {%  elif subscription.expires_in >= 0 and  subscription.expires_in <= 30 %}
                   <td><a href="{% url 'subscription-detail' subscription.id %}"  class="btn btn-danger btn-block">Expires in <span class="badge badge-light">{{subscription.expires_in}}</span> day{{subscription.expires_in|pluralize }}</a></td>
               {% elif subscription.expires_in > 30 and subscription.expires_in <= 90 %}
-                  <td><a href=""  class="btn btn-warning btn-block">Expires in <span class="badge badge-light">{{subscription.expires_in}}</span> day{{subscription.expires_in|pluralize }}</a></td>
+                  <td><a href="{% url 'subscription-detail' subscription.id %}"  class="btn btn-warning btn-block">Expires in <span class="badge badge-light">{{subscription.expires_in}}</span> day{{subscription.expires_in|pluralize }}</a></td>
               {% elif subscription.status.name == "Pending" %}
                   <td><a href="{% url 'subscription-detail' subscription.id %}"  class="btn btn-info btn-block">{{subscription.status}}</a></td>
               {% elif subscription.status.name == "Active" %}
