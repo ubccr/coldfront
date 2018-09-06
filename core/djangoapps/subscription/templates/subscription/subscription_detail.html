@@ -46,15 +46,15 @@ Subscription Detail
         </tr>
         <tr>
           <th style="white-space:nowrap;">Active Until:</th>
-          <td>{{ subscription.active_until }} {% if subscription.expires_in <= 60 and subscription.expires_in >= 0 %} <a href="{% url 'subscription-renew' subscription.pk %}"><span class="badge badge-warning"><i class="fas fa-redo-alt"></i> Expires in {{subscription.expires_in}} days</span></a>{% endif %}</td>
+          <td>{{ subscription.active_until }} {% if subscription.status.name == 'Active' and subscription.expires_in <= 60 and subscription.expires_in >= 0 %} <a href="{% url 'subscription-renew' subscription.pk %}"><span class="badge badge-warning"><i class="fas fa-redo-alt"></i> Expires in {{subscription.expires_in}} day{{subscription.expires_in|pluralize}}</span></a>{% endif %}</td>
         </tr>
         <tr>
           <th style="white-space:nowrap;">Created:</th>
-          <td>{{ subscription.created }}</td>
+          <td>{{ subscription.created|date:"M. d, Y" }}</td>
         </tr>
         <tr>
           <th style="white-space:nowrap;">Last Modified:</th>
-          <td>{{ subscription.modified }}</td>
+          <td>{{ subscription.modified|date:"M. d, Y" }}</td>
         </tr>
       </table>
     </div>
@@ -79,10 +79,17 @@ Subscription Detail
         </thead>
         <tbody>
           {% for attribute in attributes_without_usage %}
-          <tr>
-            <td>{{attribute}}</td>
-            <td>{{attribute.value}}</td>
-          </tr>
+            {% if attribute.is_private %}
+              <tr style="background-color:#eee">
+                <td> <i class="fas fa-lock"></i> {{attribute}}</td>
+                <td>{{attribute.value}}</td>
+              </tr>
+            {% else %}
+               <tr>
+                <td>{{attribute}}</td>
+                <td>{{attribute.value}}</td>
+              </tr>
+            {% endif %}
           {% endfor %}
         </tbody>
       </table>
@@ -105,14 +112,14 @@ Subscription Detail
 {% endif %}
 
 
-<!-- Start Project Users -->
+<!-- Start Subscription Users -->
 <div class="card mb-3">
   <div class="card-header">
   <h4 class="d-inline"><i class="fas fa-users"></i> Users in Subscription </h4> <span class="badge badge-secondary">{{subscription_users.count}}</span>
     <div class="float-right">
       {% if subscription.project.status.name != 'Archived' and is_allowed_to_update_project and subscription.status.name in 'Active,Approved,New,Pending' %}
-        <a class="btn btn-primary" href="{% url 'subscription-add-users' subscription.pk %}" role="button"><i class="fas fa-user-plus"></i> Add Users</a>
-        <a class="btn btn-primary" href="{% url 'subscription-delete-users' subscription.pk %}" role="button"><i class="fas fa-user-times"></i></i> Delete Users</a>    
+        <a class="btn btn-success" href="{% url 'subscription-add-users' subscription.pk %}" role="button"><i class="fas fa-user-plus"></i> Add Users</a>
+        <a class="btn btn-danger" href="{% url 'subscription-delete-users' subscription.pk %}" role="button"><i class="fas fa-user-times"></i></i> Delete Users</a>    
       {% endif %}
     </div>
 
@@ -142,7 +149,7 @@ Subscription Detail
             {% else %}
               <td class="text-info">{{ user.status.name }}</td>
             {% endif %}
-            <td>{{ user.modified }}</td>
+            <td>{{ user.modified|date:"M. d, Y" }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -152,6 +159,38 @@ Subscription Detail
   </div>
 </div>
 
+<!-- Start Admin Messages -->
+<div class="card mb-3">
+  <div class="card-header">
+  <h4 class="d-inline"><i class="fas fa-users"></i> Messages from System Administrators </h4> <span class="badge badge-secondary">{{subscription.subscriptionusermessage_set.count}}</span>
+  </div>
+  <div class="card-body">
+    {% if subscription.subscriptionusermessage_set.all %}
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Comment</th>
+              <th>Administrator</th>
+              <th>Last Modified</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for message in subscription.subscriptionusermessage_set.all %}
+            <tr>
+              <td>{{ message.message }}</td>
+              <td>{{ message.author.first_name }} {{ message.author.last_name }}</td>
+              <td>{{ message.modified }}</td>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %} 
+      <div class="alert alert-info" role="alert"><i class="fa fa-info-circle"></i> There are no messages from system administrators.</div>
+    {% endif %}
+    
+  </div>
+</div>
 
 
 <script>

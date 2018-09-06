@@ -3,6 +3,7 @@ from django.contrib import admin
 from core.djangoapps.publication.models import (PublicationSource, Publication)
 from simple_history.admin import SimpleHistoryAdmin
 
+
 @admin.register(PublicationSource)
 class PublicationSourceAdmin(SimpleHistoryAdmin):
     list_display = ('name', 'url',)

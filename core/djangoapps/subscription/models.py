@@ -36,7 +36,7 @@ class Subscription(TimeStampedModel):
 
         permissions = (
             ('can_view_all_subscriptions', 'Can see all subscriptions'),
-            ('can_review_pending_subscriptions', 'Can review pending subscriptions'),
+            ('can_review_subscription_requests', 'Can review subscription requests'),
         )
 
     def clean(self):
@@ -80,6 +80,26 @@ class Subscription(TimeStampedModel):
 
     def __str__(self):
         return "%s (%s)" % (self.resources.first().name, self.project.pi)
+
+
+class SubscriptionAdminComment(TimeStampedModel):
+    """ SubscriptionAttributeType. """
+    subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    comment = models.TextField()
+
+    def __str__(self):
+        return self.comment
+
+
+class SubscriptionUserMessage(TimeStampedModel):
+    """ SubscriptionAttributeType. """
+    subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    message = models.TextField()
+
+    def __str__(self):
+        return self.message
 
 
 class AttributeType(TimeStampedModel):

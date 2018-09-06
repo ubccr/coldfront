@@ -67,7 +67,7 @@
         <td><a target="_blank" href="/subscription/{{subscription.id}}/">{{ subscription.id }}</a></td>
         <td style="white-space:nowrap;"><a target="_blank" href="/project/{{subscription.project.id}}/">{{ subscription.project.title|truncatechars:50 }}</a></td>
         <td style="white-space:nowrap;">{{subscription.project.pi.first_name}} {{subscription.project.pi.last_name}} ({{subscription.project.pi.username}})</td>
-        <td style="white-space:nowrap;">{{ subscription.resources.first }}</td>
+        <td style="white-space:nowrap;">{{ subscription.get_parent_resource }}</td>
         <td style="white-space:nowrap;">{{ subscription.status.name }}</td>
         <td style="white-space:nowrap;">{{ subscription.active_until }}</td>
       </tr>

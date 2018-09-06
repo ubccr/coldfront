@@ -48,7 +48,8 @@ main {
 
 
 body > main > form > div.alert.alert-block.alert-danger > ul > li {
-
+  list-style: none;
+  margin-top: 14px;
 }
 
 body > main > div > div.card.border-primary > div.card-body > form > div.alert.alert-block.alert-danger > ul > li {
@@ -56,3 +57,4 @@ body > main > div > div.card.border-primary > div.card-body > form > div.alert.a
   margin-top: 14px;
   
 }
+

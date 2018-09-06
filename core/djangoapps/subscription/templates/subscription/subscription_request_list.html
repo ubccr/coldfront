@@ -1,0 +1,60 @@
+{% extends "templates/base.html" %} 
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+
+
+{% block title %}
+Subscription Review New and Pending Requests
+{% endblock %}
+
+
+{% block content %}
+
+
+<h1>New and Pending Subscription Requests</h1>
+{% if subscription_list %}
+<div class="table-responsive">
+  <table class="table table-sm">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Date Requested</th>
+        <th>Project Title</th>
+        <th>PI</th>
+        <th>Resource</th>
+        <th style="white-space:nowrap;">Project Review Status</th>
+        <th>Subscription Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for subscription in subscription_list %}
+      <tr>
+        <td><a href="{% url 'subscription-detail' subscription.pk %}">{{subscription.pk}}</a></td>
+        <td >{{ subscription.created|date:"M. d, Y" }}</td>
+        <td><a href="{% url 'project-detail' subscription.project.pk %}">{{subscription.project.title|truncatechars:50}}</a></td>
+        <td>{{subscription.project.pi.first_name}} {{subscription.project.pi.last_name}} ({{subscription.project.pi.username}})</td>
+        <td>{{subscription.get_parent_resource}}</td>
+        <td class="text-center">{{subscription.project.needs_review|convert_boolean_to_icon}}</td>
+        <td style="white-space:nowrap;">
+          <a href="{% url 'subscription-approve-request' subscription.pk %}" class="btn btn-success mr-1">Approve</a>
+          <a href="{% url 'subscription-deny-request' subscription.pk %}" class="btn btn-danger mr-1">Deny</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="alert alert-light">
+  No pending subscriptions to review!
+</div>
+{% endif %}
+
+
+
+<script>
+
+</script>
+
+{% endblock %}

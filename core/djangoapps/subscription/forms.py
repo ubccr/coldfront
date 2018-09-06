@@ -57,7 +57,7 @@ class SubscriptionSearchForm(forms.Form):
         required=False)
     resource_name = forms.ModelMultipleChoiceField(
         label='Resource Name',
-        queryset=Resource.objects.all().order_by('name'),
+        queryset=Resource.objects.filter(is_subscribable=True).order_by('name'),
         required=False)
     active_until = forms.DateField(
         label='Active Until',

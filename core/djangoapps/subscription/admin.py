@@ -14,7 +14,9 @@ from core.djangoapps.subscription.models import (AttributeType, Subscription,
                                                  SubscriptionAttributeUsage,
                                                  SubscriptionStatusChoice,
                                                  SubscriptionUser,
-                                                 SubscriptionUserStatusChoice)
+                                                 SubscriptionUserStatusChoice,
+                                                 SubscriptionAdminComment,
+                                                 SubscriptionUserMessage,)
 
 
 @admin.register(SubscriptionStatusChoice)
@@ -35,6 +37,20 @@ class SubscriptionAttributeInline(admin.TabularInline):
     fields = ('subscription_attribute_type', 'value', )
 
 
+class SubscriptionAdminCommentInline(admin.TabularInline):
+    model = SubscriptionAdminComment
+    extra = 0
+    fields = ('comment', 'author', 'created'),
+    readonly_fields = ('author', 'created')
+
+
+class SubscriptionUserMessageInline(admin.TabularInline):
+    model = SubscriptionUserMessage
+    extra = 0
+    fields = ('message', 'author', 'created'),
+    readonly_fields = ('author', 'created')
+
+
 @admin.register(Subscription)
 class SubscriptionAdmin(SimpleHistoryAdmin):
     readonly_fields_change = ('project', 'justification', 'created', 'modified',)
@@ -42,7 +58,7 @@ class SubscriptionAdmin(SimpleHistoryAdmin):
                      'status', 'active_until', 'created', 'modified',)
     list_display = ('pk', 'project_title', 'project_pi', 'resource', 'quantity',
                     'justification', 'active_until', 'status', 'created', 'modified', )
-    inlines = [SubscriptionUserInline, SubscriptionAttributeInline, CommentInline]
+    inlines = [SubscriptionUserInline, SubscriptionAttributeInline, SubscriptionAdminCommentInline, SubscriptionUserMessageInline]
     list_filter = ('resources__resource_type__name', 'status', 'resources__name', )
     search_fields = ['project__pi__username', 'project__pi__first_name', 'project__pi__last_name', 'resources__name',
                      'subscriptionuser__user__first_name', 'subscriptionuser__user__last_name', 'subscriptionuser__user__username']
@@ -77,6 +93,15 @@ class SubscriptionAdmin(SimpleHistoryAdmin):
             return []
         else:
             return super().get_inline_instances(request)
+
+    def save_formset(self, request, form, formset, change):
+        if formset.model in [SubscriptionAdminComment, SubscriptionUserMessage]:
+            instances = formset.save(commit=False)
+            for instance in instances:
+                instance.author = request.user
+                instance.save()
+        else:
+            formset.save()
 
 
 @admin.register(AttributeType)
@@ -235,6 +260,42 @@ class SubscriptionUserAdmin(SimpleHistoryAdmin):
             return []
         else:
             return super().get_inline_instances(request)
+
+
+
+    def set_active(self, request, queryset):
+        queryset.update(status=SubscriptionUserStatusChoice.objects.get(name='Active'))
+
+    def set_pending_add(self, request, queryset):
+        queryset.update(status=SubscriptionUserStatusChoice.objects.get(name='Pending -- Add'))
+
+    def set_pending_remove(self, request, queryset):
+        queryset.update(status=SubscriptionUserStatusChoice.objects.get(name='Pending - Remove'))
+
+    def set_denied(self, request, queryset):
+        queryset.update(status=SubscriptionUserStatusChoice.objects.get(name='Denied'))
+
+    def set_removed(self, request, queryset):
+
+        queryset.update(status=SubscriptionUserStatusChoice.objects.get(name='Removed'))
+
+    set_active.short_description = "Set Selected User's Status To Active"
+
+    set_pending_add.short_description = "Set Selected User's Status To Pending Add"
+
+    set_pending_remove.short_description = "Set Selected User's Status To Pending Remove"
+
+    set_denied.short_description = "Set Selected User's Status To Denied"
+
+    set_removed.short_description = "Set Selected User's Status To Removed"
+
+    actions = [
+        set_active,
+        set_pending_add,
+        set_pending_remove,
+        set_denied,
+        set_removed,
+    ]
 
 
 class ValueFilter(admin.SimpleListFilter):
