@@ -1,6 +1,7 @@
 {% extends "common/base.html" %} 
 {% load crispy_forms_tags %}
 {% load static %}
+{% load common_tags %} 
 
 
 {% block title %}
@@ -14,7 +15,7 @@ Review Project
 
 
 <div class="card-body">
-<p class="text-justify">CCR requires faculty to review their project information annually in order to renew their group’s accounts.  The information provided by researchers is compiled and used to help make the case to the University for continued investment in CCR.  Up-to-date and accurate information is crucial to our success.  Please review and, if necessary, update your project description, publication and grant information.  Please verify the user accounts in your group and remove any that should no longer have access to CCR resources.  Thank you!
+<p class="text-justify">{% settings_value 'EMAIL_CENTER_NAME' %} requires faculty to review their project information annually in order to renew their group’s accounts.  The information provided by researchers is compiled and used to help make the case to the University for continued investment in {% settings_value 'EMAIL_CENTER_NAME' %}.  Up-to-date and accurate information is crucial to our success.  Please review and, if necessary, update your project description, publication and grant information.  Please verify the user accounts in your group and remove any that should no longer have access to {% settings_value 'EMAIL_CENTER_NAME' %} resources.  Thank you!
  </p>
 
   <div class="table-responsive">
