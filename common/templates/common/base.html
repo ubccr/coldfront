@@ -49,20 +49,20 @@
 {% hijack_notification %}
 <body>
   {% if user.is_authenticated %} 
-    {% include 'templates/authorized_navbar.html' %} 
+    {% include 'common/authorized_navbar.html' %} 
   {% else %} 
-    {% include 'templates/nonauthorized_navbar.html' %} 
+    {% include 'common/nonauthorized_navbar.html' %} 
   {% endif %}
 
    <!-- Begin page content -->
   <main role="main" class="container">
-    {% include 'templates/messages.html' %} 
+    {% include 'common/messages.html' %} 
     {% block content %} 
       Content goes here! 
     {% endblock %}
   </main>
  
-  {% include 'templates/footer.html' %}
+  {% include 'common/footer.html' %}
   {% block javascript %} {% endblock %}
 </body>
 

@@ -76,7 +76,10 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ['common', ],
+        'DIRS': [
+            os.path.join(BASE_DIR, 'site/templates'),
+            os.path.join(BASE_DIR, 'common/templates'),
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -119,9 +122,9 @@ CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 STATIC_URL = '/static/'
 STATIC_ROOT = './static_root/'
-STATIC_PATH = os.path.join(BASE_DIR, 'static')
 STATICFILES_DIRS = (
-    STATIC_PATH,
+    os.path.join(BASE_DIR, 'site/static'),
+    os.path.join(BASE_DIR, 'static'),
 )
 
 LOGIN_URL = '/user/login'

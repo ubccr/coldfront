@@ -867,7 +867,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             template_context = {'url': url}
 
             email_subject = EMAIL_SUBJECT_PREFIX + ' New project review has been submitted'
-            email_body = render_to_string('email_templates/new_project_review.txt', template_context)
+            email_body = render_to_string('email/new_project_review.txt', template_context)
             email_sender = EMAIL_SENDER
 
             if settings.DEBUG and settings.DEVELOP:

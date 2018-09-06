@@ -38,6 +38,12 @@ main {
   /* Set the fixed height of the footer here */
   height: 150px;
   background-color: #4582EC;
+  color: #ffffff;
+  padding-top: 15px;
+}
+
+#footer a {
+  color: #ffffff;
 }
 
 .banner-logo {
