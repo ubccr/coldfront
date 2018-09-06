@@ -322,7 +322,6 @@ class SubscriptionCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         users = [User.objects.get(username=username) for username in usernames]
         if project_obj.pi not in users:
-            print('test')
             users.append(project_obj.pi)
 
         active_until = datetime.datetime.now() + relativedelta(years=1)
