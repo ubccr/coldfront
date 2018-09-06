@@ -974,7 +974,6 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             receiver_list = EMAIL_DEVELOPMENT_EMAIL_LIST
         else:
             receiver_list = [project_review_obj.project.pi.email, ]
-            receiver_list = ['mkzia@buffalo.edu', ]
 
         send_mail(
             'Request for more information',
