@@ -121,11 +121,14 @@ MESSAGE_TAGS = {
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 STATIC_URL = '/static/'
-STATIC_ROOT = './static_root/'
-STATICFILES_DIRS = (
-    os.path.join(BASE_DIR, 'site/static'),
-    os.path.join(BASE_DIR, 'static'),
-)
+STATIC_ROOT = os.path.join(BASE_DIR, 'static_root')
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'common/static'),
+]
+
+# Add local site static files
+if os.path.isdir(os.path.join(BASE_DIR, 'site/static')):
+    STATICFILES_DIRS.insert(0, os.path.join(BASE_DIR, 'site/static'))
 
 LOGIN_URL = '/user/login'
 LOGIN_REDIRECT_URL = '/'
