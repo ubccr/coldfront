@@ -2,10 +2,10 @@
 {% load crispy_forms_tags %} 
 {% load static %} 
 
-{% block title %} Delete Users from Project {% endblock %} 
+{% block title %} Remove Users from Project {% endblock %} 
 
 {% block content %}
-<h1>Delete users from project: {{project.title}}</h1>
+<h1>Remove users from project: {{project.title}}</h1>
 <hr>
 {% if formset %}
 <div class="card border-light">
@@ -14,7 +14,7 @@
     <form action="{% url 'project-delete-users' project.pk %}" method="post">
       {% csrf_token %}
       <div class="mb-3">
-        <button type="submit" class="btn btn-primary"><i class="fas fa-user-minus"></i> Delete Selected Users From Project</button>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-user-minus"></i> Remove Selected Users From Project</button>
         <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left"></i> Back to Project</a>
         <br>
       </div>
@@ -55,7 +55,7 @@
 {% else %} 
   <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left"></i> Back to Project</a> 
   <div class="alert alert-info">
-    No users to delete!
+    No users to remove!
   </div>
 {% endif %}
 <script>
