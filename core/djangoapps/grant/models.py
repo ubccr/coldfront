@@ -5,6 +5,8 @@ from model_utils.models import TimeStampedModel
 
 from core.djangoapps.project.models import Project
 
+from simple_history.models import HistoricalRecords
+
 
 class GrantFundingAgency(TimeStampedModel):
     name = models.CharField(max_length=255)
@@ -44,7 +46,7 @@ class Grant(TimeStampedModel):
         max_length=10,
         choices=ROLE_CHOICES,
     )
-    grant_pi_full_name = models.CharField(max_length=255, blank=True)
+    grant_pi_full_name = models.CharField('Grant PI Full Name', max_length=255, blank=True)
     funding_agency = models.ForeignKey(GrantFundingAgency, on_delete=models.CASCADE)
     other_funding_agency = models.CharField(max_length=255, blank=True)
     other_award_number = models.CharField(max_length=255, blank=True)
@@ -54,6 +56,7 @@ class Grant(TimeStampedModel):
     direct_funding = models.FloatField()
     total_amount_awarded = models.FloatField()
     status = models.ForeignKey(GrantStatusChoice, on_delete=models.CASCADE)
+    history = HistoricalRecords()
 
     @property
     def grant_pi(self):

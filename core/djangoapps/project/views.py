@@ -13,7 +13,13 @@ from django.urls import reverse
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from django.views.generic.base import TemplateView
+from django.views.generic.edit import FormView
 
+from django.conf import settings
+from common.djangolibs.utils import import_from_settings
+
+
+from django.core.mail import send_mail
 from common.djangoapps.user.forms import UserSearchForm
 from common.djangoapps.user.utils import CombinedUserSearch
 from core.djangoapps.project.forms import (ProjectAddUserForm,
@@ -21,7 +27,8 @@ from core.djangoapps.project.forms import (ProjectAddUserForm,
                                            ProjectDeleteUserForm,
                                            ProjectSearchForm,
                                            ProjectUserUpdateForm,
-                                           ProjectReviewForm)
+                                           ProjectReviewForm,
+                                           ProjectReviewEmailForm)
 from core.djangoapps.project.models import (Project, ProjectStatusChoice,
                                             ProjectUser, ProjectUserRoleChoice,
                                             ProjectUserStatusChoice, ProjectReview, ProjectReviewStatusChoice)
@@ -32,6 +39,10 @@ from core.djangoapps.subscription.signals import (subscription_activate_user,
                                                   subscription_remove_user)
 from core.djangoapps.grant.models import Grant
 from core.djangoapps.publication.models import Publication
+
+
+EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings('EMAIL_DIRECTOR_EMAIL_ADDRESS')
+EMAIL_DEVELOPMENT_EMAIL_LIST = import_from_settings('EMAIL_DEVELOPMENT_EMAIL_LIST')
 
 
 class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
@@ -781,6 +792,7 @@ def project_update_email_notification(request):
     else:
         return HttpResponse('', status=400)
 
+
 class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'project/project_review.html'
     login_url = "/"  # redirect URL if fail test_func
@@ -803,11 +815,15 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
 
-        if not project_obj.project_needs_review and not project_obj.force_project_review and not project_obj.project_requires_review:
+        if not project_obj.project_needs_review:
             messages.error(request, 'You do not need to review this project.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
-        else:
-            return super().dispatch(request, *args, **kwargs)
+
+        if 'Auto-Import Project'.lower() in project_obj.title.lower():
+            messages.error(request, 'You must update the project title before reviewing your project. You cannot have "Auto-Import Project" in the title.')
+            return HttpResponseRedirect(reverse('project-update', kwargs={'pk': project_obj.pk}))
+
+        return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
@@ -816,6 +832,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context = {}
         context['project'] = project_obj
         context['project_review_form'] = project_review_form
+        context['project_users'] = ', '.join(['{} {}'.format(ele.user.first_name, ele.user.last_name) for ele in project_obj.projectuser_set.filter(status__name='Active')])
 
         return render(request, self.template_name, context)
 
@@ -832,15 +849,120 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 reason_for_not_updating_project=form_data.get('reason'),
                 status=project_review_status_choice)
 
-            if project_obj.force_project_review:
-                project_obj.force_project_review = False
-                project_obj.save()
+            project_obj.project_needs_review = False
+            project_obj.save()
 
             messages.success(request, 'Project reviewed successfully.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
-            messages.error(request, 'There was an error in your project review.')
+            messages.error(request, 'There was an error in processing  your project review.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
 
+class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
+    model = ProjectReview
+    template_name = 'project/project_review_list.html'
+    prefetch_related = ['project', ]
+    context_object_name = 'project_review_list'
+
+    def get_queryset(self):
+        return ProjectReview.objects.filter(status__name='Pending')
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('project.can_review_pending_project_reviews'):
+            return True
+
+        messages.error(self.request, 'You do not have permission to review pending project reviews.')
+
+
+class ProjectReviewCompleteView(LoginRequiredMixin, UserPassesTestMixin, View):
+    login_url = "/"
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('project.can_review_pending_project_reviews'):
+            return True
+
+        messages.error(self.request, 'You do not have permission to mark a pending project review as completed.')
+
+    def get(self, request, project_review_pk):
+        project_review_obj = get_object_or_404(ProjectReview, pk=project_review_pk)
+
+        project_review_status_completed_obj = ProjectReviewStatusChoice.objects.get(name='Completed')
+        project_review_obj.status = project_review_status_completed_obj
+        project_review_obj.save()
+
+        messages.success(request, 'Project review for {} has been completed'.format(
+            project_review_obj.project.title)
+        )
+
+        return HttpResponseRedirect(reverse('project-review-list'))
+
+
+class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+    form_class = ProjectReviewEmailForm
+    template_name = 'project/project_review_email.html'
+    login_url = "/"
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('project.can_review_pending_project_reviews'):
+            return True
+
+        messages.error(self.request, 'You do not have permission to send email for a pending project review.')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        pk = self.kwargs.get('pk')
+        project_review_obj = get_object_or_404(ProjectReview, pk=pk)
+        context['project_review'] = project_review_obj
+
+        return context
+
+    def get_form(self, form_class=None):
+        """Return an instance of the form to be used in this view."""
+        if form_class is None:
+            form_class = self.get_form_class()
+        return form_class(self.kwargs.get('pk'), **self.get_form_kwargs())
+
+    def form_valid(self, form):
+        pk = self.kwargs.get('pk')
+        project_review_obj = get_object_or_404(ProjectReview, pk=pk)
+        form_data = form.cleaned_data
+
+        if settings.DEBUG and settings.DEVELOP:
+            receiver_list = EMAIL_DEVELOPMENT_EMAIL_LIST
+        else:
+            receiver_list = [project_review_obj.project.pi.email, ]
+            receiver_list = ['mkzia@buffalo.edu', ]
+
+        send_mail(
+            'Request for more information',
+            form_data.get('email_body'),
+            EMAIL_DIRECTOR_EMAIL_ADDRESS,
+            receiver_list,
+            fail_silently=False,
+        )
+        messages.success(self.request, 'Email sent to {} {} ({})'.format(
+            project_review_obj.project.pi.first_name,
+            project_review_obj.project.pi.last_name,
+            project_review_obj.project.pi.username)
+        )
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('project-review-list')

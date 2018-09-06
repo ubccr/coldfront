@@ -6,6 +6,8 @@ from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
+from simple_history.admin import SimpleHistoryAdmin
+
 from core.djangoapps.subscription.models import (AttributeType, Subscription,
                                                  SubscriptionAttribute,
                                                  SubscriptionAttributeType,
@@ -26,9 +28,6 @@ class SubscriptionUserInline(admin.TabularInline):
     fields = ('user', 'status', )
     readonly_fields = ('user', )
 
-    def has_add_permission(self, request):
-        return False
-
 
 class SubscriptionAttributeInline(admin.TabularInline):
     model = SubscriptionAttribute
@@ -37,7 +36,7 @@ class SubscriptionAttributeInline(admin.TabularInline):
 
 
 @admin.register(Subscription)
-class SubscriptionAdmin(admin.ModelAdmin):
+class SubscriptionAdmin(SimpleHistoryAdmin):
     readonly_fields_change = ('project', 'justification', 'created', 'modified',)
     fields_change = ('project', 'resources', 'quantity', 'justification',
                      'status', 'active_until', 'created', 'modified',)
@@ -93,14 +92,6 @@ class SubscriptionAttributeTypeAdmin(admin.ModelAdmin):
 class SubscriptionAttributeUsageInline(admin.TabularInline):
     model = SubscriptionAttributeUsage
     extra = 0
-    # fields = ('user', 'status', )
-    # readonly_fields = ('user', )
-
-    def has_add_permission(self, request):
-        return False
-
-    def has_delete_permission(self, request, obj):
-        return False
 
 
 class UsageValueFilter(admin.SimpleListFilter):
@@ -133,13 +124,13 @@ class UsageValueFilter(admin.SimpleListFilter):
 
 
 @admin.register(SubscriptionAttribute)
-class SubscriptionAttributeAdmin(admin.ModelAdmin):
+class SubscriptionAttributeAdmin(SimpleHistoryAdmin):
     readonly_fields_change = ('subscription', 'subscription_attribute_type', 'created', 'modified', 'project_title')
     fields_change = ('project_title', 'subscription', 'subscription_attribute_type', 'value', 'created', 'modified',)
     list_display = ('pk', 'project', 'pi', 'resource', 'subscription_status',
                     'subscription_attribute_type', 'value', 'usage', 'is_private', 'created', 'modified',)
-    inline = [SubscriptionAttributeUsageInline, ]
-    list_filter = (UsageValueFilter, 'subscription_attribute_type',)
+    inlines = [SubscriptionAttributeUsageInline, ]
+    list_filter = (UsageValueFilter, 'subscription_attribute_type', 'is_private', 'subscription__status')
     search_fields = (
         'subscription__project__pi__first_name',
         'subscription__project__pi__last_name',
@@ -156,7 +147,7 @@ class SubscriptionAttributeAdmin(admin.ModelAdmin):
             return 'N/A'
 
     def resource(self, obj):
-        return obj.subscription.resources.first()
+        return obj.subscription.get_parent_resource
 
     def subscription_status(self, obj):
         return obj.subscription.status
@@ -197,7 +188,7 @@ class SubscriptionUserStatusChoiceAdmin(admin.ModelAdmin):
 
 
 @admin.register(SubscriptionUser)
-class SubscriptionUserAdmin(admin.ModelAdmin):
+class SubscriptionUserAdmin(SimpleHistoryAdmin):
     readonly_fields_change = ('subscription', 'user', 'resource', 'created', 'modified',)
     fields_change = ('subscription', 'user', 'status', 'created', 'modified',)
     list_display = ('pk', 'project', 'project_pi', 'resource', 'subscription_status',
@@ -275,7 +266,7 @@ class ValueFilter(admin.SimpleListFilter):
 
 
 @admin.register(SubscriptionAttributeUsage)
-class SubscriptionAttributeUsageAdmin(admin.ModelAdmin):
+class SubscriptionAttributeUsageAdmin(SimpleHistoryAdmin):
     list_display = ('subscription_attribute', 'resource', 'value',)
     readonly_fields = ('subscription_attribute',)
     fields = ('subscription_attribute', 'value',)

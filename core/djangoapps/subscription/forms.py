@@ -8,8 +8,6 @@ from core.djangoapps.subscription.models import (Subscription,
                                                  SubscriptionStatusChoice)
 from core.djangoapps.subscription.utils import get_user_resources
 
-EMAIL_DIRECTOR_PENDING_SUBSCRIPTION_EMAIL = import_from_settings('EMAIL_DIRECTOR_PENDING_SUBSCRIPTION_EMAIL')
-
 
 class SubscriptionForm(forms.Form):
     resource = forms.ModelChoiceField(queryset=None, empty_label=None)
@@ -25,7 +23,8 @@ class SubscriptionForm(forms.Form):
         user_query_set = project_obj.projectuser_set.select_related('user').filter(
             status__name__in=['Active', 'Pending Add'])
         if user_query_set:
-            self.fields['users'].choices = ((user.user.username, "%s %s (%s)" % (user.user.first_name, user.user.last_name, user.user.username)) for user in user_query_set)
+            self.fields['users'].choices = ((user.user.username, "%s %s (%s)" % (
+                user.user.first_name, user.user.last_name, user.user.username)) for user in user_query_set)
             self.fields['users'].help_text = '<br/>Select users in your project to add to this subscription.'
         else:
             self.fields['users'].widget = forms.HiddenInput()
@@ -75,17 +74,6 @@ class SubscriptionSearchForm(forms.Form):
     show_all_subscriptions = forms.BooleanField(initial=False, required=False)
 
 
-class SubscriptionEmailForm(forms.Form):
-    email_body = forms.CharField(
-        required=True,
-        widget=forms.Textarea
-    )
-
-    def __init__(self, pk, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        subscription_obj = get_object_or_404(Subscription, pk=int(pk))
-        self.fields['email_body'].initial = 'Dear {} {} \n{}'.format(subscription_obj.project.pi.first_name, subscription_obj.project.pi.last_name, EMAIL_DIRECTOR_PENDING_SUBSCRIPTION_EMAIL)
-
 class SubscriptionReviewUserForm(forms.Form):
     SUBSCRIPTION_REVIEW_USER_CHOICES = (
         ('keep_in_subscription_and_project', 'Keep in subscription and project'),
@@ -98,4 +86,3 @@ class SubscriptionReviewUserForm(forms.Form):
     last_name = forms.CharField(max_length=150, required=False, disabled=True)
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     user_status = forms.ChoiceField(choices=SUBSCRIPTION_REVIEW_USER_CHOICES)
-

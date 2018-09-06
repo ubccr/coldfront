@@ -8,6 +8,8 @@ from core.djangoapps.project.models import (Project, ProjectStatusChoice,
                                             ProjectUserStatusChoice, ProjectReview)
 
 
+from simple_history.admin import SimpleHistoryAdmin
+
 @admin.register(ProjectStatusChoice)
 class ProjectStatusChoiceAdmin(admin.ModelAdmin):
     list_display = ('name',)
@@ -24,7 +26,7 @@ class ProjectUserStatusChoiceAdmin(admin.ModelAdmin):
 
 
 @admin.register(ProjectUser)
-class ProjectUserAdmin(admin.ModelAdmin):
+class ProjectUserAdmin(SimpleHistoryAdmin):
     fields_change = ('user', 'project', 'role', 'status', 'created', 'modified', )
     readonly_fields_change = ('user', 'project', 'created', 'modified', )
     list_display = ('pk', 'project_title', 'PI', 'User', 'role', 'status',
@@ -70,18 +72,14 @@ class ProjectUserInline(admin.TabularInline):
     readonly_fields = ['user', 'project', ]
     extra = 0
 
-    def has_add_permission(self, request):
-        return False
-
-
 @admin.register(Project)
-class ProjectAdmin(admin.ModelAdmin):
-    fields_change = ('title', 'pi', 'description', 'status', 'project_requires_review', 'force_project_review', 'created', 'modified', )
+class ProjectAdmin(SimpleHistoryAdmin):
+    fields_change = ('title', 'pi', 'description', 'status', 'project_requires_review', 'project_needs_review', 'created', 'modified', )
     readonly_fields_change = ('pi', 'created', 'modified', )
     list_display = ('pk', 'title', 'PI', 'created', 'modified', 'status')
     search_fields = ['pi__username', 'projectuser__user__username',
                      'projectuser__user__last_name', 'projectuser__user__last_name', 'title']
-    list_filter = ('status', 'force_project_review')
+    list_filter = ('status', 'project_needs_review')
     inlines_change = [ProjectUserInline, CommentInline]
 
     def PI(self, obj):
@@ -109,6 +107,6 @@ class ProjectAdmin(admin.ModelAdmin):
 
 
 @admin.register(ProjectReview)
-class ProjectReviewAdmin(admin.ModelAdmin):
+class ProjectReviewAdmin(SimpleHistoryAdmin):
     list_display = ('pk', 'project', 'reason_for_not_updating_project', 'created', 'status')
     list_filter = ('status', )

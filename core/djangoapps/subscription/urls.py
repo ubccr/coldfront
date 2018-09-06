@@ -9,7 +9,6 @@ urlpatterns = [
     path('<int:pk>/approve-pending-request', subscription_views.SubscriptionApprovePendingRequestView.as_view(),
          name='subscription-approve-request'),
     path('<int:pk>/deny-pending-request', subscription_views.SubscriptionDenyPendingRequestView.as_view(), name='subscription-deny-request'),
-    path('<int:pk>/email-pending-request', subscription_views.SubscriptionEmailPendingRequestView.as_view(), name='subscription-email-request'),
     path('<int:pk>/add-users', subscription_views.SubscriptionAddUsersView.as_view(), name='subscription-add-users'),
     path('<int:pk>/delete-users', subscription_views.SubscriptionDeleteUsersView.as_view(), name='subscription-delete-users'),
     path('review-new-requests', subscription_views.SubscriptionReviewPendingRequestsView.as_view(),

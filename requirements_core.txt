@@ -1,4 +1,5 @@
 beautifulsoup4
+bibtexparser
 Django
 django-admin-comments
 django_auth_ldap
@@ -10,7 +11,9 @@ django-hijack-admin
 django-model-utils
 django-python3-ldap
 django-q
+django-simple-history
 django-sslserver
+doi2bib
 humanize
 isort
 kerberos

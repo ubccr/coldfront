@@ -8,6 +8,7 @@ from model_utils.models import TimeStampedModel
 
 from core.djangoapps.project.models import Project
 from core.djangoapps.resources.models import Resource
+from simple_history.models import HistoricalRecords
 
 
 class SubscriptionStatusChoice(TimeStampedModel):
@@ -28,6 +29,7 @@ class Subscription(TimeStampedModel):
     quantity = models.IntegerField(default=1)
     active_until = models.DateField(blank=True, null=True)
     justification = models.TextField()
+    history = HistoricalRecords()
 
     class Meta:
         ordering = ['active_until']
@@ -39,10 +41,12 @@ class Subscription(TimeStampedModel):
 
     def clean(self):
         if self.status.name == 'Expired' and self.active_until > datetime.datetime.now().date():
-            raise ValidationError('You cannot set the status of this subscription to expired without changing the active until date.')
+            raise ValidationError(
+                'You cannot set the status of this subscription to expired without changing the active until date.')
 
         elif self.status.name == 'Active' and self.active_until < datetime.datetime.now().date():
-            raise ValidationError('You cannot set the status of this subscription to active without changing the active until date.')
+            raise ValidationError(
+                'You cannot set the status of this subscription to active without changing the active until date.')
 
     @property
     def expires_in(self):
@@ -66,16 +70,13 @@ class Subscription(TimeStampedModel):
 
         return mark_safe(html_string)
 
-
     @property
     def get_resources_as_string(self):
         return ', '.join([ele.name for ele in self.resources.all()])
 
-
     @property
     def get_parent_resource(self):
         return self.resources.filter(is_subscribable=True).first()
-
 
     def __str__(self):
         return "%s (%s)" % (self.resources.first().name, self.project.pi)
@@ -91,6 +92,7 @@ class AttributeType(TimeStampedModel):
     class Meta:
         ordering = ['name', ]
 
+
 class SubscriptionAttributeType(TimeStampedModel):
     """ SubscriptionAttributeType. """
     attribute_type = models.ForeignKey(AttributeType, on_delete=models.CASCADE)
@@ -98,6 +100,7 @@ class SubscriptionAttributeType(TimeStampedModel):
     has_usage = models.BooleanField(default=False)
     is_required = models.BooleanField(default=False)
     is_unique = models.BooleanField(default=False)
+    history = HistoricalRecords()
 
     def __str__(self):
         return self.name
@@ -105,12 +108,14 @@ class SubscriptionAttributeType(TimeStampedModel):
     class Meta:
         ordering = ['name', ]
 
+
 class SubscriptionAttribute(TimeStampedModel):
     """ SubscriptionAttribute. """
     subscription_attribute_type = models.ForeignKey(SubscriptionAttributeType, on_delete=models.CASCADE)
     subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
     value = models.CharField(max_length=128)
     is_private = models.BooleanField(default=True)
+    history = HistoricalRecords()
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -134,6 +139,7 @@ class SubscriptionAttributeUsage(TimeStampedModel):
     """ SubscriptionAttributeUsage. """
     subscription_attribute = models.OneToOneField(SubscriptionAttribute, on_delete=models.CASCADE, primary_key=True)
     value = models.FloatField(default=0)
+    history = HistoricalRecords()
 
     def __str__(self):
         return '{}: {}'.format(self.subscription_attribute.subscription_attribute_type.name, self.value)
@@ -148,12 +154,14 @@ class SubscriptionUserStatusChoice(TimeStampedModel):
     class Meta:
         ordering = ['name', ]
 
+
 class SubscriptionUser(TimeStampedModel):
     """ SubscriptionUserStatus. """
     subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     status = models.ForeignKey(SubscriptionUserStatusChoice, on_delete=models.CASCADE,
                                verbose_name='Subscription User Status')
+    history = HistoricalRecords()
 
     def __str__(self):
         return '%s (%s)' % (self.user, self.subscription.resources.first().name)
