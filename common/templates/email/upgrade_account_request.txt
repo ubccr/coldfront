@@ -1,0 +1,2 @@
+User {{user.username}} ({{user.email}}) has requested to upgrade their account.
+Please verify they are eligible and update their user account accordingly.
