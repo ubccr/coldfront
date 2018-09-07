@@ -12,6 +12,7 @@ def settings_value(name):
         'LOGIN_FAIL_MESSAGE',
         'ACCOUNT_CREATION_TEXT',
         'EMAIL_CENTER_NAME',
+        'EMAIL_PROJECT_REVIEW_CONTACT',
     ]
     return mark_safe(getattr(settings, name, '') if name in allowed_names else '')
 
