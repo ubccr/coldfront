@@ -13,7 +13,7 @@ Project Detail
 
 {% if is_allowed_to_update_project and project.needs_review %}
 <div class="alert alert-warning">
-  <strong>Warning!</strong> You need to review this project. <a href="{% url 'project-review' project.pk %}">Review Project</a>
+  You need to review this project. <a href="{% url 'project-review' project.pk %}">Review Project</a>
 </div>
 {% endif %}
 

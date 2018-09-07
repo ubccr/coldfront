@@ -39,7 +39,7 @@ class ProjectAddUsersToSubscriptionForm(forms.Form):
         project_obj = get_object_or_404(Project, pk=project_pk)
 
         subscription_query_set = project_obj.subscription_set.filter(
-            status__name__in=['Active', 'New', 'Pending'])
+            status__name__in=['Active', 'New', 'Pending'], resources__is_subscribable=True)
         subscription_choices = [(subscription.id, "%s (%s)" %(subscription.resources.first().name, subscription.resources.first().resource_type.name)) for subscription in subscription_query_set]
         subscription_choices.insert(0, ('__select_all__', 'Select All'))
         if subscription_query_set:
@@ -64,7 +64,7 @@ class ProjectUserUpdateForm(forms.Form):
 
 
 class ProjectReviewForm(forms.Form):
-    reason = forms.CharField(widget=forms.Textarea, required=False)
+    reason = forms.CharField(label='Reason for not updating project information', widget=forms.Textarea(attrs={'placeholder': 'If you have no new information to provide, you are required to provide a statement explaining this in this box. Thank you!'}), required=False)
     acknowledgement = forms.BooleanField(label='By checking this box I acknowledge that I have updated my project to the best of my knowledge', initial=False, required=True)
 
     def __init__(self, project_pk, *args, **kwargs):
@@ -88,10 +88,6 @@ class ProjectReviewForm(forms.Form):
             self.fields['reason'].widget = forms.HiddenInput()
         else:
             self.fields['reason'].required = True
-
-
-        self.fields['reason'].help_text = '<br/>Reason for not adding new grants and/or publications in the past year.'
-
 
 
 class ProjectReviewEmailForm(forms.Form):

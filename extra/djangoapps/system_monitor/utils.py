@@ -25,9 +25,9 @@ def get_system_monitor_context():
 class SystemMonitor:
     """If anything fails, the home page will still work"""
     RESPONSE_PARSER_FUNCTION = 'parse_html_using_beautiful_soup'
-    primary_color = '#4582EC'
-    info_color = '#17a2b8'
-    secondary_color = '#adb5bd'
+    primary_color = '#002f56'
+    info_color = '#2f9fd0'
+    secondary_color = '#666666'
 
     def __init__(self):
         self.SYSTEM_MONITOR_ENDPOINT = import_from_settings('SYSTEM_MONITOR_ENDPOINT')

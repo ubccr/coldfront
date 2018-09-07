@@ -11,11 +11,11 @@ Review Project
 
 
 {% block content %}
-<h1>Reviewing Project: {{project.title}}</h1> <hr>
+<h3>Reviewing Project: {{project.title}}</h3> <hr>
 
 
 <div class="card-body">
-<p class="text-justify">{% settings_value 'EMAIL_CENTER_NAME' %} requires faculty to review their project information annually in order to renew their group’s accounts.  The information provided by researchers is compiled and used to help make the case to the University for continued investment in {% settings_value 'EMAIL_CENTER_NAME' %}.  Up-to-date and accurate information is crucial to our success.  Please review and, if necessary, update your project description, publication and grant information.  Please verify the user accounts in your group and remove any that should no longer have access to {% settings_value 'EMAIL_CENTER_NAME' %} resources.  Thank you!
+<p class="text-justify">{% settings_value 'EMAIL_CENTER_NAME' %} requires faculty to review their project information annually in order to renew their group’s accounts. The information provided by researchers is compiled and used to help make the case to the University for continued investment in {% settings_value 'EMAIL_CENTER_NAME' %}. Up-to-date and accurate information is crucial to our success. Please review and, if necessary, update your project description, publication and grant information. Please verify the user accounts in your group and remove any that should no longer have access to {% settings_value 'EMAIL_CENTER_NAME' %} resources. You can do so by clicking the “Back to Project” button at the bottom of the page. <a href="mailto:{% settings_value 'EMAIL_PROJECT_REVIEW_CONTACT' %}">Questions? Contact us</a>
  </p>
 
   <div class="table-responsive">
