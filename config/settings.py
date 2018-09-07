@@ -78,6 +78,7 @@ TEMPLATES = [
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
             os.path.join(BASE_DIR, 'site/templates'),
+            '/usr/share/coldfront/site/templates',
             os.path.join(BASE_DIR, 'common/templates'),
         ],
         'APP_DIRS': True,
@@ -129,6 +130,10 @@ STATICFILES_DIRS = [
 # Add local site static files
 if os.path.isdir(os.path.join(BASE_DIR, 'site/static')):
     STATICFILES_DIRS.insert(0, os.path.join(BASE_DIR, 'site/static'))
+
+# Add system site static files
+if os.path.isdir('/usr/share/coldfront/site/static'):
+    STATICFILES_DIRS.insert(0, '/usr/share/coldfront/site/static')
 
 LOGIN_URL = '/user/login'
 LOGIN_REDIRECT_URL = '/'
