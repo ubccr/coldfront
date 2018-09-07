@@ -39,7 +39,7 @@ class ProjectAddUsersToSubscriptionForm(forms.Form):
         project_obj = get_object_or_404(Project, pk=project_pk)
 
         subscription_query_set = project_obj.subscription_set.filter(
-            status__name__in=['Active', 'New', 'Pending'])
+            status__name__in=['Active', 'New', 'Pending'], resources__is_subscribable=True)
         subscription_choices = [(subscription.id, "%s (%s)" %(subscription.resources.first().name, subscription.resources.first().resource_type.name)) for subscription in subscription_query_set]
         subscription_choices.insert(0, ('__select_all__', 'Select All'))
         if subscription_query_set:
