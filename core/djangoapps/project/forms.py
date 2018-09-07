@@ -64,7 +64,7 @@ class ProjectUserUpdateForm(forms.Form):
 
 
 class ProjectReviewForm(forms.Form):
-    reason = forms.CharField(widget=forms.Textarea, required=False)
+    reason = forms.CharField(label='Reason for not updating project information', widget=forms.Textarea(attrs={'placeholder': 'If you have no new information to provide, you are required to provide a statement explaining this in this box. Thank you!'}), required=False)
     acknowledgement = forms.BooleanField(label='By checking this box I acknowledge that I have updated my project to the best of my knowledge', initial=False, required=True)
 
     def __init__(self, project_pk, *args, **kwargs):
@@ -88,10 +88,6 @@ class ProjectReviewForm(forms.Form):
             self.fields['reason'].widget = forms.HiddenInput()
         else:
             self.fields['reason'].required = True
-
-
-        self.fields['reason'].help_text = '<br/>Reason for not adding new grants and/or publications in the past year.'
-
 
 
 class ProjectReviewEmailForm(forms.Form):
