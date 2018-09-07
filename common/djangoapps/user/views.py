@@ -12,7 +12,7 @@ from django.views.generic import TemplateView
 from common.djangoapps.user.forms import UserSearchForm
 from common.djangoapps.user.utils import CombinedUserSearch
 from common.djangolibs.utils import import_from_settings
-from common.djangolibs.mail import send_email
+from common.djangolibs.mail import send_email_template
 
 logger = logging.getLogger(__name__)
 EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
@@ -45,7 +45,7 @@ class UserUpgradeAccount(LoginRequiredMixin, UserPassesTestMixin, View):
         return super().dispatch(request, *args, **kwargs)
 
     def post(self, request):
-        send_email(
+        send_email_template(
             'Upgrade Account Request',
             'email/upgrade_account_request.txt',
             {'user': request.user},

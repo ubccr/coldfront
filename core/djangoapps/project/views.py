@@ -17,12 +17,12 @@ from django.views.generic.edit import FormView
 
 
 from common.djangolibs.utils import get_domain_url
+from common.djangolibs.mail import send_email, send_email_template
 
 from django.conf import settings
 from common.djangolibs.utils import import_from_settings
 
 
-from django.core.mail import send_mail
 from common.djangoapps.user.forms import UserSearchForm
 from common.djangoapps.user.utils import CombinedUserSearch
 from core.djangoapps.project.forms import (ProjectAddUserForm,
@@ -864,18 +864,14 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
             domain_url = get_domain_url(self.request)
             url = '{}{}'.format(domain_url, reverse('project-review-list'))
-            template_context = {'url': url}
 
-            email_subject = EMAIL_SUBJECT_PREFIX + ' New project review has been submitted'
-            email_body = render_to_string('email/new_project_review.txt', template_context)
-            email_sender = EMAIL_SENDER
-
-            if settings.DEBUG and settings.DEVELOP:
-                email_receiver_list = EMAIL_DEVELOPMENT_EMAIL_LIST
-            else:
-                email_receiver_list = [EMAIL_DIRECTOR_EMAIL_ADDRESS, ]
-
-            send_mail(email_subject, email_body, email_sender, email_receiver_list, fail_silently=False)
+            send_email_template(
+                'New project review has been submitted',
+                'email/new_project_review.txt',
+                {'url': url},
+                EMAIL_SENDER,
+                [EMAIL_DIRECTOR_EMAIL_ADDRESS, ]
+            )
 
             messages.success(request, 'Project reviewed successfully.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
@@ -970,18 +966,13 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         project_review_obj = get_object_or_404(ProjectReview, pk=pk)
         form_data = form.cleaned_data
 
-        if settings.DEBUG and settings.DEVELOP:
-            receiver_list = EMAIL_DEVELOPMENT_EMAIL_LIST
-        else:
-            receiver_list = [project_review_obj.project.pi.email, ]
-
-        send_mail(
+        send_email(
             'Request for more information',
             form_data.get('email_body'),
             EMAIL_DIRECTOR_EMAIL_ADDRESS,
-            receiver_list,
-            fail_silently=False,
+            [project_review_obj.project.pi.email, ],
         )
+
         messages.success(self.request, 'Email sent to {} {} ({})'.format(
             project_review_obj.project.pi.first_name,
             project_review_obj.project.pi.last_name,
