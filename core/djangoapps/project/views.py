@@ -865,7 +865,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             domain_url = get_domain_url(self.request)
             url = '{}{}'.format(domain_url, reverse('project-review-list'))
 
-            send_email(
+            send_email_template(
                 'New project review has been submitted',
                 'email/new_project_review.txt',
                 {'url': url},
