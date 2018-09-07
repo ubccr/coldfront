@@ -49,7 +49,7 @@ class ProjectAddUsersToSubscriptionForm(forms.Form):
             self.fields['subscription'].widget = forms.HiddenInput()
 
 
-class ProjectDeleteUserForm(forms.Form):
+class ProjectRemoveUserForm(forms.Form):
     username = forms.CharField( max_length=150, disabled=True)
     first_name = forms.CharField(max_length=30, required=False, disabled=True)
     last_name = forms.CharField(max_length=150, required=False, disabled=True)
