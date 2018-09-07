@@ -331,7 +331,6 @@ class SubscriptionCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         users = [User.objects.get(username=username) for username in usernames]
         if project_obj.pi not in users:
-            print('test')
             users.append(project_obj.pi)
 
         active_until = datetime.datetime.now() + relativedelta(years=1)
@@ -827,6 +826,16 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
                 user=old_subscription_obj.project.pi,
                 status=subscription_user_active_status_choice)
             subscription_activate_user.send(sender=self.__class__, subscription_user_pk=subscription_user_obj.pk)
+
+
+            # Copy subscription attributes
+
+            for subscription_attribute_obj in old_subscription_obj.subscriptionattribute_set.all():
+                subscription_attribute_obj.pk = None
+                subscription_attribute_obj.id = None
+                subscription_attribute_obj.subscription = new_subscription_obj
+                subscription_attribute_obj.save()
+
 
             if users_in_subscription:
                 for form in formset:

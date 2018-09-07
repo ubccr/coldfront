@@ -95,7 +95,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         else:
             if self.object.status.name == 'Active':
                 subscriptions = Subscription.objects.filter(
-                    Q(status__name__in=['Active', 'Approved', 'Denied', 'New', 'Pending', ]) &
+                    Q(status__name__in=['Active', 'Approved', 'Denied', 'New', 'Pending', 'Expired' ]) &
                     Q(project=self.object) &
                     Q(project__projectuser__user=self.request.user) &
                     Q(project__projectuser__status__name='Active') &
