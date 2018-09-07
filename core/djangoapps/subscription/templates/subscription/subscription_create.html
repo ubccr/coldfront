@@ -1,5 +1,6 @@
 {% extends "common/base.html" %} 
 {% load crispy_forms_tags %}
+{% load common_tags %} 
 {% load static %}
 
 
@@ -13,7 +14,7 @@ Request New Subscription
 <h2>Request New Subscription <br><small> Project: {{ project.title }} </small> </h2>
 
 
-<p class="text-justify">The following CCR resources are available to request for this project. If you need access to more than one of these, please submit a separate subscription request for each resource. For each request you must provide the justification for how you intend to use the resource to further the research goals of your project.</p>
+<p class="text-justify">The following {% settings_value 'EMAIL_CENTER_NAME' %} resources are available to request for this project. If you need access to more than one of these, please submit a separate subscription request for each resource. For each request you must provide the justification for how you intend to use the resource to further the research goals of your project.</p>
 
 
 

@@ -1,4 +1,5 @@
 import datetime
+import logging
 from datetime import date
 
 from dateutil.relativedelta import relativedelta
@@ -46,6 +47,7 @@ EMAIL_OPT_OUT_INSTRUCTION_URL = import_from_settings('EMAIL_OPT_OUT_INSTRUCTION_
 EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
 EMAIL_CENTER_NAME = import_from_settings('EMAIL_CENTER_NAME')
 
+logger = logging.getLogger(__name__)
 
 class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     model = Subscription
@@ -92,12 +94,19 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
             attributes_without_usage = [attribute for attribute in self.object.subscriptionattribute_set.filter(is_private=False) if not hasattr(attribute, 'subscriptionattributeusage')]
 
         guage_data = []
+        invalid_attributes = []
         for attribute in attributes_with_usage:
-            guage_data.append(generate_guauge_data_from_usage(attribute.subscription_attribute_type.name,
-                                                              int(attribute.value), int(attribute.subscriptionattributeusage.value)))
+            try:
+                guage_data.append(generate_guauge_data_from_usage(attribute.subscription_attribute_type.name,
+                                                                  int(attribute.value), int(attribute.subscriptionattributeusage.value)))
+            except ValueError:
+                logger.error("Subscription attribute '%s' is not an int but has a usage", attribute.subscription_attribute_type.name)
+                invalid_attributes.append(attribute)
+                    
+        for a in invalid_attributes:
+            attributes_with_usage.remove(a)
 
         context['guage_data'] = guage_data
-
         context['attributes_with_usage'] = attributes_with_usage
         context['attributes_without_usage'] = attributes_without_usage
 
