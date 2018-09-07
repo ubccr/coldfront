@@ -1,13 +1,21 @@
+import logging
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.shortcuts import render
+from django.contrib import messages
 from django.utils.decorators import method_decorator
 from django.views import View
+from django.http import HttpResponseRedirect
+from django.urls import reverse
 from django.views.generic import TemplateView
 
 from common.djangoapps.user.forms import UserSearchForm
 from common.djangoapps.user.utils import CombinedUserSearch
+from common.djangolibs.utils import import_from_settings
+from common.djangolibs.mail import send_email
 
+logger = logging.getLogger(__name__)
+EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
 
 @method_decorator(login_required, name='dispatch')
 class UserProfile(TemplateView):
@@ -19,6 +27,34 @@ class UserProfile(TemplateView):
         context['group_list'] = group_list
         return context
 
+class UserUpgradeAccount(LoginRequiredMixin, UserPassesTestMixin, View):
+    login_url = "/"
+
+    def test_func(self):
+        return True
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_superuser:
+            messages.error(request, 'You are already a super user')
+            return HttpResponseRedirect(reverse('user-profile'))
+
+        if request.user.userprofile.is_pi:
+            messages.error(request, 'Your account has already been upgraded')
+            return HttpResponseRedirect(reverse('user-profile'))
+
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request):
+        send_email(
+            'Upgrade Account Request',
+            'email/upgrade_account_request.txt',
+            {'user': request.user},
+            EMAIL_TICKET_SYSTEM_ADDRESS,
+            [request.user.email]
+        )
+
+        messages.success(request, 'Your request has been sent')
+        return HttpResponseRedirect(reverse('user-profile'))
 
 class UserSearchHome(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'user/user_search_home.html'
