@@ -27,7 +27,7 @@ from common.djangoapps.user.forms import UserSearchForm
 from common.djangoapps.user.utils import CombinedUserSearch
 from core.djangoapps.project.forms import (ProjectAddUserForm,
                                            ProjectAddUsersToSubscriptionForm,
-                                           ProjectDeleteUserForm,
+                                           ProjectRemoveUserForm,
                                            ProjectSearchForm,
                                            ProjectUserUpdateForm,
                                            ProjectReviewForm,
@@ -619,8 +619,8 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': pk}))
 
 
-class ProjectDeleteUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
-    template_name = 'project/project_delete_users.html'
+class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'project/project_remove_users.html'
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -638,13 +638,13 @@ class ProjectDeleteUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         if project_obj.status.name not in ['Active', 'New', ]:
-            messages.error(request, 'You cannot delete users from an archived project.')
+            messages.error(request, 'You cannot remove users from an archived project.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
 
-    def get_users_to_delete(self, project_obj):
-        users_to_delete = [
+    def get_users_to_remove(self, project_obj):
+        users_to_remove = [
 
             {'username': ele.user.username,
              'first_name': ele.user.first_name,
@@ -655,18 +655,18 @@ class ProjectDeleteUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             for ele in project_obj.projectuser_set.filter(status__name='Active') if ele.user != self.request.user and ele.user != project_obj.pi
         ]
 
-        return users_to_delete
+        return users_to_remove
 
     def get(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         project_obj = get_object_or_404(Project, pk=pk)
 
-        users_to_delete = self.get_users_to_delete(project_obj)
+        users_to_remove = self.get_users_to_remove(project_obj)
         context = {}
 
-        if users_to_delete:
-            formset = formset_factory(ProjectDeleteUserForm, max_num=len(users_to_delete))
-            formset = formset(initial=users_to_delete, prefix='userform')
+        if users_to_remove:
+            formset = formset_factory(ProjectRemoveUserForm, max_num=len(users_to_remove))
+            formset = formset(initial=users_to_remove, prefix='userform')
             context['formset'] = formset
 
         context['project'] = get_object_or_404(Project, pk=pk)
@@ -676,12 +676,12 @@ class ProjectDeleteUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         pk = self.kwargs.get('pk')
         project_obj = get_object_or_404(Project, pk=pk)
 
-        users_to_delete = self.get_users_to_delete(project_obj)
+        users_to_remove = self.get_users_to_remove(project_obj)
 
-        formset = formset_factory(ProjectDeleteUserForm, max_num=len(users_to_delete))
-        formset = formset(request.POST, initial=users_to_delete, prefix='userform')
+        formset = formset_factory(ProjectRemoveUserForm, max_num=len(users_to_remove))
+        formset = formset(request.POST, initial=users_to_remove, prefix='userform')
 
-        delete_users_count = 0
+        remove_users_count = 0
 
         if formset.is_valid():
             project_user_removed_status_choice = ProjectUserStatusChoice.objects.get(name='Removed')
@@ -690,7 +690,7 @@ class ProjectDeleteUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                 user_form_data = form.cleaned_data
                 if user_form_data['selected']:
 
-                    delete_users_count += 1
+                    remove_users_count += 1
 
                     user_obj = User.objects.get(username=user_form_data.get('username'))
 
@@ -712,7 +712,7 @@ class ProjectDeleteUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                             subscription_remove_user.send(sender=self.__class__,
                                                           subscription_user_pk=subscription_user_obj.pk)
 
-            messages.success(request, 'Deleted {} users from project.'.format(delete_users_count))
+            messages.success(request, 'Removed {} users from project.'.format(remove_users_count))
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': pk}))
 
 
