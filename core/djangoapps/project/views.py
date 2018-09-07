@@ -842,7 +842,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context = {}
         context['project'] = project_obj
         context['project_review_form'] = project_review_form
-        context['project_users'] = ', '.join(['{} {}'.format(ele.user.first_name, ele.user.last_name) for ele in project_obj.projectuser_set.filter(status__name='Active')])
+        context['project_users'] = ', '.join(['{} {}'.format(ele.user.first_name, ele.user.last_name) for ele in project_obj.projectuser_set.filter(status__name='Active').order_by('user__last_name')])
 
         return render(request, self.template_name, context)
 
