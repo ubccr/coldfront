@@ -1,6 +1,7 @@
-{% extends "templates/base.html" %} 
+{% extends "common/base.html" %} 
 {% load crispy_forms_tags %}
 {% load static %}
+{% load common_tags %} 
 
 
 {% block title %}
@@ -10,12 +11,19 @@ Review Project
 
 
 {% block content %}
-<h1>Reviewing Project: {{project.title}}</h1> <hr>
+<h3>Reviewing Project: {{project.title}}</h3> <hr>
 
 
 <div class="card-body">
-<p class="text-justify">CCR requires faculty to review their project information annually in order to renew their group’s accounts.  The information provided by researchers is compiled and used to help make the case to the University for continued investment in CCR.  Up-to-date and accurate information is crucial to our success.  Please review and, if necessary, update your project description, publication and grant information.  Please verify the user accounts in your group and remove any that should no longer have access to CCR resources.  Thank you!
- </p>
+<p class="text-justify">{% settings_value 'EMAIL_CENTER_NAME' %} requires faculty to review their project information annually in order to renew their group’s accounts. The information provided by researchers is compiled and used to help make the case to the University for continued investment in {% settings_value 'EMAIL_CENTER_NAME' %}. Up-to-date and accurate information is crucial to our success. <a href="mailto:{% settings_value 'EMAIL_PROJECT_REVIEW_CONTACT' %}">Questions? Contact us</a></p>
+<p class="text-justify">Please update the following information:
+<ol>
+    <li><a href="{% url 'project-detail' project.pk %}"><i class="fas fa-external-link-alt"></i> Verify</a> your project description is accurate</li>
+    <li><a href="{% url 'project-detail' project.pk %}#publications"><i class="fas fa-external-link-alt"></i> Add</a> Publications</li>
+    <li><a href="{% url 'project-detail' project.pk %}#grants"><i class="fas fa-external-link-alt"></i> Add</a> Grants</li>
+    <li><a href="{% url 'project-detail' project.pk %}#users"><i class="fas fa-external-link-alt"></i> Verify</a> the user accounts in your group and remove any that should no longer have access to {% settings_value 'EMAIL_CENTER_NAME' %} resources</li>
+</ol>
+</p>
 
   <div class="table-responsive">
     <table class="table table-bordered table-sm">

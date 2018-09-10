@@ -11,6 +11,8 @@ def settings_value(name):
     allowed_names = [
         'LOGIN_FAIL_MESSAGE',
         'ACCOUNT_CREATION_TEXT',
+        'EMAIL_CENTER_NAME',
+        'EMAIL_PROJECT_REVIEW_CONTACT',
     ]
     return mark_safe(getattr(settings, name, '') if name in allowed_names else '')
 
@@ -26,6 +28,6 @@ def get_icon(expand_accordion):
 @register.filter
 def convert_boolean_to_icon(boolean):
     if boolean == False:
-        return mark_safe('<i class="fas fa-check"></i>')
+        return mark_safe('<span class="badge badge-success"><i class="fas fa-check"></i></span>')
     else:
-        return mark_safe('<i class="fas fa-times"></i>')
+        return mark_safe('<span class="badge badge-danger"><i class="fas fa-times"></i></span>')

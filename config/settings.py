@@ -76,7 +76,11 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ['common', ],
+        'DIRS': [
+            os.path.join(BASE_DIR, 'site/templates'),
+            '/usr/share/coldfront/site/templates',
+            os.path.join(BASE_DIR, 'common/templates'),
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -105,6 +109,7 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
+ADMIN_COMMENTS_SHOW_EMPTY = True
 
 MESSAGE_TAGS = {
     messages.DEBUG: 'info',
@@ -117,11 +122,18 @@ MESSAGE_TAGS = {
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 STATIC_URL = '/static/'
-STATIC_ROOT = './static_root/'
-STATIC_PATH = os.path.join(BASE_DIR, 'static')
-STATICFILES_DIRS = (
-    STATIC_PATH,
-)
+STATIC_ROOT = os.path.join(BASE_DIR, 'static_root')
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'common/static'),
+]
+
+# Add local site static files
+if os.path.isdir(os.path.join(BASE_DIR, 'site/static')):
+    STATICFILES_DIRS.insert(0, os.path.join(BASE_DIR, 'site/static'))
+
+# Add system site static files
+if os.path.isdir('/usr/share/coldfront/site/static'):
+    STATICFILES_DIRS.insert(0, '/usr/share/coldfront/site/static')
 
 LOGIN_URL = '/user/login'
 LOGIN_REDIRECT_URL = '/'

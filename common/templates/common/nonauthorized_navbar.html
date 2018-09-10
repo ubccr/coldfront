@@ -1,0 +1,24 @@
+ {% include 'common/navbar_brand.html' %}
+<nav class="navbar navbar-expand-md navbar-dark bg-primary">
+  <div class="container">
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-main">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="navbar-collapse collapse" id="navbar-main">
+      <ul class="navbar-nav">
+        <li id="navbar-home" class="nav-item active">
+          <a id="navbar-home" class="nav-link" href="/">Home</a>
+        </li>
+        <li id="navbar-center-summary" class="nav-item">
+          <a class="nav-link" href="{% url 'center-summary' %}">Center Summary</a>
+        </li>
+        <li id="navbar-help" class="nav-item">
+          <a class="nav-link" href="#">Help</a>
+        </li>
+      </ul>
+      <ul class="navbar-nav ml-auto">
+        <li class="nav-item"><a id="navbar-login" class="nav-link" href="{% url 'login' %}"><i class="fas fa-sign-in-alt"></i> Log In</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>

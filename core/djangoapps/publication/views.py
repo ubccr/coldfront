@@ -79,40 +79,41 @@ class PublicationSearchResultView(LoginRequiredMixin, UserPassesTestMixin, Templ
             return super().dispatch(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        source_pk = request.POST.get('source')
         unique_id = request.POST.get('unique_id')
         project_pk = self.kwargs.get('project_pk')
 
         project_obj = get_object_or_404(Project, pk=project_pk)
-        source_obj = get_object_or_404(PublicationSource, pk=source_pk)
+        matching_source_obj = None
+        for source in PublicationSource.objects.all():
+            if source.name == 'doi':
+                try:
+                    status, bib_str = crossref.get_bib(unique_id)
+                    bp = BibTexParser(interpolate_strings=False)
+                    bib_database = bp.parse(bib_str)
+                    bib_json = bib_database.entries[0]
+                    matching_source_obj = source
+                    break
+                except:
+                    continue
 
-        if source_obj.name == 'doi':
-            try:
-                status, bib_str = crossref.get_bib(unique_id)
-                bp = BibTexParser(interpolate_strings=False)
-                bib_database = bp.parse(bib_str)
-                bib_json = bib_database.entries[0]
-            except:
-                return render(request, self.template_name, {})
+            elif source.name == 'adsabs':
+                try:
+                    url = 'http://adsabs.harvard.edu/cgi-bin/nph-bib_query?bibcode={}&data_type=BIBTEX'.format(unique_id)
+                    r = requests.get(url, timeout=5)
+                    bp = BibTexParser(interpolate_strings=False)
+                    bib_database = bp.parse(r.text)
+                    bib_json = bib_database.entries[0]
+                    matching_source_obj = source
+                    break
+                except:
+                    continue
 
-        elif source_obj.name == 'adsabs':
-            try:
-                url = 'http://adsabs.harvard.edu/cgi-bin/nph-bib_query?bibcode={}&data_type=BIBTEX'.format(unique_id)
-                r = requests.get(url)
-                print(r)
-                print(r.text)
-                bp = BibTexParser(interpolate_strings=False)
-                bib_database = bp.parse(r.text)
-                bib_json = bib_database.entries[0]
-            except:
-                return render(request, self.template_name, {})
-
-
+        if not matching_source_obj:
+            return render(request, self.template_name, {})
 
         year = as_text(bib_json['year'])
         author = as_text(bib_json['author']).replace('{\\textquotesingle}', "'").replace('{\\textendash}', '-').replace('{\\textemdash}', '-').replace('{\\textasciigrave}', ' ').replace('{\\textdaggerdbl}', ' ').replace('{\\textdagger}', ' ')
         title = as_text(bib_json['title']).replace('{\\textquotesingle}', "'").replace('{\\textendash}', '-').replace('{\\textemdash}', '-').replace('{\\textasciigrave}', ' ').replace('{\\textdaggerdbl}', ' ').replace('{\\textdagger}', ' ')
-        # author = author.replace('{\\textquotesingle}', '')
 
         author = re.sub("{|}", "", author)
         title = re.sub("{|}", "", title)
@@ -121,8 +122,7 @@ class PublicationSearchResultView(LoginRequiredMixin, UserPassesTestMixin, Templ
         context['year'] = year
         context['title'] = title
         context['unique_id'] = unique_id
-        context['source'] = source_pk
-        context['source_obj'] = PublicationSource.objects.get(id=source_pk)
+        context['source'] = matching_source_obj
         context['project_pk'] = project_obj.pk
 
         return render(request, self.template_name, context)

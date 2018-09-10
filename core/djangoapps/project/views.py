@@ -7,7 +7,7 @@ from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.forms import formset_factory
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views import View
@@ -15,16 +15,19 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 
+
+from common.djangolibs.utils import get_domain_url
+from common.djangolibs.mail import send_email, send_email_template
+
 from django.conf import settings
 from common.djangolibs.utils import import_from_settings
 
 
-from django.core.mail import send_mail
 from common.djangoapps.user.forms import UserSearchForm
 from common.djangoapps.user.utils import CombinedUserSearch
 from core.djangoapps.project.forms import (ProjectAddUserForm,
                                            ProjectAddUsersToSubscriptionForm,
-                                           ProjectDeleteUserForm,
+                                           ProjectRemoveUserForm,
                                            ProjectSearchForm,
                                            ProjectUserUpdateForm,
                                            ProjectReviewForm,
@@ -39,10 +42,13 @@ from core.djangoapps.subscription.signals import (subscription_activate_user,
                                                   subscription_remove_user)
 from core.djangoapps.grant.models import Grant
 from core.djangoapps.publication.models import Publication
+from django.template.loader import render_to_string
 
 
 EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings('EMAIL_DIRECTOR_EMAIL_ADDRESS')
 EMAIL_DEVELOPMENT_EMAIL_LIST = import_from_settings('EMAIL_DEVELOPMENT_EMAIL_LIST')
+EMAIL_SUBJECT_PREFIX = import_from_settings('EMAIL_SUBJECT_PREFIX')
+EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
 
 
 class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
@@ -65,9 +71,9 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             return True
 
         messages.error(self.request, 'You do not have permission to view the previous page.')
+        return False
 
     def get_context_data(self, **kwargs):
-
         context = super().get_context_data(**kwargs)
         # Can the user update the project?
         if self.request.user.is_superuser:
@@ -87,17 +93,15 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         if self.request.user.is_superuser or self.request.user.has_perm('subscription.can_view_all_subscriptions'):
             subscriptions = Subscription.objects.prefetch_related('resources').filter(project=self.object)
         else:
-            if self.object.status.name == 'Active':
+            if self.object.status.name in ['Active', 'New']:
                 subscriptions = Subscription.objects.filter(
-                    Q(status__name__in=['Active', 'Approved', 'Denied', 'New', 'Pending', ]) &
+                    Q(status__name__in=['Active', 'Approved', 'Denied', 'New', 'Pending', 'Expired']) &
                     Q(project=self.object) &
                     Q(project__projectuser__user=self.request.user) &
-                    Q(project__projectuser__status__name='Active') &
+                    Q(project__projectuser__status__name__in=['Active', 'Pending - Add']) &
                     Q(subscriptionuser__user=self.request.user) &
-                    Q(subscriptionuser__status__name__in=['Active', 'Pending', ])
+                    Q(subscriptionuser__status__name__in=['Active', 'Pending - Add', ])
                 ).distinct().order_by('-created')
-            else:
-                subscriptions = Subscription.objects.prefetch_related('resources').filter(project=self.object)
 
         context['publications'] = Publication.objects.filter(project=self.object, status='Active').order_by('-year')
         context['grants'] = Grant.objects.filter(project=self.object, status__name__in=['Active', 'Pending'])
@@ -570,6 +574,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         if formset.is_valid() and subscription_form.is_valid():
             project_user_active_status_choice = ProjectUserStatusChoice.objects.get(name='Active')
             subscription_user_active_status_choice = SubscriptionUserStatusChoice.objects.get(name='Active')
+            subscription_user_pending_add_status_choice = SubscriptionUserStatusChoice.objects.get(name='Pending - Add')
             subscription_form_data = subscription_form.cleaned_data['subscription']
             if '__select_all__' in subscription_form_data:
                 subscription_form_data.remove('__select_all__')
@@ -599,13 +604,13 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                     for subscription in Subscription.objects.filter(pk__in=subscription_form_data):
                         if subscription.subscriptionuser_set.filter(user=user_obj).exists():
                             subscription_user_obj = subscription.subscriptionuser_set.get(user=user_obj)
-                            subscription_user_obj.status = subscription_user_active_status_choice
+                            subscription_user_obj.status = subscription_user_pending_add_status_choice
                             subscription_user_obj.save()
                         else:
                             subscription_user_obj = SubscriptionUser.objects.create(
                                 subscription=subscription,
                                 user=user_obj,
-                                status=subscription_user_active_status_choice)
+                                status=subscription_user_pending_add_status_choice)
                         subscription_activate_user.send(sender=self.__class__,
                                                         subscription_user_pk=subscription_user_obj.pk)
 
@@ -613,8 +618,8 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': pk}))
 
 
-class ProjectDeleteUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
-    template_name = 'project/project_delete_users.html'
+class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'project/project_remove_users.html'
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -632,13 +637,13 @@ class ProjectDeleteUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         if project_obj.status.name not in ['Active', 'New', ]:
-            messages.error(request, 'You cannot delete users from an archived project.')
+            messages.error(request, 'You cannot remove users from an archived project.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
 
-    def get_users_to_delete(self, project_obj):
-        users_to_delete = [
+    def get_users_to_remove(self, project_obj):
+        users_to_remove = [
 
             {'username': ele.user.username,
              'first_name': ele.user.first_name,
@@ -649,18 +654,18 @@ class ProjectDeleteUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             for ele in project_obj.projectuser_set.filter(status__name='Active') if ele.user != self.request.user and ele.user != project_obj.pi
         ]
 
-        return users_to_delete
+        return users_to_remove
 
     def get(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         project_obj = get_object_or_404(Project, pk=pk)
 
-        users_to_delete = self.get_users_to_delete(project_obj)
+        users_to_remove = self.get_users_to_remove(project_obj)
         context = {}
 
-        if users_to_delete:
-            formset = formset_factory(ProjectDeleteUserForm, max_num=len(users_to_delete))
-            formset = formset(initial=users_to_delete, prefix='userform')
+        if users_to_remove:
+            formset = formset_factory(ProjectRemoveUserForm, max_num=len(users_to_remove))
+            formset = formset(initial=users_to_remove, prefix='userform')
             context['formset'] = formset
 
         context['project'] = get_object_or_404(Project, pk=pk)
@@ -670,12 +675,12 @@ class ProjectDeleteUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         pk = self.kwargs.get('pk')
         project_obj = get_object_or_404(Project, pk=pk)
 
-        users_to_delete = self.get_users_to_delete(project_obj)
+        users_to_remove = self.get_users_to_remove(project_obj)
 
-        formset = formset_factory(ProjectDeleteUserForm, max_num=len(users_to_delete))
-        formset = formset(request.POST, initial=users_to_delete, prefix='userform')
+        formset = formset_factory(ProjectRemoveUserForm, max_num=len(users_to_remove))
+        formset = formset(request.POST, initial=users_to_remove, prefix='userform')
 
-        delete_users_count = 0
+        remove_users_count = 0
 
         if formset.is_valid():
             project_user_removed_status_choice = ProjectUserStatusChoice.objects.get(name='Removed')
@@ -684,7 +689,7 @@ class ProjectDeleteUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                 user_form_data = form.cleaned_data
                 if user_form_data['selected']:
 
-                    delete_users_count += 1
+                    remove_users_count += 1
 
                     user_obj = User.objects.get(username=user_form_data.get('username'))
 
@@ -706,7 +711,7 @@ class ProjectDeleteUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                             subscription_remove_user.send(sender=self.__class__,
                                                           subscription_user_pk=subscription_user_obj.pk)
 
-            messages.success(request, 'Deleted {} users from project.'.format(delete_users_count))
+            messages.success(request, 'Removed {} users from project.'.format(remove_users_count))
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': pk}))
 
 
@@ -815,12 +820,17 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
 
-        if not project_obj.project_needs_review:
+        if not project_obj.needs_review:
             messages.error(request, 'You do not need to review this project.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
         if 'Auto-Import Project'.lower() in project_obj.title.lower():
-            messages.error(request, 'You must update the project title before reviewing your project. You cannot have "Auto-Import Project" in the title.')
+            messages.error(
+                request, 'You must update the project title before reviewing your project. You cannot have "Auto-Import Project" in the title.')
+            return HttpResponseRedirect(reverse('project-update', kwargs={'pk': project_obj.pk}))
+
+        if 'We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!' in project_obj.description:
+            messages.error(request, 'You must update the project description before reviewing your project.')
             return HttpResponseRedirect(reverse('project-update', kwargs={'pk': project_obj.pk}))
 
         return super().dispatch(request, *args, **kwargs)
@@ -832,7 +842,8 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context = {}
         context['project'] = project_obj
         context['project_review_form'] = project_review_form
-        context['project_users'] = ', '.join(['{} {}'.format(ele.user.first_name, ele.user.last_name) for ele in project_obj.projectuser_set.filter(status__name='Active')])
+        context['project_users'] = ', '.join(['{} {}'.format(ele.user.first_name, ele.user.last_name)
+                                              for ele in project_obj.projectuser_set.filter(status__name='Active').order_by('user__last_name')])
 
         return render(request, self.template_name, context)
 
@@ -849,8 +860,19 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 reason_for_not_updating_project=form_data.get('reason'),
                 status=project_review_status_choice)
 
-            project_obj.project_needs_review = False
+            project_obj.force_review = False
             project_obj.save()
+
+            domain_url = get_domain_url(self.request)
+            url = '{}{}'.format(domain_url, reverse('project-review-list'))
+
+            send_email_template(
+                'New project review has been submitted',
+                'email/new_project_review.txt',
+                {'url': url},
+                EMAIL_SENDER,
+                [EMAIL_DIRECTOR_EMAIL_ADDRESS, ]
+            )
 
             messages.success(request, 'Project reviewed successfully.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
@@ -900,6 +922,7 @@ class ProjectReviewCompleteView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         project_review_status_completed_obj = ProjectReviewStatusChoice.objects.get(name='Completed')
         project_review_obj.status = project_review_status_completed_obj
+        project_review_obj.project.project_needs_review = False
         project_review_obj.save()
 
         messages.success(request, 'Project review for {} has been completed'.format(
@@ -944,19 +967,13 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         project_review_obj = get_object_or_404(ProjectReview, pk=pk)
         form_data = form.cleaned_data
 
-        if settings.DEBUG and settings.DEVELOP:
-            receiver_list = EMAIL_DEVELOPMENT_EMAIL_LIST
-        else:
-            receiver_list = [project_review_obj.project.pi.email, ]
-            receiver_list = ['mkzia@buffalo.edu', ]
-
-        send_mail(
+        send_email(
             'Request for more information',
             form_data.get('email_body'),
             EMAIL_DIRECTOR_EMAIL_ADDRESS,
-            receiver_list,
-            fail_silently=False,
+            [project_review_obj.project.pi.email, ],
         )
+
         messages.success(self.request, 'Email sent to {} {} ({})'.format(
             project_review_obj.project.pi.first_name,
             project_review_obj.project.pi.last_name,

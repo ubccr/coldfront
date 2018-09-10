@@ -1,4 +1,5 @@
 import datetime
+import logging
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -10,6 +11,7 @@ from core.djangoapps.project.models import Project
 from core.djangoapps.resources.models import Resource
 from simple_history.models import HistoricalRecords
 
+logger = logging.getLogger(__name__)
 
 class SubscriptionStatusChoice(TimeStampedModel):
     name = models.CharField(max_length=64)
@@ -36,7 +38,7 @@ class Subscription(TimeStampedModel):
 
         permissions = (
             ('can_view_all_subscriptions', 'Can see all subscriptions'),
-            ('can_review_pending_subscriptions', 'Can review pending subscriptions'),
+            ('can_review_subscription_requests', 'Can review subscription requests'),
         )
 
     def clean(self):
@@ -58,8 +60,13 @@ class Subscription(TimeStampedModel):
         for attribute in self.subscriptionattribute_set.all():
 
             if hasattr(attribute, 'subscriptionattributeusage'):
-                percent = round(float(attribute.subscriptionattributeusage.value) /
-                                float(attribute.value) * 10000) / 100
+                try:
+                    percent = round(float(attribute.subscriptionattributeusage.value) /
+                                    float(attribute.value) * 10000) / 100
+                except ValueError:
+                    percent = 'Invalid Value'
+                    logger.error("Subscription attribute '%s' is not an int but has a usage", attribute.subscription_attribute_type.name)
+
                 string = '{}: {}/{} ({} %) <br>'.format(
                     attribute.subscription_attribute_type.name,
                     attribute.subscriptionattributeusage.value,
@@ -72,14 +79,34 @@ class Subscription(TimeStampedModel):
 
     @property
     def get_resources_as_string(self):
-        return ', '.join([ele.name for ele in self.resources.all()])
+        return ', '.join([ele.name for ele in self.resources.all().order_by('-is_subscribable')])
 
     @property
     def get_parent_resource(self):
         return self.resources.filter(is_subscribable=True).first()
 
     def __str__(self):
-        return "%s (%s)" % (self.resources.first().name, self.project.pi)
+        return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
+
+
+class SubscriptionAdminComment(TimeStampedModel):
+    """ SubscriptionAttributeType. """
+    subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    comment = models.TextField()
+
+    def __str__(self):
+        return self.comment
+
+
+class SubscriptionUserMessage(TimeStampedModel):
+    """ SubscriptionAttributeType. """
+    subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    message = models.TextField()
+
+    def __str__(self):
+        return self.message
 
 
 class AttributeType(TimeStampedModel):

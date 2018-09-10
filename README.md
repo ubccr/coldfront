@@ -10,10 +10,13 @@ TODO: Write me
 
 ## Developing
 
+Install required OS packages:
+```
 yum groupinstall @Development
 yum install mariadb-server mariadb-devel redis python36 python36-devel openldap-devel 
+```
 
-Checkout the code, setup virtualenv, and install requirments:
+Checkout the code, setup virtualenv, and pip install requirements:
 ```
 $ git clone https://github.com/ubccr/coldfront.git
 $ cd coldfront/

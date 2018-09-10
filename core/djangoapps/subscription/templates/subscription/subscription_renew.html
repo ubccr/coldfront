@@ -1,4 +1,4 @@
-{% extends "templates/base.html" %} 
+{% extends "common/base.html" %} 
 {% load crispy_forms_tags %}
 {% load static %}
 
@@ -11,12 +11,13 @@ Renew Subscription
 
 {% block content %}
 <h1>Renew subscription to {{subscription.get_parent_resource }} for project: {{subscription.project.title}}</h1> <hr>
-{% if formset %}
+
 <div class="card border-light">
   <div class="card-body">
-  
     <form action="{% url 'subscription-renew' subscription.pk %}" method="post">
       {% csrf_token %}
+      {{ formset.management_form }}  
+      {% if formset %}
       <div class="table-responsive">
         <table class="table table-sm">
           <thead>
@@ -42,8 +43,32 @@ Renew Subscription
             {% endfor %}
           </tbody>
         </table>
+      </div>    
+     
+      {% else %}
+
+       <div class="table-responsive">
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>First Name</th>
+              <th>Last Name</th>
+              <th>Email</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>{{ subscription.project.pi.username }}</td>
+              <td>{{ subscription.project.pi.first_name }}</td>
+              <td>{{ subscription.project.pi.last_name }}</td>
+              <td>{{ subscription.project.pi.email }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      {{ formset.management_form }}
+      There are no additional users on this subscription. To add new users, click submit to complete the renewal and and return to the project page. <hr>
+      {% endif %}
       <div class="mb-3">
         <button type="submit" class="btn btn-primary">Submit</button>
         <a class="btn btn-secondary" href="{% url 'subscription-detail' subscription.pk %}" role="button"><i class="fas fa-long-arrow-left"></i> Back to Subscription</a>
@@ -52,12 +77,8 @@ Renew Subscription
     </form>
   </div>
 </div>
-{% else %} 
-  <a class="btn btn-secondary mb-3" href="{% url 'subscription-detail' subscription.pk %}" role="button"><i class="fas fa-long-arrow-left"></i> Back to Subscription</a> 
-  <div class="alert alert-info">
-    All users in project are already in this subscription!
-  </div>
-{% endif %}
+
+
 
 <script>
 $("#selectAll").click(function () {

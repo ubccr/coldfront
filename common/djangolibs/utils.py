@@ -34,3 +34,7 @@ def update_statuses():
         status=SubscriptionStatusChoice.objects.get(name='Expired'))
 
     logger.info('Subscriptions set to expired: {}'.format(number_expired))
+
+
+def get_domain_url(request):
+    return request.build_absolute_uri().replace(request.get_full_path(), '')

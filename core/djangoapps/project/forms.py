@@ -39,8 +39,8 @@ class ProjectAddUsersToSubscriptionForm(forms.Form):
         project_obj = get_object_or_404(Project, pk=project_pk)
 
         subscription_query_set = project_obj.subscription_set.filter(
-            status__name__in=['Active', 'New', 'Pending'])
-        subscription_choices = [(subscription.id, "%s (%s)" %(subscription.resources.first().name, subscription.resources.first().resource_type.name)) for subscription in subscription_query_set]
+            status__name__in=['Active', 'New', 'Pending'], resources__is_subscribable=True)
+        subscription_choices = [(subscription.id, "%s (%s)" %(subscription.get_parent_resource.name, subscription.get_parent_resource.resource_type.name)) for subscription in subscription_query_set]
         subscription_choices.insert(0, ('__select_all__', 'Select All'))
         if subscription_query_set:
             self.fields['subscription'].choices = subscription_choices
@@ -49,7 +49,7 @@ class ProjectAddUsersToSubscriptionForm(forms.Form):
             self.fields['subscription'].widget = forms.HiddenInput()
 
 
-class ProjectDeleteUserForm(forms.Form):
+class ProjectRemoveUserForm(forms.Form):
     username = forms.CharField( max_length=150, disabled=True)
     first_name = forms.CharField(max_length=30, required=False, disabled=True)
     last_name = forms.CharField(max_length=150, required=False, disabled=True)
@@ -64,7 +64,7 @@ class ProjectUserUpdateForm(forms.Form):
 
 
 class ProjectReviewForm(forms.Form):
-    reason = forms.CharField(widget=forms.Textarea, required=False)
+    reason = forms.CharField(label='Reason for not updating project information', widget=forms.Textarea(attrs={'placeholder': 'If you have no new information to provide, you are required to provide a statement explaining this in this box. Thank you!'}), required=False)
     acknowledgement = forms.BooleanField(label='By checking this box I acknowledge that I have updated my project to the best of my knowledge', initial=False, required=True)
 
     def __init__(self, project_pk, *args, **kwargs):
@@ -74,20 +74,20 @@ class ProjectReviewForm(forms.Form):
 
         if project_obj.grant_set.exists():
             latest_grant = project_obj.grant_set.order_by('-modified')[0]
-            grant_updated_over_365_days = (now - latest_grant.created).days > 365
+            grant_updated_in_last_year = (now - latest_grant.created).days < 365
         else:
-            grant_updated_over_365_days = None
+            grant_updated_in_last_year = None
 
         if project_obj.publication_set.exists():
             latest_publication = project_obj.publication_set.order_by('-created')[0]
-            publication_over_365_days = (now - latest_publication.created).days > 365
+            publication_updated_in_last_year = (now - latest_publication.created).days < 365
         else:
-            publication_over_365_days = None
+            publication_updated_in_last_year = None
 
-        if not (grant_updated_over_365_days or publication_over_365_days):
+        if grant_updated_in_last_year and publication_updated_in_last_year:
             self.fields['reason'].widget = forms.HiddenInput()
-
-        self.fields['reason'].help_text = '<br/>Reason for not adding new grants and/or publications in the past year.'
+        else:
+            self.fields['reason'].required = True
 
 
 class ProjectReviewEmailForm(forms.Form):

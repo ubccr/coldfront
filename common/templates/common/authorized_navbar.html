@@ -1,0 +1,36 @@
+ {% include 'common/navbar_brand.html' %}
+<nav class="navbar navbar-expand-md navbar-dark bg-primary">
+  <div class="container">
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-main">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="navbar-collapse collapse" id="navbar-main">
+      <ul class="navbar-nav">
+        <li id="navbar-home" class="nav-item active">
+          <a class="nav-link" href="/">Home</a>
+        </li>
+        <li id="navbar-center-summary" class="nav-item">
+          <a class="nav-link" href="{% url 'center-summary' %}">Center Summary</a>
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">Project</a>
+          <div class="dropdown-menu">
+            <a class="dropdown-item" href="{% url 'project-list' %}">Projects</a>
+            <a class="dropdown-item" href="{% url 'subscription-list' %}">Subscriptions</a>
+            <a class="dropdown-item" href="#">Publications</a>
+            <a class="dropdown-item" href="#">Grants</a>
+          </div>
+        </li>
+        {% if request.user.is_superuser %}
+          {% include 'common/navbar_admin.html' %}
+        {% endif %}
+        <li id="navbar-help" class="nav-item">
+          <a class="nav-link" href="#">Help</a>
+        </li>
+      </ul>
+      <ul class="navbar-nav ml-auto">
+        {% include 'common/navbar_login.html' %}
+      </ul>
+    </div>
+  </div>
+</nav>
