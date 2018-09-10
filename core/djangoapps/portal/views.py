@@ -35,7 +35,6 @@ def home(request):
             Q(subscriptionuser__status__name__in=['Active', 'Pending - Add'])
         ).distinct().order_by('-created')[:5]
         context['project_list'] = project_list
-        print(subscription_list)
         context['subscription_list'] = subscription_list
     else:
         template_name = 'portal/nonauthorized_home.html'
