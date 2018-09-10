@@ -16,6 +16,7 @@ django-sslserver
 doi2bib
 humanize
 isort
+ipython
 kerberos
 mysqlclient
 python-dateutil
