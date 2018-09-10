@@ -79,7 +79,7 @@ class Subscription(TimeStampedModel):
 
     @property
     def get_resources_as_string(self):
-        return ', '.join([ele.name for ele in self.resources.all()])
+        return ', '.join([ele.name for ele in self.resources.all().order_by('-is_subscribable')])
 
     @property
     def get_parent_resource(self):

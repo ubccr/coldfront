@@ -66,15 +66,14 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
         subscription_obj = self.get_object()
 
         user_can_access_project = subscription_obj.project.projectuser_set.filter(
-            user=self.request.user, status__name='Active').exists()
+            user=self.request.user, status__name__in=['Active', 'New',]).exists()
 
         user_can_access_subscription = subscription_obj.subscriptionuser_set.filter(
-            user=self.request.user, status__name__in=['Active', 'Pending Add']).exists()
+            user=self.request.user, status__name__in=['Active', 'Pending - Add']).exists()
 
         if user_can_access_project and user_can_access_subscription:
             return True
 
-        messages.error(self.request, 'You do not have permission to view the previous page.')
         return False
 
     def get_context_data(self, **kwargs):
@@ -102,7 +101,7 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
             except ValueError:
                 logger.error("Subscription attribute '%s' is not an int but has a usage", attribute.subscription_attribute_type.name)
                 invalid_attributes.append(attribute)
-                    
+
         for a in invalid_attributes:
             attributes_with_usage.remove(a)
 
