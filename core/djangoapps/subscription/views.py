@@ -564,7 +564,7 @@ class SubscriptionDeleteUsersView(LoginRequiredMixin, UserPassesTestMixin, Templ
                     delete_users_count += 1
 
                     user_obj = User.objects.get(username=user_form_data.get('username'))
-                    if subscription_obj.pi == user_obj:
+                    if subscription_obj.project.pi == user_obj:
                         continue
 
                     subscription_user_obj = subscription_obj.subscriptionuser_set.get(user=user_obj)
