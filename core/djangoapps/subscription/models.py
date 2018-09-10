@@ -86,7 +86,7 @@ class Subscription(TimeStampedModel):
         return self.resources.filter(is_subscribable=True).first()
 
     def __str__(self):
-        return "%s (%s)" % (self.resources.first().name, self.project.pi)
+        return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
 
 
 class SubscriptionAdminComment(TimeStampedModel):

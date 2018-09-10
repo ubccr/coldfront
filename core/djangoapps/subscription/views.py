@@ -49,6 +49,7 @@ EMAIL_CENTER_NAME = import_from_settings('EMAIL_CENTER_NAME')
 
 logger = logging.getLogger(__name__)
 
+
 class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     model = Subscription
     template_name = 'subscription/subscription_detail.html'

@@ -30,7 +30,7 @@ def home(request):
             Q(status__name__in=['Active', 'Approved', 'Denied', 'Expired', 'New', 'Pending', ]) &
             Q(project__status__name__in=['Active', 'New']) &
             Q(project__projectuser__user=request.user) &
-            Q(project__projectuser__status__name=['Active', 'Pending - Add']) &
+            Q(project__projectuser__status__name__in=['Active', 'Pending - Add']) &
             Q(subscriptionuser__user=request.user) &
             Q(subscriptionuser__status__name__in=['Active', 'Pending - Add'])
         ).distinct().order_by('-created')[:5]
