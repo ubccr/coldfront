@@ -44,9 +44,18 @@ class Mokey_Oidc(OpenIdConnectAuth):
         self.OIDC_CA_CERT = import_from_settings(
             'SOCIAL_AUTH_MOKEY_OIDC_VERIFY_SSL')
 
+        self.ENABLE_BASIC_AUTH = import_from_settings(
+            'SOCIAL_AUTH_MOKEY_OIDC_ENABLE_BASIC_AUTH')
+
     def auth_complete_credentials(self):
-        client_id, client_secret = self.get_key_and_secret()
-        return (client_id, client_secret)
+        """Here we assume the token endpoint authentication method is
+        client_secret_post so we don't send basic auth creds. To override this
+        set SOCIAL_AUTH_MOKEY_OIDC_ENABLE_BASIC_AUTH to True.
+        """
+        if self.ENABLE_BASIC_AUTH:
+            return self.get_key_and_secret()
+
+        return None
 
     @cache(ttl=86400)
     def get_jwks_keys(self):
