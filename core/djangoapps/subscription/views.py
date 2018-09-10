@@ -599,7 +599,7 @@ class SubscriptionRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templ
         return context
 
 
-class SubscriptionApproveRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
+class SubscriptionActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
     login_url = "/"
 
     def test_func(self):
@@ -611,16 +611,16 @@ class SubscriptionApproveRequestView(LoginRequiredMixin, UserPassesTestMixin, Vi
         if self.request.user.has_perm('subscription.can_review_subscription_requests'):
             return True
 
-        messages.error(self.request, 'You do not have permission to approve a subscription request.')
+        messages.error(self.request, 'You do not have permission to activate a subscription request.')
 
     def get(self, request, pk):
         subscription_obj = get_object_or_404(Subscription, pk=pk)
 
-        subscription_status_approved_obj = SubscriptionStatusChoice.objects.get(name='Approved')
-        subscription_obj.status = subscription_status_approved_obj
+        subscription_status_active_obj = SubscriptionStatusChoice.objects.get(name='Active')
+        subscription_obj.status = subscription_status_active_obj
         subscription_obj.save()
 
-        messages.success(request, 'Subscription to {} has been APPROVED for {} {} ({})'.format(
+        messages.success(request, 'Subscription to {} has been ACTIVATED for {} {} ({})'.format(
             subscription_obj.get_parent_resource,
             subscription_obj.project.pi.first_name,
             subscription_obj.project.pi.last_name,
