@@ -82,7 +82,7 @@ Project Detail
 <!-- Start Project Users -->
 <div class="card mb-3">
   <div class="card-header">
-  <h4 class="d-inline"><i class="fas fa-users"></i> Users</h4> <span class="badge badge-secondary">{{project_users.count}}</span>
+  <h4 class="d-inline"><i class="fas fa-users"></i> <a name="users">Users</a></h4> <span class="badge badge-secondary">{{project_users.count}}</span>
     <div class="float-right">
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
         <a class="btn btn-primary" href="#" role="button"><i class="far fa-envelope"></i> Email Project Users</a>
@@ -214,7 +214,7 @@ Project Detail
 <!-- Start Project Grants -->
 <div class="card mb-3">
   <div class="card-header">
-  <h4 class="d-inline"><i class="fas fa-trophy"></i> Grants </h4> <span class="badge badge-secondary">{{grants.count}}</span>
+  <h4 class="d-inline"><i class="fas fa-trophy"></i> <a name="grants">Grants</a> </h4> <span class="badge badge-secondary">{{grants.count}}</span>
     <div class="float-right">
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
         <a class="btn btn-success" href="{% url 'grant-create' project.id %}" role="button"><i class="fas fa-plus"></i> Add Grant</a>
@@ -266,7 +266,7 @@ Project Detail
 <!-- Start Project Publications -->
 <div class="card mb-3">
   <div class="card-header">
-  <h4 class="d-inline"><i class="fas fa-newspaper"></i> Publications </h4> <span class="badge badge-secondary">{{publications.count}}</span>
+  <h4 class="d-inline"><i class="fas fa-newspaper"></i> <a name="publications">Publications</a> </h4> <span class="badge badge-secondary">{{publications.count}}</span>
     <div class="float-right">
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
         <a class="btn btn-success" href="{% url 'publication-search' project.pk %}" role="button"><i class="fas fa-plus"></i> Add Publication</a>
