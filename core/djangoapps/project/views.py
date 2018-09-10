@@ -93,17 +93,15 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         if self.request.user.is_superuser or self.request.user.has_perm('subscription.can_view_all_subscriptions'):
             subscriptions = Subscription.objects.prefetch_related('resources').filter(project=self.object)
         else:
-            if self.object.status.name == 'Active':
+            if self.object.status.name in ['Active', 'New']:
                 subscriptions = Subscription.objects.filter(
-                    Q(status__name__in=['Active', 'Approved', 'Denied', 'New', 'Pending', 'Expired' ]) &
+                    Q(status__name__in=['Active', 'Approved', 'Denied', 'New', 'Pending', 'Expired']) &
                     Q(project=self.object) &
                     Q(project__projectuser__user=self.request.user) &
-                    Q(project__projectuser__status__name='Active') &
+                    Q(project__projectuser__status__name__in=['Active', 'Pending - Add']) &
                     Q(subscriptionuser__user=self.request.user) &
-                    Q(subscriptionuser__status__name__in=['Active', 'Pending', ])
+                    Q(subscriptionuser__status__name__in=['Active', 'Pending - Add', ])
                 ).distinct().order_by('-created')
-            else:
-                subscriptions = Subscription.objects.prefetch_related('resources').filter(project=self.object)
 
         context['publications'] = Publication.objects.filter(project=self.object, status='Active').order_by('-year')
         context['grants'] = Grant.objects.filter(project=self.object, status__name__in=['Active', 'Pending'])
@@ -826,7 +824,8 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
         if 'Auto-Import Project'.lower() in project_obj.title.lower():
-            messages.error(request, 'You must update the project title before reviewing your project. You cannot have "Auto-Import Project" in the title.')
+            messages.error(
+                request, 'You must update the project title before reviewing your project. You cannot have "Auto-Import Project" in the title.')
             return HttpResponseRedirect(reverse('project-update', kwargs={'pk': project_obj.pk}))
 
         if 'We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!' in project_obj.description:
@@ -842,7 +841,8 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context = {}
         context['project'] = project_obj
         context['project_review_form'] = project_review_form
-        context['project_users'] = ', '.join(['{} {}'.format(ele.user.first_name, ele.user.last_name) for ele in project_obj.projectuser_set.filter(status__name='Active').order_by('user__last_name')])
+        context['project_users'] = ', '.join(['{} {}'.format(ele.user.first_name, ele.user.last_name)
+                                              for ele in project_obj.projectuser_set.filter(status__name='Active').order_by('user__last_name')])
 
         return render(request, self.template_name, context)
 
