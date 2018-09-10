@@ -5,13 +5,6 @@
 <form action="{% url 'project-add-users' pk %}" method="post">
   {% csrf_token %}
   <div class="mb-3">
-  {% if matches %}  
-  <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus"></i> Add Selected Users to Project</button>
-  {% endif %}
-  <a class="btn btn-secondary" href="{% url 'project-detail' pk %}" role="button">Back to Project</a><br>
-  </div>
-
-  <div class="mb-3">
   {% if number_of_usernames_found %}
     <strong>Found {{number_of_usernames_found}} of {{number_of_usernames_searched}} usernames searched.</strong> 
   {% elif matches %}
@@ -63,6 +56,12 @@
 
   <input id="q" type="hidden" name="q" value="{{user_search_string}}">
   <input id="search_by" type="hidden" name="search_by" value="{{search_by}}">
+    <div class="mb-3">
+  {% if matches %}  
+  <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus"></i> Add Selected Users to Project</button>
+  {% endif %}
+  <a class="btn btn-secondary" href="{% url 'project-detail' pk %}" role="button">Back to Project</a><br>
+  </div>
 </form>
 
 {% else %}

@@ -17,11 +17,6 @@ Add Users to Subscription
   
     <form action="{% url 'subscription-add-users' subscription.pk %}" method="post">
       {% csrf_token %}
-      <div class="mb-3">
-        <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus"></i> Add Selected Users to Subscription</button>
-        <a class="btn btn-secondary" href="{% url 'subscription-detail' subscription.pk %}" role="button"><i class="fas fa-long-arrow-left"></i> Back to Subscription</a>
-        <br>
-      </div>
       <div class="table-responsive">
         <table class="table table-sm table-hover">
           <thead>
@@ -51,6 +46,11 @@ Add Users to Subscription
         </table>
       </div>
       {{ formset.management_form }}
+      <div class="mb-3">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus"></i> Add Selected Users to Subscription</button>
+        <a class="btn btn-secondary" href="{% url 'subscription-detail' subscription.pk %}" role="button"><i class="fas fa-long-arrow-left"></i> Back to Subscription</a>
+        <br>
+      </div>
     </form>
   </div>
 </div>
