@@ -34,7 +34,7 @@ class SubscriptionUserInline(admin.TabularInline):
 class SubscriptionAttributeInline(admin.TabularInline):
     model = SubscriptionAttribute
     extra = 0
-    fields = ('subscription_attribute_type', 'value', )
+    fields = ('subscription_attribute_type', 'value', 'is_private')
 
 
 class SubscriptionAdminCommentInline(admin.TabularInline):
@@ -151,7 +151,7 @@ class UsageValueFilter(admin.SimpleListFilter):
 @admin.register(SubscriptionAttribute)
 class SubscriptionAttributeAdmin(SimpleHistoryAdmin):
     readonly_fields_change = ('subscription', 'subscription_attribute_type', 'created', 'modified', 'project_title')
-    fields_change = ('project_title', 'subscription', 'subscription_attribute_type', 'value', 'created', 'modified',)
+    fields_change = ('project_title', 'subscription', 'subscription_attribute_type', 'value', 'is_private', 'created', 'modified',)
     list_display = ('pk', 'project', 'pi', 'resource', 'subscription_status',
                     'subscription_attribute_type', 'value', 'usage', 'is_private', 'created', 'modified',)
     inlines = [SubscriptionAttributeUsageInline, ]

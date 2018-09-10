@@ -644,7 +644,6 @@ class SubscriptionActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, V
             if subscription_user.enable_notifications:
                 email_receiver_list.append(subscription_user.user.email)
 
-
         send_email_template(
             'Subscription Activated',
             'email/subscription_activated.txt',
