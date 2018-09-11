@@ -1,6 +1,7 @@
  {% include 'common/navbar_brand.html' %}
 <nav class="navbar navbar-expand-md navbar-dark bg-primary">
   <div class="container">
+    <a class="navbar-brand d-block d-sm-none text-primary" href="#">Coldfront</a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-main">
       <span class="navbar-toggler-icon"></span>
     </button>
@@ -17,7 +18,7 @@
         </li>
       </ul>
       <ul class="navbar-nav ml-auto">
-        <li class="nav-item"><a id="navbar-login" class="nav-link" href="{% url 'login' %}"><i class="fas fa-sign-in-alt"></i> Log In</a></li>
+        <li id="navbar-login" class="nav-item"><a id="navbar-login" class="nav-link" href="{% url 'login' %}"><i class="fas fa-sign-in-alt"></i> Log In</a></li>
       </ul>
     </div>
   </div>
