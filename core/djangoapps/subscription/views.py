@@ -564,7 +564,7 @@ class SubscriptionDeleteUsersView(LoginRequiredMixin, UserPassesTestMixin, Templ
                     delete_users_count += 1
 
                     user_obj = User.objects.get(username=user_form_data.get('username'))
-                    if subscription_obj.pi == user_obj:
+                    if subscription_obj.project.pi == user_obj:
                         continue
 
                     subscription_user_obj = subscription_obj.subscriptionuser_set.get(user=user_obj)
@@ -599,7 +599,7 @@ class SubscriptionRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templ
         return context
 
 
-class SubscriptionApproveRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
+class SubscriptionActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
     login_url = "/"
 
     def test_func(self):
@@ -611,16 +611,16 @@ class SubscriptionApproveRequestView(LoginRequiredMixin, UserPassesTestMixin, Vi
         if self.request.user.has_perm('subscription.can_review_subscription_requests'):
             return True
 
-        messages.error(self.request, 'You do not have permission to approve a subscription request.')
+        messages.error(self.request, 'You do not have permission to activate a subscription request.')
 
     def get(self, request, pk):
         subscription_obj = get_object_or_404(Subscription, pk=pk)
 
-        subscription_status_approved_obj = SubscriptionStatusChoice.objects.get(name='Approved')
-        subscription_obj.status = subscription_status_approved_obj
+        subscription_status_active_obj = SubscriptionStatusChoice.objects.get(name='Active')
+        subscription_obj.status = subscription_status_active_obj
         subscription_obj.save()
 
-        messages.success(request, 'Subscription to {} has been APPROVED for {} {} ({})'.format(
+        messages.success(request, 'Subscription to {} has been ACTIVATED for {} {} ({})'.format(
             subscription_obj.get_parent_resource,
             subscription_obj.project.pi.first_name,
             subscription_obj.project.pi.last_name,
@@ -643,7 +643,6 @@ class SubscriptionApproveRequestView(LoginRequiredMixin, UserPassesTestMixin, Vi
         for subscription_user in subscription_obj.project.projectuser_set.all():
             if subscription_user.enable_notifications:
                 email_receiver_list.append(subscription_user.user.email)
-
 
         send_email_template(
             'Subscription Activated',

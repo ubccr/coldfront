@@ -22,6 +22,7 @@ class SubscriptionForm(forms.Form):
         self.fields['quantity'].initial = 1
         user_query_set = project_obj.projectuser_set.select_related('user').filter(
             status__name__in=['Active', 'Pending Add'])
+        user_query_set = user_query_set.exclude(user=project_obj.pi)
         if user_query_set:
             self.fields['users'].choices = ((user.user.username, "%s %s (%s)" % (
                 user.user.first_name, user.user.last_name, user.user.username)) for user in user_query_set)
