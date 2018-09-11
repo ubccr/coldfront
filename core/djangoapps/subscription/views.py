@@ -45,7 +45,7 @@ EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
 EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
 EMAIL_OPT_OUT_INSTRUCTION_URL = import_from_settings('EMAIL_OPT_OUT_INSTRUCTION_URL')
 EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
-EMAIL_CENTER_NAME = import_from_settings('EMAIL_CENTER_NAME')
+EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
 
 logger = logging.getLogger(__name__)
 
