@@ -1,6 +1,7 @@
 {% extends "common/base.html" %}
 {% load crispy_forms_tags %}
 {% load staticfiles %}
+{% load common_tags %} 
 {% load humanize %}
 
 {% block title %}
@@ -12,6 +13,7 @@ Center Summary
 
 {% block content %}
 
+<h1>{% settings_value 'EMAIL_CENTER_NAME' %} Scientific Impact</h1><hr>
 
 <!-- Start  Publications -->
 <div class="card mb-3 border-primary">
