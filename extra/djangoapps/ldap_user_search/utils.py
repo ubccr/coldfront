@@ -2,6 +2,7 @@ import json
 
 from django.db.models import Q
 from ldap3 import Connection, Server
+import ldap
 
 from common.djangoapps.user.utils import UserSearch
 from common.djangolibs.utils import import_from_settings
@@ -36,9 +37,9 @@ class LDAPUserSearch(UserSearch):
     def search_a_user(self, user_search_string=None, search_by='all_fields'):
         size_limit = 50
         if user_search_string and search_by == 'all_fields':
-            filter = "(|(givenName=*{}*)(sn=*{}*)(uid=*{}*)(mail=*{}*))".format(*[user_search_string] * 4)
+            filter = ldap.filter.filter_format("(|(givenName=*%s*)(sn=*%s*)(uid=*%s*)(mail=*%s*))", [user_search_string] * 4)
         elif user_search_string and search_by == 'username_only':
-            filter = "(uid={})".format(user_search_string)
+            filter = ldap.filter.filter_format("(uid=%s)", [user_search_string])
             size_limit = 1
         else:
             filter = '(objectclass=person)'
