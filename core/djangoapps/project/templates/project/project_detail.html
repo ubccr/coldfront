@@ -39,7 +39,7 @@ Project Detail
     <div class="card-body">
       {% if project.status.name != 'Archived' %}
         <a class="btn btn-success" href="{% url 'project-add-users-search' project.pk %}" role="button"><i class="fas fa-user-plus"></i> Add Users</a>
-        <a class="btn btn-success" href="{% url 'publication-search' project.pk %}" role="button"><i class="far fa-newspaper"></i> Add Publications</a>
+        <a class="btn btn-success" href="{% url 'publication-search' project.pk %}" role="button"><i class="far fa-newspaper"></i> Add Publication</a>
         <a class="btn btn-success" href="{% url 'grant-create' project.id %}" role="button"><i class="fas fa-trophy"></i> Add Grant</a>
         <a class="btn btn-info" href="{% url 'project-update' project.pk %}" role="button"><i class="far fa-edit"></i> Update Project Information</a>
       {% endif %}
