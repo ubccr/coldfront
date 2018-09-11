@@ -17,11 +17,6 @@ Delete Publications from Project
   
     <form action="{% url 'publication-delete-publications' project.pk %}" method="post">
       {% csrf_token %}
-      <div class="mb-3">
-        <button type="submit" class="btn btn-danger"><i class="fas fa-minus"></i> Delete Selected Publications from Project</button>
-        <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left"></i> Back to Project</a>
-        <br>
-      </div>
       <div class="table-responsive">
         <table class="table table-sm table-hover">
           <thead>
@@ -45,6 +40,11 @@ Delete Publications from Project
         </table>
       </div>
       {{ formset.management_form }}
+      <div>
+        <button type="submit" class="btn btn-danger"><i class="fas fa-minus"></i> Delete Selected Publications from Project</button>
+        <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left"></i> Back to Project</a>
+        <br>
+      </div>
     </form>
   </div>
 </div>

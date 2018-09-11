@@ -46,7 +46,7 @@ Add Users to Subscription
         </table>
       </div>
       {{ formset.management_form }}
-      <div class="mb-3">
+      <div>
         <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus"></i> Add Selected Users to Subscription</button>
         <a class="btn btn-secondary" href="{% url 'subscription-detail' subscription.pk %}" role="button"><i class="fas fa-long-arrow-left"></i> Back to Subscription</a>
         <br>
