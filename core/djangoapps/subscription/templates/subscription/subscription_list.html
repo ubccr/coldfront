@@ -97,6 +97,13 @@
   No subscriptions to display!
 </div>
 {% endif %}
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-project-menu").addClass("active");
+  $("#navbar-subscription").addClass("active");
+</script>
+
 <script>
 $(document).on('click', '#form_reset_button', function() {
   
