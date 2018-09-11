@@ -26,13 +26,15 @@
 {% endblock %} 
 
 
+
 {% block javascript %} 
+
   {{ block.super }}
   <script>
-    $("#navbar-main > ul > li.active").removeClass("active");
-    $("#navbar-ldap-home").addClass("active");
-  </script>
-
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-admin").addClass("active");
+   $("#navbar-user-search").addClass("active");
+</script>
 
 <script>
   $('#post-form').on('submit', function(event){

@@ -1,6 +1,8 @@
- {% include 'common/navbar_brand.html' %}
+{% include 'common/navbar_brand.html' %}
+{% load common_tags %} 
 <nav class="navbar navbar-expand-md navbar-dark bg-primary">
   <div class="container">
+    <a class="navbar-brand d-block d-sm-none text-primary" href="#">Coldfront</a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-main">
       <span class="navbar-toggler-icon"></span>
     </button>
@@ -12,7 +14,7 @@
         <li id="navbar-center-summary" class="nav-item">
           <a class="nav-link" href="{% url 'center-summary' %}">Center Summary</a>
         </li>
-        <li class="nav-item dropdown">
+        <li id="navbar-project-menu" class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">Project</a>
           <div class="dropdown-menu">
             <a class="dropdown-item" href="{% url 'project-list' %}">Projects</a>
@@ -25,7 +27,7 @@
           {% include 'common/navbar_admin.html' %}
         {% endif %}
         <li id="navbar-help" class="nav-item">
-          <a class="nav-link" href="#">Help</a>
+          <a class="nav-link" href="{% settings_value 'CENTER_HELP_URL' %}">Help</a>
         </li>
       </ul>
       <ul class="navbar-nav ml-auto">
