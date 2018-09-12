@@ -12,8 +12,12 @@ from core.djangoapps.grant.models import Grant
 from django.contrib.humanize.templatetags.humanize import intcomma
 
 import operator
+from collections import Counter
+import pprint
 
 from django.db.models import Count, Sum
+
+
 def home(request):
 
     context = {}
@@ -50,21 +54,23 @@ def home(request):
 def center_summary(request):
     context = {}
 
-
     # Publications Card
-    publications_by_year = list(Publication.objects.filter(year__gte=1999).values('unique_id', 'year').distinct().values('year').annotate(num_pub=Count('year')).order_by('-year'))
+    publications_by_year = list(Publication.objects.filter(year__gte=1999).values(
+        'unique_id', 'year').distinct().values('year').annotate(num_pub=Count('year')).order_by('-year'))
 
     publications_by_year = [(ele['year'], ele['num_pub']) for ele in publications_by_year]
 
     publication_by_year_bar_chart_data = generate_publication_by_year_chart_data(publications_by_year)
     context['publication_by_year_bar_chart_data'] = publication_by_year_bar_chart_data
-    context['total_publications_count'] = Publication.objects.filter(year__gte=1999).values('unique_id', 'year').distinct().count()
+    context['total_publications_count'] = Publication.objects.filter(
+        year__gte=1999).values('unique_id', 'year').distinct().count()
 
     # Grants Card
-    total_grants_by_agency_sum = list(Grant.objects.values('funding_agency__name').annotate(total_amount=Sum('total_amount_awarded')))
+    total_grants_by_agency_sum = list(Grant.objects.values(
+        'funding_agency__name').annotate(total_amount=Sum('total_amount_awarded')))
 
-
-    total_grants_by_agency_count = list(Grant.objects.values('funding_agency__name').annotate(count=Count('total_amount_awarded')))
+    total_grants_by_agency_count = list(Grant.objects.values(
+        'funding_agency__name').annotate(count=Count('total_amount_awarded')))
 
     total_grants_by_agency_count = {ele['funding_agency__name']: ele['count'] for ele in total_grants_by_agency_count}
 
@@ -72,14 +78,49 @@ def center_summary(request):
         ele['funding_agency__name'],
         intcomma(int(ele['total_amount'])),
         total_grants_by_agency_count[ele['funding_agency__name']]
-        ), ele['total_amount']] for ele in total_grants_by_agency_sum]
+    ), ele['total_amount']] for ele in total_grants_by_agency_sum]
 
     total_grants_by_agency = sorted(total_grants_by_agency, key=operator.itemgetter(1), reverse=True)
     grants_agency_chart_data = generate_total_grants_by_agency_chart_data(total_grants_by_agency)
     context['grants_agency_chart_data'] = grants_agency_chart_data
     context['grants_total'] = intcomma(int(sum(list(Grant.objects.values_list('total_amount_awarded', flat=True)))))
-    context['grants_total_pi_only'] = intcomma(int(sum(list(Grant.objects.filter(role='PI').values_list('total_amount_awarded', flat=True)))))
-    context['grants_total_copi_only'] = intcomma(int(sum(list(Grant.objects.filter(role='CoPI').values_list('total_amount_awarded', flat=True)))))
-    context['grants_total_sp_only'] = intcomma(int(sum(list(Grant.objects.filter(role='SP').values_list('total_amount_awarded', flat=True)))))
+    context['grants_total_pi_only'] = intcomma(
+        int(sum(list(Grant.objects.filter(role='PI').values_list('total_amount_awarded', flat=True)))))
+    context['grants_total_copi_only'] = intcomma(
+        int(sum(list(Grant.objects.filter(role='CoPI').values_list('total_amount_awarded', flat=True)))))
+    context['grants_total_sp_only'] = intcomma(
+        int(sum(list(Grant.objects.filter(role='SP').values_list('total_amount_awarded', flat=True)))))
+
+
+    # Subscription breakdown by FOS
+    subscriptions_by_fos = {}
+    active_users_by_fos = {}
+    total_subscriptions_users = []
+
+    for subscription in Subscription.objects.filter(status__name='Active').prefetch_related('project__field_of_science', 'subscriptionuser_set'):
+        fos = subscription.project.field_of_science.description
+        if not subscriptions_by_fos.get(fos):
+            subscriptions_by_fos[fos] = 0
+        if not active_users_by_fos.get(fos):
+            active_users_by_fos[fos] = []
+
+        for user in subscription.subscriptionuser_set.filter(status__name="Active").values_list('user__username', flat=True):
+            if user not in active_users_by_fos[fos]:
+                active_users_by_fos[fos].append(user)
+
+            total_subscriptions_users.append(user)
+
+        subscriptions_by_fos[fos] += 1
+
+    active_users_by_fos = {fos: len(users)
+                           for fos, users in active_users_by_fos.items()}
+    total_subscriptions_users = len(list(set(total_subscriptions_users)))
+
+    active_pi_count = Project.objects.filter(status__name='Active').values_list('pi__username', flat=True).distinct().count()
+
+    context['subscriptions_by_fos'] = subscriptions_by_fos
+    context['active_users_by_fos'] = active_users_by_fos
+    context['total_subscriptions_users'] = total_subscriptions_users
+    context['active_pi_count'] = active_pi_count
 
     return render(request, 'portal/center_summary.html', context)
