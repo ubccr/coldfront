@@ -52,13 +52,13 @@ def center_summary(request):
 
 
     # Publications Card
-    publications_by_year = list(Publication.objects.filter(year__gte=1999).values('year').annotate(num_pub=Count('year')).order_by('-year'))
+    publications_by_year = list(Publication.objects.filter(year__gte=1999).values('unique_id', 'year').distinct().values('year').annotate(num_pub=Count('year')).order_by('-year'))
 
     publications_by_year = [(ele['year'], ele['num_pub']) for ele in publications_by_year]
 
     publication_by_year_bar_chart_data = generate_publication_by_year_chart_data(publications_by_year)
     context['publication_by_year_bar_chart_data'] = publication_by_year_bar_chart_data
-    context['total_publications_count'] = Publication.objects.filter(year__gte=1999).count()
+    context['total_publications_count'] = Publication.objects.filter(year__gte=1999).values('unique_id', 'year').distinct().count()
 
     # Grants Card
     total_grants_by_agency_sum = list(Grant.objects.values('funding_agency__name').annotate(total_amount=Sum('total_amount_awarded')))
