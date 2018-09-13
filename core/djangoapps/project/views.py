@@ -105,6 +105,8 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                     Q(subscriptionuser__user=self.request.user) &
                     Q(subscriptionuser__status__name__in=['Active', 'Pending - Add', ])
                 ).distinct().order_by('-created')
+            else:
+                subscriptions = Subscription.objects.prefetch_related('resources').filter(project=self.object)
 
         context['publications'] = Publication.objects.filter(project=self.object, status='Active').order_by('-year')
         context['grants'] = Grant.objects.filter(project=self.object, status__name__in=['Active', 'Pending'])

@@ -11,7 +11,7 @@ Project Detail
 
 {% block content %}
 
-{% if is_allowed_to_update_project and project.needs_review %}
+{% if is_allowed_to_update_project and project.needs_review and project.status.name == 'Active' %}
 <div class="alert alert-warning">
   You need to review this project. <a href="{% url 'project-review' project.pk %}">Review Project</a>
 </div>
