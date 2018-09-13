@@ -272,7 +272,7 @@ Project Detail
   <h4 class="d-inline"><i class="fas fa-newspaper"></i> <a name="publications">Publications</a> </h4> <span class="badge badge-secondary">{{publications.count}}</span>
     <div class="float-right">
       {% if project.latest_publication.created %}
-        <span class="badge badge-info">Last Updated: {{project.latest_grant.created|date:"M. d, Y"}}</span>
+        <span class="badge badge-info">Last Updated: {{project.latest_publication.created|date:"M. d, Y"}}</span>
       {% endif %}
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
         <a class="btn btn-success" href="{% url 'publication-search' project.pk %}" role="button"><i class="fas fa-plus"></i> Add Publication</a>
