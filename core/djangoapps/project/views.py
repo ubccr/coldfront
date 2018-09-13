@@ -90,6 +90,9 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         # Only show 'Active Users'
         project_users = self.object.projectuser_set.filter(status__name='Active').order_by('user__username')
 
+
+        context['mailto'] = 'mailto:' + ','.join([user.user.email for user in project_users])
+
         if self.request.user.is_superuser or self.request.user.has_perm('subscription.can_view_all_subscriptions'):
             subscriptions = Subscription.objects.prefetch_related('resources').filter(project=self.object)
         else:
