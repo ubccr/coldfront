@@ -84,7 +84,7 @@ class ProjectReviewForm(forms.Form):
         else:
             publication_updated_in_last_year = None
 
-        if grant_updated_in_last_year and publication_updated_in_last_year:
+        if grant_updated_in_last_year or publication_updated_in_last_year:
             self.fields['reason'].widget = forms.HiddenInput()
         else:
             self.fields['reason'].required = True
