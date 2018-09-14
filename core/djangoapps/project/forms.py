@@ -1,9 +1,11 @@
+import datetime
+
 from django import forms
 from django.shortcuts import get_object_or_404
 
-from core.djangoapps.project.models import Project, ProjectUserRoleChoice, ProjectReview
-import datetime
 from common.djangolibs.utils import import_from_settings
+from core.djangoapps.project.models import (Project, ProjectReview,
+                                            ProjectUserRoleChoice)
 
 EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL = import_from_settings('EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL')
 

@@ -2,7 +2,7 @@ import os
 
 from django.core.management.base import BaseCommand
 
-from core.djangoapps.publication.models import (PublicationSource)
+from core.djangoapps.publication.models import PublicationSource
 
 
 class Command(BaseCommand):
@@ -12,5 +12,3 @@ class Command(BaseCommand):
         PublicationSource.objects.all().delete()
         for name, url in [('doi', 'https://doi.org/'), ]:
             PublicationSource.objects.get_or_create(name=name, url=url)
-
-

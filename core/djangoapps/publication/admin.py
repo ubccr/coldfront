@@ -1,7 +1,7 @@
 from django.contrib import admin
-
-from core.djangoapps.publication.models import (PublicationSource, Publication)
 from simple_history.admin import SimpleHistoryAdmin
+
+from core.djangoapps.publication.models import Publication, PublicationSource
 
 
 @admin.register(PublicationSource)

@@ -9,7 +9,6 @@ from common.djangoapps.field_of_science.models import FieldOfScience
 from core.djangoapps.project.models import (Project, ProjectStatusChoice,
                                             ProjectUser, ProjectUserRoleChoice,
                                             ProjectUserStatusChoice)
-
 from core.djangoapps.publication.models import Publication, PublicationSource
 
 base_dir = settings.BASE_DIR

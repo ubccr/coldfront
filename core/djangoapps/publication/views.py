@@ -1,26 +1,22 @@
-from django.shortcuts import render
+import re
+
+import requests
+from bibtexparser.bibdatabase import as_text
+from bibtexparser.bparser import BibTexParser
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.views.generic import DetailView, ListView, TemplateView, View
-from django.shortcuts import get_object_or_404
 from django.db import IntegrityError
 from django.forms import formset_factory
-
-from django.contrib import messages
 from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
+from django.views.generic import DetailView, ListView, TemplateView, View
+from doi2bib import crossref
 
 from core.djangoapps.project.models import Project
-
-from core.djangoapps.publication.forms import PublicationSearchForm
+from core.djangoapps.publication.forms import (PublicationDeleteForm,
+                                               PublicationSearchForm)
 from core.djangoapps.publication.models import Publication, PublicationSource
-
-from core.djangoapps.publication.forms import PublicationDeleteForm
-
-from bibtexparser.bparser import BibTexParser
-from bibtexparser.bibdatabase import as_text
-from doi2bib import crossref
-import requests
-import re
 
 
 class PublicationSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):

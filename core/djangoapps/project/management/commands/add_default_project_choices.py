@@ -2,8 +2,8 @@ import os
 
 from django.core.management.base import BaseCommand
 
-from core.djangoapps.project.models import (ProjectStatusChoice,
-                                            ProjectReviewStatusChoice,
+from core.djangoapps.project.models import (ProjectReviewStatusChoice,
+                                            ProjectStatusChoice,
                                             ProjectUserRoleChoice,
                                             ProjectUserStatusChoice)
 

@@ -1,12 +1,13 @@
 import datetime
 import os
 import pprint
-import pytz
 
+import pytz
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-from core.djangoapps.grant.models import Grant, GrantFundingAgency, GrantStatusChoice
+from core.djangoapps.grant.models import (Grant, GrantFundingAgency,
+                                          GrantStatusChoice)
 from core.djangoapps.project.models import Project
 
 base_dir = settings.BASE_DIR

@@ -1,6 +1,8 @@
 
-from core.djangoapps.subscription.models import Subscription
 import datetime
+
+from core.djangoapps.subscription.models import Subscription
+
 
 def generate_publication_by_year_chart_data(publications_by_year):
 

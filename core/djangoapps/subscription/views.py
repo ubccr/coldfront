@@ -13,20 +13,22 @@ from django.db.models.query import QuerySet
 from django.forms import formset_factory
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils.html import mark_safe
 from django.views import View
 from django.views.generic import DetailView, ListView, TemplateView
 from django.views.generic.edit import FormView
 
-from common.djangolibs.utils import import_from_settings
 from common.djangolibs.mail import send_email_template
-from core.djangoapps.project.models import Project, ProjectUserStatusChoice, ProjectUser
+from common.djangolibs.utils import get_domain_url, import_from_settings
+from core.djangoapps.project.models import (Project, ProjectUser,
+                                            ProjectUserStatusChoice)
 from core.djangoapps.subscription.forms import (SubscriptionAddUserForm,
                                                 SubscriptionDeleteUserForm,
                                                 SubscriptionForm,
-                                                SubscriptionSearchForm,
-                                                SubscriptionReviewUserForm)
+                                                SubscriptionReviewUserForm,
+                                                SubscriptionSearchForm)
 from core.djangoapps.subscription.models import (Subscription,
                                                  SubscriptionStatusChoice,
                                                  SubscriptionUser,
@@ -35,9 +37,6 @@ from core.djangoapps.subscription.signals import (subscription_activate_user,
                                                   subscription_remove_user)
 from core.djangoapps.subscription.utils import (generate_guauge_data_from_usage,
                                                 get_user_resources)
-
-from django.template.loader import render_to_string
-from common.djangolibs.utils import get_domain_url
 
 EMAIL_DEVELOPMENT_EMAIL_LIST = import_from_settings('EMAIL_DEVELOPMENT_EMAIL_LIST')
 EMAIL_SUBJECT_PREFIX = import_from_settings('EMAIL_SUBJECT_PREFIX')

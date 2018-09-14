@@ -1,5 +1,6 @@
 import pprint
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
@@ -7,43 +8,39 @@ from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.forms import formset_factory
-from django.http import HttpResponse, HttpResponseRedirect, HttpResponseForbidden
+from django.http import (HttpResponse, HttpResponseForbidden,
+                         HttpResponseRedirect)
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 
-
-from common.djangolibs.utils import get_domain_url
-from common.djangolibs.mail import send_email, send_email_template
-
-from django.conf import settings
-from common.djangolibs.utils import import_from_settings
-
-
 from common.djangoapps.user.forms import UserSearchForm
 from common.djangoapps.user.utils import CombinedUserSearch
+from common.djangolibs.mail import send_email, send_email_template
+from common.djangolibs.utils import get_domain_url, import_from_settings
+from core.djangoapps.grant.models import Grant
 from core.djangoapps.project.forms import (ProjectAddUserForm,
                                            ProjectAddUsersToSubscriptionForm,
                                            ProjectRemoveUserForm,
-                                           ProjectSearchForm,
-                                           ProjectUserUpdateForm,
+                                           ProjectReviewEmailForm,
                                            ProjectReviewForm,
-                                           ProjectReviewEmailForm)
-from core.djangoapps.project.models import (Project, ProjectStatusChoice,
-                                            ProjectUser, ProjectUserRoleChoice,
-                                            ProjectUserStatusChoice, ProjectReview, ProjectReviewStatusChoice)
+                                           ProjectSearchForm,
+                                           ProjectUserUpdateForm)
+from core.djangoapps.project.models import (Project, ProjectReview,
+                                            ProjectReviewStatusChoice,
+                                            ProjectStatusChoice, ProjectUser,
+                                            ProjectUserRoleChoice,
+                                            ProjectUserStatusChoice)
+from core.djangoapps.publication.models import Publication
 from core.djangoapps.subscription.models import (Subscription,
                                                  SubscriptionUser,
                                                  SubscriptionUserStatusChoice)
 from core.djangoapps.subscription.signals import (subscription_activate_user,
                                                   subscription_remove_user)
-from core.djangoapps.grant.models import Grant
-from core.djangoapps.publication.models import Publication
-from django.template.loader import render_to_string
-
 
 EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings('EMAIL_DIRECTOR_EMAIL_ADDRESS')
 EMAIL_DEVELOPMENT_EMAIL_LIST = import_from_settings('EMAIL_DEVELOPMENT_EMAIL_LIST')
