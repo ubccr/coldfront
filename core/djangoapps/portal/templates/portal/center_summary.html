@@ -163,7 +163,7 @@ function get_subscription_by_fos() {
     url: "/subscription-by-fos",
     success: function(data) {
       $('#subscription-by-fos').html(data);
-      $('#resource-table').DataTable({
+      $('#fos-table').DataTable({
         "iDisplayLength": 10,
         "bSortClasses": false,
         "order": [

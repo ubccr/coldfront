@@ -69,3 +69,8 @@ class Grant(TimeStampedModel):
 
     class Meta:
         verbose_name_plural = "Grants"
+
+        permissions = (
+            ("can_view_all_grants", "Can view all grants"),
+        )
+
