@@ -1,18 +1,19 @@
 import logging
+
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.http import HttpResponseRedirect
 from django.shortcuts import render
-from django.contrib import messages
+from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views import View
-from django.http import HttpResponseRedirect
-from django.urls import reverse
 from django.views.generic import TemplateView
 
 from common.djangoapps.user.forms import UserSearchForm
 from common.djangoapps.user.utils import CombinedUserSearch
-from common.djangolibs.utils import import_from_settings
 from common.djangolibs.mail import send_email_template
+from common.djangolibs.utils import import_from_settings
 
 logger = logging.getLogger(__name__)
 EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')

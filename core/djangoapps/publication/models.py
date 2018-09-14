@@ -1,9 +1,9 @@
 from django.db import models
-
 from model_utils.models import TimeStampedModel
+from simple_history.models import HistoricalRecords
 
 from core.djangoapps.project.models import Project
-from simple_history.models import HistoricalRecords
+
 
 class PublicationSource(TimeStampedModel):
     name = models.CharField(max_length=255)

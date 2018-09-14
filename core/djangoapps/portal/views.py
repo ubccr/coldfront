@@ -1,22 +1,21 @@
-from django.conf import settings
-from django.db.models import Q
-from django.shortcuts import render
-
-from core.djangoapps.project.models import Project
-from core.djangoapps.subscription.models import Subscription, SubscriptionUser
-from extra.djangoapps.system_monitor.utils import get_system_monitor_context
-
-from core.djangoapps.portal.utils import generate_publication_by_year_chart_data, generate_total_grants_by_agency_chart_data
-from core.djangoapps.publication.models import Publication
-from core.djangoapps.grant.models import Grant
-from django.contrib.humanize.templatetags.humanize import intcomma
-
-from core.djangoapps.portal.utils import generate_subscriptions_chart_data, generate_resources_chart_data
-
 import operator
 from collections import Counter
 
-from django.db.models import Count, Sum
+from django.conf import settings
+from django.contrib.humanize.templatetags.humanize import intcomma
+from django.db.models import Count, Q, Sum
+from django.shortcuts import render
+from django.views.decorators.cache import cache_page
+
+from core.djangoapps.grant.models import Grant
+from core.djangoapps.portal.utils import (generate_publication_by_year_chart_data,
+                                          generate_resources_chart_data,
+                                          generate_subscriptions_chart_data,
+                                          generate_total_grants_by_agency_chart_data)
+from core.djangoapps.project.models import Project
+from core.djangoapps.publication.models import Publication
+from core.djangoapps.subscription.models import Subscription, SubscriptionUser
+from extra.djangoapps.system_monitor.utils import get_system_monitor_context
 
 
 def home(request):
@@ -95,6 +94,7 @@ def center_summary(request):
     return render(request, 'portal/center_summary.html', context)
 
 
+@cache_page(60 * 15)
 def subscription_by_fos(request):
 
     subscriptions_by_fos = Counter(list(Subscription.objects.filter(
@@ -118,6 +118,7 @@ def subscription_by_fos(request):
     return render(request, 'portal/subscription_by_fos.html', context)
 
 
+@cache_page(60 * 15)
 def subscription_summary(request):
 
     subscription_resources = [

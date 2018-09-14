@@ -1,8 +1,8 @@
 import json
 
+import ldap
 from django.db.models import Q
 from ldap3 import Connection, Server
-import ldap
 
 from common.djangoapps.user.utils import UserSearch
 from common.djangolibs.utils import import_from_settings

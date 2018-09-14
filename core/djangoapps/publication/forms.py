@@ -1,4 +1,5 @@
 from django import forms
+
 from core.djangoapps.publication.models import PublicationSource
 
 

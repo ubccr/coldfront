@@ -1,17 +1,15 @@
-from django.views.generic.edit import UpdateView, CreateView
-from django.shortcuts import get_object_or_404
-from django.views.generic import FormView
-from core.djangoapps.grant.models import Grant, GrantFundingAgency, GrantStatusChoice
-from django.views.generic import DetailView, ListView, TemplateView
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.urls import reverse
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.forms import formset_factory
-from django.shortcuts import get_object_or_404, render
 from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
+from django.views.generic import DetailView, FormView, ListView, TemplateView
+from django.views.generic.edit import CreateView, UpdateView
 
-
-from core.djangoapps.grant.forms import GrantForm, GrantDeleteForm
+from core.djangoapps.grant.forms import GrantDeleteForm, GrantForm
+from core.djangoapps.grant.models import (Grant, GrantFundingAgency,
+                                          GrantStatusChoice)
 from core.djangoapps.project.models import Project
 
 
