@@ -37,7 +37,7 @@ class Subscription(TimeStampedModel):
         ordering = ['active_until']
 
         permissions = (
-            ('can_view_all_subscriptions', 'Can see all subscriptions'),
+            ('can_view_all_subscriptions', 'Can view all subscriptions'),
             ('can_review_subscription_requests', 'Can review subscription requests'),
         )
 

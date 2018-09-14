@@ -38,3 +38,13 @@ def update_statuses():
 
 def get_domain_url(request):
     return request.build_absolute_uri().replace(request.get_full_path(), '')
+
+
+class Echo:
+    """An object that implements just the write method of the file-like
+    interface.
+    """
+
+    def write(self, value):
+        """Write the value by returning it, instead of storing in a buffer."""
+        return value
