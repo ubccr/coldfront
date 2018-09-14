@@ -12,6 +12,8 @@ urlpatterns = [
     path('hijack/', include('hijack.urls', namespace='hijack')),
     path('', portal_views.home, name='home'),
     path('center-summary', portal_views.center_summary, name='center-summary'),
+    path('subscription-summary', portal_views.subscription_summary, name='subscription-summary'),
+    path('subscription-by-fos', portal_views.subscription_by_fos, name='subscription-by-fos'),
     path('user/', include('common.djangoapps.user.urls')),
     path('project/', include('core.djangoapps.project.urls')),
     path('subscription/', include('core.djangoapps.subscription.urls')),

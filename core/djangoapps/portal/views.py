@@ -5,7 +5,6 @@ from django.shortcuts import render
 from core.djangoapps.project.models import Project
 from core.djangoapps.subscription.models import Subscription, SubscriptionUser
 from extra.djangoapps.system_monitor.utils import get_system_monitor_context
-from core.djangoapps.resources.models import Resource
 
 from core.djangoapps.portal.utils import generate_publication_by_year_chart_data, generate_total_grants_by_agency_chart_data
 from core.djangoapps.publication.models import Publication
@@ -16,7 +15,6 @@ from core.djangoapps.portal.utils import generate_subscriptions_chart_data, gene
 
 import operator
 from collections import Counter
-import pprint
 
 from django.db.models import Count, Sum
 
@@ -94,24 +92,36 @@ def center_summary(request):
     context['grants_total_sp_only'] = intcomma(
         int(sum(list(Grant.objects.filter(role='SP').values_list('total_amount_awarded', flat=True)))))
 
+    return render(request, 'portal/center_summary.html', context)
 
-    # Subscription breakdown by FOS
 
-    subscriptions_by_fos = Counter(list(Subscription.objects.filter(status__name='Active').values_list('project__field_of_science__description', flat=True)))
+def subscription_by_fos(request):
+
+    subscriptions_by_fos = Counter(list(Subscription.objects.filter(
+        status__name='Active').values_list('project__field_of_science__description', flat=True)))
 
     user_subscriptions = SubscriptionUser.objects.filter(status__name='Active', subscription__status__name='Active')
 
-    active_users_by_fos = Counter(list(user_subscriptions.values_list('subscription__project__field_of_science__description', flat=True)))
+    active_users_by_fos = Counter(list(user_subscriptions.values_list(
+        'subscription__project__field_of_science__description', flat=True)))
     total_subscriptions_users = user_subscriptions.values('user').distinct().count()
 
-    active_pi_count = Project.objects.filter(status__name='Active').values_list('pi__username', flat=True).distinct().count()
+    active_pi_count = Project.objects.filter(status__name='Active').values_list(
+        'pi__username', flat=True).distinct().count()
 
+    context = {}
     context['subscriptions_by_fos'] = dict(subscriptions_by_fos)
     context['active_users_by_fos'] = dict(active_users_by_fos)
     context['total_subscriptions_users'] = total_subscriptions_users
     context['active_pi_count'] = active_pi_count
 
-    subscription_resources = [s.get_parent_resource.parent_resource if s.get_parent_resource.parent_resource else s.get_parent_resource for s in Subscription.objects.filter(status__name='Active')]
+    return render(request, 'portal/subscription_by_fos.html', context)
+
+
+def subscription_summary(request):
+
+    subscription_resources = [
+        s.get_parent_resource.parent_resource if s.get_parent_resource.parent_resource else s.get_parent_resource for s in Subscription.objects.filter(status__name='Active')]
 
     subscriptions_count_by_resource = dict(Counter(subscription_resources))
 
@@ -120,8 +130,9 @@ def center_summary(request):
     subscriptions_chart_data = generate_subscriptions_chart_data()
     resources_chart_data = generate_resources_chart_data(subscription_count_by_resource_type)
 
+    context = {}
     context['subscriptions_chart_data'] = subscriptions_chart_data
     context['subscriptions_count_by_resource'] = subscriptions_count_by_resource
     context['resources_chart_data'] = resources_chart_data
 
-    return render(request, 'portal/center_summary.html', context)
+    return render(request, 'portal/subscription_summary.html', context)
