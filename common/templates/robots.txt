@@ -8,3 +8,4 @@ Disallow: /grant/
 Disallow: /publication/ 
 Disallow: /mokey_oidc/ 
 Disallow: /subscription-by-fos
+Disallow: /subscription-summary
