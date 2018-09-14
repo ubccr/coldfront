@@ -22,14 +22,3 @@
 <strong>Total Active Users: {{total_subscriptions_users}}</strong>
 <br>
 <strong>Total Active Principle Investigators: {{active_pi_count}}</strong>
-<script>
-$(document).ready(function() {
-  $('#fos-table').DataTable({
-    "iDisplayLength": 10,
-    "bSortClasses": false,
-    "order": [
-      [1, "desc"]
-    ]
-  });
-});
-</script>
