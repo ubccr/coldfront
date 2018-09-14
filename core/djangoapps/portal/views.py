@@ -17,6 +17,7 @@ import operator
 from collections import Counter
 
 from django.db.models import Count, Sum
+from django.views.decorators.cache import cache_page
 
 
 def home(request):
@@ -95,6 +96,7 @@ def center_summary(request):
     return render(request, 'portal/center_summary.html', context)
 
 
+@cache_page(60 * 15)
 def subscription_by_fos(request):
 
     subscriptions_by_fos = Counter(list(Subscription.objects.filter(
@@ -118,6 +120,7 @@ def subscription_by_fos(request):
     return render(request, 'portal/subscription_by_fos.html', context)
 
 
+@cache_page(60 * 15)
 def subscription_summary(request):
 
     subscription_resources = [

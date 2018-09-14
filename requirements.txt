@@ -12,6 +12,7 @@ django-admin-comments==1.0.1
 django-auth-ldap==1.7.0
 django-compat==1.0.15
 django-crispy-forms==1.7.2
+django-debug-toolbar==1.10.1
 django-extensions==2.1.2
 django-formtools==2.1
 django-hijack==2.1.10
@@ -48,6 +49,7 @@ PyJWT==1.6.4
 pyparsing==2.2.0
 python-dateutil==2.7.3
 python-ldap==3.1.0
+python-memcached==1.59
 python3-openid==3.1.0
 pytz==2018.5
 redis==2.10.6
@@ -57,6 +59,7 @@ simplegeneric==0.8.1
 six==1.11.0
 social-auth-app-django==2.1.0
 social-auth-core==1.7.0
+sqlparse==0.2.4
 traitlets==4.3.2
 urllib3==1.23
 wcwidth==0.1.7
