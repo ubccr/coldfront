@@ -50,8 +50,8 @@ class UserUpgradeAccount(LoginRequiredMixin, UserPassesTestMixin, View):
             'Upgrade Account Request',
             'email/upgrade_account_request.txt',
             {'user': request.user},
-            EMAIL_TICKET_SYSTEM_ADDRESS,
-            [request.user.email]
+            request.user.email,
+            [EMAIL_TICKET_SYSTEM_ADDRESS]
         )
 
         messages.success(request, 'Your request has been sent')
