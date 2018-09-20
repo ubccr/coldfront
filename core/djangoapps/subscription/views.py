@@ -79,8 +79,8 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # subscription_obj = self.get_object()
-        subscription_users = self.object.subscriptionuser_set.filter(
-            status__name__in=['Active', 'Pending - Add', 'New', ]).order_by('user__username')
+        subscription_users = self.object.subscriptionuser_set.exclude(
+            status__name__in=['Removed']).order_by('user__username')
 
         if self.request.user.is_superuser:
             attributes_with_usage = [attribute for attribute in self.object.subscriptionattribute_set.all() if hasattr(attribute, 'subscriptionattributeusage')]
@@ -512,8 +512,8 @@ class SubscriptionDeleteUsersView(LoginRequiredMixin, UserPassesTestMixin, Templ
             return super().dispatch(request, *args, **kwargs)
 
     def get_users_to_delete(self, subscription_obj):
-        users_to_delete = list(subscription_obj.subscriptionuser_set.filter(
-            status__name__in=['Active', 'Pending - Add']).values_list('user__username', flat=True))
+        users_to_delete = list(subscription_obj.subscriptionuser_set.exclude(
+            status__name__in=['Removed', 'Error', 'Pending - Remove']).values_list('user__username', flat=True))
 
         users_to_delete = User.objects.filter(username__in=users_to_delete).exclude(pk=subscription_obj.project.pi.pk)
         users_to_delete = [
