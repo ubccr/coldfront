@@ -43,7 +43,7 @@ def check_ipa_group_error(res):
 def add_user_group(subscription_user_pk):
     subscription_user = SubscriptionUser.objects.get(pk=subscription_user_pk)
 
-    groups = subscription_user.subscription.subscriptionattribute_set.filter(subscription_attribute_type__name='freeipa_group').all()
+    groups = subscription_user.subscription.subscriptionattribute_set.filter(subscription_attribute_type__name='freeipa_group')
     if len(groups) == 0:
         logger.info("Subscription does not have any groups. Nothing to add")
         return
@@ -61,7 +61,7 @@ def add_user_group(subscription_user_pk):
 
 def remove_user_group(subscription_user_pk):
     subscription_user = SubscriptionUser.objects.get(pk=subscription_user_pk)
-    groups = subscription_user.subscription.subscriptionattribute_set.filter(subscription_attribute_type__name='freeipa_group').all()
+    groups = subscription_user.subscription.subscriptionattribute_set.filter(subscription_attribute_type__name='freeipa_group')
     if len(groups) == 0:
         logger.info("Subscription does not have any groups. Nothing to remove")
         return
