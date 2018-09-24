@@ -230,3 +230,12 @@ EXTRA_APPS += [
     'extra.djangoapps.slurm',
 ]
 SLRUM_DISABLE_SIGNAL_PROCESSING = True
+
+#------------------------------------------------------------------------------
+# Enable freeipa app
+#------------------------------------------------------------------------------
+# EXTRA_APPS += [
+#     'extra.djangoapps.freeipa',
+# ]
+# FREEIPA_DISABLE_SIGNAL_PROCESSING = False
+# FREEIPA_KTNAME = '/path/to/user.keytab'
