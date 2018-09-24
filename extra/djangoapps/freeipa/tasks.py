@@ -20,43 +20,59 @@ except Exception as e:
     logger.error("Failed to initialze FreeIPA lib: %s", e)
     raise ImproperlyConfigured('Failed to initialze FreeIPA: {0}'.format(e))
 
-# Resource Name
-# subscription_user_obj.subscription.resources.first().name
-
-# Resource Type Name
-# subscription_user_obj.subscription.resources.first().resource_type.name
-
-# User groups
-# subscription_user_obj.user.group_set.all()
-
 logger = logging.getLogger(__name__)
+
+def check_ipa_group_error(res):
+    if not res:
+        raise ValueError('Missing FreeIPA response')
+
+    if res['completed'] == 1:
+        return
+
+    user = res['failed']['member']['user'][0][0]
+    group = res['result']['cn'][0]
+    err_msg = res['failed']['member']['user'][0][1]
+
+    # If user is already a member don't error out. Silently ignore
+    if err_msg == 'This entry is already a member':
+        logger.warn("User %s is already a member of group %s", user, group)
+        return
+
+    raise Exception(err_msg)
 
 def add_user_group(subscription_user_pk):
     subscription_user = SubscriptionUser.objects.get(pk=subscription_user_pk)
-    freeipa_group = subscription_user.subscription.subscriptionattribute_set.filter(subscription_attribute_type__name='freeipa_group').first()
-    if not freeipa_group:
-        logger.info("Subscription does not have a group. Nothing to add")
+
+    groups = subscription_user.subscription.subscriptionattribute_set.filter(subscription_attribute_type__name='freeipa_group').all()
+    if len(groups) == 0:
+        logger.info("Subscription does not have any groups. Nothing to add")
         return
 
     os.environ["KRB5_CLIENT_KTNAME"] = CLIENT_KTNAME
-    try:
-        print(api.Command.user_show(u'ccruser'))
-        logger.info("Added user %s to group %s successfully", subscription_user.user.username, freeipa_group.value)
-    except Exception as e:
-        logger.error("Failed adding user %s to group %s: %s", subscription_user.user.username, freeipa_group.value, e)
-        set_subscription_user_status_to_error(subscription_user_pk)
+    for g in groups:
+        try:
+            res = api.Command.group_add_member(g.value, user=[subscription_user.user.username])
+            check_ipa_group_error(res)
+        except Exception as e:
+            logger.error("Failed adding user %s to group %s: %s", subscription_user.user.username, g.value, e)
+            set_subscription_user_status_to_error(subscription_user_pk)
+        else:
+            logger.info("Added user %s to group %s successfully", subscription_user.user.username, g.value)
 
 def remove_user_group(subscription_user_pk):
     subscription_user = SubscriptionUser.objects.get(pk=subscription_user_pk)
-    freeipa_group = subscription_user.subscription.subscriptionattribute_set.filter(subscription_attribute_type__name='freeipa_group').first()
-    if not freeipa_group:
-        logger.info("Subscription does not have a group. Nothing to remove")
+    groups = subscription_user.subscription.subscriptionattribute_set.filter(subscription_attribute_type__name='freeipa_group').all()
+    if len(groups) == 0:
+        logger.info("Subscription does not have any groups. Nothing to remove")
         return
 
     os.environ["KRB5_CLIENT_KTNAME"] = CLIENT_KTNAME
-    try:
-        print(api.Command.user_show(u'jbednasz'))
-        logger.info("Removed user %s from group %s successfully", subscription_user.user.username, freeipa_group.value)
-    except Exception as e:
-        logger.error("Failed removing user %s from group %s: %s", subscription_user.user.username, freeipa_group.value, e)
-        set_subscription_user_status_to_error(subscription_user_pk)
+    for g in groups:
+        try:
+            res = api.Command.group_remove_member(g.value, user=[subscription_user.user.username])
+            check_ipa_group_error(res)
+        except Exception as e:
+            logger.error("Failed removing user %s from group %s: %s", subscription_user.user.username, g.value, e)
+            set_subscription_user_status_to_error(subscription_user_pk)
+        else:
+            logger.info("Removed user %s from group %s successfully", subscription_user.user.username, g.value)
