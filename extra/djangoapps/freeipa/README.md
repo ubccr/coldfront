@@ -16,11 +16,12 @@ FreeIPA unix groups can be set on a per subscription basis using using a
 subscription attribute named "freeipa\_group".  The value of this attribute
 must be a valid unix group in FreeIPA. Any users added/removed from the
 subscription will then automatically be added/removed from the group in
-FreeIPA. You can specify more than one group by simply added multiple
+FreeIPA. You can specify more than one group by simply adding multiple
 "freeipa\_group" subscription attributes. This app subscribes to specific
 Coldfront signals that are sent whenever a user is added or removed from a
 subscription and submits a job to django-q. The tasks run by django-q are
-defined in tasks.py and interact with the FreeIPA API using the python library.
+defined in tasks.py and interact with the FreeIPA API using the ipaclient
+python library.
 
 ## Requirements
 
