@@ -42,6 +42,9 @@ def check_ipa_group_error(res):
 
 def add_user_group(subscription_user_pk):
     subscription_user = SubscriptionUser.objects.get(pk=subscription_user_pk)
+    if subscription_user.subscription.status.name != 'Active':
+        logger.warn("Subscription is not active. Will not add groups")
+        return
 
     groups = subscription_user.subscription.subscriptionattribute_set.filter(subscription_attribute_type__name='freeipa_group')
     if len(groups) == 0:
@@ -61,6 +64,10 @@ def add_user_group(subscription_user_pk):
 
 def remove_user_group(subscription_user_pk):
     subscription_user = SubscriptionUser.objects.get(pk=subscription_user_pk)
+    if subscription_user.subscription.status.name not in ['Active', 'Pending', 'Inactive (Renewed)', ]:
+        logger.warn("Subscription is not active or pending. Will not remove groups.")
+        return
+
     groups = subscription_user.subscription.subscriptionattribute_set.filter(subscription_attribute_type__name='freeipa_group')
     if len(groups) == 0:
         logger.info("Subscription does not have any groups. Nothing to remove")
