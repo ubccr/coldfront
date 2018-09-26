@@ -11,6 +11,7 @@ from core.djangoapps.subscription.utils import \
     set_subscription_user_status_to_error
 
 CLIENT_KTNAME = import_from_settings('FREEIPA_KTNAME')
+UNIX_GROUP_ATTRIBUTE_NAME = 'freeipa_group'
 
 try:
     api.bootstrap()
@@ -46,7 +47,7 @@ def add_user_group(subscription_user_pk):
         logger.warn("Subscription is not active. Will not add groups")
         return
 
-    groups = subscription_user.subscription.subscriptionattribute_set.filter(subscription_attribute_type__name='freeipa_group')
+    groups = subscription_user.subscription.subscriptionattribute_set.filter(subscription_attribute_type__name=UNIX_GROUP_ATTRIBUTE_NAME)
     if len(groups) == 0:
         logger.info("Subscription does not have any groups. Nothing to add")
         return
@@ -68,7 +69,7 @@ def remove_user_group(subscription_user_pk):
         logger.warn("Subscription is not active or pending. Will not remove groups.")
         return
 
-    groups = subscription_user.subscription.subscriptionattribute_set.filter(subscription_attribute_type__name='freeipa_group')
+    groups = subscription_user.subscription.subscriptionattribute_set.filter(subscription_attribute_type__name=UNIX_GROUP_ATTRIBUTE_NAME)
     if len(groups) == 0:
         logger.info("Subscription does not have any groups. Nothing to remove")
         return
