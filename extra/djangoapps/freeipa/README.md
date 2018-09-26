@@ -43,7 +43,6 @@ local\_settings.py file:
     EXTRA_APPS += [
         'extra.djangoapps.freeipa',
     ]
-    FREEIPA_DISABLE_SIGNAL_PROCESSING = False
     FREEIPA_KTNAME = '/path/to/user.keytab'
 ```
 
