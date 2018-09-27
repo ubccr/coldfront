@@ -45,4 +45,9 @@ local\_settings.py file:
     OIDC_OP_AUTHORIZATION_ENDPOINT = "https://hydra.local/oauth2/auth"
     OIDC_OP_TOKEN_ENDPOINT = "https://hydra.local/oauth2/token"
     OIDC_OP_USER_ENDPOINT = "https://hydra.local/userinfo"
+
+    # Optional config settings
+    MOKEY_OIDC_PI_GROUP = 'pi'
+    MOKEY_OIDC_ALLOWED_GROUPS = ['academic']
+    MOKEY_OIDC_DENY_GROUPS = ['badguys']
 ```
