@@ -4,15 +4,15 @@ from django.contrib.auth.models import Group
 class OIDCMokeyAuthenticationBackend(OIDCAuthenticationBackend):
 
     def create_user(self, claims):
+        email = claims.get('email')
         username = claims.get('uid')
         if not username:
             return None
 
         user = self.UserModel.objects.create_user(username, email)
 
-        user.first_name = claims.get('first_name', '')
-        user.last_name = claims.get('last_name', '')
-        user.email = claims.get('email')
+        user.first_name = claims.get('first', '')
+        user.last_name = claims.get('last', '')
 
         groups = claims.get('groups', '')
         user.groups.clear()
@@ -25,8 +25,9 @@ class OIDCMokeyAuthenticationBackend(OIDCAuthenticationBackend):
         return user
 
     def update_user(self, user, claims):
-        user.first_name = claims.get('first_name', '')
-        user.last_name = claims.get('last_name', '')
+        print(claims)
+        user.first_name = claims.get('first', '')
+        user.last_name = claims.get('last', '')
         user.email = claims.get('email')
 
         groups = claims.get('groups', '')
