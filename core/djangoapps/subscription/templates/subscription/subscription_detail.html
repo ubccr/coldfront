@@ -144,7 +144,7 @@ Subscription Detail
             <td>{{ user.user.email }}</td>
             {% if user.status.name == 'Active' %}
               <td class="text-success">{{ user.status.name }}</td>
-            {% elif user.status.name == 'Denied' %}
+            {% elif user.status.name == 'Denied' or user.status.name == 'Error' %}
               <td class="text-danger">{{ user.status.name }}</td>
             {% else %}
               <td class="text-info">{{ user.status.name }}</td>

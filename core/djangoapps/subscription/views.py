@@ -347,14 +347,11 @@ class SubscriptionCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             subscription_obj.resources.add(linked_resource)
 
         subscription_user_active_status = SubscriptionUserStatusChoice.objects.get(name='Active')
-        subscription_user_pending_add_status_choice = SubscriptionUserStatusChoice.objects.get(name='Pending - Add')
         for user in users:
             subscription_user_obj = SubscriptionUser.objects.create(
                 subscription=subscription_obj,
                 user=user,
-                status=subscription_user_pending_add_status_choice)
-            subscription_activate_user.send(sender=self.__class__,
-                                            subscription_user_pk=subscription_user_obj.pk)
+                status=subscription_user_active_status)
 
         pi_name = '{} {} ({})'.format(subscription_obj.project.pi.first_name, subscription_obj.project.pi.last_name, subscription_obj.project.pi.username)
         resource_name = subscription_obj.get_parent_resource
@@ -459,7 +456,6 @@ class SubscriptionAddUsersView(LoginRequiredMixin, UserPassesTestMixin, Template
         if formset.is_valid():
 
             subscription_user_active_status_choice = SubscriptionUserStatusChoice.objects.get(name='Active')
-            subscription_user_pending_add_status_choice = SubscriptionUserStatusChoice.objects.get(name='Pending - Add')
 
             for form in formset:
                 user_form_data = form.cleaned_data
@@ -471,11 +467,11 @@ class SubscriptionAddUsersView(LoginRequiredMixin, UserPassesTestMixin, Template
 
                     if subscription_obj.subscriptionuser_set.filter(user=user_obj).exists():
                         subscription_user_obj = subscription_obj.subscriptionuser_set.get(user=user_obj)
-                        subscription_user_obj.status = subscription_user_pending_add_status_choice
+                        subscription_user_obj.status = subscription_user_active_status_choice
                         subscription_user_obj.save()
                     else:
                         subscription_user_obj = SubscriptionUser.objects.create(
-                            subscription=subscription_obj, user=user_obj, status=subscription_user_pending_add_status_choice)
+                            subscription=subscription_obj, user=user_obj, status=subscription_user_active_status_choice)
 
                     subscription_activate_user.send(sender=self.__class__,
                                                     subscription_user_pk=subscription_user_obj.pk)
@@ -639,8 +635,10 @@ class SubscriptionActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, V
         }
 
         email_receiver_list = []
-        for subscription_user in subscription_obj.project.projectuser_set.all():
-            if subscription_user.enable_notifications:
+
+        for subscription_user in subscription_obj.subscriptionuser_set.exclude(status__name__in=['Removed', 'Error']):
+            subscription_activate_user.send(sender=self.__class__, subscription_user_pk=subscription_user.pk)
+            if subscription_user.subscription.project.projectuser_set.get(user=subscription_user.user).enable_notifications:
                 email_receiver_list.append(subscription_user.user.email)
 
         send_email_template(
@@ -819,8 +817,6 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
                 subscription=new_subscription_obj,
                 user=old_subscription_obj.project.pi,
                 status=subscription_user_active_status_choice)
-            subscription_activate_user.send(sender=self.__class__, subscription_user_pk=subscription_user_obj.pk)
-
 
             # Copy subscription attributes
 
@@ -844,11 +840,10 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
                             subscription=new_subscription_obj,
                             user=user_obj,
                             status=subscription_user_active_status_choice)
-                        subscription_activate_user.send(
-                            sender=self.__class__, subscription_user_pk=subscription_user_obj.pk)
 
                     elif user_status == 'keep_in_project_only':
-                        continue
+                        subscription_user_obj = old_subscription_obj.subscriptionuser_set.get(user=user_obj)
+                        subscription_remove_user.send(sender=self.__class__, subscription_user_pk=subscription_user_obj.pk)
 
                     elif user_status == 'remove_from_project':
                         project_user_obj = ProjectUser.objects.get(
@@ -856,6 +851,8 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
                             user=user_obj)
                         project_user_obj.status = project_user_remove_status_choice
                         project_user_obj.save()
+                        subscription_user_obj = old_subscription_obj.subscriptionuser_set.get(user=user_obj)
+                        subscription_remove_user.send(sender=self.__class__, subscription_user_pk=subscription_user_obj.pk)
 
             old_subscription_obj.status = subscription_inactive_status_choice
             old_subscription_obj.save()
