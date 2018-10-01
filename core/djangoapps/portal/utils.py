@@ -70,7 +70,9 @@ def generate_resources_chart_data(subscriptions_count_by_resource_type):
 def generate_subscriptions_chart_data():
 
     active_count = Subscription.objects.filter(status__name='Active').count()
+    new_count = Subscription.objects.filter(status__name='New').count()
     pending_count = Subscription.objects.filter(status__name='Pending').count()
+
 
     now = datetime.datetime.now()
     start_time = datetime.date(now.year - 1, 1, 1)
@@ -80,19 +82,23 @@ def generate_subscriptions_chart_data():
     # expired_count = Subscription.objects.filter(status='EXP').count()
 
     active_label = "Active: %d" % (active_count)
+    new_label = "New: %d" % (new_count)
     pending_label = "Pending: %d" % (pending_count)
     expired_label = "Expired: %d" % (expired_count)
+
 
     subscription_chart_data = {
         "columns": [
             [active_label, active_count],
+            [new_label, new_count],
             [pending_label, pending_count],
             [expired_label, expired_count],
         ],
         "type": 'donut',
         "colors": {
             active_label: '#6da04b',
-            pending_label: '#2f9fd0',
+            new_label: '#2f9fd0',
+            pending_label: '#ffc72c',
             expired_label: '#e56a54',
         }
     }
