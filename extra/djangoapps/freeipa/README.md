@@ -44,6 +44,7 @@ local\_settings.py file:
         'extra.djangoapps.freeipa',
     ]
     FREEIPA_KTNAME = '/path/to/user.keytab'
+    FREEIPA_GROUP_ATTRIBUTE_NAME = 'freeipa_group' 
 ```
 
 The "FREEIPA\_KTNAME" should be the path to the keytab file for a user in
@@ -51,4 +52,6 @@ FreeIPA with the appropriate permissions for modifing group membership. The
 easiest way to do this in FreeIPA is to create a new role for Coldfront with
 the "Modify Group membership" priviledge. Then create a user account
 specifically for use with Coldfront and assign them this role. Then export a
-keytab for that user.
+keytab for that user. "FREEIPA\_GROUP\_ATTRIBUTE\_NAME" is optional and is the
+name of the subscription attribute for the unix group. Default is
+"freeipa\_group".

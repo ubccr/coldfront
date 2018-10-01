@@ -11,7 +11,7 @@ from core.djangoapps.subscription.utils import \
     set_subscription_user_status_to_error
 
 CLIENT_KTNAME = import_from_settings('FREEIPA_KTNAME')
-UNIX_GROUP_ATTRIBUTE_NAME = 'freeipa_group'
+UNIX_GROUP_ATTRIBUTE_NAME = import_from_settings('FREEIPA_GROUP_ATTRIBUTE_NAME', 'freeipa_group')
 
 try:
     api.bootstrap()
