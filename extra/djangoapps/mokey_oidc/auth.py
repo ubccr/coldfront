@@ -12,6 +12,17 @@ DENY_GROUPS = import_from_settings('MOKEY_OIDC_DENY_GROUPS', [])
 
 class OIDCMokeyAuthenticationBackend(OIDCAuthenticationBackend):
 
+    def _sync_groups(self, user, groups):
+        is_pi = False
+        user.groups.clear()
+        for group_name in groups:
+            group, created = Group.objects.get_or_create(name=group_name)
+            user.groups.add(group)
+            if group_name == PI_GROUP:
+                is_pi = True
+
+        user.userprofile.is_pi = is_pi
+
     def create_user(self, claims):
         email = claims.get('email')
         username = claims.get('uid')
@@ -49,17 +60,6 @@ class OIDCMokeyAuthenticationBackend(OIDCAuthenticationBackend):
         user.save()
 
         return user
-
-    def _sync_groups(self, user, groups):
-        is_pi = False
-        user.groups.clear()
-        for group_name in groups:
-            group, created = Group.objects.get_or_create(name=group_name)
-            user.groups.add(group)
-            if group_name == PI_GROUP:
-                is_pi = True
-
-        user.userprofile.is_pi = is_pi
 
     def filter_users_by_claims(self, claims):
         uid = claims.get('uid')
