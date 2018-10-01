@@ -5,8 +5,6 @@ Here you can define custom database settings, add authentication backends,
 configure logging, and add extra coldfront apps.
 """
 
-import os
-
 #------------------------------------------------------------------------------
 # Secret Key (required set to something long and random)
 #------------------------------------------------------------------------------
@@ -146,7 +144,6 @@ http://localhost
 # ]
 # 
 # IQUOTA_KEYTAB = '/path/to/user.keytab'
-# os.environ['KRB5_CLIENT_KTNAME'] = IQUOTA_KEYTAB
 # IQUOTA_CA_CERT = '/etc/ipa/ca.crt'
 # IQUOTA_API_HOST = 'localhost'
 # IQUOTA_API_PORT = '8080'

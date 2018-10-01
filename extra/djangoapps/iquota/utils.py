@@ -1,3 +1,4 @@
+import os
 import humanize
 import requests
 
@@ -15,10 +16,12 @@ class Iquota:
         self.IQUOTA_CA_CERT = import_from_settings('IQUOTA_CA_CERT')
         self.IQUOTA_USER_PATH = import_from_settings('IQUOTA_USER_PATH')
         self.IQUOTA_GROUP_PATH = import_from_settings('IQUOTA_GROUP_PATH')
+        self.IQUOTA_KEYTAB = import_from_settings('IQUOTA_KEYTAB')
         self.username = username
         self.groups = groups
 
     def gssclient_token(self):
+        os.environ['KRB5_CLIENT_KTNAME'] = self.IQUOTA_KEYTAB
 
         service = "HTTP@" + self.IQUOTA_API_HOST
 
