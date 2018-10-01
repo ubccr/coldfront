@@ -27,6 +27,5 @@ urlpatterns = [
 if 'extra.djangoapps.iquota' in settings.EXTRA_APPS:
     urlpatterns.append(path('iquota/', include('extra.djangoapps.iquota.urls')))
 
-
 if 'extra.djangoapps.mokey_oidc' in settings.EXTRA_APPS:
-    urlpatterns.append(path('mokey_oidc/', include('social_django.urls', namespace='social')))
+    urlpatterns.append(path('oidc/', include('mozilla_django_oidc.urls')))
