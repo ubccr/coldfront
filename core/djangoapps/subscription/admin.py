@@ -5,18 +5,17 @@ from admin_comments.admin import CommentInline
 from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
-
 from simple_history.admin import SimpleHistoryAdmin
 
 from core.djangoapps.subscription.models import (AttributeType, Subscription,
+                                                 SubscriptionAdminComment,
                                                  SubscriptionAttribute,
                                                  SubscriptionAttributeType,
                                                  SubscriptionAttributeUsage,
                                                  SubscriptionStatusChoice,
                                                  SubscriptionUser,
-                                                 SubscriptionUserStatusChoice,
-                                                 SubscriptionAdminComment,
-                                                 SubscriptionUserMessage,)
+                                                 SubscriptionUserMessage,
+                                                 SubscriptionUserStatusChoice)
 
 
 @admin.register(SubscriptionStatusChoice)

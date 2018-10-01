@@ -1,6 +1,7 @@
 from django import forms
-from django.shortcuts import get_object_or_404
 from django.forms import ModelForm
+from django.shortcuts import get_object_or_404
+
 from common.djangolibs.utils import import_from_settings
 from core.djangoapps.grant.models import Grant
 

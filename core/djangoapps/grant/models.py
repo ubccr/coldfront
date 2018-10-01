@@ -2,10 +2,9 @@ from django.core.validators import (MaxLengthValidator, MaxValueValidator,
                                     MinLengthValidator)
 from django.db import models
 from model_utils.models import TimeStampedModel
+from simple_history.models import HistoricalRecords
 
 from core.djangoapps.project.models import Project
-
-from simple_history.models import HistoricalRecords
 
 
 class GrantFundingAgency(TimeStampedModel):
@@ -70,3 +69,8 @@ class Grant(TimeStampedModel):
 
     class Meta:
         verbose_name_plural = "Grants"
+
+        permissions = (
+            ("can_view_all_grants", "Can view all grants"),
+        )
+

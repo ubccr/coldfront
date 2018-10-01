@@ -32,3 +32,12 @@ def convert_boolean_to_icon(boolean):
         return mark_safe('<span class="badge badge-success"><i class="fas fa-check"></i></span>')
     else:
         return mark_safe('<span class="badge badge-danger"><i class="fas fa-times"></i></span>')
+
+
+@register.filter('get_value_from_dict')
+def get_value_from_dict(dict_data, key):
+    """
+    usage example {{ your_dict|get_value_from_dict:your_key }}
+    """
+    if key:
+        return dict_data.get(key)

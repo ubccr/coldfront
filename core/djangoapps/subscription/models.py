@@ -6,10 +6,10 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.html import mark_safe
 from model_utils.models import TimeStampedModel
+from simple_history.models import HistoricalRecords
 
 from core.djangoapps.project.models import Project
 from core.djangoapps.resources.models import Resource
-from simple_history.models import HistoricalRecords
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ class Subscription(TimeStampedModel):
         ordering = ['active_until']
 
         permissions = (
-            ('can_view_all_subscriptions', 'Can see all subscriptions'),
+            ('can_view_all_subscriptions', 'Can view all subscriptions'),
             ('can_review_subscription_requests', 'Can review subscription requests'),
         )
 

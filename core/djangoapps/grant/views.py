@@ -1,18 +1,21 @@
-from django.views.generic.edit import UpdateView, CreateView
-from django.shortcuts import get_object_or_404
-from django.views.generic import FormView
-from core.djangoapps.grant.models import Grant, GrantFundingAgency, GrantStatusChoice
-from django.views.generic import DetailView, ListView, TemplateView
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.urls import reverse
+import csv
+
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.forms import formset_factory
-from django.shortcuts import get_object_or_404, render
 from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
+from django.views import View
+from django.views.generic import DetailView, FormView, ListView, TemplateView
+from django.views.generic.edit import CreateView, UpdateView
+from django.http import StreamingHttpResponse
 
-
-from core.djangoapps.grant.forms import GrantForm, GrantDeleteForm
+from core.djangoapps.grant.forms import GrantDeleteForm, GrantForm
+from core.djangoapps.grant.models import (Grant, GrantFundingAgency,
+                                          GrantStatusChoice)
 from core.djangoapps.project.models import Project
+from common.djangolibs.utils import Echo
 
 
 class GrantCreateView(FormView):
@@ -174,3 +177,75 @@ class GrantDeleteGrantsView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
 
     def get_success_url(self):
         return reverse('project-detail', kwargs={'pk': self.object.project.id})
+
+
+class GrantReportView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    model = Grant
+    template_name = 'grant/grant_report_list.html'
+    context_object_name = 'grant_list'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('grant.can_view_all_grants'):
+            return True
+
+        messages.error(self.request, 'You do not have permission to view all grants.')
+
+
+class GrantDownloadView(LoginRequiredMixin, UserPassesTestMixin, View):
+    login_url = "/"
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('grant.can_view_all_grants'):
+            return True
+
+        messages.error(self.request, 'You do not have permission to download all grants.')
+
+    def get(self, request):
+
+        header = [
+            'Grant Title',
+            'Project PI',
+            'Faculty Role',
+            'Grant PI',
+            'Total Amount Awarded',
+            'Funding Agency',
+            'Grant Number',
+            'Start Date',
+            'End Date',
+            'Percent Credit',
+            'Direct Funding',
+        ]
+
+        rows = []
+        grants = Grant.objects.prefetch_related('project', 'project__pi').all().order_by('-total_amount_awarded')
+        for grant in grants:
+            row = [
+                grant.title,
+                ' '.join((grant.project.pi.first_name, grant.project.pi.last_name)),
+                grant.role,
+                grant.grant_pi_full_name,
+                grant.total_amount_awarded,
+                grant.funding_agency,
+                grant.grant_number,
+                grant.grant_start,
+                grant.grant_end,
+                grant.percent_credit,
+                grant.direct_funding,
+            ]
+
+            rows.append(row)
+        rows.insert(0, header)
+        pseudo_buffer = Echo()
+        writer = csv.writer(pseudo_buffer)
+        response = StreamingHttpResponse((writer.writerow(row) for row in rows),
+                                         content_type="text/csv")
+        response['Content-Disposition'] = 'attachment; filename="grants.csv"'
+        return response

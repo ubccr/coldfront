@@ -1,9 +1,11 @@
+import datetime
+
 from django import forms
 from django.shortcuts import get_object_or_404
 
-from core.djangoapps.project.models import Project, ProjectUserRoleChoice, ProjectReview
-import datetime
 from common.djangolibs.utils import import_from_settings
+from core.djangoapps.project.models import (Project, ProjectReview,
+                                            ProjectUserRoleChoice)
 
 EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL = import_from_settings('EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL')
 
@@ -84,7 +86,7 @@ class ProjectReviewForm(forms.Form):
         else:
             publication_updated_in_last_year = None
 
-        if grant_updated_in_last_year and publication_updated_in_last_year:
+        if grant_updated_in_last_year or publication_updated_in_last_year:
             self.fields['reason'].widget = forms.HiddenInput()
         else:
             self.fields['reason'].required = True

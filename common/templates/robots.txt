@@ -1,0 +1,11 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /hijack/ 
+Disallow: /user/ 
+Disallow: /project/ 
+Disallow: /subscription/ 
+Disallow: /grant/ 
+Disallow: /publication/ 
+Disallow: /mokey_oidc/ 
+Disallow: /subscription-by-fos
+Disallow: /subscription-summary

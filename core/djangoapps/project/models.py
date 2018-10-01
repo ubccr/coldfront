@@ -1,15 +1,14 @@
+import datetime
 import textwrap
 
 from django.contrib.auth.models import User
-from django.core.validators import MinLengthValidator
 from django.core.exceptions import ValidationError
+from django.core.validators import MinLengthValidator
 from django.db import models
-import datetime
 from model_utils.models import TimeStampedModel
+from simple_history.models import HistoricalRecords
 
 from common.djangoapps.field_of_science.models import FieldOfScience
-
-from simple_history.models import HistoricalRecords
 
 
 class ProjectStatusChoice(TimeStampedModel):
@@ -107,7 +106,7 @@ We do not have information about your research. Please provide a detailed descri
         ordering = ['title']
 
         permissions = (
-            ("can_view_all_projects", "Can see all projects"),
+            ("can_view_all_projects", "Can view all projects"),
             ("can_review_pending_project_reviews", "Can review pending project reviews"),
         )
 

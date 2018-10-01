@@ -2,13 +2,14 @@ import textwrap
 
 from admin_comments.admin import CommentInline
 from django.contrib import admin
-
-from core.djangoapps.project.models import (Project, ProjectStatusChoice,
-                                            ProjectUser, ProjectUserRoleChoice,
-                                            ProjectUserStatusChoice, ProjectReview, ProjectUserMessage, ProjectAdminComment)
-
-
 from simple_history.admin import SimpleHistoryAdmin
+
+from core.djangoapps.project.models import (Project, ProjectAdminComment,
+                                            ProjectReview, ProjectStatusChoice,
+                                            ProjectUser, ProjectUserMessage,
+                                            ProjectUserRoleChoice,
+                                            ProjectUserStatusChoice)
+
 
 @admin.register(ProjectStatusChoice)
 class ProjectStatusChoiceAdmin(admin.ModelAdmin):

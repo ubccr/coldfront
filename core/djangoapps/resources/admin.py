@@ -1,7 +1,5 @@
 from django.contrib import admin
-
 from simple_history.admin import SimpleHistoryAdmin
-
 
 from core.djangoapps.resources.models import (AttributeType, Resource,
                                               ResourceAttribute,
