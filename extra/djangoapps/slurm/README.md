@@ -27,6 +27,23 @@ subscription attribute named "slurm\_user\_specs". The value of this attribute
 must conform to the Slurm specification format and are colon separated. Setting
 specifications on an individual user basis is not currently supported.
 
+This app also subscribes to specific Coldfront signals that are sent whenever a
+user is added or removed from a subscription and submits a job to django-q. The
+tasks run by django-q are defined in tasks.py and interact with Slurm using the
+sacctmgr command. Anytime a user is removed from a subscription their Slurm
+association is removed. You can disable this behavior by setting "SLURM\_NOOP"
+to False.
+
+## Requirements
+
+- pip install django-q
+
+To run django-q:
+
+```
+    python manage.py qcluster
+```
+
 ## Usage
 
 To enable this extra app add or uncomment the following in your
@@ -36,6 +53,8 @@ local\_settings.py file:
     EXTRA_APPS += [
         'extra.djangoapps.slurm',
     ]
+    SLURM_NOOP = False
+    SLURM_SACCTMGR_PATH = '/usr/bin/sacctmgr' 
 ```
 
 To generate Slurm association data from Coldfront run the following command:
