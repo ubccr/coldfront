@@ -55,7 +55,7 @@ python manage.py initial_setup
 
 7. Setup an admin user
 ```
-python manage.py createsuperser
+python manage.py createsuperuser
 ```
 
 8. Start development server

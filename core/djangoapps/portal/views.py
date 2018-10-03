@@ -135,5 +135,5 @@ def subscription_summary(request):
     context['subscriptions_count_by_resource'] = subscriptions_count_by_resource
     context['resources_chart_data'] = resources_chart_data
 
-    print(context)
+
     return render(request, 'portal/subscription_summary.html', context)
