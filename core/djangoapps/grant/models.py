@@ -73,4 +73,3 @@ class Grant(TimeStampedModel):
         permissions = (
             ("can_view_all_grants", "Can view all grants"),
         )
-

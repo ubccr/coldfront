@@ -1,12 +1,12 @@
 import json
 import logging
 
-import ldap.filter
 from django.db.models import Q
-from ldap3 import Connection, Server
 
+import ldap.filter
 from common.djangoapps.user.utils import UserSearch
 from common.djangolibs.utils import import_from_settings
+from ldap3 import Connection, Server
 
 logger = logging.getLogger(__name__)
 

@@ -1,10 +1,12 @@
-import sys
-import os
 import logging
-from django.db.models import Q
+import os
+import sys
+
 from django.core.management.base import BaseCommand, CommandError
+from django.db.models import Q
+
+from core.djangoapps.resources.models import Resource, ResourceAttribute
 from core.djangoapps.subscription.models import Subscription
-from core.djangoapps.resources.models import Resource,ResourceAttribute
 
 logger = logging.getLogger(__name__)
 

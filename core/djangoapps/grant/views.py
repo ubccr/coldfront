@@ -3,19 +3,18 @@ import csv
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.forms import formset_factory
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.views import View
 from django.views.generic import DetailView, FormView, ListView, TemplateView
 from django.views.generic.edit import CreateView, UpdateView
-from django.http import StreamingHttpResponse
 
+from common.djangolibs.utils import Echo
 from core.djangoapps.grant.forms import GrantDeleteForm, GrantForm
 from core.djangoapps.grant.models import (Grant, GrantFundingAgency,
                                           GrantStatusChoice)
 from core.djangoapps.project.models import Project
-from common.djangolibs.utils import Echo
 
 
 class GrantCreateView(FormView):

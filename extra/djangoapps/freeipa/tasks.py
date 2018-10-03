@@ -1,14 +1,14 @@
-import os
 import logging
+import os
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured
-from ipalib import api
 
 from common.djangolibs.utils import import_from_settings
 from core.djangoapps.subscription.models import SubscriptionUser
 from core.djangoapps.subscription.utils import \
     set_subscription_user_status_to_error
+from ipalib import api
 
 logger = logging.getLogger(__name__)
 

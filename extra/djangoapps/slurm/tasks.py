@@ -1,11 +1,11 @@
-import os
 import logging
+import os
 import shlex
 import subprocess
 
 from django.contrib.auth.models import User
-from django.db.models import Q
 from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
+from django.db.models import Q
 
 from common.djangolibs.utils import import_from_settings
 from core.djangoapps.subscription.models import SubscriptionUser

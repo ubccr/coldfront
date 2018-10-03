@@ -38,7 +38,6 @@ from core.djangoapps.subscription.signals import (subscription_activate_user,
 from core.djangoapps.subscription.utils import (generate_guauge_data_from_usage,
                                                 get_user_resources)
 
-
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 if EMAIL_ENABLED:
     EMAIL_DEVELOPMENT_EMAIL_LIST = import_from_settings('EMAIL_DEVELOPMENT_EMAIL_LIST')

@@ -1,8 +1,9 @@
 import logging
 
-from mozilla_django_oidc.auth import OIDCAuthenticationBackend
 from django.contrib.auth.models import Group
+
 from common.djangolibs.utils import import_from_settings
+from mozilla_django_oidc.auth import OIDCAuthenticationBackend
 
 logger = logging.getLogger(__name__)
 
