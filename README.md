@@ -1,6 +1,21 @@
 # Coldfront - Resource Allocation System
 
-TODO: Write me
+Coldfront is an open source resource allocation system designed to provide a
+central portal for administration, reporting, and measuring scientific impact
+of HPC resources. Coldfront was created to help HPC centers manage access to a
+diverse set of resources across large groups of users and provide a rich set of
+extensible meta data for comprehensive reporting. Coldfront is written in
+Python and released under the GPLv3 license.
+
+## Features
+
+- Allocation/Subscription based system for managing access to resources
+- Collect Project, Grant, and Publication data from users
+- Define custom attributes on resources and subscriptions
+- Email notifications for expiring/renewing access to resources
+- Integration with 3rd party systems for automation and access control
+- Center director approval system and annual project reviews
+
 
 ## Quick Install
 1. Coldfront requires Python 3.6, memcached, and redis. 
