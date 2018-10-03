@@ -34,14 +34,12 @@ pip install -r requirements.txt
 
 ```
 
-4. Copy config/local_settings.py.sample to config/local_settings.py
+4. Copy config/local_settings.py.sample to config/local_settings.py. Open config/local_settings.py and update the following
+    1. Update `SECRET_KEY`. Consider making the length at least 50 characters long. 
+    2. Update `TIME_ZONE` if necessary
 ```
 cp config/local_settings.py.sample config/local_settings.py
 ```
-
-Open config/local_settings.py and update the following
-    1. Update `SECRET_KEY`. Consider making the length at least 50 characters long. 
-    2. Update `TIME_ZONE` if necessary
 
 5. Copy config/local_strings.py.sample to config/local_strings.py and update if desired. 
 ```
@@ -51,6 +49,16 @@ cp config/local_strings.py.sample config/local_strings.py
 6. Run initial setup
 ```
 python manage.py initial_setup
+```
+
+7. Setup an admin user
+```
+python manage.py createsuperser
+```
+
+8. Start development server
+```
+python manage.py runserver 0.0.0.0:8000
 ```
 
 

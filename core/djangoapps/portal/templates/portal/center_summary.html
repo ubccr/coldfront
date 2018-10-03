@@ -103,28 +103,30 @@ $(document).ready(function() {
 });
 
 function drawPublications() {
-  var chart = c3.generate({
-    bindto: '#chartPublications',
-    data: publication_by_year_bar_chart_data,
-    legend: {
-      show: false,
-      item: {
-        onclick: function(id) {}
-      }
-    },
-    axis: {
-      x: {
-        label: {
-          text: 'Year',
-          position: 'outer-center'
+  if (publication_by_year_bar_chart_data) {
+    var chart = c3.generate({
+      bindto: '#chartPublications',
+      data: publication_by_year_bar_chart_data,
+      legend: {
+        show: false,
+        item: {
+          onclick: function(id) {}
         }
       },
-      y: {
-        label: 'Number of Publications',
-        position: 'outer-middle'
+      axis: {
+        x: {
+          label: {
+            text: 'Year',
+            position: 'outer-center'
+          }
+        },
+        y: {
+          label: 'Number of Publications',
+          position: 'outer-middle'
+        }
       }
-    }
-  });
+    });
+  }
 }
 
 function drawGrantsByAgency() {
