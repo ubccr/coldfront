@@ -10,6 +10,8 @@ from core.djangoapps.subscription.models import SubscriptionUser
 from core.djangoapps.subscription.utils import \
     set_subscription_user_status_to_error
 
+logger = logging.getLogger(__name__)
+
 CLIENT_KTNAME = import_from_settings('FREEIPA_KTNAME')
 UNIX_GROUP_ATTRIBUTE_NAME = import_from_settings('FREEIPA_GROUP_ATTRIBUTE_NAME', 'freeipa_group')
 
@@ -20,8 +22,6 @@ try:
 except Exception as e:
     logger.error("Failed to initialze FreeIPA lib: %s", e)
     raise ImproperlyConfigured('Failed to initialze FreeIPA: {0}'.format(e))
-
-logger = logging.getLogger(__name__)
 
 def check_ipa_group_error(res):
     if not res:
