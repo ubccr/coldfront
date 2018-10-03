@@ -78,13 +78,14 @@ python manage.py createsuperuser
 python manage.py runserver 0.0.0.0:8000
 ```
 
+9. Point your browser to http://localhost:8000
+
 
 ## Directory structure
 
 - core - The core Coldfront application
 - common - Common code shared between applications
 - extra - Extra applications that can be configured in Coldfront
-
 
 ## License
 
