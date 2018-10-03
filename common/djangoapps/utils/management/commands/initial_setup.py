@@ -16,3 +16,5 @@ class Command(BaseCommand):
         call_command('add_default_project_choices')
         call_command('add_default_subscription_choices')
         call_command('add_default_publication_sources')
+        call_command('add_scheduled_tasks')
+        call_command('loaddata', 'initial_data.json')

@@ -1,0 +1,176 @@
+[
+{
+  "model": "resources.attributetype",
+  "pk": 1,
+  "fields": {
+    "name": "Int"
+  }
+},
+{
+  "model": "resources.attributetype",
+  "pk": 2,
+  "fields": {
+    "name": "Date"
+  }
+},
+{
+  "model": "resources.attributetype",
+  "pk": 3,
+  "fields": {
+    "name": "Yes/No"
+  }
+},
+{
+  "model": "resources.attributetype",
+  "pk": 4,
+  "fields": {
+    "name": "Public/Private"
+  }
+},
+{
+  "model": "resources.attributetype",
+  "pk": 5,
+  "fields": {
+    "name": "Active/Inactive"
+  }
+},
+{
+  "model": "resources.attributetype",
+  "pk": 6,
+  "fields": {
+    "name": "Text"
+  }
+},
+{
+  "model": "resources.resourceattributetype",
+  "pk": 1,
+  "fields": {
+    "attribute_type": 4,
+    "name": "Access",
+    "is_required": true,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resources.resourceattributetype",
+  "pk": 2,
+  "fields": {
+    "attribute_type": 5,
+    "name": "Status",
+    "is_required": true,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resources.resourceattributetype",
+  "pk": 3,
+  "fields": {
+    "attribute_type": 2,
+    "name": "ServiceStart",
+    "is_required": true,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resources.resourceattributetype",
+  "pk": 4,
+  "fields": {
+    "attribute_type": 2,
+    "name": "ServiceEnd",
+    "is_required": true,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resources.resourceattributetype",
+  "pk": 5,
+  "fields": {
+    "attribute_type": 6,
+    "name": "AllowedGroups",
+    "is_required": true,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resources.resourceattributetype",
+  "pk": 6,
+  "fields": {
+    "attribute_type": 6,
+    "name": "Owner",
+    "is_required": true,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resources.resourceattributetype",
+  "pk": 7,
+  "fields": {
+    "attribute_type": 1,
+    "name": "expiry_time",
+    "is_required": true,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resources.resourceattributetype",
+  "pk": 8,
+  "fields": {
+    "attribute_type": 3,
+    "name": "fee_applies",
+    "is_required": true,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resources.resourceattributetype",
+  "pk": 9,
+  "fields": {
+    "attribute_type": 1,
+    "name": "Node Count",
+    "is_required": true,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resources.resourceattributetype",
+  "pk": 10,
+  "fields": {
+    "attribute_type": 1,
+    "name": "Core Count",
+    "is_required": true,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resources.resourceattributetype",
+  "pk": 11,
+  "fields": {
+    "attribute_type": 6,
+    "name": "slurm_cluster",
+    "is_required": true,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resources.resourceattributetype",
+  "pk": 12,
+  "fields": {
+    "attribute_type": 6,
+    "name": "slurm_specs",
+    "is_required": true,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+}
+]

@@ -70,23 +70,6 @@ python manage.py runserver 0.0.0.0:8000
 - common - Common code shared between applications
 - extra - Extra applications that can be configured in Coldfront
 
-## Developing
-
-Install required OS packages:
-```
-yum groupinstall @Development
-yum install mariadb-server mariadb-devel redis python36 python36-devel openldap-devel 
-```
-
-Checkout the code, setup virtualenv, and pip install requirements:
-```
-$ git clone https://github.com/ubccr/coldfront.git
-$ cd coldfront/
-$ python3 -mvenv venv
-$ source venv/bin/activate
-$ pip install -r requirements.txt
-
-```
 
 ## License
 
