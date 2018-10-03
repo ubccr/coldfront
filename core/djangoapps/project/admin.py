@@ -1,6 +1,5 @@
 import textwrap
 
-from admin_comments.admin import CommentInline
 from django.contrib import admin
 from simple_history.admin import SimpleHistoryAdmin
 
@@ -34,7 +33,6 @@ class ProjectUserAdmin(SimpleHistoryAdmin):
                     'created', 'modified',)
     list_filter = ('role', 'status')
     search_fields = ['user__username', 'user__first_name', 'user__last_name']
-    inlines_change = [CommentInline, ]
     raw_id_fields = ('user', 'project')
 
     def project_title(self, obj):
