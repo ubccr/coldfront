@@ -1,4 +1,5 @@
 import json
+import logging
 
 import ldap
 from django.db.models import Q
@@ -7,6 +8,7 @@ from ldap3 import Connection, Server
 from common.djangoapps.user.utils import UserSearch
 from common.djangolibs.utils import import_from_settings
 
+logger = logging.getLogger(__name__)
 
 class LDAPUserSearch(UserSearch):
     search_source = 'LDAP'
@@ -54,4 +56,5 @@ class LDAPUserSearch(UserSearch):
             user_dict = self.parse_ldap_entry(entry)
             users.append(user_dict)
 
+        logger.info("LDAP user search for %s found %s results", user_search_string, len(users))
         return users
