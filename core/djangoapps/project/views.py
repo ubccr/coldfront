@@ -42,10 +42,14 @@ from core.djangoapps.subscription.models import (Subscription,
 from core.djangoapps.subscription.signals import (subscription_activate_user,
                                                   subscription_remove_user)
 
-EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings('EMAIL_DIRECTOR_EMAIL_ADDRESS')
-EMAIL_DEVELOPMENT_EMAIL_LIST = import_from_settings('EMAIL_DEVELOPMENT_EMAIL_LIST')
-EMAIL_SUBJECT_PREFIX = import_from_settings('EMAIL_SUBJECT_PREFIX')
-EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
+EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
+if EMAIL_ENABLED:
+    EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings('EMAIL_DIRECTOR_EMAIL_ADDRESS')
+    EMAIL_DEVELOPMENT_EMAIL_LIST = import_from_settings('EMAIL_DEVELOPMENT_EMAIL_LIST')
+    EMAIL_SUBJECT_PREFIX = import_from_settings('EMAIL_SUBJECT_PREFIX')
+    EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
+else:
+    EMAIL_DIRECTOR_EMAIL_ADDRESS, EMAIL_DEVELOPMENT_EMAIL_LIST, EMAIL_SUBJECT_PREFIX, EMAIL_SENDER = None
 
 
 class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
