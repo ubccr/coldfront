@@ -2,6 +2,57 @@
 
 TODO: Write me
 
+## Quick Install
+1. Coldfront requires Python 3.6, memcached, and redis. 
+
+### CentOS (7.5)
+```
+sudo yum install python36 python36-devel memcached redis
+``` 
+
+### Ubuntu (16.04)
+```
+sudo add-apt-repository ppa:jonathonf/python-3.6
+sudo apt-get update
+sudo apt-get install python3.6 python3.6-venv memcached redis-server
+``` 
+
+2. Clone Coldfront in a new directory and create a Python virtual environment for Coldfront
+```
+mkdir coldfront_app
+cd coldfront_app
+git clone https://github.com/ubccr/coldfront.git
+python3.6 -mvenv venv
+```
+
+3. Activate the virtual environment and install the required Python packages
+```
+source venv/bin/activate
+cd coldfront
+pip install wheel
+pip install -r requirements.txt
+
+```
+
+4. Copy config/local_settings.py.sample to config/local_settings.py
+```
+cp config/local_settings.py.sample config/local_settings.py
+```
+Open config/local_settings.py and update the following
+    1. Update `SECRET_KEY`. Consider making the length at least 50 characters long. 
+    2. Update `TIME_ZONE` if necessary
+
+5. Copy config/local_strings.py.sample to config/local_strings.py and update if desired. 
+```
+cp config/local_strings.py.sample config/local_strings.py
+```
+
+6. Run initial setup
+```
+python manage.py initial_setup
+```
+
+
 ## Directory structure
 
 - core - The core Coldfront application
