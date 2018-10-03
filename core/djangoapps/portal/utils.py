@@ -24,7 +24,10 @@ def generate_publication_by_year_chart_data(publications_by_year):
             }
         }
     else:
-        data = ''
+        data = {
+            "columns": [],
+            "type": 'bar'
+        }
 
     return data
 
@@ -41,28 +44,35 @@ def generate_total_grants_by_agency_chart_data(total_grants_by_agency):
 
 def generate_resources_chart_data(subscriptions_count_by_resource_type):
 
-    cluster_label = "Cluster: %d" % (subscriptions_count_by_resource_type['Cluster'])
-    cloud_label = "Cloud: %d" % (subscriptions_count_by_resource_type['Cloud'])
-    server_label = "Server: %d" % (subscriptions_count_by_resource_type['Server'])
-    storage_label = "Storage: %d" % (subscriptions_count_by_resource_type['Storage'])
 
-    resource_plot_data = {
-        "columns": [
-            [cluster_label, subscriptions_count_by_resource_type['Cluster']],
-            [storage_label, subscriptions_count_by_resource_type['Storage']],
-            [cloud_label, subscriptions_count_by_resource_type['Cloud']],
-            [server_label, subscriptions_count_by_resource_type['Server']],
+    if subscriptions_count_by_resource_type:
+        cluster_label = "Cluster: %d" % (subscriptions_count_by_resource_type['Cluster'])
+        cloud_label = "Cloud: %d" % (subscriptions_count_by_resource_type['Cloud'])
+        server_label = "Server: %d" % (subscriptions_count_by_resource_type['Server'])
+        storage_label = "Storage: %d" % (subscriptions_count_by_resource_type['Storage'])
 
-        ],
-        "type": 'donut',
-        "colors": {
-            cluster_label: '#6da04b',
-            storage_label: '#ffc72c',
-            cloud_label: '#2f9fd0',
-            server_label: '#e56a54',
+        resource_plot_data = {
+            "columns": [
+                [cluster_label, subscriptions_count_by_resource_type['Cluster']],
+                [storage_label, subscriptions_count_by_resource_type['Storage']],
+                [cloud_label, subscriptions_count_by_resource_type['Cloud']],
+                [server_label, subscriptions_count_by_resource_type['Server']],
 
+            ],
+            "type": 'donut',
+            "colors": {
+                cluster_label: '#6da04b',
+                storage_label: '#ffc72c',
+                cloud_label: '#2f9fd0',
+                server_label: '#e56a54',
+
+            }
         }
-    }
+    else:
+        resource_plot_data = {
+            "type": 'donut',
+            "columns": []
+        }
 
     return resource_plot_data
 

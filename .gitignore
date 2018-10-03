@@ -11,3 +11,4 @@ local_data/
 site/
 local_settings.py
 local_strings.py
+coldfront.db

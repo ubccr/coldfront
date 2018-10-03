@@ -103,7 +103,7 @@ $(document).ready(function() {
 });
 
 function drawPublications() {
-  if (publication_by_year_bar_chart_data) {
+   if (publication_by_year_bar_chart_data['columns'].length != 0 ) {
     var chart = c3.generate({
       bindto: '#chartPublications',
       data: publication_by_year_bar_chart_data,
@@ -126,22 +126,24 @@ function drawPublications() {
         }
       }
     });
-  }
+  };
 }
 
 function drawGrantsByAgency() {
-  var chart = c3.generate({
-    bindto: '#chartGrants',
-    data: grants_agency_chart_data,
-    donut: {
-      title: "Grants"
-    },
-    legend: {
-      item: {
-        onclick: function(id) {}
+  if (grants_agency_chart_data['columns'].length != 0 ) {
+    var chart = c3.generate({
+      bindto: '#chartGrants',
+      data: grants_agency_chart_data,
+      donut: {
+        title: "Grants"
+      },
+      legend: {
+        item: {
+          onclick: function(id) {}
+        }
       }
-    }
-  });
+    });
+  }
 }
 
 var grants_agency_chart_data = {{ grants_agency_chart_data | safe }}
