@@ -1,7 +1,7 @@
 import json
 import logging
 
-import ldap
+import ldap.filter
 from django.db.models import Q
 from ldap3 import Connection, Server
 
