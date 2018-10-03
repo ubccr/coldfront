@@ -194,4 +194,12 @@ EXTRA_AUTHENTICATION_BACKENDS = []
 # OIDC_OP_AUTHORIZATION_ENDPOINT = "https://localhost/hydra/oauth2/auth"
 # OIDC_OP_TOKEN_ENDPOINT = "https://localhost/hydra/oauth2/token"
 # OIDC_OP_USER_ENDPOINT = "https://localhost/hydra/userinfo"
-# OIDC_VERIFY_SSL = True
+# OIDC_VERIFY_SSL = True 
+
+#------------------------------------------------------------------------------
+# Enable Slurm support
+#------------------------------------------------------------------------------
+EXTRA_APPS += [
+    'extra.djangoapps.slurm',
+]
+SLURM_SACCTMGR_PATH = '/usr/bin/sacctmgr' 

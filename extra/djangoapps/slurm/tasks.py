@@ -1,75 +1,72 @@
-
+import os
+import logging
+import shlex
 import subprocess
 
 from django.contrib.auth.models import User
+from django.db.models import Q
+from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 
+from common.djangolibs.utils import import_from_settings
 from core.djangoapps.subscription.models import SubscriptionUser
 from core.djangoapps.subscription.utils import \
     set_subscription_user_status_to_error
 
-# Resource Name
-# subscription_user_obj.subscription.resources.first().name
+SLURM_CLUSTER_ATTRIBUTE_NAME = import_from_settings('SLURM_CLUSTER_ATTRIBUTE_NAME', 'slurm_cluster')
+SLURM_ACCOUNT_ATTRIBUTE_NAME = import_from_settings('SLURM_ACCOUNT_ATTRIBUTE_NAME', 'slurm_account_name')
+SLURM_NOOP = import_from_settings('SLURM_NOOP', False)
+SLURM_SACCTMGR_PATH = import_from_settings('SLURM_SACCTMGR_PATH', '/usr/bin/sacctmgr')
+SLURM_CMD_REMOVE_USER = SLURM_SACCTMGR_PATH + ' -Q -i delete user where name={} cluster={} account={}'
 
-# Resource Type Name
-# subscription_user_obj.subscription.resources.first().resource_type.name
+logger = logging.getLogger(__name__)
 
-# User groups
-# subscription_user_obj.user.group_set.all()
+def _remove_assoc(user, cluster, account):
+    cmd = SLURM_CMD_REMOVE_USER.format(user, cluster, account)
 
+    if SLURM_NOOP:
+        logger.info('NOOP - Slurm cmd: %s', cmd)
+        return
 
-def activate_user_account_task1(subscription_user_pk):
-    subscription_user_obj = SubscriptionUser.objects.get(pk=subscription_user_pk)
+    result = subprocess.run(shlex.split(cmd), stdout=subprocess.PIPE)
+    if result.returncode != 0:
+        logger.error('Slurm command failed: %s', cmd)
+        err_msg = 'return_value={} output={}'.format(result.returncode, result.stdout)
+        raise Exception(err_msg)
 
-    print('Running activate_user_account_task1 for user: {} for resource {}'.format(
-          subscription_user_obj.user.username, subscription_user_obj.subscription.resources.first().name), '.' * 25)
+def remove_association(subscription_user_pk):
+    subscription_user = SubscriptionUser.objects.get(pk=subscription_user_pk)
+    if subscription_user.subscription.status.name not in ['Active', 'Pending', 'Inactive (Renewed)', ]:
+        logger.warn("Subscription is not active or pending. Will not remove Slurm associations.")
+        return
 
     try:
-        completed = subprocess.run(['ls', '-l'], stdout=subprocess.PIPE)
-        print('returncode:', completed.returncode)
-        print('Have {} bytes in stdout:\n{}'.format(
-            len(completed.stdout),
-            completed.stdout.decode('utf-8'))
-        )
-    except subprocess.CalledProcessError as err:
-        print('ERROR:', err)
+        slurm_account = subscription_user.subscription.subscriptionattribute_set.get(subscription_attribute_type__name=SLURM_ACCOUNT_ATTRIBUTE_NAME)
+    except ObjectDoesNotExist:
+        logger.warn("No slurm account name found for subscription: %s. Nothing to do.", subscription_user.subscription)
+        return
 
-    if False:  # some fail condition
-        set_subscription_user_status_to_error(subscription_user_pk)
+    slurm_resources = subscription_user.subscription.resources.filter(
+            Q(resourceattribute__resource_attribute_type__name=SLURM_CLUSTER_ATTRIBUTE_NAME) | 
+            Q(parent_resource__resourceattribute__resource_attribute_type__name=SLURM_CLUSTER_ATTRIBUTE_NAME))
 
+    for r in slurm_resources.distinct():
+        cluster_name = None
+        try:
+            cluster_name = r.resourceattribute_set.get(resource_attribute_type__name='slurm_cluster')
+        except ObjectDoesNotExist:
+            try:
+                cluster_name = r.parent_resource.resourceattribute_set.get(resource_attribute_type__name='slurm_cluster')
+            except ObjectDoesNotExist:
+                pass
 
-def activate_user_account_task2(subscription_user_pk):
-    subscription_user_obj = SubscriptionUser.objects.get(pk=subscription_user_pk)
+        if not cluster_name:
+            logger.error("Could not find cluster name for resource %s for subscription %s", r, subscription_user.subscription)
+            continue
 
-    print('Running activate_user_account_task2 for user: {} for resource {}'.format(
-          subscription_user_obj.user.username, subscription_user_obj.subscription.resources.first().name), '.' * 25)
-
-    if False:  # some fail condition
-        set_subscription_user_status_to_error(subscription_user_pk)
-
-
-def activate_user_account_task3(subscription_user_pk):
-    subscription_user_obj = SubscriptionUser.objects.get(pk=subscription_user_pk)
-
-    print('Running activate_user_account_task3 for user: {} for resource {}'.format(
-          subscription_user_obj.user.username, subscription_user_obj.subscription.resources.first().name), '.' * 25)
-
-    if False:  # some fail condition
-        set_subscription_user_status_to_error(subscription_user_pk)
-
-
-def remove_user_account_task1(subscription_user_pk):
-    subscription_user_obj = SubscriptionUser.objects.get(pk=subscription_user_pk)
-    print('Running remove_user_account_task1 for user: {} for resource {}'.format(
-          subscription_user_obj.user.username, subscription_user_obj.subscription.resources.first().name), '.' * 25)
-
-    if False:  # some fail condition
-        set_subscription_user_status_to_error(subscription_user_pk)
-
-
-def remove_user_account_task2(subscription_user_pk):
-    subscription_user_obj = SubscriptionUser.objects.get(pk=subscription_user_pk)
-    print('Running remove_user_account_task2 for user: {} for resource {}'.format(
-          subscription_user_obj.user.username, subscription_user_obj.subscription.resources.first().name), '.' * 25)
-
-    if False:  # some fail condition
-        set_subscription_user_status_to_error(subscription_user_pk)
+        try:
+            _remove_assoc(subscription_user.user.username, cluster_name.value, slurm_account.value)
+        except Exception as e:
+            logger.error("Failed removing Slurm assocation for user %s on account %s in cluster %s: %s", subscription_user.user.username, slurm_account.value, cluster_name.value, e)
+            set_subscription_user_status_to_error(subscription_user_pk)
+        else:
+            logger.info("Successfully removed Slurm assocation: user=%s cluster=%s account=%s", subscription_user.user.username, cluster_name.value, slurm_account.value)
