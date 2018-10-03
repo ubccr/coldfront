@@ -32,12 +32,9 @@ INSTALLED_APPS = [
 INSTALLED_APPS += [
     'crispy_forms',
     'sslserver',
-    'social_django',
-    'admin_comments',
     'django_q',
     'hijack',
     'hijack_admin',
-    'compat',
     'simple_history',
 ]
 
