@@ -114,7 +114,6 @@ def subscription_by_fos(request):
     context['active_users_by_fos'] = dict(active_users_by_fos)
     context['total_subscriptions_users'] = total_subscriptions_users
     context['active_pi_count'] = active_pi_count
-
     return render(request, 'portal/subscription_by_fos.html', context)
 
 
@@ -135,5 +134,6 @@ def subscription_summary(request):
     context['subscriptions_chart_data'] = subscriptions_chart_data
     context['subscriptions_count_by_resource'] = subscriptions_count_by_resource
     context['resources_chart_data'] = resources_chart_data
+
 
     return render(request, 'portal/subscription_summary.html', context)

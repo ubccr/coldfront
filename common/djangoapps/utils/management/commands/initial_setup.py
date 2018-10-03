@@ -2,9 +2,10 @@ import os
 
 from django.conf import settings
 from django.core.management import call_command
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 
 base_dir = settings.BASE_DIR
+
 
 class Command(BaseCommand):
 
@@ -15,9 +16,5 @@ class Command(BaseCommand):
         call_command('add_default_project_choices')
         call_command('add_default_subscription_choices')
         call_command('add_default_publication_sources')
-        call_command('import_users')
-        call_command('import_projects')
-        call_command('import_resources')
-        call_command('import_subscriptions')
-        call_command('import_grants')
-        call_command('import_publications')
+        call_command('add_scheduled_tasks')
+        call_command('loaddata', 'initial_data.json')

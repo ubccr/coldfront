@@ -1,9 +1,6 @@
-import datetime
 import textwrap
 
-from admin_comments.admin import CommentInline
-from django.contrib import admin, messages
-from django.core.exceptions import ValidationError
+from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 from simple_history.admin import SimpleHistoryAdmin
 
@@ -217,7 +214,6 @@ class SubscriptionUserAdmin(SimpleHistoryAdmin):
     fields_change = ('subscription', 'user', 'status', 'created', 'modified',)
     list_display = ('pk', 'project', 'project_pi', 'resource', 'subscription_status',
                     'user_info', 'status', 'created', 'modified',)
-    inlines_change = [CommentInline, ]
     list_filter = ('status', 'subscription__status', 'subscription__resources',)
     search_fields = (
         'user__first_name',

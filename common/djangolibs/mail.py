@@ -8,12 +8,19 @@ from django.template.loader import render_to_string
 from common.djangolibs.utils import import_from_settings
 
 logger = logging.getLogger(__name__)
-EMAIL_SUBJECT_PREFIX = import_from_settings('EMAIL_SUBJECT_PREFIX')
-EMAIL_DEVELOPMENT_EMAIL_LIST = import_from_settings('EMAIL_DEVELOPMENT_EMAIL_LIST')
+EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
+if EMAIL_ENABLED:
+    EMAIL_SUBJECT_PREFIX = import_from_settings('EMAIL_SUBJECT_PREFIX')
+    EMAIL_DEVELOPMENT_EMAIL_LIST = import_from_settings('EMAIL_DEVELOPMENT_EMAIL_LIST')
+
 
 def send_email(subject, body, sender, receiver_list):
     """Helper function for sending emails
     """
+
+    if not EMAIL_ENABLED:
+        return
+
     if len(receiver_list) == 0:
         logger.error('Failed to send email missing receiver_list')
         return
@@ -32,6 +39,7 @@ def send_email(subject, body, sender, receiver_list):
         send_mail(subject, body, sender, receiver_list, fail_silently=False)
     except SMTPException as e:
         logger.error('Failed to send email to %s from %s with subject %s', sender, ','.join(receiver_list), subject)
+
 
 def send_email_template(subject, template_name, context, sender, receiver_list):
     """Helper function for sending emails from a template

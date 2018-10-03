@@ -19,8 +19,6 @@
           <div class="dropdown-menu">
             <a class="dropdown-item" href="{% url 'project-list' %}">Projects</a>
             <a class="dropdown-item" href="{% url 'subscription-list' %}">Subscriptions</a>
-            <a class="dropdown-item" href="#">Publications</a>
-            <a class="dropdown-item" href="#">Grants</a>
           </div>
         </li>
         {% if request.user.is_superuser %} 

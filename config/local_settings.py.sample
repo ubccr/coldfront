@@ -4,11 +4,58 @@ Local Coldfront settings
 Here you can define custom database settings, add authentication backends,
 configure logging, and add extra coldfront apps.
 """
-
 #------------------------------------------------------------------------------
 # Secret Key (required set to something long and random)
 #------------------------------------------------------------------------------
-# SECRET_KEY = ''
+SECRET_KEY = ''
+
+#------------------------------------------------------------------------------
+# Enable debugging. WARNING: These should be set to False in production
+#------------------------------------------------------------------------------
+DEBUG = True
+DEVELOP = True
+
+#------------------------------------------------------------------------------
+# General Center Information
+#------------------------------------------------------------------------------
+# CENTER_NAME = 'HPC Resources'
+# CENTER_HELP_URL = 'http://localhost/help'
+
+#------------------------------------------------------------------------------
+# Locale settings
+#------------------------------------------------------------------------------
+# https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+LANGUAGE_CODE = 'en-us'
+TIME_ZONE = 'America/New_York'
+
+#------------------------------------------------------------------------------
+# Logging
+#------------------------------------------------------------------------------
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+        # 'file': {
+        #     'class': 'logging.FileHandler',
+        #     'filename': '/tmp/debug.log',
+        # },
+    },
+    'loggers': {
+        'django_auth_ldap': {
+            'level': 'WARN',
+            # 'handlers': ['console', 'file'],
+            'handlers': ['console', ],
+        },
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+    },
+}
+
 
 #------------------------------------------------------------------------------
 # Custom Database settings
@@ -28,76 +75,30 @@ EXTRA_APPS = []
 EXTRA_MIDDLEWARE = []
 EXTRA_AUTHENTICATION_BACKENDS = []
 
-#------------------------------------------------------------------------------
-# Enable debugging. WARNING: These should be set to False in production
-#------------------------------------------------------------------------------
-# DEBUG = True
-# DEVELOP = True
-
-#------------------------------------------------------------------------------
-# General Center Information
-#------------------------------------------------------------------------------
-CENTER_NAME = 'HPC Resources'
-CENTER_HELP_URL = 'http://localhost/help'
-
-#------------------------------------------------------------------------------
-# Locale settings
-#------------------------------------------------------------------------------
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'America/New_York'
-
-
-#------------------------------------------------------------------------------
-# Logging
-#------------------------------------------------------------------------------
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-        # 'file': {
-        #     'class': 'logging.FileHandler',
-        #     'filename': '/tmp/debug.log',
-        # },
-    },
-    'loggers': {
-         'django_auth_ldap': {
-            'level': 'WARN',
-            # 'handlers': ['console', 'file'],
-             'handlers': ['console', ],
-        },
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
-        },
-    },
-}
-
 
 #------------------------------------------------------------------------------
 # Email/Notification settings
 #------------------------------------------------------------------------------
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'localhost'
-EMAIL_PORT = 25
-EMAIL_HOST_USER = ''
-EMAIL_HOST_PASSWORD = ''
-EMAIL_USE_TLS = False
-EMAIL_TIMEOUT = 3
-EMAIL_SUBJECT_PREFIX = '[Coldfront]'
-EMAIL_ADMIN_LIST = ['admin@localhost']
-EMAIL_SENDER = 'coldfront@localhost'
-EMAIL_TICKET_SYSTEM_ADDRESS = 'help@localhost'
-EMAIL_DIRECTOR_EMAIL_ADDRESS = 'director@localhost'
-EMAIL_PROJECT_REVIEW_CONTACT = 'review@localhost'
-EMAIL_DEVELOPMENT_EMAIL_LIST = ['dev1@localhost', 'dev2@localhost']
-EMAIL_OPT_OUT_INSTRUCTION_URL = 'http://localhost/optout'
-EMAIL_SIGNATURE = """
-HPC Resources
-http://localhost
-"""
+# EMAIL_ENABLED = True
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'localhost'
+# EMAIL_PORT = 25
+# EMAIL_HOST_USER = ''
+# EMAIL_HOST_PASSWORD = ''
+# EMAIL_USE_TLS = False
+# EMAIL_TIMEOUT = 3
+# EMAIL_SUBJECT_PREFIX = '[Coldfront]'
+# EMAIL_ADMIN_LIST = ['admin@localhost']
+# EMAIL_SENDER = 'coldfront@localhost'
+# EMAIL_TICKET_SYSTEM_ADDRESS = 'help@localhost'
+# EMAIL_DIRECTOR_EMAIL_ADDRESS = 'director@localhost'
+# EMAIL_PROJECT_REVIEW_CONTACT = 'review@localhost'
+# EMAIL_DEVELOPMENT_EMAIL_LIST = ['dev1@localhost', 'dev2@localhost']
+# EMAIL_OPT_OUT_INSTRUCTION_URL = 'http://localhost/optout'
+# EMAIL_SIGNATURE = """
+# HPC Resources
+# http://localhost
+# """
 
 #------------------------------------------------------------------------------
 # Enable LDAP user searches. This will be used when searching users to add to
@@ -114,7 +115,7 @@ http://localhost
 #------------------------------------------------------------------------------
 # import ldap
 # from django_auth_ldap.config import GroupOfNamesType, LDAPSearch
-# 
+#
 # EXTRA_AUTHENTICATION_BACKENDS += ['django_auth_ldap.backend.LDAPBackend',]
 # AUTH_LDAP_BIND_AS_AUTHENTICATING_USER=True
 # AUTH_LDAP_MIRROR_GROUPS = True
@@ -142,7 +143,7 @@ http://localhost
 # EXTRA_APPS += [
 #     'extra.djangoapps.iquota'
 # ]
-# 
+#
 # IQUOTA_KEYTAB = '/path/to/user.keytab'
 # IQUOTA_CA_CERT = '/etc/ipa/ca.crt'
 # IQUOTA_API_HOST = 'localhost'
@@ -177,15 +178,15 @@ http://localhost
 #     'mozilla_django_oidc',
 #     'extra.djangoapps.mokey_oidc',
 # ]
-# 
+#
 # EXTRA_AUTHENTICATION_BACKENDS += [
 #     'extra.djangoapps.mokey_oidc.auth.OIDCMokeyAuthenticationBackend',
 # ]
-# 
+#
 # EXTRA_MIDDLEWARE += [
 #     'mozilla_django_oidc.middleware.SessionRefresh',
 # ]
-# 
+#
 # OIDC_OP_JWKS_ENDPOINT = "https://localhost/hydra/.well-known/jwks.json"
 # OIDC_RP_SIGN_ALGO = 'RS256'
 # OIDC_RP_CLIENT_ID = ''
