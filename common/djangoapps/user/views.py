@@ -16,7 +16,12 @@ from common.djangolibs.mail import send_email_template
 from common.djangolibs.utils import import_from_settings
 
 logger = logging.getLogger(__name__)
-EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
+EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
+if EMAIL_ENABLED:
+    EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
+else:
+    EMAIL_TICKET_SYSTEM_ADDRESS = ''
+
 
 @method_decorator(login_required, name='dispatch')
 class UserProfile(TemplateView):
@@ -27,6 +32,7 @@ class UserProfile(TemplateView):
         group_list = ', '.join([group.name for group in self.request.user.groups.all()])
         context['group_list'] = group_list
         return context
+
 
 class UserUpgradeAccount(LoginRequiredMixin, UserPassesTestMixin, View):
     login_url = "/"
@@ -56,6 +62,7 @@ class UserUpgradeAccount(LoginRequiredMixin, UserPassesTestMixin, View):
 
         messages.success(request, 'Your request has been sent')
         return HttpResponseRedirect(reverse('user-profile'))
+
 
 class UserSearchHome(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'user/user_search_home.html'
