@@ -38,9 +38,9 @@ pip install -r requirements.txt
 ```
 cp config/local_settings.py.sample config/local_settings.py
 ```
-    Open config/local_settings.py and update the following:
-        Update `SECRET_KEY`. Consider making the length at least 50 characters long. 
-        Update `TIME_ZONE` if necessary
+Open config/local_settings.py and update the following:
+    Update `SECRET_KEY`. Consider making the length at least 50 characters long. 
+    Update `TIME_ZONE` if necessary
 
 
 5. Copy config/local_strings.py.sample to config/local_strings.py and update if desired. 
