@@ -48,9 +48,6 @@ if EMAIL_ENABLED:
     EMAIL_OPT_OUT_INSTRUCTION_URL = import_from_settings('EMAIL_OPT_OUT_INSTRUCTION_URL')
     EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
     EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
-else:
-    EMAIL_DEVELOPMENT_EMAIL_LIST, EMAIL_SUBJECT_PREFIX, EMAIL_SENDER, EMAIL_TICKET_SYSTEM_ADDRESS, EMAIL_OPT_OUT_INSTRUCTION_URL, EMAIL_SIGNATURE, EMAIL_CENTER_NAME = None
-
 
 logger = logging.getLogger(__name__)
 
@@ -370,13 +367,14 @@ class SubscriptionCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             'url': url
         }
 
-        send_email_template(
-            'New subscription request: {} - {}'.format(pi_name, resource_name),
-            'email/new_subscription_request.txt',
-            template_context,
-            EMAIL_SENDER,
-            [EMAIL_TICKET_SYSTEM_ADDRESS, ]
-        )
+        if EMAIL_ENABLED:
+            send_email_template(
+                'New subscription request: {} - {}'.format(pi_name, resource_name),
+                'email/new_subscription_request.txt',
+                template_context,
+                EMAIL_SENDER,
+                [EMAIL_TICKET_SYSTEM_ADDRESS, ]
+            )
 
         return super().form_valid(form)
 
@@ -647,13 +645,15 @@ class SubscriptionActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, V
             if subscription_user.subscription.project.projectuser_set.get(user=subscription_user.user).enable_notifications:
                 email_receiver_list.append(subscription_user.user.email)
 
-        send_email_template(
-            'Subscription Activated',
-            'email/subscription_activated.txt',
-            template_context,
-            EMAIL_SENDER,
-            email_receiver_list
-        )
+
+        if EMAIL_ENABLED:
+            send_email_template(
+                'Subscription Activated',
+                'email/subscription_activated.txt',
+                template_context,
+                EMAIL_SENDER,
+                email_receiver_list
+            )
 
         return HttpResponseRedirect(reverse('subscription-request-list'))
 
@@ -704,13 +704,14 @@ class SubscriptionDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View)
             if subscription_user.enable_notifications:
                 email_receiver_list.append(subscription_user.user.email)
 
-        send_email_template(
-            'Subscription Denied',
-            'email/subscription_denied.txt',
-            template_context,
-            EMAIL_SENDER,
-            email_receiver_list
-        )
+        if EMAIL_ENABLED:
+            send_email_template(
+                'Subscription Denied',
+                'email/subscription_denied.txt',
+                template_context,
+                EMAIL_SENDER,
+                email_receiver_list
+            )
 
         return HttpResponseRedirect(reverse('subscription-request-list'))
 
@@ -873,13 +874,15 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
                 'url': url
             }
 
-            send_email_template(
-                'Subscription renewed: {} - {}'.format(pi_name, resource_name),
-                'email/subscription_renewed.txt',
-                template_context,
-                EMAIL_SENDER,
-                [EMAIL_TICKET_SYSTEM_ADDRESS, ]
-            )
+
+            if EMAIL_ENABLED:
+                send_email_template(
+                    'Subscription renewed: {} - {}'.format(pi_name, resource_name),
+                    'email/subscription_renewed.txt',
+                    template_context,
+                    EMAIL_SENDER,
+                    [EMAIL_TICKET_SYSTEM_ADDRESS, ]
+                )
 
             messages.success(request, 'Subscription renewed successfully')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': new_subscription_obj.project.pk}))

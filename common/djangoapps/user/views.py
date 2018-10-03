@@ -19,8 +19,6 @@ logger = logging.getLogger(__name__)
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 if EMAIL_ENABLED:
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
-else:
-    EMAIL_TICKET_SYSTEM_ADDRESS = ''
 
 
 @method_decorator(login_required, name='dispatch')
@@ -52,13 +50,14 @@ class UserUpgradeAccount(LoginRequiredMixin, UserPassesTestMixin, View):
         return super().dispatch(request, *args, **kwargs)
 
     def post(self, request):
-        send_email_template(
-            'Upgrade Account Request',
-            'email/upgrade_account_request.txt',
-            {'user': request.user},
-            request.user.email,
-            [EMAIL_TICKET_SYSTEM_ADDRESS]
-        )
+        if EMAIL_ENABLED:
+            send_email_template(
+                'Upgrade Account Request',
+                'email/upgrade_account_request.txt',
+                {'user': request.user},
+                request.user.email,
+                [EMAIL_TICKET_SYSTEM_ADDRESS]
+            )
 
         messages.success(request, 'Your request has been sent')
         return HttpResponseRedirect(reverse('user-profile'))
