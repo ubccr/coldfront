@@ -77,12 +77,23 @@ python manage.py initial_setup
 python manage.py createsuperuser
 ```
 
-8. Start development server
+8. Optional: Add some test data
+```
+python manage.py load_test_data
+```
+
+9. Start development server
 ```
 python manage.py runserver 0.0.0.0:8000
 ```
 
-9. Point your browser to http://localhost:8000
+10. Point your browser to http://localhost:8000
+
+You can log in as `admin` with password `test1234`. 
+You can log in as a PI using username `ccollins` with password `test1234`.
+You can log in as center director using username `michardson` with password `test1234`.
+
+Password for all users is also `teset1234`. 
 
 
 ## Directory structure

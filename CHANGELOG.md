@@ -1,6 +1,11 @@
 # Coldfront Changelog
 
 ## [Unreleased]
+- Add test data
+- Fixed subscription breakdown by status plot failing due to missing resource
+- Add links to all projects and subscriptions for admin and director 
+- Move template inside email conditional.
+- Update django-hijack setting to redirect to admin user list page after release
 
 ## [0.0.1] - 2018-10-03
 - Initial release

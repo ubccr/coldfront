@@ -106,9 +106,8 @@ def subscription_by_fos(request):
         'subscription__project__field_of_science__description', flat=True)))
     total_subscriptions_users = user_subscriptions.values('user').distinct().count()
 
-    active_pi_count = Project.objects.filter(status__name='Active').values_list(
+    active_pi_count = Project.objects.filter(status__name__in=['Active', 'New']).values_list(
         'pi__username', flat=True).distinct().count()
-
     context = {}
     context['subscriptions_by_fos'] = dict(subscriptions_by_fos)
     context['active_users_by_fos'] = dict(active_users_by_fos)

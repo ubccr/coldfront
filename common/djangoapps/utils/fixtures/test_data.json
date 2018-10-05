@@ -1,0 +1,7719 @@
+[
+{
+  "model": "django_q.schedule",
+  "pk": 1,
+  "fields": {
+    "name": null,
+    "func": "common.djangolibs.utils.update_statuses",
+    "hook": null,
+    "args": "()",
+    "kwargs": "{}",
+    "schedule_type": "D",
+    "minutes": null,
+    "repeats": -1,
+    "next_run": "2018-10-04T04:00:00Z",
+    "task": null
+  }
+},
+{
+  "model": "project.projectstatuschoice",
+  "pk": 1,
+  "fields": {
+    "created": "2018-10-03T18:52:58.681Z",
+    "modified": "2018-10-03T18:52:58.681Z",
+    "name": "New"
+  }
+},
+{
+  "model": "project.projectstatuschoice",
+  "pk": 2,
+  "fields": {
+    "created": "2018-10-03T18:52:58.691Z",
+    "modified": "2018-10-03T18:52:58.692Z",
+    "name": "Active"
+  }
+},
+{
+  "model": "project.projectstatuschoice",
+  "pk": 3,
+  "fields": {
+    "created": "2018-10-03T18:52:58.703Z",
+    "modified": "2018-10-03T18:52:58.704Z",
+    "name": "Archived"
+  }
+},
+{
+  "model": "project.projectreviewstatuschoice",
+  "pk": 1,
+  "fields": {
+    "created": "2018-10-03T18:52:58.715Z",
+    "modified": "2018-10-03T18:52:58.716Z",
+    "name": "Completed"
+  }
+},
+{
+  "model": "project.projectreviewstatuschoice",
+  "pk": 2,
+  "fields": {
+    "created": "2018-10-03T18:52:58.727Z",
+    "modified": "2018-10-03T18:52:58.727Z",
+    "name": "Pending"
+  }
+},
+{
+  "model": "project.projectuserrolechoice",
+  "pk": 1,
+  "fields": {
+    "created": "2018-10-03T18:52:58.738Z",
+    "modified": "2018-10-03T18:52:58.738Z",
+    "name": "User"
+  }
+},
+{
+  "model": "project.projectuserrolechoice",
+  "pk": 2,
+  "fields": {
+    "created": "2018-10-03T18:52:58.750Z",
+    "modified": "2018-10-03T18:52:58.750Z",
+    "name": "Manager"
+  }
+},
+{
+  "model": "project.projectuserstatuschoice",
+  "pk": 1,
+  "fields": {
+    "created": "2018-10-03T18:52:58.762Z",
+    "modified": "2018-10-03T18:52:58.762Z",
+    "name": "Active"
+  }
+},
+{
+  "model": "project.projectuserstatuschoice",
+  "pk": 2,
+  "fields": {
+    "created": "2018-10-03T18:52:58.773Z",
+    "modified": "2018-10-03T18:52:58.773Z",
+    "name": "Pending - Add"
+  }
+},
+{
+  "model": "project.projectuserstatuschoice",
+  "pk": 3,
+  "fields": {
+    "created": "2018-10-03T18:52:58.783Z",
+    "modified": "2018-10-03T18:52:58.783Z",
+    "name": "Pending - Remove"
+  }
+},
+{
+  "model": "project.projectuserstatuschoice",
+  "pk": 4,
+  "fields": {
+    "created": "2018-10-03T18:52:58.794Z",
+    "modified": "2018-10-03T18:52:58.795Z",
+    "name": "Denied"
+  }
+},
+{
+  "model": "project.projectuserstatuschoice",
+  "pk": 5,
+  "fields": {
+    "created": "2018-10-03T18:52:58.806Z",
+    "modified": "2018-10-03T18:52:58.806Z",
+    "name": "Removed"
+  }
+},
+{
+  "model": "resources.attributetype",
+  "pk": 1,
+  "fields": {
+    "created": "2018-10-03T18:52:59.078Z",
+    "modified": "2018-10-03T18:52:59.078Z",
+    "name": "Int"
+  }
+},
+{
+  "model": "resources.attributetype",
+  "pk": 2,
+  "fields": {
+    "created": "2018-10-03T18:52:59.080Z",
+    "modified": "2018-10-03T18:52:59.080Z",
+    "name": "Date"
+  }
+},
+{
+  "model": "resources.attributetype",
+  "pk": 3,
+  "fields": {
+    "created": "2018-10-03T18:52:59.081Z",
+    "modified": "2018-10-03T18:52:59.081Z",
+    "name": "Yes/No"
+  }
+},
+{
+  "model": "resources.attributetype",
+  "pk": 4,
+  "fields": {
+    "created": "2018-10-03T18:52:59.082Z",
+    "modified": "2018-10-03T18:52:59.082Z",
+    "name": "Public/Private"
+  }
+},
+{
+  "model": "resources.attributetype",
+  "pk": 5,
+  "fields": {
+    "created": "2018-10-03T18:52:59.083Z",
+    "modified": "2018-10-03T18:52:59.083Z",
+    "name": "Active/Inactive"
+  }
+},
+{
+  "model": "resources.attributetype",
+  "pk": 6,
+  "fields": {
+    "created": "2018-10-03T18:52:59.084Z",
+    "modified": "2018-10-03T18:52:59.084Z",
+    "name": "Text"
+  }
+},
+{
+  "model": "resources.resourcetype",
+  "pk": 1,
+  "fields": {
+    "created": "2018-10-04T14:58:59.366Z",
+    "modified": "2018-10-04T14:58:59.367Z",
+    "name": "Cloud",
+    "description": "Cloud computing"
+  }
+},
+{
+  "model": "resources.resourcetype",
+  "pk": 2,
+  "fields": {
+    "created": "2018-10-04T14:59:08.950Z",
+    "modified": "2018-10-04T14:59:08.951Z",
+    "name": "Cluster",
+    "description": "Cluster servers"
+  }
+},
+{
+  "model": "resources.resourcetype",
+  "pk": 3,
+  "fields": {
+    "created": "2018-10-04T14:59:17.816Z",
+    "modified": "2018-10-04T14:59:17.817Z",
+    "name": "Cluster Partition",
+    "description": "Cluster Partition"
+  }
+},
+{
+  "model": "resources.resourcetype",
+  "pk": 4,
+  "fields": {
+    "created": "2018-10-04T14:59:26.794Z",
+    "modified": "2018-10-04T14:59:31.318Z",
+    "name": "Server",
+    "description": "Extra servers providing various services"
+  }
+},
+{
+  "model": "resources.resourcetype",
+  "pk": 5,
+  "fields": {
+    "created": "2018-10-04T14:59:40.533Z",
+    "modified": "2018-10-04T14:59:40.534Z",
+    "name": "Software License",
+    "description": "Software licenses purchased by users"
+  }
+},
+{
+  "model": "resources.resourcetype",
+  "pk": 6,
+  "fields": {
+    "created": "2018-10-04T14:59:50.193Z",
+    "modified": "2018-10-04T14:59:50.194Z",
+    "name": "Storage",
+    "description": "NAS storage"
+  }
+},
+{
+  "model": "resources.resourceattributetype",
+  "pk": 1,
+  "fields": {
+    "created": "2018-10-03T18:52:59.085Z",
+    "modified": "2018-10-03T18:52:59.085Z",
+    "attribute_type": 4,
+    "name": "Access",
+    "is_required": true,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resources.resourceattributetype",
+  "pk": 2,
+  "fields": {
+    "created": "2018-10-03T18:52:59.087Z",
+    "modified": "2018-10-03T18:52:59.087Z",
+    "attribute_type": 5,
+    "name": "Status",
+    "is_required": true,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resources.resourceattributetype",
+  "pk": 3,
+  "fields": {
+    "created": "2018-10-03T18:52:59.088Z",
+    "modified": "2018-10-03T18:52:59.088Z",
+    "attribute_type": 2,
+    "name": "ServiceStart",
+    "is_required": true,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resources.resourceattributetype",
+  "pk": 4,
+  "fields": {
+    "created": "2018-10-03T18:52:59.089Z",
+    "modified": "2018-10-03T18:52:59.089Z",
+    "attribute_type": 2,
+    "name": "ServiceEnd",
+    "is_required": true,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resources.resourceattributetype",
+  "pk": 5,
+  "fields": {
+    "created": "2018-10-03T18:52:59.091Z",
+    "modified": "2018-10-03T18:52:59.091Z",
+    "attribute_type": 6,
+    "name": "AllowedGroups",
+    "is_required": true,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resources.resourceattributetype",
+  "pk": 6,
+  "fields": {
+    "created": "2018-10-03T18:52:59.092Z",
+    "modified": "2018-10-03T18:52:59.092Z",
+    "attribute_type": 6,
+    "name": "Owner",
+    "is_required": true,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resources.resourceattributetype",
+  "pk": 7,
+  "fields": {
+    "created": "2018-10-03T18:52:59.093Z",
+    "modified": "2018-10-03T18:52:59.093Z",
+    "attribute_type": 1,
+    "name": "expiry_time",
+    "is_required": true,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resources.resourceattributetype",
+  "pk": 8,
+  "fields": {
+    "created": "2018-10-03T18:52:59.095Z",
+    "modified": "2018-10-03T18:52:59.095Z",
+    "attribute_type": 3,
+    "name": "fee_applies",
+    "is_required": true,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resources.resourceattributetype",
+  "pk": 9,
+  "fields": {
+    "created": "2018-10-03T18:52:59.096Z",
+    "modified": "2018-10-03T18:52:59.096Z",
+    "attribute_type": 1,
+    "name": "Node Count",
+    "is_required": true,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resources.resourceattributetype",
+  "pk": 10,
+  "fields": {
+    "created": "2018-10-03T18:52:59.097Z",
+    "modified": "2018-10-03T18:52:59.097Z",
+    "attribute_type": 1,
+    "name": "Core Count",
+    "is_required": true,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resources.resourceattributetype",
+  "pk": 11,
+  "fields": {
+    "created": "2018-10-03T18:52:59.098Z",
+    "modified": "2018-10-03T18:52:59.098Z",
+    "attribute_type": 6,
+    "name": "slurm_cluster",
+    "is_required": true,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resources.resourceattributetype",
+  "pk": 12,
+  "fields": {
+    "created": "2018-10-03T18:52:59.100Z",
+    "modified": "2018-10-03T18:52:59.100Z",
+    "attribute_type": 6,
+    "name": "slurm_specs",
+    "is_required": true,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resources.resourceattribute",
+  "pk": 1,
+  "fields": {
+    "created": "2018-10-04T15:01:19.801Z",
+    "modified": "2018-10-04T15:01:19.813Z",
+    "resource_attribute_type": 8,
+    "resource": 1,
+    "value": "Yes"
+  }
+},
+{
+  "model": "resources.resourceattribute",
+  "pk": 2,
+  "fields": {
+    "created": "2018-10-04T15:03:19.319Z",
+    "modified": "2018-10-04T15:03:19.330Z",
+    "resource_attribute_type": 11,
+    "resource": 2,
+    "value": "chemistry"
+  }
+},
+{
+  "model": "resources.resourceattribute",
+  "pk": 3,
+  "fields": {
+    "created": "2018-10-04T15:07:56.373Z",
+    "modified": "2018-10-04T15:07:56.390Z",
+    "resource_attribute_type": 8,
+    "resource": 3,
+    "value": "Yes"
+  }
+},
+{
+  "model": "resources.resourceattribute",
+  "pk": 4,
+  "fields": {
+    "created": "2018-10-04T15:07:56.373Z",
+    "modified": "2018-10-04T15:07:56.391Z",
+    "resource_attribute_type": 11,
+    "resource": 3,
+    "value": "industry"
+  }
+},
+{
+  "model": "resources.resourceattribute",
+  "pk": 5,
+  "fields": {
+    "created": "2018-10-04T15:07:56.374Z",
+    "modified": "2018-10-04T15:07:56.392Z",
+    "resource_attribute_type": 12,
+    "resource": 3,
+    "value": "QOS+=compute:Fairshare=100"
+  }
+},
+{
+  "model": "resources.resourceattribute",
+  "pk": 6,
+  "fields": {
+    "created": "2018-10-04T15:09:37.952Z",
+    "modified": "2018-10-04T15:09:37.963Z",
+    "resource_attribute_type": 11,
+    "resource": 4,
+    "value": "physics"
+  }
+},
+{
+  "model": "resources.resourceattribute",
+  "pk": 7,
+  "fields": {
+    "created": "2018-10-04T18:37:42.044Z",
+    "modified": "2018-10-04T18:37:42.056Z",
+    "resource_attribute_type": 12,
+    "resource": 5,
+    "value": "QOS+=scavenger:Fairshare=100"
+  }
+},
+{
+  "model": "resources.resourceattribute",
+  "pk": 8,
+  "fields": {
+    "created": "2018-10-04T19:00:09.909Z",
+    "modified": "2018-10-04T19:01:59.677Z",
+    "resource_attribute_type": 12,
+    "resource": 6,
+    "value": "QOS+=ccollins:Fairshare=100"
+  }
+},
+{
+  "model": "resources.resourceattribute",
+  "pk": 9,
+  "fields": {
+    "created": "2018-10-04T19:01:46.534Z",
+    "modified": "2018-10-04T19:01:46.545Z",
+    "resource_attribute_type": 12,
+    "resource": 7,
+    "value": "QOS+=jlee:Fairshare=100"
+  }
+},
+{
+  "model": "resources.resourceattribute",
+  "pk": 10,
+  "fields": {
+    "created": "2018-10-04T19:03:19.873Z",
+    "modified": "2018-10-04T19:03:19.884Z",
+    "resource_attribute_type": 12,
+    "resource": 8,
+    "value": "QOS+=vjones:Fairshare=100"
+  }
+},
+{
+  "model": "resources.resourceattribute",
+  "pk": 11,
+  "fields": {
+    "created": "2018-10-04T19:05:24.986Z",
+    "modified": "2018-10-04T19:05:24.996Z",
+    "resource_attribute_type": 12,
+    "resource": 9,
+    "value": "QOS+=scavenger:Fairshare=100"
+  }
+},
+{
+  "model": "resources.resourceattribute",
+  "pk": 12,
+  "fields": {
+    "created": "2018-10-04T19:08:04.711Z",
+    "modified": "2018-10-04T19:08:04.721Z",
+    "resource_attribute_type": 12,
+    "resource": 10,
+    "value": "QOS+=scavenger:Fairshare=100"
+  }
+},
+{
+  "model": "resources.resourceattribute",
+  "pk": 13,
+  "fields": {
+    "created": "2018-10-04T19:09:28.088Z",
+    "modified": "2018-10-04T19:09:28.108Z",
+    "resource_attribute_type": 8,
+    "resource": 11,
+    "value": "No"
+  }
+},
+{
+  "model": "resources.resourceattribute",
+  "pk": 14,
+  "fields": {
+    "created": "2018-10-04T19:09:28.089Z",
+    "modified": "2018-10-04T19:09:28.110Z",
+    "resource_attribute_type": 11,
+    "resource": 11,
+    "value": "university-hpc"
+  }
+},
+{
+  "model": "resources.resourceattribute",
+  "pk": 15,
+  "fields": {
+    "created": "2018-10-04T19:09:28.089Z",
+    "modified": "2018-10-04T19:09:28.111Z",
+    "resource_attribute_type": 12,
+    "resource": 11,
+    "value": "QOS+=general-compute,viz,gpu,largemem,debug:Fairshare=100"
+  }
+},
+{
+  "model": "resources.resourceattribute",
+  "pk": 16,
+  "fields": {
+    "created": "2018-10-04T19:11:07.255Z",
+    "modified": "2018-10-04T19:11:07.266Z",
+    "resource_attribute_type": 8,
+    "resource": 12,
+    "value": "Yes"
+  }
+},
+{
+  "model": "resources.resourceattribute",
+  "pk": 17,
+  "fields": {
+    "created": "2018-10-04T19:16:01.586Z",
+    "modified": "2018-10-04T19:16:01.598Z",
+    "resource_attribute_type": 8,
+    "resource": 13,
+    "value": "Yes"
+  }
+},
+{
+  "model": "resources.resourceattribute",
+  "pk": 18,
+  "fields": {
+    "created": "2018-10-04T19:16:31.612Z",
+    "modified": "2018-10-04T19:16:31.623Z",
+    "resource_attribute_type": 8,
+    "resource": 14,
+    "value": "Yes"
+  }
+},
+{
+  "model": "resources.resourceattribute",
+  "pk": 19,
+  "fields": {
+    "created": "2018-10-04T19:19:32.210Z",
+    "modified": "2018-10-04T19:19:32.221Z",
+    "resource_attribute_type": 8,
+    "resource": 15,
+    "value": "No"
+  }
+},
+{
+  "model": "subscription.subscriptionstatuschoice",
+  "pk": 1,
+  "fields": {
+    "created": "2018-10-03T18:52:58.820Z",
+    "modified": "2018-10-03T18:52:58.820Z",
+    "name": "Active"
+  }
+},
+{
+  "model": "subscription.subscriptionstatuschoice",
+  "pk": 2,
+  "fields": {
+    "created": "2018-10-03T18:52:58.831Z",
+    "modified": "2018-10-03T18:52:58.832Z",
+    "name": "Pending"
+  }
+},
+{
+  "model": "subscription.subscriptionstatuschoice",
+  "pk": 3,
+  "fields": {
+    "created": "2018-10-03T18:52:58.843Z",
+    "modified": "2018-10-03T18:52:58.843Z",
+    "name": "Expired"
+  }
+},
+{
+  "model": "subscription.subscriptionstatuschoice",
+  "pk": 4,
+  "fields": {
+    "created": "2018-10-03T18:52:58.855Z",
+    "modified": "2018-10-03T18:52:58.855Z",
+    "name": "Denied"
+  }
+},
+{
+  "model": "subscription.subscriptionstatuschoice",
+  "pk": 5,
+  "fields": {
+    "created": "2018-10-03T18:52:58.867Z",
+    "modified": "2018-10-03T18:52:58.867Z",
+    "name": "Revoked"
+  }
+},
+{
+  "model": "subscription.subscriptionstatuschoice",
+  "pk": 6,
+  "fields": {
+    "created": "2018-10-03T18:52:58.878Z",
+    "modified": "2018-10-03T18:52:58.878Z",
+    "name": "Unpaid"
+  }
+},
+{
+  "model": "subscription.subscriptionstatuschoice",
+  "pk": 7,
+  "fields": {
+    "created": "2018-10-03T18:52:58.890Z",
+    "modified": "2018-10-03T18:52:58.890Z",
+    "name": "New"
+  }
+},
+{
+  "model": "subscription.subscriptionstatuschoice",
+  "pk": 8,
+  "fields": {
+    "created": "2018-10-03T18:52:58.901Z",
+    "modified": "2018-10-03T18:52:58.901Z",
+    "name": "Inactive (Renewed)"
+  }
+},
+{
+  "model": "subscription.subscriptionstatuschoice",
+  "pk": 9,
+  "fields": {
+    "created": "2018-10-03T18:52:58.911Z",
+    "modified": "2018-10-03T18:52:58.912Z",
+    "name": "Approved"
+  }
+},
+{
+  "model": "subscription.subscription",
+  "pk": 1,
+  "fields": {
+    "created": "2018-10-04T19:56:29.526Z",
+    "modified": "2018-10-04T21:03:25.059Z",
+    "project": 1,
+    "status": 1,
+    "quantity": 1,
+    "active_until": "2019-10-04",
+    "justification": "This is my private server for running calculations.",
+    "resources": [
+      15
+    ]
+  }
+},
+{
+  "model": "subscription.subscription",
+  "pk": 2,
+  "fields": {
+    "created": "2018-10-04T19:56:39.831Z",
+    "modified": "2018-10-04T21:03:28.461Z",
+    "project": 1,
+    "status": 1,
+    "quantity": 1,
+    "active_until": "2019-10-04",
+    "justification": "I need space to store my data.",
+    "resources": [
+      14
+    ]
+  }
+},
+{
+  "model": "subscription.subscription",
+  "pk": 3,
+  "fields": {
+    "created": "2018-10-04T19:59:05.315Z",
+    "modified": "2018-10-04T21:28:41.384Z",
+    "project": 1,
+    "status": 1,
+    "quantity": 1,
+    "active_until": "2019-10-04",
+    "justification": "I will be crunching my data on the university cluster.",
+    "resources": [
+      10,
+      5,
+      9,
+      11
+    ]
+  }
+},
+{
+  "model": "subscription.subscription",
+  "pk": 4,
+  "fields": {
+    "created": "2018-10-04T21:17:47.306Z",
+    "modified": "2018-10-04T21:20:52.958Z",
+    "project": 2,
+    "status": 1,
+    "quantity": 1,
+    "active_until": "2019-10-04",
+    "justification": "Need to store project",
+    "resources": [
+      14
+    ]
+  }
+},
+{
+  "model": "subscription.subscription",
+  "pk": 5,
+  "fields": {
+    "created": "2018-10-04T21:18:06.948Z",
+    "modified": "2018-10-04T21:23:41.503Z",
+    "project": 2,
+    "status": 1,
+    "quantity": 1,
+    "active_until": "2019-10-04",
+    "justification": "Need cloud access",
+    "resources": [
+      1
+    ]
+  }
+},
+{
+  "model": "subscription.subscription",
+  "pk": 6,
+  "fields": {
+    "created": "2018-10-04T21:18:18.174Z",
+    "modified": "2018-10-04T21:22:10.548Z",
+    "project": 2,
+    "status": 1,
+    "quantity": 1,
+    "active_until": "2019-10-04",
+    "justification": "Need cloud storage",
+    "resources": [
+      12
+    ]
+  }
+},
+{
+  "model": "subscription.attributetype",
+  "pk": 1,
+  "fields": {
+    "created": "2018-10-03T18:52:59.101Z",
+    "modified": "2018-10-03T18:52:59.101Z",
+    "name": "Int"
+  }
+},
+{
+  "model": "subscription.attributetype",
+  "pk": 2,
+  "fields": {
+    "created": "2018-10-03T18:52:59.102Z",
+    "modified": "2018-10-03T18:52:59.102Z",
+    "name": "Float"
+  }
+},
+{
+  "model": "subscription.attributetype",
+  "pk": 3,
+  "fields": {
+    "created": "2018-10-03T18:52:59.103Z",
+    "modified": "2018-10-03T18:52:59.103Z",
+    "name": "Yes/No"
+  }
+},
+{
+  "model": "subscription.attributetype",
+  "pk": 4,
+  "fields": {
+    "created": "2018-10-03T18:52:59.105Z",
+    "modified": "2018-10-03T18:52:59.105Z",
+    "name": "Text"
+  }
+},
+{
+  "model": "subscription.attributetype",
+  "pk": 5,
+  "fields": {
+    "created": "2018-10-03T18:52:59.106Z",
+    "modified": "2018-10-03T18:52:59.106Z",
+    "name": "Date"
+  }
+},
+{
+  "model": "subscription.subscriptionattributetype",
+  "pk": 1,
+  "fields": {
+    "created": "2018-10-03T18:52:59.107Z",
+    "modified": "2018-10-03T18:52:59.107Z",
+    "attribute_type": 2,
+    "name": "Paid",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false
+  }
+},
+{
+  "model": "subscription.subscriptionattributetype",
+  "pk": 2,
+  "fields": {
+    "created": "2018-10-03T18:52:59.108Z",
+    "modified": "2018-10-03T18:52:59.108Z",
+    "attribute_type": 1,
+    "name": "Purchase Order Number",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false
+  }
+},
+{
+  "model": "subscription.subscriptionattributetype",
+  "pk": 3,
+  "fields": {
+    "created": "2018-10-03T18:52:59.109Z",
+    "modified": "2018-10-03T18:52:59.110Z",
+    "attribute_type": 1,
+    "name": "Core Usage (Hours)",
+    "has_usage": true,
+    "is_required": false,
+    "is_unique": false
+  }
+},
+{
+  "model": "subscription.subscriptionattributetype",
+  "pk": 4,
+  "fields": {
+    "created": "2018-10-03T18:52:59.111Z",
+    "modified": "2018-10-03T18:52:59.111Z",
+    "attribute_type": 2,
+    "name": "Paid Cloud Support (Hours)",
+    "has_usage": true,
+    "is_required": false,
+    "is_unique": false
+  }
+},
+{
+  "model": "subscription.subscriptionattributetype",
+  "pk": 5,
+  "fields": {
+    "created": "2018-10-03T18:52:59.112Z",
+    "modified": "2018-10-03T18:52:59.112Z",
+    "attribute_type": 2,
+    "name": "Paid Storage Support (Hours)",
+    "has_usage": true,
+    "is_required": false,
+    "is_unique": false
+  }
+},
+{
+  "model": "subscription.subscriptionattributetype",
+  "pk": 6,
+  "fields": {
+    "created": "2018-10-03T18:52:59.114Z",
+    "modified": "2018-10-03T18:52:59.114Z",
+    "attribute_type": 2,
+    "name": "Paid Network Support (Hours)",
+    "has_usage": true,
+    "is_required": false,
+    "is_unique": false
+  }
+},
+{
+  "model": "subscription.subscriptionattributetype",
+  "pk": 7,
+  "fields": {
+    "created": "2018-10-03T18:52:59.115Z",
+    "modified": "2018-10-03T18:52:59.115Z",
+    "attribute_type": 4,
+    "name": "Cloud Account Name",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false
+  }
+},
+{
+  "model": "subscription.subscriptionattributetype",
+  "pk": 8,
+  "fields": {
+    "created": "2018-10-03T18:52:59.116Z",
+    "modified": "2018-10-03T18:52:59.116Z",
+    "attribute_type": 1,
+    "name": "Storage Quota (GB)",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false
+  }
+},
+{
+  "model": "subscription.subscriptionattributetype",
+  "pk": 9,
+  "fields": {
+    "created": "2018-10-03T18:52:59.117Z",
+    "modified": "2018-10-03T18:52:59.117Z",
+    "attribute_type": 4,
+    "name": "slurm_account_name",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false
+  }
+},
+{
+  "model": "subscription.subscriptionattributetype",
+  "pk": 10,
+  "fields": {
+    "created": "2018-10-03T18:52:59.119Z",
+    "modified": "2018-10-03T18:52:59.119Z",
+    "attribute_type": 3,
+    "name": "EXPIRE NOTIFICATION",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false
+  }
+},
+{
+  "model": "subscription.subscriptionattributetype",
+  "pk": 11,
+  "fields": {
+    "created": "2018-10-03T18:52:59.120Z",
+    "modified": "2018-10-03T18:52:59.120Z",
+    "attribute_type": 3,
+    "name": "SupportersQOS",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false
+  }
+},
+{
+  "model": "subscription.subscriptionattributetype",
+  "pk": 12,
+  "fields": {
+    "created": "2018-10-03T18:52:59.121Z",
+    "modified": "2018-10-03T18:52:59.121Z",
+    "attribute_type": 5,
+    "name": "SupportersQOSExpireDate",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false
+  }
+},
+{
+  "model": "subscription.subscriptionattributetype",
+  "pk": 13,
+  "fields": {
+    "created": "2018-10-03T18:52:59.123Z",
+    "modified": "2018-10-03T18:52:59.123Z",
+    "attribute_type": 3,
+    "name": "CLOUD_USAGE_NOTIFICATION",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false
+  }
+},
+{
+  "model": "subscription.subscriptionattributetype",
+  "pk": 14,
+  "fields": {
+    "created": "2018-10-03T18:52:59.124Z",
+    "modified": "2018-10-03T18:52:59.124Z",
+    "attribute_type": 3,
+    "name": "Is Course?",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false
+  }
+},
+{
+  "model": "subscription.subscriptionattributetype",
+  "pk": 15,
+  "fields": {
+    "created": "2018-10-03T18:52:59.125Z",
+    "modified": "2018-10-03T18:52:59.125Z",
+    "attribute_type": 4,
+    "name": "Storage_Group_Name",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false
+  }
+},
+{
+  "model": "subscription.subscriptionattributetype",
+  "pk": 16,
+  "fields": {
+    "created": "2018-10-03T18:52:59.127Z",
+    "modified": "2018-10-03T18:52:59.127Z",
+    "attribute_type": 4,
+    "name": "freeipa_group",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false
+  }
+},
+{
+  "model": "subscription.subscriptionattributetype",
+  "pk": 17,
+  "fields": {
+    "created": "2018-10-03T18:52:59.128Z",
+    "modified": "2018-10-03T18:52:59.128Z",
+    "attribute_type": 4,
+    "name": "slurm_user_specs",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false
+  }
+},
+{
+  "model": "subscription.subscriptionattributetype",
+  "pk": 18,
+  "fields": {
+    "created": "2018-10-03T18:52:59.129Z",
+    "modified": "2018-10-03T18:52:59.129Z",
+    "attribute_type": 4,
+    "name": "slurm_specs",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false
+  }
+},
+{
+  "model": "subscription.subscriptionattribute",
+  "pk": 1,
+  "fields": {
+    "created": "2018-10-04T21:22:10.544Z",
+    "modified": "2018-10-04T21:22:25.055Z",
+    "subscription_attribute_type": 8,
+    "subscription": 6,
+    "value": "1000",
+    "is_private": false
+  }
+},
+{
+  "model": "subscription.subscriptionattribute",
+  "pk": 2,
+  "fields": {
+    "created": "2018-10-04T21:23:41.499Z",
+    "modified": "2018-10-04T21:24:17.836Z",
+    "subscription_attribute_type": 3,
+    "subscription": 5,
+    "value": "500",
+    "is_private": false
+  }
+},
+{
+  "model": "subscription.subscriptionattribute",
+  "pk": 3,
+  "fields": {
+    "created": "2018-10-04T21:28:09.566Z",
+    "modified": "2018-10-04T21:28:09.579Z",
+    "subscription_attribute_type": 18,
+    "subscription": 3,
+    "value": "Fairshare=100:QOS+=supporters",
+    "is_private": true
+  }
+},
+{
+  "model": "subscription.subscriptionattribute",
+  "pk": 4,
+  "fields": {
+    "created": "2018-10-04T21:28:09.566Z",
+    "modified": "2018-10-04T21:29:34.355Z",
+    "subscription_attribute_type": 9,
+    "subscription": 3,
+    "value": "ccollins",
+    "is_private": false
+  }
+},
+{
+  "model": "subscription.subscriptionattribute",
+  "pk": 5,
+  "fields": {
+    "created": "2018-10-04T21:28:09.567Z",
+    "modified": "2018-10-04T21:28:09.582Z",
+    "subscription_attribute_type": 17,
+    "subscription": 3,
+    "value": "Fairshare=parent",
+    "is_private": true
+  }
+},
+{
+  "model": "subscription.subscriptionattribute",
+  "pk": 6,
+  "fields": {
+    "created": "2018-10-04T21:28:41.372Z",
+    "modified": "2018-10-04T21:29:43.825Z",
+    "subscription_attribute_type": 16,
+    "subscription": 3,
+    "value": "ccollins",
+    "is_private": false
+  }
+},
+{
+  "model": "subscription.subscriptionattributeusage",
+  "pk": 1,
+  "fields": {
+    "created": "2018-10-04T21:22:25.054Z",
+    "modified": "2018-10-04T21:22:25.060Z",
+    "value": 500.0
+  }
+},
+{
+  "model": "subscription.subscriptionattributeusage",
+  "pk": 2,
+  "fields": {
+    "created": "2018-10-04T21:23:41.509Z",
+    "modified": "2018-10-04T21:24:04.544Z",
+    "value": 450.0
+  }
+},
+{
+  "model": "subscription.subscriptionuserstatuschoice",
+  "pk": 1,
+  "fields": {
+    "created": "2018-10-03T18:52:58.922Z",
+    "modified": "2018-10-03T18:52:58.922Z",
+    "name": "Active"
+  }
+},
+{
+  "model": "subscription.subscriptionuserstatuschoice",
+  "pk": 2,
+  "fields": {
+    "created": "2018-10-03T18:52:58.933Z",
+    "modified": "2018-10-03T18:52:58.933Z",
+    "name": "Denied"
+  }
+},
+{
+  "model": "subscription.subscriptionuserstatuschoice",
+  "pk": 3,
+  "fields": {
+    "created": "2018-10-03T18:52:58.945Z",
+    "modified": "2018-10-03T18:52:58.945Z",
+    "name": "Pending - Add"
+  }
+},
+{
+  "model": "subscription.subscriptionuserstatuschoice",
+  "pk": 4,
+  "fields": {
+    "created": "2018-10-03T18:52:58.957Z",
+    "modified": "2018-10-03T18:52:58.957Z",
+    "name": "Pending - Remove"
+  }
+},
+{
+  "model": "subscription.subscriptionuserstatuschoice",
+  "pk": 5,
+  "fields": {
+    "created": "2018-10-03T18:52:58.968Z",
+    "modified": "2018-10-03T18:52:58.969Z",
+    "name": "Removed"
+  }
+},
+{
+  "model": "subscription.subscriptionuserstatuschoice",
+  "pk": 6,
+  "fields": {
+    "created": "2018-10-03T18:52:58.979Z",
+    "modified": "2018-10-03T18:52:58.979Z",
+    "name": "Error"
+  }
+},
+{
+  "model": "grant.grantfundingagency",
+  "pk": 1,
+  "fields": {
+    "created": "2018-10-03T18:52:58.523Z",
+    "modified": "2018-10-03T18:52:58.523Z",
+    "name": "Department of Defense (DoD)"
+  }
+},
+{
+  "model": "grant.grantfundingagency",
+  "pk": 2,
+  "fields": {
+    "created": "2018-10-03T18:52:58.534Z",
+    "modified": "2018-10-03T18:52:58.534Z",
+    "name": "Department of Energy (DOE)"
+  }
+},
+{
+  "model": "grant.grantfundingagency",
+  "pk": 3,
+  "fields": {
+    "created": "2018-10-03T18:52:58.545Z",
+    "modified": "2018-10-03T18:52:58.545Z",
+    "name": "Environmental Protection Agency (EPA)"
+  }
+},
+{
+  "model": "grant.grantfundingagency",
+  "pk": 4,
+  "fields": {
+    "created": "2018-10-03T18:52:58.556Z",
+    "modified": "2018-10-03T18:52:58.556Z",
+    "name": "National Aeronautics and Space Administration (NASA)"
+  }
+},
+{
+  "model": "grant.grantfundingagency",
+  "pk": 5,
+  "fields": {
+    "created": "2018-10-03T18:52:58.568Z",
+    "modified": "2018-10-03T18:52:58.568Z",
+    "name": "National Institutes of Health (NIH)"
+  }
+},
+{
+  "model": "grant.grantfundingagency",
+  "pk": 6,
+  "fields": {
+    "created": "2018-10-03T18:52:58.578Z",
+    "modified": "2018-10-03T18:52:58.578Z",
+    "name": "National Science Foundation (NSF)"
+  }
+},
+{
+  "model": "grant.grantfundingagency",
+  "pk": 7,
+  "fields": {
+    "created": "2018-10-03T18:52:58.590Z",
+    "modified": "2018-10-03T18:52:58.590Z",
+    "name": "New York State Department of Health (DOH)"
+  }
+},
+{
+  "model": "grant.grantfundingagency",
+  "pk": 8,
+  "fields": {
+    "created": "2018-10-03T18:52:58.602Z",
+    "modified": "2018-10-03T18:52:58.602Z",
+    "name": "New York State (NYS)"
+  }
+},
+{
+  "model": "grant.grantfundingagency",
+  "pk": 9,
+  "fields": {
+    "created": "2018-10-03T18:52:58.613Z",
+    "modified": "2018-10-03T18:52:58.613Z",
+    "name": "Empire State Development (ESD)"
+  }
+},
+{
+  "model": "grant.grantfundingagency",
+  "pk": 10,
+  "fields": {
+    "created": "2018-10-03T18:52:58.625Z",
+    "modified": "2018-10-03T18:52:58.625Z",
+    "name": "Empire State Development's Division of Science, Technology and Innovation (NYSTAR)"
+  }
+},
+{
+  "model": "grant.grantfundingagency",
+  "pk": 11,
+  "fields": {
+    "created": "2018-10-03T18:52:58.637Z",
+    "modified": "2018-10-03T18:52:58.637Z",
+    "name": "Other"
+  }
+},
+{
+  "model": "grant.grantstatuschoice",
+  "pk": 1,
+  "fields": {
+    "created": "2018-10-03T18:52:58.648Z",
+    "modified": "2018-10-03T18:52:58.649Z",
+    "name": "Active"
+  }
+},
+{
+  "model": "grant.grantstatuschoice",
+  "pk": 2,
+  "fields": {
+    "created": "2018-10-03T18:52:58.659Z",
+    "modified": "2018-10-03T18:52:58.659Z",
+    "name": "Archived"
+  }
+},
+{
+  "model": "grant.grantstatuschoice",
+  "pk": 3,
+  "fields": {
+    "created": "2018-10-03T18:52:58.668Z",
+    "modified": "2018-10-03T18:52:58.669Z",
+    "name": "Pending"
+  }
+},
+{
+  "model": "grant.grant",
+  "pk": 1,
+  "fields": {
+    "created": "2018-10-04T19:55:46.553Z",
+    "modified": "2018-10-04T19:55:46.553Z",
+    "project": 1,
+    "title": "Angular momentum in QGP holography",
+    "grant_number": "111222333444",
+    "role": "PI",
+    "grant_pi_full_name": "Carl Collins",
+    "funding_agency": 5,
+    "other_funding_agency": "",
+    "other_award_number": "",
+    "grant_start": "2018-10-01",
+    "grant_end": "2020-11-07",
+    "percent_credit": 5.0,
+    "direct_funding": 5000.0,
+    "total_amount_awarded": 500000.0,
+    "status": 1
+  }
+},
+{
+  "model": "grant.grant",
+  "pk": 2,
+  "fields": {
+    "created": "2018-10-04T21:20:07.212Z",
+    "modified": "2018-10-04T21:20:07.213Z",
+    "project": 2,
+    "title": "Quantum Hall transitions",
+    "grant_number": "111222334444",
+    "role": "CoPI",
+    "grant_pi_full_name": "John Smith",
+    "funding_agency": 6,
+    "other_funding_agency": "",
+    "other_award_number": "",
+    "grant_start": "2018-10-01",
+    "grant_end": "2019-04-06",
+    "percent_credit": 1.0,
+    "direct_funding": 1000.0,
+    "total_amount_awarded": 100000.0,
+    "status": 1
+  }
+},
+{
+  "model": "publication.publicationsource",
+  "pk": 1,
+  "fields": {
+    "created": "2018-10-03T18:52:58.993Z",
+    "modified": "2018-10-03T18:52:58.993Z",
+    "name": "doi",
+    "url": "https://doi.org/"
+  }
+},
+{
+  "model": "publication.publication",
+  "pk": 1,
+  "fields": {
+    "created": "2018-10-04T19:54:35.102Z",
+    "modified": "2018-10-04T19:54:35.102Z",
+    "project": 1,
+    "title": "Angular momentum in QGP holography",
+    "author": "Brett McInnes",
+    "year": 2014,
+    "unique_id": "10.1016/j.nuclphysb.2014.08.011",
+    "source": 1,
+    "status": "Active"
+  }
+},
+{
+  "model": "publication.publication",
+  "pk": 2,
+  "fields": {
+    "created": "2018-10-04T20:56:55.254Z",
+    "modified": "2018-10-04T20:56:55.255Z",
+    "project": 1,
+    "title": "Magnetic excitations in the spinel compoundLix[Mn1.96Li0.04]O4(x=0.2,0.6,0.8,1.0): How a classical system can mimic quantum critical scaling",
+    "author": "Thomas Heitmann and Alexander Schmets and John Gaddy and Jagat Lamsal and Marcus Petrovic and Thomas Vojta and Wouter Montfrooij",
+    "year": 2010,
+    "unique_id": "10.1103/PhysRevB.81.014411",
+    "source": 1,
+    "status": "Active"
+  }
+},
+{
+  "model": "publication.publication",
+  "pk": 3,
+  "fields": {
+    "created": "2018-10-04T20:57:20.624Z",
+    "modified": "2018-10-04T20:57:20.625Z",
+    "project": 1,
+    "title": "Extreme sensitivity of a frustrated quantum magnet:Cs2CuCl4",
+    "author": "Oleg A. Starykh and Hosho Katsura and Leon Balents",
+    "year": 2010,
+    "unique_id": "10.1103/PhysRevB.82.014421",
+    "source": 1,
+    "status": "Active"
+  }
+},
+{
+  "model": "publication.publication",
+  "pk": 4,
+  "fields": {
+    "created": "2018-10-04T21:05:19.422Z",
+    "modified": "2018-10-04T21:05:19.423Z",
+    "project": 1,
+    "title": "Robust ferroelectric state in multiferroicMn1-xZnxWO4",
+    "author": "R. P. Chaudhury and F. Ye and J. A. Fernandez-Baca and B. Lorenz and Y. Q. Wang and Y. Y. Sun and H. A. Mook and C. W. Chu",
+    "year": 2011,
+    "unique_id": "10.1103/PhysRevB.83.014401",
+    "source": 1,
+    "status": "Active"
+  }
+},
+{
+  "model": "publication.publication",
+  "pk": 5,
+  "fields": {
+    "created": "2018-10-04T21:05:35.487Z",
+    "modified": "2018-10-04T21:05:35.487Z",
+    "project": 1,
+    "title": "Interaction effects in topological superconducting wires supporting Majorana fermions",
+    "author": "E. M. Stoudenmire and Jason Alicea and Oleg A. Starykh and Matthew P.A. Fisher",
+    "year": 2011,
+    "unique_id": "10.1103/PhysRevB.84.014503",
+    "source": 1,
+    "status": "Active"
+  }
+},
+{
+  "model": "publication.publication",
+  "pk": 6,
+  "fields": {
+    "created": "2018-10-04T21:06:00.058Z",
+    "modified": "2018-10-04T21:06:00.058Z",
+    "project": 1,
+    "title": "Lattice constants from semilocal density functionals with zero-point phonon correction",
+    "author": "Pan Hao and Yuan Fang and Jianwei Sun and G\\'abor I. Csonka and Pier H. T. Philipsen and John P. Perdew",
+    "year": 2012,
+    "unique_id": "10.1103/PhysRevB.85.014111",
+    "source": 1,
+    "status": "Active"
+  }
+},
+{
+  "model": "publication.publication",
+  "pk": 7,
+  "fields": {
+    "created": "2018-10-04T21:16:49.095Z",
+    "modified": "2018-10-04T21:16:49.096Z",
+    "project": 2,
+    "title": "Logarithmic correlations in quantum Hall plateau transitions",
+    "author": "Romain Vasseur",
+    "year": 2015,
+    "unique_id": "10.1103/PhysRevB.92.014205",
+    "source": 1,
+    "status": "Active"
+  }
+},
+{
+  "model": "publication.publication",
+  "pk": 8,
+  "fields": {
+    "created": "2018-10-04T21:17:18.413Z",
+    "modified": "2018-10-04T21:17:18.413Z",
+    "project": 2,
+    "title": "Anisotropic magnetocapacitance in ferromagnetic-plate capacitors",
+    "author": "J. A. Haigh and C. Ciccarelli and A. C. Betz and A. Irvine and V. Nov\\'ak and T. Jungwirth and J. Wunderlich",
+    "year": 2015,
+    "unique_id": "10.1103/PhysRevB.91.140409",
+    "source": 1,
+    "status": "Active"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 1,
+  "fields": {
+    "name": "Can add log entry",
+    "content_type": 1,
+    "codename": "add_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 2,
+  "fields": {
+    "name": "Can change log entry",
+    "content_type": 1,
+    "codename": "change_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 3,
+  "fields": {
+    "name": "Can delete log entry",
+    "content_type": 1,
+    "codename": "delete_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 4,
+  "fields": {
+    "name": "Can view log entry",
+    "content_type": 1,
+    "codename": "view_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 5,
+  "fields": {
+    "name": "Can add permission",
+    "content_type": 2,
+    "codename": "add_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 6,
+  "fields": {
+    "name": "Can change permission",
+    "content_type": 2,
+    "codename": "change_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 7,
+  "fields": {
+    "name": "Can delete permission",
+    "content_type": 2,
+    "codename": "delete_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 8,
+  "fields": {
+    "name": "Can view permission",
+    "content_type": 2,
+    "codename": "view_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 9,
+  "fields": {
+    "name": "Can add group",
+    "content_type": 3,
+    "codename": "add_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 10,
+  "fields": {
+    "name": "Can change group",
+    "content_type": 3,
+    "codename": "change_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 11,
+  "fields": {
+    "name": "Can delete group",
+    "content_type": 3,
+    "codename": "delete_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 12,
+  "fields": {
+    "name": "Can view group",
+    "content_type": 3,
+    "codename": "view_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 13,
+  "fields": {
+    "name": "Can add user",
+    "content_type": 4,
+    "codename": "add_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 14,
+  "fields": {
+    "name": "Can change user",
+    "content_type": 4,
+    "codename": "change_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 15,
+  "fields": {
+    "name": "Can delete user",
+    "content_type": 4,
+    "codename": "delete_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 16,
+  "fields": {
+    "name": "Can view user",
+    "content_type": 4,
+    "codename": "view_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 17,
+  "fields": {
+    "name": "Can add content type",
+    "content_type": 5,
+    "codename": "add_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 18,
+  "fields": {
+    "name": "Can change content type",
+    "content_type": 5,
+    "codename": "change_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 19,
+  "fields": {
+    "name": "Can delete content type",
+    "content_type": 5,
+    "codename": "delete_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 20,
+  "fields": {
+    "name": "Can view content type",
+    "content_type": 5,
+    "codename": "view_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 21,
+  "fields": {
+    "name": "Can add session",
+    "content_type": 6,
+    "codename": "add_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 22,
+  "fields": {
+    "name": "Can change session",
+    "content_type": 6,
+    "codename": "change_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 23,
+  "fields": {
+    "name": "Can delete session",
+    "content_type": 6,
+    "codename": "delete_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 24,
+  "fields": {
+    "name": "Can view session",
+    "content_type": 6,
+    "codename": "view_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 25,
+  "fields": {
+    "name": "Can add Scheduled task",
+    "content_type": 7,
+    "codename": "add_schedule"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 26,
+  "fields": {
+    "name": "Can change Scheduled task",
+    "content_type": 7,
+    "codename": "change_schedule"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 27,
+  "fields": {
+    "name": "Can delete Scheduled task",
+    "content_type": 7,
+    "codename": "delete_schedule"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 28,
+  "fields": {
+    "name": "Can view Scheduled task",
+    "content_type": 7,
+    "codename": "view_schedule"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 29,
+  "fields": {
+    "name": "Can add task",
+    "content_type": 8,
+    "codename": "add_task"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 30,
+  "fields": {
+    "name": "Can change task",
+    "content_type": 8,
+    "codename": "change_task"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 31,
+  "fields": {
+    "name": "Can delete task",
+    "content_type": 8,
+    "codename": "delete_task"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 32,
+  "fields": {
+    "name": "Can view task",
+    "content_type": 8,
+    "codename": "view_task"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 33,
+  "fields": {
+    "name": "Can add Failed task",
+    "content_type": 8,
+    "codename": "add_failure"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 34,
+  "fields": {
+    "name": "Can change Failed task",
+    "content_type": 8,
+    "codename": "change_failure"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 35,
+  "fields": {
+    "name": "Can delete Failed task",
+    "content_type": 8,
+    "codename": "delete_failure"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 36,
+  "fields": {
+    "name": "Can view Failed task",
+    "content_type": 8,
+    "codename": "view_failure"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 37,
+  "fields": {
+    "name": "Can add Successful task",
+    "content_type": 8,
+    "codename": "add_success"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 38,
+  "fields": {
+    "name": "Can change Successful task",
+    "content_type": 8,
+    "codename": "change_success"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 39,
+  "fields": {
+    "name": "Can delete Successful task",
+    "content_type": 8,
+    "codename": "delete_success"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 40,
+  "fields": {
+    "name": "Can view Successful task",
+    "content_type": 8,
+    "codename": "view_success"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 41,
+  "fields": {
+    "name": "Can add Queued task",
+    "content_type": 9,
+    "codename": "add_ormq"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 42,
+  "fields": {
+    "name": "Can change Queued task",
+    "content_type": 9,
+    "codename": "change_ormq"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 43,
+  "fields": {
+    "name": "Can delete Queued task",
+    "content_type": 9,
+    "codename": "delete_ormq"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 44,
+  "fields": {
+    "name": "Can view Queued task",
+    "content_type": 9,
+    "codename": "view_ormq"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 45,
+  "fields": {
+    "name": "Can add user profile",
+    "content_type": 12,
+    "codename": "add_userprofile"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 46,
+  "fields": {
+    "name": "Can change user profile",
+    "content_type": 12,
+    "codename": "change_userprofile"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 47,
+  "fields": {
+    "name": "Can delete user profile",
+    "content_type": 12,
+    "codename": "delete_userprofile"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 48,
+  "fields": {
+    "name": "Can view user profile",
+    "content_type": 12,
+    "codename": "view_userprofile"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 49,
+  "fields": {
+    "name": "Can add field of science",
+    "content_type": 13,
+    "codename": "add_fieldofscience"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 50,
+  "fields": {
+    "name": "Can change field of science",
+    "content_type": 13,
+    "codename": "change_fieldofscience"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 51,
+  "fields": {
+    "name": "Can delete field of science",
+    "content_type": 13,
+    "codename": "delete_fieldofscience"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 52,
+  "fields": {
+    "name": "Can view field of science",
+    "content_type": 13,
+    "codename": "view_fieldofscience"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 53,
+  "fields": {
+    "name": "Can add historical project",
+    "content_type": 14,
+    "codename": "add_historicalproject"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 54,
+  "fields": {
+    "name": "Can change historical project",
+    "content_type": 14,
+    "codename": "change_historicalproject"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 55,
+  "fields": {
+    "name": "Can delete historical project",
+    "content_type": 14,
+    "codename": "delete_historicalproject"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 56,
+  "fields": {
+    "name": "Can view historical project",
+    "content_type": 14,
+    "codename": "view_historicalproject"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 57,
+  "fields": {
+    "name": "Can add historical project review",
+    "content_type": 15,
+    "codename": "add_historicalprojectreview"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 58,
+  "fields": {
+    "name": "Can change historical project review",
+    "content_type": 15,
+    "codename": "change_historicalprojectreview"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 59,
+  "fields": {
+    "name": "Can delete historical project review",
+    "content_type": 15,
+    "codename": "delete_historicalprojectreview"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 60,
+  "fields": {
+    "name": "Can view historical project review",
+    "content_type": 15,
+    "codename": "view_historicalprojectreview"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 61,
+  "fields": {
+    "name": "Can add historical project user",
+    "content_type": 16,
+    "codename": "add_historicalprojectuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 62,
+  "fields": {
+    "name": "Can change historical project user",
+    "content_type": 16,
+    "codename": "change_historicalprojectuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 63,
+  "fields": {
+    "name": "Can delete historical project user",
+    "content_type": 16,
+    "codename": "delete_historicalprojectuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 64,
+  "fields": {
+    "name": "Can view historical project user",
+    "content_type": 16,
+    "codename": "view_historicalprojectuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 65,
+  "fields": {
+    "name": "Can add project",
+    "content_type": 17,
+    "codename": "add_project"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 66,
+  "fields": {
+    "name": "Can change project",
+    "content_type": 17,
+    "codename": "change_project"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 67,
+  "fields": {
+    "name": "Can delete project",
+    "content_type": 17,
+    "codename": "delete_project"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 68,
+  "fields": {
+    "name": "Can view project",
+    "content_type": 17,
+    "codename": "view_project"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 69,
+  "fields": {
+    "name": "Can view all projects",
+    "content_type": 17,
+    "codename": "can_view_all_projects"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 70,
+  "fields": {
+    "name": "Can review pending project reviews",
+    "content_type": 17,
+    "codename": "can_review_pending_project_reviews"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 71,
+  "fields": {
+    "name": "Can add project admin comment",
+    "content_type": 18,
+    "codename": "add_projectadmincomment"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 72,
+  "fields": {
+    "name": "Can change project admin comment",
+    "content_type": 18,
+    "codename": "change_projectadmincomment"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 73,
+  "fields": {
+    "name": "Can delete project admin comment",
+    "content_type": 18,
+    "codename": "delete_projectadmincomment"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 74,
+  "fields": {
+    "name": "Can view project admin comment",
+    "content_type": 18,
+    "codename": "view_projectadmincomment"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 75,
+  "fields": {
+    "name": "Can add project review",
+    "content_type": 19,
+    "codename": "add_projectreview"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 76,
+  "fields": {
+    "name": "Can change project review",
+    "content_type": 19,
+    "codename": "change_projectreview"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 77,
+  "fields": {
+    "name": "Can delete project review",
+    "content_type": 19,
+    "codename": "delete_projectreview"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 78,
+  "fields": {
+    "name": "Can view project review",
+    "content_type": 19,
+    "codename": "view_projectreview"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 79,
+  "fields": {
+    "name": "Can add project review status choice",
+    "content_type": 20,
+    "codename": "add_projectreviewstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 80,
+  "fields": {
+    "name": "Can change project review status choice",
+    "content_type": 20,
+    "codename": "change_projectreviewstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 81,
+  "fields": {
+    "name": "Can delete project review status choice",
+    "content_type": 20,
+    "codename": "delete_projectreviewstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 82,
+  "fields": {
+    "name": "Can view project review status choice",
+    "content_type": 20,
+    "codename": "view_projectreviewstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 83,
+  "fields": {
+    "name": "Can add project status choice",
+    "content_type": 21,
+    "codename": "add_projectstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 84,
+  "fields": {
+    "name": "Can change project status choice",
+    "content_type": 21,
+    "codename": "change_projectstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 85,
+  "fields": {
+    "name": "Can delete project status choice",
+    "content_type": 21,
+    "codename": "delete_projectstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 86,
+  "fields": {
+    "name": "Can view project status choice",
+    "content_type": 21,
+    "codename": "view_projectstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 87,
+  "fields": {
+    "name": "Can add project user",
+    "content_type": 22,
+    "codename": "add_projectuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 88,
+  "fields": {
+    "name": "Can change project user",
+    "content_type": 22,
+    "codename": "change_projectuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 89,
+  "fields": {
+    "name": "Can delete project user",
+    "content_type": 22,
+    "codename": "delete_projectuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 90,
+  "fields": {
+    "name": "Can view project user",
+    "content_type": 22,
+    "codename": "view_projectuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 91,
+  "fields": {
+    "name": "Can add project user message",
+    "content_type": 23,
+    "codename": "add_projectusermessage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 92,
+  "fields": {
+    "name": "Can change project user message",
+    "content_type": 23,
+    "codename": "change_projectusermessage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 93,
+  "fields": {
+    "name": "Can delete project user message",
+    "content_type": 23,
+    "codename": "delete_projectusermessage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 94,
+  "fields": {
+    "name": "Can view project user message",
+    "content_type": 23,
+    "codename": "view_projectusermessage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 95,
+  "fields": {
+    "name": "Can add project user role choice",
+    "content_type": 24,
+    "codename": "add_projectuserrolechoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 96,
+  "fields": {
+    "name": "Can change project user role choice",
+    "content_type": 24,
+    "codename": "change_projectuserrolechoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 97,
+  "fields": {
+    "name": "Can delete project user role choice",
+    "content_type": 24,
+    "codename": "delete_projectuserrolechoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 98,
+  "fields": {
+    "name": "Can view project user role choice",
+    "content_type": 24,
+    "codename": "view_projectuserrolechoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 99,
+  "fields": {
+    "name": "Can add project user status choice",
+    "content_type": 25,
+    "codename": "add_projectuserstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 100,
+  "fields": {
+    "name": "Can change project user status choice",
+    "content_type": 25,
+    "codename": "change_projectuserstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 101,
+  "fields": {
+    "name": "Can delete project user status choice",
+    "content_type": 25,
+    "codename": "delete_projectuserstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 102,
+  "fields": {
+    "name": "Can view project user status choice",
+    "content_type": 25,
+    "codename": "view_projectuserstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 103,
+  "fields": {
+    "name": "Can add attribute type",
+    "content_type": 26,
+    "codename": "add_attributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 104,
+  "fields": {
+    "name": "Can change attribute type",
+    "content_type": 26,
+    "codename": "change_attributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 105,
+  "fields": {
+    "name": "Can delete attribute type",
+    "content_type": 26,
+    "codename": "delete_attributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 106,
+  "fields": {
+    "name": "Can view attribute type",
+    "content_type": 26,
+    "codename": "view_attributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 107,
+  "fields": {
+    "name": "Can add historical resource",
+    "content_type": 27,
+    "codename": "add_historicalresource"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 108,
+  "fields": {
+    "name": "Can change historical resource",
+    "content_type": 27,
+    "codename": "change_historicalresource"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 109,
+  "fields": {
+    "name": "Can delete historical resource",
+    "content_type": 27,
+    "codename": "delete_historicalresource"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 110,
+  "fields": {
+    "name": "Can view historical resource",
+    "content_type": 27,
+    "codename": "view_historicalresource"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 111,
+  "fields": {
+    "name": "Can add historical resource attribute",
+    "content_type": 28,
+    "codename": "add_historicalresourceattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 112,
+  "fields": {
+    "name": "Can change historical resource attribute",
+    "content_type": 28,
+    "codename": "change_historicalresourceattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 113,
+  "fields": {
+    "name": "Can delete historical resource attribute",
+    "content_type": 28,
+    "codename": "delete_historicalresourceattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 114,
+  "fields": {
+    "name": "Can view historical resource attribute",
+    "content_type": 28,
+    "codename": "view_historicalresourceattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 115,
+  "fields": {
+    "name": "Can add historical resource attribute type",
+    "content_type": 29,
+    "codename": "add_historicalresourceattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 116,
+  "fields": {
+    "name": "Can change historical resource attribute type",
+    "content_type": 29,
+    "codename": "change_historicalresourceattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 117,
+  "fields": {
+    "name": "Can delete historical resource attribute type",
+    "content_type": 29,
+    "codename": "delete_historicalresourceattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 118,
+  "fields": {
+    "name": "Can view historical resource attribute type",
+    "content_type": 29,
+    "codename": "view_historicalresourceattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 119,
+  "fields": {
+    "name": "Can add historical resource type",
+    "content_type": 30,
+    "codename": "add_historicalresourcetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 120,
+  "fields": {
+    "name": "Can change historical resource type",
+    "content_type": 30,
+    "codename": "change_historicalresourcetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 121,
+  "fields": {
+    "name": "Can delete historical resource type",
+    "content_type": 30,
+    "codename": "delete_historicalresourcetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 122,
+  "fields": {
+    "name": "Can view historical resource type",
+    "content_type": 30,
+    "codename": "view_historicalresourcetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 123,
+  "fields": {
+    "name": "Can add resource",
+    "content_type": 31,
+    "codename": "add_resource"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 124,
+  "fields": {
+    "name": "Can change resource",
+    "content_type": 31,
+    "codename": "change_resource"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 125,
+  "fields": {
+    "name": "Can delete resource",
+    "content_type": 31,
+    "codename": "delete_resource"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 126,
+  "fields": {
+    "name": "Can view resource",
+    "content_type": 31,
+    "codename": "view_resource"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 127,
+  "fields": {
+    "name": "Can add resource attribute",
+    "content_type": 32,
+    "codename": "add_resourceattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 128,
+  "fields": {
+    "name": "Can change resource attribute",
+    "content_type": 32,
+    "codename": "change_resourceattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 129,
+  "fields": {
+    "name": "Can delete resource attribute",
+    "content_type": 32,
+    "codename": "delete_resourceattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 130,
+  "fields": {
+    "name": "Can view resource attribute",
+    "content_type": 32,
+    "codename": "view_resourceattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 131,
+  "fields": {
+    "name": "Can add resource attribute type",
+    "content_type": 33,
+    "codename": "add_resourceattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 132,
+  "fields": {
+    "name": "Can change resource attribute type",
+    "content_type": 33,
+    "codename": "change_resourceattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 133,
+  "fields": {
+    "name": "Can delete resource attribute type",
+    "content_type": 33,
+    "codename": "delete_resourceattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 134,
+  "fields": {
+    "name": "Can view resource attribute type",
+    "content_type": 33,
+    "codename": "view_resourceattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 135,
+  "fields": {
+    "name": "Can add resource type",
+    "content_type": 34,
+    "codename": "add_resourcetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 136,
+  "fields": {
+    "name": "Can change resource type",
+    "content_type": 34,
+    "codename": "change_resourcetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 137,
+  "fields": {
+    "name": "Can delete resource type",
+    "content_type": 34,
+    "codename": "delete_resourcetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 138,
+  "fields": {
+    "name": "Can view resource type",
+    "content_type": 34,
+    "codename": "view_resourcetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 139,
+  "fields": {
+    "name": "Can add attribute type",
+    "content_type": 35,
+    "codename": "add_attributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 140,
+  "fields": {
+    "name": "Can change attribute type",
+    "content_type": 35,
+    "codename": "change_attributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 141,
+  "fields": {
+    "name": "Can delete attribute type",
+    "content_type": 35,
+    "codename": "delete_attributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 142,
+  "fields": {
+    "name": "Can view attribute type",
+    "content_type": 35,
+    "codename": "view_attributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 143,
+  "fields": {
+    "name": "Can add historical subscription",
+    "content_type": 36,
+    "codename": "add_historicalsubscription"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 144,
+  "fields": {
+    "name": "Can change historical subscription",
+    "content_type": 36,
+    "codename": "change_historicalsubscription"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 145,
+  "fields": {
+    "name": "Can delete historical subscription",
+    "content_type": 36,
+    "codename": "delete_historicalsubscription"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 146,
+  "fields": {
+    "name": "Can view historical subscription",
+    "content_type": 36,
+    "codename": "view_historicalsubscription"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 147,
+  "fields": {
+    "name": "Can add historical subscription attribute",
+    "content_type": 37,
+    "codename": "add_historicalsubscriptionattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 148,
+  "fields": {
+    "name": "Can change historical subscription attribute",
+    "content_type": 37,
+    "codename": "change_historicalsubscriptionattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 149,
+  "fields": {
+    "name": "Can delete historical subscription attribute",
+    "content_type": 37,
+    "codename": "delete_historicalsubscriptionattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 150,
+  "fields": {
+    "name": "Can view historical subscription attribute",
+    "content_type": 37,
+    "codename": "view_historicalsubscriptionattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 151,
+  "fields": {
+    "name": "Can add historical subscription attribute type",
+    "content_type": 38,
+    "codename": "add_historicalsubscriptionattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 152,
+  "fields": {
+    "name": "Can change historical subscription attribute type",
+    "content_type": 38,
+    "codename": "change_historicalsubscriptionattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 153,
+  "fields": {
+    "name": "Can delete historical subscription attribute type",
+    "content_type": 38,
+    "codename": "delete_historicalsubscriptionattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 154,
+  "fields": {
+    "name": "Can view historical subscription attribute type",
+    "content_type": 38,
+    "codename": "view_historicalsubscriptionattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 155,
+  "fields": {
+    "name": "Can add historical subscription attribute usage",
+    "content_type": 39,
+    "codename": "add_historicalsubscriptionattributeusage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 156,
+  "fields": {
+    "name": "Can change historical subscription attribute usage",
+    "content_type": 39,
+    "codename": "change_historicalsubscriptionattributeusage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 157,
+  "fields": {
+    "name": "Can delete historical subscription attribute usage",
+    "content_type": 39,
+    "codename": "delete_historicalsubscriptionattributeusage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 158,
+  "fields": {
+    "name": "Can view historical subscription attribute usage",
+    "content_type": 39,
+    "codename": "view_historicalsubscriptionattributeusage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 159,
+  "fields": {
+    "name": "Can add historical subscription user",
+    "content_type": 40,
+    "codename": "add_historicalsubscriptionuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 160,
+  "fields": {
+    "name": "Can change historical subscription user",
+    "content_type": 40,
+    "codename": "change_historicalsubscriptionuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 161,
+  "fields": {
+    "name": "Can delete historical subscription user",
+    "content_type": 40,
+    "codename": "delete_historicalsubscriptionuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 162,
+  "fields": {
+    "name": "Can view historical subscription user",
+    "content_type": 40,
+    "codename": "view_historicalsubscriptionuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 163,
+  "fields": {
+    "name": "Can add subscription",
+    "content_type": 41,
+    "codename": "add_subscription"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 164,
+  "fields": {
+    "name": "Can change subscription",
+    "content_type": 41,
+    "codename": "change_subscription"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 165,
+  "fields": {
+    "name": "Can delete subscription",
+    "content_type": 41,
+    "codename": "delete_subscription"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 166,
+  "fields": {
+    "name": "Can view subscription",
+    "content_type": 41,
+    "codename": "view_subscription"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 167,
+  "fields": {
+    "name": "Can view all subscriptions",
+    "content_type": 41,
+    "codename": "can_view_all_subscriptions"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 168,
+  "fields": {
+    "name": "Can review subscription requests",
+    "content_type": 41,
+    "codename": "can_review_subscription_requests"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 169,
+  "fields": {
+    "name": "Can add subscription admin comment",
+    "content_type": 42,
+    "codename": "add_subscriptionadmincomment"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 170,
+  "fields": {
+    "name": "Can change subscription admin comment",
+    "content_type": 42,
+    "codename": "change_subscriptionadmincomment"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 171,
+  "fields": {
+    "name": "Can delete subscription admin comment",
+    "content_type": 42,
+    "codename": "delete_subscriptionadmincomment"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 172,
+  "fields": {
+    "name": "Can view subscription admin comment",
+    "content_type": 42,
+    "codename": "view_subscriptionadmincomment"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 173,
+  "fields": {
+    "name": "Can add subscription attribute",
+    "content_type": 43,
+    "codename": "add_subscriptionattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 174,
+  "fields": {
+    "name": "Can change subscription attribute",
+    "content_type": 43,
+    "codename": "change_subscriptionattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 175,
+  "fields": {
+    "name": "Can delete subscription attribute",
+    "content_type": 43,
+    "codename": "delete_subscriptionattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 176,
+  "fields": {
+    "name": "Can view subscription attribute",
+    "content_type": 43,
+    "codename": "view_subscriptionattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 177,
+  "fields": {
+    "name": "Can add subscription attribute type",
+    "content_type": 44,
+    "codename": "add_subscriptionattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 178,
+  "fields": {
+    "name": "Can change subscription attribute type",
+    "content_type": 44,
+    "codename": "change_subscriptionattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 179,
+  "fields": {
+    "name": "Can delete subscription attribute type",
+    "content_type": 44,
+    "codename": "delete_subscriptionattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 180,
+  "fields": {
+    "name": "Can view subscription attribute type",
+    "content_type": 44,
+    "codename": "view_subscriptionattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 181,
+  "fields": {
+    "name": "Can add subscription status choice",
+    "content_type": 45,
+    "codename": "add_subscriptionstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 182,
+  "fields": {
+    "name": "Can change subscription status choice",
+    "content_type": 45,
+    "codename": "change_subscriptionstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 183,
+  "fields": {
+    "name": "Can delete subscription status choice",
+    "content_type": 45,
+    "codename": "delete_subscriptionstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 184,
+  "fields": {
+    "name": "Can view subscription status choice",
+    "content_type": 45,
+    "codename": "view_subscriptionstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 185,
+  "fields": {
+    "name": "Can add subscription user",
+    "content_type": 46,
+    "codename": "add_subscriptionuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 186,
+  "fields": {
+    "name": "Can change subscription user",
+    "content_type": 46,
+    "codename": "change_subscriptionuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 187,
+  "fields": {
+    "name": "Can delete subscription user",
+    "content_type": 46,
+    "codename": "delete_subscriptionuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 188,
+  "fields": {
+    "name": "Can view subscription user",
+    "content_type": 46,
+    "codename": "view_subscriptionuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 189,
+  "fields": {
+    "name": "Can add subscription user message",
+    "content_type": 47,
+    "codename": "add_subscriptionusermessage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 190,
+  "fields": {
+    "name": "Can change subscription user message",
+    "content_type": 47,
+    "codename": "change_subscriptionusermessage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 191,
+  "fields": {
+    "name": "Can delete subscription user message",
+    "content_type": 47,
+    "codename": "delete_subscriptionusermessage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 192,
+  "fields": {
+    "name": "Can view subscription user message",
+    "content_type": 47,
+    "codename": "view_subscriptionusermessage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 193,
+  "fields": {
+    "name": "Can add subscription user status choice",
+    "content_type": 48,
+    "codename": "add_subscriptionuserstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 194,
+  "fields": {
+    "name": "Can change subscription user status choice",
+    "content_type": 48,
+    "codename": "change_subscriptionuserstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 195,
+  "fields": {
+    "name": "Can delete subscription user status choice",
+    "content_type": 48,
+    "codename": "delete_subscriptionuserstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 196,
+  "fields": {
+    "name": "Can view subscription user status choice",
+    "content_type": 48,
+    "codename": "view_subscriptionuserstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 197,
+  "fields": {
+    "name": "Can add subscription attribute usage",
+    "content_type": 49,
+    "codename": "add_subscriptionattributeusage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 198,
+  "fields": {
+    "name": "Can change subscription attribute usage",
+    "content_type": 49,
+    "codename": "change_subscriptionattributeusage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 199,
+  "fields": {
+    "name": "Can delete subscription attribute usage",
+    "content_type": 49,
+    "codename": "delete_subscriptionattributeusage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 200,
+  "fields": {
+    "name": "Can view subscription attribute usage",
+    "content_type": 49,
+    "codename": "view_subscriptionattributeusage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 201,
+  "fields": {
+    "name": "Can add grant",
+    "content_type": 50,
+    "codename": "add_grant"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 202,
+  "fields": {
+    "name": "Can change grant",
+    "content_type": 50,
+    "codename": "change_grant"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 203,
+  "fields": {
+    "name": "Can delete grant",
+    "content_type": 50,
+    "codename": "delete_grant"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 204,
+  "fields": {
+    "name": "Can view grant",
+    "content_type": 50,
+    "codename": "view_grant"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 205,
+  "fields": {
+    "name": "Can view all grants",
+    "content_type": 50,
+    "codename": "can_view_all_grants"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 206,
+  "fields": {
+    "name": "Can add grant funding agency",
+    "content_type": 51,
+    "codename": "add_grantfundingagency"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 207,
+  "fields": {
+    "name": "Can change grant funding agency",
+    "content_type": 51,
+    "codename": "change_grantfundingagency"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 208,
+  "fields": {
+    "name": "Can delete grant funding agency",
+    "content_type": 51,
+    "codename": "delete_grantfundingagency"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 209,
+  "fields": {
+    "name": "Can view grant funding agency",
+    "content_type": 51,
+    "codename": "view_grantfundingagency"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 210,
+  "fields": {
+    "name": "Can add grant status choice",
+    "content_type": 52,
+    "codename": "add_grantstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 211,
+  "fields": {
+    "name": "Can change grant status choice",
+    "content_type": 52,
+    "codename": "change_grantstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 212,
+  "fields": {
+    "name": "Can delete grant status choice",
+    "content_type": 52,
+    "codename": "delete_grantstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 213,
+  "fields": {
+    "name": "Can view grant status choice",
+    "content_type": 52,
+    "codename": "view_grantstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 214,
+  "fields": {
+    "name": "Can add historical grant",
+    "content_type": 53,
+    "codename": "add_historicalgrant"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 215,
+  "fields": {
+    "name": "Can change historical grant",
+    "content_type": 53,
+    "codename": "change_historicalgrant"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 216,
+  "fields": {
+    "name": "Can delete historical grant",
+    "content_type": 53,
+    "codename": "delete_historicalgrant"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 217,
+  "fields": {
+    "name": "Can view historical grant",
+    "content_type": 53,
+    "codename": "view_historicalgrant"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 218,
+  "fields": {
+    "name": "Can add historical publication",
+    "content_type": 54,
+    "codename": "add_historicalpublication"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 219,
+  "fields": {
+    "name": "Can change historical publication",
+    "content_type": 54,
+    "codename": "change_historicalpublication"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 220,
+  "fields": {
+    "name": "Can delete historical publication",
+    "content_type": 54,
+    "codename": "delete_historicalpublication"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 221,
+  "fields": {
+    "name": "Can view historical publication",
+    "content_type": 54,
+    "codename": "view_historicalpublication"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 222,
+  "fields": {
+    "name": "Can add publication",
+    "content_type": 55,
+    "codename": "add_publication"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 223,
+  "fields": {
+    "name": "Can change publication",
+    "content_type": 55,
+    "codename": "change_publication"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 224,
+  "fields": {
+    "name": "Can delete publication",
+    "content_type": 55,
+    "codename": "delete_publication"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 225,
+  "fields": {
+    "name": "Can view publication",
+    "content_type": 55,
+    "codename": "view_publication"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 226,
+  "fields": {
+    "name": "Can add publication source",
+    "content_type": 56,
+    "codename": "add_publicationsource"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 227,
+  "fields": {
+    "name": "Can change publication source",
+    "content_type": 56,
+    "codename": "change_publicationsource"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 228,
+  "fields": {
+    "name": "Can delete publication source",
+    "content_type": 56,
+    "codename": "delete_publicationsource"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 229,
+  "fields": {
+    "name": "Can view publication source",
+    "content_type": 56,
+    "codename": "view_publicationsource"
+  }
+},
+{
+  "model": "auth.group",
+  "pk": 1,
+  "fields": {
+    "name": "ccollins",
+    "permissions": []
+  }
+},
+{
+  "model": "auth.group",
+  "pk": 2,
+  "fields": {
+    "name": "jlee",
+    "permissions": []
+  }
+},
+{
+  "model": "auth.group",
+  "pk": 3,
+  "fields": {
+    "name": "vjones",
+    "permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 1,
+  "fields": {
+    "password": "pbkdf2_sha256$120000$STEKSQrFLAOg$S3BAXtHAfIcewVeeJxTzk2hgS5Fq8OLaajNMY/qQ/qc=",
+    "last_login": "2018-10-04T20:52:25.130Z",
+    "is_superuser": true,
+    "username": "admin",
+    "first_name": "",
+    "last_name": "",
+    "email": "",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2018-10-04T14:36:59.995Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 2,
+  "fields": {
+    "password": "pbkdf2_sha256$120000$OUlu13hmF4gu$AHOS1Sq0PR0W1eAEASI28JHiXoHShY7lg+dPvNXvZ9c=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "michardson",
+    "first_name": "Mary",
+    "last_name": "Richardson",
+    "email": "mary.richardson@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:40:36Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 3,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "wjohnson",
+    "first_name": "Wanda",
+    "last_name": "Johnson",
+    "email": "wanda.johnson@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:24.943Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 4,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "ccollins",
+    "first_name": "Carl",
+    "last_name": "Collins",
+    "email": "carl.collins@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:24.958Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 5,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "jlee",
+    "first_name": "Judith",
+    "last_name": "Lee",
+    "email": "judith.lee@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:24.969Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 6,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "vjones",
+    "first_name": "Victor",
+    "last_name": "Jones",
+    "email": "victor.jones@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:24.981Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 7,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "radams",
+    "first_name": "Richard",
+    "last_name": "Adams",
+    "email": "richard.adams@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:24.993Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 8,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "mlopez",
+    "first_name": "Matthew",
+    "last_name": "Lopez",
+    "email": "matthew.lopez@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.004Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 9,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "cperez",
+    "first_name": "Cynthia",
+    "last_name": "Perez",
+    "email": "cynthia.perez@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.018Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 10,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "ajames",
+    "first_name": "Andrea",
+    "last_name": "James",
+    "email": "andrea.james@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.030Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 11,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "ahenderson",
+    "first_name": "Ashley",
+    "last_name": "Henderson",
+    "email": "ashley.henderson@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.041Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 12,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "lreed",
+    "first_name": "Louise",
+    "last_name": "Reed",
+    "email": "louise.reed@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.052Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 13,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "bjenkins",
+    "first_name": "Brenda",
+    "last_name": "Jenkins",
+    "email": "brenda.jenkins@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.064Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 14,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "tphillips",
+    "first_name": "Todd",
+    "last_name": "Phillips",
+    "email": "todd.phillips@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.076Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 15,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "kmoore",
+    "first_name": "Kathy",
+    "last_name": "Moore",
+    "email": "kathy.moore@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.087Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 16,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "ctaylor",
+    "first_name": "Carolyn",
+    "last_name": "Taylor",
+    "email": "carolyn.taylor@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.100Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 17,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "arussell",
+    "first_name": "Adam",
+    "last_name": "Russell",
+    "email": "adam.russell@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.113Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 18,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "dward",
+    "first_name": "Donald",
+    "last_name": "Ward",
+    "email": "donald.ward@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.125Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 19,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "jwilson",
+    "first_name": "Joan",
+    "last_name": "Wilson",
+    "email": "joan.wilson@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.138Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 20,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "cbutler",
+    "first_name": "Carlos",
+    "last_name": "Butler",
+    "email": "carlos.butler@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.150Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 21,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "csimmons",
+    "first_name": "Craig",
+    "last_name": "Simmons",
+    "email": "craig.simmons@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.163Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 22,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "mbailey",
+    "first_name": "Michael",
+    "last_name": "Bailey",
+    "email": "michael.bailey@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.175Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 23,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "aallen",
+    "first_name": "Ann",
+    "last_name": "Allen",
+    "email": "ann.allen@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.188Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 24,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "cbennett",
+    "first_name": "Christine",
+    "last_name": "Bennett",
+    "email": "christine.bennett@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.201Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 25,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "bevans",
+    "first_name": "Bonnie",
+    "last_name": "Evans",
+    "email": "bonnie.evans@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.212Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 26,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "aroberts",
+    "first_name": "Alan",
+    "last_name": "Roberts",
+    "email": "alan.roberts@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.224Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 27,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "lrodriguez",
+    "first_name": "Larry",
+    "last_name": "Rodriguez",
+    "email": "larry.rodriguez@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.235Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 28,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "sbarnes",
+    "first_name": "Steve",
+    "last_name": "Barnes",
+    "email": "steve.barnes@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.248Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 29,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "dcox",
+    "first_name": "Debra",
+    "last_name": "Cox",
+    "email": "debra.cox@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.260Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 30,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "along",
+    "first_name": "Annie",
+    "last_name": "Long",
+    "email": "annie.long@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.272Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 31,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "eramirez",
+    "first_name": "Elizabeth",
+    "last_name": "Ramirez",
+    "email": "elizabeth.ramirez@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.284Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 32,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "jstewart",
+    "first_name": "Joe",
+    "last_name": "Stewart",
+    "email": "joe.stewart@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.296Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 33,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "hpeterson",
+    "first_name": "Helen",
+    "last_name": "Peterson",
+    "email": "helen.peterson@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.308Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 34,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "danderson",
+    "first_name": "Diana",
+    "last_name": "Anderson",
+    "email": "diana.anderson@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.321Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 35,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "rthompson",
+    "first_name": "Rebecca",
+    "last_name": "Thompson",
+    "email": "rebecca.thompson@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.332Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 36,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "lthomas",
+    "first_name": "Lillian",
+    "last_name": "Thomas",
+    "email": "lillian.thomas@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.345Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 37,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "mcook",
+    "first_name": "Martin",
+    "last_name": "Cook",
+    "email": "martin.cook@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.357Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 38,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "rharris",
+    "first_name": "Raymond",
+    "last_name": "Harris",
+    "email": "raymond.harris@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.370Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 39,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "whughes",
+    "first_name": "Wayne",
+    "last_name": "Hughes",
+    "email": "wayne.hughes@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.382Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 40,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "jbell",
+    "first_name": "Jean",
+    "last_name": "Bell",
+    "email": "jean.bell@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.393Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 41,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "showard",
+    "first_name": "Susan",
+    "last_name": "Howard",
+    "email": "susan.howard@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.404Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 42,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "ahernandez",
+    "first_name": "Amanda",
+    "last_name": "Hernandez",
+    "email": "amanda.hernandez@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.415Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 43,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "wyoung",
+    "first_name": "Willie",
+    "last_name": "Young",
+    "email": "willie.young@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.427Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 44,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "lgonzalez",
+    "first_name": "Lisa",
+    "last_name": "Gonzalez",
+    "email": "lisa.gonzalez@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.439Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 45,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "sbrown",
+    "first_name": "Sarah",
+    "last_name": "Brown",
+    "email": "sarah.brown@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.451Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 46,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "arobinson",
+    "first_name": "Albert",
+    "last_name": "Robinson",
+    "email": "albert.robinson@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.463Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 47,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "dfoster",
+    "first_name": "Donna",
+    "last_name": "Foster",
+    "email": "donna.foster@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.476Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 48,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "kbryant",
+    "first_name": "Kimberly",
+    "last_name": "Bryant",
+    "email": "kimberly.bryant@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.488Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 49,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "smurphy",
+    "first_name": "Shirley",
+    "last_name": "Murphy",
+    "email": "shirley.murphy@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.501Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 50,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "ggray",
+    "first_name": "Gerald",
+    "last_name": "Gray",
+    "email": "gerald.gray@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.514Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 51,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "jmorgan",
+    "first_name": "James",
+    "last_name": "Morgan",
+    "email": "james.morgan@coldfront.org",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2018-10-04T18:52:25.525Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 1,
+  "fields": {
+    "user": 1,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 2,
+  "fields": {
+    "user": 2,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 3,
+  "fields": {
+    "user": 3,
+    "is_pi": true
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 4,
+  "fields": {
+    "user": 4,
+    "is_pi": true
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 5,
+  "fields": {
+    "user": 5,
+    "is_pi": true
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 6,
+  "fields": {
+    "user": 6,
+    "is_pi": true
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 7,
+  "fields": {
+    "user": 7,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 8,
+  "fields": {
+    "user": 8,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 9,
+  "fields": {
+    "user": 9,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 10,
+  "fields": {
+    "user": 10,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 11,
+  "fields": {
+    "user": 11,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 12,
+  "fields": {
+    "user": 12,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 13,
+  "fields": {
+    "user": 13,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 14,
+  "fields": {
+    "user": 14,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 15,
+  "fields": {
+    "user": 15,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 16,
+  "fields": {
+    "user": 16,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 17,
+  "fields": {
+    "user": 17,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 18,
+  "fields": {
+    "user": 18,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 19,
+  "fields": {
+    "user": 19,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 20,
+  "fields": {
+    "user": 20,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 21,
+  "fields": {
+    "user": 21,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 22,
+  "fields": {
+    "user": 22,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 23,
+  "fields": {
+    "user": 23,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 24,
+  "fields": {
+    "user": 24,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 25,
+  "fields": {
+    "user": 25,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 26,
+  "fields": {
+    "user": 26,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 27,
+  "fields": {
+    "user": 27,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 28,
+  "fields": {
+    "user": 28,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 29,
+  "fields": {
+    "user": 29,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 30,
+  "fields": {
+    "user": 30,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 31,
+  "fields": {
+    "user": 31,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 32,
+  "fields": {
+    "user": 32,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 33,
+  "fields": {
+    "user": 33,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 34,
+  "fields": {
+    "user": 34,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 35,
+  "fields": {
+    "user": 35,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 36,
+  "fields": {
+    "user": 36,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 37,
+  "fields": {
+    "user": 37,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 38,
+  "fields": {
+    "user": 38,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 39,
+  "fields": {
+    "user": 39,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 40,
+  "fields": {
+    "user": 40,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 41,
+  "fields": {
+    "user": 41,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 42,
+  "fields": {
+    "user": 42,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 43,
+  "fields": {
+    "user": 43,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 44,
+  "fields": {
+    "user": 44,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 45,
+  "fields": {
+    "user": 45,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 46,
+  "fields": {
+    "user": 46,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 47,
+  "fields": {
+    "user": 47,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 48,
+  "fields": {
+    "user": 48,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 49,
+  "fields": {
+    "user": 49,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 50,
+  "fields": {
+    "user": 50,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 51,
+  "fields": {
+    "user": 51,
+    "is_pi": false
+  }
+},
+{
+  "model": "project.historicalproject",
+  "pk": 1,
+  "fields": {
+    "id": 1,
+    "created": "2018-10-04T19:54:11.510Z",
+    "modified": "2018-10-04T19:54:11.527Z",
+    "title": "Angular momentum in QGP holography",
+    "description": "We want to estimate the quark chemical potential of a rotating sample of plasma.",
+    "force_review": false,
+    "requires_review": true,
+    "pi": 4,
+    "field_of_science": 16,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:54:11.526Z",
+    "history_user": 4,
+    "history_type": "+"
+  }
+},
+{
+  "model": "project.historicalproject",
+  "pk": 2,
+  "fields": {
+    "id": 1,
+    "created": "2018-10-04T19:54:11.510Z",
+    "modified": "2018-10-04T19:54:11.570Z",
+    "title": "Angular momentum in QGP holography",
+    "description": "We want to estimate the quark chemical potential of a rotating sample of plasma.",
+    "force_review": false,
+    "requires_review": true,
+    "pi": 4,
+    "field_of_science": 16,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:54:11.570Z",
+    "history_user": 4,
+    "history_type": "~"
+  }
+},
+{
+  "model": "project.historicalproject",
+  "pk": 3,
+  "fields": {
+    "id": 2,
+    "created": "2018-10-04T21:16:30.419Z",
+    "modified": "2018-10-04T21:16:30.436Z",
+    "title": "Measuring critical behavior of quantum Hall transitions",
+    "description": "This purpose of this project is to measure the critical behavior of quantum Hall transitions",
+    "force_review": false,
+    "requires_review": true,
+    "pi": 5,
+    "field_of_science": 22,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:16:30.435Z",
+    "history_user": 5,
+    "history_type": "+"
+  }
+},
+{
+  "model": "project.historicalproject",
+  "pk": 4,
+  "fields": {
+    "id": 2,
+    "created": "2018-10-04T21:16:30.419Z",
+    "modified": "2018-10-04T21:16:30.484Z",
+    "title": "Measuring critical behavior of quantum Hall transitions",
+    "description": "This purpose of this project is to measure the critical behavior of quantum Hall transitions",
+    "force_review": false,
+    "requires_review": true,
+    "pi": 5,
+    "field_of_science": 22,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:16:30.484Z",
+    "history_user": 5,
+    "history_type": "~"
+  }
+},
+{
+  "model": "project.historicalproject",
+  "pk": 5,
+  "fields": {
+    "id": 1,
+    "created": "2018-10-04T19:54:11.510Z",
+    "modified": "2018-10-04T21:34:28.177Z",
+    "title": "Angular momentum in QGP holography",
+    "description": "We want to estimate the quark chemical potential of a rotating sample of plasma.",
+    "force_review": false,
+    "requires_review": true,
+    "pi": 4,
+    "field_of_science": 16,
+    "status": 2,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:34:28.176Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "project.historicalproject",
+  "pk": 6,
+  "fields": {
+    "id": 2,
+    "created": "2018-10-04T21:16:30.419Z",
+    "modified": "2018-10-04T21:34:33.650Z",
+    "title": "Measuring critical behavior of quantum Hall transitions",
+    "description": "This purpose of this project is to measure the critical behavior of quantum Hall transitions",
+    "force_review": false,
+    "requires_review": true,
+    "pi": 5,
+    "field_of_science": 22,
+    "status": 2,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:34:33.649Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "project.project",
+  "pk": 1,
+  "fields": {
+    "created": "2018-10-04T19:54:11.510Z",
+    "modified": "2018-10-04T21:34:28.175Z",
+    "title": "Angular momentum in QGP holography",
+    "pi": 4,
+    "description": "We want to estimate the quark chemical potential of a rotating sample of plasma.",
+    "field_of_science": 16,
+    "status": 2,
+    "force_review": false,
+    "requires_review": true
+  }
+},
+{
+  "model": "project.project",
+  "pk": 2,
+  "fields": {
+    "created": "2018-10-04T21:16:30.419Z",
+    "modified": "2018-10-04T21:34:33.648Z",
+    "title": "Measuring critical behavior of quantum Hall transitions",
+    "pi": 5,
+    "description": "This purpose of this project is to measure the critical behavior of quantum Hall transitions",
+    "field_of_science": 22,
+    "status": 2,
+    "force_review": false,
+    "requires_review": true
+  }
+},
+{
+  "model": "project.historicalprojectuser",
+  "pk": 1,
+  "fields": {
+    "id": 1,
+    "created": "2018-10-04T19:54:11.539Z",
+    "modified": "2018-10-04T19:54:11.550Z",
+    "enable_notifications": true,
+    "user": 4,
+    "project": 1,
+    "role": 2,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:54:11.549Z",
+    "history_user": 4,
+    "history_type": "+"
+  }
+},
+{
+  "model": "project.historicalprojectuser",
+  "pk": 2,
+  "fields": {
+    "id": 2,
+    "created": "2018-10-04T20:53:16.679Z",
+    "modified": "2018-10-04T20:53:16.691Z",
+    "enable_notifications": true,
+    "user": 7,
+    "project": 1,
+    "role": 1,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T20:53:16.690Z",
+    "history_user": 4,
+    "history_type": "+"
+  }
+},
+{
+  "model": "project.historicalprojectuser",
+  "pk": 3,
+  "fields": {
+    "id": 3,
+    "created": "2018-10-04T20:53:48.130Z",
+    "modified": "2018-10-04T20:53:48.142Z",
+    "enable_notifications": true,
+    "user": 8,
+    "project": 1,
+    "role": 1,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T20:53:48.142Z",
+    "history_user": 4,
+    "history_type": "+"
+  }
+},
+{
+  "model": "project.historicalprojectuser",
+  "pk": 4,
+  "fields": {
+    "id": 4,
+    "created": "2018-10-04T20:54:14.468Z",
+    "modified": "2018-10-04T20:54:14.481Z",
+    "enable_notifications": true,
+    "user": 9,
+    "project": 1,
+    "role": 1,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T20:54:14.480Z",
+    "history_user": 4,
+    "history_type": "+"
+  }
+},
+{
+  "model": "project.historicalprojectuser",
+  "pk": 5,
+  "fields": {
+    "id": 4,
+    "created": "2018-10-04T20:54:14.468Z",
+    "modified": "2018-10-04T20:54:20.879Z",
+    "enable_notifications": true,
+    "user": 9,
+    "project": 1,
+    "role": 2,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T20:54:20.878Z",
+    "history_user": 4,
+    "history_type": "~"
+  }
+},
+{
+  "model": "project.historicalprojectuser",
+  "pk": 6,
+  "fields": {
+    "id": 5,
+    "created": "2018-10-04T21:16:30.450Z",
+    "modified": "2018-10-04T21:16:30.462Z",
+    "enable_notifications": true,
+    "user": 5,
+    "project": 2,
+    "role": 2,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:16:30.461Z",
+    "history_user": 5,
+    "history_type": "+"
+  }
+},
+{
+  "model": "project.historicalprojectuser",
+  "pk": 7,
+  "fields": {
+    "id": 6,
+    "created": "2018-10-04T21:18:30.694Z",
+    "modified": "2018-10-04T21:18:30.706Z",
+    "enable_notifications": true,
+    "user": 26,
+    "project": 2,
+    "role": 1,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:18:30.705Z",
+    "history_user": 5,
+    "history_type": "+"
+  }
+},
+{
+  "model": "project.historicalprojectuser",
+  "pk": 8,
+  "fields": {
+    "id": 7,
+    "created": "2018-10-04T21:19:08.629Z",
+    "modified": "2018-10-04T21:19:08.639Z",
+    "enable_notifications": true,
+    "user": 34,
+    "project": 2,
+    "role": 1,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:19:08.638Z",
+    "history_user": 5,
+    "history_type": "+"
+  }
+},
+{
+  "model": "project.historicalprojectuser",
+  "pk": 9,
+  "fields": {
+    "id": 6,
+    "created": "2018-10-04T21:18:30.694Z",
+    "modified": "2018-10-04T21:19:15.296Z",
+    "enable_notifications": true,
+    "user": 26,
+    "project": 2,
+    "role": 2,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:19:15.295Z",
+    "history_user": 5,
+    "history_type": "~"
+  }
+},
+{
+  "model": "project.projectuser",
+  "pk": 1,
+  "fields": {
+    "created": "2018-10-04T19:54:11.539Z",
+    "modified": "2018-10-04T19:54:11.539Z",
+    "user": 4,
+    "project": 1,
+    "role": 2,
+    "status": 1,
+    "enable_notifications": true
+  }
+},
+{
+  "model": "project.projectuser",
+  "pk": 2,
+  "fields": {
+    "created": "2018-10-04T20:53:16.679Z",
+    "modified": "2018-10-04T20:53:16.679Z",
+    "user": 7,
+    "project": 1,
+    "role": 1,
+    "status": 1,
+    "enable_notifications": true
+  }
+},
+{
+  "model": "project.projectuser",
+  "pk": 3,
+  "fields": {
+    "created": "2018-10-04T20:53:48.130Z",
+    "modified": "2018-10-04T20:53:48.130Z",
+    "user": 8,
+    "project": 1,
+    "role": 1,
+    "status": 1,
+    "enable_notifications": true
+  }
+},
+{
+  "model": "project.projectuser",
+  "pk": 4,
+  "fields": {
+    "created": "2018-10-04T20:54:14.468Z",
+    "modified": "2018-10-04T20:54:20.866Z",
+    "user": 9,
+    "project": 1,
+    "role": 2,
+    "status": 1,
+    "enable_notifications": true
+  }
+},
+{
+  "model": "project.projectuser",
+  "pk": 5,
+  "fields": {
+    "created": "2018-10-04T21:16:30.450Z",
+    "modified": "2018-10-04T21:16:30.450Z",
+    "user": 5,
+    "project": 2,
+    "role": 2,
+    "status": 1,
+    "enable_notifications": true
+  }
+},
+{
+  "model": "project.projectuser",
+  "pk": 6,
+  "fields": {
+    "created": "2018-10-04T21:18:30.694Z",
+    "modified": "2018-10-04T21:19:15.283Z",
+    "user": 26,
+    "project": 2,
+    "role": 2,
+    "status": 1,
+    "enable_notifications": true
+  }
+},
+{
+  "model": "project.projectuser",
+  "pk": 7,
+  "fields": {
+    "created": "2018-10-04T21:19:08.629Z",
+    "modified": "2018-10-04T21:19:08.629Z",
+    "user": 34,
+    "project": 2,
+    "role": 1,
+    "status": 1,
+    "enable_notifications": true
+  }
+},
+{
+  "model": "resources.historicalresourcetype",
+  "pk": 1,
+  "fields": {
+    "id": 1,
+    "created": "2018-10-04T14:58:59.366Z",
+    "modified": "2018-10-04T14:58:59.368Z",
+    "name": "Cloud",
+    "description": "Cloud computing",
+    "history_change_reason": null,
+    "history_date": "2018-10-04T14:58:59.367Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresourcetype",
+  "pk": 2,
+  "fields": {
+    "id": 2,
+    "created": "2018-10-04T14:59:08.950Z",
+    "modified": "2018-10-04T14:59:08.952Z",
+    "name": "Cluster",
+    "description": "Cluster servers",
+    "history_change_reason": null,
+    "history_date": "2018-10-04T14:59:08.951Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresourcetype",
+  "pk": 3,
+  "fields": {
+    "id": 3,
+    "created": "2018-10-04T14:59:17.816Z",
+    "modified": "2018-10-04T14:59:17.818Z",
+    "name": "Cluster Partition",
+    "description": "Cluster Partition",
+    "history_change_reason": null,
+    "history_date": "2018-10-04T14:59:17.818Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresourcetype",
+  "pk": 4,
+  "fields": {
+    "id": 4,
+    "created": "2018-10-04T14:59:26.794Z",
+    "modified": "2018-10-04T14:59:26.796Z",
+    "name": "Server",
+    "description": "Extra servers providing various services",
+    "history_change_reason": null,
+    "history_date": "2018-10-04T14:59:26.795Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresourcetype",
+  "pk": 5,
+  "fields": {
+    "id": 4,
+    "created": "2018-10-04T14:59:26.794Z",
+    "modified": "2018-10-04T14:59:31.319Z",
+    "name": "Server",
+    "description": "Extra servers providing various services",
+    "history_change_reason": null,
+    "history_date": "2018-10-04T14:59:31.319Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "resources.historicalresourcetype",
+  "pk": 6,
+  "fields": {
+    "id": 5,
+    "created": "2018-10-04T14:59:40.533Z",
+    "modified": "2018-10-04T14:59:40.535Z",
+    "name": "Software License",
+    "description": "Software licenses purchased by users",
+    "history_change_reason": null,
+    "history_date": "2018-10-04T14:59:40.535Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresourcetype",
+  "pk": 7,
+  "fields": {
+    "id": 6,
+    "created": "2018-10-04T14:59:50.193Z",
+    "modified": "2018-10-04T14:59:50.195Z",
+    "name": "Storage",
+    "description": "NAS storage",
+    "history_change_reason": null,
+    "history_date": "2018-10-04T14:59:50.195Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresource",
+  "pk": 1,
+  "fields": {
+    "id": 1,
+    "created": "2018-10-04T15:01:08.486Z",
+    "modified": "2018-10-04T15:01:08.494Z",
+    "name": "University Cloud",
+    "description": "University Research Cloud",
+    "is_available": true,
+    "is_public": true,
+    "is_subscribable": true,
+    "parent_resource": null,
+    "resource_type": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T15:01:08.494Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresource",
+  "pk": 2,
+  "fields": {
+    "id": 1,
+    "created": "2018-10-04T15:01:08.486Z",
+    "modified": "2018-10-04T15:01:19.808Z",
+    "name": "University Cloud",
+    "description": "University Research Cloud",
+    "is_available": true,
+    "is_public": true,
+    "is_subscribable": true,
+    "parent_resource": null,
+    "resource_type": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T15:01:19.807Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "resources.historicalresource",
+  "pk": 3,
+  "fields": {
+    "id": 2,
+    "created": "2018-10-04T15:03:19.312Z",
+    "modified": "2018-10-04T15:03:19.324Z",
+    "name": "Chemistry",
+    "description": "Chemistry Cluster",
+    "is_available": true,
+    "is_public": true,
+    "is_subscribable": false,
+    "parent_resource": null,
+    "resource_type": 2,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T15:03:19.324Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresource",
+  "pk": 4,
+  "fields": {
+    "id": 3,
+    "created": "2018-10-04T15:07:56.366Z",
+    "modified": "2018-10-04T15:07:56.385Z",
+    "name": "Industry",
+    "description": "Industry Cluster",
+    "is_available": true,
+    "is_public": false,
+    "is_subscribable": true,
+    "parent_resource": null,
+    "resource_type": 2,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T15:07:56.384Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresource",
+  "pk": 5,
+  "fields": {
+    "id": 4,
+    "created": "2018-10-04T15:09:37.944Z",
+    "modified": "2018-10-04T15:09:37.957Z",
+    "name": "Physics",
+    "description": "Physics Cluster",
+    "is_available": true,
+    "is_public": true,
+    "is_subscribable": false,
+    "parent_resource": null,
+    "resource_type": 2,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T15:09:37.957Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresource",
+  "pk": 6,
+  "fields": {
+    "id": 5,
+    "created": "2018-10-04T18:37:42.036Z",
+    "modified": "2018-10-04T18:37:42.050Z",
+    "name": "Industry-scavenger",
+    "description": "Scavenger partition on Industry cluster",
+    "is_available": true,
+    "is_public": false,
+    "is_subscribable": false,
+    "parent_resource": 3,
+    "resource_type": 2,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T18:37:42.049Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresource",
+  "pk": 7,
+  "fields": {
+    "id": 6,
+    "created": "2018-10-04T19:00:09.900Z",
+    "modified": "2018-10-04T19:00:09.917Z",
+    "name": "Chemistry-ccollins",
+    "description": "Carl\tCollins's nodes",
+    "is_available": true,
+    "is_public": false,
+    "is_subscribable": true,
+    "parent_resource": 2,
+    "resource_type": 2,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:00:09.914Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresource",
+  "pk": 8,
+  "fields": {
+    "id": 7,
+    "created": "2018-10-04T19:01:46.525Z",
+    "modified": "2018-10-04T19:01:46.539Z",
+    "name": "Physics-jlee",
+    "description": "Judith Lee's nodes",
+    "is_available": true,
+    "is_public": false,
+    "is_subscribable": true,
+    "parent_resource": 4,
+    "resource_type": 2,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:01:46.539Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresource",
+  "pk": 9,
+  "fields": {
+    "id": 6,
+    "created": "2018-10-04T19:00:09.900Z",
+    "modified": "2018-10-04T19:01:59.672Z",
+    "name": "Chemistry-ccollins",
+    "description": "Carl\tCollins's nodes",
+    "is_available": true,
+    "is_public": false,
+    "is_subscribable": true,
+    "parent_resource": 2,
+    "resource_type": 2,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:01:59.671Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "resources.historicalresource",
+  "pk": 10,
+  "fields": {
+    "id": 8,
+    "created": "2018-10-04T19:03:19.865Z",
+    "modified": "2018-10-04T19:03:19.879Z",
+    "name": "Physics-vjones",
+    "description": "Victor Jones's nodes",
+    "is_available": true,
+    "is_public": false,
+    "is_subscribable": true,
+    "parent_resource": 4,
+    "resource_type": 2,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:03:19.878Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresource",
+  "pk": 11,
+  "fields": {
+    "id": 9,
+    "created": "2018-10-04T19:05:24.977Z",
+    "modified": "2018-10-04T19:05:24.991Z",
+    "name": "Physics-scavenger",
+    "description": "Scavenger partition on Physics cluster",
+    "is_available": true,
+    "is_public": true,
+    "is_subscribable": false,
+    "parent_resource": 4,
+    "resource_type": 2,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:05:24.990Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresource",
+  "pk": 12,
+  "fields": {
+    "id": 10,
+    "created": "2018-10-04T19:08:04.703Z",
+    "modified": "2018-10-04T19:08:04.716Z",
+    "name": "Chemistry-scavenger",
+    "description": "Scavenger partition on Chemistry cluster",
+    "is_available": true,
+    "is_public": true,
+    "is_subscribable": false,
+    "parent_resource": 2,
+    "resource_type": 2,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:08:04.715Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresource",
+  "pk": 13,
+  "fields": {
+    "id": 11,
+    "created": "2018-10-04T19:09:28.080Z",
+    "modified": "2018-10-04T19:09:28.100Z",
+    "name": "University HPC",
+    "description": "University Academic Cluster",
+    "is_available": true,
+    "is_public": true,
+    "is_subscribable": true,
+    "parent_resource": null,
+    "resource_type": 2,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:09:28.099Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresource",
+  "pk": 14,
+  "fields": {
+    "id": 12,
+    "created": "2018-10-04T19:11:07.244Z",
+    "modified": "2018-10-04T19:11:07.260Z",
+    "name": "University Cloud Storage",
+    "description": "Storage available to cloud instances",
+    "is_available": true,
+    "is_public": true,
+    "is_subscribable": true,
+    "parent_resource": 1,
+    "resource_type": 6,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:11:07.259Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresource",
+  "pk": 15,
+  "fields": {
+    "id": 13,
+    "created": "2018-10-04T19:16:01.580Z",
+    "modified": "2018-10-04T19:16:01.592Z",
+    "name": "BudgetStorage",
+    "description": "Low-tier storage option - NOT BACKED UP",
+    "is_available": true,
+    "is_public": true,
+    "is_subscribable": true,
+    "parent_resource": null,
+    "resource_type": 6,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:16:01.591Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresource",
+  "pk": 16,
+  "fields": {
+    "id": 14,
+    "created": "2018-10-04T19:16:31.605Z",
+    "modified": "2018-10-04T19:16:31.617Z",
+    "name": "ProjectStorage",
+    "description": "Enterprise-level storage - BACKED UP DAILY",
+    "is_available": true,
+    "is_public": true,
+    "is_subscribable": true,
+    "parent_resource": null,
+    "resource_type": 6,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:16:31.617Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresource",
+  "pk": 17,
+  "fields": {
+    "id": 15,
+    "created": "2018-10-04T19:19:32.204Z",
+    "modified": "2018-10-04T19:19:32.216Z",
+    "name": "server-collins",
+    "description": "Server for Carl Collins's research lab",
+    "is_available": true,
+    "is_public": true,
+    "is_subscribable": true,
+    "parent_resource": null,
+    "resource_type": 4,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:19:32.215Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresource",
+  "pk": 18,
+  "fields": {
+    "id": 7,
+    "created": "2018-10-04T19:01:46.525Z",
+    "modified": "2018-10-04T19:20:49.386Z",
+    "name": "Physics-jlee",
+    "description": "Judith Lee's nodes",
+    "is_available": true,
+    "is_public": false,
+    "is_subscribable": true,
+    "parent_resource": 4,
+    "resource_type": 2,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:20:49.385Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "resources.historicalresource",
+  "pk": 19,
+  "fields": {
+    "id": 8,
+    "created": "2018-10-04T19:03:19.865Z",
+    "modified": "2018-10-04T19:20:58.377Z",
+    "name": "Physics-vjones",
+    "description": "Victor Jones's nodes",
+    "is_available": true,
+    "is_public": false,
+    "is_subscribable": true,
+    "parent_resource": 4,
+    "resource_type": 2,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:20:58.377Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "resources.historicalresource",
+  "pk": 20,
+  "fields": {
+    "id": 6,
+    "created": "2018-10-04T19:00:09.900Z",
+    "modified": "2018-10-04T19:21:07.779Z",
+    "name": "Chemistry-ccollins",
+    "description": "Carl\tCollins's nodes",
+    "is_available": true,
+    "is_public": false,
+    "is_subscribable": true,
+    "parent_resource": 2,
+    "resource_type": 2,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:21:07.779Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "resources.historicalresource",
+  "pk": 21,
+  "fields": {
+    "id": 15,
+    "created": "2018-10-04T19:19:32.204Z",
+    "modified": "2018-10-04T19:21:23.327Z",
+    "name": "server-ccollins",
+    "description": "Server for Carl Collins's research lab",
+    "is_available": true,
+    "is_public": true,
+    "is_subscribable": true,
+    "parent_resource": null,
+    "resource_type": 4,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:21:23.326Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "resources.historicalresource",
+  "pk": 22,
+  "fields": {
+    "id": 15,
+    "created": "2018-10-04T19:19:32.204Z",
+    "modified": "2018-10-04T21:23:13.472Z",
+    "name": "server-ccollins",
+    "description": "Server for Carl Collins's research lab",
+    "is_available": true,
+    "is_public": false,
+    "is_subscribable": true,
+    "parent_resource": null,
+    "resource_type": 4,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:23:13.471Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "resources.resource",
+  "pk": 1,
+  "fields": {
+    "created": "2018-10-04T15:01:08.486Z",
+    "modified": "2018-10-04T15:01:19.806Z",
+    "parent_resource": null,
+    "resource_type": 1,
+    "name": "University Cloud",
+    "description": "University Research Cloud",
+    "is_available": true,
+    "is_public": true,
+    "is_subscribable": true,
+    "allowed_groups": [],
+    "allowed_users": [],
+    "linked_resources": []
+  }
+},
+{
+  "model": "resources.resource",
+  "pk": 2,
+  "fields": {
+    "created": "2018-10-04T15:03:19.312Z",
+    "modified": "2018-10-04T15:03:19.323Z",
+    "parent_resource": null,
+    "resource_type": 2,
+    "name": "Chemistry",
+    "description": "Chemistry Cluster",
+    "is_available": true,
+    "is_public": true,
+    "is_subscribable": false,
+    "allowed_groups": [],
+    "allowed_users": [],
+    "linked_resources": []
+  }
+},
+{
+  "model": "resources.resource",
+  "pk": 3,
+  "fields": {
+    "created": "2018-10-04T15:07:56.366Z",
+    "modified": "2018-10-04T15:07:56.383Z",
+    "parent_resource": null,
+    "resource_type": 2,
+    "name": "Industry",
+    "description": "Industry Cluster",
+    "is_available": true,
+    "is_public": false,
+    "is_subscribable": true,
+    "allowed_groups": [],
+    "allowed_users": [],
+    "linked_resources": []
+  }
+},
+{
+  "model": "resources.resource",
+  "pk": 4,
+  "fields": {
+    "created": "2018-10-04T15:09:37.944Z",
+    "modified": "2018-10-04T15:09:37.956Z",
+    "parent_resource": null,
+    "resource_type": 2,
+    "name": "Physics",
+    "description": "Physics Cluster",
+    "is_available": true,
+    "is_public": true,
+    "is_subscribable": false,
+    "allowed_groups": [],
+    "allowed_users": [],
+    "linked_resources": []
+  }
+},
+{
+  "model": "resources.resource",
+  "pk": 5,
+  "fields": {
+    "created": "2018-10-04T18:37:42.036Z",
+    "modified": "2018-10-04T18:37:42.049Z",
+    "parent_resource": 3,
+    "resource_type": 2,
+    "name": "Industry-scavenger",
+    "description": "Scavenger partition on Industry cluster",
+    "is_available": true,
+    "is_public": false,
+    "is_subscribable": false,
+    "allowed_groups": [],
+    "allowed_users": [],
+    "linked_resources": [
+      11
+    ]
+  }
+},
+{
+  "model": "resources.resource",
+  "pk": 6,
+  "fields": {
+    "created": "2018-10-04T19:00:09.900Z",
+    "modified": "2018-10-04T19:21:07.778Z",
+    "parent_resource": 2,
+    "resource_type": 2,
+    "name": "Chemistry-ccollins",
+    "description": "Carl\tCollins's nodes",
+    "is_available": true,
+    "is_public": false,
+    "is_subscribable": true,
+    "allowed_groups": [
+      1
+    ],
+    "allowed_users": [],
+    "linked_resources": []
+  }
+},
+{
+  "model": "resources.resource",
+  "pk": 7,
+  "fields": {
+    "created": "2018-10-04T19:01:46.525Z",
+    "modified": "2018-10-04T19:20:49.384Z",
+    "parent_resource": 4,
+    "resource_type": 2,
+    "name": "Physics-jlee",
+    "description": "Judith Lee's nodes",
+    "is_available": true,
+    "is_public": false,
+    "is_subscribable": true,
+    "allowed_groups": [
+      2
+    ],
+    "allowed_users": [],
+    "linked_resources": []
+  }
+},
+{
+  "model": "resources.resource",
+  "pk": 8,
+  "fields": {
+    "created": "2018-10-04T19:03:19.865Z",
+    "modified": "2018-10-04T19:20:58.376Z",
+    "parent_resource": 4,
+    "resource_type": 2,
+    "name": "Physics-vjones",
+    "description": "Victor Jones's nodes",
+    "is_available": true,
+    "is_public": false,
+    "is_subscribable": true,
+    "allowed_groups": [
+      3
+    ],
+    "allowed_users": [],
+    "linked_resources": []
+  }
+},
+{
+  "model": "resources.resource",
+  "pk": 9,
+  "fields": {
+    "created": "2018-10-04T19:05:24.977Z",
+    "modified": "2018-10-04T19:05:24.990Z",
+    "parent_resource": 4,
+    "resource_type": 2,
+    "name": "Physics-scavenger",
+    "description": "Scavenger partition on Physics cluster",
+    "is_available": true,
+    "is_public": true,
+    "is_subscribable": false,
+    "allowed_groups": [],
+    "allowed_users": [],
+    "linked_resources": [
+      11
+    ]
+  }
+},
+{
+  "model": "resources.resource",
+  "pk": 10,
+  "fields": {
+    "created": "2018-10-04T19:08:04.703Z",
+    "modified": "2018-10-04T19:08:04.715Z",
+    "parent_resource": 2,
+    "resource_type": 2,
+    "name": "Chemistry-scavenger",
+    "description": "Scavenger partition on Chemistry cluster",
+    "is_available": true,
+    "is_public": true,
+    "is_subscribable": false,
+    "allowed_groups": [],
+    "allowed_users": [],
+    "linked_resources": [
+      11
+    ]
+  }
+},
+{
+  "model": "resources.resource",
+  "pk": 11,
+  "fields": {
+    "created": "2018-10-04T19:09:28.080Z",
+    "modified": "2018-10-04T19:09:28.099Z",
+    "parent_resource": null,
+    "resource_type": 2,
+    "name": "University HPC",
+    "description": "University Academic Cluster",
+    "is_available": true,
+    "is_public": true,
+    "is_subscribable": true,
+    "allowed_groups": [],
+    "allowed_users": [],
+    "linked_resources": [
+      10,
+      5,
+      9
+    ]
+  }
+},
+{
+  "model": "resources.resource",
+  "pk": 12,
+  "fields": {
+    "created": "2018-10-04T19:11:07.244Z",
+    "modified": "2018-10-04T19:11:07.259Z",
+    "parent_resource": 1,
+    "resource_type": 6,
+    "name": "University Cloud Storage",
+    "description": "Storage available to cloud instances",
+    "is_available": true,
+    "is_public": true,
+    "is_subscribable": true,
+    "allowed_groups": [],
+    "allowed_users": [],
+    "linked_resources": []
+  }
+},
+{
+  "model": "resources.resource",
+  "pk": 13,
+  "fields": {
+    "created": "2018-10-04T19:16:01.580Z",
+    "modified": "2018-10-04T19:16:01.591Z",
+    "parent_resource": null,
+    "resource_type": 6,
+    "name": "BudgetStorage",
+    "description": "Low-tier storage option - NOT BACKED UP",
+    "is_available": true,
+    "is_public": true,
+    "is_subscribable": true,
+    "allowed_groups": [],
+    "allowed_users": [],
+    "linked_resources": []
+  }
+},
+{
+  "model": "resources.resource",
+  "pk": 14,
+  "fields": {
+    "created": "2018-10-04T19:16:31.605Z",
+    "modified": "2018-10-04T19:16:31.616Z",
+    "parent_resource": null,
+    "resource_type": 6,
+    "name": "ProjectStorage",
+    "description": "Enterprise-level storage - BACKED UP DAILY",
+    "is_available": true,
+    "is_public": true,
+    "is_subscribable": true,
+    "allowed_groups": [],
+    "allowed_users": [],
+    "linked_resources": []
+  }
+},
+{
+  "model": "resources.resource",
+  "pk": 15,
+  "fields": {
+    "created": "2018-10-04T19:19:32.204Z",
+    "modified": "2018-10-04T21:23:13.470Z",
+    "parent_resource": null,
+    "resource_type": 4,
+    "name": "server-ccollins",
+    "description": "Server for Carl Collins's research lab",
+    "is_available": true,
+    "is_public": false,
+    "is_subscribable": true,
+    "allowed_groups": [
+      1
+    ],
+    "allowed_users": [],
+    "linked_resources": []
+  }
+},
+{
+  "model": "resources.historicalresourceattribute",
+  "pk": 1,
+  "fields": {
+    "id": 1,
+    "created": "2018-10-04T15:01:19.801Z",
+    "modified": "2018-10-04T15:01:19.814Z",
+    "value": "Yes",
+    "resource_attribute_type": 8,
+    "resource": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T15:01:19.813Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresourceattribute",
+  "pk": 2,
+  "fields": {
+    "id": 2,
+    "created": "2018-10-04T15:03:19.319Z",
+    "modified": "2018-10-04T15:03:19.330Z",
+    "value": "chemistry",
+    "resource_attribute_type": 11,
+    "resource": 2,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T15:03:19.330Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresourceattribute",
+  "pk": 3,
+  "fields": {
+    "id": 3,
+    "created": "2018-10-04T15:07:56.373Z",
+    "modified": "2018-10-04T15:07:56.390Z",
+    "value": "Yes",
+    "resource_attribute_type": 8,
+    "resource": 3,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T15:07:56.390Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresourceattribute",
+  "pk": 4,
+  "fields": {
+    "id": 4,
+    "created": "2018-10-04T15:07:56.373Z",
+    "modified": "2018-10-04T15:07:56.392Z",
+    "value": "industry",
+    "resource_attribute_type": 11,
+    "resource": 3,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T15:07:56.391Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresourceattribute",
+  "pk": 5,
+  "fields": {
+    "id": 5,
+    "created": "2018-10-04T15:07:56.374Z",
+    "modified": "2018-10-04T15:07:56.393Z",
+    "value": "QOS+=compute:Fairshare=100",
+    "resource_attribute_type": 12,
+    "resource": 3,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T15:07:56.392Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresourceattribute",
+  "pk": 6,
+  "fields": {
+    "id": 6,
+    "created": "2018-10-04T15:09:37.952Z",
+    "modified": "2018-10-04T15:09:37.963Z",
+    "value": "physics",
+    "resource_attribute_type": 11,
+    "resource": 4,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T15:09:37.963Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresourceattribute",
+  "pk": 7,
+  "fields": {
+    "id": 7,
+    "created": "2018-10-04T18:37:42.044Z",
+    "modified": "2018-10-04T18:37:42.057Z",
+    "value": "QOS+=scavenger:Fairshare=100",
+    "resource_attribute_type": 12,
+    "resource": 5,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T18:37:42.057Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresourceattribute",
+  "pk": 8,
+  "fields": {
+    "id": 8,
+    "created": "2018-10-04T19:00:09.909Z",
+    "modified": "2018-10-04T19:00:09.925Z",
+    "value": "QOS+=ciaranwi:Fairshare=100",
+    "resource_attribute_type": 12,
+    "resource": 6,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:00:09.924Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresourceattribute",
+  "pk": 9,
+  "fields": {
+    "id": 9,
+    "created": "2018-10-04T19:01:46.534Z",
+    "modified": "2018-10-04T19:01:46.546Z",
+    "value": "QOS+=jlee:Fairshare=100",
+    "resource_attribute_type": 12,
+    "resource": 7,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:01:46.545Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresourceattribute",
+  "pk": 10,
+  "fields": {
+    "id": 8,
+    "created": "2018-10-04T19:00:09.909Z",
+    "modified": "2018-10-04T19:01:59.678Z",
+    "value": "QOS+=ccollins:Fairshare=100",
+    "resource_attribute_type": 12,
+    "resource": 6,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:01:59.678Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "resources.historicalresourceattribute",
+  "pk": 11,
+  "fields": {
+    "id": 10,
+    "created": "2018-10-04T19:03:19.873Z",
+    "modified": "2018-10-04T19:03:19.885Z",
+    "value": "QOS+=vjones:Fairshare=100",
+    "resource_attribute_type": 12,
+    "resource": 8,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:03:19.885Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresourceattribute",
+  "pk": 12,
+  "fields": {
+    "id": 11,
+    "created": "2018-10-04T19:05:24.986Z",
+    "modified": "2018-10-04T19:05:24.997Z",
+    "value": "QOS+=scavenger:Fairshare=100",
+    "resource_attribute_type": 12,
+    "resource": 9,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:05:24.996Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresourceattribute",
+  "pk": 13,
+  "fields": {
+    "id": 12,
+    "created": "2018-10-04T19:08:04.711Z",
+    "modified": "2018-10-04T19:08:04.722Z",
+    "value": "QOS+=scavenger:Fairshare=100",
+    "resource_attribute_type": 12,
+    "resource": 10,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:08:04.722Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresourceattribute",
+  "pk": 14,
+  "fields": {
+    "id": 13,
+    "created": "2018-10-04T19:09:28.088Z",
+    "modified": "2018-10-04T19:09:28.109Z",
+    "value": "No",
+    "resource_attribute_type": 8,
+    "resource": 11,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:09:28.109Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresourceattribute",
+  "pk": 15,
+  "fields": {
+    "id": 14,
+    "created": "2018-10-04T19:09:28.089Z",
+    "modified": "2018-10-04T19:09:28.111Z",
+    "value": "university-hpc",
+    "resource_attribute_type": 11,
+    "resource": 11,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:09:28.110Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresourceattribute",
+  "pk": 16,
+  "fields": {
+    "id": 15,
+    "created": "2018-10-04T19:09:28.089Z",
+    "modified": "2018-10-04T19:09:28.112Z",
+    "value": "QOS+=general-compute,viz,gpu,largemem,debug:Fairshare=100",
+    "resource_attribute_type": 12,
+    "resource": 11,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:09:28.111Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresourceattribute",
+  "pk": 17,
+  "fields": {
+    "id": 16,
+    "created": "2018-10-04T19:11:07.255Z",
+    "modified": "2018-10-04T19:11:07.267Z",
+    "value": "Yes",
+    "resource_attribute_type": 8,
+    "resource": 12,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:11:07.266Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresourceattribute",
+  "pk": 18,
+  "fields": {
+    "id": 17,
+    "created": "2018-10-04T19:16:01.586Z",
+    "modified": "2018-10-04T19:16:01.599Z",
+    "value": "Yes",
+    "resource_attribute_type": 8,
+    "resource": 13,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:16:01.598Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresourceattribute",
+  "pk": 19,
+  "fields": {
+    "id": 18,
+    "created": "2018-10-04T19:16:31.612Z",
+    "modified": "2018-10-04T19:16:31.624Z",
+    "value": "Yes",
+    "resource_attribute_type": 8,
+    "resource": 14,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:16:31.623Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "resources.historicalresourceattribute",
+  "pk": 20,
+  "fields": {
+    "id": 19,
+    "created": "2018-10-04T19:19:32.210Z",
+    "modified": "2018-10-04T19:19:32.222Z",
+    "value": "No",
+    "resource_attribute_type": 8,
+    "resource": 15,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:19:32.221Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscription",
+  "pk": 1,
+  "fields": {
+    "id": 1,
+    "created": "2018-10-04T19:56:29.526Z",
+    "modified": "2018-10-04T19:56:29.537Z",
+    "quantity": 1,
+    "active_until": "2019-10-04",
+    "justification": "This is my private server for running calculations.",
+    "project": 1,
+    "status": 7,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:56:29.536Z",
+    "history_user": 4,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscription",
+  "pk": 2,
+  "fields": {
+    "id": 2,
+    "created": "2018-10-04T19:56:39.831Z",
+    "modified": "2018-10-04T19:56:39.842Z",
+    "quantity": 1,
+    "active_until": "2019-10-04",
+    "justification": "I need space to store my data.",
+    "project": 1,
+    "status": 7,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:56:39.841Z",
+    "history_user": 4,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscription",
+  "pk": 3,
+  "fields": {
+    "id": 3,
+    "created": "2018-10-04T19:59:05.315Z",
+    "modified": "2018-10-04T19:59:05.327Z",
+    "quantity": 1,
+    "active_until": "2019-10-04",
+    "justification": "I will be crunching my data on the university cluster.",
+    "project": 1,
+    "status": 7,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:59:05.326Z",
+    "history_user": 4,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscription",
+  "pk": 4,
+  "fields": {
+    "id": 1,
+    "created": "2018-10-04T19:56:29.526Z",
+    "modified": "2018-10-04T20:57:35.494Z",
+    "quantity": 1,
+    "active_until": "2019-10-04",
+    "justification": "This is my private server for running calculations.",
+    "project": 1,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T20:57:35.494Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "subscription.historicalsubscription",
+  "pk": 5,
+  "fields": {
+    "id": 1,
+    "created": "2018-10-04T19:56:29.526Z",
+    "modified": "2018-10-04T21:00:03.123Z",
+    "quantity": 1,
+    "active_until": "2019-10-04",
+    "justification": "This is my private server for running calculations.",
+    "project": 1,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:00:03.122Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "subscription.historicalsubscription",
+  "pk": 6,
+  "fields": {
+    "id": 1,
+    "created": "2018-10-04T19:56:29.526Z",
+    "modified": "2018-10-04T21:01:13.344Z",
+    "quantity": 1,
+    "active_until": "2019-10-04",
+    "justification": "This is my private server for running calculations.",
+    "project": 1,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:01:13.343Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "subscription.historicalsubscription",
+  "pk": 7,
+  "fields": {
+    "id": 1,
+    "created": "2018-10-04T19:56:29.526Z",
+    "modified": "2018-10-04T21:03:25.073Z",
+    "quantity": 1,
+    "active_until": "2019-10-04",
+    "justification": "This is my private server for running calculations.",
+    "project": 1,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:03:25.072Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "subscription.historicalsubscription",
+  "pk": 8,
+  "fields": {
+    "id": 3,
+    "created": "2018-10-04T19:59:05.315Z",
+    "modified": "2018-10-04T21:03:27.426Z",
+    "quantity": 1,
+    "active_until": "2019-10-04",
+    "justification": "I will be crunching my data on the university cluster.",
+    "project": 1,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:03:27.425Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "subscription.historicalsubscription",
+  "pk": 9,
+  "fields": {
+    "id": 2,
+    "created": "2018-10-04T19:56:39.831Z",
+    "modified": "2018-10-04T21:03:28.473Z",
+    "quantity": 1,
+    "active_until": "2019-10-04",
+    "justification": "I need space to store my data.",
+    "project": 1,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:03:28.473Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "subscription.historicalsubscription",
+  "pk": 10,
+  "fields": {
+    "id": 4,
+    "created": "2018-10-04T21:17:47.306Z",
+    "modified": "2018-10-04T21:17:47.319Z",
+    "quantity": 1,
+    "active_until": "2019-10-04",
+    "justification": "Need to store project",
+    "project": 2,
+    "status": 7,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:17:47.318Z",
+    "history_user": 5,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscription",
+  "pk": 11,
+  "fields": {
+    "id": 5,
+    "created": "2018-10-04T21:18:06.948Z",
+    "modified": "2018-10-04T21:18:06.960Z",
+    "quantity": 1,
+    "active_until": "2019-10-04",
+    "justification": "Need cloud access",
+    "project": 2,
+    "status": 7,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:18:06.959Z",
+    "history_user": 5,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscription",
+  "pk": 12,
+  "fields": {
+    "id": 6,
+    "created": "2018-10-04T21:18:18.174Z",
+    "modified": "2018-10-04T21:18:18.186Z",
+    "quantity": 1,
+    "active_until": "2019-10-04",
+    "justification": "Need cloud storage",
+    "project": 2,
+    "status": 7,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:18:18.185Z",
+    "history_user": 5,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscription",
+  "pk": 13,
+  "fields": {
+    "id": 4,
+    "created": "2018-10-04T21:17:47.306Z",
+    "modified": "2018-10-04T21:20:52.971Z",
+    "quantity": 1,
+    "active_until": "2019-10-04",
+    "justification": "Need to store project",
+    "project": 2,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:20:52.970Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "subscription.historicalsubscription",
+  "pk": 14,
+  "fields": {
+    "id": 5,
+    "created": "2018-10-04T21:18:06.948Z",
+    "modified": "2018-10-04T21:20:53.576Z",
+    "quantity": 1,
+    "active_until": "2019-10-04",
+    "justification": "Need cloud access",
+    "project": 2,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:20:53.576Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "subscription.historicalsubscription",
+  "pk": 15,
+  "fields": {
+    "id": 6,
+    "created": "2018-10-04T21:18:18.174Z",
+    "modified": "2018-10-04T21:20:54.587Z",
+    "quantity": 1,
+    "active_until": "2019-10-04",
+    "justification": "Need cloud storage",
+    "project": 2,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:20:54.586Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "subscription.historicalsubscription",
+  "pk": 16,
+  "fields": {
+    "id": 6,
+    "created": "2018-10-04T21:18:18.174Z",
+    "modified": "2018-10-04T21:22:10.549Z",
+    "quantity": 1,
+    "active_until": "2019-10-04",
+    "justification": "Need cloud storage",
+    "project": 2,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:22:10.549Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "subscription.historicalsubscription",
+  "pk": 17,
+  "fields": {
+    "id": 5,
+    "created": "2018-10-04T21:18:06.948Z",
+    "modified": "2018-10-04T21:23:41.504Z",
+    "quantity": 1,
+    "active_until": "2019-10-04",
+    "justification": "Need cloud access",
+    "project": 2,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:23:41.504Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "subscription.historicalsubscription",
+  "pk": 18,
+  "fields": {
+    "id": 3,
+    "created": "2018-10-04T19:59:05.315Z",
+    "modified": "2018-10-04T21:28:09.577Z",
+    "quantity": 1,
+    "active_until": "2019-10-04",
+    "justification": "I will be crunching my data on the university cluster.",
+    "project": 1,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:28:09.576Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "subscription.historicalsubscription",
+  "pk": 19,
+  "fields": {
+    "id": 3,
+    "created": "2018-10-04T19:59:05.315Z",
+    "modified": "2018-10-04T21:28:41.385Z",
+    "quantity": 1,
+    "active_until": "2019-10-04",
+    "justification": "I will be crunching my data on the university cluster.",
+    "project": 1,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:28:41.385Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionattribute",
+  "pk": 1,
+  "fields": {
+    "id": 1,
+    "created": "2018-10-04T21:22:10.544Z",
+    "modified": "2018-10-04T21:22:10.552Z",
+    "value": "1000",
+    "is_private": false,
+    "subscription_attribute_type": 8,
+    "subscription": 6,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:22:10.552Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionattribute",
+  "pk": 2,
+  "fields": {
+    "id": 1,
+    "created": "2018-10-04T21:22:10.544Z",
+    "modified": "2018-10-04T21:22:25.057Z",
+    "value": "1000",
+    "is_private": false,
+    "subscription_attribute_type": 8,
+    "subscription": 6,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:22:25.056Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionattribute",
+  "pk": 3,
+  "fields": {
+    "id": 2,
+    "created": "2018-10-04T21:23:41.499Z",
+    "modified": "2018-10-04T21:23:41.507Z",
+    "value": "500",
+    "is_private": true,
+    "subscription_attribute_type": 3,
+    "subscription": 5,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:23:41.507Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionattribute",
+  "pk": 4,
+  "fields": {
+    "id": 2,
+    "created": "2018-10-04T21:23:41.499Z",
+    "modified": "2018-10-04T21:24:04.542Z",
+    "value": "500",
+    "is_private": true,
+    "subscription_attribute_type": 3,
+    "subscription": 5,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:24:04.541Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionattribute",
+  "pk": 5,
+  "fields": {
+    "id": 2,
+    "created": "2018-10-04T21:23:41.499Z",
+    "modified": "2018-10-04T21:24:17.839Z",
+    "value": "500",
+    "is_private": false,
+    "subscription_attribute_type": 3,
+    "subscription": 5,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:24:17.837Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionattribute",
+  "pk": 6,
+  "fields": {
+    "id": 3,
+    "created": "2018-10-04T21:28:09.566Z",
+    "modified": "2018-10-04T21:28:09.580Z",
+    "value": "Fairshare=100:QOS+=supporters",
+    "is_private": true,
+    "subscription_attribute_type": 18,
+    "subscription": 3,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:28:09.579Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionattribute",
+  "pk": 7,
+  "fields": {
+    "id": 4,
+    "created": "2018-10-04T21:28:09.566Z",
+    "modified": "2018-10-04T21:28:09.581Z",
+    "value": "ccollins",
+    "is_private": true,
+    "subscription_attribute_type": 9,
+    "subscription": 3,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:28:09.581Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionattribute",
+  "pk": 8,
+  "fields": {
+    "id": 5,
+    "created": "2018-10-04T21:28:09.567Z",
+    "modified": "2018-10-04T21:28:09.583Z",
+    "value": "Fairshare=parent",
+    "is_private": true,
+    "subscription_attribute_type": 17,
+    "subscription": 3,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:28:09.582Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionattribute",
+  "pk": 9,
+  "fields": {
+    "id": 6,
+    "created": "2018-10-04T21:28:41.372Z",
+    "modified": "2018-10-04T21:28:41.388Z",
+    "value": "ccollins",
+    "is_private": true,
+    "subscription_attribute_type": 16,
+    "subscription": 3,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:28:41.388Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionattribute",
+  "pk": 10,
+  "fields": {
+    "id": 4,
+    "created": "2018-10-04T21:28:09.566Z",
+    "modified": "2018-10-04T21:29:34.356Z",
+    "value": "ccollins",
+    "is_private": false,
+    "subscription_attribute_type": 9,
+    "subscription": 3,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:29:34.356Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionattribute",
+  "pk": 11,
+  "fields": {
+    "id": 6,
+    "created": "2018-10-04T21:28:41.372Z",
+    "modified": "2018-10-04T21:29:43.826Z",
+    "value": "ccollins",
+    "is_private": false,
+    "subscription_attribute_type": 16,
+    "subscription": 3,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:29:43.826Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionattributeusage",
+  "pk": 1,
+  "fields": {
+    "created": "2018-10-04T21:22:25.054Z",
+    "modified": "2018-10-04T21:22:25.061Z",
+    "value": 500.0,
+    "subscription_attribute": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:22:25.061Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionattributeusage",
+  "pk": 2,
+  "fields": {
+    "created": "2018-10-04T21:23:41.509Z",
+    "modified": "2018-10-04T21:23:41.510Z",
+    "value": 0.0,
+    "subscription_attribute": 2,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:23:41.509Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionattributeusage",
+  "pk": 3,
+  "fields": {
+    "created": "2018-10-04T21:23:41.509Z",
+    "modified": "2018-10-04T21:24:04.545Z",
+    "value": 450.0,
+    "subscription_attribute": 2,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:24:04.545Z",
+    "history_user": 1,
+    "history_type": "~"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionuser",
+  "pk": 1,
+  "fields": {
+    "id": 1,
+    "created": "2018-10-04T19:56:29.561Z",
+    "modified": "2018-10-04T19:56:29.573Z",
+    "subscription": 1,
+    "user": 4,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:56:29.572Z",
+    "history_user": 4,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionuser",
+  "pk": 2,
+  "fields": {
+    "id": 2,
+    "created": "2018-10-04T19:56:39.865Z",
+    "modified": "2018-10-04T19:56:39.875Z",
+    "subscription": 2,
+    "user": 4,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:56:39.875Z",
+    "history_user": 4,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionuser",
+  "pk": 3,
+  "fields": {
+    "id": 3,
+    "created": "2018-10-04T19:59:05.382Z",
+    "modified": "2018-10-04T19:59:05.392Z",
+    "subscription": 3,
+    "user": 4,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:59:05.392Z",
+    "history_user": 4,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionuser",
+  "pk": 4,
+  "fields": {
+    "id": 4,
+    "created": "2018-10-04T20:53:16.704Z",
+    "modified": "2018-10-04T20:53:16.715Z",
+    "subscription": 1,
+    "user": 7,
+    "status": 3,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T20:53:16.715Z",
+    "history_user": 4,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionuser",
+  "pk": 5,
+  "fields": {
+    "id": 5,
+    "created": "2018-10-04T20:53:16.727Z",
+    "modified": "2018-10-04T20:53:16.750Z",
+    "subscription": 2,
+    "user": 7,
+    "status": 3,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T20:53:16.749Z",
+    "history_user": 4,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionuser",
+  "pk": 6,
+  "fields": {
+    "id": 6,
+    "created": "2018-10-04T20:53:16.760Z",
+    "modified": "2018-10-04T20:53:16.771Z",
+    "subscription": 3,
+    "user": 7,
+    "status": 3,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T20:53:16.770Z",
+    "history_user": 4,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionuser",
+  "pk": 7,
+  "fields": {
+    "id": 7,
+    "created": "2018-10-04T20:53:48.156Z",
+    "modified": "2018-10-04T20:53:48.166Z",
+    "subscription": 1,
+    "user": 8,
+    "status": 3,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T20:53:48.166Z",
+    "history_user": 4,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionuser",
+  "pk": 8,
+  "fields": {
+    "id": 8,
+    "created": "2018-10-04T20:53:48.178Z",
+    "modified": "2018-10-04T20:53:48.190Z",
+    "subscription": 3,
+    "user": 8,
+    "status": 3,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T20:53:48.189Z",
+    "history_user": 4,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionuser",
+  "pk": 9,
+  "fields": {
+    "id": 9,
+    "created": "2018-10-04T20:54:14.495Z",
+    "modified": "2018-10-04T20:54:14.507Z",
+    "subscription": 1,
+    "user": 9,
+    "status": 3,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T20:54:14.506Z",
+    "history_user": 4,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionuser",
+  "pk": 10,
+  "fields": {
+    "id": 10,
+    "created": "2018-10-04T21:17:47.342Z",
+    "modified": "2018-10-04T21:17:47.352Z",
+    "subscription": 4,
+    "user": 5,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:17:47.352Z",
+    "history_user": 5,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionuser",
+  "pk": 11,
+  "fields": {
+    "id": 11,
+    "created": "2018-10-04T21:18:06.984Z",
+    "modified": "2018-10-04T21:18:06.994Z",
+    "subscription": 5,
+    "user": 5,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:18:06.994Z",
+    "history_user": 5,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionuser",
+  "pk": 12,
+  "fields": {
+    "id": 12,
+    "created": "2018-10-04T21:18:18.210Z",
+    "modified": "2018-10-04T21:18:18.220Z",
+    "subscription": 6,
+    "user": 5,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:18:18.219Z",
+    "history_user": 5,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionuser",
+  "pk": 13,
+  "fields": {
+    "id": 13,
+    "created": "2018-10-04T21:18:30.720Z",
+    "modified": "2018-10-04T21:18:30.730Z",
+    "subscription": 4,
+    "user": 26,
+    "status": 3,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:18:30.730Z",
+    "history_user": 5,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionuser",
+  "pk": 14,
+  "fields": {
+    "id": 14,
+    "created": "2018-10-04T21:18:30.741Z",
+    "modified": "2018-10-04T21:18:30.752Z",
+    "subscription": 5,
+    "user": 26,
+    "status": 3,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:18:30.752Z",
+    "history_user": 5,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionuser",
+  "pk": 15,
+  "fields": {
+    "id": 15,
+    "created": "2018-10-04T21:18:30.764Z",
+    "modified": "2018-10-04T21:18:30.774Z",
+    "subscription": 6,
+    "user": 26,
+    "status": 3,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:18:30.774Z",
+    "history_user": 5,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionuser",
+  "pk": 16,
+  "fields": {
+    "id": 16,
+    "created": "2018-10-04T21:19:08.652Z",
+    "modified": "2018-10-04T21:19:08.664Z",
+    "subscription": 5,
+    "user": 34,
+    "status": 3,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:19:08.664Z",
+    "history_user": 5,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.historicalsubscriptionuser",
+  "pk": 17,
+  "fields": {
+    "id": 17,
+    "created": "2018-10-04T21:19:08.675Z",
+    "modified": "2018-10-04T21:19:08.687Z",
+    "subscription": 6,
+    "user": 34,
+    "status": 3,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:19:08.686Z",
+    "history_user": 5,
+    "history_type": "+"
+  }
+},
+{
+  "model": "subscription.subscriptionuser",
+  "pk": 1,
+  "fields": {
+    "created": "2018-10-04T19:56:29.561Z",
+    "modified": "2018-10-04T19:56:29.561Z",
+    "subscription": 1,
+    "user": 4,
+    "status": 1
+  }
+},
+{
+  "model": "subscription.subscriptionuser",
+  "pk": 2,
+  "fields": {
+    "created": "2018-10-04T19:56:39.865Z",
+    "modified": "2018-10-04T19:56:39.866Z",
+    "subscription": 2,
+    "user": 4,
+    "status": 1
+  }
+},
+{
+  "model": "subscription.subscriptionuser",
+  "pk": 3,
+  "fields": {
+    "created": "2018-10-04T19:59:05.382Z",
+    "modified": "2018-10-04T19:59:05.383Z",
+    "subscription": 3,
+    "user": 4,
+    "status": 1
+  }
+},
+{
+  "model": "subscription.subscriptionuser",
+  "pk": 4,
+  "fields": {
+    "created": "2018-10-04T20:53:16.704Z",
+    "modified": "2018-10-04T20:53:16.704Z",
+    "subscription": 1,
+    "user": 7,
+    "status": 1
+  }
+},
+{
+  "model": "subscription.subscriptionuser",
+  "pk": 5,
+  "fields": {
+    "created": "2018-10-04T20:53:16.727Z",
+    "modified": "2018-10-04T20:53:16.727Z",
+    "subscription": 2,
+    "user": 7,
+    "status": 1
+  }
+},
+{
+  "model": "subscription.subscriptionuser",
+  "pk": 6,
+  "fields": {
+    "created": "2018-10-04T20:53:16.760Z",
+    "modified": "2018-10-04T20:53:16.760Z",
+    "subscription": 3,
+    "user": 7,
+    "status": 1
+  }
+},
+{
+  "model": "subscription.subscriptionuser",
+  "pk": 7,
+  "fields": {
+    "created": "2018-10-04T20:53:48.156Z",
+    "modified": "2018-10-04T20:53:48.156Z",
+    "subscription": 1,
+    "user": 8,
+    "status": 1
+  }
+},
+{
+  "model": "subscription.subscriptionuser",
+  "pk": 8,
+  "fields": {
+    "created": "2018-10-04T20:53:48.178Z",
+    "modified": "2018-10-04T20:53:48.179Z",
+    "subscription": 3,
+    "user": 8,
+    "status": 1
+  }
+},
+{
+  "model": "subscription.subscriptionuser",
+  "pk": 9,
+  "fields": {
+    "created": "2018-10-04T20:54:14.495Z",
+    "modified": "2018-10-04T20:54:14.496Z",
+    "subscription": 1,
+    "user": 9,
+    "status": 1
+  }
+},
+{
+  "model": "subscription.subscriptionuser",
+  "pk": 10,
+  "fields": {
+    "created": "2018-10-04T21:17:47.342Z",
+    "modified": "2018-10-04T21:17:47.343Z",
+    "subscription": 4,
+    "user": 5,
+    "status": 1
+  }
+},
+{
+  "model": "subscription.subscriptionuser",
+  "pk": 11,
+  "fields": {
+    "created": "2018-10-04T21:18:06.984Z",
+    "modified": "2018-10-04T21:18:06.984Z",
+    "subscription": 5,
+    "user": 5,
+    "status": 1
+  }
+},
+{
+  "model": "subscription.subscriptionuser",
+  "pk": 12,
+  "fields": {
+    "created": "2018-10-04T21:18:18.210Z",
+    "modified": "2018-10-04T21:18:18.210Z",
+    "subscription": 6,
+    "user": 5,
+    "status": 1
+  }
+},
+{
+  "model": "subscription.subscriptionuser",
+  "pk": 13,
+  "fields": {
+    "created": "2018-10-04T21:18:30.720Z",
+    "modified": "2018-10-04T21:18:30.720Z",
+    "subscription": 4,
+    "user": 26,
+    "status": 1
+  }
+},
+{
+  "model": "subscription.subscriptionuser",
+  "pk": 14,
+  "fields": {
+    "created": "2018-10-04T21:18:30.741Z",
+    "modified": "2018-10-04T21:18:30.741Z",
+    "subscription": 5,
+    "user": 26,
+    "status": 1
+  }
+},
+{
+  "model": "subscription.subscriptionuser",
+  "pk": 15,
+  "fields": {
+    "created": "2018-10-04T21:18:30.764Z",
+    "modified": "2018-10-04T21:18:30.764Z",
+    "subscription": 6,
+    "user": 26,
+    "status": 1
+  }
+},
+{
+  "model": "subscription.subscriptionuser",
+  "pk": 16,
+  "fields": {
+    "created": "2018-10-04T21:19:08.652Z",
+    "modified": "2018-10-04T21:19:08.652Z",
+    "subscription": 5,
+    "user": 34,
+    "status": 1
+  }
+},
+{
+  "model": "subscription.subscriptionuser",
+  "pk": 17,
+  "fields": {
+    "created": "2018-10-04T21:19:08.675Z",
+    "modified": "2018-10-04T21:19:08.676Z",
+    "subscription": 6,
+    "user": 34,
+    "status": 1
+  }
+},
+{
+  "model": "grant.historicalgrant",
+  "pk": 1,
+  "fields": {
+    "id": 1,
+    "created": "2018-10-04T19:55:46.553Z",
+    "modified": "2018-10-04T19:55:46.568Z",
+    "title": "Angular momentum in QGP holography",
+    "grant_number": "111222333444",
+    "role": "PI",
+    "grant_pi_full_name": "Carl Collins",
+    "other_funding_agency": "",
+    "other_award_number": "",
+    "grant_start": "2018-10-01",
+    "grant_end": "2020-11-07",
+    "percent_credit": 5.0,
+    "direct_funding": 5000.0,
+    "total_amount_awarded": 500000.0,
+    "project": 1,
+    "funding_agency": 5,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:55:46.565Z",
+    "history_user": 4,
+    "history_type": "+"
+  }
+},
+{
+  "model": "grant.historicalgrant",
+  "pk": 2,
+  "fields": {
+    "id": 2,
+    "created": "2018-10-04T21:20:07.212Z",
+    "modified": "2018-10-04T21:20:07.227Z",
+    "title": "Quantum Hall transitions",
+    "grant_number": "111222334444",
+    "role": "CoPI",
+    "grant_pi_full_name": "John Smith",
+    "other_funding_agency": "",
+    "other_award_number": "",
+    "grant_start": "2018-10-01",
+    "grant_end": "2019-04-06",
+    "percent_credit": 1.0,
+    "direct_funding": 1000.0,
+    "total_amount_awarded": 100000.0,
+    "project": 2,
+    "funding_agency": 6,
+    "status": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:20:07.224Z",
+    "history_user": 5,
+    "history_type": "+"
+  }
+},
+{
+  "model": "publication.historicalpublication",
+  "pk": 1,
+  "fields": {
+    "id": 1,
+    "created": "2018-10-04T19:54:35.102Z",
+    "modified": "2018-10-04T19:54:35.115Z",
+    "title": "Angular momentum in QGP holography",
+    "author": "Brett McInnes",
+    "year": 2014,
+    "unique_id": "10.1016/j.nuclphysb.2014.08.011",
+    "status": "Active",
+    "project": 1,
+    "source": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T19:54:35.114Z",
+    "history_user": 4,
+    "history_type": "+"
+  }
+},
+{
+  "model": "publication.historicalpublication",
+  "pk": 2,
+  "fields": {
+    "id": 2,
+    "created": "2018-10-04T20:56:55.254Z",
+    "modified": "2018-10-04T20:56:55.269Z",
+    "title": "Magnetic excitations in the spinel compoundLix[Mn1.96Li0.04]O4(x=0.2,0.6,0.8,1.0): How a classical system can mimic quantum critical scaling",
+    "author": "Thomas Heitmann and Alexander Schmets and John Gaddy and Jagat Lamsal and Marcus Petrovic and Thomas Vojta and Wouter Montfrooij",
+    "year": 2010,
+    "unique_id": "10.1103/PhysRevB.81.014411",
+    "status": "Active",
+    "project": 1,
+    "source": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T20:56:55.268Z",
+    "history_user": 4,
+    "history_type": "+"
+  }
+},
+{
+  "model": "publication.historicalpublication",
+  "pk": 3,
+  "fields": {
+    "id": 3,
+    "created": "2018-10-04T20:57:20.624Z",
+    "modified": "2018-10-04T20:57:20.638Z",
+    "title": "Extreme sensitivity of a frustrated quantum magnet:Cs2CuCl4",
+    "author": "Oleg A. Starykh and Hosho Katsura and Leon Balents",
+    "year": 2010,
+    "unique_id": "10.1103/PhysRevB.82.014421",
+    "status": "Active",
+    "project": 1,
+    "source": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T20:57:20.638Z",
+    "history_user": 4,
+    "history_type": "+"
+  }
+},
+{
+  "model": "publication.historicalpublication",
+  "pk": 4,
+  "fields": {
+    "id": 4,
+    "created": "2018-10-04T21:05:19.422Z",
+    "modified": "2018-10-04T21:05:19.434Z",
+    "title": "Robust ferroelectric state in multiferroicMn1-xZnxWO4",
+    "author": "R. P. Chaudhury and F. Ye and J. A. Fernandez-Baca and B. Lorenz and Y. Q. Wang and Y. Y. Sun and H. A. Mook and C. W. Chu",
+    "year": 2011,
+    "unique_id": "10.1103/PhysRevB.83.014401",
+    "status": "Active",
+    "project": 1,
+    "source": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:05:19.433Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "publication.historicalpublication",
+  "pk": 5,
+  "fields": {
+    "id": 5,
+    "created": "2018-10-04T21:05:35.487Z",
+    "modified": "2018-10-04T21:05:35.498Z",
+    "title": "Interaction effects in topological superconducting wires supporting Majorana fermions",
+    "author": "E. M. Stoudenmire and Jason Alicea and Oleg A. Starykh and Matthew P.A. Fisher",
+    "year": 2011,
+    "unique_id": "10.1103/PhysRevB.84.014503",
+    "status": "Active",
+    "project": 1,
+    "source": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:05:35.498Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "publication.historicalpublication",
+  "pk": 6,
+  "fields": {
+    "id": 6,
+    "created": "2018-10-04T21:06:00.058Z",
+    "modified": "2018-10-04T21:06:00.070Z",
+    "title": "Lattice constants from semilocal density functionals with zero-point phonon correction",
+    "author": "Pan Hao and Yuan Fang and Jianwei Sun and G\\'abor I. Csonka and Pier H. T. Philipsen and John P. Perdew",
+    "year": 2012,
+    "unique_id": "10.1103/PhysRevB.85.014111",
+    "status": "Active",
+    "project": 1,
+    "source": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:06:00.069Z",
+    "history_user": 1,
+    "history_type": "+"
+  }
+},
+{
+  "model": "publication.historicalpublication",
+  "pk": 7,
+  "fields": {
+    "id": 7,
+    "created": "2018-10-04T21:16:49.095Z",
+    "modified": "2018-10-04T21:16:49.109Z",
+    "title": "Logarithmic correlations in quantum Hall plateau transitions",
+    "author": "Romain Vasseur",
+    "year": 2015,
+    "unique_id": "10.1103/PhysRevB.92.014205",
+    "status": "Active",
+    "project": 2,
+    "source": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:16:49.108Z",
+    "history_user": 5,
+    "history_type": "+"
+  }
+},
+{
+  "model": "publication.historicalpublication",
+  "pk": 8,
+  "fields": {
+    "id": 8,
+    "created": "2018-10-04T21:17:18.413Z",
+    "modified": "2018-10-04T21:17:18.425Z",
+    "title": "Anisotropic magnetocapacitance in ferromagnetic-plate capacitors",
+    "author": "J. A. Haigh and C. Ciccarelli and A. C. Betz and A. Irvine and V. Nov\\'ak and T. Jungwirth and J. Wunderlich",
+    "year": 2015,
+    "unique_id": "10.1103/PhysRevB.91.140409",
+    "status": "Active",
+    "project": 2,
+    "source": 1,
+    "history_change_reason": null,
+    "history_date": "2018-10-04T21:17:18.424Z",
+    "history_user": 5,
+    "history_type": "+"
+  }
+}
+]

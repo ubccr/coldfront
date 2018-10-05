@@ -34,6 +34,7 @@ INSTALLED_APPS += [
     'sslserver',
     'django_q',
     'hijack',
+    'compat',
     'hijack_admin',
     'simple_history',
 ]
@@ -148,6 +149,8 @@ LOGOUT_REDIRECT_URL = '/'
 
 HIJACK_USE_BOOTSTRAP = True
 HIJACK_ALLOW_GET_REQUESTS = True
+HIJACK_LOGIN_REDIRECT_URL = '/'  # Where admins are redirected to after hijacking a user
+HIJACK_LOGOUT_REDIRECT_URL = '/admin/auth/user/'  # Where admins are redirected to after releasing a user
 
 #------------------------------------------------------------------------------
 # Local settings overrides (see local_settings.py.sample)

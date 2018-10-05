@@ -87,7 +87,7 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
         if self.request.user.is_superuser:
             attributes_with_usage = [attribute for attribute in self.object.subscriptionattribute_set.all() if hasattr(attribute, 'subscriptionattributeusage')]
 
-            attributes_without_usage = [attribute for attribute in self.object.subscriptionattribute_set.all() if not hasattr(attribute, 'subscriptionattributeusage')]
+            attributes_without_usage = [attribute for attribute in self.object.subscriptionattribute_set.all().order_by('subscription_attribute_type__name') if not hasattr(attribute, 'subscriptionattributeusage')]
 
         else:
             attributes_with_usage = [attribute for attribute in self.object.subscriptionattribute_set.filter(is_private=False) if hasattr(attribute, 'subscriptionattributeusage')]
@@ -360,13 +360,14 @@ class SubscriptionCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         domain_url = get_domain_url(self.request)
         url = '{}{}'.format(domain_url, reverse('subscription-request-list'))
 
-        template_context = {
-            'pi': pi_name,
-            'resource': resource_name,
-            'url': url
-        }
 
         if EMAIL_ENABLED:
+            template_context = {
+                'pi': pi_name,
+                'resource': resource_name,
+                'url': url
+            }
+
             send_email_template(
                 'New subscription request: {} - {}'.format(pi_name, resource_name),
                 'email/new_subscription_request.txt',
@@ -629,23 +630,25 @@ class SubscriptionActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, V
         domain_url = get_domain_url(self.request)
         subscription_url = '{}{}'.format(domain_url, reverse('subscription-detail', kwargs={'pk': subscription_obj.pk}))
 
-        template_context = {
-            'center_name': EMAIL_CENTER_NAME,
-            'resource': resource_name,
-            'subscription_url': subscription_url,
-            'signature': EMAIL_SIGNATURE,
-            'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
-        }
-
-        email_receiver_list = []
-
-        for subscription_user in subscription_obj.subscriptionuser_set.exclude(status__name__in=['Removed', 'Error']):
-            subscription_activate_user.send(sender=self.__class__, subscription_user_pk=subscription_user.pk)
-            if subscription_user.subscription.project.projectuser_set.get(user=subscription_user.user).enable_notifications:
-                email_receiver_list.append(subscription_user.user.email)
 
 
         if EMAIL_ENABLED:
+            template_context = {
+                'center_name': EMAIL_CENTER_NAME,
+                'resource': resource_name,
+                'subscription_url': subscription_url,
+                'signature': EMAIL_SIGNATURE,
+                'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
+            }
+
+            email_receiver_list = []
+
+            for subscription_user in subscription_obj.subscriptionuser_set.exclude(status__name__in=['Removed', 'Error']):
+                subscription_activate_user.send(sender=self.__class__, subscription_user_pk=subscription_user.pk)
+                if subscription_user.subscription.project.projectuser_set.get(user=subscription_user.user).enable_notifications:
+                    email_receiver_list.append(subscription_user.user.email)
+
+
             send_email_template(
                 'Subscription Activated',
                 'email/subscription_activated.txt',
@@ -690,20 +693,22 @@ class SubscriptionDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View)
         domain_url = get_domain_url(self.request)
         subscription_url = '{}{}'.format(domain_url, reverse('subscription-detail', kwargs={'pk': subscription_obj.pk}))
 
-        template_context = {
-            'center_name': EMAIL_CENTER_NAME,
-            'resource': resource_name,
-            'subscription_url': subscription_url,
-            'signature': EMAIL_SIGNATURE,
-            'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
-        }
-
-        email_receiver_list = []
-        for subscription_user in subscription_obj.project.projectuser_set.all():
-            if subscription_user.enable_notifications:
-                email_receiver_list.append(subscription_user.user.email)
 
         if EMAIL_ENABLED:
+            template_context = {
+                'center_name': EMAIL_CENTER_NAME,
+                'resource': resource_name,
+                'subscription_url': subscription_url,
+                'signature': EMAIL_SIGNATURE,
+                'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
+            }
+
+            email_receiver_list = []
+            for subscription_user in subscription_obj.project.projectuser_set.all():
+                if subscription_user.enable_notifications:
+                    email_receiver_list.append(subscription_user.user.email)
+
+
             send_email_template(
                 'Subscription Denied',
                 'email/subscription_denied.txt',
@@ -867,14 +872,15 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
             resource_name = new_subscription_obj.get_parent_resource
             domain_url = get_domain_url(self.request)
             url = '{}{}'.format(domain_url, reverse('subscription-request-list'))
-            template_context = {
-                'pi': pi_name,
-                'resource': resource_name,
-                'url': url
-            }
 
 
             if EMAIL_ENABLED:
+                template_context = {
+                    'pi': pi_name,
+                    'resource': resource_name,
+                    'url': url
+                }
+
                 send_email_template(
                     'Subscription renewed: {} - {}'.format(pi_name, resource_name),
                     'email/subscription_renewed.txt',
