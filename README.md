@@ -77,7 +77,7 @@ python manage.py initial_setup
 python manage.py createsuperuser
 ```
 
-7. Optional: Add some dummy data
+8. Optional: Add some dummy data
 ```
 python manage.py load_dummy_data
 ```
