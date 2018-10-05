@@ -77,9 +77,9 @@ python manage.py initial_setup
 python manage.py createsuperuser
 ```
 
-8. Optional: Add some dummy data
+8. Optional: Add some test data
 ```
-python manage.py load_dummy_data
+python manage.py load_test_data
 ```
 
 9. Start development server
@@ -91,8 +91,9 @@ python manage.py runserver 0.0.0.0:8000
 
 You can log in as `admin` with password `test1234`. 
 You can log in as a PI using username `ccollins` with password `test1234`.
-You can log in as director role using username `michardson` with password `test1234`.
+You can log in as center director using username `michardson` with password `test1234`.
 
+Password for all users is also `teset1234`. 
 
 
 ## Directory structure

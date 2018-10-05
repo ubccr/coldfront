@@ -11,7 +11,7 @@ base_dir = settings.BASE_DIR
 class Command(BaseCommand):
 
     def handle(self, *args, **options):
-        call_command('loaddata', 'dummy_data.json')
+        call_command('loaddata', 'test_data.json')
         for user in User.objects.all():
             user.set_password('test1234')
             user.save()
