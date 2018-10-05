@@ -21,7 +21,11 @@ Python and released under the GPLv3 license.
 1. Coldfront requires Python 3.6, memcached, and redis. 
 
 ### CentOS (7.5)
+
+Install EPEL then install required packages:
+
 ```
+sudo yum install epel-release
 sudo yum install python36 python36-devel memcached redis
 ``` 
 
