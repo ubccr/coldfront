@@ -87,8 +87,11 @@ python manage.py load_dummy_data
 python manage.py runserver 0.0.0.0:8000
 ```
 
-
 10. Point your browser to http://localhost:8000
+
+You can log in as `admin` with password `test1234`. 
+You can log in as a PI using username `ccollins` with password `test1234`.
+You can log in as director role using username `michardson` with password `test1234`.
 
 
 
