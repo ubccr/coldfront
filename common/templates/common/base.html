@@ -53,8 +53,9 @@
   <title> {% block title %}Welcome to Coldfront {% endblock %} </title>
 
 </head>
-{% hijack_notification %}
 <body>
+{% include "su/is_su.html" %}
+
   {% if user.is_authenticated %} 
     {% include 'common/authorized_navbar.html' %} 
   {% else %} 
