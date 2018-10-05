@@ -1,0 +1,9 @@
+{% load i18n %}
+{% if IS_SU %}
+<div id="hijacked-warning" class="alert hijacked-warning hijacked-warning-bootstrap" role="alert">
+    {% blocktrans with user=request.user%}You are currently working on behalf of {{ user }}.{% endblocktrans %}
+    <div class="hijacked-warning-controls">
+        <a class="btn btn-default btn-sm django-hijack-button-default" href="{% url 'su_logout' %}">{% blocktrans with user=request.user %}release {{ user }}{% endblocktrans %}</a>
+    </div>
+</div>
+{% endif %}

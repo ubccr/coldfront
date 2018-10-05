@@ -101,6 +101,11 @@ EXTRA_AUTHENTICATION_BACKENDS = []
 # """
 
 #------------------------------------------------------------------------------
+# Enable administrators to login as other users
+#------------------------------------------------------------------------------
+# EXTRA_AUTHENTICATION_BACKENDS += ['django_su.backends.SuBackend',]
+
+#------------------------------------------------------------------------------
 # Enable LDAP user searches. This will be used when searching users to add to
 # projects/subscriptions.
 #------------------------------------------------------------------------------

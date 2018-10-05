@@ -33,9 +33,6 @@ INSTALLED_APPS += [
     'crispy_forms',
     'sslserver',
     'django_q',
-    'hijack',
-    'compat',
-    'hijack_admin',
     'simple_history',
 ]
 
@@ -147,10 +144,8 @@ LOGIN_URL = '/user/login'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
-HIJACK_USE_BOOTSTRAP = True
-HIJACK_ALLOW_GET_REQUESTS = True
-HIJACK_LOGIN_REDIRECT_URL = '/'  # Where admins are redirected to after hijacking a user
-HIJACK_LOGOUT_REDIRECT_URL = '/admin/auth/user/'  # Where admins are redirected to after releasing a user
+SU_LOGIN_CALLBACK = "common.djangolibs.utils.su_login_callback"
+SU_LOGOUT_REDIRECT_URL = "/admin/auth/user/"
 
 #------------------------------------------------------------------------------
 # Local settings overrides (see local_settings.py.sample)
@@ -181,3 +176,8 @@ try:
     AUTHENTICATION_BACKENDS = AUTHENTICATION_BACKENDS + EXTRA_AUTHENTICATION_BACKENDS
 except NameError:
     AUTHENTICATION_BACKENDS = AUTHENTICATION_BACKENDS
+
+
+if 'django_su.backends.SuBackend' in EXTRA_AUTHENTICATION_BACKENDS:
+    INSTALLED_APPS.insert(0, 'django_su')
+    TEMPLATES[0]['OPTIONS']['context_processors'].extend(['django_su.context_processors.is_su', ])

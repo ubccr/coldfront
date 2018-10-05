@@ -48,3 +48,13 @@ class Echo:
     def write(self, value):
         """Write the value by returning it, instead of storing in a buffer."""
         return value
+
+
+def su_login_callback(user):
+    """Only superusers are allowed to login as other users
+    """
+    if user.is_active and user.is_superuser:
+        return True
+
+    logger.warn('User {} requested to login as another user but does not have permissions', user)
+    return False

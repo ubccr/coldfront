@@ -5,14 +5,12 @@ blessed==1.15.0
 certifi==2018.8.24
 chardet==3.0.4
 Django==2.1.2
-django-compat==1.0.15
 django-crispy-forms==1.7.2
-django-hijack==2.1.10
-django-hijack-admin==2.1.10
 django-model-utils==3.1.2
 django-picklefield==1.1.0
 django-q==1.0.1
 django-simple-history==2.4.0
+django-su==0.8.0
 django-sslserver==0.20
 doi2bib==0.3.0
 future==0.16.0

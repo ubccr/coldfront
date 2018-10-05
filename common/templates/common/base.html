@@ -1,6 +1,5 @@
 {% load static %}
 {% load staticfiles %}
-{% load hijack_tags %}
 
 <!DOCTYPE html>
 <html lang="en">
@@ -44,8 +43,6 @@
   
   <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
   <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js"></script>
-  <!-- Django-Hijack -->
-  <link rel="stylesheet" type="text/css" href="{% static 'hijack/hijack-styles.css' %}" />
 
    <!-- Custom -->
   <link rel="stylesheet" href="{% static 'common/css/common.css' %}">
@@ -53,8 +50,9 @@
   <title> {% block title %}Welcome to Coldfront {% endblock %} </title>
 
 </head>
-{% hijack_notification %}
 <body>
+{% include "su/is_su.html" %}
+
   {% if user.is_authenticated %} 
     {% include 'common/authorized_navbar.html' %} 
   {% else %} 

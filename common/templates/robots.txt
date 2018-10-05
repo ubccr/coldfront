@@ -1,6 +1,6 @@
 User-agent: *
 Disallow: /admin/
-Disallow: /hijack/ 
+Disallow: /su/ 
 Disallow: /user/ 
 Disallow: /project/ 
 Disallow: /subscription/ 
