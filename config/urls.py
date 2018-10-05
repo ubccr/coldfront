@@ -10,7 +10,6 @@ import core.djangoapps.portal.views as portal_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('hijack/', include('hijack.urls', namespace='hijack')),
     path('robots.txt', TemplateView.as_view(template_name='robots.txt', content_type='text/plain'), name="robots"),
     path('', portal_views.home, name='home'),
     path('center-summary', portal_views.center_summary, name='center-summary'),
@@ -29,3 +28,6 @@ if 'extra.djangoapps.iquota' in settings.EXTRA_APPS:
 
 if 'extra.djangoapps.mokey_oidc' in settings.EXTRA_APPS:
     urlpatterns.append(path('oidc/', include('mozilla_django_oidc.urls')))
+
+if 'django_su.backends.SuBackend' in settings.EXTRA_AUTHENTICATION_BACKENDS:
+    urlpatterns.append(path('su/', include('django_su.urls')))
