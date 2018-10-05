@@ -87,7 +87,9 @@ python manage.py load_dummy_data
 python manage.py runserver 0.0.0.0:8000
 ```
 
+
 10. Point your browser to http://localhost:8000
+
 
 
 ## Directory structure
