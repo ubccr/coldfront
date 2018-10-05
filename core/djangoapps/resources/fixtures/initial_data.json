@@ -172,5 +172,53 @@
     "is_unique_per_resource": false,
     "is_value_unique": false
   }
+},
+{
+  "model": "resources.resourcetype",
+  "pk": 1,
+  "fields": {
+    "name": "Cloud",
+    "description": "Cloud computing"
+  }
+},
+{
+  "model": "resources.resourcetype",
+  "pk": 2,
+  "fields": {
+    "name": "Cluster",
+    "description": "Cluster servers"
+  }
+},
+{
+  "model": "resources.resourcetype",
+  "pk": 3,
+  "fields": {
+    "name": "Cluster Partition",
+    "description": "Cluster Partition"
+  }
+},
+{
+  "model": "resources.resourcetype",
+  "pk": 4,
+  "fields": {
+    "name": "Server",
+    "description": "Extra servers providing various services"
+  }
+},
+{
+  "model": "resources.resourcetype",
+  "pk": 5,
+  "fields": {
+    "name": "Software License",
+    "description": "Software licenses purchased by users"
+  }
+},
+{
+  "model": "resources.resourcetype",
+  "pk": 6,
+  "fields": {
+    "name": "Storage",
+    "description": "NAS storage"
+  }
 }
 ]

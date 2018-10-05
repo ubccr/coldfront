@@ -46,17 +46,17 @@ def generate_resources_chart_data(subscriptions_count_by_resource_type):
 
 
     if subscriptions_count_by_resource_type:
-        cluster_label = "Cluster: %d" % (subscriptions_count_by_resource_type['Cluster'])
-        cloud_label = "Cloud: %d" % (subscriptions_count_by_resource_type['Cloud'])
-        server_label = "Server: %d" % (subscriptions_count_by_resource_type['Server'])
-        storage_label = "Storage: %d" % (subscriptions_count_by_resource_type['Storage'])
+        cluster_label = "Cluster: %d" % (subscriptions_count_by_resource_type.get('Cluster', 0))
+        cloud_label = "Cloud: %d" % (subscriptions_count_by_resource_type.get('Cloud', 0))
+        server_label = "Server: %d" % (subscriptions_count_by_resource_type.get('Server', 0))
+        storage_label = "Storage: %d" % (subscriptions_count_by_resource_type.get('Storage', 0))
 
         resource_plot_data = {
             "columns": [
-                [cluster_label, subscriptions_count_by_resource_type['Cluster']],
-                [storage_label, subscriptions_count_by_resource_type['Storage']],
-                [cloud_label, subscriptions_count_by_resource_type['Cloud']],
-                [server_label, subscriptions_count_by_resource_type['Server']],
+                [cluster_label, subscriptions_count_by_resource_type.get('Cluster', 0)],
+                [storage_label, subscriptions_count_by_resource_type.get('Storage', 0)],
+                [cloud_label, subscriptions_count_by_resource_type.get('Cloud', 0)],
+                [server_label, subscriptions_count_by_resource_type.get('Server', 0)]
 
             ],
             "type": 'donut',
