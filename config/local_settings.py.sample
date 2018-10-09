@@ -204,7 +204,7 @@ EXTRA_AUTHENTICATION_BACKENDS = []
 #------------------------------------------------------------------------------
 # Enable Slurm support
 #------------------------------------------------------------------------------
-EXTRA_APPS += [
-    'extra.djangoapps.slurm',
-]
-SLURM_SACCTMGR_PATH = '/usr/bin/sacctmgr' 
+# EXTRA_APPS += [
+#     'extra.djangoapps.slurm',
+# ]
+# SLURM_SACCTMGR_PATH = '/usr/bin/sacctmgr' 
