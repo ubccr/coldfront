@@ -8,7 +8,8 @@ app enabled, when a user is added/removed from a subscription, they are also
 added/removed from any configured FreeIPA unix groups. If a host has the
 appropriate HBAC rule in place to restrict access to only allowed groups then
 this can provide a way for PI's in Coldfront to manage access to their
-resources.
+resources. This app also provides searching FreeIPA LDAP when adding users to
+projects and subscriptions.
 
 ## Design
 
@@ -45,6 +46,9 @@ local\_settings.py file:
     ]
     FREEIPA_KTNAME = '/path/to/user.keytab'
     FREEIPA_GROUP_ATTRIBUTE_NAME = 'freeipa_group' 
+    FREEIPA_SERVER = 'freeipa.localhost.localdomain'
+    FREEIPA_USER_SEARCH_BASE = 'cn=users,cn=accounts,dc=example,dc=edu'
+    ADDITIONAL_USER_SEARCH_CLASSES = ['extra.djangoapps.freeipa.search.LDAPUserSearch',]
 ```
 
 The "FREEIPA\_KTNAME" should be the path to the keytab file for a user in

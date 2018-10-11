@@ -1,8 +1,11 @@
-# LDAP user search for Coldfront
+# Example custom LDAP user search for Coldfront
 
 Coldfront django extra app providing user searching using LDAP. When adding
 users to a subscription or a project, Coldfront will by default look in the
-local database only. This app enables searching an LDAP directory.
+local database only. This app enables searching an LDAP directory. This is just
+an example and the code will most likely need to be adapted to your particular
+LDAP schema. See the code in utils.py and modify accordingly. Also see the
+search.py code in the FreeIPA extra app.
 
 ## Design
 
