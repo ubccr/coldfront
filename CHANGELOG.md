@@ -6,6 +6,10 @@
 - Add links to all projects and subscriptions for admin and director 
 - Move template inside email conditional.
 - Remove django-hijack. Switch to using django-su. Fixes #85
+- Add freeipa consistency checker command line tool
+- Add freeipa ldap user search
+- Limit freeipa LDAP searching to enabled users
+- Limit local searches to active users
 
 ## [0.0.1] - 2018-10-03
 - Initial release
