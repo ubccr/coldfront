@@ -1,4 +1,5 @@
 import abc
+import logging
 
 from django.contrib.auth.models import User
 from django.db.models import Q
@@ -6,6 +7,7 @@ from django.utils.module_loading import import_string
 
 from common.djangolibs.utils import import_from_settings
 
+logger = logging.getLogger(__name__)
 
 class UserSearch(abc.ABC):
 
@@ -46,10 +48,10 @@ class LocalUserSearch(UserSearch):
                 Q(first_name__icontains=user_search_string) |
                 Q(last_name__icontains=user_search_string) |
                 Q(email__icontains=user_search_string)
-            ).distinct()[:size_limit]
+            ).filter(Q(is_active=True)).distinct()[:size_limit]
 
         elif user_search_string and search_by == 'username_only':
-            entries = User.objects.filter(username=user_search_string)
+            entries = User.objects.filter(username=user_search_string, is_active=True)
         else:
             User.objects.all()[:size_limit]
 
@@ -65,6 +67,7 @@ class LocalUserSearch(UserSearch):
                 }
                 users.append(user_dict)
 
+        logger.info("Local user search for %s found %s results", user_search_string, len(users))
         return users
 
 
