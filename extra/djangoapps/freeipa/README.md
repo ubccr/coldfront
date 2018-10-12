@@ -11,6 +11,10 @@ this can provide a way for PI's in Coldfront to manage access to their
 resources. This app also provides searching FreeIPA LDAP when adding users to
 projects and subscriptions.
 
+A command line tool is also provided with this app that allows an administrator
+to check the consistency between Colfront and FreeIPA and optionally sync any
+discrepancies. 
+
 ## Design
 
 FreeIPA unix groups can be set on a per subscription basis using using a
@@ -54,8 +58,39 @@ local\_settings.py file:
 The "FREEIPA\_KTNAME" should be the path to the keytab file for a user in
 FreeIPA with the appropriate permissions for modifing group membership. The
 easiest way to do this in FreeIPA is to create a new role for Coldfront with
-the "Modify Group membership" priviledge. Then create a user account
+the "Modify Group membership" privilege. Then create a user account
 specifically for use with Coldfront and assign them this role. Then export a
 keytab for that user. "FREEIPA\_GROUP\_ATTRIBUTE\_NAME" is optional and is the
 name of the subscription attribute for the unix group. Default is
 "freeipa\_group".
+
+## CLI Usage
+
+To check the consistency between Coldfront and FreeIPA run the following command:
+
+```
+    $ python manage.py freeipa_check
+```
+
+This will process all active subscriptions that have a "freeipa\_group"
+attribute and check that active users are members of that group and removed
+users are not members of that group in freeipa. You can optionally provide the
+'--sync' flag and this tool will modify group membership in FreeIPA. This will
+also update user status in Coldfront to match that in freeipa.
+
+```
+    $ python manage.py freeipa_check --sync
+```
+
+To get verbose logging run:
+
+```
+    $ python manage.py freeipa_check --sync --verbosity 2
+```
+
+You can also optionally limit to specific users and groups:
+
+```
+    $ python manage.py freeipa_check --username jane --group academic --verbosity 2
+
+```
