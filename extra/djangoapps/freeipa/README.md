@@ -24,9 +24,9 @@ subscription will then automatically be added/removed from the group in
 FreeIPA. You can specify more than one group by simply adding multiple
 "freeipa\_group" subscription attributes. This app subscribes to specific
 Coldfront signals that are sent whenever a user is added or removed from a
-subscription and submits a job to django-q. The tasks run by django-q are
-defined in tasks.py and interact with the FreeIPA API using the ipaclient
-python library.
+subscription and the signals in turn submit jobs to django-q. The tasks run by
+django-q are defined in tasks.py and interact with the FreeIPA API using the
+ipaclient python library.
 
 ## Requirements
 
@@ -56,7 +56,7 @@ local\_settings.py file:
 ```
 
 The "FREEIPA\_KTNAME" should be the path to the keytab file for a user in
-FreeIPA with the appropriate permissions for modifing group membership. The
+FreeIPA with the appropriate permissions for modifying group membership. The
 easiest way to do this in FreeIPA is to create a new role for Coldfront with
 the "Modify Group membership" privilege. Then create a user account
 specifically for use with Coldfront and assign them this role. Then export a
