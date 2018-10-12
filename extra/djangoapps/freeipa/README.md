@@ -12,7 +12,7 @@ resources. This app also provides searching FreeIPA LDAP when adding users to
 projects and subscriptions.
 
 A command line tool is also provided with this app that allows an administrator
-to check the consistency between Colfront and FreeIPA and optionally sync any
+to check the consistency between Coldfront and FreeIPA and optionally sync any
 discrepancies. 
 
 ## Design
