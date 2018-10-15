@@ -14,15 +14,16 @@ from common.djangolibs.mail import send_email_template
 logger = logging.getLogger(__name__)
 
 
+CENTER_NAME = import_from_settings('CENTER_NAME')
+CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
+
 EMAIL_DEVELOPMENT_EMAIL_LIST = import_from_settings('EMAIL_DEVELOPMENT_EMAIL_LIST')
 EMAIL_SUBJECT_PREFIX = import_from_settings('EMAIL_SUBJECT_PREFIX')
 EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
 EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
 EMAIL_OPT_OUT_INSTRUCTION_URL = import_from_settings('EMAIL_OPT_OUT_INSTRUCTION_URL')
 EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
-EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
 EMAIL_PROJECT_RENEWAL_HELP_URL = import_from_settings('EMAIL_PROJECT_RENEWAL_HELP_URL')
-CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
 EMAIL_SUBSCRIPTION_EXPIRING_NOTIFICATION_DAYS = import_from_settings('EMAIL_SUBSCRIPTION_EXPIRING_NOTIFICATION_DAYS')
 
 
@@ -49,7 +50,7 @@ def send_expiry_emails():
             resource_name = subscription_obj.get_parent_resource.name
 
             template_context = {
-                'center_name': EMAIL_CENTER_NAME,
+                'center_name': CENTER_NAME,
                 'subscription_type': resource_name,
                 'expring_in_days': days_remaining,
                 'subscripion_renew_url': subscripion_renew_url,
@@ -89,7 +90,7 @@ def send_expiry_emails():
         project_url = '{}/{}/{}/'.format(CENTER_BASE_URL.strip('/'), 'project', subscription_obj.project.pk)
 
         template_context = {
-            'center_name': EMAIL_CENTER_NAME,
+            'center_name': CENTER_NAME,
             'subscription_type': resource_name,
             'project_renewal_help_url': EMAIL_PROJECT_RENEWAL_HELP_URL,
             'project_url': project_url,

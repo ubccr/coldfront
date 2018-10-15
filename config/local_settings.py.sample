@@ -97,7 +97,6 @@ EXTRA_AUTHENTICATION_BACKENDS = []
 # EMAIL_PROJECT_REVIEW_CONTACT = 'review@localhost'
 # EMAIL_DEVELOPMENT_EMAIL_LIST = ['dev1@localhost', 'dev2@localhost']
 # EMAIL_OPT_OUT_INSTRUCTION_URL = 'http://localhost/optout'
-# EMAIL_CENTER_NAME = 'http://localhost/optout'
 # EMAIL_PROJECT_RENEWAL_HELP_URL = 'http://localhost/optout'
 # EMAIL_SUBSCRIPTION_EXPIRING_NOTIFICATION_DAYS = [7, 14, 30]
 # EMAIL_SIGNATURE = """
