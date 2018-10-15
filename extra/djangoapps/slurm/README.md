@@ -5,6 +5,10 @@ Subscriptions in Coldfront are marshalled out to Slurm associations in the
 Slurm flat file format and can be loaded with sacctmgr. For more information on
 the Slurm flat file format see [here](https://slurm.schedmd.com/sacctmgr.html).
 
+A command line tool is also provided with this app that allows an administrator
+to check the consistency between Coldfront and Slurm and optionally sync any
+discrepancies. 
+
 ## Design
 
 Resources in Coldfront map to Clusters (or partitions within a cluster) in
@@ -85,3 +89,33 @@ you would only set the "slurm\_cluster" resource attribute on the Slurm cluster
 resource and not on the partitions. Also, "slurm\_specs" resource attribute on
 paritions are merged with the subscription "slurm\_specs" and set on the Slurm
 account association instead of the cluster.
+
+## CLI Usage
+
+To check the consistency between Coldfront and Slurm run the following command:
+
+```
+    $ python manage.py slurm_check
+```
+
+This will process all active subscriptions that have a "slurm\_account\_name" subscription attribute and are subscribed to a resource with a "slurm\_cluster" resource attribute.
+Any active users are checked to ensure they have the correct Slurm association and removed
+users are checked to ensure they do not have an assocation. You can optionally provide the
+'--sync' flag and this tool will add/remove assocations in Slurm using sacctmgr.
+
+```
+    $ python manage.py slurm_check -v 0 -x
+```
+
+To get verbose logging run:
+
+```
+    $ python manage.py slurm_check -v 3 -x
+```
+
+You can also optionally limit to specific users and groups:
+
+```
+    $ python manage.py slurm_check -v 0 --username jane --account physics
+
+```

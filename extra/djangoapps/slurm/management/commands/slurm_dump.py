@@ -7,6 +7,8 @@ from django.db.models import Q
 
 from core.djangoapps.resources.models import Resource, ResourceAttribute
 from core.djangoapps.subscription.models import Subscription
+from extra.djangoapps.slurm.utils import SLURM_CLUSTER_ATTRIBUTE_NAME, \
+              SLURM_ACCOUNT_ATTRIBUTE_NAME, SLURM_SPECS_ATTRIBUTE_NAME, SLURM_USER_SPECS_ATTRIBUTE_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -23,14 +25,14 @@ class Command(BaseCommand):
         try:
             r = Resource.objects.get(
                     is_available=True,
-                    resourceattribute__resource_attribute_type__name='slurm_cluster',
+                    resourceattribute__resource_attribute_type__name=SLURM_CLUSTER_ATTRIBUTE_NAME,
                     resourceattribute__value=cluster,
                 )
         except:
             logger.warn("No resource found for Slurm cluster: %s", cluster)
             return
 
-        specs = r.resourceattribute_set.filter(resource_attribute_type__name='slurm_specs').first()
+        specs = r.resourceattribute_set.filter(resource_attribute_type__name=SLURM_SPECS_ATTRIBUTE_NAME).first()
         out.write("Cluster - '{}':{}\n".format(
             cluster,
             specs.value if specs else '',
@@ -47,13 +49,13 @@ class Command(BaseCommand):
     def write_account_from_subscription(self, out, sub, specs=[]):
         """Write out account assocation"""
         try:
-            slurm_account = sub.subscriptionattribute_set.get(subscription_attribute_type__name='slurm_account_name')
+            slurm_account = sub.subscriptionattribute_set.get(subscription_attribute_type__name=SLURM_ACCOUNT_ATTRIBUTE_NAME)
         except:
             logger.warn("No slurm account name found for subscription: %s", sub)
             return
             
-        user_specs = sub.subscriptionattribute_set.filter(subscription_attribute_type__name='slurm_user_specs').first()
-        sub_specs = sub.subscriptionattribute_set.filter(subscription_attribute_type__name='slurm_specs').first()
+        user_specs = sub.subscriptionattribute_set.filter(subscription_attribute_type__name=SLURM_USER_SPECS_ATTRIBUTE_NAME).first()
+        sub_specs = sub.subscriptionattribute_set.filter(subscription_attribute_type__name=SLURM_SPECS_ATTRIBUTE_NAME).first()
         if sub_specs:
             specs.append(sub_specs.value)
 
@@ -82,7 +84,7 @@ class Command(BaseCommand):
                 'subscriptionuser_set'
             ).filter(
                 status__name='Active',
-                subscriptionattribute__subscription_attribute_type__name='slurm_account_name',
+                subscriptionattribute__subscription_attribute_type__name=SLURM_ACCOUNT_ATTRIBUTE_NAME,
             )
 
         # For each subscription, fetch the subscribed resources that have a
@@ -90,16 +92,16 @@ class Command(BaseCommand):
         for s in subs:
 
             slurm_resources = s.resources.filter(
-                    Q(resourceattribute__resource_attribute_type__name='slurm_cluster') | 
-                    Q(parent_resource__resourceattribute__resource_attribute_type__name='slurm_cluster'))
+                    Q(resourceattribute__resource_attribute_type__name=SLURM_CLUSTER_ATTRIBUTE_NAME) | 
+                    Q(parent_resource__resourceattribute__resource_attribute_type__name=SLURM_CLUSTER_ATTRIBUTE_NAME))
 
             for r in slurm_resources.distinct():
                 specs = []
                 cname = None
                 try:
-                    cname = r.resourceattribute_set.get(resource_attribute_type__name='slurm_cluster')
+                    cname = r.resourceattribute_set.get(resource_attribute_type__name=SLURM_CLUSTER_ATTRIBUTE_NAME)
                 except:
-                    cname = r.parent_resource.resourceattribute_set.get(resource_attribute_type__name='slurm_cluster')
+                    cname = r.parent_resource.resourceattribute_set.get(resource_attribute_type__name=SLURM_CLUSTER_ATTRIBUTE_NAME)
 
                 if not cname:
                     logger.error("Could not find cluster name from resource {} for subscription {}", r, s)
@@ -107,7 +109,7 @@ class Command(BaseCommand):
 
                 # If resource_type is a slurm parition we merge the specs into the Slurm account association
                 if r.resource_type.name == 'Cluster Partition':
-                    rspecs = r.resourceattribute_set.filter(resource_attribute_type__name='slurm_specs').first()
+                    rspecs = r.resourceattribute_set.filter(resource_attribute_type__name=SLURM_SPECS_ATTRIBUTE_NAME).first()
                     if rspecs:
                         specs.append(rspecs.value) 
 

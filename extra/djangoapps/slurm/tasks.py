@@ -1,37 +1,14 @@
 import logging
-import os
-import shlex
-import subprocess
 
-from django.contrib.auth.models import User
-from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 
-from common.djangolibs.utils import import_from_settings
+from extra.djangoapps.slurm.utils import slurm_remove_assoc, SLURM_CLUSTER_ATTRIBUTE_NAME, SLURM_ACCOUNT_ATTRIBUTE_NAME
 from core.djangoapps.subscription.models import SubscriptionUser
 from core.djangoapps.subscription.utils import \
     set_subscription_user_status_to_error
 
-SLURM_CLUSTER_ATTRIBUTE_NAME = import_from_settings('SLURM_CLUSTER_ATTRIBUTE_NAME', 'slurm_cluster')
-SLURM_ACCOUNT_ATTRIBUTE_NAME = import_from_settings('SLURM_ACCOUNT_ATTRIBUTE_NAME', 'slurm_account_name')
-SLURM_NOOP = import_from_settings('SLURM_NOOP', False)
-SLURM_SACCTMGR_PATH = import_from_settings('SLURM_SACCTMGR_PATH', '/usr/bin/sacctmgr')
-SLURM_CMD_REMOVE_USER = SLURM_SACCTMGR_PATH + ' -Q -i delete user where name={} cluster={} account={}'
-
 logger = logging.getLogger(__name__)
-
-def _remove_assoc(user, cluster, account):
-    cmd = SLURM_CMD_REMOVE_USER.format(user, cluster, account)
-
-    if SLURM_NOOP:
-        logger.info('NOOP - Slurm cmd: %s', cmd)
-        return
-
-    result = subprocess.run(shlex.split(cmd), stdout=subprocess.PIPE)
-    if result.returncode != 0:
-        logger.error('Slurm command failed: %s', cmd)
-        err_msg = 'return_value={} output={}'.format(result.returncode, result.stdout)
-        raise Exception(err_msg)
 
 def remove_association(subscription_user_pk):
     subscription_user = SubscriptionUser.objects.get(pk=subscription_user_pk)
@@ -52,10 +29,10 @@ def remove_association(subscription_user_pk):
     for r in slurm_resources.distinct():
         cluster_name = None
         try:
-            cluster_name = r.resourceattribute_set.get(resource_attribute_type__name='slurm_cluster')
+            cluster_name = r.resourceattribute_set.get(resource_attribute_type__name=SLURM_CLUSTER_ATTRIBUTE_NAME)
         except ObjectDoesNotExist:
             try:
-                cluster_name = r.parent_resource.resourceattribute_set.get(resource_attribute_type__name='slurm_cluster')
+                cluster_name = r.parent_resource.resourceattribute_set.get(resource_attribute_type__name=SLURM_CLUSTER_ATTRIBUTE_NAME)
             except ObjectDoesNotExist:
                 pass
 
@@ -64,7 +41,7 @@ def remove_association(subscription_user_pk):
             continue
 
         try:
-            _remove_assoc(subscription_user.user.username, cluster_name.value, slurm_account.value)
+            slurm_remove_assoc(subscription_user.user.username, cluster_name.value, slurm_account.value)
         except Exception as e:
             logger.error("Failed removing Slurm assocation for user %s on account %s in cluster %s: %s", subscription_user.user.username, slurm_account.value, cluster_name.value, e)
             set_subscription_user_status_to_error(subscription_user_pk)
