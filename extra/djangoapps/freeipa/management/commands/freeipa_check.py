@@ -124,14 +124,14 @@ class Command(BaseCommand):
 
         verbosity = int(options['verbosity'])
         root_logger = logging.getLogger('')
-        if verbosity == 2:
-            root_logger.setLevel(logging.WARN)
-        elif verbosity == 3:
+        if verbosity == 0:
+            root_logger.setLevel(logging.ERROR)
+        elif verbosity == 2:
             root_logger.setLevel(logging.INFO)
-        elif verbosity >= 4:
+        elif verbosity == 3:
             root_logger.setLevel(logging.DEBUG)
         else:
-            root_logger.setLevel(logging.ERROR)
+            root_logger.setLevel(logging.WARN)
 
         self.sync = False
         if options['sync']:
