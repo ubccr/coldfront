@@ -18,7 +18,7 @@ class Command(BaseCommand):
         parser.add_argument("-s", "--sync", help="Sync changes to/from FreeIPA", action="store_true")
         parser.add_argument("-u", "--username", help="Check specific username")
         parser.add_argument("-g", "--group", help="Check specific group")
-        parser.add_argument("-x", "--header", help="Include header in output")
+        parser.add_argument("-x", "--header", help="Include header in output", action="store_true")
 
     def check_ipa_error(self, res):
         if not res or 'result' not in res:
@@ -125,11 +125,13 @@ class Command(BaseCommand):
         verbosity = int(options['verbosity'])
         root_logger = logging.getLogger('')
         if verbosity == 2:
+            root_logger.setLevel(logging.WARN)
+        elif verbosity == 3:
             root_logger.setLevel(logging.INFO)
-        elif verbosity >= 3:
+        elif verbosity >= 4:
             root_logger.setLevel(logging.DEBUG)
         else:
-            root_logger.setLevel(logging.WARN)
+            root_logger.setLevel(logging.ERROR)
 
         self.sync = False
         if options['sync']:

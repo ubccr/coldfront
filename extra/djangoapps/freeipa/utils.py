@@ -1,3 +1,6 @@
+import logging
+import os
+
 from django.core.exceptions import ImproperlyConfigured
 from common.djangolibs.utils import import_from_settings
 
@@ -6,7 +9,10 @@ from ipalib import api
 CLIENT_KTNAME = import_from_settings('FREEIPA_KTNAME')
 UNIX_GROUP_ATTRIBUTE_NAME = import_from_settings('FREEIPA_GROUP_ATTRIBUTE_NAME', 'freeipa_group')
 
+logger = logging.getLogger(__name__)
+
 try:
+    os.environ["KRB5_CLIENT_KTNAME"] = CLIENT_KTNAME
     api.bootstrap()
     api.finalize()
     api.Backend.rpcclient.connect()
