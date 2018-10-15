@@ -49,5 +49,3 @@ def su_login_callback(user):
 
     logger.warn('User {} requested to login as another user but does not have permissions', user)
     return False
-
-
