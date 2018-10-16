@@ -16,6 +16,12 @@ DEBUG = True
 DEVELOP = True
 
 #------------------------------------------------------------------------------
+# Session settings
+#------------------------------------------------------------------------------
+# This should be set to True in production when using HTTPS
+SESSION_COOKIE_SECURE = False
+
+#------------------------------------------------------------------------------
 # General Center Information
 #------------------------------------------------------------------------------
 # CENTER_NAME = 'HPC Resources'
