@@ -7,7 +7,8 @@ from django.core.management.base import BaseCommand, CommandError
 from core.djangoapps.subscription.models import Subscription
 from ipalib import api
 from ipalib.errors import NotFound
-from extra.djangoapps.freeipa.utils import check_ipa_group_error, CLIENT_KTNAME, UNIX_GROUP_ATTRIBUTE_NAME
+from extra.djangoapps.freeipa.utils import check_ipa_group_error, CLIENT_KTNAME, \
+                                           FREEIPA_NOOP, UNIX_GROUP_ATTRIBUTE_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ class Command(BaseCommand):
             raise ValueError('Missing FreeIPA result')
 
     def add_group(self, userobj, group, status):
-        if self.sync:
+        if self.sync and not FREEIPA_NOOP:
             try:
                 res = api.Command.group_add_member(group, user=[userobj.user.username])
                 check_ipa_group_error(res)
@@ -47,7 +48,7 @@ class Command(BaseCommand):
         self.stdout.write('\t'.join(row))
 
     def remove_group(self, userobj, group, status):
-        if self.sync:
+        if self.sync and not FREEIPA_NOOP:
             try:
                 res = api.Command.group_remove_member(group, user=[userobj.user.username])
                 check_ipa_group_error(res)
@@ -70,6 +71,9 @@ class Command(BaseCommand):
 
     def sync_user_status(self, userobj, active=False):
         if not self.sync:
+            return
+
+        if FREEIPA_NOOP:
             return
 
         try:
