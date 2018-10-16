@@ -14,6 +14,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
 
         date = datetime.datetime.now() + datetime.timedelta(days=1)
-        schedule('common.djangolibs.utils.update_statuses',
+        schedule('core.djangoapps.subscription.tasks.update_statuses',
+            schedule_type=Schedule.DAILY,
+            next_run=datetime.datetime(date.year, date.month, date.day, 00, 00, 00, 000000))
+
+        schedule('core.djangoapps.subscription.tasks.send_expiry_emails',
             schedule_type=Schedule.DAILY,
             next_run=datetime.datetime(date.year, date.month, date.day, 00, 00, 00, 000000))
