@@ -99,9 +99,9 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                     Q(status__name__in=['Active', 'Approved', 'Denied', 'New', 'Pending', 'Expired']) &
                     Q(project=self.object) &
                     Q(project__projectuser__user=self.request.user) &
-                    Q(project__projectuser__status__name__in=['Active', 'Pending - Add']) &
+                    Q(project__projectuser__status__name__in=['Active', ]) &
                     Q(subscriptionuser__user=self.request.user) &
-                    Q(subscriptionuser__status__name__in=['Active', 'Pending - Add', ])
+                    Q(subscriptionuser__status__name__in=['Active', ])
                 ).distinct().order_by('-created')
             else:
                 subscriptions = Subscription.objects.prefetch_related('resources').filter(project=self.object)
@@ -577,7 +577,6 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         if formset.is_valid() and subscription_form.is_valid():
             project_user_active_status_choice = ProjectUserStatusChoice.objects.get(name='Active')
             subscription_user_active_status_choice = SubscriptionUserStatusChoice.objects.get(name='Active')
-            subscription_user_pending_add_status_choice = SubscriptionUserStatusChoice.objects.get(name='Pending - Add')
             subscription_form_data = subscription_form.cleaned_data['subscription']
             if '__select_all__' in subscription_form_data:
                 subscription_form_data.remove('__select_all__')
@@ -607,13 +606,13 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                     for subscription in Subscription.objects.filter(pk__in=subscription_form_data):
                         if subscription.subscriptionuser_set.filter(user=user_obj).exists():
                             subscription_user_obj = subscription.subscriptionuser_set.get(user=user_obj)
-                            subscription_user_obj.status = subscription_user_pending_add_status_choice
+                            subscription_user_obj.status = subscription_user_active_status_choice
                             subscription_user_obj.save()
                         else:
                             subscription_user_obj = SubscriptionUser.objects.create(
                                 subscription=subscription,
                                 user=user_obj,
-                                status=subscription_user_pending_add_status_choice)
+                                status=subscription_user_active_status_choice)
                         subscription_activate_user.send(sender=self.__class__,
                                                         subscription_user_pk=subscription_user_obj.pk)
 
@@ -707,7 +706,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     subscriptions_to_remove_user_from = project_obj.subscription_set.filter(
                         status__name__in=['Active', 'New', 'Pending'])
                     for subscription in subscriptions_to_remove_user_from:
-                        for subscription_user_obj in subscription.subscriptionuser_set.filter(user=user_obj, status__name__in=['Active', 'Pending - Add']):
+                        for subscription_user_obj in subscription.subscriptionuser_set.filter(user=user_obj, status__name__in=['Active', ]):
                             subscription_user_obj.status = subscription_user_removed_status_choice
                             subscription_user_obj.save()
 
