@@ -7,7 +7,8 @@ from core.djangoapps.subscription.models import SubscriptionUser
 from core.djangoapps.subscription.utils import \
     set_subscription_user_status_to_error
 from ipalib import api
-from extra.djangoapps.freeipa.utils import check_ipa_group_error, UNIX_GROUP_ATTRIBUTE_NAME, CLIENT_KTNAME
+from extra.djangoapps.freeipa.utils import check_ipa_group_error, UNIX_GROUP_ATTRIBUTE_NAME, \
+                                           FREEIPA_NOOP, CLIENT_KTNAME
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,10 @@ def add_user_group(subscription_user_pk):
 
     os.environ["KRB5_CLIENT_KTNAME"] = CLIENT_KTNAME
     for g in groups:
+        if FREEIPA_NOOP:
+            logger.warn("NOOP - FreeIPA adding user %s to group %s", subscription_user.user.username, g.value)
+            continue
+
         try:
             res = api.Command.group_add_member(g.value, user=[subscription_user.user.username])
             check_ipa_group_error(res)
@@ -46,6 +51,10 @@ def remove_user_group(subscription_user_pk):
 
     os.environ["KRB5_CLIENT_KTNAME"] = CLIENT_KTNAME
     for g in groups:
+        if FREEIPA_NOOP:
+            logger.warn("NOOP - FreeIPA removing user %s from group %s", subscription_user.user.username, g.value)
+            continue
+
         try:
             res = api.Command.group_remove_member(g.value, user=[subscription_user.user.username])
             check_ipa_group_error(res)

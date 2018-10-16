@@ -8,6 +8,7 @@ from ipalib import api
 
 CLIENT_KTNAME = import_from_settings('FREEIPA_KTNAME')
 UNIX_GROUP_ATTRIBUTE_NAME = import_from_settings('FREEIPA_GROUP_ATTRIBUTE_NAME', 'freeipa_group')
+FREEIPA_NOOP = import_from_settings('FREEIPA_NOOP', False)
 
 logger = logging.getLogger(__name__)
 

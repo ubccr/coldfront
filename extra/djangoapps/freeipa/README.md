@@ -48,6 +48,7 @@ local\_settings.py file:
     EXTRA_APPS += [
         'extra.djangoapps.freeipa',
     ]
+    FREEIPA_NOOP = False
     FREEIPA_KTNAME = '/path/to/user.keytab'
     FREEIPA_GROUP_ATTRIBUTE_NAME = 'freeipa_group' 
     FREEIPA_SERVER = 'freeipa.localhost.localdomain'
@@ -69,7 +70,7 @@ name of the subscription attribute for the unix group. Default is
 To check the consistency between Coldfront and FreeIPA run the following command:
 
 ```
-    $ python manage.py freeipa_check
+    $ python manage.py freeipa_check -x --verbosity 0
 ```
 
 This will process all active subscriptions that have a "freeipa\_group"
