@@ -8,6 +8,9 @@ from django.views.generic import TemplateView
 
 import core.djangoapps.portal.views as portal_views
 
+admin.site.site_header = 'ColdFront Administration'
+admin.site.site_title = 'ColdFront Administration'
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('robots.txt', TemplateView.as_view(template_name='robots.txt', content_type='text/plain'), name="robots"),
