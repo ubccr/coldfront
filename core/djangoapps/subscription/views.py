@@ -71,7 +71,7 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
             user=self.request.user, status__name__in=['Active', 'New',]).exists()
 
         user_can_access_subscription = subscription_obj.subscriptionuser_set.filter(
-            user=self.request.user, status__name__in=['Active', 'Pending - Add']).exists()
+            user=self.request.user, status__name__in=['Active', ]).exists()
 
         if user_can_access_project and user_can_access_subscription:
             return True
@@ -407,6 +407,9 @@ class SubscriptionAddUsersView(LoginRequiredMixin, UserPassesTestMixin, Template
             messages.error(request, 'You cannot add users to a subscription with status {}.'.format(
                 subscription_obj.status.name))
             return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': subscription_obj.pk}))
+        elif subscription_obj.project.needs_review:
+            messages.error(request, 'You need to review your project before you can add users to subscriptions.')
+            return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': subscription_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
 
@@ -507,6 +510,9 @@ class SubscriptionDeleteUsersView(LoginRequiredMixin, UserPassesTestMixin, Templ
         if subscription_obj.status.name not in ['Active', 'New', 'Pending', 'Approved', ]:
             messages.error(request, 'You cannot delete users from a subscription with status {}.'.format(
                 subscription_obj.status.name))
+            return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': subscription_obj.pk}))
+        elif subscription_obj.project.needs_review:
+            messages.error(request, 'You need to review your project before you can delete users from subscriptions.')
             return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': subscription_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
@@ -749,11 +755,11 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
             return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': subscription_obj.pk}))
 
         if subscription_obj.project.needs_review:
-            messages.error(request, 'You cannot request a new subscription because you have to review your project first.')
+            messages.error(request, 'You cannot renew your subscription because you have to review your project first.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': subscription_obj.project.pk}))
 
         if subscription_obj.project.last_project_review and subscription_obj.project.last_project_review.status.name == 'Pending':
-            messages.error(request, 'You cannot request a new subscription because your project review is in pending state.')
+            messages.error(request, 'You cannot renew your subscription because your project review is in pending state.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': subscription_obj.project.pk}))
 
         if subscription_obj.expires_in > 60:
