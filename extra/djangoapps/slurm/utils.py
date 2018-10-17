@@ -15,6 +15,7 @@ SLURM_SACCTMGR_PATH = import_from_settings('SLURM_SACCTMGR_PATH', '/usr/bin/sacc
 SLURM_CMD_REMOVE_USER = SLURM_SACCTMGR_PATH + ' -Q -i delete user where name={} cluster={} account={}'
 SLURM_CMD_ADD_USER = SLURM_SACCTMGR_PATH + ' -Q -i create user name={} cluster={} account={}'
 SLURM_CMD_CHECK_ASSOCIATION = SLURM_SACCTMGR_PATH + ' list associations User={} Cluster={} Account={} Format=Cluster,Account,User,QOS -P'
+SLURM_CMD_BLOCK_ACCOUNT = SLURM_SACCTMGR_PATH + ' -Q -i modify account {} where Cluster={} set GrpSubmitJobs=0'
 
 logger = logging.getLogger(__name__)
 
@@ -39,10 +40,16 @@ def slurm_remove_assoc(user, cluster, account):
     cmd = SLURM_CMD_REMOVE_USER.format(user, cluster, account)
     _run_slurm_cmd(cmd, noop=SLURM_NOOP)
 
-def slurm_add_assoc(user, cluster, account, specs=[]):
+def slurm_add_assoc(user, cluster, account, specs=None):
+    if specs is None:
+        specs = []
     cmd = SLURM_CMD_ADD_USER.format(user, cluster, account)
     if len(specs) > 0:
         cmd += ' ' + ' '.join(specs)
+    _run_slurm_cmd(cmd, noop=SLURM_NOOP)
+
+def slurm_block_account(cluster, account):
+    cmd = SLURM_CMD_BLOCK_ACCOUNT.format(account, cluster)
     _run_slurm_cmd(cmd, noop=SLURM_NOOP)
 
 def slurm_check_assoc(user, cluster, account):
