@@ -85,6 +85,16 @@ class Subscription(TimeStampedModel):
     def get_parent_resource(self):
         return self.resources.filter(is_subscribable=True).first()
 
+    def get_attribute(self, name):
+        attr = self.subscriptionattribute_set.filter(subscription_attribute_type__name=name).first()
+        if attr:
+            return attr.value
+        return None
+
+    def get_attribute_list(self, name):
+        attr = self.subscriptionattribute_set.filter(subscription_attribute_type__name=name).all()
+        return [a.value for a in attr]
+
     def __str__(self):
         return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
 

@@ -6,8 +6,8 @@ Slurm flat file format and can be loaded with sacctmgr. For more information on
 the Slurm flat file format see [here](https://slurm.schedmd.com/sacctmgr.html).
 
 A command line tool is also provided with this app that allows an administrator
-to check the consistency between Coldfront and Slurm and optionally sync any
-discrepancies. 
+to check the consistency between Coldfront and Slurm and optionally remove any
+assocations that should not be in Slurm according to Coldfront.
 
 ## Design
 
@@ -30,23 +30,6 @@ provide Slurm specifications for each user in a subscription using a
 subscription attribute named "slurm\_user\_specs". The value of this attribute
 must conform to the Slurm specification format and are colon separated. Setting
 specifications on an individual user basis is not currently supported.
-
-This app also subscribes to specific Coldfront signals that are sent whenever a
-user is added or removed from a subscription and submits a job to django-q. The
-tasks run by django-q are defined in tasks.py and interact with Slurm using the
-sacctmgr command. Anytime a user is removed from a subscription their Slurm
-association is removed. You can disable this behavior by setting "SLURM\_NOOP"
-to False.
-
-## Requirements
-
-- pip install django-q
-
-To run django-q:
-
-```
-    python manage.py qcluster
-```
 
 ## Usage
 
@@ -95,27 +78,12 @@ account association instead of the cluster.
 To check the consistency between Coldfront and Slurm run the following command:
 
 ```
-    $ python manage.py slurm_check
+    $ sacctmgr dump file=/output_dir/tux.cfg
+    $ python manage.py slurm_check -i /output_dir/tux.cfg
 ```
 
-This will process all active subscriptions that have a "slurm\_account\_name" subscription attribute and are subscribed to a resource with a "slurm\_cluster" resource attribute.
-Any active users are checked to ensure they have the correct Slurm association and removed
-users are checked to ensure they do not have an assocation. You can optionally provide the
-'--sync' flag and this tool will add/remove assocations in Slurm using sacctmgr.
-
-```
-    $ python manage.py slurm_check -v 0 -x
-```
-
-To get verbose logging run:
-
-```
-    $ python manage.py slurm_check -v 3 -x
-```
-
-You can also optionally limit to specific users and groups:
-
-```
-    $ python manage.py slurm_check -v 0 --username jane --account physics
-
-```
+This will process the output of sacctmgr dump flat file and compare to active
+subscriptions in Coldfront. Any users with Slurm assocations that are not
+members of an active Subscrption in Coldfront will be reported and can be
+removed. You can optionally provide the '--sync' flag and this tool will remove
+assocations in Slurm using sacctmgr.

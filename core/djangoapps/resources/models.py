@@ -88,6 +88,16 @@ class Resource(TimeStampedModel):
     def status(self):
         return ResourceAttribute.objects.get(resource=self, resource_attribute_type__attribute="Status").value
 
+    def get_attribute(self, name):
+        attr = self.resourceattribute_set.filter(resource_attribute_type__name=name).first()
+        if attr:
+            return attr.value
+        return None
+
+    def get_attribute_list(self, name):
+        attr = self.resourceattribute_set.filter(resource_attribute_type__name=name).all()
+        return [a.value for a in attr]
+
     def __str__(self):
         return '%s (%s)' %(self.name, self.resource_type.name)
 
