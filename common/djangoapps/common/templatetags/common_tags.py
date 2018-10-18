@@ -41,7 +41,7 @@ def convert_status_to_icon(status):
     elif status == 'Completed':
         return mark_safe('<h4><span class="badge badge-success"><i class="fas fa-check-circle"></i></span></h4>')
     elif not status:
-        return mark_safe('<h4><span class="badge badge-primary"><i class="fas fa-check-circle"></i></span></h4>')
+        return mark_safe('<h4><span class="badge badge-primary"><i class="fas fa-comment-slash"></i></span></h4>')
 
 
 @register.filter('get_value_from_dict')
