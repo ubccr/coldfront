@@ -43,9 +43,7 @@ User: {{user_quota.username}} <span style="float:right">{{user_quota.used}} of {
                     $('#iquota_inner').html(data);
                 },
                 error: function(data) {
-
-                    $('#iquota_inner').html("Error refreshing quota!");
-
+                    $('#iquota_inner').html('<div class="alert alert-warning"><i class="fas fa-info-circle"></i> Error refreshing quota information.</div>');
                 },
             });
         });

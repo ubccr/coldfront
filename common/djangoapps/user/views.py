@@ -77,6 +77,7 @@ class UserSearchHome(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
 class UserSearchResults(LoginRequiredMixin, UserPassesTestMixin, View):
     template_name = 'user/user_search_results.html'
+    raise_exception = True
 
     def post(self, request):
         user_search_string = request.POST.get('q')

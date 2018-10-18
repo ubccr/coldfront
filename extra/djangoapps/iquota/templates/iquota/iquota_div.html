@@ -22,8 +22,7 @@ $("#quota-button").click(function() {
       $('#iquota_inner').html(data);
     },
     error: function(data) {
-
-      $('#iquota_inner').html('<div class="alert alert-warning" role="alert"><i class="fas fa-info-circle"></i> Error getting quota information.</div>');
+      $('#iquota_inner').html('<div class="alert alert-warning"><i class="fas fa-info-circle"></i> Error getting quota information.</div>');
     },
   });
 });

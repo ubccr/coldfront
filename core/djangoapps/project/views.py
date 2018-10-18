@@ -461,6 +461,7 @@ class ProjectAddUsersSearchView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
 class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'project/add_user_search_results.html'
+    raise_exception = True
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""

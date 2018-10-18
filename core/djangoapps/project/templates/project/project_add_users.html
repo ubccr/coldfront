@@ -94,8 +94,12 @@ Add Users to Project
 
         // handle a non-successful response
         error : function(xhr,errmsg,err) {
-            $('#results').html("<div class='alert-box alert radius' data-alert>Oops! We have encountered an error: "+errmsg+
-                " <a href='#' class='close'>&times;</a></div>"); // add the error to the dom
+            if(xhr.status == 403 || xhr.status == 401) {
+                $('#search_results_inner').html("<div class='alert alert-danger'>Your session expired. Please login again. <a href='#' class='close'>&times;</a></div>");
+            } else {
+                $('#search_results_inner').html("<div class='alert alert-danger'>Oops! We have encountered an error: "+errmsg+
+                    " <a href='#' class='close'>&times;</a></div>"); // add the error to the dom
+            }
             console.log(xhr.status + ": " + xhr.responseText); // provide a bit more info about the error to the console
         }
     });
