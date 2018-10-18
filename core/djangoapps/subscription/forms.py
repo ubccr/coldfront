@@ -78,7 +78,7 @@ class SubscriptionSearchForm(forms.Form):
 class SubscriptionReviewUserForm(forms.Form):
     SUBSCRIPTION_REVIEW_USER_CHOICES = (
         ('keep_in_subscription_and_project', 'Keep in subscription and project'),
-        ('keep_in_project_only', 'Keep in project only'),
+        ('keep_in_project_only', 'Remove from this subscription only'),
         ('remove_from_project', 'Remove from project'),
     )
 
