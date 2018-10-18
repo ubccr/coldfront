@@ -13,11 +13,16 @@ SLURM_USER_SPECS_ATTRIBUTE_NAME = import_from_settings('SLURM_USER_SPECS_ATTRIBU
 SLURM_NOOP = import_from_settings('SLURM_NOOP', False)
 SLURM_SACCTMGR_PATH = import_from_settings('SLURM_SACCTMGR_PATH', '/usr/bin/sacctmgr')
 SLURM_CMD_REMOVE_USER = SLURM_SACCTMGR_PATH + ' -Q -i delete user where name={} cluster={} account={}'
+SLURM_CMD_REMOVE_ACCOUNT = SLURM_SACCTMGR_PATH + ' -Q -i delete account where name={} cluster={}'
+SLURM_CMD_ADD_ACCOUNT = SLURM_SACCTMGR_PATH + ' -Q -i create account name={} cluster={}'
 SLURM_CMD_ADD_USER = SLURM_SACCTMGR_PATH + ' -Q -i create user name={} cluster={} account={}'
 SLURM_CMD_CHECK_ASSOCIATION = SLURM_SACCTMGR_PATH + ' list associations User={} Cluster={} Account={} Format=Cluster,Account,User,QOS -P'
 SLURM_CMD_BLOCK_ACCOUNT = SLURM_SACCTMGR_PATH + ' -Q -i modify account {} where Cluster={} set GrpSubmitJobs=0'
 
 logger = logging.getLogger(__name__)
+
+class SlurmError(Exception):
+    pass
 
 def _run_slurm_cmd(cmd, noop=True):
     if noop:
@@ -29,7 +34,7 @@ def _run_slurm_cmd(cmd, noop=True):
     except subprocess.CalledProcessError as e:
         logger.error('Slurm command failed: %s', cmd)
         err_msg = 'return_value={} stdout={} stderr={}'.format(e.returncode, e.stdout, e.stderr)
-        raise Exception(err_msg)
+        raise SlurmError(err_msg)
 
     logger.debug('Slurm cmd: %s', cmd)
     logger.debug('Slurm cmd output: %s', result.stdout)
@@ -40,10 +45,22 @@ def slurm_remove_assoc(user, cluster, account):
     cmd = SLURM_CMD_REMOVE_USER.format(user, cluster, account)
     _run_slurm_cmd(cmd, noop=SLURM_NOOP)
 
+def slurm_remove_account(cluster, account):
+    cmd = SLURM_CMD_REMOVE_ACCOUNT.format(account, cluster)
+    _run_slurm_cmd(cmd, noop=SLURM_NOOP)
+
 def slurm_add_assoc(user, cluster, account, specs=None):
     if specs is None:
         specs = []
     cmd = SLURM_CMD_ADD_USER.format(user, cluster, account)
+    if len(specs) > 0:
+        cmd += ' ' + ' '.join(specs)
+    _run_slurm_cmd(cmd, noop=SLURM_NOOP)
+
+def slurm_add_account(cluster, account, specs=None):
+    if specs is None:
+        specs = []
+    cmd = SLURM_CMD_ADD_ACCOUNT.format(account, cluster)
     if len(specs) > 0:
         cmd += ' ' + ' '.join(specs)
     _run_slurm_cmd(cmd, noop=SLURM_NOOP)

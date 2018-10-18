@@ -14,18 +14,25 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("-o", "--output", help="Path to output directory")
+        parser.add_argument("-c", "--cluster", help="Only output specific Slurm cluster")
 
     def handle(self, *args, **options):
-        self.slurm_out = os.getcwd()
+        out_dir = None
         if options['output']:
-            self.slurm_out = options['output']
+            out_dir = options['output']
+            if not os.path.isdir(out_dir):
+                os.mkdir(out_dir, 0o0700)
 
-        if not os.path.isdir(self.slurm_out):
-            os.mkdir(self.slurm_out, 0o0700)
-
-        logger.warn("Writing output to directory: %s", self.slurm_out)
+            logger.warn("Writing output to directory: %s", out_dir)
 
         for attr in ResourceAttribute.objects.filter(resource_attribute_type__name=SLURM_CLUSTER_ATTRIBUTE_NAME):
+            if options['cluster'] and options['cluster'] != attr.value:
+                continue
+
             cluster = SlurmCluster.new_from_resource(attr.resource)
-            with open(os.path.join(self.slurm_out, '{}.cfg'.format(cluster.name)), 'w') as fh:
+            if not out_dir:
+                cluster.write(self.stdout)
+                continue
+
+            with open(os.path.join(out_dir, '{}.cfg'.format(cluster.name)), 'w') as fh:
                 cluster.write(fh)

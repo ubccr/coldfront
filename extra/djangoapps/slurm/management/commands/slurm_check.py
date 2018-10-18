@@ -4,22 +4,191 @@ import sys
 
 from django.core.management.base import BaseCommand, CommandError
 
+from common.djangolibs.utils import import_from_settings
 from core.djangoapps.resources.models import ResourceAttribute
 from extra.djangoapps.slurm.associations import SlurmCluster
-from extra.djangoapps.slurm.utils import slurm_check_assoc, slurm_remove_assoc, \
-              slurm_add_assoc, SLURM_CLUSTER_ATTRIBUTE_NAME, \
+from extra.djangoapps.slurm.utils import SlurmError, slurm_remove_account, slurm_remove_assoc, \
+              slurm_add_assoc, slurm_add_account, SLURM_CLUSTER_ATTRIBUTE_NAME, \
               SLURM_ACCOUNT_ATTRIBUTE_NAME, SLURM_USER_SPECS_ATTRIBUTE_NAME
+
+
+SLURM_IGNORE_USERS = import_from_settings('SLURM_IGNORE_USERS', [])
+SLURM_IGNORE_ACCOUNTS = import_from_settings('SLURM_IGNORE_ACCOUNTS', [])
+SLURM_IGNORE_CLUSTERS = import_from_settings('SLURM_IGNORE_CLUSTERS', [])
 
 logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
-    help = 'Check for Slurm associations that should be removed'
+    help = 'Check consistency between Slurm associations and Coldfront subscriptions'
 
     def add_arguments(self, parser):
         parser.add_argument("-i", "--input", help="Input sacctmgr dump flat file", required=True)
-        parser.add_argument("-s", "--sync", help="Sync changes to Slurm", action="store_true")
+        parser.add_argument("-s", "--sync", help="Remove associations in Slurm that no longer exist in Coldfront", action="store_true")
         parser.add_argument("-u", "--username", help="Check specific username")
         parser.add_argument("-a", "--account", help="Check specific account")
+        parser.add_argument("-x", "--header", help="Include header in output", action="store_true")
+
+    def write(self, data):
+        try:
+            self.stdout.write(data)
+        except BrokenPipeError:
+            devnull = os.open(os.devnull, os.O_WRONLY)
+            os.dup2(devnull, sys.stdout.fileno())
+            sys.exit(1)
+
+    def _skip_user(self, user, account):
+        if user in SLURM_IGNORE_USERS:
+            logger.debug("Ignoring user %s", user)
+            return True
+
+        if account in SLURM_IGNORE_ACCOUNTS:
+            logger.debug("Ignoring account %s", account)
+            return True
+
+        if self.filter_account and account != self.filter_account:
+            return True
+
+        if self.filter_user and user != self.filter_user:
+            return True
+
+        return False
+
+    def _skip_account(self, account):
+        if account in SLURM_IGNORE_ACCOUNTS:
+            logger.debug("Ignoring account %s", account)
+            return True
+
+        if self.filter_user:
+            return True
+
+        if self.filter_account and account != self.filter_account:
+            return True
+
+        return False
+
+    def remove_user(self, user, account, cluster):
+        if self._skip_user(user, account):
+            return
+
+        if self.sync:
+            try:
+                slurm_remove_assoc(user, cluster, account)
+            except SlurmError as e:
+                logger.error("Failed removing Slurm association user %s account %s cluster %s: %s", user, account, cluster, e)
+            else:
+                logger.error("Removed Slurm association user %s account %s cluster %s successfully", user, account, cluster)
+
+        row = [
+            user,
+            account,
+            cluster,
+            'Remove',
+        ]
+
+        self.write('\t'.join(row))
+
+    def remove_account(self, account, cluster):
+        if self._skip_account(account):
+            return
+
+        if self.sync:
+            try:
+                slurm_remove_account(cluster, account)
+            except SlurmError as e:
+                logger.error("Failed removing Slurm account %s cluster %s: %s", account, cluster, e)
+            else:
+                logger.error("Removed Slurm account %s cluster %s successfully", account, cluster)
+
+        row = [
+            '',
+            account,
+            cluster,
+            'Remove',
+        ]
+
+        self.write('\t'.join(row))
+
+    def add_user(self, user, account, cluster, specs):
+        if self._skip_user(user, account):
+            return
+
+        if self.sync:
+            try:
+                spec_list = []
+                if len(specs) > 0:
+                    spec_list = specs.split(':')
+                slurm_add_assoc(user, cluster, account, specs=spec_list)
+            except SlurmError as e:
+                logger.error("Failed adding Slurm association user %s account %s cluster %s: %s", user, account, cluster, e)
+            else:
+                logger.error("Added Slurm association user %s account %s cluster %s successfully", user, account, cluster)
+
+        row = [
+            user,
+            account,
+            cluster,
+            'Add',
+        ]
+
+        self.write('\t'.join(row))
+
+    def add_account(self, account, cluster, specs):
+        if self._skip_account(account):
+            return
+
+        if self.sync:
+            try:
+                spec_list = []
+                if len(specs) > 0:
+                    spec_list = specs.split(':')
+                slurm_add_account(cluster, account, specs=spec_list)
+            except SlurmError as e:
+                logger.error("Failed adding Slurm account %s cluster %s: %s", account, cluster, e)
+            else:
+                logger.error("Added Slurm account %s cluster %s successfully", account, cluster)
+
+        row = [
+            '',
+            account,
+            cluster,
+            'Add',
+        ]
+
+        self.write('\t'.join(row))
+
+    def _diff(self, cluster_a, cluster_b, action):
+        for name, account in cluster_a.accounts.items():
+            if name in cluster_b.accounts:
+                total = 0
+                for uid, user in account.users.items():
+                    if uid not in cluster_b.accounts[name].users:
+                        if action == 'Remove':
+                            self.remove_user(uid, name, cluster_a.name)
+                        elif action == 'Add':
+                            self.add_user(uid, name, cluster_a.name, user.format_specs())
+                        total += 1
+
+                if action == 'Remove' and total == len(account.users):
+                    self.remove_account(name, cluster_a.name)
+            else:
+                if action == 'Add':
+                    self.add_account(name, cluster_a.name, account.format_specs())
+
+                for uid, user in account.users.items():
+                    if action == 'Remove':
+                        self.remove_user(uid, name, cluster_a.name)
+                    elif action == 'Add':
+                        self.add_user(uid, name, cluster_a.name, user.format_specs())
+
+                if action == 'Remove':
+                    self.remove_account(name, cluster_a.name)
+
+    def check_consistency(self, slurm_cluster, coldfront_cluster):
+        # Check for accounts in Slurm NOT in Coldfront
+        self._diff(slurm_cluster, coldfront_cluster, 'Remove')
+
+        # Check for accounts in Colfront NOT in Slurm
+        self._diff(coldfront_cluster, slurm_cluster, 'Add')
 
     def handle(self, *args, **options):
         verbosity = int(options['verbosity'])
@@ -41,30 +210,29 @@ class Command(BaseCommand):
         with open(options['input']) as fh:
             slurm_cluster = SlurmCluster.new_from_stream(fh)
 
+        if slurm_cluster.name in SLURM_IGNORE_CLUSTERS:
+            logger.warn("Ignoring cluster %s. Nothing to do.", slurm_cluster.name)
+            sys.exit(0)
+
         try:
             resource = ResourceAttribute.objects.get(resource_attribute_type__name=SLURM_CLUSTER_ATTRIBUTE_NAME, value=slurm_cluster.name).resource
         except ResourceAttribute.DoesNotExist:
             logger.error("No Slurm '%s' cluster resource found in Coldfront using '%s' attribute", slurm_cluster.name, SLURM_CLUSTER_ATTRIBUTE_NAME)
             sys.exit(1)
 
+        header = [
+            'username',
+            'account',
+            'cluster',
+            'slurm_action',
+        ]
+
+        if options['header']:
+            self.write('\t'.join(header))
+
+        self.filter_user = options['username']
+        self.filter_account = options['account']
+
         coldfront_cluster = SlurmCluster.new_from_resource(resource)
 
-        for name, account in slurm_cluster.accounts.items():
-            if name in coldfront_cluster.accounts:
-                remove = []
-                for uid in account.users:
-                    if uid in coldfront_cluster.accounts[name].users:
-                        remove.append(uid)
-
-                for u in remove:
-                    slurm_cluster.accounts[name].users.pop(u)
-
-        remove = []
-        for name, account in slurm_cluster.accounts.items():
-            if len(account.users) == 0:
-                remove.append(name)
-
-        for a in remove:
-            slurm_cluster.accounts.pop(a)
-
-        slurm_cluster.write(self.stdout)
+        self.check_consistency(slurm_cluster, coldfront_cluster)

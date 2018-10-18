@@ -1,13 +1,12 @@
 import datetime
 import re
+import sys
+import os
 
 from core.djangoapps.resources.models import Resource
 
-from extra.djangoapps.slurm.utils import SLURM_CLUSTER_ATTRIBUTE_NAME, \
+from extra.djangoapps.slurm.utils import SlurmError, SLURM_CLUSTER_ATTRIBUTE_NAME, \
               SLURM_ACCOUNT_ATTRIBUTE_NAME, SLURM_SPECS_ATTRIBUTE_NAME, SLURM_USER_SPECS_ATTRIBUTE_NAME
-
-class SlurmError(Exception):
-    pass
 
 class SlurmParserError(SlurmError):
     pass
@@ -28,6 +27,14 @@ class SlurmBase:
                 items.append(i)
 
         return ':'.join([x for x in list(set(items))])
+
+    def _write(self, out, data):
+        try:
+            out.write(data)
+        except BrokenPipeError:
+            devnull = os.open(os.devnull, os.O_WRONLY)
+            os.dup2(devnull, sys.stdout.fileno())
+            sys.exit(1)
     
 class SlurmCluster(SlurmBase):
     def __init__(self, name, specs=None):
@@ -110,15 +117,15 @@ class SlurmCluster(SlurmBase):
         self.accounts[name] = account
 
     def write(self, out):
-        out.write("# Coldfront Subscription Slurm assocations dump {}\n".format(datetime.datetime.now().date()))
-        out.write("Cluster - '{}':{}\n".format(
+        self._write(out, "# Coldfront Subscription Slurm assocations dump {}\n".format(datetime.datetime.now().date()))
+        self._write(out, "Cluster - '{}':{}\n".format(
             self.name,
             self.format_specs(),
         ))
         if 'root' in self.accounts:
             self.accounts['root'].write(out)
         else:
-            out.write("Parent - 'root'\n")
+            self._write(out, "Parent - 'root'\n")
 
         for name, account in self.accounts.items():
             if account.name == 'root':
@@ -172,12 +179,12 @@ class SlurmAccount(SlurmBase):
 
     def write(self, out):
         if self.name != 'root':
-            out.write("Account - '{}':{}\n".format(
+            self._write(out, "Account - '{}':{}\n".format(
                 self.name,
                 self.format_specs(),
             ))
 
-        out.write("Parent - '{}'\n".format(self.name))
+        self._write(out, "Parent - '{}'\n".format(self.name))
         for uid, user in self.users.items():
             user.write(out)
 
@@ -198,7 +205,7 @@ class SlurmUser(SlurmBase):
         return SlurmUser(name, specs=parts[1:])
 
     def write(self, out):
-        out.write("User - '{}':{}\n".format(
+        self._write(out, "User - '{}':{}\n".format(
             self.name,
             self.format_specs(),
         ))
