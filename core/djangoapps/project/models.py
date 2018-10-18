@@ -9,7 +9,9 @@ from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
 from common.djangoapps.field_of_science.models import FieldOfScience
+from common.djangolibs.utils import import_from_settings
 
+ENABLE_PROJECT_REVIEW = import_from_settings('ENABLE_PROJECT_REVIEW', False)
 
 class ProjectStatusChoice(TimeStampedModel):
     name = models.CharField(max_length=64)
@@ -79,6 +81,9 @@ We do not have information about your research. Please provide a detailed descri
 
         if self.force_review is True:
             return True
+
+        if not ENABLE_PROJECT_REVIEW:
+            return False
 
         if self.requires_review is False:
             return False

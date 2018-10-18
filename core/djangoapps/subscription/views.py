@@ -40,8 +40,6 @@ from core.djangoapps.subscription.utils import (generate_guauge_data_from_usage,
 
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 if EMAIL_ENABLED:
-    EMAIL_DEVELOPMENT_EMAIL_LIST = import_from_settings('EMAIL_DEVELOPMENT_EMAIL_LIST')
-    EMAIL_SUBJECT_PREFIX = import_from_settings('EMAIL_SUBJECT_PREFIX')
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
     EMAIL_OPT_OUT_INSTRUCTION_URL = import_from_settings('EMAIL_OPT_OUT_INSTRUCTION_URL')
