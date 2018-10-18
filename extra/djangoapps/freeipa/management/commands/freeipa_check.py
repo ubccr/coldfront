@@ -173,8 +173,7 @@ class Command(BaseCommand):
             logger.info("Filtering output by group: %s", options['group'])
 
         for s in subs:
-            unix_group = s.subscriptionattribute_set.filter(subscription_attribute_type__name=UNIX_GROUP_ATTRIBUTE_NAME)
-            groups = [g.value for g in unix_group.all()]
+            groups = s.get_attribute_list(UNIX_GROUP_ATTRIBUTE_NAME)
             if options['group']:
                 if options['group'] not in groups:
                     continue
