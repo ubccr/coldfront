@@ -40,8 +40,6 @@ from core.djangoapps.subscription.utils import (generate_guauge_data_from_usage,
 
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 if EMAIL_ENABLED:
-    EMAIL_DEVELOPMENT_EMAIL_LIST = import_from_settings('EMAIL_DEVELOPMENT_EMAIL_LIST')
-    EMAIL_SUBJECT_PREFIX = import_from_settings('EMAIL_SUBJECT_PREFIX')
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
     EMAIL_OPT_OUT_INSTRUCTION_URL = import_from_settings('EMAIL_OPT_OUT_INSTRUCTION_URL')
@@ -282,9 +280,6 @@ class SubscriptionCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             messages.error(request, 'You cannot request a new subscription because you have to review your project first.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
-        if project_obj.last_project_review and project_obj.last_project_review.status.name == 'Pending':
-            messages.error(request, 'You cannot request a new subscription because your project review is in pending state.')
-            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
         if project_obj.status.name not in ['Active', 'New', ]:
             messages.error(request, 'You cannot request a new subscription to an archived project.')
@@ -756,10 +751,6 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
 
         if subscription_obj.project.needs_review:
             messages.error(request, 'You cannot renew your subscription because you have to review your project first.')
-            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': subscription_obj.project.pk}))
-
-        if subscription_obj.project.last_project_review and subscription_obj.project.last_project_review.status.name == 'Pending':
-            messages.error(request, 'You cannot renew your subscription because your project review is in pending state.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': subscription_obj.project.pk}))
 
         if subscription_obj.expires_in > 60:
