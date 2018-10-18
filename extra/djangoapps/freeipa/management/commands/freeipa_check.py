@@ -21,6 +21,14 @@ class Command(BaseCommand):
         parser.add_argument("-g", "--group", help="Check specific group")
         parser.add_argument("-x", "--header", help="Include header in output", action="store_true")
 
+    def write(self, data):
+        try:
+            self.stdout.write(data)
+        except BrokenPipeError:
+            devnull = os.open(os.devnull, os.O_WRONLY)
+            os.dup2(devnull, sys.stdout.fileno())
+            sys.exit(1)
+
     def check_ipa_error(self, res):
         if not res or 'result' not in res:
             raise ValueError('Missing FreeIPA result')
@@ -45,7 +53,7 @@ class Command(BaseCommand):
             'Active' if userobj.user.is_active else 'Inactive',
         ]
 
-        self.stdout.write('\t'.join(row))
+        self.write('\t'.join(row))
 
     def remove_group(self, userobj, group, status):
         if self.sync and not FREEIPA_NOOP:
@@ -67,7 +75,7 @@ class Command(BaseCommand):
             'Active' if userobj.user.is_active else 'Inactive',
         ]
 
-        self.stdout.write('\t'.join(row))
+        self.write('\t'.join(row))
 
     def sync_user_status(self, userobj, active=False):
         if not self.sync:
@@ -153,7 +161,7 @@ class Command(BaseCommand):
         ]
 
         if options['header']:
-            self.stdout.write('\t'.join(header))
+            self.write('\t'.join(header))
 
         # Fetch all active subscriptions with a 'freeipa_group' attribute
         subs = Subscription.objects.prefetch_related(
