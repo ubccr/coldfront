@@ -23,7 +23,9 @@ Subscription Review New and Pending Requests
         <th>Project Title</th>
         <th>PI</th>
         <th>Resource</th>
-        <th style="white-space:nowrap;">Project Review Status</th>
+        {% if ENABLE_PROJECT_REVIEW %}
+          <th style="white-space:nowrap;">Project Review Status</th>
+        {% endif %}
         <th>Subscription Actions</th>
       </tr>
     </thead>
@@ -35,7 +37,9 @@ Subscription Review New and Pending Requests
         <td><a href="{% url 'project-detail' subscription.project.pk %}">{{subscription.project.title|truncatechars:50}}</a></td>
         <td>{{subscription.project.pi.first_name}} {{subscription.project.pi.last_name}} ({{subscription.project.pi.username}})</td>
         <td>{{subscription.get_parent_resource}}</td>
-        <td class="text-center">{{subscription.project.last_project_review.status.name|convert_status_to_icon}}</td>
+        {% if ENABLE_PROJECT_REVIEW %}
+          <td class="text-center">{{subscription.project|convert_status_to_icon}}</td>
+        {% endif %}
         <td style="white-space:nowrap;">
           <a href="{% url 'subscription-activate-request' subscription.pk %}" class="btn btn-success mr-1">Activate</a>
           <a href="{% url 'subscription-deny-request' subscription.pk %}" class="btn btn-danger mr-1">Deny</a>
