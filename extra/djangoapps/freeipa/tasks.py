@@ -18,7 +18,7 @@ def add_user_group(subscription_user_pk):
         logger.warn("Subscription is not active. Will not add groups")
         return
 
-    groups = subscription_user.subscription.subscriptionattribute_set.filter(subscription_attribute_type__name=UNIX_GROUP_ATTRIBUTE_NAME)
+    groups = subscription_user.subscription.get_attribute_list(UNIX_GROUP_ATTRIBUTE_NAME)
     if len(groups) == 0:
         logger.info("Subscription does not have any groups. Nothing to add")
         return
@@ -26,17 +26,17 @@ def add_user_group(subscription_user_pk):
     os.environ["KRB5_CLIENT_KTNAME"] = CLIENT_KTNAME
     for g in groups:
         if FREEIPA_NOOP:
-            logger.warn("NOOP - FreeIPA adding user %s to group %s", subscription_user.user.username, g.value)
+            logger.warn("NOOP - FreeIPA adding user %s to group %s", subscription_user.user.username, g)
             continue
 
         try:
-            res = api.Command.group_add_member(g.value, user=[subscription_user.user.username])
+            res = api.Command.group_add_member(g, user=[subscription_user.user.username])
             check_ipa_group_error(res)
         except Exception as e:
-            logger.error("Failed adding user %s to group %s: %s", subscription_user.user.username, g.value, e)
+            logger.error("Failed adding user %s to group %s: %s", subscription_user.user.username, g, e)
             set_subscription_user_status_to_error(subscription_user_pk)
         else:
-            logger.info("Added user %s to group %s successfully", subscription_user.user.username, g.value)
+            logger.info("Added user %s to group %s successfully", subscription_user.user.username, g)
 
 def remove_user_group(subscription_user_pk):
     subscription_user = SubscriptionUser.objects.get(pk=subscription_user_pk)
@@ -44,7 +44,7 @@ def remove_user_group(subscription_user_pk):
         logger.warn("Subscription is not active or pending. Will not remove groups.")
         return
 
-    groups = subscription_user.subscription.subscriptionattribute_set.filter(subscription_attribute_type__name=UNIX_GROUP_ATTRIBUTE_NAME)
+    groups = subscription_user.subscription.get_attribute_list(UNIX_GROUP_ATTRIBUTE_NAME)
     if len(groups) == 0:
         logger.info("Subscription does not have any groups. Nothing to remove")
         return
@@ -52,14 +52,14 @@ def remove_user_group(subscription_user_pk):
     os.environ["KRB5_CLIENT_KTNAME"] = CLIENT_KTNAME
     for g in groups:
         if FREEIPA_NOOP:
-            logger.warn("NOOP - FreeIPA removing user %s from group %s", subscription_user.user.username, g.value)
+            logger.warn("NOOP - FreeIPA removing user %s from group %s", subscription_user.user.username, g)
             continue
 
         try:
-            res = api.Command.group_remove_member(g.value, user=[subscription_user.user.username])
+            res = api.Command.group_remove_member(g, user=[subscription_user.user.username])
             check_ipa_group_error(res)
         except Exception as e:
-            logger.error("Failed removing user %s from group %s: %s", subscription_user.user.username, g.value, e)
+            logger.error("Failed removing user %s from group %s: %s", subscription_user.user.username, g, e)
             set_subscription_user_status_to_error(subscription_user_pk)
         else:
-            logger.info("Removed user %s from group %s successfully", subscription_user.user.username, g.value)
+            logger.info("Removed user %s from group %s successfully", subscription_user.user.username, g)
