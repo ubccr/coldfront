@@ -215,8 +215,11 @@ class Command(BaseCommand):
             self.noop = True
             logger.warn("NOOP enabled")
 
-        with open(options['input']) as fh:
-            slurm_cluster = SlurmCluster.new_from_stream(fh)
+        if options['input'] == '-':
+            slurm_cluster = SlurmCluster.new_from_stream(sys.stdin)
+        else:
+            with open(options['input']) as fh:
+                slurm_cluster = SlurmCluster.new_from_stream(fh)
 
         if slurm_cluster.name in SLURM_IGNORE_CLUSTERS:
             logger.warn("Ignoring cluster %s. Nothing to do.", slurm_cluster.name)
