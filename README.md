@@ -98,9 +98,25 @@ Password for all users is also `teset1234`.
 
 ## Directory structure
 
-- core - The core Coldfront application
-- common - Common code shared between applications
-- extra - Extra applications that can be configured in Coldfront
+- coldfront
+    - core - The core Coldfront application
+        - field_of_science
+        - grant
+        - portal
+        - project
+        - publication
+        - resource
+        - subscription
+        - user
+        - utils
+    - libs - Helper libraries
+    - plugins - Plugins that can be configured in Coldfront
+        - freeipa
+        - iquota
+        - ldap_user_search
+        - mokey_oidc
+        - slurm
+        - system_monitor
 
 ## License
 
