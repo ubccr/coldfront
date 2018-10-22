@@ -31,6 +31,15 @@ def _run_slurm_cmd(cmd, noop=True):
     try:
         result = subprocess.run(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
     except subprocess.CalledProcessError as e:
+        if 'Nothing deleted' in str(e.stdout):
+            # We tried to delete something that didn't exist. Don't throw error
+            logger.warn('Nothing to delete: %s', cmd)
+            return e.stdout
+        if 'Nothing new added' in str(e.stdout):
+            # We tried to add something that already exists. Don't throw error
+            logger.warn('Nothing new to add: %s', cmd)
+            return e.stdout
+
         logger.error('Slurm command failed: %s', cmd)
         err_msg = 'return_value={} stdout={} stderr={}'.format(e.returncode, e.stdout, e.stderr)
         raise SlurmError(err_msg)
