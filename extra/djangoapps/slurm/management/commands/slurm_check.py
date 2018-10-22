@@ -3,6 +3,7 @@ import os
 import sys
 
 from django.core.management.base import BaseCommand, CommandError
+from django.conf import settings
 
 from common.djangolibs.utils import import_from_settings
 from core.djangoapps.resources.models import ResourceAttribute
@@ -15,6 +16,7 @@ from extra.djangoapps.slurm.utils import SlurmError, slurm_remove_account, slurm
 SLURM_IGNORE_USERS = import_from_settings('SLURM_IGNORE_USERS', [])
 SLURM_IGNORE_ACCOUNTS = import_from_settings('SLURM_IGNORE_ACCOUNTS', [])
 SLURM_IGNORE_CLUSTERS = import_from_settings('SLURM_IGNORE_CLUSTERS', [])
+SLURM_NOOP = import_from_settings('SLURM_NOOP', False)
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +26,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("-i", "--input", help="Input sacctmgr dump flat file", required=True)
         parser.add_argument("-s", "--sync", help="Remove associations in Slurm that no longer exist in Coldfront", action="store_true")
+        parser.add_argument("-n", "--noop", help="Print commands only. Do not run any commands.", action="store_true")
         parser.add_argument("-u", "--username", help="Check specific username")
         parser.add_argument("-a", "--account", help="Check specific account")
         parser.add_argument("-x", "--header", help="Include header in output", action="store_true")
@@ -72,7 +75,7 @@ class Command(BaseCommand):
 
         if self.sync:
             try:
-                slurm_remove_assoc(user, cluster, account)
+                slurm_remove_assoc(user, cluster, account, noop=self.noop)
             except SlurmError as e:
                 logger.error("Failed removing Slurm association user %s account %s cluster %s: %s", user, account, cluster, e)
             else:
@@ -93,7 +96,7 @@ class Command(BaseCommand):
 
         if self.sync:
             try:
-                slurm_remove_account(cluster, account)
+                slurm_remove_account(cluster, account, noop=self.noop)
             except SlurmError as e:
                 logger.error("Failed removing Slurm account %s cluster %s: %s", account, cluster, e)
             else:
@@ -117,7 +120,7 @@ class Command(BaseCommand):
                 spec_list = []
                 if len(specs) > 0:
                     spec_list = specs.split(':')
-                slurm_add_assoc(user, cluster, account, specs=spec_list)
+                slurm_add_assoc(user, cluster, account, specs=spec_list, noop=self.noop)
             except SlurmError as e:
                 logger.error("Failed adding Slurm association user %s account %s cluster %s: %s", user, account, cluster, e)
             else:
@@ -141,7 +144,7 @@ class Command(BaseCommand):
                 spec_list = []
                 if len(specs) > 0:
                     spec_list = specs.split(':')
-                slurm_add_account(cluster, account, specs=spec_list)
+                slurm_add_account(cluster, account, specs=spec_list, noop=self.noop)
             except SlurmError as e:
                 logger.error("Failed adding Slurm account %s cluster %s: %s", account, cluster, e)
             else:
@@ -206,6 +209,11 @@ class Command(BaseCommand):
         if options['sync']:
             self.sync = True
             logger.warn("Syncing Slurm with Coldfront")
+
+        self.noop = SLURM_NOOP
+        if options['noop']:
+            self.noop = True
+            logger.warn("NOOP enabled")
 
         with open(options['input']) as fh:
             slurm_cluster = SlurmCluster.new_from_stream(fh)

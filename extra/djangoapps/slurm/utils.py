@@ -10,7 +10,6 @@ SLURM_CLUSTER_ATTRIBUTE_NAME = import_from_settings('SLURM_CLUSTER_ATTRIBUTE_NAM
 SLURM_ACCOUNT_ATTRIBUTE_NAME = import_from_settings('SLURM_ACCOUNT_ATTRIBUTE_NAME', 'slurm_account_name')
 SLURM_SPECS_ATTRIBUTE_NAME = import_from_settings('SLURM_SPECS_ATTRIBUTE_NAME', 'slurm_specs')
 SLURM_USER_SPECS_ATTRIBUTE_NAME = import_from_settings('SLURM_USER_SPECS_ATTRIBUTE_NAME', 'slurm_user_specs')
-SLURM_NOOP = import_from_settings('SLURM_NOOP', False)
 SLURM_SACCTMGR_PATH = import_from_settings('SLURM_SACCTMGR_PATH', '/usr/bin/sacctmgr')
 SLURM_CMD_REMOVE_USER = SLURM_SACCTMGR_PATH + ' -Q -i delete user where name={} cluster={} account={}'
 SLURM_CMD_REMOVE_ACCOUNT = SLURM_SACCTMGR_PATH + ' -Q -i delete account where name={} cluster={}'
@@ -41,33 +40,33 @@ def _run_slurm_cmd(cmd, noop=True):
 
     return result.stdout
 
-def slurm_remove_assoc(user, cluster, account):
+def slurm_remove_assoc(user, cluster, account, noop=False):
     cmd = SLURM_CMD_REMOVE_USER.format(user, cluster, account)
-    _run_slurm_cmd(cmd, noop=SLURM_NOOP)
+    _run_slurm_cmd(cmd, noop=noop)
 
-def slurm_remove_account(cluster, account):
+def slurm_remove_account(cluster, account, noop=False):
     cmd = SLURM_CMD_REMOVE_ACCOUNT.format(account, cluster)
-    _run_slurm_cmd(cmd, noop=SLURM_NOOP)
+    _run_slurm_cmd(cmd, noop=noop)
 
-def slurm_add_assoc(user, cluster, account, specs=None):
+def slurm_add_assoc(user, cluster, account, specs=None, noop=False):
     if specs is None:
         specs = []
     cmd = SLURM_CMD_ADD_USER.format(user, cluster, account)
     if len(specs) > 0:
         cmd += ' ' + ' '.join(specs)
-    _run_slurm_cmd(cmd, noop=SLURM_NOOP)
+    _run_slurm_cmd(cmd, noop=noop)
 
-def slurm_add_account(cluster, account, specs=None):
+def slurm_add_account(cluster, account, specs=None, noop=False):
     if specs is None:
         specs = []
     cmd = SLURM_CMD_ADD_ACCOUNT.format(account, cluster)
     if len(specs) > 0:
         cmd += ' ' + ' '.join(specs)
-    _run_slurm_cmd(cmd, noop=SLURM_NOOP)
+    _run_slurm_cmd(cmd, noop=noop)
 
-def slurm_block_account(cluster, account):
+def slurm_block_account(cluster, account, noop=False):
     cmd = SLURM_CMD_BLOCK_ACCOUNT.format(account, cluster)
-    _run_slurm_cmd(cmd, noop=SLURM_NOOP)
+    _run_slurm_cmd(cmd, noop=noop)
 
 def slurm_check_assoc(user, cluster, account):
     cmd = SLURM_CMD_CHECK_ASSOCIATION.format(user, cluster, account)
