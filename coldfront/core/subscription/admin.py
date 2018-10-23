@@ -24,7 +24,7 @@ class SubscriptionUserInline(admin.TabularInline):
     model = SubscriptionUser
     extra = 0
     fields = ('user', 'status', )
-    readonly_fields = ('user', )
+    raw_id_fields = ('user', )
 
 
 class SubscriptionAttributeInline(admin.TabularInline):
@@ -220,6 +220,7 @@ class SubscriptionUserAdmin(SimpleHistoryAdmin):
         'user__last_name',
         'user__username',
     )
+    raw_id_fields = ('subscription', 'user', )
 
     def subscription_status(self, obj):
         return obj.subscription.status
