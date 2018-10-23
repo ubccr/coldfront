@@ -1,5 +1,4 @@
 arrow==0.12.1
-beautifulsoup4==4.6.3
 bibtexparser==1.0.1
 blessed==1.15.0
 certifi==2018.8.24

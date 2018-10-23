@@ -1,1 +1,2 @@
 ipaclient==4.7.0
+gssapi==1.5.1
