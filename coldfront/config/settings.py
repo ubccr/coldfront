@@ -145,7 +145,7 @@ LOGIN_URL = '/user/login'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
-SU_LOGIN_CALLBACK = "coldfront.core.utils.su_login_callback"
+SU_LOGIN_CALLBACK = "coldfront.core.utils.common.su_login_callback"
 SU_LOGOUT_REDIRECT_URL = "/admin/auth/user/"
 
 #------------------------------------------------------------------------------
