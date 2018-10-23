@@ -1,0 +1,7 @@
+{% if 'coldfront.plugins.iquota' in EXTRA_APPS and user.is_authenticated %}
+  {% include "iquota/iquota_div.html" %} 
+{% endif %}
+
+{% if 'coldfront.plugins.system_monitor' in EXTRA_APPS %}
+  {% include "system_monitor/system_monitor_div.html" %} 
+{% endif %}
