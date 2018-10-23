@@ -10,7 +10,7 @@ from coldfront.plugins.slurm.associations import SlurmCluster
 logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
-    help = 'Dump slurm assocations for sacctmgr in flat file format'
+    help = 'Dump slurm associations for sacctmgr in flat file format'
 
     def add_arguments(self, parser):
         parser.add_argument("-o", "--output", help="Path to output directory")

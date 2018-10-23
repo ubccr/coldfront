@@ -7,7 +7,7 @@ the Slurm flat file format see [here](https://slurm.schedmd.com/sacctmgr.html).
 
 A command line tool is also provided with this app that allows an administrator
 to check the consistency between Coldfront and Slurm and optionally remove any
-assocations that should not be in Slurm according to Coldfront.
+associations that should not be in Slurm according to Coldfront.
 
 ## Design
 
@@ -62,15 +62,15 @@ You can then load this file into Slurm with the following command:
 Resources in Coldfront can optionally be organized into parent/child
 relationships. This is useful in the context of Slurm for example if you have a
 single Slurm controller with multiple partitions. Each partition represents a
-seperate resource in Coldfront that users can subscribe to. In this case you
+separate resource in Coldfront that users can subscribe to. In this case you
 would create a parent resource that represents your Slurm cluster (or
 controller) with a resource type of "Cluster". Each Slurm partition would be a
-seperate resource in Coldfront with a resource type of "Partition" and have
+separate resource in Coldfront with a resource type of "Partition" and have
 their parent resource set to the Slurm cluster. Users wouldn't subscribe to the
-parent Slurm cluster resource but only subcribe to the parition resources. Here
+parent Slurm cluster resource but only subscribe to the partition resources. Here
 you would only set the "slurm\_cluster" resource attribute on the Slurm cluster
 resource and not on the partitions. Also, "slurm\_specs" resource attribute on
-paritions are merged with the subscription "slurm\_specs" and set on the Slurm
+partitions are merged with the subscription "slurm\_specs" and set on the Slurm
 account association instead of the cluster.
 
 ## CLI Usage
@@ -83,7 +83,7 @@ To check the consistency between Coldfront and Slurm run the following command:
 ```
 
 This will process the output of sacctmgr dump flat file and compare to active
-subscriptions in Coldfront. Any users with Slurm assocations that are not
-members of an active Subscrption in Coldfront will be reported and can be
+subscriptions in Coldfront. Any users with Slurm associations that are not
+members of an active Subscription in Coldfront will be reported and can be
 removed. You can optionally provide the '--sync' flag and this tool will remove
-assocations in Slurm using sacctmgr.
+associations in Slurm using sacctmgr.

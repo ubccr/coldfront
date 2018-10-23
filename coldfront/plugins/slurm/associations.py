@@ -117,7 +117,7 @@ class SlurmCluster(SlurmBase):
         self.accounts[name] = account
 
     def write(self, out):
-        self._write(out, "# Coldfront Subscription Slurm assocations dump {}\n".format(datetime.datetime.now().date()))
+        self._write(out, "# Coldfront Subscription Slurm associations dump {}\n".format(datetime.datetime.now().date()))
         self._write(out, "Cluster - '{}':{}\n".format(
             self.name,
             self.format_specs(),
