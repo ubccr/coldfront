@@ -1,17 +1,25 @@
 import datetime
 import logging
+import importlib
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.html import mark_safe
+from django.utils.module_loading import import_string
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
 from coldfront.core.project.models import Project
 from coldfront.core.resources.models import Resource
+from coldfront.core.utils.common import import_from_settings
+
 
 logger = logging.getLogger(__name__)
+
+
+SUBSCRIPTION_FUNCS_ON_EXPIRE = import_from_settings('SUBSCRIPTION_FUNCS_ON_EXPIRE', [])
+
 
 class SubscriptionStatusChoice(TimeStampedModel):
     name = models.CharField(max_length=64)
@@ -50,6 +58,16 @@ class Subscription(TimeStampedModel):
             raise ValidationError(
                 'You cannot set the status of this subscription to active without changing the active until date.')
 
+    def save(self, *args, **kwargs):
+        if self.pk:
+            old_obj = Subscription.objects.get(pk=self.pk)
+            if old_obj.status.name != self.status.name and self.status.name == 'Expired':
+                for func_string in SUBSCRIPTION_FUNCS_ON_EXPIRE:
+                    func_to_run = import_string(func_string)
+                    func_to_run(self.pk)
+
+        super().save(*args, **kwargs)
+
     @property
     def expires_in(self):
         return (self.active_until - datetime.date.today()).days
@@ -65,7 +83,8 @@ class Subscription(TimeStampedModel):
                                     float(attribute.value) * 10000) / 100
                 except ValueError:
                     percent = 'Invalid Value'
-                    logger.error("Subscription attribute '%s' is not an int but has a usage", attribute.subscription_attribute_type.name)
+                    logger.error("Subscription attribute '%s' is not an int but has a usage",
+                                 attribute.subscription_attribute_type.name)
 
                 string = '{}: {}/{} ({} %) <br>'.format(
                     attribute.subscription_attribute_type.name,
@@ -97,6 +116,9 @@ class Subscription(TimeStampedModel):
 
     def __str__(self):
         return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
+
+    class Meta:
+        ordering = ['pk', ]
 
 
 class SubscriptionAdminComment(TimeStampedModel):

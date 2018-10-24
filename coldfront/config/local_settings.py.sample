@@ -69,6 +69,12 @@ LOGGING = {
 #------------------------------------------------------------------------------
 # ENABLE_PROJECT_REVIEW = False
 
+#------------------------------------------------------------------------------
+# Extra ColdFront configurations
+#------------------------------------------------------------------------------
+# Subscription functions to run on expiration
+# SUBSCRIPTION_FUNCS_ON_EXPIRE = ['coldfront.core.subscription.utils.test_subscription_function', ]
+
 
 #------------------------------------------------------------------------------
 # Custom Database settings

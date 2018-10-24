@@ -26,11 +26,14 @@ EMAIL_SUBSCRIPTION_EXPIRING_NOTIFICATION_DAYS = import_from_settings(
 
 def update_statuses():
 
-    number_expired = Subscription.objects.filter(
-        status__name='Active', active_until__lt=datetime.datetime.now().date()).update(
-        status=SubscriptionStatusChoice.objects.get(name='Expired'))
+    expired_status_choice = SubscriptionStatusChoice.objects.get(name='Expired')
+    subscriptions_to_expire = Subscription.objects.filter(
+        status__name='Active', active_until__lt=datetime.datetime.now().date())
+    for sub_obj in subscriptions_to_expire:
+        sub_obj.status = expired_status_choice
+        sub_obj.save()
 
-    logger.info('Subscriptions set to expired: {}'.format(number_expired))
+    logger.info('Subscriptions set to expired: {}'.format(subscriptions_to_expire.count()))
 
 
 def send_expiry_emails():
