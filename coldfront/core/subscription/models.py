@@ -1,5 +1,6 @@
 import datetime
 import logging
+import importlib
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -10,8 +11,14 @@ from simple_history.models import HistoricalRecords
 
 from coldfront.core.project.models import Project
 from coldfront.core.resources.models import Resource
+from coldfront.core.utils.common import import_from_settings
+
 
 logger = logging.getLogger(__name__)
+
+
+
+SUBSCRIPTION_FUNCS_ON_EXPIRE = import_from_settings('SUBSCRIPTION_FUNCS_ON_EXPIRE', [])
 
 class SubscriptionStatusChoice(TimeStampedModel):
     name = models.CharField(max_length=64)
@@ -33,6 +40,7 @@ class Subscription(TimeStampedModel):
     justification = models.TextField()
     history = HistoricalRecords()
 
+
     class Meta:
         ordering = ['active_until']
 
@@ -49,6 +57,21 @@ class Subscription(TimeStampedModel):
         elif self.status.name == 'Active' and self.active_until < datetime.datetime.now().date():
             raise ValidationError(
                 'You cannot set the status of this subscription to active without changing the active until date.')
+
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            old_obj = Subscription.objects.get(pk=self.pk)
+            if old_obj.status.name != self.status.name and self.status.name == 'Expired':
+                for func_string in SUBSCRIPTION_FUNCS_ON_EXPIRE:
+                    module = func_string.split('.')
+                    func_name = module[-1]
+                    module = '.'.join(module[:-1])
+                    module = importlib.import_module(module)
+                    func_to_run = getattr(module, func_name)
+                    func_to_run(self.pk)
+
+        super().save(*args, **kwargs)
 
     @property
     def expires_in(self):
@@ -97,6 +120,10 @@ class Subscription(TimeStampedModel):
 
     def __str__(self):
         return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
+
+    class Meta:
+        ordering = ['pk', ]
+
 
 
 class SubscriptionAdminComment(TimeStampedModel):

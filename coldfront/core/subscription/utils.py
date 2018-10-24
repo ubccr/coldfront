@@ -52,5 +52,5 @@ def get_user_resources(user_obj):
     return resources
 
 
-def update_subscription_status():
-    print('hello!')
+def test_subscription_function(subcription_pk):
+    print('test_subscription_function', subcription_pk)
