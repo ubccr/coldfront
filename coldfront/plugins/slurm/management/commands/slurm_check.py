@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import tempfile
 
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
@@ -9,7 +10,7 @@ from coldfront.core.utils.common import import_from_settings
 from coldfront.core.resources.models import ResourceAttribute
 from coldfront.plugins.slurm.associations import SlurmCluster
 from coldfront.plugins.slurm.utils import SlurmError, slurm_remove_account, slurm_remove_assoc, \
-              slurm_add_assoc, slurm_add_account, SLURM_CLUSTER_ATTRIBUTE_NAME, \
+              slurm_add_assoc, slurm_add_account, slurm_dump_cluster, SLURM_CLUSTER_ATTRIBUTE_NAME, \
               SLURM_ACCOUNT_ATTRIBUTE_NAME, SLURM_USER_SPECS_ATTRIBUTE_NAME
 
 
@@ -24,7 +25,8 @@ class Command(BaseCommand):
     help = 'Check consistency between Slurm associations and Coldfront subscriptions'
 
     def add_arguments(self, parser):
-        parser.add_argument("-i", "--input", help="Input sacctmgr dump flat file", required=True)
+        parser.add_argument("-i", "--input", help="Path to sacctmgr dump flat file as input. Defaults to stdin")
+        parser.add_argument("-c", "--cluster", help="Run sacctmgr dump [cluster] as input")
         parser.add_argument("-s", "--sync", help="Remove associations in Slurm that no longer exist in Coldfront", action="store_true")
         parser.add_argument("-n", "--noop", help="Print commands only. Do not run any commands.", action="store_true")
         parser.add_argument("-u", "--username", help="Check specific username")
@@ -193,6 +195,20 @@ class Command(BaseCommand):
         # Check for accounts in Colfront NOT in Slurm
         self._diff(coldfront_cluster, slurm_cluster, 'Add')
 
+    def _cluster_from_dump(self, cluster):
+        slurm_cluster = None
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fname = os.path.join(tmpdir, 'cluster.cfg')
+            try:
+                slurm_dump_cluster(cluster, fname, noop=self.noop)
+                if not self.noop:
+                    with open(fname) as fh:
+                        slurm_cluster = SlurmCluster.new_from_stream(fh)
+            except SlurmError as e:
+                logger.error("Failed to dump Slurm cluster %s: %s", cluster, e)
+
+        return slurm_cluster
+
     def handle(self, *args, **options):
         verbosity = int(options['verbosity'])
         root_logger = logging.getLogger('')
@@ -215,11 +231,17 @@ class Command(BaseCommand):
             self.noop = True
             logger.warn("NOOP enabled")
 
-        if options['input'] == '-':
-            slurm_cluster = SlurmCluster.new_from_stream(sys.stdin)
-        else:
+        if options['cluster']:
+            slurm_cluster = self._cluster_from_dump(options['cluster'])
+        elif options['input']:
             with open(options['input']) as fh:
                 slurm_cluster = SlurmCluster.new_from_stream(fh)
+        else:
+            slurm_cluster = SlurmCluster.new_from_stream(sys.stdin)
+
+        if not slurm_cluster:
+            logger.error("Failed to import existing Slurm associations")
+            sys.exit(1)
 
         if slurm_cluster.name in SLURM_IGNORE_CLUSTERS:
             logger.warn("Ignoring cluster %s. Nothing to do.", slurm_cluster.name)
