@@ -200,10 +200,9 @@ class Command(BaseCommand):
         with tempfile.TemporaryDirectory() as tmpdir:
             fname = os.path.join(tmpdir, 'cluster.cfg')
             try:
-                slurm_dump_cluster(cluster, fname, noop=self.noop)
-                if not self.noop:
-                    with open(fname) as fh:
-                        slurm_cluster = SlurmCluster.new_from_stream(fh)
+                slurm_dump_cluster(cluster, fname)
+                with open(fname) as fh:
+                    slurm_cluster = SlurmCluster.new_from_stream(fh)
             except SlurmError as e:
                 logger.error("Failed to dump Slurm cluster %s: %s", cluster, e)
 
