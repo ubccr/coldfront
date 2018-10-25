@@ -17,6 +17,7 @@ SLURM_CMD_ADD_ACCOUNT = SLURM_SACCTMGR_PATH + ' -Q -i create account name={} clu
 SLURM_CMD_ADD_USER = SLURM_SACCTMGR_PATH + ' -Q -i create user name={} cluster={} account={}'
 SLURM_CMD_CHECK_ASSOCIATION = SLURM_SACCTMGR_PATH + ' list associations User={} Cluster={} Account={} Format=Cluster,Account,User,QOS -P'
 SLURM_CMD_BLOCK_ACCOUNT = SLURM_SACCTMGR_PATH + ' -Q -i modify account {} where Cluster={} set GrpSubmitJobs=0'
+SLURM_CMD_DUMP_CLUSTER = SLURM_SACCTMGR_PATH + ' dump {} file={}'
 
 logger = logging.getLogger(__name__)
 
@@ -50,17 +51,17 @@ def _run_slurm_cmd(cmd, noop=True):
     return result.stdout
 
 def slurm_remove_assoc(user, cluster, account, noop=False):
-    cmd = SLURM_CMD_REMOVE_USER.format(user, cluster, account)
+    cmd = SLURM_CMD_REMOVE_USER.format(shlex.quote(user), shlex.quote(cluster), shlex.quote(account))
     _run_slurm_cmd(cmd, noop=noop)
 
 def slurm_remove_account(cluster, account, noop=False):
-    cmd = SLURM_CMD_REMOVE_ACCOUNT.format(account, cluster)
+    cmd = SLURM_CMD_REMOVE_ACCOUNT.format(shlex.quote(account), shlex.quote(cluster))
     _run_slurm_cmd(cmd, noop=noop)
 
 def slurm_add_assoc(user, cluster, account, specs=None, noop=False):
     if specs is None:
         specs = []
-    cmd = SLURM_CMD_ADD_USER.format(user, cluster, account)
+    cmd = SLURM_CMD_ADD_USER.format(shlex.quote(user), shlex.quote(cluster), shlex.quote(account))
     if len(specs) > 0:
         cmd += ' ' + ' '.join(specs)
     _run_slurm_cmd(cmd, noop=noop)
@@ -68,17 +69,17 @@ def slurm_add_assoc(user, cluster, account, specs=None, noop=False):
 def slurm_add_account(cluster, account, specs=None, noop=False):
     if specs is None:
         specs = []
-    cmd = SLURM_CMD_ADD_ACCOUNT.format(account, cluster)
+    cmd = SLURM_CMD_ADD_ACCOUNT.format(shlex.quote(account), shlex.quote(cluster))
     if len(specs) > 0:
         cmd += ' ' + ' '.join(specs)
     _run_slurm_cmd(cmd, noop=noop)
 
 def slurm_block_account(cluster, account, noop=False):
-    cmd = SLURM_CMD_BLOCK_ACCOUNT.format(account, cluster)
+    cmd = SLURM_CMD_BLOCK_ACCOUNT.format(shlex.quote(account), shlex.quote(cluster))
     _run_slurm_cmd(cmd, noop=noop)
 
 def slurm_check_assoc(user, cluster, account):
-    cmd = SLURM_CMD_CHECK_ASSOCIATION.format(user, cluster, account)
+    cmd = SLURM_CMD_CHECK_ASSOCIATION.format(shlex.quote(user), shlex.quote(cluster), shlex.quote(account))
     output = _run_slurm_cmd(cmd, noop=False) 
 
     with StringIO(output.decode("UTF-8")) as fh:
@@ -88,3 +89,7 @@ def slurm_check_assoc(user, cluster, account):
                 return True
 
     return False
+
+def slurm_dump_cluster(cluster, fname, noop=False):
+    cmd = SLURM_CMD_DUMP_CLUSTER.format(shlex.quote(cluster), shlex.quote(fname))
+    _run_slurm_cmd(cmd, noop=noop)
