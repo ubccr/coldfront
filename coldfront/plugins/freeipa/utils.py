@@ -12,6 +12,15 @@ FREEIPA_NOOP = import_from_settings('FREEIPA_NOOP', False)
 
 logger = logging.getLogger(__name__)
 
+class ApiError(Exception):
+    pass
+
+class AlreadyMemberError(ApiError):
+    pass
+
+class NotMemberError(ApiError):
+    pass
+
 try:
     os.environ["KRB5_CLIENT_KTNAME"] = CLIENT_KTNAME
     api.bootstrap()
@@ -32,9 +41,12 @@ def check_ipa_group_error(res):
     group = res['result']['cn'][0]
     err_msg = res['failed']['member']['user'][0][1]
 
-    # If user is already a member don't error out. Silently ignore
+    # Check if user is already a member
     if err_msg == 'This entry is already a member':
-        logger.warn("User %s is already a member of group %s", user, group)
-        return
+        raise AlreadyMemberError(err_msg)
 
-    raise Exception(err_msg)
+    # Check if user is not a member
+    if err_msg == 'This entry is not a member':
+        raise NotMemberError(err_msg)
+
+    raise ApiError(err_msg)
