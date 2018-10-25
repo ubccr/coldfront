@@ -49,6 +49,7 @@ file:
         'coldfront.plugin.freeipa',
     ]
     FREEIPA_NOOP = False
+    FREEIPA_ENABLE_SIGNALS = False
     FREEIPA_KTNAME = '/path/to/user.keytab'
     FREEIPA_GROUP_ATTRIBUTE_NAME = 'freeipa_group' 
     FREEIPA_SERVER = 'freeipa.localhost.localdomain'

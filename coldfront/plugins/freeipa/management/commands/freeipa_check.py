@@ -21,6 +21,7 @@ class Command(BaseCommand):
         parser.add_argument("-s", "--sync", help="Sync changes to/from FreeIPA", action="store_true")
         parser.add_argument("-u", "--username", help="Check specific username")
         parser.add_argument("-g", "--group", help="Check specific group")
+        parser.add_argument("-n", "--noop", help="Print commands only. Do not run any commands.", action="store_true")
         parser.add_argument("-x", "--header", help="Include header in output", action="store_true")
 
     def write(self, data):
@@ -36,7 +37,7 @@ class Command(BaseCommand):
             raise ValueError('Missing FreeIPA result')
 
     def add_group(self, user, group, status):
-        if self.sync and not FREEIPA_NOOP:
+        if self.sync and not self.noop:
             try:
                 res = api.Command.group_add_member(group, user=[user.username])
                 check_ipa_group_error(res)
@@ -58,7 +59,7 @@ class Command(BaseCommand):
         self.write('\t'.join(row))
 
     def remove_group(self, user, group, status):
-        if self.sync and not FREEIPA_NOOP:
+        if self.sync and not self.noop:
             try:
                 res = api.Command.group_remove_member(group, user=[user.username])
                 check_ipa_group_error(res)
@@ -83,7 +84,7 @@ class Command(BaseCommand):
         if not self.sync:
             return
 
-        if FREEIPA_NOOP:
+        if self.noop:
             return
 
         try:
@@ -196,6 +197,11 @@ class Command(BaseCommand):
             root_logger.setLevel(logging.DEBUG)
         else:
             root_logger.setLevel(logging.WARN)
+
+        self.noop = FREEIPA_NOOP
+        if options['noop']:
+            self.noop = True
+            logger.warn("NOOP enabled")
 
         self.sync = False
         if options['sync']:

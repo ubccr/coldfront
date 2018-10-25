@@ -208,6 +208,7 @@ EXTRA_AUTHENTICATION_BACKENDS = []
 # FREEIPA_KTNAME = '/path/to/user.keytab'
 # FREEIPA_SERVER = 'freeipa.localhost.localdomain'
 # FREEIPA_USER_SEARCH_BASE = 'cn=users,cn=accounts,dc=example,dc=edu'
+# FREEIPA_ENABLE_SIGNALS = False
 # ADDITIONAL_USER_SEARCH_CLASSES = ['coldfront.plugins.freeipa.search.LDAPUserSearch',]
 
 #------------------------------------------------------------------------------
