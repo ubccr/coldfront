@@ -19,7 +19,7 @@ setup(
         'Source Code': 'https://github.com/ubccr/coldfront',
     },
     author='Andrew E. Bruno, Dori Sajdak, Mohammad Zia',
-    license='GPLv3',
+    license='GNU General Public License v3 (GPLv3)',
     packages=find_packages(),
     install_requires=[
         'arrow==0.12.1',
