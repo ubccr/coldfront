@@ -2,6 +2,7 @@
 *.swp
 coldfront.egg-info
 dist
+build
 *._*
 *.DS_Store
 *.swp
