@@ -161,7 +161,7 @@ class SubscriptionListView(LoginRequiredMixin, ListView):
                     'project', 'project__pi', 'status',).all().order_by(order_by)
             else:
                 subscriptions = Subscription.objects.prefetch_related('project', 'project__pi', 'status',).filter(
-                    Q(status__name__in=['Active', 'Approved', 'Denied', 'New', 'Pending', ]) &
+                    Q(status__name__in=['Active', 'Denied', 'New', ]) &
                     Q(project__status__name='Active') &
                     Q(project__projectuser__user=self.request.user) &
                     Q(project__projectuser__status__name='Active') &
@@ -202,7 +202,7 @@ class SubscriptionListView(LoginRequiredMixin, ListView):
 
         else:
             subscriptions = Subscription.objects.prefetch_related('project', 'project__pi', 'status',).filter(
-                Q(status__name__in=['Active', 'Pending', 'New', 'Approved']) &
+                Q(status__name__in=['Active', 'New', ]) &
                 Q(subscriptionuser__user=self.request.user) &
                 Q(subscriptionuser__status__name='Active')
             ).order_by(order_by)
@@ -405,7 +405,7 @@ class SubscriptionAddUsersView(LoginRequiredMixin, UserPassesTestMixin, Template
 
     def dispatch(self, request, *args, **kwargs):
         subscription_obj = get_object_or_404(Subscription, pk=self.kwargs.get('pk'))
-        if subscription_obj.status.name not in ['Active', 'Approved', 'New', 'Pending', ]:
+        if subscription_obj.status.name not in ['Active', 'New', 'Renewal Requested', ]:
             messages.error(request, 'You cannot add users to a subscription with status {}.'.format(
                 subscription_obj.status.name))
             return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': subscription_obj.pk}))
@@ -509,7 +509,7 @@ class SubscriptionRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templ
 
     def dispatch(self, request, *args, **kwargs):
         subscription_obj = get_object_or_404(Subscription, pk=self.kwargs.get('pk'))
-        if subscription_obj.status.name not in ['Active', 'New', 'Pending',]:
+        if subscription_obj.status.name not in ['Active', 'New', 'Renewal Requested', ]:
             messages.error(request, 'You cannot remove users from a subscription with status {}.'.format(
                 subscription_obj.status.name))
             return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': subscription_obj.pk}))
@@ -521,9 +521,9 @@ class SubscriptionRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templ
 
     def get_users_to_remove(self, subscription_obj):
         users_to_remove = list(subscription_obj.subscriptionuser_set.exclude(
-            status__name__in=['Removed', 'Error', 'Pending - Remove']).values_list('user__username', flat=True))
+            status__name__in=['Removed', 'Error', ]).values_list('user__username', flat=True))
 
-        users_to_remove = User.objects.filter(username__in=users_to_remove).exclude(pk=subscription_obj.project.pi.pk)
+        users_to_remove = User.objects.filter(username__in=users_to_remove).exclude(pk__in=[subscription_obj.project.pi.pk, self.request.user.pk])
         users_to_remove = [
 
             {'username': user.username,
@@ -601,7 +601,7 @@ class SubscriptionRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templ
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        subscription_list = Subscription.objects.filter(status__name__in=['New', 'Pending'])
+        subscription_list = Subscription.objects.filter(status__name__in=['New', ])
         context['subscription_list'] = subscription_list
         context['ENABLE_PROJECT_REVIEW'] = ENABLE_PROJECT_REVIEW
         return context
@@ -775,7 +775,7 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
 
     def get_users_in_subscription(self, subscription_obj):
         users_in_subscription = subscription_obj.subscriptionuser_set.exclude(
-            status__name__in=['Removed']).exclude(user=subscription_obj.project.pi).order_by('user__last_name')
+            status__name__in=['Removed']).exclude(user__pk__in=[subscription_obj.project.pi.pk, self.request.user.pk]).order_by('user__last_name')
 
         users = [
 
@@ -806,81 +806,53 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
 
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        old_subscription_obj = get_object_or_404(Subscription, pk=pk)
+        subscription_obj = get_object_or_404(Subscription, pk=pk)
 
-        users_in_subscription = self.get_users_in_subscription(old_subscription_obj)
+        users_in_subscription = self.get_users_in_subscription(subscription_obj)
 
         formset = formset_factory(SubscriptionReviewUserForm, max_num=len(users_in_subscription))
         formset = formset(request.POST, initial=users_in_subscription, prefix='userform')
 
+        subscription_renewal_requested_status_choice = SubscriptionStatusChoice.objects.get(name='Renewal Requested')
+        subscription_user_removed_status_choice = SubscriptionUserStatusChoice.objects.get(name='Removed')
+        project_user_remove_status_choice = ProjectUserStatusChoice.objects.get(name='Removed')
+        active_until = datetime.datetime.now() + relativedelta(years=1)
+
+        subscription_obj.status = subscription_renewal_requested_status_choice
+        subscription_obj.active_until = active_until
+        subscription_obj.save()
+
         if not users_in_subscription or formset.is_valid():
-            subscription_pending_status_choice = SubscriptionStatusChoice.objects.get(name='Pending')
-            subscription_inactive_status_choice = SubscriptionStatusChoice.objects.get(name='Inactive (Renewed)')
-
-            subscription_user_active_status_choice = SubscriptionUserStatusChoice.objects.get(name='Active')
-
-            project_user_remove_status_choice = ProjectUserStatusChoice.objects.get(name='Removed')
-
-            active_until = datetime.datetime.now() + relativedelta(years=1)
-
-            new_subscription_obj = Subscription.objects.create(
-                project=old_subscription_obj.project,
-                justification=old_subscription_obj.justification,
-                quantity=old_subscription_obj.quantity,
-                active_until=active_until,
-                status=subscription_pending_status_choice
-            )
-
-            for resource in old_subscription_obj.resources.all():
-                new_subscription_obj.resources.add(resource)
-
-            # Add PI
-            subscription_user_obj = SubscriptionUser.objects.create(
-                subscription=new_subscription_obj,
-                user=old_subscription_obj.project.pi,
-                status=subscription_user_active_status_choice)
-
-            # Copy subscription attributes
-
-            for subscription_attribute_obj in old_subscription_obj.subscriptionattribute_set.all():
-                subscription_attribute_obj.pk = None
-                subscription_attribute_obj.id = None
-                subscription_attribute_obj.subscription = new_subscription_obj
-                subscription_attribute_obj.save()
-
 
             if users_in_subscription:
                 for form in formset:
                     user_form_data = form.cleaned_data
-
                     user_obj = User.objects.get(username=user_form_data.get('username'))
-
                     user_status = user_form_data.get('user_status')
 
-                    if user_status == 'keep_in_subscription_and_project':
-                        subscription_user_obj = SubscriptionUser.objects.create(
-                            subscription=new_subscription_obj,
-                            user=user_obj,
-                            status=subscription_user_active_status_choice)
+                    if user_status == 'keep_in_project_only':
+                        subscription_user_obj = subscription_obj.subscriptionuser_set.get(user=user_obj)
+                        subscription_user_obj.status = subscription_user_removed_status_choice
+                        subscription_user_obj.save()
 
-                    elif user_status == 'keep_in_project_only':
-                        subscription_user_obj = old_subscription_obj.subscriptionuser_set.get(user=user_obj)
                         subscription_remove_user.send(sender=self.__class__, subscription_user_pk=subscription_user_obj.pk)
 
                     elif user_status == 'remove_from_project':
+                        subscription_user_obj = subscription_obj.subscriptionuser_set.get(user=user_obj)
+                        subscription_user_obj.status = subscription_user_removed_status_choice
+                        subscription_user_obj.save()
+
+                        subscription_remove_user.send(sender=self.__class__, subscription_user_pk=subscription_user_obj.pk)
+
                         project_user_obj = ProjectUser.objects.get(
-                            project=old_subscription_obj.project,
+                            project=subscription_obj.project,
                             user=user_obj)
                         project_user_obj.status = project_user_remove_status_choice
                         project_user_obj.save()
-                        subscription_user_obj = old_subscription_obj.subscriptionuser_set.get(user=user_obj)
-                        subscription_remove_user.send(sender=self.__class__, subscription_user_pk=subscription_user_obj.pk)
 
-            old_subscription_obj.status = subscription_inactive_status_choice
-            old_subscription_obj.save()
 
-            pi_name = '{} {} ({})'.format(new_subscription_obj.project.pi.first_name, new_subscription_obj.project.pi.last_name, new_subscription_obj.project.pi.username)
-            resource_name = new_subscription_obj.get_parent_resource
+            pi_name = '{} {} ({})'.format(subscription_obj.project.pi.first_name, subscription_obj.project.pi.last_name, subscription_obj.project.pi.username)
+            resource_name = subscription_obj.get_parent_resource
             domain_url = get_domain_url(self.request)
             url = '{}{}'.format(domain_url, reverse('subscription-request-list'))
 
@@ -901,4 +873,4 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
                 )
 
             messages.success(request, 'Subscription renewed successfully')
-            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': new_subscription_obj.project.pk}))
+            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': subscription_obj.project.pk}))
