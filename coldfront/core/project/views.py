@@ -43,6 +43,7 @@ from coldfront.core.subscription.signals import (subscription_activate_user,
                                                   subscription_remove_user)
 
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
+ENABLE_SUBSCRIPTION_RENEWAL = import_from_settings('ENABLE_SUBSCRIPTION_RENEWAL', True)
 if EMAIL_ENABLED:
     EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings('EMAIL_DIRECTOR_EMAIL_ADDRESS')
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
@@ -108,6 +109,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['grants'] = Grant.objects.filter(project=self.object, status__name__in=['Active', 'Pending'])
         context['subscriptions'] = subscriptions
         context['project_users'] = project_users
+        context['ENABLE_SUBSCRIPTION_RENEWAL'] = ENABLE_SUBSCRIPTION_RENEWAL
         return context
 
 

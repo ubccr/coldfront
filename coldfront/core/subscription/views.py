@@ -38,6 +38,7 @@ from coldfront.core.subscription.signals import (subscription_activate_user,
 from coldfront.core.subscription.utils import (generate_guauge_data_from_usage,
                                                 get_user_resources)
 
+ENABLE_SUBSCRIPTION_RENEWAL = import_from_settings('ENABLE_SUBSCRIPTION_RENEWAL', True)
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 if EMAIL_ENABLED:
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
@@ -124,6 +125,9 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
         else:
             context['is_allowed_to_update_project'] = False
         context['subscription_users'] = subscription_users
+
+
+        context['ENABLE_SUBSCRIPTION_RENEWAL'] = ENABLE_SUBSCRIPTION_RENEWAL
         return context
 
 
@@ -747,6 +751,12 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
 
     def dispatch(self, request, *args, **kwargs):
         subscription_obj = get_object_or_404(Subscription, pk=self.kwargs.get('pk'))
+
+
+        if not ENABLE_SUBSCRIPTION_RENEWAL:
+            messages.error(request, 'Subscription renewal is disabled. Request a new subscription to this resource if you want to continue using it after the active until date.')
+            return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': subscription_obj.pk}))
+
 
         if subscription_obj.status.name not in ['Active', ]:
             messages.error(request, 'You cannot renew a subscription with status {}.'.format(

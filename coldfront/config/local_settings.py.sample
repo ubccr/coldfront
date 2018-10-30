@@ -70,6 +70,12 @@ LOGGING = {
 ENABLE_PROJECT_REVIEW = True
 
 #------------------------------------------------------------------------------
+# Enable Subscription Renewal
+#------------------------------------------------------------------------------
+ENABLE_SUBSCRIPTION_RENEWAL = True
+
+
+#------------------------------------------------------------------------------
 # Extra ColdFront configurations
 #------------------------------------------------------------------------------
 # Subscription functions to run on expiration
