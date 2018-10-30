@@ -11,7 +11,7 @@ from simple_history.models import HistoricalRecords
 from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.utils.common import import_from_settings
 
-ENABLE_PROJECT_REVIEW = import_from_settings('ENABLE_PROJECT_REVIEW', False)
+PROJECT_ENABLE_PROJECT_REVIEW = import_from_settings('PROJECT_ENABLE_PROJECT_REVIEW', False)
 
 class ProjectStatusChoice(TimeStampedModel):
     name = models.CharField(max_length=64)
@@ -82,7 +82,7 @@ We do not have information about your research. Please provide a detailed descri
         if self.force_review is True:
             return True
 
-        if not ENABLE_PROJECT_REVIEW:
+        if not PROJECT_ENABLE_PROJECT_REVIEW:
             return False
 
         if self.requires_review is False:

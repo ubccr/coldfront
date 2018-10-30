@@ -42,8 +42,11 @@ from coldfront.core.subscription.models import (Subscription,
 from coldfront.core.subscription.signals import (subscription_activate_user,
                                                   subscription_remove_user)
 
+
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
-ENABLE_SUBSCRIPTION_RENEWAL = import_from_settings('ENABLE_SUBSCRIPTION_RENEWAL', True)
+SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL = import_from_settings('SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL', True)
+SUBSCRIPTION_DEFAULT_SUBSCRIPTION_LENGTH = import_from_settings('SUBSCRIPTION_DEFAULT_SUBSCRIPTION_LENGTH', 365)
+
 if EMAIL_ENABLED:
     EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings('EMAIL_DIRECTOR_EMAIL_ADDRESS')
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
@@ -109,7 +112,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['grants'] = Grant.objects.filter(project=self.object, status__name__in=['Active', 'Pending'])
         context['subscriptions'] = subscriptions
         context['project_users'] = project_users
-        context['ENABLE_SUBSCRIPTION_RENEWAL'] = ENABLE_SUBSCRIPTION_RENEWAL
+        context['SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL'] = SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL
         return context
 
 

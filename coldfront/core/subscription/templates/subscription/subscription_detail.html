@@ -46,7 +46,7 @@ Subscription Detail
         </tr>
         <tr>
           <th style="white-space:nowrap;">Active Until:</th>
-          <td>{{ subscription.active_until }} {% if ENABLE_SUBSCRIPTION_RENEWAL and subscription.status.name == 'Active' and subscription.expires_in <= 60 and subscription.expires_in >= 0 %} <a href="{% url 'subscription-renew' subscription.pk %}"><span class="badge badge-warning"><i class="fas fa-redo-alt"></i> Expires in {{subscription.expires_in}} day{{subscription.expires_in|pluralize}}</span></a>{% endif %}</td>
+          <td>{{ subscription.active_until }} {% if SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL and subscription.status.name == 'Active' and subscription.expires_in <= 60 and subscription.expires_in >= 0 %} <a href="{% url 'subscription-renew' subscription.pk %}"><span class="badge badge-warning"><i class="fas fa-redo-alt"></i> Expires in {{subscription.expires_in}} day{{subscription.expires_in|pluralize}}</span></a>{% endif %}</td>
         </tr>
         <tr>
           <th style="white-space:nowrap;">Created:</th>

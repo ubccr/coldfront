@@ -38,7 +38,9 @@ from coldfront.core.subscription.signals import (subscription_activate_user,
 from coldfront.core.subscription.utils import (generate_guauge_data_from_usage,
                                                 get_user_resources)
 
-ENABLE_SUBSCRIPTION_RENEWAL = import_from_settings('ENABLE_SUBSCRIPTION_RENEWAL', True)
+SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL = import_from_settings('SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL', True)
+SUBSCRIPTION_DEFAULT_SUBSCRIPTION_LENGTH = import_from_settings('SUBSCRIPTION_DEFAULT_SUBSCRIPTION_LENGTH', 365)
+
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 if EMAIL_ENABLED:
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
@@ -127,7 +129,7 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
         context['subscription_users'] = subscription_users
 
 
-        context['ENABLE_SUBSCRIPTION_RENEWAL'] = ENABLE_SUBSCRIPTION_RENEWAL
+        context['SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL'] = SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL
         return context
 
 
@@ -336,13 +338,11 @@ class SubscriptionCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         if project_obj.pi not in users:
             users.append(project_obj.pi)
 
-        active_until = datetime.datetime.now() + relativedelta(years=1)
         subscription_new_status = SubscriptionStatusChoice.objects.get(name='New')
         subscription_obj = Subscription.objects.create(
             project=project_obj,
             justification=justification,
             quantity=quantity,
-            active_until=active_until,
             status=subscription_new_status
         )
         subscription_obj.resources.add(resource_obj)
@@ -625,7 +625,10 @@ class SubscriptionActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, V
         subscription_obj = get_object_or_404(Subscription, pk=pk)
 
         subscription_status_active_obj = SubscriptionStatusChoice.objects.get(name='Active')
+        active_until = datetime.datetime.now() + relativedelta(days=SUBSCRIPTION_DEFAULT_SUBSCRIPTION_LENGTH)
+
         subscription_obj.status = subscription_status_active_obj
+        subscription_obj.active_until = active_until
         subscription_obj.save()
 
         messages.success(request, 'Subscription to {} has been ACTIVATED for {} {} ({})'.format(
@@ -687,7 +690,10 @@ class SubscriptionDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View)
         subscription_obj = get_object_or_404(Subscription, pk=pk)
 
         subscription_status_denied_obj = SubscriptionStatusChoice.objects.get(name='Denied')
+        active_until = datetime.datetime.now()
+
         subscription_obj.status = subscription_status_denied_obj
+        subscription_obj.active_until = active_until
         subscription_obj.save()
 
         messages.success(request, 'Subscription to {} has been DENIED for {} {} ({})'.format(
@@ -753,7 +759,7 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         subscription_obj = get_object_or_404(Subscription, pk=self.kwargs.get('pk'))
 
 
-        if not ENABLE_SUBSCRIPTION_RENEWAL:
+        if not SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL:
             messages.error(request, 'Subscription renewal is disabled. Request a new subscription to this resource if you want to continue using it after the active until date.')
             return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': subscription_obj.pk}))
 
@@ -816,10 +822,8 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         subscription_renewal_requested_status_choice = SubscriptionStatusChoice.objects.get(name='Renewal Requested')
         subscription_user_removed_status_choice = SubscriptionUserStatusChoice.objects.get(name='Removed')
         project_user_remove_status_choice = ProjectUserStatusChoice.objects.get(name='Removed')
-        active_until = datetime.datetime.now() + relativedelta(years=1)
 
         subscription_obj.status = subscription_renewal_requested_status_choice
-        subscription_obj.active_until = active_until
         subscription_obj.save()
 
         if not users_in_subscription or formset.is_valid():

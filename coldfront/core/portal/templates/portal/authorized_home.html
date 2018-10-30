@@ -42,6 +42,8 @@
               <td>{{subscription.get_parent_resource}}</td>
               {%  if subscription.status.name == "Expired" and subscription.expires_in < 0 %}
                   <td><a href="{% url 'subscription-detail' subscription.id %}"  class="btn btn-danger btn-block">Expired</a></td>
+              {%  elif subscription.status.name == "Renewal Requested" %}
+                  <td><a href="{% url 'subscription-detail' subscription.id %}"  class="btn btn-danger btn-block">Renewal Requested</a></td>
               {%  elif subscription.expires_in >= 0 and  subscription.expires_in <= 30 %}
                   <td><a href="{% url 'subscription-detail' subscription.id %}"  class="btn btn-danger btn-block">Expires in <span class="badge badge-light">{{subscription.expires_in}}</span> day{{subscription.expires_in|pluralize }}</a></td>
               {% elif subscription.expires_in > 30 and subscription.expires_in <= 90 %}
