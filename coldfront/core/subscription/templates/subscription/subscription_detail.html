@@ -119,7 +119,7 @@ Subscription Detail
     <div class="float-right">
       {% if subscription.project.status.name != 'Archived' and is_allowed_to_update_project and subscription.status.name in 'Active,Approved,New,Pending' %}
         <a class="btn btn-success" href="{% url 'subscription-add-users' subscription.pk %}" role="button"><i class="fas fa-user-plus"></i> Add Users</a>
-        <a class="btn btn-danger" href="{% url 'subscription-delete-users' subscription.pk %}" role="button"><i class="fas fa-user-times"></i></i> Delete Users</a>    
+        <a class="btn btn-danger" href="{% url 'subscription-remove-users' subscription.pk %}" role="button"><i class="fas fa-user-times"></i></i> Remove Users</a>    
       {% endif %}
     </div>
 

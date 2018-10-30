@@ -25,7 +25,7 @@ from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.project.models import (Project, ProjectUser,
                                             ProjectUserStatusChoice)
 from coldfront.core.subscription.forms import (SubscriptionAddUserForm,
-                                                SubscriptionDeleteUserForm,
+                                                SubscriptionRemoveUserForm,
                                                 SubscriptionForm,
                                                 SubscriptionReviewUserForm,
                                                 SubscriptionSearchForm)
@@ -484,8 +484,8 @@ class SubscriptionAddUsersView(LoginRequiredMixin, UserPassesTestMixin, Template
             return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': pk}))
 
 
-class SubscriptionDeleteUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
-    template_name = 'subscription/subscription_delete_users.html'
+class SubscriptionRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'subscription/subscription_remove_users.html'
     login_url = "/"  # redirect URL if fail test_func
 
     def test_func(self):
@@ -501,47 +501,47 @@ class SubscriptionDeleteUsersView(LoginRequiredMixin, UserPassesTestMixin, Templ
         if subscription_obj.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
             return True
 
-        messages.error(self.request, 'You do not have permission to delete users from subscription.')
+        messages.error(self.request, 'You do not have permission to remove users from subscription.')
 
     def dispatch(self, request, *args, **kwargs):
         subscription_obj = get_object_or_404(Subscription, pk=self.kwargs.get('pk'))
-        if subscription_obj.status.name not in ['Active', 'New', 'Pending', 'Approved', ]:
-            messages.error(request, 'You cannot delete users from a subscription with status {}.'.format(
+        if subscription_obj.status.name not in ['Active', 'New', 'Pending',]:
+            messages.error(request, 'You cannot remove users from a subscription with status {}.'.format(
                 subscription_obj.status.name))
             return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': subscription_obj.pk}))
         elif subscription_obj.project.needs_review:
-            messages.error(request, 'You need to review your project before you can delete users from subscriptions.')
+            messages.error(request, 'You need to review your project before you can remove users from subscriptions.')
             return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': subscription_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
 
-    def get_users_to_delete(self, subscription_obj):
-        users_to_delete = list(subscription_obj.subscriptionuser_set.exclude(
+    def get_users_to_remove(self, subscription_obj):
+        users_to_remove = list(subscription_obj.subscriptionuser_set.exclude(
             status__name__in=['Removed', 'Error', 'Pending - Remove']).values_list('user__username', flat=True))
 
-        users_to_delete = User.objects.filter(username__in=users_to_delete).exclude(pk=subscription_obj.project.pi.pk)
-        users_to_delete = [
+        users_to_remove = User.objects.filter(username__in=users_to_remove).exclude(pk=subscription_obj.project.pi.pk)
+        users_to_remove = [
 
             {'username': user.username,
              'first_name': user.first_name,
              'last_name': user.last_name,
              'email': user.email, }
 
-            for user in users_to_delete
+            for user in users_to_remove
         ]
 
-        return users_to_delete
+        return users_to_remove
 
     def get(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         subscription_obj = get_object_or_404(Subscription, pk=pk)
 
-        users_to_delete = self.get_users_to_delete(subscription_obj)
+        users_to_remove = self.get_users_to_remove(subscription_obj)
         context = {}
 
-        if users_to_delete:
-            formset = formset_factory(SubscriptionDeleteUserForm, max_num=len(users_to_delete))
-            formset = formset(initial=users_to_delete, prefix='userform')
+        if users_to_remove:
+            formset = formset_factory(SubscriptionRemoveUserForm, max_num=len(users_to_remove))
+            formset = formset(initial=users_to_remove, prefix='userform')
             context['formset'] = formset
 
         context['subscription'] = subscription_obj
@@ -551,12 +551,12 @@ class SubscriptionDeleteUsersView(LoginRequiredMixin, UserPassesTestMixin, Templ
         pk = self.kwargs.get('pk')
         subscription_obj = get_object_or_404(Subscription, pk=pk)
 
-        users_to_delete = self.get_users_to_delete(subscription_obj)
+        users_to_remove = self.get_users_to_remove(subscription_obj)
 
-        formset = formset_factory(SubscriptionDeleteUserForm, max_num=len(users_to_delete))
-        formset = formset(request.POST, initial=users_to_delete, prefix='userform')
+        formset = formset_factory(SubscriptionRemoveUserForm, max_num=len(users_to_remove))
+        formset = formset(request.POST, initial=users_to_remove, prefix='userform')
 
-        delete_users_count = 0
+        remove_users_count = 0
 
         if formset.is_valid():
             subscription_user_removed_status_choice = SubscriptionUserStatusChoice.objects.get(name='Removed')
@@ -564,7 +564,7 @@ class SubscriptionDeleteUsersView(LoginRequiredMixin, UserPassesTestMixin, Templ
                 user_form_data = form.cleaned_data
                 if user_form_data['selected']:
 
-                    delete_users_count += 1
+                    remove_users_count += 1
 
                     user_obj = User.objects.get(username=user_form_data.get('username'))
                     if subscription_obj.project.pi == user_obj:
@@ -576,7 +576,7 @@ class SubscriptionDeleteUsersView(LoginRequiredMixin, UserPassesTestMixin, Templ
                     subscription_remove_user.send(sender=self.__class__,
                                                   subscription_user_pk=subscription_user_obj.pk)
 
-            messages.success(request, 'Deleted {} users from subscription.'.format(delete_users_count))
+            messages.success(request, 'Removed {} users from subscription.'.format(remove_users_count))
             return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': pk}))
 
 

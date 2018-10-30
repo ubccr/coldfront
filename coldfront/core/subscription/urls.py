@@ -10,7 +10,7 @@ urlpatterns = [
          name='subscription-activate-request'),
     path('<int:pk>/deny-request', subscription_views.SubscriptionDenyRequestView.as_view(), name='subscription-deny-request'),
     path('<int:pk>/add-users', subscription_views.SubscriptionAddUsersView.as_view(), name='subscription-add-users'),
-    path('<int:pk>/delete-users', subscription_views.SubscriptionDeleteUsersView.as_view(), name='subscription-delete-users'),
+    path('<int:pk>/remove-users', subscription_views.SubscriptionRemoveUsersView.as_view(), name='subscription-remove-users'),
     path('request-list', subscription_views.SubscriptionRequestListView.as_view(),
          name='subscription-request-list'),
     path('<int:pk>/renew', subscription_views.SubscriptionRenewView.as_view(), name='subscription-renew'),
