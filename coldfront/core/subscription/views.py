@@ -163,7 +163,6 @@ class SubscriptionListView(LoginRequiredMixin, ListView):
                     'project', 'project__pi', 'status',).all().order_by(order_by)
             else:
                 subscriptions = Subscription.objects.prefetch_related('project', 'project__pi', 'status',).filter(
-                    Q(status__name__in=['Active', 'Denied', 'New', ]) &
                     Q(project__status__name='Active') &
                     Q(project__projectuser__user=self.request.user) &
                     Q(project__projectuser__status__name='Active') &
@@ -204,7 +203,6 @@ class SubscriptionListView(LoginRequiredMixin, ListView):
 
         else:
             subscriptions = Subscription.objects.prefetch_related('project', 'project__pi', 'status',).filter(
-                Q(status__name__in=['Active', 'New', ]) &
                 Q(subscriptionuser__user=self.request.user) &
                 Q(subscriptionuser__status__name='Active')
             ).order_by(order_by)
@@ -601,7 +599,7 @@ class SubscriptionRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templ
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        subscription_list = Subscription.objects.filter(status__name__in=['New', ])
+        subscription_list = Subscription.objects.filter(status__name__in=['New', 'Renewal Requested', ])
         context['subscription_list'] = subscription_list
         context['ENABLE_PROJECT_REVIEW'] = ENABLE_PROJECT_REVIEW
         return context
