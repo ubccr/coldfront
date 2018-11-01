@@ -43,7 +43,7 @@ class Subscription(TimeStampedModel):
     history = HistoricalRecords()
 
     class Meta:
-        ordering = ['pk', ]
+        ordering = ['end_date', ]
 
         permissions = (
             ('can_view_all_subscriptions', 'Can view all subscriptions'),
@@ -70,9 +70,6 @@ class Subscription(TimeStampedModel):
             if not self.end_date:
                 raise ValidationError('You have to set the end date.')
 
-            if self.end_date < datetime.datetime.now().date():
-                raise ValidationError(
-                'End date cannot be less than today')
 
             if self.start_date > self.end_date:
                 raise ValidationError('Start date cannot be greater than the end date.')
