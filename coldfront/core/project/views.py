@@ -98,7 +98,6 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         else:
             if self.object.status.name in ['Active', 'New']:
                 subscriptions = Subscription.objects.filter(
-                    Q(status__name__in=['Active', 'Denied', 'Expired', 'New', ]) &
                     Q(project=self.object) &
                     Q(project__projectuser__user=self.request.user) &
                     Q(project__projectuser__status__name__in=['Active', ]) &
@@ -523,7 +522,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
                     users_already_in_project.append(ele)
             context['users_already_in_project'] = users_already_in_project
 
-        # The follow block of code is used to hide/show the subscription div in the form.
+        # The following block of code is used to hide/show the subscription div in the form.
         if project_obj.subscription_set.filter(status__name__in=['Active', 'New', 'Renewal Requested']).exists():
             div_subscription_class = 'placeholder_div_class'
         else:
