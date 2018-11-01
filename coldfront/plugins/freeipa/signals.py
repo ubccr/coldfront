@@ -8,7 +8,7 @@ from coldfront.core.subscription.signals import (subscription_activate_user,
                                                   subscription_remove_user)
 from coldfront.core.subscription.views import (SubscriptionActivateRequestView,
                                                 SubscriptionAddUsersView,
-                                                SubscriptionDeleteUsersView,
+                                                SubscriptionRemoveUsersView,
                                                 SubscriptionRenewView)
 
 
@@ -21,7 +21,7 @@ def activate_user(sender, **kwargs):
 
 
 @receiver(subscription_remove_user, sender=ProjectRemoveUsersView)
-@receiver(subscription_remove_user, sender=SubscriptionDeleteUsersView)
+@receiver(subscription_remove_user, sender=SubscriptionRemoveUsersView)
 @receiver(subscription_remove_user, sender=SubscriptionRenewView)
 def remove_user(sender, **kwargs):
     subscription_user_pk = kwargs.get('subscription_user_pk')
