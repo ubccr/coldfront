@@ -187,16 +187,16 @@ class SubscriptionListView(LoginRequiredMixin, ListView):
             if data.get('resource_name'):
                 subscriptions = subscriptions.filter(resources__in=data.get('resource_name'))
 
-            # Active Until
-            if data.get('active_until'):
-                subscriptions = subscriptions.filter(active_until__lt=data.get(
-                    'active_until'), status__name='Active').order_by('active_until')
+            # End Date
+            if data.get('end_date'):
+                subscriptions = subscriptions.filter(end_date__lt=data.get(
+                    'end_date'), status__name='Active').order_by('end_date')
 
             # Active from now until date
             if data.get('active_from_now_until_date'):
-                subscriptions = subscriptions.filter(active_until__gte=date.today())
-                subscriptions = subscriptions.filter(active_until__lt=data.get(
-                    'active_from_now_until_date'), status__name='Active').order_by('active_until')
+                subscriptions = subscriptions.filter(end_date__gte=date.today())
+                subscriptions = subscriptions.filter(end_date__lt=data.get(
+                    'active_from_now_until_date'), status__name='Active').order_by('end_date')
 
             # Status
             if data.get('status'):
@@ -625,10 +625,12 @@ class SubscriptionActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, V
         subscription_obj = get_object_or_404(Subscription, pk=pk)
 
         subscription_status_active_obj = SubscriptionStatusChoice.objects.get(name='Active')
-        active_until = datetime.datetime.now() + relativedelta(days=SUBSCRIPTION_DEFAULT_SUBSCRIPTION_LENGTH)
+        start_date = datetime.datetime.now()
+        end_date = datetime.datetime.now() + relativedelta(days=SUBSCRIPTION_DEFAULT_SUBSCRIPTION_LENGTH)
 
         subscription_obj.status = subscription_status_active_obj
-        subscription_obj.active_until = active_until
+        subscription_obj.start_date = start_date
+        subscription_obj.end_date = end_date
         subscription_obj.save()
 
         messages.success(request, 'Subscription to {} has been ACTIVATED for {} {} ({})'.format(
@@ -690,10 +692,11 @@ class SubscriptionDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View)
         subscription_obj = get_object_or_404(Subscription, pk=pk)
 
         subscription_status_denied_obj = SubscriptionStatusChoice.objects.get(name='Denied')
-        active_until = datetime.datetime.now()
+
 
         subscription_obj.status = subscription_status_denied_obj
-        subscription_obj.active_until = active_until
+        subscription_obj.start_date = None
+        subscription_obj.end_date = None
         subscription_obj.save()
 
         messages.success(request, 'Subscription to {} has been DENIED for {} {} ({})'.format(

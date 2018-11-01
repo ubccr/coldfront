@@ -51,9 +51,9 @@ class SubscriptionUserMessageInline(admin.TabularInline):
 class SubscriptionAdmin(SimpleHistoryAdmin):
     readonly_fields_change = ('project', 'justification', 'created', 'modified',)
     fields_change = ('project', 'resources', 'quantity', 'justification',
-                     'status', 'active_until', 'created', 'modified',)
+                     'status', 'start_date', 'end_date', 'created', 'modified',)
     list_display = ('pk', 'project_title', 'project_pi', 'resource', 'quantity',
-                    'justification', 'active_until', 'status', 'created', 'modified', )
+                    'justification', 'start_date', 'end_date', 'status', 'created', 'modified', )
     inlines = [SubscriptionUserInline, SubscriptionAttributeInline, SubscriptionAdminCommentInline, SubscriptionUserMessageInline]
     list_filter = ('resources__resource_type__name', 'status', 'resources__name', )
     search_fields = ['project__pi__username', 'project__pi__first_name', 'project__pi__last_name', 'resources__name',
@@ -262,11 +262,6 @@ class SubscriptionUserAdmin(SimpleHistoryAdmin):
     def set_active(self, request, queryset):
         queryset.update(status=SubscriptionUserStatusChoice.objects.get(name='Active'))
 
-    def set_pending_add(self, request, queryset):
-        queryset.update(status=SubscriptionUserStatusChoice.objects.get(name='Pending -- Add'))
-
-    def set_pending_remove(self, request, queryset):
-        queryset.update(status=SubscriptionUserStatusChoice.objects.get(name='Pending - Remove'))
 
     def set_denied(self, request, queryset):
         queryset.update(status=SubscriptionUserStatusChoice.objects.get(name='Denied'))
@@ -277,9 +272,6 @@ class SubscriptionUserAdmin(SimpleHistoryAdmin):
 
     set_active.short_description = "Set Selected User's Status To Active"
 
-    set_pending_add.short_description = "Set Selected User's Status To Pending Add"
-
-    set_pending_remove.short_description = "Set Selected User's Status To Pending Remove"
 
     set_denied.short_description = "Set Selected User's Status To Denied"
 
@@ -287,8 +279,6 @@ class SubscriptionUserAdmin(SimpleHistoryAdmin):
 
     actions = [
         set_active,
-        set_pending_add,
-        set_pending_remove,
         set_denied,
         set_removed,
     ]

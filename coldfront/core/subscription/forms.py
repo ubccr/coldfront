@@ -60,12 +60,12 @@ class SubscriptionSearchForm(forms.Form):
         label='Resource Name',
         queryset=Resource.objects.filter(is_subscribable=True).order_by('name'),
         required=False)
-    active_until = forms.DateField(
-        label='Active Until',
+    end_date = forms.DateField(
+        label='End Date',
         widget=forms.DateInput(attrs={'class': 'datepicker'}),
         required=False)
     active_from_now_until_date = forms.DateField(
-        label='Active From Now Until Date',
+        label='Active from Now Until Date',
         widget=forms.DateInput(attrs={'class': 'datepicker'}),
         required=False)
     status = forms.ModelMultipleChoiceField(

@@ -37,12 +37,13 @@ class Subscription(TimeStampedModel):
     resources = models.ManyToManyField(Resource)
     status = models.ForeignKey(SubscriptionStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
     quantity = models.IntegerField(default=1)
-    active_until = models.DateField(blank=True, null=True)
+    start_date = models.DateField(blank=True, null=True)
+    end_date = models.DateField(blank=True, null=True)
     justification = models.TextField()
     history = HistoricalRecords()
 
     class Meta:
-        ordering = ['active_until']
+        ordering = ['end_date', ]
 
         permissions = (
             ('can_view_all_subscriptions', 'Can view all subscriptions'),
@@ -50,13 +51,28 @@ class Subscription(TimeStampedModel):
         )
 
     def clean(self):
-        if self.status.name == 'Expired' and self.active_until > datetime.datetime.now().date():
-            raise ValidationError(
-                'You cannot set the status of this subscription to expired without changing the active until date.')
+        if self.status.name == 'Expired':
+            if not self.end_date:
+                raise ValidationError('You have to set the end date.')
 
-        elif self.status.name == 'Active' and self.active_until < datetime.datetime.now().date():
-            raise ValidationError(
-                'You cannot set the status of this subscription to active without changing the active until date.')
+            if self.end_date > datetime.datetime.now().date():
+                raise ValidationError(
+                    'End date cannot be greater than today.')
+
+            if self.start_date > self.end_date:
+                raise ValidationError(
+                    'End date cannot be greater than start date.')
+
+        elif self.status.name == 'Active':
+            if not self.start_date:
+                raise ValidationError('You have to set the start date.')
+
+            if not self.end_date:
+                raise ValidationError('You have to set the end date.')
+
+
+            if self.start_date > self.end_date:
+                raise ValidationError('Start date cannot be greater than the end date.')
 
     def save(self, *args, **kwargs):
         if self.pk:
@@ -70,7 +86,7 @@ class Subscription(TimeStampedModel):
 
     @property
     def expires_in(self):
-        return (self.active_until - datetime.date.today()).days
+        return (self.end_date - datetime.date.today()).days
 
     @property
     def get_usage(self):
