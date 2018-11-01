@@ -90,7 +90,7 @@ class Command(BaseCommand):
                     print(title.strip(), pi_username.strip())
 
                 resource_obj = Resource.objects.get(name=resource_name)
-                active_until_datetime_obj = datetime.datetime.strptime(active_util, '%Y-%m-%d')
+                end_date_datetime_obj = datetime.datetime.strptime(active_util, '%Y-%m-%d')
 
                 created = datetime.datetime.strptime(created.strip(), '%Y-%m-%d %H:%M:%S').date()
                 modified = datetime.datetime.strptime(modified.strip(), '%Y-%m-%d %H:%M:%S').date()
@@ -99,7 +99,7 @@ class Command(BaseCommand):
                     modified=modified,
                     project=project_obj,
                     status=subscription_status_choices[status],
-                    active_until=active_until_datetime_obj,
+                    end_date=end_date_datetime_obj,
                     quantity=int(quantity),
                     justification=justification.strip()
                 )

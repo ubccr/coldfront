@@ -55,9 +55,9 @@
           <a href="?order_by=status__name&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
         </th>
          <th style="white-space:nowrap;">
-          Active Until
-          <a href="?order_by=active_until&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-          <a href="?order_by=active_until&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+          End Date
+          <a href="?order_by=end_date&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+          <a href="?order_by=end_date&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
         </th>
       </tr>
     </thead>
@@ -69,7 +69,7 @@
         <td style="white-space:nowrap;">{{subscription.project.pi.first_name}} {{subscription.project.pi.last_name}} ({{subscription.project.pi.username}})</td>
         <td style="white-space:nowrap;">{{ subscription.get_parent_resource }}</td>
         <td style="white-space:nowrap;">{{ subscription.status.name }}</td>
-        <td style="white-space:nowrap;">{{ subscription.active_until }}</td>
+        <td style="white-space:nowrap;">{{ subscription.end_date }}</td>
       </tr>
       {% endfor %}
     </tbody>

@@ -28,7 +28,7 @@ def update_statuses():
 
     expired_status_choice = SubscriptionStatusChoice.objects.get(name='Expired')
     subscriptions_to_expire = Subscription.objects.filter(
-        status__name='Active', active_until__lt=datetime.datetime.now().date())
+        status__name='Active', end_date__lt=datetime.datetime.now().date())
     for sub_obj in subscriptions_to_expire:
         sub_obj.status = expired_status_choice
         sub_obj.save()
@@ -42,7 +42,7 @@ def send_expiry_emails():
     for days_remaining in sorted(set(EMAIL_SUBSCRIPTION_EXPIRING_NOTIFICATION_DAYS)):
         expring_in_days = datetime.datetime.today() + datetime.timedelta(days=days_remaining)
 
-        for subscription_obj in Subscription.objects.filter(status__name='Active', active_until=expring_in_days):
+        for subscription_obj in Subscription.objects.filter(status__name='Active', end_date=expring_in_days):
 
             subscripion_renew_url = '{}/{}/{}/{}/'.format(CENTER_BASE_URL.strip('/'), 'subscription', subscription_obj.pk, 'renew')
 
@@ -81,7 +81,7 @@ def send_expiry_emails():
 
     expring_in_days = datetime.datetime.today() + datetime.timedelta(days=-1)
 
-    for subscription_obj in Subscription.objects.filter(active_until=expring_in_days):
+    for subscription_obj in Subscription.objects.filter(end_date=expring_in_days):
 
         resource_name = subscription_obj.get_parent_resource.name
 

@@ -86,7 +86,7 @@ def generate_subscriptions_chart_data():
     now = datetime.datetime.now()
     start_time = datetime.date(now.year - 1, 1, 1)
     expired_count = Subscription.objects.filter(
-        status__name='Expired', active_until__gte=start_time).count()
+        status__name='Expired', end_date__gte=start_time).count()
 
     active_label = "Active: %d" % (active_count)
     new_label = "New: %d" % (new_count)
