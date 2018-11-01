@@ -65,15 +65,21 @@ LOGGING = {
 }
 
 #------------------------------------------------------------------------------
-# Enable Project Review
-#------------------------------------------------------------------------------
-# ENABLE_PROJECT_REVIEW = False
-
-#------------------------------------------------------------------------------
 # Extra ColdFront configurations
 #------------------------------------------------------------------------------
-# Subscription functions to run on expiration
-# SUBSCRIPTION_FUNCS_ON_EXPIRE = ['coldfront.core.subscription.utils.test_subscription_function', ]
+
+
+#------------------------------------------------------------------------------
+# Enable Project Review
+#------------------------------------------------------------------------------
+PROJECT_ENABLE_PROJECT_REVIEW = False
+
+#------------------------------------------------------------------------------
+# Subscription related
+#------------------------------------------------------------------------------
+SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL = True
+SUBSCRIPTION_FUNCS_ON_EXPIRE = ['coldfront.core.subscription.utils.test_subscription_function', ]
+SUBSCRIPTION_DEFAULT_SUBSCRIPTION_LENGTH = 365 # DAYS
 
 
 #------------------------------------------------------------------------------

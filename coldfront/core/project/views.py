@@ -42,7 +42,11 @@ from coldfront.core.subscription.models import (Subscription,
 from coldfront.core.subscription.signals import (subscription_activate_user,
                                                   subscription_remove_user)
 
+
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
+SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL = import_from_settings('SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL', True)
+SUBSCRIPTION_DEFAULT_SUBSCRIPTION_LENGTH = import_from_settings('SUBSCRIPTION_DEFAULT_SUBSCRIPTION_LENGTH', 365)
+
 if EMAIL_ENABLED:
     EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings('EMAIL_DIRECTOR_EMAIL_ADDRESS')
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
@@ -94,7 +98,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         else:
             if self.object.status.name in ['Active', 'New']:
                 subscriptions = Subscription.objects.filter(
-                    Q(status__name__in=['Active', 'Approved', 'Denied', 'New', 'Pending', 'Expired']) &
+                    Q(status__name__in=['Active', 'Denied', 'Expired', 'New', ]) &
                     Q(project=self.object) &
                     Q(project__projectuser__user=self.request.user) &
                     Q(project__projectuser__status__name__in=['Active', ]) &
@@ -108,6 +112,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['grants'] = Grant.objects.filter(project=self.object, status__name__in=['Active', 'Pending'])
         context['subscriptions'] = subscriptions
         context['project_users'] = project_users
+        context['SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL'] = SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL
         return context
 
 
@@ -519,7 +524,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
             context['users_already_in_project'] = users_already_in_project
 
         # The follow block of code is used to hide/show the subscription div in the form.
-        if project_obj.subscription_set.filter(status__name__in=['Active', 'New', 'Pending']).exists():
+        if project_obj.subscription_set.filter(status__name__in=['Active', 'New', 'Renewal Requested']).exists():
             div_subscription_class = 'placeholder_div_class'
         else:
             div_subscription_class = 'd-none'
@@ -713,9 +718,9 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     project_user_obj.status = project_user_removed_status_choice
                     project_user_obj.save()
 
-                    # get active, new, pending subscription to remove users from
+                    # get subscription to remove users from
                     subscriptions_to_remove_user_from = project_obj.subscription_set.filter(
-                        status__name__in=['Active', 'New', 'Pending'])
+                        status__name__in=['Active', 'New', 'Renewal Requested'])
                     for subscription in subscriptions_to_remove_user_from:
                         for subscription_user_obj in subscription.subscriptionuser_set.filter(user=user_obj, status__name__in=['Active', ]):
                             subscription_user_obj.status = subscription_user_removed_status_choice

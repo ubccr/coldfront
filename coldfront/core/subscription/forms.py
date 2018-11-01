@@ -21,7 +21,7 @@ class SubscriptionForm(forms.Form):
         self.fields['resource'].queryset = get_user_resources(request_user)
         self.fields['quantity'].initial = 1
         user_query_set = project_obj.projectuser_set.select_related('user').filter(
-            status__name__in=['Active', 'Pending Add'])
+            status__name__in=['Active',])
         user_query_set = user_query_set.exclude(user=project_obj.pi)
         if user_query_set:
             self.fields['users'].choices = ((user.user.username, "%s %s (%s)" % (
@@ -41,7 +41,7 @@ class SubscriptionAddUserForm(forms.Form):
     selected = forms.BooleanField(initial=False, required=False)
 
 
-class SubscriptionDeleteUserForm(forms.Form):
+class SubscriptionRemoveUserForm(forms.Form):
     username = forms.CharField(max_length=150, disabled=True)
     first_name = forms.CharField(max_length=30, required=False, disabled=True)
     last_name = forms.CharField(max_length=150, required=False, disabled=True)

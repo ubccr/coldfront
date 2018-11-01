@@ -31,12 +31,12 @@ def home(request):
         ).distinct().order_by('-created')[:5]
 
         subscription_list = Subscription.objects.filter(
-            Q(status__name__in=['Active', 'Approved', 'Denied', 'Expired', 'New', 'Pending', ]) &
+            Q(status__name__in=['Active', 'New', 'Renewal Requested', ]) &
             Q(project__status__name__in=['Active', 'New']) &
             Q(project__projectuser__user=request.user) &
-            Q(project__projectuser__status__name__in=['Active', 'Pending - Add']) &
+            Q(project__projectuser__status__name__in=['Active', ]) &
             Q(subscriptionuser__user=request.user) &
-            Q(subscriptionuser__status__name__in=['Active', 'Pending - Add'])
+            Q(subscriptionuser__status__name__in=['Active', ])
         ).distinct().order_by('-created')[:5]
         context['project_list'] = project_list
         context['subscription_list'] = subscription_list

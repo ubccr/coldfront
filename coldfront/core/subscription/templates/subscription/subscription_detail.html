@@ -46,7 +46,7 @@ Subscription Detail
         </tr>
         <tr>
           <th style="white-space:nowrap;">Active Until:</th>
-          <td>{{ subscription.active_until }} {% if subscription.status.name == 'Active' and subscription.expires_in <= 60 and subscription.expires_in >= 0 %} <a href="{% url 'subscription-renew' subscription.pk %}"><span class="badge badge-warning"><i class="fas fa-redo-alt"></i> Expires in {{subscription.expires_in}} day{{subscription.expires_in|pluralize}}</span></a>{% endif %}</td>
+          <td>{{ subscription.active_until }} {% if SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL and subscription.status.name == 'Active' and subscription.expires_in <= 60 and subscription.expires_in >= 0 %} <a href="{% url 'subscription-renew' subscription.pk %}"><span class="badge badge-warning"><i class="fas fa-redo-alt"></i> Expires in {{subscription.expires_in}} day{{subscription.expires_in|pluralize}}</span></a>{% endif %}</td>
         </tr>
         <tr>
           <th style="white-space:nowrap;">Created:</th>
@@ -117,9 +117,9 @@ Subscription Detail
   <div class="card-header">
   <h4 class="d-inline"><i class="fas fa-users"></i> Users in Subscription </h4> <span class="badge badge-secondary">{{subscription_users.count}}</span>
     <div class="float-right">
-      {% if subscription.project.status.name != 'Archived' and is_allowed_to_update_project and subscription.status.name in 'Active,Approved,New,Pending' %}
+      {% if subscription.project.status.name != 'Archived' and is_allowed_to_update_project and subscription.status.name in 'Active,New,Renewal Requested' %}
         <a class="btn btn-success" href="{% url 'subscription-add-users' subscription.pk %}" role="button"><i class="fas fa-user-plus"></i> Add Users</a>
-        <a class="btn btn-danger" href="{% url 'subscription-delete-users' subscription.pk %}" role="button"><i class="fas fa-user-times"></i></i> Delete Users</a>    
+        <a class="btn btn-danger" href="{% url 'subscription-remove-users' subscription.pk %}" role="button"><i class="fas fa-user-times"></i></i> Remove Users</a>    
       {% endif %}
     </div>
 

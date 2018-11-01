@@ -9,8 +9,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
-        for choice in ('Active', 'Pending', 'Expired', 'Denied', 'Revoked', 'Unpaid', 'New', 'Inactive (Renewed)', 'Approved'):
+        for choice in ('Active', 'Denied', 'Expired', 'New', 'Renewal Requested', 'Revoked', 'Unpaid',):
             SubscriptionStatusChoice.objects.get_or_create(name=choice)
 
-        for choice in ('Active', 'Denied', 'Pending - Add', 'Pending - Remove', 'Removed', 'Error'):
+        for choice in ('Active', 'Error', 'Removed', ):
             SubscriptionUserStatusChoice.objects.get_or_create(name=choice)
