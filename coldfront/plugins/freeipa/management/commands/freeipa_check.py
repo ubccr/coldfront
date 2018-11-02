@@ -166,6 +166,8 @@ class Command(BaseCommand):
             subscriptionuser__user=user,
             subscriptionattribute__subscription_attribute_type__name=UNIX_GROUP_ATTRIBUTE_NAME
         ).exclude(
+            status__name__in=['New', 'Renewal Requested'],
+        ).exclude(
             status__name='Active',
             subscriptionuser__status__name='Active',
         ).distinct()
