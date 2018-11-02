@@ -49,6 +49,18 @@ class SubscriptionRemoveUserForm(forms.Form):
     selected = forms.BooleanField(initial=False, required=False)
 
 
+
+class SubscriptionAttributeDeleteForm(forms.Form):
+    pk = forms.IntegerField(required=False, disabled=True)
+    name = forms.CharField(max_length=150, required=False, disabled=True)
+    value = forms.CharField(max_length=150, required=False, disabled=True)
+    selected = forms.BooleanField(initial=False, required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['pk'].widget = forms.HiddenInput()
+
+
 class SubscriptionSearchForm(forms.Form):
     project = forms.CharField(label='Project', max_length=100, required=False)
     pi = forms.CharField(label='PI', max_length=100, required=False)

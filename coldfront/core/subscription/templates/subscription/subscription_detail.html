@@ -66,10 +66,16 @@ Subscription Detail
   </div>
 </div>
 
-{% if attributes_without_usage or attributes_with_usage%}
+{% if attributes_without_usage or attributes_with_usage or request.user.is_superuser %}
 <div class="card mb-3">
   <div class="card-header">
-    <h4><i class="fas fa-info-circle"></i> Subscription Attributes</h4>
+    <h4 class="d-inline"><i class="fas fa-info-circle"></i> Subscription Attributes</h4>
+     <div class="float-right">
+      {% if request.user.is_superuser %}
+        <a class="btn btn-success" href="{% url 'subscription-attribute-add' subscription.pk %}" role="button"><i class="fas fa-plus"></i> Add Subscription Attribute</a>
+        <a class="btn btn-danger" href="{% url 'subscription-attribute-delete' subscription.pk %}" role="button"><i class="fas fa-minus"></i> Delete Subscription Attributes</a>    
+      {% endif %}
+    </div>
   </div>
   <div class="card-body">
     {% if attributes_without_usage %}

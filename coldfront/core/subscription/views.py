@@ -18,7 +18,9 @@ from django.urls import reverse
 from django.utils.html import mark_safe
 from django.views import View
 from django.views.generic import DetailView, ListView, TemplateView
-from django.views.generic.edit import FormView
+from django.views.generic.edit import FormView, CreateView
+from django.core.exceptions import ValidationError
+from django import forms
 
 from coldfront.core.utils.mail import send_email_template
 from coldfront.core.utils.common import get_domain_url, import_from_settings
@@ -28,11 +30,13 @@ from coldfront.core.subscription.forms import (SubscriptionAddUserForm,
                                                 SubscriptionRemoveUserForm,
                                                 SubscriptionForm,
                                                 SubscriptionReviewUserForm,
-                                                SubscriptionSearchForm)
+                                                SubscriptionSearchForm,
+                                                SubscriptionAttributeDeleteForm)
 from coldfront.core.subscription.models import (Subscription,
                                                  SubscriptionStatusChoice,
                                                  SubscriptionUser,
-                                                 SubscriptionUserStatusChoice)
+                                                 SubscriptionUserStatusChoice,
+                                                 SubscriptionAttribute,)
 from coldfront.core.subscription.signals import (subscription_activate_user,
                                                   subscription_remove_user)
 from coldfront.core.subscription.utils import (generate_guauge_data_from_usage,
@@ -574,6 +578,117 @@ class SubscriptionRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templ
 
             messages.success(request, 'Removed {} users from subscription.'.format(remove_users_count))
             return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': pk}))
+
+
+
+class SubscriptionAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    model = SubscriptionAttribute
+    # fields = ['subscription_attribute_type', 'value', 'is_private', ]
+    fields = '__all__'
+    template_name = 'subscription/subscription_subscriptionattribute_create.html'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+
+        if self.request.user.is_superuser:
+            return True
+
+        messages.error(self.request, 'You do not have permission to add subscription attributes.')
+
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        pk = self.kwargs.get('pk')
+        subscription_obj = get_object_or_404(Subscription, pk=pk)
+        context['subscription'] = subscription_obj
+        return context
+
+
+    def get_initial(self):
+        initial = super(SubscriptionAttributeCreateView, self).get_initial()
+        pk = self.kwargs.get('pk')
+        subscription_obj = get_object_or_404(Subscription, pk=pk)
+        initial['subscription'] = subscription_obj
+        return initial
+
+    def get_form(self, form_class=None):
+        """Return an instance of the form to be used in this view."""
+        form = super(SubscriptionAttributeCreateView, self).get_form(form_class)
+        form.fields['subscription'].widget = forms.HiddenInput()
+        return form
+
+
+    def get_success_url(self):
+        return reverse('subscription-detail', kwargs={'pk': self.kwargs.get('pk')})
+
+
+
+class SubscriptionAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'subscription/subscription_subscriptionattribute_delete.html'
+    login_url = "/"  # redirect URL if fail test_func
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        messages.error(self.request, 'You do not have permission to delete subscription attributes.')
+
+
+    def get_subscription_attributes_to_delete(self, subscription_obj):
+
+        subscription_attributes_to_delete = SubscriptionAttribute.objects.filter(subscription=subscription_obj)
+        subscription_attributes_to_delete = [
+
+            {'pk': attribute.pk,
+             'name': attribute.subscription_attribute_type.name,
+             'value': attribute.value,
+            }
+
+            for attribute in subscription_attributes_to_delete
+        ]
+
+        return subscription_attributes_to_delete
+
+    def get(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        subscription_obj = get_object_or_404(Subscription, pk=pk)
+
+        subscription_attributes_to_delete = self.get_subscription_attributes_to_delete(subscription_obj)
+        context = {}
+
+        if subscription_attributes_to_delete:
+            formset = formset_factory(SubscriptionAttributeDeleteForm, max_num=len(subscription_attributes_to_delete))
+            formset = formset(initial=subscription_attributes_to_delete, prefix='attributeform')
+            context['formset'] = formset
+        context['subscription'] = subscription_obj
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        subscription_obj = get_object_or_404(Subscription, pk=pk)
+
+        subscription_attributes_to_delete = self.get_subscription_attributes_to_delete(subscription_obj)
+
+        formset = formset_factory(SubscriptionAttributeDeleteForm, max_num=len(subscription_attributes_to_delete))
+        formset = formset(request.POST, initial=subscription_attributes_to_delete, prefix='attributeform')
+
+        attributes_deleted_count = 0
+
+        if formset.is_valid():
+            for form in formset:
+                form_data = form.cleaned_data
+                if form_data['selected']:
+
+                    attributes_deleted_count += 1
+
+                    subscription_attribute = SubscriptionAttribute.objects.get(pk=form_data['pk'])
+                    subscription_attribute.delete()
+
+
+            messages.success(request, 'Deleted {} attributes from subscription.'.format(attributes_deleted_count))
+            return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': pk}))
+
 
 
 class SubscriptionRequestListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):

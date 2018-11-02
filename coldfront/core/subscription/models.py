@@ -70,7 +70,6 @@ class Subscription(TimeStampedModel):
             if not self.end_date:
                 raise ValidationError('You have to set the end date.')
 
-
             if self.start_date > self.end_date:
                 raise ValidationError('Start date cannot be greater than the end date.')
 
@@ -193,11 +192,16 @@ class SubscriptionAttribute(TimeStampedModel):
     history = HistoricalRecords()
 
     def save(self, *args, **kwargs):
+
         super().save(*args, **kwargs)
         if self.subscription_attribute_type.has_usage and not SubscriptionAttributeUsage.objects.filter(subscription_attribute=self).exists():
             SubscriptionAttributeUsage.objects.create(subscription_attribute=self)
 
     def clean(self):
+        if self.subscription_attribute_type.is_unique and self.subscription.subscriptionattribute_set.filter(subscription_attribute_type=self.subscription_attribute_type).exists():
+            raise ValidationError("'{}' attribute already exists for this subscription.".format(
+                self.subscription_attribute_type))
+
         expected_value_type = self.subscription_attribute_type.name.strip()
         if expected_value_type == "Int" and not isinstance(self.value, int):
             raise ValidationError('Invalid Value "%s". Value must be an integer.' % (self.value))
