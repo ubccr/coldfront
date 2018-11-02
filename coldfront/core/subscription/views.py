@@ -407,9 +407,6 @@ class SubscriptionAddUsersView(LoginRequiredMixin, UserPassesTestMixin, Template
             messages.error(request, 'You cannot add users to a subscription with status {}.'.format(
                 subscription_obj.status.name))
             return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': subscription_obj.pk}))
-        elif subscription_obj.project.needs_review:
-            messages.error(request, 'You need to review your project before you can add users to subscriptions.')
-            return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': subscription_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
 
@@ -510,9 +507,6 @@ class SubscriptionRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templ
         if subscription_obj.status.name not in ['Active', 'New', 'Renewal Requested', ]:
             messages.error(request, 'You cannot remove users from a subscription with status {}.'.format(
                 subscription_obj.status.name))
-            return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': subscription_obj.pk}))
-        elif subscription_obj.project.needs_review:
-            messages.error(request, 'You need to review your project before you can remove users from subscriptions.')
             return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': subscription_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
