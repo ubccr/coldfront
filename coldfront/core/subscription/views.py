@@ -54,7 +54,7 @@ if EMAIL_ENABLED:
     EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
     EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
 
-ENABLE_PROJECT_REVIEW = import_from_settings('ENABLE_PROJECT_REVIEW', False)
+PROJECT_ENABLE_PROJECT_REVIEW = import_from_settings('PROJECT_ENABLE_PROJECT_REVIEW', False)
 
 
 logger = logging.getLogger(__name__)
@@ -830,7 +830,7 @@ class SubscriptionRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templ
         context = super().get_context_data(**kwargs)
         subscription_list = Subscription.objects.filter(status__name__in=['New', 'Renewal Requested', ])
         context['subscription_list'] = subscription_list
-        context['ENABLE_PROJECT_REVIEW'] = ENABLE_PROJECT_REVIEW
+        context['PROJECT_ENABLE_PROJECT_REVIEW'] = PROJECT_ENABLE_PROJECT_REVIEW
         return context
 
 
