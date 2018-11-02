@@ -126,6 +126,22 @@ class Subscription(TimeStampedModel):
             return attr.value
         return None
 
+    def set_usage(self, name, value):
+        attr = self.subscriptionattribute_set.filter(subscription_attribute_type__name=name).first()
+        if not attr:
+            return
+
+        if not attr.subscription_attribute_type.has_usage:
+            return
+
+        if not SubscriptionAttributeUsage.objects.filter(subscription_attribute=attr).exists():
+            usage = SubscriptionAttributeUsage.objects.create(subscription_attribute=attr)
+        else:
+            usage = attr.subscriptionattributeusage
+
+        usage.value = value
+        usage.save()
+
     def get_attribute_list(self, name):
         attr = self.subscriptionattribute_set.filter(subscription_attribute_type__name=name).all()
         return [a.value for a in attr]

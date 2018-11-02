@@ -249,3 +249,12 @@ EXTRA_AUTHENTICATION_BACKENDS = []
 #     'coldfront.plugins.slurm',
 # ]
 # SLURM_SACCTMGR_PATH = '/usr/bin/sacctmgr' 
+
+#------------------------------------------------------------------------------
+# Enable XDMoD support
+#------------------------------------------------------------------------------
+# EXTRA_APPS += [
+#     'coldfront.plugins.xdmod',
+# ]
+
+# XDMOD_API_URL = 'http://localhost'
