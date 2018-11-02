@@ -26,6 +26,8 @@ Subscription Detail
   <h4><i class="fas fa-list"></i> Subscription Information</h4>
   </div>
   <div class="card-body">
+    <form method="post">
+    {% csrf_token %}
     <div class="table-responsive">
       <table class="table table-bordered table-sm">
         <tr>
@@ -42,7 +44,13 @@ Subscription Detail
         </tr>
         <tr>
           <th style="white-space:nowrap;">Status:</th>
-          <td>{{ subscription.status.name }}</td>
+          <td>
+            {% if request.user.is_superuser %}
+              {{ form.status }}
+            {% else %}
+              {{ subscription.status }}
+            {% endif %}
+          </td>
         </tr>
         <tr>
           <th style="white-space:nowrap;">Start Date:</th>
@@ -50,7 +58,16 @@ Subscription Detail
         </tr>
         <tr>
           <th style="white-space:nowrap;">End Date:</th>
-          <td>{{ subscription.end_date }} {% if SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL and subscription.status.name == 'Active' and subscription.expires_in <= 60 and subscription.expires_in >= 0 %} <a href="{% url 'subscription-renew' subscription.pk %}"><span class="badge badge-warning"><i class="fas fa-redo-alt"></i> Expires in {{subscription.expires_in}} day{{subscription.expires_in|pluralize}}</span></a>{% endif %}</td>
+          <td>
+              {% if request.user.is_superuser %}
+                {{ form.end_date }} 
+              {% else %}
+                {{ subscription.end_date }} 
+              {% endif %}
+
+            {% if is_allowed_to_update_project and SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL and subscription.status.name == 'Active' and subscription.expires_in <= 60 and subscription.expires_in >= 0 %} <a href="{% url 'subscription-renew' subscription.pk %}"><span class="badge badge-warning"><i class="fas fa-redo-alt"></i> Expires in {{subscription.expires_in}} day{{subscription.expires_in|pluralize}}</span></a>{% endif %}
+
+          </td>
         </tr>
         <tr>
           <th style="white-space:nowrap;">Created:</th>
@@ -62,6 +79,10 @@ Subscription Detail
         </tr>
       </table>
     </div>
+    {% if request.user.is_superuser %}
+    <button type="submit" class="btn btn-success float-right"><i class="fas fa-sync"></i> Update</button>
+    {% endif %}
+  </form>
     
   </div>
 </div>
@@ -226,6 +247,8 @@ function drawGauges(guage_data) {
 
     }
 }
+$(".datepicker").datepicker();
+
 
 </script>
 

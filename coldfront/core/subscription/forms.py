@@ -32,6 +32,14 @@ class SubscriptionForm(forms.Form):
 
         self.fields['justification'].help_text = '<br/>Justification for requesting this subscription.'
 
+class SubscriptionUpdateForm(forms.Form):
+    status = forms.ModelChoiceField(queryset=SubscriptionStatusChoice.objects.all().order_by('name'), empty_label=None)
+    end_date = forms.DateField(
+        label='End Date',
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        required=False)
+
+
 
 class SubscriptionAddUserForm(forms.Form):
     username = forms.CharField(max_length=150, disabled=True)
