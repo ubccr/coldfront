@@ -27,7 +27,7 @@ def home(request):
             (Q(pi=request.user) & Q(status__name__in=['New', 'Active', ])) |
             (Q(status__name__in=['New', 'Active', ]) &
              Q(projectuser__user=request.user) &
-             Q(projectuser__status__name__in=['Active', 'Pending - Add', ]))
+             Q(projectuser__status__name__in=['Active', ]))
         ).distinct().order_by('-created')[:5]
 
         subscription_list = Subscription.objects.filter(
