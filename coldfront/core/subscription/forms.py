@@ -32,6 +32,14 @@ class SubscriptionForm(forms.Form):
 
         self.fields['justification'].help_text = '<br/>Justification for requesting this subscription.'
 
+class SubscriptionUpdateForm(forms.Form):
+    status = forms.ModelChoiceField(queryset=SubscriptionStatusChoice.objects.all().order_by('name'), empty_label=None)
+    end_date = forms.DateField(
+        label='End Date',
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        required=False)
+
+
 
 class SubscriptionAddUserForm(forms.Form):
     username = forms.CharField(max_length=150, disabled=True)
@@ -47,6 +55,18 @@ class SubscriptionRemoveUserForm(forms.Form):
     last_name = forms.CharField(max_length=150, required=False, disabled=True)
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
+
+
+
+class SubscriptionAttributeDeleteForm(forms.Form):
+    pk = forms.IntegerField(required=False, disabled=True)
+    name = forms.CharField(max_length=150, required=False, disabled=True)
+    value = forms.CharField(max_length=150, required=False, disabled=True)
+    selected = forms.BooleanField(initial=False, required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['pk'].widget = forms.HiddenInput()
 
 
 class SubscriptionSearchForm(forms.Form):

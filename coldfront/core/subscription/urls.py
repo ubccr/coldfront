@@ -14,4 +14,6 @@ urlpatterns = [
     path('request-list', subscription_views.SubscriptionRequestListView.as_view(),
          name='subscription-request-list'),
     path('<int:pk>/renew', subscription_views.SubscriptionRenewView.as_view(), name='subscription-renew'),
+    path('<int:pk>/subscriptionattribute/add', subscription_views.SubscriptionAttributeCreateView.as_view(), name='subscription-attribute-add'),
+    path('<int:pk>/subscriptionattribute/delete', subscription_views.SubscriptionAttributeDeleteView.as_view(), name='subscription-attribute-delete'),
 ]

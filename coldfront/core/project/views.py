@@ -450,9 +450,6 @@ class ProjectAddUsersSearchView(LoginRequiredMixin, UserPassesTestMixin, Templat
         if project_obj.status.name not in ['Active', 'New', ]:
             messages.error(request, 'You cannot add users to an archived project.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
-        elif project_obj.needs_review:
-            messages.error(request, 'You need to review your project before you can add users to it.')
-            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
 
@@ -484,9 +481,6 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         if project_obj.status.name not in ['Active', 'New', ]:
             messages.error(request, 'You cannot add users to an archived project.')
-            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
-        elif project_obj.needs_review:
-            messages.error(request, 'You need to review your project before you can add users to it.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
@@ -555,9 +549,6 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         if project_obj.status.name not in ['Active', 'New', ]:
             messages.error(request, 'You cannot add users to an archived project.')
-            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
-        elif project_obj.needs_review:
-            messages.error(request, 'You need to review your project before you can add users to it.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
@@ -652,9 +643,6 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         if project_obj.status.name not in ['Active', 'New', ]:
             messages.error(request, 'You cannot remove users from an archived project.')
-            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
-        elif project_obj.needs_review:
-            messages.error(request, 'You need to review your project before you can delete users from it.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)

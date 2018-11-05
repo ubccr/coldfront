@@ -18,7 +18,9 @@ from django.urls import reverse
 from django.utils.html import mark_safe
 from django.views import View
 from django.views.generic import DetailView, ListView, TemplateView
-from django.views.generic.edit import FormView
+from django.views.generic.edit import FormView, CreateView
+from django.core.exceptions import ValidationError
+from django import forms
 
 from coldfront.core.utils.mail import send_email_template
 from coldfront.core.utils.common import get_domain_url, import_from_settings
@@ -28,11 +30,14 @@ from coldfront.core.subscription.forms import (SubscriptionAddUserForm,
                                                 SubscriptionRemoveUserForm,
                                                 SubscriptionForm,
                                                 SubscriptionReviewUserForm,
-                                                SubscriptionSearchForm)
+                                                SubscriptionSearchForm,
+                                                SubscriptionAttributeDeleteForm,
+                                                SubscriptionUpdateForm)
 from coldfront.core.subscription.models import (Subscription,
                                                  SubscriptionStatusChoice,
                                                  SubscriptionUser,
-                                                 SubscriptionUserStatusChoice)
+                                                 SubscriptionUserStatusChoice,
+                                                 SubscriptionAttribute,)
 from coldfront.core.subscription.signals import (subscription_activate_user,
                                                   subscription_remove_user)
 from coldfront.core.subscription.utils import (generate_guauge_data_from_usage,
@@ -49,13 +54,13 @@ if EMAIL_ENABLED:
     EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
     EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
 
-ENABLE_PROJECT_REVIEW = import_from_settings('ENABLE_PROJECT_REVIEW', False)
+PROJECT_ENABLE_PROJECT_REVIEW = import_from_settings('PROJECT_ENABLE_PROJECT_REVIEW', False)
 
 
 logger = logging.getLogger(__name__)
 
 
-class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     model = Subscription
     template_name = 'subscription/subscription_detail.html'
     context_object_name = 'subscription'
@@ -69,7 +74,8 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
         if self.request.user.has_perm('subscription.can_view_all_subscriptions'):
             return True
 
-        subscription_obj = self.get_object()
+        pk = self.kwargs.get('pk')
+        subscription_obj = get_object_or_404(Subscription, pk=pk)
 
         user_can_access_project = subscription_obj.project.projectuser_set.filter(
             user=self.request.user, status__name__in=['Active', 'New',]).exists()
@@ -84,19 +90,20 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # subscription_obj = self.get_object()
-        subscription_users = self.object.subscriptionuser_set.exclude(
+        pk = self.kwargs.get('pk')
+        subscription_obj = get_object_or_404(Subscription, pk=pk)
+        subscription_users = subscription_obj.subscriptionuser_set.exclude(
             status__name__in=['Removed']).order_by('user__username')
 
         if self.request.user.is_superuser:
-            attributes_with_usage = [attribute for attribute in self.object.subscriptionattribute_set.all() if hasattr(attribute, 'subscriptionattributeusage')]
+            attributes_with_usage = [attribute for attribute in subscription_obj.subscriptionattribute_set.all() if hasattr(attribute, 'subscriptionattributeusage')]
 
-            attributes_without_usage = [attribute for attribute in self.object.subscriptionattribute_set.all().order_by('subscription_attribute_type__name') if not hasattr(attribute, 'subscriptionattributeusage')]
+            attributes_without_usage = [attribute for attribute in subscription_obj.subscriptionattribute_set.all().order_by('subscription_attribute_type__name') if not hasattr(attribute, 'subscriptionattributeusage')]
 
         else:
-            attributes_with_usage = [attribute for attribute in self.object.subscriptionattribute_set.filter(is_private=False) if hasattr(attribute, 'subscriptionattributeusage')]
+            attributes_with_usage = [attribute for attribute in subscription_obj.subscriptionattribute_set.filter(is_private=False) if hasattr(attribute, 'subscriptionattributeusage')]
 
-            attributes_without_usage = [attribute for attribute in self.object.subscriptionattribute_set.filter(is_private=False) if not hasattr(attribute, 'subscriptionattributeusage')]
+            attributes_without_usage = [attribute for attribute in subscription_obj.subscriptionattribute_set.filter(is_private=False) if not hasattr(attribute, 'subscriptionattributeusage')]
 
         guage_data = []
         invalid_attributes = []
@@ -111,6 +118,18 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
         for a in invalid_attributes:
             attributes_with_usage.remove(a)
 
+
+        if self.request.user.is_superuser:
+            context['is_allowed_to_update_project'] = True
+        elif subscription_obj.project.projectuser_set.filter(user=self.request.user).exists():
+            project_user = subscription_obj.project.projectuser_set.get(user=self.request.user)
+            if project_user.role.name == 'Manager':
+                context['is_allowed_to_update_project'] = True
+            else:
+                context['is_allowed_to_update_project'] = False
+        else:
+            context['is_allowed_to_update_project'] = False
+
         context['guage_data'] = guage_data
         context['attributes_with_usage'] = attributes_with_usage
         context['attributes_without_usage'] = attributes_without_usage
@@ -118,8 +137,8 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
         # Can the user update the project?
         if self.request.user.is_superuser:
             context['is_allowed_to_update_project'] = True
-        elif self.object.project.projectuser_set.filter(user=self.request.user).exists():
-            project_user = self.object.project.projectuser_set.get(user=self.request.user)
+        elif subscription_obj.project.projectuser_set.filter(user=self.request.user).exists():
+            project_user = subscription_obj.project.projectuser_set.get(user=self.request.user)
             if project_user.role.name == 'Manager':
                 context['is_allowed_to_update_project'] = True
             else:
@@ -132,6 +151,111 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView
         context['SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL'] = SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL
         return context
 
+    def get(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        subscription_obj = get_object_or_404(Subscription, pk=pk)
+
+        initial_data = {
+            'status': subscription_obj.status,
+            'end_date': subscription_obj.end_date,
+        }
+
+        form = SubscriptionUpdateForm(initial=initial_data)
+
+        context = self.get_context_data()
+        context['form'] = form
+        context['subscription'] = subscription_obj
+
+        return render(request, self.template_name, context)
+
+
+
+    def post(self, request, *args, **kwargs):
+        if self.request.user.is_superuser:
+            messages.success(request, 'You do not have permission to update the subscription')
+            return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': pk}))
+
+        pk = self.kwargs.get('pk')
+        subscription_obj = get_object_or_404(Subscription, pk=pk)
+
+        initial_data = {
+            'status': subscription_obj.status,
+            'end_date': subscription_obj.end_date,
+        }
+
+        form = SubscriptionUpdateForm(request.POST, initial=initial_data)
+
+        if form.is_valid():
+            form_data = form.cleaned_data
+            subscription_obj.end_date = form_data.get('end_date')
+
+            old_status = subscription_obj.status.name
+            new_status = form_data.get('status').name
+
+            subscription_obj.status = form_data.get('status')
+            subscription_obj.save()
+
+            if EMAIL_ENABLED:
+                resource_name = subscription_obj.get_parent_resource
+                domain_url = get_domain_url(self.request)
+                subscription_url = '{}{}'.format(domain_url, reverse('subscription-detail', kwargs={'pk': subscription_obj.pk}))
+
+            if old_status != 'Active' and new_status == 'Active':
+                start_date = datetime.datetime.now()
+                subscription_obj.start_date = start_date
+                subscription_obj.save()
+                if EMAIL_ENABLED:
+                    template_context = {
+                        'center_name': EMAIL_CENTER_NAME,
+                        'resource': resource_name,
+                        'subscription_url': subscription_url,
+                        'signature': EMAIL_SIGNATURE,
+                        'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
+                    }
+
+                    email_receiver_list = []
+
+                    for subscription_user in subscription_obj.subscriptionuser_set.exclude(status__name__in=['Removed', 'Error']):
+                        subscription_activate_user.send(sender=self.__class__, subscription_user_pk=subscription_user.pk)
+                        if subscription_user.subscription.project.projectuser_set.get(user=subscription_user.user).enable_notifications:
+                            email_receiver_list.append(subscription_user.user.email)
+
+                    send_email_template(
+                        'Subscription Activated',
+                        'email/subscription_activated.txt',
+                        template_context,
+                        EMAIL_SENDER,
+                        email_receiver_list
+                    )
+
+            elif old_status != 'Denied' and new_status == 'Denied':
+                subscription_obj.start_date = None
+                subscription_obj.end_date = None
+                subscription_obj.save()
+                if EMAIL_ENABLED:
+                    template_context = {
+                        'center_name': EMAIL_CENTER_NAME,
+                        'resource': resource_name,
+                        'subscription_url': subscription_url,
+                        'signature': EMAIL_SIGNATURE,
+                        'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
+                    }
+
+                    email_receiver_list = []
+                    for subscription_user in subscription_obj.project.projectuser_set.all():
+                        if subscription_user.enable_notifications:
+                            email_receiver_list.append(subscription_user.user.email)
+
+                    send_email_template(
+                        'Subscription Denied',
+                        'email/subscription_denied.txt',
+                        template_context,
+                        EMAIL_SENDER,
+                        email_receiver_list
+                    )
+
+            messages.success(request, 'Subscription updated!')
+            return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': pk}))
 
 class SubscriptionListView(LoginRequiredMixin, ListView):
 
@@ -407,9 +531,6 @@ class SubscriptionAddUsersView(LoginRequiredMixin, UserPassesTestMixin, Template
             messages.error(request, 'You cannot add users to a subscription with status {}.'.format(
                 subscription_obj.status.name))
             return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': subscription_obj.pk}))
-        elif subscription_obj.project.needs_review:
-            messages.error(request, 'You need to review your project before you can add users to subscriptions.')
-            return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': subscription_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
 
@@ -511,9 +632,6 @@ class SubscriptionRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templ
             messages.error(request, 'You cannot remove users from a subscription with status {}.'.format(
                 subscription_obj.status.name))
             return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': subscription_obj.pk}))
-        elif subscription_obj.project.needs_review:
-            messages.error(request, 'You need to review your project before you can remove users from subscriptions.')
-            return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': subscription_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
 
@@ -582,6 +700,117 @@ class SubscriptionRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templ
             return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': pk}))
 
 
+
+class SubscriptionAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    model = SubscriptionAttribute
+    # fields = ['subscription_attribute_type', 'value', 'is_private', ]
+    fields = '__all__'
+    template_name = 'subscription/subscription_subscriptionattribute_create.html'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+
+        if self.request.user.is_superuser:
+            return True
+
+        messages.error(self.request, 'You do not have permission to add subscription attributes.')
+
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        pk = self.kwargs.get('pk')
+        subscription_obj = get_object_or_404(Subscription, pk=pk)
+        context['subscription'] = subscription_obj
+        return context
+
+
+    def get_initial(self):
+        initial = super(SubscriptionAttributeCreateView, self).get_initial()
+        pk = self.kwargs.get('pk')
+        subscription_obj = get_object_or_404(Subscription, pk=pk)
+        initial['subscription'] = subscription_obj
+        return initial
+
+    def get_form(self, form_class=None):
+        """Return an instance of the form to be used in this view."""
+        form = super(SubscriptionAttributeCreateView, self).get_form(form_class)
+        form.fields['subscription'].widget = forms.HiddenInput()
+        return form
+
+
+    def get_success_url(self):
+        return reverse('subscription-detail', kwargs={'pk': self.kwargs.get('pk')})
+
+
+
+class SubscriptionAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'subscription/subscription_subscriptionattribute_delete.html'
+    login_url = "/"  # redirect URL if fail test_func
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        messages.error(self.request, 'You do not have permission to delete subscription attributes.')
+
+
+    def get_subscription_attributes_to_delete(self, subscription_obj):
+
+        subscription_attributes_to_delete = SubscriptionAttribute.objects.filter(subscription=subscription_obj)
+        subscription_attributes_to_delete = [
+
+            {'pk': attribute.pk,
+             'name': attribute.subscription_attribute_type.name,
+             'value': attribute.value,
+            }
+
+            for attribute in subscription_attributes_to_delete
+        ]
+
+        return subscription_attributes_to_delete
+
+    def get(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        subscription_obj = get_object_or_404(Subscription, pk=pk)
+
+        subscription_attributes_to_delete = self.get_subscription_attributes_to_delete(subscription_obj)
+        context = {}
+
+        if subscription_attributes_to_delete:
+            formset = formset_factory(SubscriptionAttributeDeleteForm, max_num=len(subscription_attributes_to_delete))
+            formset = formset(initial=subscription_attributes_to_delete, prefix='attributeform')
+            context['formset'] = formset
+        context['subscription'] = subscription_obj
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        subscription_obj = get_object_or_404(Subscription, pk=pk)
+
+        subscription_attributes_to_delete = self.get_subscription_attributes_to_delete(subscription_obj)
+
+        formset = formset_factory(SubscriptionAttributeDeleteForm, max_num=len(subscription_attributes_to_delete))
+        formset = formset(request.POST, initial=subscription_attributes_to_delete, prefix='attributeform')
+
+        attributes_deleted_count = 0
+
+        if formset.is_valid():
+            for form in formset:
+                form_data = form.cleaned_data
+                if form_data['selected']:
+
+                    attributes_deleted_count += 1
+
+                    subscription_attribute = SubscriptionAttribute.objects.get(pk=form_data['pk'])
+                    subscription_attribute.delete()
+
+
+            messages.success(request, 'Deleted {} attributes from subscription.'.format(attributes_deleted_count))
+            return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': pk}))
+
+
+
 class SubscriptionRequestListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'subscription/subscription_request_list.html'
     login_url = "/"
@@ -601,7 +830,7 @@ class SubscriptionRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templ
         context = super().get_context_data(**kwargs)
         subscription_list = Subscription.objects.filter(status__name__in=['New', 'Renewal Requested', ])
         context['subscription_list'] = subscription_list
-        context['ENABLE_PROJECT_REVIEW'] = ENABLE_PROJECT_REVIEW
+        context['PROJECT_ENABLE_PROJECT_REVIEW'] = PROJECT_ENABLE_PROJECT_REVIEW
         return context
 
 
