@@ -15,7 +15,7 @@ from coldfront.core.portal.utils import (generate_publication_by_year_chart_data
 from coldfront.core.project.models import Project
 from coldfront.core.publication.models import Publication
 from coldfront.core.subscription.models import Subscription, SubscriptionUser
-from coldfront.plugins.system_monitor.utils import get_system_monitor_context
+
 
 
 def home(request):
@@ -46,6 +46,7 @@ def home(request):
     context['EXTRA_APPS'] = settings.EXTRA_APPS
 
     if 'coldfront.plugins.system_monitor' in settings.EXTRA_APPS:
+        from coldfront.plugins.system_monitor.utils import get_system_monitor_context
         context.update(get_system_monitor_context())
 
     return render(request, template_name, context)
