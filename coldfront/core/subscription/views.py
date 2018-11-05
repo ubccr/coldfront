@@ -171,12 +171,11 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
 
     def post(self, request, *args, **kwargs):
-        if self.request.user.is_superuser:
-            messages.success(request, 'You do not have permission to update the subscription')
-            return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': pk}))
-
         pk = self.kwargs.get('pk')
         subscription_obj = get_object_or_404(Subscription, pk=pk)
+        if not self.request.user.is_superuser:
+            messages.success(request, 'You do not have permission to update the subscription')
+            return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': pk}))
 
         initial_data = {
             'status': subscription_obj.status,
@@ -187,7 +186,11 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         if form.is_valid():
             form_data = form.cleaned_data
-            subscription_obj.end_date = form_data.get('end_date')
+            end_date = form_data.get('end_date')
+            if not end_date:
+                end_date = datetime.datetime.now() + relativedelta(days=SUBSCRIPTION_DEFAULT_SUBSCRIPTION_LENGTH)
+
+            subscription_obj.end_date = end_date
 
             old_status = subscription_obj.status.name
             new_status = form_data.get('status').name
@@ -712,8 +715,8 @@ class SubscriptionAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, C
 
         if self.request.user.is_superuser:
             return True
-
-        messages.error(self.request, 'You do not have permission to add subscription attributes.')
+        else:
+            messages.error(self.request, 'You do not have permission to add subscription attributes.')
 
 
     def get_context_data(self, **kwargs):
@@ -751,8 +754,8 @@ class SubscriptionAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, T
         """ UserPassesTestMixin Tests"""
         if self.request.user.is_superuser:
             return True
-
-        messages.error(self.request, 'You do not have permission to delete subscription attributes.')
+        else:
+            messages.error(self.request, 'You do not have permission to delete subscription attributes.')
 
 
     def get_subscription_attributes_to_delete(self, subscription_obj):
