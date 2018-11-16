@@ -34,11 +34,24 @@ class SubscriptionForm(forms.Form):
 
 class SubscriptionUpdateForm(forms.Form):
     status = forms.ModelChoiceField(queryset=SubscriptionStatusChoice.objects.all().order_by('name'), empty_label=None)
+    start_date = forms.DateField(
+        label='Start Date',
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        required=False)
     end_date = forms.DateField(
         label='End Date',
         widget=forms.DateInput(attrs={'class': 'datepicker'}),
         required=False)
 
+    def clean(self):
+        cleaned_data = super().clean()
+        start_date = cleaned_data.get("start_date")
+        end_date = cleaned_data.get("end_date")
+
+        if start_date and end_date < start_date:
+            raise forms.ValidationError(
+                        'End date cannot be less than start date'
+                    )
 
 
 class SubscriptionAddUserForm(forms.Form):

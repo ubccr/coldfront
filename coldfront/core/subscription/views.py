@@ -158,6 +158,7 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         initial_data = {
             'status': subscription_obj.status,
             'end_date': subscription_obj.end_date,
+            'start_date': subscription_obj.start_date
         }
 
         form = SubscriptionUpdateForm(initial=initial_data)
@@ -187,6 +188,11 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         if form.is_valid():
             form_data = form.cleaned_data
             end_date = form_data.get('end_date')
+            start_date = form_data.get('start_date')
+
+            print(start_date)
+            if not start_date:
+                start_date = datetime.datetime.now()
             if not end_date:
                 end_date = datetime.datetime.now() + relativedelta(days=SUBSCRIPTION_DEFAULT_SUBSCRIPTION_LENGTH)
 
@@ -204,7 +210,6 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                 subscription_url = '{}{}'.format(domain_url, reverse('subscription-detail', kwargs={'pk': subscription_obj.pk}))
 
             if old_status != 'Active' and new_status == 'Active':
-                start_date = datetime.datetime.now()
                 subscription_obj.start_date = start_date
                 subscription_obj.save()
                 if EMAIL_ENABLED:
@@ -257,8 +262,25 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                         email_receiver_list
                     )
 
+            subscription_obj.refresh_from_db()
+
+            if start_date and subscription_obj.start_date != start_date:
+                subscription_obj.start_date = start_date
+                subscription_obj.save()
+
+            if end_date and subscription_obj.end_date != end_date:
+                subscription_obj.end_date = end_date
+                subscription_obj.save()
+
             messages.success(request, 'Subscription updated!')
             return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': pk}))
+        else:
+            context = self.get_context_data()
+            context['form'] = form
+            context['subscription'] = subscription_obj
+
+            return render(request, self.template_name, context)
+
 
 class SubscriptionListView(LoginRequiredMixin, ListView):
 
