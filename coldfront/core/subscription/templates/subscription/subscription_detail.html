@@ -20,6 +20,14 @@ Subscription Detail
 <h1>Subscription Detail</h1> <hr>
 </div>
 
+{% if form.non_field_errors %}
+<div class="alert alert-danger" role="alert">
+  {{ form.non_field_errors }}
+</div>
+{% endif %}
+
+
+
 
 <div class="card mb-3">
   <div class="card-header">
@@ -54,7 +62,13 @@ Subscription Detail
         </tr>
         <tr>
           <th style="white-space:nowrap;">Start Date:</th>
-          <td>{{ subscription.start_date }}</td>
+          <td>
+              {% if request.user.is_superuser %}
+                {{ form.start_date }} 
+              {% else %}
+                {{ subscription.start_date }} 
+              {% endif %}
+          </td>
         </tr>
         <tr>
           <th style="white-space:nowrap;">End Date:</th>
@@ -247,7 +261,7 @@ function drawGauges(guage_data) {
 
     }
 }
-$(".datepicker").datepicker();
+$(".datepicker").datepicker({ dateFormat: 'yy-mm-dd' });
 
 
 </script>
