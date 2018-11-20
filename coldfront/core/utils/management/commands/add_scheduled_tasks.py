@@ -18,6 +18,6 @@ class Command(BaseCommand):
             schedule_type=Schedule.DAILY,
             next_run=datetime.datetime(date.year, date.month, date.day, 00, 00, 00, 000000))
 
-        schedule('coldront.core.subscription.tasks.send_expiry_emails',
+        schedule('coldfront.core.subscription.tasks.send_expiry_emails',
             schedule_type=Schedule.DAILY,
             next_run=datetime.datetime(date.year, date.month, date.day, 00, 00, 00, 000000))
