@@ -34,7 +34,8 @@ class ProjectAddUserForm(forms.Form):
 
 
 class ProjectAddUsersToSubscriptionForm(forms.Form):
-    subscription = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, required=False)
+    subscription = forms.MultipleChoiceField(
+        widget=forms.CheckboxSelectMultiple(attrs={'checked' : 'checked'}), required=False)
 
     def __init__(self, request_user, project_pk, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -49,6 +50,9 @@ class ProjectAddUsersToSubscriptionForm(forms.Form):
             self.fields['subscription'].help_text = '<br/>Select subscriptions to add selected users to.'
         else:
             self.fields['subscription'].widget = forms.HiddenInput()
+
+
+
 
 
 class ProjectRemoveUserForm(forms.Form):
