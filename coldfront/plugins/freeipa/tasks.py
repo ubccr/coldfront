@@ -31,7 +31,7 @@ def add_user_group(subscription_user_pk):
     os.environ["KRB5_CLIENT_KTNAME"] = CLIENT_KTNAME
     for g in groups:
         if FREEIPA_NOOP:
-            logger.warn("NOOP - FreeIPA adding user %s to group %s", subscription_user.user.username, g)
+            logger.warn("NOOP - FreeIPA adding user %s to group %s for subscription %s", subscription_user.user.username, g, subscription_user.subscription)
             continue
 
         try:
@@ -85,7 +85,7 @@ def remove_user_group(subscription_user_pk):
     os.environ["KRB5_CLIENT_KTNAME"] = CLIENT_KTNAME
     for g in groups:
         if FREEIPA_NOOP:
-            logger.warn("NOOP - FreeIPA removing user %s from group %s", subscription_user.user.username, g)
+            logger.warn("NOOP - FreeIPA removing user %s from group %s for subscription %s", subscription_user.user.username, g, subscription_user.subscription)
             continue
 
         try:
