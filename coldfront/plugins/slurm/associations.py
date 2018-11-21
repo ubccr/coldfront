@@ -57,16 +57,16 @@ class SlurmCluster(SlurmBase):
                     raise(SlurmParserError('Cluster name not found for line: {}'.format(line)))
                 cluster = SlurmCluster(name)
                 cluster.specs += parts[1:]
-            elif re.match("^Account - '\w+'", line):
+            elif re.match("^Account - '[^']+'", line):
                 account = SlurmAccount.new_from_sacctmgr(line)
                 cluster.accounts[account.name] = account
-            elif re.match("^Parent - '\w+'", line):
+            elif re.match("^Parent - '[^']+'", line):
                 parent = re.sub(r"^Parent - ", '', line).strip("\n'")
                 if parent == 'root':
                     cluster.accounts['root'] = SlurmAccount('root')
                 if not parent:
                     raise(SlurmParserError('Parent name not found for line: {}'.format(line)))
-            elif re.match("^User - '\w+'", line):
+            elif re.match("^User - '[^']+'", line):
                 user = SlurmUser.new_from_sacctmgr(line)
                 if not parent:
                     raise(SlurmParserError('Found user record without Parent for line: {}'.format(line)))
@@ -142,7 +142,7 @@ class SlurmAccount(SlurmBase):
     def new_from_sacctmgr(line):
         """Create a new SlurmAccount by parsing a line from sacctmgr dump. For
         example: Account - 'physics':Description='physics group':Organization='cas':Fairshare=100"""
-        if not re.match("^Account - '\w+'", line):
+        if not re.match("^Account - '[^']+'", line):
             raise(SlurmParserError('Invalid format. Must start with "Account" for line: {}'.format(line)))
 
         parts = line.split(':')
@@ -194,7 +194,7 @@ class SlurmUser(SlurmBase):
     def new_from_sacctmgr(line):
         """Create a new SlurmUser by parsing a line from sacctmgr dump. For
         example: User - 'jane':DefaultAccount='physics':Fairshare=Parent:QOS='general-compute'"""
-        if not re.match("^User - '\w+'", line):
+        if not re.match("^User - '[^']+'", line):
             raise(SlurmParserError('Invalid format. Must start with "User" for line: {}'.format(line)))
 
         parts = line.split(':')
