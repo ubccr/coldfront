@@ -69,7 +69,6 @@ def send_expiry_emails():
 
                     email_receiver_list.append(subscription_user.user.email)
 
-            print(subscription_obj.id, email_receiver_list)
             send_email_template('Subscription to {} expiring in {} days'.format(resource_name, days_remaining),
                 'email/subscription_expiring.txt',
                 template_context,
@@ -112,7 +111,6 @@ def send_expiry_emails():
 
                 email_receiver_list.append(subscription_user.user.email)
 
-        print(subscription_obj.id, email_receiver_list)
         send_email_template('Subscription to {} has expired'.format(resource_name),
             'email/subscription_expired.txt',
             template_context,
