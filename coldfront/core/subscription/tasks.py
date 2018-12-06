@@ -62,7 +62,11 @@ def send_expiry_emails():
 
             email_receiver_list = []
             for subscription_user in subscription_obj.project.projectuser_set.all():
-                if subscription_user.enable_notifications:
+                if (subscription_user.enable_notifications and
+                    subscription_obj.subscriptionuser_set.filter(
+                        user=subscription_user.user, status__name='Active')
+                    and subscription_user.user.email not in email_receiver_list):
+
                     email_receiver_list.append(subscription_user.user.email)
 
             send_email_template('Subscription to {} expiring in {} days'.format(resource_name, days_remaining),
@@ -100,7 +104,11 @@ def send_expiry_emails():
 
         email_receiver_list = []
         for subscription_user in subscription_obj.project.projectuser_set.all():
-            if subscription_user.enable_notifications:
+            if (subscription_user.enable_notifications and
+                subscription_obj.subscriptionuser_set.filter(
+                    user=subscription_user.user, status__name='Active')
+                and subscription_user.user.email not in email_receiver_list):
+
                 email_receiver_list.append(subscription_user.user.email)
 
         send_email_template('Subscription to {} has expired'.format(resource_name),

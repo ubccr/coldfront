@@ -127,6 +127,12 @@ Project Detail
                 {% if user.enable_notifications %} checked {% endif %}
                 {% if user.role.name == "Manager" %} disabled {% endif %}
                 {% if not request.user.is_superuser and user.role.name == "User" and request.user == user.user %} disabled {% endif %}>
+              {% elif request.user == user.user %}
+                <input type="checkbox" 
+                id="email_notifications_for_user_id_{{user.id}}" 
+                name="email_notifications_checkbox" 
+                value="{{ user.enable_notifications }}" 
+                {% if user.enable_notifications %} checked {% endif %}>
               {% else %}
                 <input type="checkbox" 
                 id="email_notifications_for_user_id_{{user.id}}" 
