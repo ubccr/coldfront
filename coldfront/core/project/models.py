@@ -77,6 +77,10 @@ We do not have information about your research. Please provide a detailed descri
 
     @property
     def needs_review(self):
+
+        if self.status.name == 'Archived':
+            return False
+
         now = datetime.datetime.now(datetime.timezone.utc)
 
         if self.force_review is True:
