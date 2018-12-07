@@ -199,6 +199,7 @@ class SubscriptionAttributeType(TimeStampedModel):
     has_usage = models.BooleanField(default=False)
     is_required = models.BooleanField(default=False)
     is_unique = models.BooleanField(default=False)
+    is_private = models.BooleanField(default=True)
     history = HistoricalRecords()
 
     def __str__(self):
@@ -213,7 +214,6 @@ class SubscriptionAttribute(TimeStampedModel):
     subscription_attribute_type = models.ForeignKey(SubscriptionAttributeType, on_delete=models.CASCADE)
     subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
     value = models.CharField(max_length=128)
-    is_private = models.BooleanField(default=True)
     history = HistoricalRecords()
 
     def save(self, *args, **kwargs):

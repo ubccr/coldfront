@@ -107,7 +107,7 @@ class AttributeTypeAdmin(admin.ModelAdmin):
 
 @admin.register(SubscriptionAttributeType)
 class SubscriptionAttributeTypeAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'name', 'has_usage')
+    list_display = ('pk', 'name', 'has_usage', 'is_private')
 
 
 class SubscriptionAttributeUsageInline(admin.TabularInline):
@@ -147,11 +147,11 @@ class UsageValueFilter(admin.SimpleListFilter):
 @admin.register(SubscriptionAttribute)
 class SubscriptionAttributeAdmin(SimpleHistoryAdmin):
     readonly_fields_change = ('subscription', 'subscription_attribute_type', 'created', 'modified', 'project_title')
-    fields_change = ('project_title', 'subscription', 'subscription_attribute_type', 'value', 'is_private', 'created', 'modified',)
+    fields_change = ('project_title', 'subscription', 'subscription_attribute_type', 'value', 'created', 'modified',)
     list_display = ('pk', 'project', 'pi', 'resource', 'subscription_status',
-                    'subscription_attribute_type', 'value', 'usage', 'is_private', 'created', 'modified',)
+                    'subscription_attribute_type', 'value', 'usage', 'created', 'modified',)
     inlines = [SubscriptionAttributeUsageInline, ]
-    list_filter = (UsageValueFilter, 'subscription_attribute_type', 'is_private', 'subscription__status', 'subscription__resources')
+    list_filter = (UsageValueFilter, 'subscription_attribute_type', 'subscription__status', 'subscription__resources')
     search_fields = (
         'subscription__project__pi__first_name',
         'subscription__project__pi__last_name',

@@ -101,9 +101,9 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             attributes_without_usage = [attribute for attribute in subscription_obj.subscriptionattribute_set.all().order_by('subscription_attribute_type__name') if not hasattr(attribute, 'subscriptionattributeusage')]
 
         else:
-            attributes_with_usage = [attribute for attribute in subscription_obj.subscriptionattribute_set.filter(is_private=False) if hasattr(attribute, 'subscriptionattributeusage')]
+            attributes_with_usage = [attribute for attribute in subscription_obj.subscriptionattribute_set.filter(subscription_attribute_type__is_private=False) if hasattr(attribute, 'subscriptionattributeusage')]
 
-            attributes_without_usage = [attribute for attribute in subscription_obj.subscriptionattribute_set.filter(is_private=False) if not hasattr(attribute, 'subscriptionattributeusage')]
+            attributes_without_usage = [attribute for attribute in subscription_obj.subscriptionattribute_set.filter(subscription_attribute_type__is_private=False) if not hasattr(attribute, 'subscriptionattributeusage')]
 
         guage_data = []
         invalid_attributes = []
