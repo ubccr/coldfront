@@ -158,7 +158,8 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         initial_data = {
             'status': subscription_obj.status,
             'end_date': subscription_obj.end_date,
-            'start_date': subscription_obj.start_date
+            'start_date': subscription_obj.start_date,
+            'description': subscription_obj.description
         }
 
         form = SubscriptionUpdateForm(initial=initial_data)
@@ -181,16 +182,22 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         initial_data = {
             'status': subscription_obj.status,
             'end_date': subscription_obj.end_date,
+            'start_date': subscription_obj.start_date,
+            'description': subscription_obj.description
         }
-
         form = SubscriptionUpdateForm(request.POST, initial=initial_data)
 
         if form.is_valid():
             form_data = form.cleaned_data
             end_date = form_data.get('end_date')
             start_date = form_data.get('start_date')
+            description = form_data.get('description')
 
-            print(start_date)
+
+
+            subscription_obj.description = description
+            subscription_obj.save()
+
             if not start_date:
                 start_date = datetime.datetime.now()
             if not end_date:

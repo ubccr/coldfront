@@ -43,7 +43,7 @@ class ProjectAddUsersToSubscriptionForm(forms.Form):
 
         subscription_query_set = project_obj.subscription_set.filter(
             status__name__in=['Active', 'New', 'Renewal Requested', ], resources__is_subscribable=True)
-        subscription_choices = [(subscription.id, "%s (%s)" %(subscription.get_parent_resource.name, subscription.get_parent_resource.resource_type.name)) for subscription in subscription_query_set]
+        subscription_choices = [(subscription.id, "%s (%s) %s" %(subscription.get_parent_resource.name, subscription.get_parent_resource.resource_type.name, subscription.description if subscription.description else '')) for subscription in subscription_query_set]
         subscription_choices.insert(0, ('__select_all__', 'Select All'))
         if subscription_query_set:
             self.fields['subscription'].choices = subscription_choices

@@ -51,7 +51,7 @@ class SubscriptionUserMessageInline(admin.TabularInline):
 class SubscriptionAdmin(SimpleHistoryAdmin):
     readonly_fields_change = ('project', 'justification', 'created', 'modified',)
     fields_change = ('project', 'resources', 'quantity', 'justification',
-                     'status', 'start_date', 'end_date', 'created', 'modified',)
+                     'status', 'start_date', 'end_date', 'description', 'created', 'modified',)
     list_display = ('pk', 'project_title', 'project_pi', 'resource', 'quantity',
                     'justification', 'start_date', 'end_date', 'status', 'created', 'modified', )
     inlines = [SubscriptionUserInline, SubscriptionAttributeInline, SubscriptionAdminCommentInline, SubscriptionUserMessageInline]

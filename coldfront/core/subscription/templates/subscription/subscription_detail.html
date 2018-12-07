@@ -84,6 +84,16 @@ Subscription Detail
           </td>
         </tr>
         <tr>
+          <th style="white-space:nowrap;">Description:</th>
+          <td>
+              {% if request.user.is_superuser %}
+                {{ form.description }} 
+              {% else %}
+                {{ subscription.description }} 
+              {% endif %}
+          </td>
+        </tr>
+        <tr>
           <th style="white-space:nowrap;">Created:</th>
           <td>{{ subscription.created|date:"M. d, Y" }}</td>
         </tr>

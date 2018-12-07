@@ -42,6 +42,9 @@ class SubscriptionUpdateForm(forms.Form):
         label='End Date',
         widget=forms.DateInput(attrs={'class': 'datepicker'}),
         required=False)
+    description = forms.CharField(max_length=512,
+        label='Description',
+        required=False)
 
     def clean(self):
         cleaned_data = super().clean()

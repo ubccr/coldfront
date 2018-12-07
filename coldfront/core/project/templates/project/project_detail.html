@@ -190,7 +190,7 @@ Project Detail
           <tr>
             <td>{{ subscription.get_parent_resource.name }}</td>
             <td>{{ subscription.resources.first.resource_type.name }}</td>
-            <td style="white-space:nowrap;">{{subscription.get_usage}}</td>
+            <td style="white-space:nowrap;">{{subscription.get_information}}</td>
             {% if subscription.status.name == 'Active' %}
               <td class="text-success">{{ subscription.status.name }}</td>
             {% elif  subscription.status.name == 'Expired' or subscription.status.name == 'Denied' %}
