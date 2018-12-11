@@ -84,6 +84,16 @@ Subscription Detail
           </td>
         </tr>
         <tr>
+          <th style="white-space:nowrap;">Description:</th>
+          <td>
+              {% if request.user.is_superuser %}
+                {{ form.description }} 
+              {% else %}
+                {{ subscription.description }} 
+              {% endif %}
+          </td>
+        </tr>
+        <tr>
           <th style="white-space:nowrap;">Created:</th>
           <td>{{ subscription.created|date:"M. d, Y" }}</td>
         </tr>
@@ -124,7 +134,7 @@ Subscription Detail
         </thead>
         <tbody>
           {% for attribute in attributes_without_usage %}
-            {% if attribute.is_private %}
+            {% if attribute.subscription_attribute_type.is_private %}
               <tr style="background-color:#eee">
                 <td> <i class="fas fa-lock"></i> {{attribute}}</td>
                 <td>{{attribute.value}}</td>

@@ -2,6 +2,7 @@ import datetime
 import logging
 import importlib
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -19,6 +20,8 @@ logger = logging.getLogger(__name__)
 
 
 SUBSCRIPTION_FUNCS_ON_EXPIRE = import_from_settings('SUBSCRIPTION_FUNCS_ON_EXPIRE', [])
+SLURM_ACCOUNT_ATTRIBUTE_NAME = import_from_settings('SLURM_ACCOUNT_ATTRIBUTE_NAME', 'slurm_account_name')
+
 
 
 class SubscriptionStatusChoice(TimeStampedModel):
@@ -40,6 +43,7 @@ class Subscription(TimeStampedModel):
     start_date = models.DateField(blank=True, null=True)
     end_date = models.DateField(blank=True, null=True)
     justification = models.TextField()
+    description = models.CharField(max_length=512, blank=True, null=True)
     history = HistoricalRecords()
 
     class Meta:
@@ -88,9 +92,12 @@ class Subscription(TimeStampedModel):
         return (self.end_date - datetime.date.today()).days
 
     @property
-    def get_usage(self):
+    def get_information(self):
         html_string = ''
         for attribute in self.subscriptionattribute_set.all():
+
+            if attribute.subscription_attribute_type.name in [SLURM_ACCOUNT_ATTRIBUTE_NAME, ]:
+                html_string += '%s: %s <br>' % (attribute.subscription_attribute_type.name, attribute.value)
 
             if hasattr(attribute, 'subscriptionattributeusage'):
                 try:
@@ -108,6 +115,8 @@ class Subscription(TimeStampedModel):
                     percent
                 )
                 html_string += string
+
+
 
         return mark_safe(html_string)
 
@@ -190,6 +199,7 @@ class SubscriptionAttributeType(TimeStampedModel):
     has_usage = models.BooleanField(default=False)
     is_required = models.BooleanField(default=False)
     is_unique = models.BooleanField(default=False)
+    is_private = models.BooleanField(default=True)
     history = HistoricalRecords()
 
     def __str__(self):
@@ -204,7 +214,6 @@ class SubscriptionAttribute(TimeStampedModel):
     subscription_attribute_type = models.ForeignKey(SubscriptionAttributeType, on_delete=models.CASCADE)
     subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
     value = models.CharField(max_length=128)
-    is_private = models.BooleanField(default=True)
     history = HistoricalRecords()
 
     def save(self, *args, **kwargs):

@@ -101,9 +101,9 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             attributes_without_usage = [attribute for attribute in subscription_obj.subscriptionattribute_set.all().order_by('subscription_attribute_type__name') if not hasattr(attribute, 'subscriptionattributeusage')]
 
         else:
-            attributes_with_usage = [attribute for attribute in subscription_obj.subscriptionattribute_set.filter(is_private=False) if hasattr(attribute, 'subscriptionattributeusage')]
+            attributes_with_usage = [attribute for attribute in subscription_obj.subscriptionattribute_set.filter(subscription_attribute_type__is_private=False) if hasattr(attribute, 'subscriptionattributeusage')]
 
-            attributes_without_usage = [attribute for attribute in subscription_obj.subscriptionattribute_set.filter(is_private=False) if not hasattr(attribute, 'subscriptionattributeusage')]
+            attributes_without_usage = [attribute for attribute in subscription_obj.subscriptionattribute_set.filter(subscription_attribute_type__is_private=False) if not hasattr(attribute, 'subscriptionattributeusage')]
 
         guage_data = []
         invalid_attributes = []
@@ -158,7 +158,8 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         initial_data = {
             'status': subscription_obj.status,
             'end_date': subscription_obj.end_date,
-            'start_date': subscription_obj.start_date
+            'start_date': subscription_obj.start_date,
+            'description': subscription_obj.description
         }
 
         form = SubscriptionUpdateForm(initial=initial_data)
@@ -181,16 +182,22 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         initial_data = {
             'status': subscription_obj.status,
             'end_date': subscription_obj.end_date,
+            'start_date': subscription_obj.start_date,
+            'description': subscription_obj.description
         }
-
         form = SubscriptionUpdateForm(request.POST, initial=initial_data)
 
         if form.is_valid():
             form_data = form.cleaned_data
             end_date = form_data.get('end_date')
             start_date = form_data.get('start_date')
+            description = form_data.get('description')
 
-            print(start_date)
+
+
+            subscription_obj.description = description
+            subscription_obj.save()
+
             if not start_date:
                 start_date = datetime.datetime.now()
             if not end_date:
