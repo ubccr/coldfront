@@ -94,7 +94,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['mailto'] = 'mailto:' + ','.join([user.user.email for user in project_users])
 
         if self.request.user.is_superuser or self.request.user.has_perm('subscription.can_view_all_subscriptions'):
-            subscriptions = Subscription.objects.prefetch_related('resources').filter(project=self.object)
+            subscriptions = Subscription.objects.prefetch_related('resources').filter(project=self.object).order_by('-end_date')
         else:
             if self.object.status.name in ['Active', 'New',]:
                 subscriptions = Subscription.objects.filter(

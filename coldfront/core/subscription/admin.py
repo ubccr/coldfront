@@ -30,7 +30,7 @@ class SubscriptionUserInline(admin.TabularInline):
 class SubscriptionAttributeInline(admin.TabularInline):
     model = SubscriptionAttribute
     extra = 0
-    fields = ('subscription_attribute_type', 'value', 'is_private')
+    fields = ('subscription_attribute_type', 'value',)
 
 
 class SubscriptionAdminCommentInline(admin.TabularInline):
