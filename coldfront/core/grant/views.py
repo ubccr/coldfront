@@ -13,7 +13,7 @@ from django.views.generic.edit import CreateView, UpdateView
 from coldfront.core.utils.common import Echo
 from coldfront.core.grant.forms import GrantDeleteForm, GrantForm
 from coldfront.core.grant.models import (Grant, GrantFundingAgency,
-                                          GrantStatusChoice)
+                                         GrantStatusChoice)
 from coldfront.core.project.models import Project
 
 
@@ -71,10 +71,9 @@ class GrantCreateView(FormView):
         context['project'] = Project.objects.get(pk=self.kwargs.get('project_pk'))
         return context
 
-
     def get_success_url(self):
         messages.success(self.request, 'Added a grant.')
-        return reverse('project-detail', kwargs={'pk':self.kwargs.get('project_pk')})
+        return reverse('project-detail', kwargs={'pk': self.kwargs.get('project_pk')})
 
 
 class GrantUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
@@ -96,7 +95,7 @@ class GrantUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Grant
     template_name_suffix = '_update_form'
     fields = ['title', 'grant_number', 'role', 'grant_pi_full_name', 'funding_agency', 'other_funding_agency',
-              'other_award_number', 'grant_start', 'grant_end', 'percent_credit', 'direct_funding', 'total_amount_awarded', 'status',]
+              'other_award_number', 'grant_start', 'grant_end', 'percent_credit', 'direct_funding', 'total_amount_awarded', 'status', ]
 
     def get_success_url(self):
         return reverse('project-detail', kwargs={'pk': self.object.project.id})
