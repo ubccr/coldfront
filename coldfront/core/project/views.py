@@ -1,4 +1,5 @@
 import pprint
+import datetime
 
 from django.conf import settings
 from django.contrib import messages
@@ -37,6 +38,7 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                             ProjectUserStatusChoice)
 from coldfront.core.publication.models import Publication
 from coldfront.core.subscription.models import (Subscription,
+                                                 SubscriptionStatusChoice,
                                                  SubscriptionUser,
                                                  SubscriptionUserStatusChoice)
 from coldfront.core.subscription.signals import (subscription_activate_user,
@@ -361,8 +363,14 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
         pk = self.kwargs.get('pk')
         project = get_object_or_404(Project, pk=pk)
         project_status_archive = ProjectStatusChoice.objects.get(name='Archived')
+        subscription_status_expired = SubscriptionStatusChoice.objects.get(name='Expired')
+        end_date = datetime.datetime.now()
         project.status = project_status_archive
         project.save()
+        for subscription in project.subscription_set.filter(status__name='Active'):
+            subscription.status = subscription_status_expired
+            subscription.end_date = end_date
+            subscription.save()
         return redirect(reverse('project-detail', kwargs={'pk': project.pk}))
 
 
