@@ -19,7 +19,7 @@ Subscription Review New and Pending Requests
     <thead>
       <tr>
         <th>#</th>
-        <th>Date Requested</th>
+        <th>Date Requested/<br>Last Modified</th>
         <th>Project Title</th>
         <th>PI</th>
         <th>Resource</th>
@@ -34,7 +34,7 @@ Subscription Review New and Pending Requests
       {% for subscription in subscription_list %}
       <tr>
         <td><a href="{% url 'subscription-detail' subscription.pk %}">{{subscription.pk}}</a></td>
-        <td >{{ subscription.created|date:"M. d, Y" }}</td>
+        <td >{{ subscription.modified|date:"M. d, Y" }}</td>
         <td><a href="{% url 'project-detail' subscription.project.pk %}">{{subscription.project.title|truncatechars:50}}</a></td>
         <td>{{subscription.project.pi.first_name}} {{subscription.project.pi.last_name}} ({{subscription.project.pi.username}})</td>
         <td>{{subscription.get_parent_resource}}</td>
