@@ -982,11 +982,19 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         project_review_obj = get_object_or_404(ProjectReview, pk=pk)
         form_data = form.cleaned_data
 
+        receiver_list = [project_review_obj.project.pi.email]
+        cc = form_data.get('cc').strip()
+        if cc:
+            cc = cc.split(',')
+        else:
+            cc = []
+            
         send_email(
             'Request for more information',
             form_data.get('email_body'),
             EMAIL_DIRECTOR_EMAIL_ADDRESS,
-            [project_review_obj.project.pi.email, ],
+            receiver_list,
+            cc
         )
 
         messages.success(self.request, 'Email sent to {} {} ({})'.format(

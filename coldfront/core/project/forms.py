@@ -8,6 +8,8 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                             ProjectUserRoleChoice)
 
 EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL = import_from_settings('EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL')
+EMAIL_ADMIN_LIST = import_from_settings('EMAIL_ADMIN_LIST')
+EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings('EMAIL_DIRECTOR_EMAIL_ADDRESS')
 
 
 class ProjectSearchForm(forms.Form):
@@ -97,6 +99,9 @@ class ProjectReviewForm(forms.Form):
 
 
 class ProjectReviewEmailForm(forms.Form):
+    cc = forms.CharField(
+        required=False
+    )
     email_body = forms.CharField(
         required=True,
         widget=forms.Textarea
@@ -106,3 +111,4 @@ class ProjectReviewEmailForm(forms.Form):
         super().__init__(*args, **kwargs)
         project_review_obj = get_object_or_404(ProjectReview, pk=int(pk))
         self.fields['email_body'].initial = 'Dear {} {} \n{}'.format(project_review_obj.project.pi.first_name, project_review_obj.project.pi.last_name, EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL)
+        self.fields['cc'].initial = ', '.join([EMAIL_DIRECTOR_EMAIL_ADDRESS] + EMAIL_ADMIN_LIST)
