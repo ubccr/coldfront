@@ -6,10 +6,10 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
 from coldfront.core.subscription.models import (Subscription,
-                                                 SubscriptionStatusChoice)
-
+                                                SubscriptionStatusChoice)
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email_template
+
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
 
