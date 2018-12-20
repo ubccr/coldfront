@@ -119,4 +119,4 @@ def send_expiry_emails():
         )
 
 
-        logger.info('Subscription to {} expired email sent to PI {}.'.format(resource_name, days_remaining, subscription_obj.project.pi.username))
+        logger.info('Subscription to {} expired email sent to PI {}.'.format(resource_name, subscription_obj.project.pi.username))
