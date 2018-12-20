@@ -44,7 +44,7 @@ def send_expiry_emails():
 
         for subscription_obj in Subscription.objects.filter(status__name='Active', end_date=expring_in_days):
 
-            subscripion_renew_url = '{}/{}/{}/{}/'.format(CENTER_BASE_URL.strip('/'), 'subscription', subscription_obj.pk, 'renew')
+            subscripion_renew_url = '{}/{}/{}/{}'.format(CENTER_BASE_URL.strip('/'), 'subscription', subscription_obj.pk, 'renew')
 
 
             resource_name = subscription_obj.get_parent_resource.name
@@ -89,7 +89,7 @@ def send_expiry_emails():
 
         resource_name = subscription_obj.get_parent_resource.name
 
-        subscripion_renew_url = '{}/{}/{}/{}/'.format(CENTER_BASE_URL.strip('/'), 'subscription', subscription_obj.pk, 'renew')
+        subscripion_renew_url = '{}/{}/{}/{}'.format(CENTER_BASE_URL.strip('/'), 'subscription', subscription_obj.pk, 'renew')
 
         project_url = '{}/{}/{}/'.format(CENTER_BASE_URL.strip('/'), 'project', subscription_obj.project.pk)
 
