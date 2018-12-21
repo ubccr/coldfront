@@ -53,14 +53,14 @@ Add Publication to Project
 
   function create_post() {
 
-    unique_id = $('#id_unique_id').val().trim();
+    search_id = $('#id_search_id').val().trim();
   
     var pk = "{{ project.pk }}"
     $.ajax({
         url : "/publication/publication-search-result/" + pk +"/", // the endpoint
         type : "POST", // http method
         data : {
-          unique_id : unique_id, 
+          search_id : search_id, 
           csrfmiddlewaretoken: "{{ csrf_token }}"
         }, // data sent with the post request
         // handle a successful response

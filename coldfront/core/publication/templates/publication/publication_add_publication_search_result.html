@@ -1,46 +1,66 @@
 {% load crispy_forms_tags %}
 
+{% if formset %}
+<div class="card border-light">
+  <div class="card-body">
 
-{% if title %}
-<form action="{% url 'add-publication' project_pk %}" method="post">
-  {% csrf_token %}
-  <div class="table-responsive-sm">          
-  <table class="table"> 
-      <tr>
-        <th>Title</th>
-        <td>{{title}}</td>
-      </tr>
-      <tr>
-        <th>Author</th>
-        <td>{{author}}</td>
-      </tr>
-      <tr>
-        <th>Year</th>
-        <td>{{year}}</td>
-      </tr> 
-      <tr>
-        <th>Link</th>
-        <td><a target="_blank" href="{{source.url}}/{{unique_id}}">{{unique_id}}</a></td>
-      </tr>           
-    </tbody>
-  </table>
+    <form action="{% url 'add-publication' project_pk %}" method="post">
+      {% csrf_token %}
+      <div class="table-responsive">
+        <table class="table table-sm table-hover">
+          <thead>
+            <tr>
+              <th>
+                <input type="checkbox" class="check" id="selectAll">
+              </th>
+              <th>#</th>
+              <th>Publication</th>
+              <th>Unique ID</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for form in formset %}
+            <tr>
+              <td>{{ form.selected }}</td>
+              <td>{{ forloop.counter }}</td>
+              <td>
+                <strong>Title: </strong>{{ form.title.value }} <br>
+                <strong>Author: </strong>{{ form.author.value }} <br> 
+                <strong>Year: </strong>{{ form.year.value }} </td>
+              <td style="white-space:nowrap;">{{ form.unique_id.value }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {{ formset.management_form }}
+       <div>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-user-minus"></i> Add Selected Publications to Project</button>
+        <a class="btn btn-secondary" href="{% url 'project-detail' project_pk %}" role="button"><i class="fas fa-long-arrow-left"></i> Back to Project</a>
+        <input id="search_ids" type="hidden" name="search_ids" value="{{search_ids}}">
+        <input id="pubs" type="hidden" name="pubs" value="{{pubs}}">
+      </div>
+
+    </form>
   </div>
-  
-  <br>
-  <button type="submit" class="btn btn-success"><i class="fas fa-plus"></i> Add Publication to Project</button>
-  <a class="btn btn-secondary" href="{% url 'project-detail' project_pk %}" role="button">Back to Project</a><br>
-
-  <input id="title" type="hidden" name="title" value="{{title}}">
-  <input id="author" type="hidden" name="author" value="{{author}}">
-  <input id="year" type="hidden" name="year" value="{{year}}">
-  <input id="source_pk" type="hidden" name="source" value="{{source.pk}}">
-  <input id="unique_id" type="hidden" name="unique_id" value="{{unique_id}}">
-</form>
-
-{% else %}
-    <div class="alert alert-info text-center">
-    No results!
-    </div>
-
+</div>
+{% else %} 
+  <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left"></i> Back to Project</a> 
+  <div class="alert alert-info">
+    No users to remove!
+  </div>
 {% endif %}
 
+
+<script>
+$("#selectAll").click(function() {
+  $("input[name^='pubform-']").prop('checked', $(this).prop('checked'));
+});
+
+$("input[name^='pubform-']").click(function(ele) {
+  var id = $(this).attr('id');
+  if (id != "selectAll") {
+    $("#selectAll").prop('checked', false);
+  }
+});
+</script>
