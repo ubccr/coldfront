@@ -6,6 +6,7 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
 from coldfront.core.subscription.models import (Subscription,
+                                                SubscriptionAttribute,
                                                 SubscriptionStatusChoice)
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email_template
@@ -89,6 +90,51 @@ def send_expiry_emails():
             logger.info('Subscription to {} expiring in {} days email sent to PI {}.'.format(
                 resource_name, days_remaining, subscription_obj.project.pi.username))
 
+    # Subscriptions expiring today
+    today = datetime.datetime.now().strftime('%Y-%m-%d')
+
+    for subscription_attribute in SubscriptionAttribute.objects.filter(
+            value=today,
+            subscription_attribute_type__name='send_expiry_email_on_date'):
+
+        subscription_obj = subscription_attribute.subscription
+        days_remaining = subscription_obj.expires_in
+
+        subscripion_renew_url = '{}/{}/{}/{}'.format(
+            CENTER_BASE_URL.strip('/'), 'subscription', subscription_obj.pk, 'renew')
+
+        resource_name = subscription_obj.get_parent_resource.name
+
+        template_context = {
+            'center_name': CENTER_NAME,
+            'subscription_type': resource_name,
+            'expring_in_days': days_remaining,
+            'subscripion_renew_url': subscripion_renew_url,
+            'project_renewal_help_url': CENTER_PROJECT_RENEWAL_HELP_URL,
+            'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL,
+            'signature': EMAIL_SIGNATURE
+
+        }
+
+        email_receiver_list = []
+        for subscription_user in subscription_obj.project.projectuser_set.all():
+            if (subscription_user.enable_notifications and
+                subscription_obj.subscriptionuser_set.filter(
+                    user=subscription_user.user, status__name='Active')
+                    and subscription_user.user.email not in email_receiver_list):
+
+                email_receiver_list.append(subscription_user.user.email)
+
+        send_email_template('Subscription to {} expiring in {} days'.format(resource_name, days_remaining),
+                            'email/subscription_expiring.txt',
+                            template_context,
+                            EMAIL_SENDER,
+                            email_receiver_list
+                            )
+
+        logger.info('Subscription to {} expiring in {} days email sent to PI {}.'.format(
+            resource_name, days_remaining, subscription_obj.project.pi.username))
+
     # Expired subscriptions
 
     expring_in_days = datetime.datetime.today() + datetime.timedelta(days=-1)
@@ -96,10 +142,9 @@ def send_expiry_emails():
     for subscription_obj in Subscription.objects.filter(end_date=expring_in_days):
 
         expire_notification = subscription_obj.subscriptionattribute_set.filter(
-                subscription_attribute_type__name='EXPIRE NOTIFICATION').first()       
+            subscription_attribute_type__name='EXPIRE NOTIFICATION').first()
         if expire_notification and expire_notification.value == 'No':
             continue
-
 
         resource_name = subscription_obj.get_parent_resource.name
 
