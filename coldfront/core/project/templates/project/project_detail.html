@@ -201,7 +201,13 @@ Project Detail
             <td>{{subscription.end_date|date:"M. d, Y"}}</td>
             <td>
               <a href="{% url 'subscription-detail' subscription.pk %}"><i class="far fa-folder-open"></i></a>
-              {% if is_allowed_to_update_project and SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL and subscription.status.name == 'Active' and subscription.expires_in <= 60 and subscription.expires_in >= 0 %} <a href="{% url 'subscription-renew' subscription.pk %}"><span class="badge badge-warning"><i class="fas fa-redo-alt"></i> Expires in {{subscription.expires_in}} day{{subscription.expires_in|pluralize}}</span></a>{% endif %}
+              {% if is_allowed_to_update_project and SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL and subscription.status.name == 'Active' and subscription.expires_in <= 60 and subscription.expires_in >= 0 %} 
+                <a href="{% url 'subscription-renew' subscription.pk %}">
+                <span class="badge badge-warning"><i class="fas fa-redo-alt"></i> 
+                Expires in {{subscription.expires_in}} day{{subscription.expires_in|pluralize}} <br> Click to renew
+                </span>
+                </a> 
+              {% endif %}
             </td>
           </tr>
           {% endfor %}

@@ -2,7 +2,7 @@ import logging
 from smtplib import SMTPException
 
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage, send_mail
 from django.template.loader import render_to_string
 
 from coldfront.core.utils.common import import_from_settings
@@ -11,10 +11,11 @@ logger = logging.getLogger(__name__)
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 if EMAIL_ENABLED:
     EMAIL_SUBJECT_PREFIX = import_from_settings('EMAIL_SUBJECT_PREFIX')
-    EMAIL_DEVELOPMENT_EMAIL_LIST = import_from_settings('EMAIL_DEVELOPMENT_EMAIL_LIST')
+    EMAIL_DEVELOPMENT_EMAIL_LIST = import_from_settings(
+        'EMAIL_DEVELOPMENT_EMAIL_LIST')
 
 
-def send_email(subject, body, sender, receiver_list):
+def send_email(subject, body, sender, receiver_list, cc=[]):
     """Helper function for sending emails
     """
 
@@ -35,10 +36,24 @@ def send_email(subject, body, sender, receiver_list):
     if settings.DEBUG:
         receiver_list = EMAIL_DEVELOPMENT_EMAIL_LIST
 
+    if cc and settings.DEBUG:
+        cc = EMAIL_DEVELOPMENT_EMAIL_LIST
+
     try:
-        send_mail(subject, body, sender, receiver_list, fail_silently=False)
+        if cc:
+            email = EmailMessage(
+                subject,
+                body,
+                sender,
+                receiver_list,
+                cc=cc)
+            email.send(fail_silently=False)
+        else:
+            send_mail(subject, body, sender,
+                      receiver_list, fail_silently=False)
     except SMTPException as e:
-        logger.error('Failed to send email to %s from %s with subject %s', sender, ','.join(receiver_list), subject)
+        logger.error('Failed to send email to %s from %s with subject %s',
+                     sender, ','.join(receiver_list), subject)
 
 
 def send_email_template(subject, template_name, context, sender, receiver_list):
