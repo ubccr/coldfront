@@ -17,8 +17,8 @@ class GrantForm(ModelForm):
             'direct_funding': 'Direct funding to {}'.format(CENTER_NAME)
         }
         help_texts = {
-            'percent_credit': 'Percent of grant amount given to {}'.format(CENTER_NAME),
-            'direct_funding': 'Amount from grant given to {}'.format(CENTER_NAME)
+            'percent_credit': 'Percent credit as entered in the sponsored projects form for grant submission as financial credit to the department/unit in the credit distribution section',
+            'direct_funding': 'Funds budgeted specifically for {} services, hardware, software, and/or personnel'.format(CENTER_NAME)
         }
 
 
