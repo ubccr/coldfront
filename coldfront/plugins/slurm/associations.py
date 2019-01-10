@@ -126,11 +126,15 @@ class SlurmCluster(SlurmBase):
             self.accounts['root'].write(out)
         else:
             self._write(out, "Parent - 'root'\n")
+            self._write(out, "User - 'root':DefaultAccount='root':AdminLevel='Administrator':Fairshare=1\n")
 
         for name, account in self.accounts.items():
             if account.name == 'root':
                 continue
             account.write(out)
+
+        for name, account in self.accounts.items():
+            account.write_users(out)
 
 
 class SlurmAccount(SlurmBase):
@@ -184,6 +188,7 @@ class SlurmAccount(SlurmBase):
                 self.format_specs(),
             ))
 
+    def write_users(self, out):
         self._write(out, "Parent - '{}'\n".format(self.name))
         for uid, user in self.users.items():
             user.write(out)
