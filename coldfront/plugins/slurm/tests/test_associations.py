@@ -8,7 +8,7 @@ from coldfront.plugins.slurm.associations import SlurmCluster
 from coldfront.plugins.slurm.utils import SLURM_CLUSTER_ATTRIBUTE_NAME
 
 class AssociationTest(TestCase):
-    fixtures = ['initial_data.json', 'test_data.json']
+    fixtures = ['test_data.json']
 
     @classmethod
     def setUpClass(cls):

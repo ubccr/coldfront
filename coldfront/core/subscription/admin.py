@@ -107,7 +107,7 @@ class AttributeTypeAdmin(admin.ModelAdmin):
 
 @admin.register(SubscriptionAttributeType)
 class SubscriptionAttributeTypeAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'name', 'has_usage', 'is_private')
+    list_display = ('pk', 'name', 'attribute_type', 'has_usage', 'is_private')
 
 
 class SubscriptionAttributeUsageInline(admin.TabularInline):
@@ -314,10 +314,16 @@ class ValueFilter(admin.SimpleListFilter):
 
 @admin.register(SubscriptionAttributeUsage)
 class SubscriptionAttributeUsageAdmin(SimpleHistoryAdmin):
-    list_display = ('subscription_attribute', 'resource', 'value',)
+    list_display = ('subscription_attribute', 'project', 'project_pi', 'resource', 'value',)
     readonly_fields = ('subscription_attribute',)
     fields = ('subscription_attribute', 'value',)
     list_filter = ('subscription_attribute__subscription_attribute_type', 'subscription_attribute__subscription__resources', ValueFilter, )
 
     def resource(self, obj):
         return obj.subscription_attribute.subscription.resources.first().name
+
+    def project(self, obj):
+        return obj.subscription_attribute.subscription.project.title
+
+    def project_pi(self, obj):
+        return obj.subscription_attribute.subscription.project.pi.username

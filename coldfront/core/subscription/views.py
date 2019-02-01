@@ -110,7 +110,7 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         for attribute in attributes_with_usage:
             try:
                 guage_data.append(generate_guauge_data_from_usage(attribute.subscription_attribute_type.name,
-                                                                  int(attribute.value), int(attribute.subscriptionattributeusage.value)))
+                                                                  float(attribute.value), float(attribute.subscriptionattributeusage.value)))
             except ValueError:
                 logger.error("Subscription attribute '%s' is not an int but has a usage", attribute.subscription_attribute_type.name)
                 invalid_attributes.append(attribute)
@@ -757,7 +757,7 @@ class SubscriptionAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, C
 
 
     def get_initial(self):
-        initial = super(SubscriptionAttributeCreateView, self).get_initial()
+        initial = super().get_initial()
         pk = self.kwargs.get('pk')
         subscription_obj = get_object_or_404(Subscription, pk=pk)
         initial['subscription'] = subscription_obj
@@ -765,7 +765,7 @@ class SubscriptionAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, C
 
     def get_form(self, form_class=None):
         """Return an instance of the form to be used in this view."""
-        form = super(SubscriptionAttributeCreateView, self).get_form(form_class)
+        form = super().get_form(form_class)
         form.fields['subscription'].widget = forms.HiddenInput()
         return form
 

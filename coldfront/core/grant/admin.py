@@ -1,7 +1,7 @@
 from django.contrib import admin
-from simple_history.admin import SimpleHistoryAdmin
 
 from coldfront.core.grant.models import Grant, GrantFundingAgency
+from simple_history.admin import SimpleHistoryAdmin
 
 
 @admin.register(GrantFundingAgency)
@@ -13,8 +13,9 @@ class GrantFundingAgencyChoiceAdmin(admin.ModelAdmin):
 class GrantAdmin(SimpleHistoryAdmin):
     readonly_fields = ('project', 'created', 'modified',)
     fields = ('project', 'title', 'grant_number', 'role', 'grant_pi_full_name', 'funding_agency', 'other_funding_agency', 'other_award_number', 'grant_start',
-        'grant_end', 'percent_credit', 'direct_funding', 'total_amount_awarded', 'status', 'created', 'modified')
-    list_display = ['title', 'Project_PI', 'role', 'grant_pi_full_name', 'Funding_Agency', 'status', 'grant_end', ]
+              'grant_end', 'percent_credit', 'direct_funding', 'total_amount_awarded', 'status', 'created', 'modified')
+    list_display = ['title', 'Project_PI', 'role',
+                    'grant_pi_full_name', 'Funding_Agency', 'status', 'grant_end', ]
     list_filter = ('funding_agency', 'role', 'status', 'grant_end')
     search_fields = ['project__title',
                      'project__pi__username',

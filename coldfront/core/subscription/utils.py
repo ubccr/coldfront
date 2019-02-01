@@ -14,7 +14,7 @@ def set_subscription_user_status_to_error(subscription_user_pk):
 
 def generate_guauge_data_from_usage(name, value, usage):
 
-    label = "%s: %d of %d" % (name, usage, value)
+    label = "%s: %.2f of %.2f" % (name, usage, value)
 
     percent = (usage/value)*100
 

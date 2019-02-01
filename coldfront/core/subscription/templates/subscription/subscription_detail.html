@@ -46,6 +46,12 @@ Subscription Detail
           <th style="white-space:nowrap;">Resource{{ subscription.resources.all|pluralize }} in subscription:</th>
           <td>{{ subscription.get_resources_as_string }}</td>
         </tr>
+        {% if request.user.is_superuser %}
+         <tr>
+          <th style="white-space:nowrap;">Quantity:</th>
+          <td>{{ subscription.quantity }}</td>
+        </tr>
+        {% endif %}
         <tr>
           <th style="white-space:nowrap;">Justification:</th>
           <td>{{ subscription.justification }}</td>
