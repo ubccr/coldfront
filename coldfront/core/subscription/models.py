@@ -1,6 +1,7 @@
 import datetime
 import importlib
 import logging
+from ast import literal_eval
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -209,7 +210,7 @@ class SubscriptionAttributeType(TimeStampedModel):
     history = HistoricalRecords()
 
     def __str__(self):
-        return self.name
+        return '%s (%s)' %(self.name, self.attribute_type.name)
 
     class Meta:
         ordering = ['name', ]
@@ -237,10 +238,10 @@ class SubscriptionAttribute(TimeStampedModel):
 
         expected_value_type = self.subscription_attribute_type.attribute_type.name.strip()
 
-        if expected_value_type == "Int" and not isinstance(self.value, int):
+        if expected_value_type == "Int" and not isinstance(literal_eval(self.value), int):
             raise ValidationError(
                 'Invalid Value "%s". Value must be an integer.' % (self.value))
-        elif expected_value_type == "Float" and not isinstance(self.value, float):
+        elif expected_value_type == "Float" and not (isinstance(literal_eval(self.value), float) or isinstance(literal_eval(self.value), int)):
             raise ValidationError(
                 'Invalid Value "%s". Value must be a float.' % (self.value))
         elif expected_value_type == "Yes/No" and self.value not in ["Yes", "No"]:
@@ -279,7 +280,7 @@ class SubscriptionUserStatusChoice(TimeStampedModel):
 
 
 class SubscriptionUser(TimeStampedModel):
-    """ SubscriptionUserStatus. """
+    """ SubscriptionUser. """
     subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     status = models.ForeignKey(SubscriptionUserStatusChoice, on_delete=models.CASCADE,
