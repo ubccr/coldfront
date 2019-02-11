@@ -146,6 +146,7 @@ class Command(BaseCommand):
 
         admin_user, _ = User.objects.get_or_create(username='admin')
         admin_user.is_superuser = True
+        admin_user.is_staff = True
         admin_user.save()
 
         for user in User.objects.all():
