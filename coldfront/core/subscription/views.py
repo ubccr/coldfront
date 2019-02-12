@@ -96,7 +96,7 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             status__name__in=['Removed']).order_by('user__username')
 
         if self.request.user.is_superuser:
-            attributes_with_usage = [attribute for attribute in subscription_obj.subscriptionattribute_set.all() if hasattr(attribute, 'subscriptionattributeusage')]
+            attributes_with_usage = [attribute for attribute in subscription_obj.subscriptionattribute_set.all().order_by('subscription_attribute_type__name') if hasattr(attribute, 'subscriptionattributeusage')]
 
             attributes_without_usage = [attribute for attribute in subscription_obj.subscriptionattribute_set.all().order_by('subscription_attribute_type__name') if not hasattr(attribute, 'subscriptionattributeusage')]
 
