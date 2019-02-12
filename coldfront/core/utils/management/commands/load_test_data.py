@@ -10,7 +10,7 @@ from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
 
 from coldfront.core.project.models import Project, ProjectStatusChoice, ProjectUser, ProjectUserRoleChoice, ProjectUserStatusChoice
-from coldfront.core.resources.models import ResourceType, Resource, ResourceAttribute, ResourceAttributeType
+from coldfront.core.resource.models import ResourceType, Resource, ResourceAttribute, ResourceAttributeType
 from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.user.models import UserProfile
 from coldfront.core.subscription.models import Subscription, SubscriptionStatusChoice, SubscriptionUser, SubscriptionUserStatusChoice

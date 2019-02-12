@@ -43,7 +43,7 @@ INSTALLED_APPS += [
     'coldfront.core.utils',
     'coldfront.core.portal',
     'coldfront.core.project',
-    'coldfront.core.resources',
+    'coldfront.core.resource',
     'coldfront.core.subscription',
     'coldfront.core.grant',
     'coldfront.core.publication',

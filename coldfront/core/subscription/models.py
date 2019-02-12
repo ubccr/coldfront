@@ -11,7 +11,7 @@ from django.utils.html import mark_safe
 from django.utils.module_loading import import_string
 
 from coldfront.core.project.models import Project
-from coldfront.core.resources.models import Resource
+from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import import_from_settings
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords

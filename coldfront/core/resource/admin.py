@@ -1,7 +1,7 @@
 from django.contrib import admin
 from simple_history.admin import SimpleHistoryAdmin
 
-from coldfront.core.resources.models import (AttributeType, Resource,
+from coldfront.core.resource.models import (AttributeType, Resource,
                                               ResourceAttribute,
                                               ResourceAttributeType,
                                               ResourceType)

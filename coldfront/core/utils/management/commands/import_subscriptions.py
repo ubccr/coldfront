@@ -7,7 +7,7 @@ from django.contrib.auth.models import Group, User
 from django.core.management.base import BaseCommand
 
 from coldfront.core.project.models import Project
-from coldfront.core.resources.models import Resource
+from coldfront.core.resource.models import Resource
 from coldfront.core.subscription.models import (AttributeType, Subscription,
                                                  SubscriptionAttribute,
                                                  SubscriptionAttributeType,

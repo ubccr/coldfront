@@ -7,7 +7,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 
 from coldfront.core.utils.common import import_from_settings
-from coldfront.core.resources.models import ResourceAttribute
+from coldfront.core.resource.models import ResourceAttribute
 from coldfront.plugins.slurm.associations import SlurmCluster
 from coldfront.plugins.slurm.utils import SlurmError, slurm_remove_account, slurm_remove_assoc, \
               slurm_add_assoc, slurm_add_account, slurm_dump_cluster, SLURM_CLUSTER_ATTRIBUTE_NAME, \
