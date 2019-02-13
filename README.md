@@ -87,7 +87,7 @@ python manage.py runserver 0.0.0.0:8000
 
 You can log in as `admin` with password `test1234`. 
 You can log in as a PI using username `cgray` with password `test1234`.
-You can log in as center director using username `sfoster` with password `test1234`.
+You can log in as another PI using username `sfoster` with password `test1234`.
 
 Password for all users is also `teset1234`. 
 
