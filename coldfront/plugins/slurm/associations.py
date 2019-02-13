@@ -3,7 +3,7 @@ import re
 import sys
 import os
 
-from coldfront.core.resources.models import Resource
+from coldfront.core.resource.models import Resource
 
 from coldfront.plugins.slurm.utils import SlurmError, SLURM_CLUSTER_ATTRIBUTE_NAME, \
               SLURM_ACCOUNT_ATTRIBUTE_NAME, SLURM_SPECS_ATTRIBUTE_NAME, SLURM_USER_SPECS_ATTRIBUTE_NAME

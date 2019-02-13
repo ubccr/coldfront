@@ -3,7 +3,7 @@ from io import StringIO
 from django.test import TestCase
 from django.core.management import call_command
 
-from coldfront.core.resources.models import Resource
+from coldfront.core.resource.models import Resource
 from coldfront.plugins.slurm.associations import SlurmCluster
 from coldfront.plugins.slurm.utils import SLURM_CLUSTER_ATTRIBUTE_NAME
 

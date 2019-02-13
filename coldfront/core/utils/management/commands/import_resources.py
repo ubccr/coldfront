@@ -4,7 +4,7 @@ from django.conf import settings
 from django.contrib.auth.models import Group
 from django.core.management.base import BaseCommand
 
-from coldfront.core.resources.models import (AttributeType, Resource,
+from coldfront.core.resource.models import (AttributeType, Resource,
                                               ResourceAttribute,
                                               ResourceAttributeType,
                                               ResourceType)

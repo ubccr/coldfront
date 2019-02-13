@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from coldfront.core.resources.models import (AttributeType,
+from coldfront.core.resource.models import (AttributeType,
                                              ResourceAttributeType,
                                              ResourceType)
 

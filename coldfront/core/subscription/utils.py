@@ -1,6 +1,6 @@
 from django.db.models import Q
 
-from coldfront.core.resources.models import Resource
+from coldfront.core.resource.models import Resource
 from coldfront.core.subscription.models import (SubscriptionUser,
                                                  SubscriptionUserStatusChoice)
 

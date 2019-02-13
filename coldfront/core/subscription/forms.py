@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404
 
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.project.models import Project
-from coldfront.core.resources.models import Resource, ResourceType
+from coldfront.core.resource.models import Resource, ResourceType
 from coldfront.core.subscription.models import (Subscription,
                                                  SubscriptionStatusChoice)
 from coldfront.core.subscription.utils import get_user_resources

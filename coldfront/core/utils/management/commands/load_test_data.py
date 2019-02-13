@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
+
 from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.grant.models import (Grant, GrantFundingAgency,
                                          GrantStatusChoice)
@@ -14,7 +15,7 @@ from coldfront.core.project.models import (Project, ProjectStatusChoice,
                                            ProjectUser, ProjectUserRoleChoice,
                                            ProjectUserStatusChoice)
 from coldfront.core.publication.models import Publication, PublicationSource
-from coldfront.core.resources.models import (Resource, ResourceAttribute,
+from coldfront.core.resource.models import (Resource, ResourceAttribute,
                                              ResourceAttributeType,
                                              ResourceType)
 from coldfront.core.subscription.models import (Subscription,
