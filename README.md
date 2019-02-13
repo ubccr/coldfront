@@ -60,7 +60,8 @@ cp config/local_settings.py.sample config/local_settings.py
 Open config/local_settings.py and update the following:
 * Update `SECRET_KEY`. Consider making the length at least 50 characters long. 
 * Update `TIME_ZONE` if necessary
-
+* Uncomment line `EMAIL_ADMIN_LIST`
+* Uncomment line `EMAIL_DIRECTOR_EMAIL_ADDRESS`
 
 5. Copy config/local_strings.py.sample to config/local_strings.py and update if desired. 
 ```
@@ -72,26 +73,21 @@ cp config/local_strings.py.sample config/local_strings.py
 python manage.py initial_setup
 ```
 
-7. Setup an admin user
-```
-python manage.py createsuperuser
-```
-
-8. Optional: Add some test data
+7. Optional: Add some test data
 ```
 python manage.py load_test_data
 ```
 
-9. Start development server
+8. Start development server
 ```
 python manage.py runserver 0.0.0.0:8000
 ```
 
-10. Point your browser to http://localhost:8000
+9. Point your browser to http://localhost:8000
 
 You can log in as `admin` with password `test1234`. 
-You can log in as a PI using username `ccollins` with password `test1234`.
-You can log in as center director using username `michardson` with password `test1234`.
+You can log in as a PI using username `cgray` with password `test1234`.
+You can log in as center director using username `sfoster` with password `test1234`.
 
 Password for all users is also `teset1234`. 
 
