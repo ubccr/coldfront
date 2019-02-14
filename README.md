@@ -16,6 +16,11 @@ Python and released under the GPLv3 license.
 - Integration with 3rd party systems for automation and access control
 - Center director approval system and annual project reviews
 
+## Contact Information
+If you would like a live demo followed by QA, please contact us at ccr-coldfront-admin-list@listserv.buffalo.edu. You can also contact us for general inquiries and installation troubleshooting. 
+
+If you would like to join our mailing list to receive news and updates, please send an email with subject 'subscribe' to ccr-open-coldfront-list@listserv.buffalo.edu. 
+
 
 ## Quick Install
 1. Coldfront requires Python 3.6, memcached, and redis. 
