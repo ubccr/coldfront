@@ -330,9 +330,12 @@ class SubscriptionListView(LoginRequiredMixin, ListView):
             if data.get('project'):
                 subscriptions = subscriptions.filter(project__title__icontains=data.get('project'))
 
-            # PI username
-            if data.get('pi'):
-                subscriptions = subscriptions.filter(project__pi__username__icontains=data.get('pi'))
+            # username
+            if data.get('username'):
+                subscriptions = subscriptions.filter(
+                    Q(project__pi__username__icontains=data.get('username')) |
+                    Q(subscriptionuser__user__username__icontains=data.get('username'))
+                )
 
             # Resource Type
             if data.get('resource_type'):

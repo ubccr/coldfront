@@ -170,7 +170,9 @@ class ProjectListView(LoginRequiredMixin, ListView):
             # Username
             if data.get('username'):
                 projects = projects.filter(
-                    pi__username__icontains=data.get('username'))
+                    Q(pi__username__icontains=data.get('username')) |
+                    Q(projectuser__user__username__icontains=data.get('username'))
+                )
 
             # Field of Science
             if data.get('field_of_science'):
