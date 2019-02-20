@@ -1,5 +1,6 @@
 import logging
 import requests
+import json
 import xml.etree.ElementTree as ET
 
 from coldfront.core.utils.common import import_from_settings
@@ -36,8 +37,8 @@ def xdmod_fetch_total_cpu_hours(start, end, account, resources=None):
 
     url = '{}{}'.format(XDMOD_API_URL, _ENDPOINT_CORE_HOURS)
     payload = _DEFAULT_PARAMS
-    payload['pi_filter'] = account
-    payload['resource_filter'] = ','.join(resources)
+    payload['pi_filter'] = '"{}"'.format(account)
+    payload['resource_filter'] = '"{}"'.format(','.join(resources))
     payload['start_date'] = start
     payload['end_date'] = end
     payload['group_by'] = 'pi'
@@ -48,6 +49,14 @@ def xdmod_fetch_total_cpu_hours(start, end, account, resources=None):
 
     logger.info(r.url)
     logger.info(r.text)
+
+    try:
+        error = r.json()
+        # XXX fix me. Here we assume any json response is bad as we're
+        # expecting xml but XDMoD should just return json always. 
+        raise XdmodNotFoundError('Got json response but expected XML: {}'.format(error))
+    except json.decoder.JSONDecodeError as e:
+        pass
 
     try:
         root = ET.fromstring(r.text)
@@ -72,8 +81,8 @@ def xdmod_fetch_cloud_core_time(start, end, project, resources=None):
 
     url = '{}{}'.format(XDMOD_API_URL, _ENDPOINT_CORE_HOURS)
     payload = _DEFAULT_PARAMS
-    payload['project_filter'] = project
-    payload['resource_filter'] = ','.join(resources)
+    payload['project_filter'] = '"{}"'.format(project)
+    payload['resource_filter'] = '"{}"'.format(','.join(resources))
     payload['start_date'] = start
     payload['end_date'] = end
     payload['group_by'] = 'project'
@@ -84,6 +93,14 @@ def xdmod_fetch_cloud_core_time(start, end, project, resources=None):
 
     logger.info(r.url)
     logger.info(r.text)
+
+    try:
+        error = r.json()
+        # XXX fix me. Here we assume any json response is bad as we're
+        # expecting xml but XDMoD should just return json always. 
+        raise XdmodNotFoundError('Got json response but expected XML: {}'.format(error))
+    except json.decoder.JSONDecodeError as e:
+        pass
 
     try:
         root = ET.fromstring(r.text)
