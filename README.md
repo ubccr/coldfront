@@ -20,6 +20,7 @@ Python and released under the GPLv3 license.
 If you would like a live demo followed by QA, please contact us at ccr-coldfront-admin-list@listserv.buffalo.edu. You can also contact us for general inquiries and installation troubleshooting. 
 
 If you would like to join our mailing list to receive news and updates, please send an email to listserv@listserv.buffalo.edu with no subject, and the following command in the body of the message:
+
 subscribe ccr-open-coldfront-list@listserv.buffalo.edu first_name last_name
 
 
