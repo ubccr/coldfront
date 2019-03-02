@@ -47,7 +47,7 @@ file:
 To generate Slurm association data from Coldfront run the following command:
 
 ```
-    $ python manage.py sacctmgr_dump -o /output_dir
+    $ python manage.py slurm_dump -o /output_dir
 ```
 
 You can then load this file into Slurm with the following command:
