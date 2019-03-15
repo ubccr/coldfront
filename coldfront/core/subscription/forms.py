@@ -86,7 +86,7 @@ class SubscriptionAttributeDeleteForm(forms.Form):
 
 
 class SubscriptionSearchForm(forms.Form):
-    project = forms.CharField(label='Project', max_length=100, required=False)
+    project = forms.CharField(label='Project Title', max_length=100, required=False)
     username = forms.CharField(label='Username', max_length=100, required=False)
     resource_type = forms.ModelChoiceField(
         label='Resource Type',
