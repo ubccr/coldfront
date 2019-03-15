@@ -123,7 +123,7 @@ Subscription Detail
   </div>
 </div>
 
-{% if attributes_without_usage or attributes_with_usage or request.user.is_superuser %}
+{% if attributes or attributes_with_usage or request.user.is_superuser %}
 <div class="card mb-3">
   <div class="card-header">
     <h4 class="d-inline"><i class="fas fa-info-circle"></i> Subscription Attributes</h4>
@@ -135,7 +135,7 @@ Subscription Detail
     </div>
   </div>
   <div class="card-body">
-    {% if attributes_without_usage %}
+    {% if attributes %}
     <div class="table-responsive">
       <table class="table table-bordered table-sm">
         <thead>
@@ -145,7 +145,7 @@ Subscription Detail
           </tr>
         </thead>
         <tbody>
-          {% for attribute in attributes_without_usage %}
+          {% for attribute in attributes %}
             {% if attribute.subscription_attribute_type.is_private %}
               <tr style="background-color:#eee">
                 <td> <i class="fas fa-lock"></i> {{attribute}}</td>

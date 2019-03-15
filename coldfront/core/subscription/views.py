@@ -98,12 +98,12 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         if self.request.user.is_superuser:
             attributes_with_usage = [attribute for attribute in subscription_obj.subscriptionattribute_set.all().order_by('subscription_attribute_type__name') if hasattr(attribute, 'subscriptionattributeusage')]
 
-            attributes_without_usage = [attribute for attribute in subscription_obj.subscriptionattribute_set.all().order_by('subscription_attribute_type__name') if not hasattr(attribute, 'subscriptionattributeusage')]
+            attributes = [attribute for attribute in subscription_obj.subscriptionattribute_set.all().order_by('subscription_attribute_type__name')]
 
         else:
             attributes_with_usage = [attribute for attribute in subscription_obj.subscriptionattribute_set.filter(subscription_attribute_type__is_private=False) if hasattr(attribute, 'subscriptionattributeusage')]
 
-            attributes_without_usage = [attribute for attribute in subscription_obj.subscriptionattribute_set.filter(subscription_attribute_type__is_private=False) if not hasattr(attribute, 'subscriptionattributeusage')]
+            attributes = [attribute for attribute in subscription_obj.subscriptionattribute_set.filter(subscription_attribute_type__is_private=False)]
 
         guage_data = []
         invalid_attributes = []
@@ -132,7 +132,7 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         context['guage_data'] = guage_data
         context['attributes_with_usage'] = attributes_with_usage
-        context['attributes_without_usage'] = attributes_without_usage
+        context['attributes'] = attributes
 
         # Can the user update the project?
         if self.request.user.is_superuser:
