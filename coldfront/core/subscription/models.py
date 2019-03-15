@@ -164,9 +164,6 @@ class Subscription(TimeStampedModel):
     def __str__(self):
         return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
 
-    class Meta:
-        ordering = ['pk', ]
-
 
 class SubscriptionAdminComment(TimeStampedModel):
     """ SubscriptionAttributeType. """
@@ -182,6 +179,7 @@ class SubscriptionUserMessage(TimeStampedModel):
     """ SubscriptionAttributeType. """
     subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
     author = models.ForeignKey(User, on_delete=models.CASCADE)
+    is_private = models.BooleanField(default=True)
     message = models.TextField()
 
     def __str__(self):
