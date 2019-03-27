@@ -14,7 +14,10 @@ class Command(BaseCommand):
         for attribute_type in ('Date', 'Float', 'Int', 'Text', 'Yes/No'):
             AttributeType.objects.get_or_create(name=attribute_type)
 
-        for choice in ('Active', 'Denied', 'Expired', 'New', 'Renewal Requested', 'Revoked', 'Unpaid',):
+        for choice in ('Active', 'Denied', 'Expired',
+                       'New', 'Paid', 'Payment Pending',
+                       'Payment Requested', 'Payment Declined',
+                       'Renewal Requested', 'Revoked', 'Unpaid',):
             SubscriptionStatusChoice.objects.get_or_create(name=choice)
 
         for choice in ('Active', 'Error', 'Removed', ):

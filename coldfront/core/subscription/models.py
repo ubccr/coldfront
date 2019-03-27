@@ -55,6 +55,7 @@ class Subscription(TimeStampedModel):
             ('can_view_all_subscriptions', 'Can view all subscriptions'),
             ('can_review_subscription_requests',
              'Can review subscription requests'),
+            ('can_manage_invoice', 'Can manage invoice'),
         )
 
     def clean(self):
@@ -166,7 +167,6 @@ class Subscription(TimeStampedModel):
 
 
 class SubscriptionAdminComment(TimeStampedModel):
-    """ SubscriptionAttributeType. """
     subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     comment = models.TextField()
@@ -175,15 +175,14 @@ class SubscriptionAdminComment(TimeStampedModel):
         return self.comment
 
 
-class SubscriptionUserMessage(TimeStampedModel):
-    """ SubscriptionAttributeType. """
+class SubscriptionUserNote(TimeStampedModel):
     subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     is_private = models.BooleanField(default=True)
-    message = models.TextField()
+    note = models.TextField()
 
     def __str__(self):
-        return self.message
+        return self.note
 
 
 class AttributeType(TimeStampedModel):

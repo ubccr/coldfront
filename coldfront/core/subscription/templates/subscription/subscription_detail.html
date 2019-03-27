@@ -1,4 +1,4 @@
-{% extends "common/base.html" %} 
+{% extends "common/base.html" %}
 {% load crispy_forms_tags %}
 {% load static %}
 
@@ -70,9 +70,9 @@ Subscription Detail
           <th style="white-space:nowrap;">Start Date:</th>
           <td>
               {% if request.user.is_superuser %}
-                {{ form.start_date }} 
+                {{ form.start_date }}
               {% else %}
-                {{ subscription.start_date }} 
+                {{ subscription.start_date }}
               {% endif %}
           </td>
         </tr>
@@ -80,15 +80,15 @@ Subscription Detail
           <th style="white-space:nowrap;">End Date:</th>
           <td>
               {% if request.user.is_superuser %}
-                {{ form.end_date }} 
+                {{ form.end_date }}
               {% else %}
-                {{ subscription.end_date }} 
+                {{ subscription.end_date }}
               {% endif %}
 
-            {% if is_allowed_to_update_project and SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL and subscription.status.name == 'Active' and subscription.expires_in <= 60 and subscription.expires_in >= 0 %} 
+            {% if is_allowed_to_update_project and SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL and subscription.status.name == 'Active' and subscription.expires_in <= 60 and subscription.expires_in >= 0 %}
               <a href="{% url 'subscription-renew' subscription.pk %}">
               <span class="badge badge-warning">
-              <i class="fas fa-redo-alt"></i> 
+              <i class="fas fa-redo-alt"></i>
               Expires in {{subscription.expires_in}} day{{subscription.expires_in|pluralize}} - click to renew
               </span>
               </a>
@@ -99,9 +99,9 @@ Subscription Detail
           <th style="white-space:nowrap;">Description:</th>
           <td>
               {% if request.user.is_superuser %}
-                {{ form.description }} 
+                {{ form.description }}
               {% else %}
-                {{ subscription.description }} 
+                {{ subscription.description }}
               {% endif %}
           </td>
         </tr>
@@ -119,7 +119,7 @@ Subscription Detail
     <button type="submit" class="btn btn-success float-right"><i class="fas fa-sync"></i> Update</button>
     {% endif %}
   </form>
-    
+
   </div>
 </div>
 
@@ -130,7 +130,7 @@ Subscription Detail
      <div class="float-right">
       {% if request.user.is_superuser %}
         <a class="btn btn-success" href="{% url 'subscription-attribute-add' subscription.pk %}" role="button"><i class="fas fa-plus"></i> Add Subscription Attribute</a>
-        <a class="btn btn-danger" href="{% url 'subscription-attribute-delete' subscription.pk %}" role="button"><i class="fas fa-minus"></i> Delete Subscription Attributes</a>    
+        <a class="btn btn-danger" href="{% url 'subscription-attribute-delete' subscription.pk %}" role="button"><i class="fas fa-minus"></i> Delete Subscription Attributes</a>
       {% endif %}
     </div>
   </div>
@@ -162,7 +162,7 @@ Subscription Detail
       </table>
     </div>
     {% endif %}
-  
+
     {% if attributes_with_usage %}
       <hr>
     {% for attribute in attributes_with_usage %}
@@ -186,7 +186,7 @@ Subscription Detail
     <div class="float-right">
       {% if subscription.project.status.name != 'Archived' and is_allowed_to_update_project and subscription.status.name in 'Active,New,Renewal Requested' %}
         <a class="btn btn-success" href="{% url 'subscription-add-users' subscription.pk %}" role="button"><i class="fas fa-user-plus"></i> Add Users</a>
-        <a class="btn btn-danger" href="{% url 'subscription-remove-users' subscription.pk %}" role="button"><i class="fas fa-user-times"></i></i> Remove Users</a>    
+        <a class="btn btn-danger" href="{% url 'subscription-remove-users' subscription.pk %}" role="button"><i class="fas fa-user-times"></i></i> Remove Users</a>
       {% endif %}
     </div>
 
@@ -222,17 +222,17 @@ Subscription Detail
         </tbody>
       </table>
     </div>
-    
+
   </div>
 </div>
 
 <!-- Start Admin Messages -->
 <div class="card mb-3">
   <div class="card-header">
-  <h4 class="d-inline"><i class="fas fa-users"></i> Messages from System Administrators </h4> <span class="badge badge-secondary">{{subscription.subscriptionusermessage_set.count}}</span>
+  <h4 class="d-inline"><i class="fas fa-users"></i> Messages from System Administrators </h4> <span class="badge badge-secondary">{{messages.count}}</span>
   </div>
   <div class="card-body">
-    {% if subscription.subscriptionusermessage_set.all %}
+    {% if messages %}
       <div class="table-responsive">
         <table class="table table-hover">
           <thead>
@@ -243,19 +243,22 @@ Subscription Detail
             </tr>
           </thead>
           <tbody>
-            {% for message in subscription.subscriptionusermessage_set.all %}
-            <tr>
-              <td>{{ message.message }}</td>
-              <td>{{ message.author.first_name }} {{ message.author.last_name }}</td>
-              <td>{{ message.modified }}</td>
+            {% for message in messages %}
+                {% if not message.is_private or request.user.is_superuser %}
+                    <tr>
+                      <td>{{ message.message }}</td>
+                      <td>{{ message.author.first_name }} {{ message.author.last_name }}</td>
+                      <td>{{ message.modified }}</td>
+                    </tr>
+                {% endif %}
             {% endfor %}
           </tbody>
         </table>
       </div>
-    {% else %} 
+    {% else %}
       <div class="alert alert-info" role="alert"><i class="fa fa-info-circle"></i> There are no messages from system administrators.</div>
     {% endif %}
-    
+
   </div>
 </div>
 

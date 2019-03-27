@@ -14,11 +14,11 @@ from django.forms import formset_factory
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.template.loader import render_to_string
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.utils.html import mark_safe
 from django.views import View
 from django.views.generic import DetailView, ListView, TemplateView
-from django.views.generic.edit import FormView, CreateView
+from django.views.generic.edit import FormView, CreateView, UpdateView
 from django.core.exceptions import ValidationError
 from django import forms
 
@@ -32,12 +32,13 @@ from coldfront.core.subscription.forms import (SubscriptionAddUserForm,
                                                 SubscriptionReviewUserForm,
                                                 SubscriptionSearchForm,
                                                 SubscriptionAttributeDeleteForm,
-                                                SubscriptionUpdateForm)
+                                                SubscriptionUpdateForm,SubscriptionInvoiceUpdateForm,
+                                                SubscriptonInvoiceNoteDeleteForm)
 from coldfront.core.subscription.models import (Subscription,
                                                  SubscriptionStatusChoice,
                                                  SubscriptionUser,
                                                  SubscriptionUserStatusChoice,
-                                                 SubscriptionAttribute,)
+                                                 SubscriptionAttribute, SubscriptionUserNote)
 from coldfront.core.subscription.signals import (subscription_activate_user,
                                                   subscription_remove_user)
 from coldfront.core.subscription.utils import (generate_guauge_data_from_usage,
@@ -55,6 +56,7 @@ if EMAIL_ENABLED:
     EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
 
 PROJECT_ENABLE_PROJECT_REVIEW = import_from_settings('PROJECT_ENABLE_PROJECT_REVIEW', False)
+INVOICING_ENABLED = import_from_settings('ENABLE_INVOICING', False)
 
 
 logger = logging.getLogger(__name__)
@@ -148,6 +150,12 @@ class SubscriptionDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         context['subscription_users'] = subscription_users
 
 
+        if self.request.user.is_superuser:
+            messages = subscription_obj.subscriptionusernote_set.all()
+        else:
+            messages = subscription_obj.subscriptionusernote_set.filter(is_private=False)
+
+        context['messages'] = messages
         context['SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL'] = SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL
         return context
 
@@ -495,12 +503,17 @@ class SubscriptionCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         if project_obj.pi not in users:
             users.append(project_obj.pi)
 
-        subscription_new_status = SubscriptionStatusChoice.objects.get(name='New')
+        print(INVOICING_ENABLED, resource_obj.requires_payment)
+        if INVOICING_ENABLED and resource_obj.requires_payment:
+            subscription_status_obj = SubscriptionStatusChoice.objects.get(name='Payment Pending')
+        else:
+            subscription_status_obj = SubscriptionStatusChoice.objects.get(name='New')
+
         subscription_obj = Subscription.objects.create(
             project=project_obj,
             justification=justification,
             quantity=quantity,
-            status=subscription_new_status
+            status=subscription_status_obj
         )
         subscription_obj.resources.add(resource_obj)
 
@@ -1143,3 +1156,177 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
 
             messages.success(request, 'Subscription renewed successfully')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': subscription_obj.project.pk}))
+
+
+class SubscriptionInvoiceListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    model = Subscription
+    template_name = 'subscription/subscription_invoice_list.html'
+    context_object_name = 'subscription_list'
+    login_url = "/"  # redirect URL if fail test_func
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        messages.error(self.request, 'You do not have permission to manage invoices.')
+        return False
+
+    def get_queryset(self):
+
+        subscriptions = Subscription.objects.filter(
+            status__name__in=['Payment Pending', 'Payment Requested', 'Payment Declined',])
+        return subscriptions
+
+class SubscriptionInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    model = Subscription
+    template_name = 'subscription/subscription_invoice_detail.html'
+    context_object_name = 'subscription'
+    login_url = "/"  # redirect URL if fail test_func
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+    def get(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        subscription_obj = get_object_or_404(Subscription, pk=pk)
+
+        initial_data = {
+            'status': subscription_obj.status,
+        }
+
+        form = SubscriptionInvoiceUpdateForm(initial=initial_data)
+
+        context = self.get_context_data()
+        context['form'] = form
+        context['subscription'] = subscription_obj
+
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        subscription_obj = get_object_or_404(Subscription, pk=pk)
+        if not self.request.user.is_superuser:
+            messages.success(request, 'You do not have permission to update the subscription')
+            return HttpResponseRedirect(reverse('subscription-detail', kwargs={'pk': pk}))
+
+        initial_data = {
+            'status': subscription_obj.status,
+        }
+        form = SubscriptionInvoiceUpdateForm(request.POST, initial=initial_data)
+
+        if form.is_valid():
+            form_data = form.cleaned_data
+            subscription_obj.status = form_data.get('status')
+            subscription_obj.save()
+            messages.success(request, 'Subscription updated!')
+            return HttpResponseRedirect(reverse('subscription-invoice-detail', kwargs={'pk': pk}))
+
+
+class SubscriptionAddInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    model = SubscriptionUserNote
+    template_name = 'subscription/subscription_add_invoice_note.html'
+    fields = ('is_private', 'message',)
+    login_url = '/' # redirect URL if fail test_func
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        pk = self.kwargs.get('pk')
+        subscription_obj = get_object_or_404(Subscription, pk=pk)
+        context['subscription'] = subscription_obj
+        return context
+
+    def form_valid(self, form):
+        # This method is called when valid form data has been POSTed.
+        # It should return an HttpResponse.
+        pk = self.kwargs.get('pk')
+        subscription_obj = get_object_or_404(Subscription, pk=pk)
+        obj = form.save(commit=False)
+        obj.author = self.request.user
+        obj.subscription =  subscription_obj
+        obj.save()
+        subscription_obj.save()
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('subscription-invoice-detail', kwargs={'pk': self.object.subscription.pk})
+
+
+class SubscriptionUpdateInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    model = SubscriptionUserNote
+    template_name = 'subscription/subscription_update_invoice_note.html'
+    fields = ('is_private', 'message',)
+    login_url = '/' # redirect URL if fail test_func
+
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+    def get_success_url(self):
+        return reverse_lazy('subscription-invoice-detail', kwargs={'pk': self.object.subscription.pk})
+
+
+class SubscriptionDeleteInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'subscription/subscription_delete_invoice_note.html'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+    def get_notes_to_delete(self, subscription_obj):
+
+        notes_to_delete = [
+            {
+                'pk': note.pk,
+                'message': note.message,
+                'author':  note.author.username,
+            }
+            for note in subscription_obj.subscriptionusernote_set.all()
+        ]
+
+        return notes_to_delete
+
+    def get(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        subscription_obj = get_object_or_404(Subscription, pk=pk)
+        notes_to_delete = self.get_notes_to_delete(subscription_obj)
+        context = {}
+        if notes_to_delete:
+            formset = formset_factory(
+                SubscriptonInvoiceNoteDeleteForm, max_num=len(notes_to_delete))
+            formset = formset(initial=notes_to_delete, prefix='noteform')
+            context['formset'] = formset
+        context['subscription'] = subscription_obj
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+
+        pk = self.kwargs.get('pk')
+        subscription_obj = get_object_or_404(Subscription, pk=pk)
+        notes_to_delete = self.get_notes_to_delete(subscription_obj)
+
+        formset = formset_factory(
+            SubscriptonInvoiceNoteDeleteForm, max_num=len(notes_to_delete))
+        formset = formset(
+            request.POST, initial=notes_to_delete, prefix='noteform')
+
+        if formset.is_valid():
+            for form in formset:
+                note_form_data = form.cleaned_data
+                if note_form_data['selected']:
+                    note_obj = SubscriptionUserNote.objects.get(
+                        pk=note_form_data.get('pk'))
+                    note_obj.delete()
+
+            return HttpResponseRedirect(reverse_lazy('subscription-invoice-detail', kwargs={'pk': subscription_obj.pk})
+)

@@ -16,4 +16,10 @@ urlpatterns = [
     path('<int:pk>/renew', subscription_views.SubscriptionRenewView.as_view(), name='subscription-renew'),
     path('<int:pk>/subscriptionattribute/add', subscription_views.SubscriptionAttributeCreateView.as_view(), name='subscription-attribute-add'),
     path('<int:pk>/subscriptionattribute/delete', subscription_views.SubscriptionAttributeDeleteView.as_view(), name='subscription-attribute-delete'),
+    path('subscription-invoice-list', subscription_views.SubscriptionInvoiceListView.as_view(),
+         name='subscription-invoice-list'),
+    path('<int:pk>/invoice/', subscription_views.SubscriptionInvoiceDetailView.as_view(), name='subscription-invoice-detail'),
+    path('subscription/<int:pk>/add-invoice-note', subscription_views.SubscriptionAddInvoiceNoteView.as_view(), name='subscription-add-invoice-note'),
+    path('subscription-invoice-note/<int:pk>/update', subscription_views.SubscriptionUpdateInvoiceNoteView.as_view(), name='subscription-update-invoice-note'),
+    path('subscription/<int:pk>/invoice/delete/', subscription_views.SubscriptionDeleteInvoiceNoteView.as_view(), name='subscription-delete-invoice-note'),
 ]

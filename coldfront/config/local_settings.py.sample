@@ -174,6 +174,11 @@ EXTRA_AUTHENTICATION_BACKENDS = []
 #
 # EXTRA_AUTHENTICATION_BACKENDS += ['django_auth_ldap.backend.LDAPBackend',]
 
+#------------------------------------------------------------------------------
+# Enable invoice functionality
+#------------------------------------------------------------------------------
+ENABLE_INVOICING = True
+
 
 #===============================================================================
 # Coldfront Plugin Settings
@@ -240,7 +245,7 @@ EXTRA_AUTHENTICATION_BACKENDS = []
 # OIDC_OP_AUTHORIZATION_ENDPOINT = "https://localhost/hydra/oauth2/auth"
 # OIDC_OP_TOKEN_ENDPOINT = "https://localhost/hydra/oauth2/token"
 # OIDC_OP_USER_ENDPOINT = "https://localhost/hydra/userinfo"
-# OIDC_VERIFY_SSL = True 
+# OIDC_VERIFY_SSL = True
 
 #------------------------------------------------------------------------------
 # Enable Slurm support
@@ -248,7 +253,7 @@ EXTRA_AUTHENTICATION_BACKENDS = []
 # EXTRA_APPS += [
 #     'coldfront.plugins.slurm',
 # ]
-# SLURM_SACCTMGR_PATH = '/usr/bin/sacctmgr' 
+# SLURM_SACCTMGR_PATH = '/usr/bin/sacctmgr'
 
 #------------------------------------------------------------------------------
 # Enable XDMoD support

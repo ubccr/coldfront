@@ -11,7 +11,7 @@ from coldfront.core.subscription.models import (AttributeType, Subscription,
                                                  SubscriptionAttributeUsage,
                                                  SubscriptionStatusChoice,
                                                  SubscriptionUser,
-                                                 SubscriptionUserMessage,
+                                                 SubscriptionUserNote,
                                                  SubscriptionUserStatusChoice)
 
 
@@ -40,10 +40,10 @@ class SubscriptionAdminCommentInline(admin.TabularInline):
     readonly_fields = ('author', 'created')
 
 
-class SubscriptionUserMessageInline(admin.TabularInline):
-    model = SubscriptionUserMessage
+class SubscriptionUserNoteInline(admin.TabularInline):
+    model = SubscriptionUserNote
     extra = 0
-    fields = ('message', 'author', 'created'),
+    fields = ('note', 'author', 'created'),
     readonly_fields = ('author', 'created')
 
 
@@ -54,7 +54,10 @@ class SubscriptionAdmin(SimpleHistoryAdmin):
                      'status', 'start_date', 'end_date', 'description', 'created', 'modified',)
     list_display = ('pk', 'project_title', 'project_pi', 'resource', 'quantity',
                     'justification', 'start_date', 'end_date', 'status', 'created', 'modified', )
-    inlines = [SubscriptionUserInline, SubscriptionAttributeInline, SubscriptionAdminCommentInline, SubscriptionUserMessageInline]
+    inlines = [SubscriptionUserInline,
+        SubscriptionAttributeInline,
+        SubscriptionAdminCommentInline,
+        SubscriptionUserNoteInline]
     list_filter = ('resources__resource_type__name', 'status', 'resources__name', )
     search_fields = ['project__pi__username', 'project__pi__first_name', 'project__pi__last_name', 'resources__name',
                      'subscriptionuser__user__first_name', 'subscriptionuser__user__last_name', 'subscriptionuser__user__username']
@@ -91,7 +94,7 @@ class SubscriptionAdmin(SimpleHistoryAdmin):
             return super().get_inline_instances(request)
 
     def save_formset(self, request, form, formset, change):
-        if formset.model in [SubscriptionAdminComment, SubscriptionUserMessage]:
+        if formset.model in [SubscriptionAdminComment, SubscriptionUserNote]:
             instances = formset.save(commit=False)
             for instance in instances:
                 instance.author = request.user

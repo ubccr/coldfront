@@ -56,6 +56,10 @@ class SubscriptionUpdateForm(forms.Form):
                         'End date cannot be less than start date'
                     )
 
+class SubscriptionInvoiceUpdateForm(forms.Form):
+    status = forms.ModelChoiceField(queryset=SubscriptionStatusChoice.objects.filter(name__in=[
+                        'Payment Pending', 'Payment Requested', 'Payment Declined', 'Paid']).order_by('name'), empty_label=None)
+
 
 class SubscriptionAddUserForm(forms.Form):
     username = forms.CharField(max_length=150, disabled=True)
@@ -71,7 +75,6 @@ class SubscriptionRemoveUserForm(forms.Form):
     last_name = forms.CharField(max_length=150, required=False, disabled=True)
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
-
 
 
 class SubscriptionAttributeDeleteForm(forms.Form):
@@ -123,3 +126,19 @@ class SubscriptionReviewUserForm(forms.Form):
     last_name = forms.CharField(max_length=150, required=False, disabled=True)
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     user_status = forms.ChoiceField(choices=SUBSCRIPTION_REVIEW_USER_CHOICES)
+
+
+class SubscriptonInvoiceNoteDeleteForm(forms.Form):
+    pk = forms.IntegerField(required=False, disabled=True)
+    message = forms.CharField(max_length=64, disabled=True)
+    author = forms.CharField(
+        max_length=512, required=False, disabled=True)
+    selected = forms.BooleanField(initial=False, required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['pk'].widget = forms.HiddenInput()
+
+
+
+
