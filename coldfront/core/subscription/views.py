@@ -19,6 +19,7 @@ from django.shortcuts import get_object_or_404, render
 from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
 from django.utils.html import mark_safe
+from django.utils.html import format_html
 from django.views import View
 from django.views.generic import DetailView, ListView, TemplateView
 from django.views.generic.edit import CreateView, FormView, UpdateView
@@ -76,7 +77,7 @@ if INVOICE_ENABLED:
 SUBSCRIPTION_ACCOUNT_ENABLED = import_from_settings(
     'SUBSCRIPTION_ACCOUNT_ENABLED', False)
 SUBSCRIPTION_ACCOUNT_MAPPING = import_from_settings(
-    'SUBSCRIPTION_ACCOUNT_MAPPING')
+    'SUBSCRIPTION_ACCOUNT_MAPPING', {})
 
 
 logger = logging.getLogger(__name__)
@@ -542,9 +543,9 @@ class SubscriptionCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         subscription_account = form_data.get('subscription_account', None)
 
         # A resource is selected that requires an account name selection but user has no account names
-        if SUBSCRIPTION_ACCOUNT_ENABLED and SubscriptionAttributeType.objects.filter(
+        if SUBSCRIPTION_ACCOUNT_ENABLED and resource_obj.name in SUBSCRIPTION_ACCOUNT_MAPPING and SubscriptionAttributeType.objects.filter(
                 name=SUBSCRIPTION_ACCOUNT_MAPPING[resource_obj.name]).exists() and not subscription_account:
-            form.add_error(None, 'You need to first create an account name')
+            form.add_error(None, format_html('You need to first create an account name. <a href="/subscription/add-subscription-account">Click here!</a>'))
             return self.form_invalid(form)
 
         usernames = form_data.get('users')
@@ -570,7 +571,7 @@ class SubscriptionCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         )
         subscription_obj.resources.add(resource_obj)
 
-        if SUBSCRIPTION_ACCOUNT_ENABLED and subscription_account:
+        if SUBSCRIPTION_ACCOUNT_ENABLED and subscription_account and resource_obj.name in SUBSCRIPTION_ACCOUNT_MAPPING :
 
             subscription_attribute_type_obj = SubscriptionAttributeType.objects.get(
                 name=SUBSCRIPTION_ACCOUNT_MAPPING[resource_obj.name])
@@ -1466,7 +1467,7 @@ class SubscriptionAccountCreateView(LoginRequiredMixin, UserPassesTestMixin, Cre
     def test_func(self):
         """ UserPassesTestMixin Tests"""
 
-        if not settings.SUBSCRIPTION_ACCOUNT_ENABLED:
+        if not SUBSCRIPTION_ACCOUNT_ENABLED:
             return False
         elif self.request.user.is_superuser:
             return True
@@ -1487,7 +1488,7 @@ class SubscriptionAccountCreateView(LoginRequiredMixin, UserPassesTestMixin, Cre
             return self.form_invalid(form)
 
     def get_success_url(self):
-        return reverse_lazy('home')
+        return reverse_lazy('subscription-account-list')
 
 
 class SubscriptionAccountListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
@@ -1499,7 +1500,7 @@ class SubscriptionAccountListView(LoginRequiredMixin, UserPassesTestMixin, ListV
     def test_func(self):
         """ UserPassesTestMixin Tests"""
 
-        if not settings.SUBSCRIPTION_ACCOUNT_ENABLED:
+        if not SUBSCRIPTION_ACCOUNT_ENABLED:
             return False
         elif self.request.user.is_superuser:
             return True

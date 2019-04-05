@@ -42,7 +42,7 @@ class SubscriptionForm(forms.Form):
             if subscription_accounts:
                 self.fields['subscription_account'].choices = (((account.name, account.name))
                                                                for account in subscription_accounts)
-                self.fields['subscription_account'].help_text = '<br/>Select account name to associate with resource.'
+                self.fields['subscription_account'].help_text = '<br/>Select account name to associate with resource. If you would like to use a different account name, <a href="/subscription/add-subscription-account">click here to add it!'
             else:
                 self.fields['subscription_account'].widget = forms.HiddenInput()
         else:

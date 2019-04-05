@@ -1,6 +1,6 @@
-{% extends "common/base.html" %} 
+{% extends "common/base.html" %}
 {% load crispy_forms_tags %}
-{% load common_tags %} 
+{% load common_tags %}
 {% load static %}
 
 
@@ -32,7 +32,7 @@ Request New Subscription
   var resources_form_label_texts = {{resources_form_label_texts |safe }};
   var resources_with_accounts = {{resources_with_accounts |safe }};
 
-  $(document).ready(function() {    
+  $(document).ready(function() {
       $('<br><input id="selectAll" class="check" type="checkbox"> <strong>Select All Users</strong>').insertAfter($("#div_id_users > label"))
       $("#id_resource").trigger('change');
 
@@ -67,7 +67,7 @@ $("#id_resource").change(function() {
         $('#div_id_quantity').hide();
         $('#id_quantity').val(1)
     }
-    console.log(resource_id)
+
     if (resources_with_accounts.includes(parseInt(resource_id))) {
         $('#div_id_subscription_account').show();
     } else {

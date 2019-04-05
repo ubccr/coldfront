@@ -114,6 +114,7 @@ SUBSCRIPTION_DEFAULT_SUBSCRIPTION_LENGTH = 365 # DAYS
 EXTRA_APPS = []
 EXTRA_MIDDLEWARE = []
 EXTRA_AUTHENTICATION_BACKENDS = []
+LOCAL_SETTINGS_EXPORT = []
 
 
 #------------------------------------------------------------------------------
@@ -183,14 +184,14 @@ EXTRA_AUTHENTICATION_BACKENDS = []
 # ------------------------------------------------------------------------------
 # Allow user to select account name for subscription
 # ------------------------------------------------------------------------------
-# SUBSCRIPTION_ACCOUNT_ENABLED = True
+SUBSCRIPTION_ACCOUNT_ENABLED = False
 # SUBSCRIPTION_ACCOUNT_MAPPING = {
     'University HPC': 'slurm_account_name',
     'University Cloud': 'Cloud Account Name',
 }
 
 
-# LOCAL_SETTINGS_EXPORT += [
+LOCAL_SETTINGS_EXPORT += [
     'SUBSCRIPTION_ACCOUNT_ENABLED'
 ]
 
