@@ -186,10 +186,9 @@ LOCAL_SETTINGS_EXPORT = []
 # ------------------------------------------------------------------------------
 SUBSCRIPTION_ACCOUNT_ENABLED = False
 # SUBSCRIPTION_ACCOUNT_MAPPING = {
-    'University HPC': 'slurm_account_name',
-    'University Cloud': 'Cloud Account Name',
-}
-
+#     'University HPC': 'slurm_account_name',
+#     'University Cloud': 'Cloud Account Name',
+# }
 
 LOCAL_SETTINGS_EXPORT += [
     'SUBSCRIPTION_ACCOUNT_ENABLED'
