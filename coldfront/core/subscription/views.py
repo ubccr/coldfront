@@ -523,8 +523,6 @@ class SubscriptionCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         context['resources_form_label_texts'] = resources_form_label_texts
         context['resources_with_accounts'] = list(Resource.objects.filter(
             name__in=list(SUBSCRIPTION_ACCOUNT_MAPPING.keys())).values_list('id', flat=True))
-        print(list(Resource.objects.filter(name__in=list(
-            SUBSCRIPTION_ACCOUNT_MAPPING.keys())).values_list('id', flat=True)))
 
         return context
 
@@ -542,6 +540,12 @@ class SubscriptionCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         justification = form_data.get('justification')
         quantity = form_data.get('quantity', 1)
         subscription_account = form_data.get('subscription_account', None)
+
+        # A resource is selected that requires an account name selection but user has no account names
+        if SUBSCRIPTION_ACCOUNT_ENABLED and SubscriptionAttributeType.objects.filter(
+                name=SUBSCRIPTION_ACCOUNT_MAPPING[resource_obj.name]).exists() and not subscription_account:
+            form.add_error(None, 'You need to first create an account name')
+            return self.form_invalid(form)
 
         usernames = form_data.get('users')
         usernames.append(project_obj.pi.username)
