@@ -166,13 +166,13 @@ class Subscription(TimeStampedModel):
         return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
 
 
-class SubscriptionAdminComment(TimeStampedModel):
+class SubscriptionAdminNote(TimeStampedModel):
     subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
     author = models.ForeignKey(User, on_delete=models.CASCADE)
-    comment = models.TextField()
+    note = models.TextField()
 
     def __str__(self):
-        return self.comment
+        return self.note
 
 
 class SubscriptionUserNote(TimeStampedModel):
@@ -290,3 +290,13 @@ class SubscriptionUser(TimeStampedModel):
     class Meta:
         verbose_name_plural = 'Subscription User Status'
         unique_together = ('user', 'subscription')
+
+
+class SubscriptionAccount(TimeStampedModel):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=64)
+
+    class Meta:
+        verbose_name_plural = 'Subscription User Status'
+        unique_together = ('user', 'name')
+        ordering = ['name', ]

@@ -174,10 +174,25 @@ EXTRA_AUTHENTICATION_BACKENDS = []
 #
 # EXTRA_AUTHENTICATION_BACKENDS += ['django_auth_ldap.backend.LDAPBackend',]
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Enable invoice functionality
-#------------------------------------------------------------------------------
-ENABLE_INVOICING = True
+# ------------------------------------------------------------------------------
+# INVOICE_ENABLED = True
+# INVOICE_DEFAULT_STATUS = 'New'  # Override default 'Pending Payment' status
+
+# ------------------------------------------------------------------------------
+# Allow user to select account name for subscription
+# ------------------------------------------------------------------------------
+# SUBSCRIPTION_ACCOUNT_ENABLED = True
+# SUBSCRIPTION_ACCOUNT_MAPPING = {
+    'University HPC': 'slurm_account_name',
+    'University Cloud': 'Cloud Account Name',
+}
+
+
+# LOCAL_SETTINGS_EXPORT += [
+    'SUBSCRIPTION_ACCOUNT_ENABLED'
+]
 
 
 #===============================================================================

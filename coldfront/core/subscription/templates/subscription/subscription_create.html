@@ -30,6 +30,7 @@ Request New Subscription
 <script>
   var resources_form_default_quantities = {{resources_form_default_quantities |safe }};
   var resources_form_label_texts = {{resources_form_label_texts |safe }};
+  var resources_with_accounts = {{resources_with_accounts |safe }};
 
   $(document).ready(function() {    
       $('<br><input id="selectAll" class="check" type="checkbox"> <strong>Select All Users</strong>').insertAfter($("#div_id_users > label"))
@@ -66,6 +67,13 @@ $("#id_resource").change(function() {
         $('#div_id_quantity').hide();
         $('#id_quantity').val(1)
     }
+    console.log(resource_id)
+    if (resources_with_accounts.includes(parseInt(resource_id))) {
+        $('#div_id_subscription_account').show();
+    } else {
+        $('#div_id_subscription_account').hide();
+    }
+
 });
 
 

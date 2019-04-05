@@ -19,6 +19,9 @@
           <div class="dropdown-menu">
             <a class="dropdown-item" href="{% url 'project-list' %}">Projects</a>
             <a class="dropdown-item" href="{% url 'subscription-list' %}">Subscriptions</a>
+            {% if settings.SUBSCRIPTION_ACCOUNT_ENABLED  %}
+              <a class="dropdown-item" href="{% url 'subscription-account-list' %}">Subscription Accounts</a>
+            {% endif %}
           </div>
         </li>
         {% if request.user.is_superuser %}
@@ -26,7 +29,7 @@
         {% elif perms.project.can_review_pending_project_reviews or perms.grant.can_view_all_grants %}
           {% include 'common/navbar_director.html' %}
         {% endif %}
-        {% if request.user.is_superuser %}
+        {% if request.user.is_superuser or perms.subscription.can_manage_invoice %}
           {% include 'common/navbar_invoice.html' %}
         {% endif %}
         <li id="navbar-help" class="nav-item">

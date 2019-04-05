@@ -40,11 +40,28 @@ Subscription Invoice Detail
       <table class="table table-bordered table-sm">
         <tr>
           <th style="white-space:nowrap;">Project:</th>
-          <td><a href="{% url 'project-detail' subscription.project.pk %}">{{ subscription.project }}</a></td>
+          <td>
+            {% if request.user.is_superuser %}
+              <a href="{% url 'project-detail' subscription.project.pk %}">{{ subscription.project }}</a></td>
+            {% else %}
+              {{ subscription.project }}
+            {% endif %}
+        </tr>
+        <tr>
+          <th style="white-space:nowrap;">Principal Investigator:</th>
+          <td>
+              {{ subscription.project.pi.first_name }} {{ subscription.project.pi.last_name }} ({{ subscription.project.pi.email }})
+          </td>
         </tr>
         <tr>
           <th style="white-space:nowrap;">Resource{{ subscription.resources.all|pluralize }} in subscription:</th>
           <td>{{ subscription.get_resources_as_string }}</td>
+        </tr>
+        <tr>
+          <th style="white-space:nowrap;">Quantity:</th>
+          <td>
+              {{ subscription.quantity }}
+          </td>
         </tr>
         <tr>
           <th style="white-space:nowrap;">Status:</th>
@@ -62,7 +79,7 @@ Subscription Invoice Detail
         </tr>
       </table>
     </div>
-    {% if request.user.is_superuser %}
+    {% if request.user.is_superuser or perms.subscription.can_manage_invoice%}
     <button type="submit" class="btn btn-success float-right"><i class="fas fa-sync"></i> Update</button>
     {% endif %}
   </form>
@@ -73,14 +90,14 @@ Subscription Invoice Detail
 <!-- Start Admin Messages -->
 <div class="card mb-3">
   <div class="card-header">
-  <h4 class="d-inline"><i class="fas fa-users"></i> Notes from Staff </h4> <span class="badge badge-secondary">{{subscription.subscriptionusermessage_set.count}}</span>
+  <h4 class="d-inline"><i class="fas fa-users"></i> Notes from Staff </h4> <span class="badge badge-secondary">{{subscription.subscriptionusernote_set.count}}</span>
    <div class="float-right">
         <a class="btn btn-success" href="{% url 'subscription-add-invoice-note' subscription.pk %}" role="button"><i class="fas fa-plus"></i> Add Note</a>
         <a class="btn btn-danger" href="{% url 'subscription-delete-invoice-note' subscription.pk %}" role="button"><i class="fas fa-minus"></i> Delete Notes</a>
     </div>
   </div>
   <div class="card-body">
-    {% if subscription.subscriptionusermessage_set.all %}
+    {% if subscription.subscriptionusernote_set.all %}
       <div class="table-responsive">
         <table class="table table-hover">
           <thead>
@@ -92,12 +109,12 @@ Subscription Invoice Detail
             </tr>
           </thead>
           <tbody>
-            {% for message in subscription.subscriptionusermessage_set.all %}
+            {% for note in subscription.subscriptionusernote_set.all %}
             <tr>
-              <td>{{ message.message }}</td>
-              <td>{{ message.author.first_name }} {{ message.author.last_name }} ({{ message.author.username }})</td>
-              <td>{{ message.modified }}</td>
-              <td><a href="{% url 'subscription-update-invoice-note' message.pk %}"><i class="fas fa-edit"></i></a></td>
+              <td>{{ note.note }}</td>
+              <td>{{ note.author.first_name }} {{ note.author.last_name }} ({{ note.author.username }})</td>
+              <td>{{ note.modified }}</td>
+              <td><a href="{% url 'subscription-update-invoice-note' note.pk %}"><i class="fas fa-edit"></i></a></td>
             {% endfor %}
           </tbody>
         </table>

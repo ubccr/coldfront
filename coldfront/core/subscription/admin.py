@@ -5,7 +5,7 @@ from django.utils.translation import gettext_lazy as _
 from simple_history.admin import SimpleHistoryAdmin
 
 from coldfront.core.subscription.models import (AttributeType, Subscription,
-                                                 SubscriptionAdminComment,
+                                                 SubscriptionAdminNote,
                                                  SubscriptionAttribute,
                                                  SubscriptionAttributeType,
                                                  SubscriptionAttributeUsage,
@@ -33,8 +33,8 @@ class SubscriptionAttributeInline(admin.TabularInline):
     fields = ('subscription_attribute_type', 'value',)
 
 
-class SubscriptionAdminCommentInline(admin.TabularInline):
-    model = SubscriptionAdminComment
+class SubscriptionAdminNoteInline(admin.TabularInline):
+    model = SubscriptionAdminNote
     extra = 0
     fields = ('comment', 'author', 'created'),
     readonly_fields = ('author', 'created')
@@ -56,7 +56,7 @@ class SubscriptionAdmin(SimpleHistoryAdmin):
                     'justification', 'start_date', 'end_date', 'status', 'created', 'modified', )
     inlines = [SubscriptionUserInline,
         SubscriptionAttributeInline,
-        SubscriptionAdminCommentInline,
+        SubscriptionAdminNoteInline,
         SubscriptionUserNoteInline]
     list_filter = ('resources__resource_type__name', 'status', 'resources__name', )
     search_fields = ['project__pi__username', 'project__pi__first_name', 'project__pi__last_name', 'resources__name',
@@ -94,7 +94,7 @@ class SubscriptionAdmin(SimpleHistoryAdmin):
             return super().get_inline_instances(request)
 
     def save_formset(self, request, form, formset, change):
-        if formset.model in [SubscriptionAdminComment, SubscriptionUserNote]:
+        if formset.model in [SubscriptionAdminNote, SubscriptionUserNote]:
             instances = formset.save(commit=False)
             for instance in instances:
                 instance.author = request.user

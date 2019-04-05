@@ -5,15 +5,19 @@ from coldfront.core.utils.common import import_from_settings
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource, ResourceType
 from coldfront.core.subscription.models import (Subscription,
-                                                 SubscriptionStatusChoice)
+                                                 SubscriptionStatusChoice, SubscriptionAccount)
 from coldfront.core.subscription.utils import get_user_resources
 
+
+
+SUBSCRIPTION_ACCOUNT_ENABLED = import_from_settings('SUBSCRIPTION_ACCOUNT_ENABLED', False)
 
 class SubscriptionForm(forms.Form):
     resource = forms.ModelChoiceField(queryset=None, empty_label=None)
     justification = forms.CharField(widget=forms.Textarea)
     quantity = forms.IntegerField(required=True)
     users = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, required=False)
+    subscription_account = forms.ChoiceField(required=False)
 
     def __init__(self, request_user, project_pk, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -29,6 +33,14 @@ class SubscriptionForm(forms.Form):
             self.fields['users'].help_text = '<br/>Select users in your project to add to this subscription.'
         else:
             self.fields['users'].widget = forms.HiddenInput()
+
+        if SUBSCRIPTION_ACCOUNT_ENABLED:
+            subscription_accounts = SubscriptionAccount.objects.filter(user=request_user)
+            self.fields['subscription_account'].choices = (((account.name, account.name)) 
+                for account in subscription_accounts)
+            self.fields['subscription_account'].help_text = '<br/>Select account name to associate with resource.'
+        else:
+            self.fields['subscription_account'].widget = forms.HiddenInput()
 
         self.fields['justification'].help_text = '<br/>Justification for requesting this subscription.'
 
@@ -130,7 +142,7 @@ class SubscriptionReviewUserForm(forms.Form):
 
 class SubscriptonInvoiceNoteDeleteForm(forms.Form):
     pk = forms.IntegerField(required=False, disabled=True)
-    message = forms.CharField(max_length=64, disabled=True)
+    note = forms.CharField(max_length=64, disabled=True)
     author = forms.CharField(
         max_length=512, required=False, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
@@ -140,5 +152,9 @@ class SubscriptonInvoiceNoteDeleteForm(forms.Form):
         self.fields['pk'].widget = forms.HiddenInput()
 
 
+class SubscriptionAccountForm(forms.ModelForm):
 
+    class Meta:
+        model = SubscriptionAccount
+        fields = ['name', ]
 

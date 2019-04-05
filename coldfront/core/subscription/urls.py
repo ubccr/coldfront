@@ -22,4 +22,6 @@ urlpatterns = [
     path('subscription/<int:pk>/add-invoice-note', subscription_views.SubscriptionAddInvoiceNoteView.as_view(), name='subscription-add-invoice-note'),
     path('subscription-invoice-note/<int:pk>/update', subscription_views.SubscriptionUpdateInvoiceNoteView.as_view(), name='subscription-update-invoice-note'),
     path('subscription/<int:pk>/invoice/delete/', subscription_views.SubscriptionDeleteInvoiceNoteView.as_view(), name='subscription-delete-invoice-note'),
+    path('add-subscription-account/', subscription_views.SubscriptionAccountCreateView.as_view(), name='add-subscription-account'),
+    path('subscription-account-list/', subscription_views.SubscriptionAccountListView.as_view(), name='subscription-account-list'),
 ]
