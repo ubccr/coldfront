@@ -207,7 +207,7 @@ class SubscriptionAttributeType(TimeStampedModel):
     history = HistoricalRecords()
 
     def __str__(self):
-        return '%s (%s)' %(self.name, self.attribute_type.name)
+        return '%s (%s)' % (self.name, self.attribute_type.name)
 
     class Meta:
         ordering = ['name', ]
@@ -294,9 +294,8 @@ class SubscriptionUser(TimeStampedModel):
 
 class SubscriptionAccount(TimeStampedModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    name = models.CharField(max_length=64)
+    name = models.CharField(max_length=64, unique=True)
 
     class Meta:
         verbose_name_plural = 'Subscription User Status'
-        unique_together = ('user', 'name')
         ordering = ['name', ]

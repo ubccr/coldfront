@@ -18,8 +18,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
-from django.utils.html import mark_safe
-from django.utils.html import format_html
+from django.utils.html import format_html, mark_safe
 from django.views import View
 from django.views.generic import DetailView, ListView, TemplateView
 from django.views.generic.edit import CreateView, FormView, UpdateView
@@ -545,7 +544,8 @@ class SubscriptionCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         # A resource is selected that requires an account name selection but user has no account names
         if SUBSCRIPTION_ACCOUNT_ENABLED and resource_obj.name in SUBSCRIPTION_ACCOUNT_MAPPING and SubscriptionAttributeType.objects.filter(
                 name=SUBSCRIPTION_ACCOUNT_MAPPING[resource_obj.name]).exists() and not subscription_account:
-            form.add_error(None, format_html('You need to first create an account name. <a href="/subscription/add-subscription-account">Click here!</a>'))
+            form.add_error(None, format_html(
+                'You need to first create an account name. <a href="/subscription/add-subscription-account">Click here!</a>'))
             return self.form_invalid(form)
 
         usernames = form_data.get('users')
@@ -571,7 +571,7 @@ class SubscriptionCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         )
         subscription_obj.resources.add(resource_obj)
 
-        if SUBSCRIPTION_ACCOUNT_ENABLED and subscription_account and resource_obj.name in SUBSCRIPTION_ACCOUNT_MAPPING :
+        if SUBSCRIPTION_ACCOUNT_ENABLED and subscription_account and resource_obj.name in SUBSCRIPTION_ACCOUNT_MAPPING:
 
             subscription_attribute_type_obj = SubscriptionAttributeType.objects.get(
                 name=SUBSCRIPTION_ACCOUNT_MAPPING[resource_obj.name])
@@ -1481,11 +1481,7 @@ class SubscriptionAccountCreateView(LoginRequiredMixin, UserPassesTestMixin, Cre
     def form_valid(self, form):
         form.instance.user = self.request.user
 
-        try:
-            return super().form_valid(form)
-        except IntegrityError as e:
-            form.add_error(None, 'Duplicate account name detected')
-            return self.form_invalid(form)
+        return super().form_valid(form)
 
     def get_success_url(self):
         return reverse_lazy('subscription-account-list')
