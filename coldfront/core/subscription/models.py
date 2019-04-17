@@ -222,7 +222,6 @@ class SubscriptionAttribute(TimeStampedModel):
     history = HistoricalRecords()
 
     def save(self, *args, **kwargs):
-
         super().save(*args, **kwargs)
         if self.subscription_attribute_type.has_usage and not SubscriptionAttributeUsage.objects.filter(subscription_attribute=self).exists():
             SubscriptionAttributeUsage.objects.create(
@@ -296,6 +295,14 @@ class SubscriptionAccount(TimeStampedModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=64, unique=True)
 
+    # def clean(self):
+    #     name = self.cleaned_data['name']
+    #     if User.objects.
+    #     raise ValidationError(
+    #         'Invalid Value "%s". Allowed inputs are "Yes" or "No".' % (self.value))
+
+    def __str__(self):
+        return self.name
+
     class Meta:
-        verbose_name_plural = 'Subscription User Status'
         ordering = ['name', ]

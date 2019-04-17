@@ -12,7 +12,8 @@ from coldfront.core.subscription.models import (AttributeType, Subscription,
                                                  SubscriptionStatusChoice,
                                                  SubscriptionUser,
                                                  SubscriptionUserNote,
-                                                 SubscriptionUserStatusChoice)
+                                                 SubscriptionUserStatusChoice, 
+                                                 SubscriptionAccount)
 
 
 @admin.register(SubscriptionStatusChoice)
@@ -330,3 +331,7 @@ class SubscriptionAttributeUsageAdmin(SimpleHistoryAdmin):
 
     def project_pi(self, obj):
         return obj.subscription_attribute.subscription.project.pi.username
+
+@admin.register(SubscriptionAccount)
+class SubscriptionAccountAdmin(SimpleHistoryAdmin):
+    list_display = ('name', 'user', )

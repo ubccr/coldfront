@@ -14,7 +14,7 @@ from django.db import IntegrityError
 from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.forms import formset_factory
-from django.http import HttpResponseRedirect
+from django.http import (HttpResponseRedirect, JsonResponse)
 from django.shortcuts import get_object_or_404, render
 from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
@@ -50,6 +50,7 @@ from coldfront.core.subscription.utils import (generate_guauge_data_from_usage,
                                                get_user_resources)
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email_template
+
 
 SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL = import_from_settings(
     'SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL', True)
@@ -519,6 +520,7 @@ class SubscriptionCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 resources_form_label_texts[resource.id] = mark_safe(
                     '<strong>{}*</strong>'.format(value))
 
+        context['SubscriptionAccountForm'] = SubscriptionAccountForm()
         context['resources_form_default_quantities'] = resources_form_default_quantities
         context['resources_form_label_texts'] = resources_form_label_texts
         context['resources_with_accounts'] = list(Resource.objects.filter(
@@ -528,6 +530,10 @@ class SubscriptionCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
     def get_form(self, form_class=None):
         """Return an instance of the form to be used in this view."""
+        # if SUBSCRIPTION_ACCOUNT_ENABLED:
+        #     subscription_accounts = SubscriptionAccount.objects.filter(user=self.request.user)
+        #     if not subscription_accounts:
+        #         subscription_account = SubscriptionAccount.objects.create(name=self.request.user.username, user=self.request.user)
         if form_class is None:
             form_class = self.get_form_class()
         return form_class(self.request.user, self.kwargs.get('project_pk'), **self.get_form_kwargs())
@@ -540,12 +546,11 @@ class SubscriptionCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         justification = form_data.get('justification')
         quantity = form_data.get('quantity', 1)
         subscription_account = form_data.get('subscription_account', None)
-
         # A resource is selected that requires an account name selection but user has no account names
         if SUBSCRIPTION_ACCOUNT_ENABLED and resource_obj.name in SUBSCRIPTION_ACCOUNT_MAPPING and SubscriptionAttributeType.objects.filter(
                 name=SUBSCRIPTION_ACCOUNT_MAPPING[resource_obj.name]).exists() and not subscription_account:
             form.add_error(None, format_html(
-                'You need to first create an account name. <a href="/subscription/add-subscription-account">Click here!</a>'))
+                'You need to first create an account name. <a href="#Modal" id="modal_link">Click here to add account name!</a>'))
             return self.form_invalid(form)
 
         usernames = form_data.get('users')
@@ -1478,10 +1483,23 @@ class SubscriptionAccountCreateView(LoginRequiredMixin, UserPassesTestMixin, Cre
                 self.request, 'You do not have permission to add subscription attributes.')
             return False
 
+    def form_invalid(self, form):
+        response = super().form_invalid(form)
+        if self.request.is_ajax():
+            return JsonResponse(form.errors, status=400)
+        else:
+            return response
+
     def form_valid(self, form):
         form.instance.user = self.request.user
-
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        if self.request.is_ajax():
+            data = {
+                'pk': self.object.pk,
+            }
+            return JsonResponse(data)
+        else:
+            return response
 
     def get_success_url(self):
         return reverse_lazy('subscription-account-list')
