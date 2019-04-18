@@ -1,1 +1,1 @@
-mozilla-django-oidc==1.1.2
+mozilla-django-oidc==1.2.1
