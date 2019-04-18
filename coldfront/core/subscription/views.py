@@ -408,7 +408,7 @@ class SubscriptionListView(LoginRequiredMixin, ListView):
                 Q(subscriptionuser__status__name='Active')
             ).order_by(order_by)
 
-        return subscriptions
+        return subscriptions.distinct()
 
     def get_context_data(self, **kwargs):
 

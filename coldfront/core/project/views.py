@@ -189,7 +189,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
                 Q(projectuser__status__name='Active')
             ).order_by(order_by)
 
-        return projects
+        return projects.distinct()
 
     def get_context_data(self, **kwargs):
 
