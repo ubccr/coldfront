@@ -28,6 +28,8 @@ class Command(BaseCommand):
             ('slurm_cluster', 'Text'),
             ('slurm_specs', 'Text'),
             ('Status', 'Public/Private'),
+            ('quantity_default_value', 'Int'),
+            ('quantity_label', 'Text')
         ):
             ResourceAttributeType.objects.get_or_create(
                 name=resource_attribute_type, attribute_type=AttributeType.objects.get(name=attribute_type))

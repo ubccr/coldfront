@@ -109,7 +109,10 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                     Q(project=self.object) &
                     Q(project__projectuser__user=self.request.user) &
                     Q(project__projectuser__status__name__in=['Active', ]) &
-                    Q(status__name__in=['Active', 'Expired', 'New', 'Renewal Requested']) &
+                    Q(status__name__in=['Active', 'Expired',
+                      'New', 'Renewal Requested',
+                      'Payment Pending', 'Payment Requested',
+                      'Payment Declined', 'Paid']) &
                     Q(subscriptionuser__user=self.request.user) &
                     Q(subscriptionuser__status__name__in=['Active', ])
                 ).distinct().order_by('-end_date')
@@ -186,7 +189,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
                 Q(projectuser__status__name='Active')
             ).order_by(order_by)
 
-        return projects
+        return projects.distinct()
 
     def get_context_data(self, **kwargs):
 

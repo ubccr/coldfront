@@ -55,6 +55,7 @@ class Subscription(TimeStampedModel):
             ('can_view_all_subscriptions', 'Can view all subscriptions'),
             ('can_review_subscription_requests',
              'Can review subscription requests'),
+            ('can_manage_invoice', 'Can manage invoice'),
         )
 
     def clean(self):
@@ -164,28 +165,24 @@ class Subscription(TimeStampedModel):
     def __str__(self):
         return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
 
-    class Meta:
-        ordering = ['pk', ]
 
-
-class SubscriptionAdminComment(TimeStampedModel):
-    """ SubscriptionAttributeType. """
+class SubscriptionAdminNote(TimeStampedModel):
     subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
     author = models.ForeignKey(User, on_delete=models.CASCADE)
-    comment = models.TextField()
+    note = models.TextField()
 
     def __str__(self):
-        return self.comment
+        return self.note
 
 
-class SubscriptionUserMessage(TimeStampedModel):
-    """ SubscriptionAttributeType. """
+class SubscriptionUserNote(TimeStampedModel):
     subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
     author = models.ForeignKey(User, on_delete=models.CASCADE)
-    message = models.TextField()
+    is_private = models.BooleanField(default=True)
+    note = models.TextField()
 
     def __str__(self):
-        return self.message
+        return self.note
 
 
 class AttributeType(TimeStampedModel):
@@ -210,7 +207,7 @@ class SubscriptionAttributeType(TimeStampedModel):
     history = HistoricalRecords()
 
     def __str__(self):
-        return '%s (%s)' %(self.name, self.attribute_type.name)
+        return '%s (%s)' % (self.name, self.attribute_type.name)
 
     class Meta:
         ordering = ['name', ]
@@ -225,7 +222,6 @@ class SubscriptionAttribute(TimeStampedModel):
     history = HistoricalRecords()
 
     def save(self, *args, **kwargs):
-
         super().save(*args, **kwargs)
         if self.subscription_attribute_type.has_usage and not SubscriptionAttributeUsage.objects.filter(subscription_attribute=self).exists():
             SubscriptionAttributeUsage.objects.create(
@@ -293,3 +289,15 @@ class SubscriptionUser(TimeStampedModel):
     class Meta:
         verbose_name_plural = 'Subscription User Status'
         unique_together = ('user', 'subscription')
+
+
+class SubscriptionAccount(TimeStampedModel):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=64, unique=True)
+
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]

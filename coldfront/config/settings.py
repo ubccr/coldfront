@@ -100,6 +100,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django_settings_export.settings_export',
             ],
         },
     },
@@ -148,6 +149,9 @@ LOGOUT_REDIRECT_URL = '/'
 SU_LOGIN_CALLBACK = "coldfront.core.utils.common.su_login_callback"
 SU_LOGOUT_REDIRECT_URL = "/admin/auth/user/"
 
+
+SETTINGS_EXPORT = []
+
 #------------------------------------------------------------------------------
 # Local settings overrides (see local_settings.py.sample)
 #------------------------------------------------------------------------------
@@ -182,3 +186,11 @@ except NameError:
 if 'django_su.backends.SuBackend' in EXTRA_AUTHENTICATION_BACKENDS:
     INSTALLED_APPS.insert(0, 'django_su')
     TEMPLATES[0]['OPTIONS']['context_processors'].extend(['django_su.context_processors.is_su', ])
+
+import coldfront
+VERSION = coldfront.__version__
+
+try:
+    SETTINGS_EXPORT = SETTINGS_EXPORT + LOCAL_SETTINGS_EXPORT
+except NameError:
+    SETTINGS_EXPORT = SETTINGS_EXPORT 

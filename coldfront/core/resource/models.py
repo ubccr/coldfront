@@ -62,6 +62,7 @@ class Resource(TimeStampedModel):
     is_available = models.BooleanField(default=True)
     is_public = models.BooleanField(default=True)
     is_subscribable = models.BooleanField(default=True)
+    requires_payment = models.BooleanField(default=False)
     allowed_groups = models.ManyToManyField(Group, blank=True)
     allowed_users = models.ManyToManyField(User, blank=True)
     linked_resources = models.ManyToManyField('self', blank=True)

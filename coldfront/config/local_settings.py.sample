@@ -114,6 +114,7 @@ SUBSCRIPTION_DEFAULT_SUBSCRIPTION_LENGTH = 365 # DAYS
 EXTRA_APPS = []
 EXTRA_MIDDLEWARE = []
 EXTRA_AUTHENTICATION_BACKENDS = []
+LOCAL_SETTINGS_EXPORT = []
 
 
 #------------------------------------------------------------------------------
@@ -173,6 +174,25 @@ EXTRA_AUTHENTICATION_BACKENDS = []
 # }
 #
 # EXTRA_AUTHENTICATION_BACKENDS += ['django_auth_ldap.backend.LDAPBackend',]
+
+# ------------------------------------------------------------------------------
+# Enable invoice functionality
+# ------------------------------------------------------------------------------
+# INVOICE_ENABLED = True
+# INVOICE_DEFAULT_STATUS = 'New'  # Override default 'Pending Payment' status
+
+# ------------------------------------------------------------------------------
+# Allow user to select account name for subscription
+# ------------------------------------------------------------------------------
+SUBSCRIPTION_ACCOUNT_ENABLED = False
+# SUBSCRIPTION_ACCOUNT_MAPPING = {
+#     'University HPC': 'slurm_account_name',
+#     'University Cloud': 'Cloud Account Name',
+# }
+
+LOCAL_SETTINGS_EXPORT += [
+    'SUBSCRIPTION_ACCOUNT_ENABLED'
+]
 
 
 #===============================================================================
@@ -240,7 +260,7 @@ EXTRA_AUTHENTICATION_BACKENDS = []
 # OIDC_OP_AUTHORIZATION_ENDPOINT = "https://localhost/hydra/oauth2/auth"
 # OIDC_OP_TOKEN_ENDPOINT = "https://localhost/hydra/oauth2/token"
 # OIDC_OP_USER_ENDPOINT = "https://localhost/hydra/userinfo"
-# OIDC_VERIFY_SSL = True 
+# OIDC_VERIFY_SSL = True
 
 #------------------------------------------------------------------------------
 # Enable Slurm support
@@ -248,7 +268,7 @@ EXTRA_AUTHENTICATION_BACKENDS = []
 # EXTRA_APPS += [
 #     'coldfront.plugins.slurm',
 # ]
-# SLURM_SACCTMGR_PATH = '/usr/bin/sacctmgr' 
+# SLURM_SACCTMGR_PATH = '/usr/bin/sacctmgr'
 
 #------------------------------------------------------------------------------
 # Enable XDMoD support

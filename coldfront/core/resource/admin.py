@@ -46,11 +46,11 @@ class ResourceAttributeInline(admin.TabularInline):
 class ResourceAdmin(SimpleHistoryAdmin):
     # readonly_fields_change = ('resource_type', )
     fields_change = ('resource_type', 'parent_resource', 'is_subscribable', 'name', 'description', 'is_available',
-                     'is_public', 'allowed_groups', 'allowed_users', 'linked_resources')
+                     'is_public', 'requires_payment', 'allowed_groups', 'allowed_users', 'linked_resources')
     list_display = ('pk', 'name', 'description', 'parent_resource', 'is_subscribable', 'resource_type_name',
                     'is_available', 'is_public', 'created', 'modified', )
     search_fields = ('name', 'description', 'resource_type__name')
-    list_filter = ('resource_type__name', 'is_subscribable', 'is_available', 'is_public', )
+    list_filter = ('resource_type__name', 'is_subscribable', 'is_available', 'is_public', 'requires_payment' )
     inlines = [ResourceAttributeInline, ]
     filter_horizontal = ['allowed_groups', 'allowed_users', 'linked_resources', ]
 

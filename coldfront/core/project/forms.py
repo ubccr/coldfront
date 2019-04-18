@@ -9,9 +9,9 @@ from coldfront.core.utils.common import import_from_settings
 
 EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL = import_from_settings(
     'EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL')
-EMAIL_ADMIN_LIST = import_from_settings('EMAIL_ADMIN_LIST')
+EMAIL_ADMIN_LIST = import_from_settings('EMAIL_ADMIN_LIST', [])
 EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
-    'EMAIL_DIRECTOR_EMAIL_ADDRESS')
+    'EMAIL_DIRECTOR_EMAIL_ADDRESS', '')
 
 
 class ProjectSearchForm(forms.Form):

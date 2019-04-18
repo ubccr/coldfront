@@ -5,14 +5,15 @@ from django.utils.translation import gettext_lazy as _
 from simple_history.admin import SimpleHistoryAdmin
 
 from coldfront.core.subscription.models import (AttributeType, Subscription,
-                                                 SubscriptionAdminComment,
+                                                 SubscriptionAdminNote,
                                                  SubscriptionAttribute,
                                                  SubscriptionAttributeType,
                                                  SubscriptionAttributeUsage,
                                                  SubscriptionStatusChoice,
                                                  SubscriptionUser,
-                                                 SubscriptionUserMessage,
-                                                 SubscriptionUserStatusChoice)
+                                                 SubscriptionUserNote,
+                                                 SubscriptionUserStatusChoice, 
+                                                 SubscriptionAccount)
 
 
 @admin.register(SubscriptionStatusChoice)
@@ -33,17 +34,17 @@ class SubscriptionAttributeInline(admin.TabularInline):
     fields = ('subscription_attribute_type', 'value',)
 
 
-class SubscriptionAdminCommentInline(admin.TabularInline):
-    model = SubscriptionAdminComment
+class SubscriptionAdminNoteInline(admin.TabularInline):
+    model = SubscriptionAdminNote
     extra = 0
     fields = ('comment', 'author', 'created'),
     readonly_fields = ('author', 'created')
 
 
-class SubscriptionUserMessageInline(admin.TabularInline):
-    model = SubscriptionUserMessage
+class SubscriptionUserNoteInline(admin.TabularInline):
+    model = SubscriptionUserNote
     extra = 0
-    fields = ('message', 'author', 'created'),
+    fields = ('note', 'author', 'created'),
     readonly_fields = ('author', 'created')
 
 
@@ -54,7 +55,10 @@ class SubscriptionAdmin(SimpleHistoryAdmin):
                      'status', 'start_date', 'end_date', 'description', 'created', 'modified',)
     list_display = ('pk', 'project_title', 'project_pi', 'resource', 'quantity',
                     'justification', 'start_date', 'end_date', 'status', 'created', 'modified', )
-    inlines = [SubscriptionUserInline, SubscriptionAttributeInline, SubscriptionAdminCommentInline, SubscriptionUserMessageInline]
+    inlines = [SubscriptionUserInline,
+        SubscriptionAttributeInline,
+        SubscriptionAdminNoteInline,
+        SubscriptionUserNoteInline]
     list_filter = ('resources__resource_type__name', 'status', 'resources__name', )
     search_fields = ['project__pi__username', 'project__pi__first_name', 'project__pi__last_name', 'resources__name',
                      'subscriptionuser__user__first_name', 'subscriptionuser__user__last_name', 'subscriptionuser__user__username']
@@ -91,7 +95,7 @@ class SubscriptionAdmin(SimpleHistoryAdmin):
             return super().get_inline_instances(request)
 
     def save_formset(self, request, form, formset, change):
-        if formset.model in [SubscriptionAdminComment, SubscriptionUserMessage]:
+        if formset.model in [SubscriptionAdminNote, SubscriptionUserNote]:
             instances = formset.save(commit=False)
             for instance in instances:
                 instance.author = request.user
@@ -327,3 +331,7 @@ class SubscriptionAttributeUsageAdmin(SimpleHistoryAdmin):
 
     def project_pi(self, obj):
         return obj.subscription_attribute.subscription.project.pi.username
+
+@admin.register(SubscriptionAccount)
+class SubscriptionAccountAdmin(SimpleHistoryAdmin):
+    list_display = ('name', 'user', )
