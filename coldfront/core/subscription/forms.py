@@ -13,7 +13,6 @@ SUBSCRIPTION_ACCOUNT_ENABLED = import_from_settings(
     'SUBSCRIPTION_ACCOUNT_ENABLED', False)
 
 
-
 class SubscriptionForm(forms.Form):
     resource = forms.ModelChoiceField(queryset=None, empty_label=None)
     justification = forms.CharField(widget=forms.Textarea)
@@ -22,8 +21,6 @@ class SubscriptionForm(forms.Form):
         widget=forms.CheckboxSelectMultiple, required=False)
     subscription_account = forms.ChoiceField(required=False)
 
-
-    empty_selection=(('','Create account by clicking link'),)
     def __init__(self, request_user, project_pk,  *args, **kwargs):
         super().__init__(*args, **kwargs)
         project_obj = get_object_or_404(Project, pk=project_pk)
@@ -44,11 +41,9 @@ class SubscriptionForm(forms.Form):
                 user=request_user)
             if subscription_accounts:
                 self.fields['subscription_account'].choices = (((account.name, account.name))
-                                                           for account in subscription_accounts)
-            else:
-                self.fields['subscription_account'].choices = self.empty_selection
+                                                               for account in subscription_accounts)
 
-            self.fields['subscription_account'].help_text = '<br/>Select account name to associate with resource. <a href="#Modal" id="modal_link">Click here to add account name!</a>'
+            self.fields['subscription_account'].help_text = '<br/>Select account name to associate with resource. <a href="#Modal" id="modal_link">Click here to create an account name!</a>'
         else:
             self.fields['subscription_account'].widget = forms.HiddenInput()
 

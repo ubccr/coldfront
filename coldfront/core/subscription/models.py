@@ -295,11 +295,6 @@ class SubscriptionAccount(TimeStampedModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=64, unique=True)
 
-    # def clean(self):
-    #     name = self.cleaned_data['name']
-    #     if User.objects.
-    #     raise ValidationError(
-    #         'Invalid Value "%s". Allowed inputs are "Yes" or "No".' % (self.value))
 
     def __str__(self):
         return self.name

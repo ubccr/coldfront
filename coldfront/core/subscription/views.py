@@ -530,10 +530,6 @@ class SubscriptionCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
     def get_form(self, form_class=None):
         """Return an instance of the form to be used in this view."""
-        # if SUBSCRIPTION_ACCOUNT_ENABLED:
-        #     subscription_accounts = SubscriptionAccount.objects.filter(user=self.request.user)
-        #     if not subscription_accounts:
-        #         subscription_account = SubscriptionAccount.objects.create(name=self.request.user.username, user=self.request.user)
         if form_class is None:
             form_class = self.get_form_class()
         return form_class(self.request.user, self.kwargs.get('project_pk'), **self.get_form_kwargs())
@@ -550,7 +546,7 @@ class SubscriptionCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         if SUBSCRIPTION_ACCOUNT_ENABLED and resource_obj.name in SUBSCRIPTION_ACCOUNT_MAPPING and SubscriptionAttributeType.objects.filter(
                 name=SUBSCRIPTION_ACCOUNT_MAPPING[resource_obj.name]).exists() and not subscription_account:
             form.add_error(None, format_html(
-                'You need to first create an account name. <a href="#Modal" id="modal_link">Click here to add account name!</a>'))
+                'You need to create an account name. Create it by clicking the link under the "Subscription account" field.'))
             return self.form_invalid(form)
 
         usernames = form_data.get('users')

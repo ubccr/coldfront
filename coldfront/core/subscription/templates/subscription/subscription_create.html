@@ -37,6 +37,7 @@ Request New Subscription
     </div>
     <div class="modal-body">
         <div id="error_div"></div>
+        *No spaces in accout name
         <form id="subscription_account_form">
           {{SubscriptionAccountForm |crispy}}
            <button id="myFormSubmit" class="btn btn-primary" type="submit">Submit</button>
@@ -101,7 +102,7 @@ $(function(){
       e.preventDefault();
     $(function () {
 
-        var new_account_name = $('#subscription_account_form').serializeArray()[0].value;
+        var new_account_name = $('#subscription_account_form').serializeArray()[0].value.trim();
         $('#id_subscription_account').prepend('<option value="' + new_account_name + '">' + new_account_name + '</option>');
         $('#id_subscription_account option[value=' + new_account_name + ']').prop('selected', true);
         $.ajax({
