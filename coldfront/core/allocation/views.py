@@ -160,6 +160,8 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context['attributes_with_usage'] = attributes_with_usage
         context['attributes'] = attributes
 
+        print('guage_data', guage_data)
+
         # Can the user update the project?
         if self.request.user.is_superuser:
             context['is_allowed_to_update_project'] = True

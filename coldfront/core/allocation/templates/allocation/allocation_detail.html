@@ -236,26 +236,26 @@ Allocation Detail
 <div class="card mb-3">
   <div class="card-header">
     <h4 class="d-inline"><i class="fas fa-users"></i> Messages from System Administrators </h4> <span
-      class="badge badge-secondary">{{messages.count}}</span>
+      class="badge badge-secondary">{{notes.count}}</span>
   </div>
   <div class="card-body">
-    {% if messages %}
+    {% if notes %}
     <div class="table-responsive">
       <table class="table table-hover">
         <thead>
           <tr>
-            <th>Comment</th>
+            <th>Note</th>
             <th>Administrator</th>
             <th>Last Modified</th>
           </tr>
         </thead>
         <tbody>
-          {% for message in messages %}
-          {% if not message.is_private or request.user.is_superuser %}
+          {% for note in notes %}
+          {% if not note.is_private or request.user.is_superuser %}
           <tr>
-            <td>{{ message.message }}</td>
-            <td>{{ message.author.first_name }} {{ message.author.last_name }}</td>
-            <td>{{ message.modified }}</td>
+            <td>{{ note.note }}</td>
+            <td>{{ note.author.first_name }} {{ note.author.last_name }}</td>
+            <td>{{ note.modified }}</td>
           </tr>
           {% endif %}
           {% endfor %}
@@ -263,7 +263,7 @@ Allocation Detail
       </table>
     </div>
     {% else %}
-    <div class="alert alert-info" role="alert"><i class="fa fa-info-circle"></i> There are no messages from system
+    <div class="alert alert-info" role="alert"><i class="fa fa-info-circle"></i> There are no notes from system
       administrators.</div>
     {% endif %}
 
@@ -274,8 +274,7 @@ Allocation Detail
 <script>
 
   $(document).ready(function () {
-    var guage_data = {{ guage_data | safe
-  }};
+    var guage_data = {{ guage_data | safe }};
   drawGauges(guage_data);
   });
 
