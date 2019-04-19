@@ -1,11 +1,12 @@
 from io import StringIO
 
-from django.test import TestCase
 from django.core.management import call_command
+from django.test import TestCase
 
 from coldfront.core.resource.models import Resource
 from coldfront.plugins.slurm.associations import SlurmCluster
 from coldfront.plugins.slurm.utils import SLURM_CLUSTER_ATTRIBUTE_NAME
+
 
 class AssociationTest(TestCase):
     fixtures = ['test_data.json']
@@ -15,11 +16,11 @@ class AssociationTest(TestCase):
         call_command('import_field_of_science_data')
         call_command('add_default_grant_options')
         call_command('add_default_project_choices')
-        call_command('add_default_subscription_choices')
+        call_command('add_default_allocation_choices')
         call_command('add_default_publication_sources')
         super(AssociationTest, cls).setUpClass()
 
-    def test_subscriptions_to_slurm(self):
+    def test_allocations_to_slurm(self):
         resource = Resource.objects.get(name='University HPC')
         cluster = SlurmCluster.new_from_resource(resource)
         self.assertEqual(cluster.name, 'university-hpc')
@@ -74,4 +75,3 @@ User - 'larry':DefaultAccount='physics':Fairshare=parent
         self.assertEqual(len(cluster2.accounts['physics'].users), 3)
         for u in ['jane', 'john', 'larry']:
             self.assertIn(u, cluster2.accounts['physics'].users)
-

@@ -2,7 +2,7 @@
 {% load common_tags %}
 <nav class="navbar navbar-expand-md navbar-dark bg-primary">
   <div class="container">
-    <a class="navbar-brand d-block d-sm-none text-primary" href="#">Coldfront</a>
+    <a class="navbar-brand d-block d-sm-none text-primary" href="#">ColdFront</a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-main">
       <span class="navbar-toggler-icon"></span>
     </button>
@@ -18,19 +18,19 @@
           <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">Project</a>
           <div class="dropdown-menu">
             <a class="dropdown-item" href="{% url 'project-list' %}">Projects</a>
-            <a class="dropdown-item" href="{% url 'subscription-list' %}">Subscriptions</a>
-            {% if settings.SUBSCRIPTION_ACCOUNT_ENABLED  %}
-              <a class="dropdown-item" href="{% url 'subscription-account-list' %}">Subscription Accounts</a>
+            <a class="dropdown-item" href="{% url 'allocation-list' %}">Allocations</a>
+            {% if settings.ALLOCATION_ACCOUNT_ENABLED  %}
+            <a class="dropdown-item" href="{% url 'allocation-account-list' %}">Allocation Accounts</a>
             {% endif %}
           </div>
         </li>
         {% if request.user.is_superuser %}
-          {% include 'common/navbar_admin.html' %}
+        {% include 'common/navbar_admin.html' %}
         {% elif perms.project.can_review_pending_project_reviews or perms.grant.can_view_all_grants %}
-          {% include 'common/navbar_director.html' %}
+        {% include 'common/navbar_director.html' %}
         {% endif %}
-        {% if request.user.is_superuser or perms.subscription.can_manage_invoice %}
-          {% include 'common/navbar_invoice.html' %}
+        {% if request.user.is_superuser or perms.allocation.can_manage_invoice %}
+        {% include 'common/navbar_invoice.html' %}
         {% endif %}
         <li id="navbar-help" class="nav-item">
           <a class="nav-link" href="{% settings_value 'CENTER_HELP_URL' %}">Help</a>

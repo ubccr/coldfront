@@ -1,5 +1,5 @@
 """
-Coldfront URL Configuration
+ColdFront URL Configuration
 """
 from django.conf import settings
 from django.contrib import admin
@@ -16,11 +16,11 @@ urlpatterns = [
     path('robots.txt', TemplateView.as_view(template_name='robots.txt', content_type='text/plain'), name="robots"),
     path('', portal_views.home, name='home'),
     path('center-summary', portal_views.center_summary, name='center-summary'),
-    path('subscription-summary', portal_views.subscription_summary, name='subscription-summary'),
-    path('subscription-by-fos', portal_views.subscription_by_fos, name='subscription-by-fos'),
+    path('allocation-summary', portal_views.allocation_summary, name='allocation-summary'),
+    path('allocation-by-fos', portal_views.allocation_by_fos, name='allocation-by-fos'),
     path('user/', include('coldfront.core.user.urls')),
     path('project/', include('coldfront.core.project.urls')),
-    path('subscription/', include('coldfront.core.subscription.urls')),
+    path('allocation/', include('coldfront.core.allocation.urls')),
     path('grant/', include('coldfront.core.grant.urls')),
     path('publication/', include('coldfront.core.publication.urls')),
 ]

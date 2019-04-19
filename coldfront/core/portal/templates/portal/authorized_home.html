@@ -1,67 +1,82 @@
 {% extends "common/base.html" %} {% load common_tags %} {% block content %}
 <div class="row">
-  
+
   <div class="col-lg-6 mt-2">
-    <a href="{% url 'project-list' %}"><h3>Projects &raquo;</h3></a>
-    <hr> 
+    <a href="{% url 'project-list' %}">
+      <h3>Projects &raquo;</h3>
+    </a>
+    <hr>
     {% if project_list %}
-      <ul class="list-group">
-        {% for project in project_list %}
-          <li class="list-group-item"><a href="{% url 'project-detail' project.pk %}"><i class="fa fa-folder fa-lg" aria-hidden="true"></i> 
-            {{project.title}}</a> {% if project.needs_review %} <a href="{% url 'project-review' project.pk %}"><span class="badge badge-warning">Needs Review</span></a> {% endif %}
-          </li>
-        {% endfor %}
-      </ul>
+    <ul class="list-group">
+      {% for project in project_list %}
+      <li class="list-group-item"><a href="{% url 'project-detail' project.pk %}"><i class="fa fa-folder fa-lg"
+            aria-hidden="true"></i>
+          {{project.title}}</a> {% if project.needs_review %} <a href="{% url 'project-review' project.pk %}"><span
+            class="badge badge-warning">Needs Review</span></a> {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
     {% else %}
-      <div class="alert alert-info" role="alert"><i class="fa fa-info-circle"></i> There are no projects to display.</div>
-      {% if user.userprofile.is_pi or user.is_superuser %}
-        <a class="btn btn-primary btn-block" href="{% url 'project-create' %}" role="button">Add a project</a><hr>
-      {% endif %}
+    <div class="alert alert-info" role="alert"><i class="fa fa-info-circle"></i> There are no projects to display.</div>
+    {% if user.userprofile.is_pi or user.is_superuser %}
+    <a class="btn btn-primary btn-block" href="{% url 'project-create' %}" role="button">Add a project</a>
+    <hr>
+    {% endif %}
 
     {% endif %}
   </div>
 
-
   <div class="col-lg-6 mt-2">
-    <a href="{% url 'subscription-list' %}"><h3>Subscriptions &raquo;</h3></a>
-    <hr> 
-    {% if subscription_list %}
+    <a href="{% url 'allocation-list' %}">
+      <h3>Allocations &raquo;</h3>
+    </a>
+    <hr>
+    {% if allocation_list %}
     <table class="table">
       <thead>
         <tr>
           <th>Project</th>
           <th>Resource</th>
           <th>Status</th>
-         
+
         </tr>
       </thead>
       <tbody>
-        {% for subscription in subscription_list %}
-            <tr>
-              <td>{{subscription.project.title}}</td>
-              <td>{{subscription.get_parent_resource}}</td>
-              {%  if subscription.status.name == "Expired" and subscription.expires_in < 0 %}
-                  <td><a href="{% url 'subscription-detail' subscription.id %}"  class="btn btn-danger btn-block">Expired</a></td>
-              {%  elif subscription.status.name == "Renewal Requested" %}
-                  <td><a href="{% url 'subscription-detail' subscription.id %}"  class="btn btn-danger btn-block">Renewal Requested</a></td>
-              {%  elif subscription.expires_in >= 0 and  subscription.expires_in <= 30 %}
-                  <td><a href="{% url 'subscription-detail' subscription.id %}"  class="btn btn-danger btn-block">Expires in <span class="badge badge-light">{{subscription.expires_in}}</span> day{{subscription.expires_in|pluralize }}</a></td>
-              {% elif subscription.expires_in > 30 and subscription.expires_in <= 90 %}
-                  <td><a href="{% url 'subscription-detail' subscription.id %}"  class="btn btn-warning btn-block">Expires in <span class="badge badge-light">{{subscription.expires_in}}</span> day{{subscription.expires_in|pluralize }}</a></td>
-              {% elif subscription.status.name == "Pending" %}
-                  <td><a href="{% url 'subscription-detail' subscription.id %}"  class="btn btn-info btn-block">{{subscription.status}}</a></td>
-              {% elif subscription.status.name == "Active" %}
-                  <td><a href="{% url 'subscription-detail' subscription.id %}"  class="btn btn-success btn-block">{{subscription.status}}</a></td>
-              {% else %}
-                  <td><a href="{% url 'subscription-detail' subscription.id %}"  class="btn btn-info btn-block">{{subscription.status}}</a></td>
-              {% endif %}        
-            </tr>
+        {% for allocation in allocation_list %}
+        <tr>
+          <td>{{allocation.project.title}}</td>
+          <td>{{allocation.get_parent_resource}}</td>
+          {%  if allocation.status.name == "Expired" and allocation.expires_in < 0 %}
+          <td><a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-danger btn-block">Expired</a></td>
+          {%  elif allocation.status.name == "Renewal Requested" %}
+          <td><a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-danger btn-block">Renewal
+              Requested</a></td>
+          {%  elif allocation.expires_in >= 0 and  allocation.expires_in <= 30 %}
+          <td><a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-danger btn-block">Expires in <span
+                class="badge badge-light">{{allocation.expires_in}}</span> day{{allocation.expires_in|pluralize }}</a>
+          </td>
+          {% elif allocation.expires_in > 30 and allocation.expires_in <= 90 %}
+          <td><a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-warning btn-block">Expires in <span
+                class="badge badge-light">{{allocation.expires_in}}</span> day{{allocation.expires_in|pluralize }}</a>
+          </td>
+          {% elif allocation.status.name == "Pending" %}
+          <td><a href="{% url 'allocation-detail' allocation.id %}"
+              class="btn btn-info btn-block">{{allocation.status}}</a></td>
+          {% elif allocation.status.name == "Active" %}
+          <td><a href="{% url 'allocation-detail' allocation.id %}"
+              class="btn btn-success btn-block">{{allocation.status}}</a></td>
+          {% else %}
+          <td><a href="{% url 'allocation-detail' allocation.id %}"
+              class="btn btn-info btn-block">{{allocation.status}}</a></td>
+          {% endif %}
+        </tr>
         {% endfor %}
       </tbody>
     </table>
-  
+
     {% else %}
-    <div class="alert alert-info" role="alert"><i class="fa fa-info-circle"></i> There are no subscriptions to display.</div>
+    <div class="alert alert-info" role="alert"><i class="fa fa-info-circle"></i> There are no allocations to display.
+    </div>
     {% endif %}
   </div>
 </div>
@@ -70,7 +85,7 @@
 </div>
 {% endblock %} {% block javascript %} {{ block.super }}
 <script>
-$("#navbar-main > ul > li.active").removeClass("active");
-$("#navbar-home").addClass("active");
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-home").addClass("active");
 </script>
 {% endblock %}

@@ -100,9 +100,9 @@ Project Detail
             <th>Username</th>
             <th>Name</th>
             <th>Email</th>
-            <th>Role <a href="#" data-toggle="popover" title="Role" data-trigger="hover" data-content="Manager role grants user access to add/remove users, subscriptions, grants, and publications to the project."><i class="fas fa-info-circle"></i></a></th>
+            <th>Role <a href="#" data-toggle="popover" title="Role" data-trigger="hover" data-content="Manager role grants user access to add/remove users, allocations, grants, and publications to the project."><i class="fas fa-info-circle"></i></a></th>
             <th>Status</th>
-            <th>Enable Notifications <a href="#" title="Enable Notifications" data-toggle="popover" data-trigger="hover" data-content="When disabled, user will not receive notifications for subscription requests and expirations or cloud usage (if applicable)."><i class="fas fa-info-circle"></i></a></th>
+            <th>Enable Notifications <a href="#" title="Enable Notifications" data-toggle="popover" data-trigger="hover" data-content="When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable)."><i class="fas fa-info-circle"></i></a></th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -160,19 +160,19 @@ Project Detail
 <!-- End Project Users -->
 
 
-<!-- Start Project Subscriptions -->
+<!-- Start Project Allocations -->
 <div class="card mb-3">
   <div class="card-header">
-  <h4 class="d-inline"><i class="fas fa-server"></i> Subscriptions </h4> <span class="badge badge-secondary">{{subscriptions.count}}</span>
+  <h4 class="d-inline"><i class="fas fa-server"></i> Allocations </h4> <span class="badge badge-secondary">{{allocations.count}}</span>
     <div class="float-right">
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
-        <a class="btn btn-success" href="{% url 'subscription-create' project.pk %}" role="button"><i class="fas fa-plus"></i> Request Resource Subscription</a>
+        <a class="btn btn-success" href="{% url 'allocation-create' project.pk %}" role="button"><i class="fas fa-plus"></i> Request Resource Allocation</a>
       {% endif %}
     </div>
 
   </div>
   <div class="card-body">
-    {% if subscriptions %}
+    {% if allocations %}
     <div class="table-responsive">
       <table class="table table-hover">
         <thead>
@@ -186,25 +186,25 @@ Project Detail
           </tr>
         </thead>
         <tbody>
-          {% for subscription in subscriptions %}
+          {% for allocation in allocations %}
           <tr>
-            <td>{{ subscription.get_parent_resource.name }}</td>
-            <td>{{ subscription.get_parent_resource.resource_type.name }}</td>
-            <td style="white-space:nowrap;">{{subscription.get_information}}</td>
-            {% if subscription.status.name == 'Active' %}
-              <td class="text-success">{{ subscription.status.name }}</td>
-            {% elif  subscription.status.name == 'Expired' or subscription.status.name == 'Denied' %}
-              <td class="text-danger">{{ subscription.status.name }}</td>
+            <td>{{ allocation.get_parent_resource.name }}</td>
+            <td>{{ allocation.get_parent_resource.resource_type.name }}</td>
+            <td style="white-space:nowrap;">{{allocation.get_information}}</td>
+            {% if allocation.status.name == 'Active' %}
+              <td class="text-success">{{ allocation.status.name }}</td>
+            {% elif  allocation.status.name == 'Expired' or allocation.status.name == 'Denied' %}
+              <td class="text-danger">{{ allocation.status.name }}</td>
             {% else %} 
-              <td class="text-info">{{ subscription.status.name }}</td>
+              <td class="text-info">{{ allocation.status.name }}</td>
             {% endif %}
-            <td>{{subscription.end_date|date:"M. d, Y"}}</td>
+            <td>{{allocation.end_date|date:"M. d, Y"}}</td>
             <td>
-              <a href="{% url 'subscription-detail' subscription.pk %}"><i class="far fa-folder-open"></i></a>
-              {% if is_allowed_to_update_project and SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL and subscription.status.name == 'Active' and subscription.expires_in <= 60 and subscription.expires_in >= 0 %} 
-                <a href="{% url 'subscription-renew' subscription.pk %}">
+              <a href="{% url 'allocation-detail' allocation.pk %}"><i class="far fa-folder-open"></i></a>
+              {% if is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %} 
+                <a href="{% url 'allocation-renew' allocation.pk %}">
                 <span class="badge badge-warning"><i class="fas fa-redo-alt"></i> 
-                Expires in {{subscription.expires_in}} day{{subscription.expires_in|pluralize}} <br> Click to renew
+                Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} <br> Click to renew
                 </span>
                 </a> 
               {% endif %}
@@ -215,11 +215,11 @@ Project Detail
       </table>
     </div>
     {% else %}
-     <div class="alert alert-info" role="alert"><i class="fas fa-info-circle"></i> There are no subscriptions to display.</div>
+     <div class="alert alert-info" role="alert"><i class="fas fa-info-circle"></i> There are no allocations to display.</div>
     {% endif %}
   </div>
 </div>
-<!-- End Project Subscriptions -->
+<!-- End Project Allocations -->
 
 
 

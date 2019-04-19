@@ -1,5 +1,5 @@
 """
-WSGI config for Coldfront project.
+WSGI config for ColdFront project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 

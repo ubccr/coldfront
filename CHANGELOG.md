@@ -1,4 +1,4 @@
-# Coldfront Changelog
+# ColdFront Changelog
 
 ## [Unreleased]
 - Add test data

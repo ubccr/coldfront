@@ -3,9 +3,9 @@ Disallow: /admin/
 Disallow: /su/ 
 Disallow: /user/ 
 Disallow: /project/ 
-Disallow: /subscription/ 
+Disallow: /allocation/ 
 Disallow: /grant/ 
 Disallow: /publication/ 
 Disallow: /mokey_oidc/ 
-Disallow: /subscription-by-fos
-Disallow: /subscription-summary
+Disallow: /allocation-by-fos
+Disallow: /allocation-summary

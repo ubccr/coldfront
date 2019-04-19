@@ -7,7 +7,11 @@ from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
-
+from coldfront.core.allocation.models import (Allocation, AllocationAttribute,
+                                              AllocationAttributeType,
+                                              AllocationStatusChoice,
+                                              AllocationUser,
+                                              AllocationUserStatusChoice)
 from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.grant.models import (Grant, GrantFundingAgency,
                                          GrantStatusChoice)
@@ -16,14 +20,8 @@ from coldfront.core.project.models import (Project, ProjectStatusChoice,
                                            ProjectUserStatusChoice)
 from coldfront.core.publication.models import Publication, PublicationSource
 from coldfront.core.resource.models import (Resource, ResourceAttribute,
-                                             ResourceAttributeType,
-                                             ResourceType)
-from coldfront.core.subscription.models import (Subscription,
-                                                SubscriptionAttribute,
-                                                SubscriptionAttributeType,
-                                                SubscriptionStatusChoice,
-                                                SubscriptionUser,
-                                                SubscriptionUserStatusChoice)
+                                            ResourceAttributeType,
+                                            ResourceType)
 from coldfront.core.user.models import UserProfile
 
 base_dir = settings.BASE_DIR
@@ -93,7 +91,7 @@ dois = [
 ]
 
 
-# resource_type, parent_resource, name, description, is_available, is_public, is_subscribable
+# resource_type, parent_resource, name, description, is_available, is_public, is_allocatable
 resources = [
 
     # Clusters
@@ -164,7 +162,7 @@ class Command(BaseCommand):
 
         for resource in resources:
 
-            resource_type, parent_resource, name, description, is_available, is_public, is_subscribable = resource
+            resource_type, parent_resource, name, description, is_available, is_public, is_allocatable = resource
             resource_type_obj = ResourceType.objects.get(name=resource_type)
             if parent_resource != None:
                 parent_resource_obj = Resource.objects.get(
@@ -179,7 +177,7 @@ class Command(BaseCommand):
                 description=description,
                 is_available=is_available,
                 is_public=is_public,
-                is_subscribable=is_subscribable
+                is_allocatable=is_allocatable
             )
 
         pi1 = User.objects.get(username='cgray')
@@ -262,108 +260,108 @@ class Command(BaseCommand):
         end_date = datetime.datetime.now() + relativedelta(days=365)
 
         # Add PI cluster
-        subscription_obj, _ = Subscription.objects.get_or_create(
+        allocation_obj, _ = Allocation.objects.get_or_create(
             project=project_obj,
-            status=SubscriptionStatusChoice.objects.get(name='Active'),
+            status=AllocationStatusChoice.objects.get(name='Active'),
             start_date=start_date,
             end_date=end_date,
             justification='I need access to my nodes.'
         )
 
-        subscription_obj.resources.add(
+        allocation_obj.resources.add(
             Resource.objects.get(name='Chemistry-cgray'))
-        subscription_obj.save()
+        allocation_obj.save()
 
-        subscription_attribute_type_obj = SubscriptionAttributeType.objects.get(
+        allocation_attribute_type_obj = AllocationAttributeType.objects.get(
             name='slurm_account_name')
-        SubscriptionAttribute.objects.get_or_create(
-            subscription_attribute_type=subscription_attribute_type_obj,
-            subscription=subscription_obj,
+        AllocationAttribute.objects.get_or_create(
+            allocation_attribute_type=allocation_attribute_type_obj,
+            allocation=allocation_obj,
             value='cgray')
 
-        subscription_attribute_type_obj = SubscriptionAttributeType.objects.get(
+        allocation_attribute_type_obj = AllocationAttributeType.objects.get(
             name='slurm_user_specs')
-        SubscriptionAttribute.objects.get_or_create(
-            subscription_attribute_type=subscription_attribute_type_obj,
-            subscription=subscription_obj,
+        AllocationAttribute.objects.get_or_create(
+            allocation_attribute_type=allocation_attribute_type_obj,
+            allocation=allocation_obj,
             value='Fairshare=parent')
 
-        subscription_user_obj = SubscriptionUser.objects.create(
-            subscription=subscription_obj,
+        allocation_user_obj = AllocationUser.objects.create(
+            allocation=allocation_obj,
             user=pi1,
-            status=SubscriptionUserStatusChoice.objects.get(name='Active')
+            status=AllocationUserStatusChoice.objects.get(name='Active')
         )
         # Add university cluster
-        subscription_obj, _ = Subscription.objects.get_or_create(
+        allocation_obj, _ = Allocation.objects.get_or_create(
             project=project_obj,
-            status=SubscriptionStatusChoice.objects.get(name='Active'),
+            status=AllocationStatusChoice.objects.get(name='Active'),
             start_date=start_date,
             end_date=end_date,
             justification='I need access to university cluster.'
         )
 
-        subscription_obj.resources.add(
+        allocation_obj.resources.add(
             Resource.objects.get(name='University HPC'))
-        subscription_obj.save()
+        allocation_obj.save()
 
-        subscription_attribute_type_obj = SubscriptionAttributeType.objects.get(
+        allocation_attribute_type_obj = AllocationAttributeType.objects.get(
             name='slurm_specs')
-        SubscriptionAttribute.objects.get_or_create(
-            subscription_attribute_type=subscription_attribute_type_obj,
-            subscription=subscription_obj,
+        AllocationAttribute.objects.get_or_create(
+            allocation_attribute_type=allocation_attribute_type_obj,
+            allocation=allocation_obj,
             value='Fairshare=100:QOS+=supporters')
 
-        subscription_attribute_type_obj = SubscriptionAttributeType.objects.get(
+        allocation_attribute_type_obj = AllocationAttributeType.objects.get(
             name='slurm_user_specs')
-        SubscriptionAttribute.objects.get_or_create(
-            subscription_attribute_type=subscription_attribute_type_obj,
-            subscription=subscription_obj,
+        AllocationAttribute.objects.get_or_create(
+            allocation_attribute_type=allocation_attribute_type_obj,
+            allocation=allocation_obj,
             value='Fairshare=parent')
 
-        subscription_attribute_type_obj = SubscriptionAttributeType.objects.get(
+        allocation_attribute_type_obj = AllocationAttributeType.objects.get(
             name='slurm_account_name')
-        SubscriptionAttribute.objects.get_or_create(
-            subscription_attribute_type=subscription_attribute_type_obj,
-            subscription=subscription_obj,
+        AllocationAttribute.objects.get_or_create(
+            allocation_attribute_type=allocation_attribute_type_obj,
+            allocation=allocation_obj,
             value='cgray')
 
-        subscription_attribute_type_obj = SubscriptionAttributeType.objects.get(
+        allocation_attribute_type_obj = AllocationAttributeType.objects.get(
             name='SupportersQOS')
-        SubscriptionAttribute.objects.get_or_create(
-            subscription_attribute_type=subscription_attribute_type_obj,
-            subscription=subscription_obj,
+        AllocationAttribute.objects.get_or_create(
+            allocation_attribute_type=allocation_attribute_type_obj,
+            allocation=allocation_obj,
             value='yes')
 
-        subscription_attribute_type_obj = SubscriptionAttributeType.objects.get(
+        allocation_attribute_type_obj = AllocationAttributeType.objects.get(
             name='SupportersQOSExpireDate')
-        SubscriptionAttribute.objects.get_or_create(
-            subscription_attribute_type=subscription_attribute_type_obj,
-            subscription=subscription_obj,
+        AllocationAttribute.objects.get_or_create(
+            allocation_attribute_type=allocation_attribute_type_obj,
+            allocation=allocation_obj,
             value='10/9/2022')
 
-        subscription_user_obj = SubscriptionUser.objects.create(
-            subscription=subscription_obj,
+        allocation_user_obj = AllocationUser.objects.create(
+            allocation=allocation_obj,
             user=pi1,
-            status=SubscriptionUserStatusChoice.objects.get(name='Active')
+            status=AllocationUserStatusChoice.objects.get(name='Active')
         )
         # Add project storage
-        subscription_obj, _ = Subscription.objects.get_or_create(
+        allocation_obj, _ = Allocation.objects.get_or_create(
             project=project_obj,
-            status=SubscriptionStatusChoice.objects.get(name='Active'),
+            status=AllocationStatusChoice.objects.get(name='Active'),
             start_date=start_date,
             end_date=end_date,
             quantity=10,
             justification='I need extra storage.'
         )
 
-        subscription_obj.resources.add(
+        allocation_obj.resources.add(
             Resource.objects.get(name='Budgetstorage'))
-        subscription_obj.save()
+        allocation_obj.save()
 
-        subscription_user_obj = SubscriptionUser.objects.create(
-            subscription=subscription_obj,
+        allocation_user_obj = AllocationUser.objects.create(
+            allocation=allocation_obj,
             user=pi1,
-            status=SubscriptionUserStatusChoice.objects.get(name='Active')
+            status=AllocationUserStatusChoice.objects.get(name='Active')
         )
         pi2 = User.objects.get(username='sfoster')
         pi2.userprofile.is_pi = True
@@ -437,82 +435,82 @@ class Command(BaseCommand):
         )
 
         # Add university cloud
-        subscription_obj, _ = Subscription.objects.get_or_create(
+        allocation_obj, _ = Allocation.objects.get_or_create(
             project=project_obj,
-            status=SubscriptionStatusChoice.objects.get(name='Active'),
+            status=AllocationStatusChoice.objects.get(name='Active'),
             start_date=start_date,
             end_date=end_date,
             justification='Need to host my own site.'
         )
 
-        subscription_obj.resources.add(
+        allocation_obj.resources.add(
             Resource.objects.get(name='University Cloud'))
-        subscription_obj.save()
+        allocation_obj.save()
 
-        subscription_attribute_type_obj = SubscriptionAttributeType.objects.get(
+        allocation_attribute_type_obj = AllocationAttributeType.objects.get(
             name='Cloud Account Name')
-        SubscriptionAttribute.objects.get_or_create(
-            subscription_attribute_type=subscription_attribute_type_obj,
-            subscription=subscription_obj,
+        AllocationAttribute.objects.get_or_create(
+            allocation_attribute_type=allocation_attribute_type_obj,
+            allocation=allocation_obj,
             value='sfoster-openstack')
 
-        subscription_attribute_type_obj = SubscriptionAttributeType.objects.get(
+        allocation_attribute_type_obj = AllocationAttributeType.objects.get(
             name='Core Usage (Hours)')
-        subscription_attribute_obj, _ = SubscriptionAttribute.objects.get_or_create(
-            subscription_attribute_type=subscription_attribute_type_obj,
-            subscription=subscription_obj,
+        allocation_attribute_obj, _ = AllocationAttribute.objects.get_or_create(
+            allocation_attribute_type=allocation_attribute_type_obj,
+            allocation=allocation_obj,
             value=1000)
 
-        subscription_attribute_obj.subscriptionattributeusage.value = 200
-        subscription_attribute_obj.subscriptionattributeusage.save()
+        allocation_attribute_obj.allocationattributeusage.value = 200
+        allocation_attribute_obj.allocationattributeusage.save()
 
-        subscription_user_obj = SubscriptionUser.objects.create(
-            subscription=subscription_obj,
+        allocation_user_obj = AllocationUser.objects.create(
+            allocation=allocation_obj,
             user=pi2,
-            status=SubscriptionUserStatusChoice.objects.get(name='Active')
+            status=AllocationUserStatusChoice.objects.get(name='Active')
         )
 
         # Add university cloud storage
-        subscription_obj, _ = Subscription.objects.get_or_create(
+        allocation_obj, _ = Allocation.objects.get_or_create(
             project=project_obj,
-            status=SubscriptionStatusChoice.objects.get(name='Active'),
+            status=AllocationStatusChoice.objects.get(name='Active'),
             start_date=start_date,
             end_date=end_date,
             justification='Need extra storage for webserver.'
         )
 
-        subscription_attribute_type_obj = SubscriptionAttributeType.objects.get(
+        allocation_attribute_type_obj = AllocationAttributeType.objects.get(
             name='Cloud Account Name')
-        SubscriptionAttribute.objects.get_or_create(
-            subscription_attribute_type=subscription_attribute_type_obj,
-            subscription=subscription_obj,
+        AllocationAttribute.objects.get_or_create(
+            allocation_attribute_type=allocation_attribute_type_obj,
+            allocation=allocation_obj,
             value='sfoster-openstack')
 
-        subscription_attribute_type_obj = SubscriptionAttributeType.objects.get(
+        allocation_attribute_type_obj = AllocationAttributeType.objects.get(
             name='Cloud Storage Quota (TB)')
-        subscription_attribute_obj, _ = SubscriptionAttribute.objects.get_or_create(
-            subscription_attribute_type=subscription_attribute_type_obj,
-            subscription=subscription_obj,
+        allocation_attribute_obj, _ = AllocationAttribute.objects.get_or_create(
+            allocation_attribute_type=allocation_attribute_type_obj,
+            allocation=allocation_obj,
             value=20)
 
-        subscription_attribute_obj.subscriptionattributeusage.value = 10
-        subscription_attribute_obj.subscriptionattributeusage.save()
+        allocation_attribute_obj.allocationattributeusage.value = 10
+        allocation_attribute_obj.allocationattributeusage.save()
 
-        subscription_attribute_type_obj = SubscriptionAttributeType.objects.get(
+        allocation_attribute_type_obj = AllocationAttributeType.objects.get(
             name='Cloud Account Name')
-        SubscriptionAttribute.objects.get_or_create(
-            subscription_attribute_type=subscription_attribute_type_obj,
-            subscription=subscription_obj,
+        AllocationAttribute.objects.get_or_create(
+            allocation_attribute_type=allocation_attribute_type_obj,
+            allocation=allocation_obj,
             value='sfoster-openstack')
 
-        subscription_obj.resources.add(
+        allocation_obj.resources.add(
             Resource.objects.get(name='University Cloud Storage'))
-        subscription_obj.save()
+        allocation_obj.save()
 
-        subscription_user_obj = SubscriptionUser.objects.create(
-            subscription=subscription_obj,
+        allocation_user_obj = AllocationUser.objects.create(
+            allocation=allocation_obj,
             user=pi2,
-            status=SubscriptionUserStatusChoice.objects.get(name='Active')
+            status=AllocationUserStatusChoice.objects.get(name='Active')
         )
 
         ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
@@ -527,7 +525,7 @@ class Command(BaseCommand):
         ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
             name='quantity_label'), resource=Resource.objects.get(name='University Cloud Storage'), value='Enter storage in 1TB increments')
         ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='quantity_label'), resource=Resource.objects.get(name='University Cloud'), value='Enter number of compute subscriptions to purchase')
+            name='quantity_label'), resource=Resource.objects.get(name='University Cloud'), value='Enter number of compute allocations to purchase')
         ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
             name='quantity_label'), resource=Resource.objects.get(name='ProjectStorage'), value='Enter storage in 1TB increments')
         ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(

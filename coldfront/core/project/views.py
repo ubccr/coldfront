@@ -19,9 +19,15 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 
+from coldfront.core.allocation.models import (Allocation,
+                                              AllocationStatusChoice,
+                                              AllocationUser,
+                                              AllocationUserStatusChoice)
+from coldfront.core.allocation.signals import (allocation_activate_user,
+                                               allocation_remove_user)
 from coldfront.core.grant.models import Grant
 from coldfront.core.project.forms import (ProjectAddUserForm,
-                                          ProjectAddUsersToSubscriptionForm,
+                                          ProjectAddUsersToAllocationForm,
                                           ProjectRemoveUserForm,
                                           ProjectReviewEmailForm,
                                           ProjectReviewForm, ProjectSearchForm,
@@ -32,22 +38,16 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice)
 from coldfront.core.publication.models import Publication
-from coldfront.core.subscription.models import (Subscription,
-                                                SubscriptionStatusChoice,
-                                                SubscriptionUser,
-                                                SubscriptionUserStatusChoice)
-from coldfront.core.subscription.signals import (subscription_activate_user,
-                                                 subscription_remove_user)
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email, send_email_template
 
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
-SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL = import_from_settings(
-    'SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL', True)
-SUBSCRIPTION_DEFAULT_SUBSCRIPTION_LENGTH = import_from_settings(
-    'SUBSCRIPTION_DEFAULT_SUBSCRIPTION_LENGTH', 365)
+ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
+    'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
+ALLOCATION_DEFAULT_ALLOCATION_LENGTH = import_from_settings(
+    'ALLOCATION_DEFAULT_ALLOCATION_LENGTH', 365)
 
 if EMAIL_ENABLED:
     EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
@@ -100,33 +100,33 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['mailto'] = 'mailto:' + \
             ','.join([user.user.email for user in project_users])
 
-        if self.request.user.is_superuser or self.request.user.has_perm('subscription.can_view_all_subscriptions'):
-            subscriptions = Subscription.objects.prefetch_related(
+        if self.request.user.is_superuser or self.request.user.has_perm('allocation.can_view_all_allocations'):
+            allocations = Allocation.objects.prefetch_related(
                 'resources').filter(project=self.object).order_by('-end_date')
         else:
             if self.object.status.name in ['Active', 'New', ]:
-                subscriptions = Subscription.objects.filter(
+                allocations = Allocation.objects.filter(
                     Q(project=self.object) &
                     Q(project__projectuser__user=self.request.user) &
                     Q(project__projectuser__status__name__in=['Active', ]) &
                     Q(status__name__in=['Active', 'Expired',
-                      'New', 'Renewal Requested',
-                      'Payment Pending', 'Payment Requested',
-                      'Payment Declined', 'Paid']) &
-                    Q(subscriptionuser__user=self.request.user) &
-                    Q(subscriptionuser__status__name__in=['Active', ])
+                                        'New', 'Renewal Requested',
+                                        'Payment Pending', 'Payment Requested',
+                                        'Payment Declined', 'Paid']) &
+                    Q(allocationuser__user=self.request.user) &
+                    Q(allocationuser__status__name__in=['Active', ])
                 ).distinct().order_by('-end_date')
             else:
-                subscriptions = Subscription.objects.prefetch_related(
+                allocations = Allocation.objects.prefetch_related(
                     'resources').filter(project=self.object)
 
         context['publications'] = Publication.objects.filter(
             project=self.object, status='Active').order_by('-year')
         context['grants'] = Grant.objects.filter(
             project=self.object, status__name__in=['Active', 'Pending'])
-        context['subscriptions'] = subscriptions
+        context['allocations'] = allocations
         context['project_users'] = project_users
-        context['SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL'] = SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL
+        context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
         return context
 
 
@@ -386,15 +386,15 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
         project = get_object_or_404(Project, pk=pk)
         project_status_archive = ProjectStatusChoice.objects.get(
             name='Archived')
-        subscription_status_expired = SubscriptionStatusChoice.objects.get(
+        allocation_status_expired = AllocationStatusChoice.objects.get(
             name='Expired')
         end_date = datetime.datetime.now()
         project.status = project_status_archive
         project.save()
-        for subscription in project.subscription_set.filter(status__name='Active'):
-            subscription.status = subscription_status_expired
-            subscription.end_date = end_date
-            subscription.save()
+        for allocation in project.allocation_set.filter(status__name='Active'):
+            allocation.status = allocation_status_expired
+            allocation.end_date = end_date
+            allocation.save()
         return redirect(reverse('project-detail', kwargs={'pk': project.pk}))
 
 
@@ -554,18 +554,18 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
                     users_already_in_project.append(ele)
             context['users_already_in_project'] = users_already_in_project
 
-        # The following block of code is used to hide/show the subscription div in the form.
-        if project_obj.subscription_set.filter(status__name__in=['Active', 'New', 'Renewal Requested']).exists():
-            div_subscription_class = 'placeholder_div_class'
+        # The following block of code is used to hide/show the allocation div in the form.
+        if project_obj.allocation_set.filter(status__name__in=['Active', 'New', 'Renewal Requested']).exists():
+            div_allocation_class = 'placeholder_div_class'
         else:
-            div_subscription_class = 'd-none'
-        context['div_subscription_class'] = div_subscription_class
+            div_allocation_class = 'd-none'
+        context['div_allocation_class'] = div_allocation_class
         ###
 
-        subscription_form = ProjectAddUsersToSubscriptionForm(
-            request.user, project_obj.pk, prefix='subscriptionform')
+        allocation_form = ProjectAddUsersToAllocationForm(
+            request.user, project_obj.pk, prefix='allocationform')
         context['pk'] = pk
-        context['subscription_form'] = subscription_form
+        context['allocation_form'] = allocation_form
         return render(request, self.template_name, context)
 
 
@@ -616,18 +616,18 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         formset = formset_factory(ProjectAddUserForm, max_num=len(matches))
         formset = formset(request.POST, initial=matches, prefix='userform')
 
-        subscription_form = ProjectAddUsersToSubscriptionForm(
-            request.user, project_obj.pk, request.POST, prefix='subscriptionform')
+        allocation_form = ProjectAddUsersToAllocationForm(
+            request.user, project_obj.pk, request.POST, prefix='allocationform')
 
         added_users_count = 0
-        if formset.is_valid() and subscription_form.is_valid():
+        if formset.is_valid() and allocation_form.is_valid():
             project_user_active_status_choice = ProjectUserStatusChoice.objects.get(
                 name='Active')
-            subscription_user_active_status_choice = SubscriptionUserStatusChoice.objects.get(
+            allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(
                 name='Active')
-            subscription_form_data = subscription_form.cleaned_data['subscription']
-            if '__select_all__' in subscription_form_data:
-                subscription_form_data.remove('__select_all__')
+            allocation_form_data = allocation_form.cleaned_data['allocation']
+            if '__select_all__' in allocation_form_data:
+                allocation_form_data.remove('__select_all__')
             for form in formset:
                 user_form_data = form.cleaned_data
                 if user_form_data['selected']:
@@ -653,19 +653,19 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                         project_user_obj = ProjectUser.objects.create(
                             user=user_obj, project=project_obj, role=role_choice, status=project_user_active_status_choice)
 
-                    for subscription in Subscription.objects.filter(pk__in=subscription_form_data):
-                        if subscription.subscriptionuser_set.filter(user=user_obj).exists():
-                            subscription_user_obj = subscription.subscriptionuser_set.get(
+                    for allocation in Allocation.objects.filter(pk__in=allocation_form_data):
+                        if allocation.allocationuser_set.filter(user=user_obj).exists():
+                            allocation_user_obj = allocation.allocationuser_set.get(
                                 user=user_obj)
-                            subscription_user_obj.status = subscription_user_active_status_choice
-                            subscription_user_obj.save()
+                            allocation_user_obj.status = allocation_user_active_status_choice
+                            allocation_user_obj.save()
                         else:
-                            subscription_user_obj = SubscriptionUser.objects.create(
-                                subscription=subscription,
+                            allocation_user_obj = AllocationUser.objects.create(
+                                allocation=allocation,
                                 user=user_obj,
-                                status=subscription_user_active_status_choice)
-                        subscription_activate_user.send(sender=self.__class__,
-                                                        subscription_user_pk=subscription_user_obj.pk)
+                                status=allocation_user_active_status_choice)
+                        allocation_activate_user.send(sender=self.__class__,
+                                                      allocation_user_pk=allocation_user_obj.pk)
 
             messages.success(
                 request, 'Added {} users to project.'.format(added_users_count))
@@ -743,7 +743,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         if formset.is_valid():
             project_user_removed_status_choice = ProjectUserStatusChoice.objects.get(
                 name='Removed')
-            subscription_user_removed_status_choice = SubscriptionUserStatusChoice.objects.get(
+            allocation_user_removed_status_choice = AllocationUserStatusChoice.objects.get(
                 name='Removed')
             for form in formset:
                 user_form_data = form.cleaned_data
@@ -762,16 +762,16 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     project_user_obj.status = project_user_removed_status_choice
                     project_user_obj.save()
 
-                    # get subscription to remove users from
-                    subscriptions_to_remove_user_from = project_obj.subscription_set.filter(
+                    # get allocation to remove users from
+                    allocations_to_remove_user_from = project_obj.allocation_set.filter(
                         status__name__in=['Active', 'New', 'Renewal Requested'])
-                    for subscription in subscriptions_to_remove_user_from:
-                        for subscription_user_obj in subscription.subscriptionuser_set.filter(user=user_obj, status__name__in=['Active', ]):
-                            subscription_user_obj.status = subscription_user_removed_status_choice
-                            subscription_user_obj.save()
+                    for allocation in allocations_to_remove_user_from:
+                        for allocation_user_obj in allocation.allocationuser_set.filter(user=user_obj, status__name__in=['Active', ]):
+                            allocation_user_obj.status = allocation_user_removed_status_choice
+                            allocation_user_obj.save()
 
-                            subscription_remove_user.send(sender=self.__class__,
-                                                          subscription_user_pk=subscription_user_obj.pk)
+                            allocation_remove_user.send(sender=self.__class__,
+                                                        allocation_user_pk=allocation_user_obj.pk)
 
             messages.success(
                 request, 'Removed {} users from project.'.format(remove_users_count))

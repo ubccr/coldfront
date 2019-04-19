@@ -14,10 +14,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
 
         date = datetime.datetime.now() + datetime.timedelta(days=1)
-        schedule('coldfront.core.subscription.tasks.update_statuses',
-            schedule_type=Schedule.DAILY,
-            next_run=datetime.datetime(date.year, date.month, date.day, 00, 00, 00, 000000))
+        schedule('coldfront.core.allocation.tasks.update_statuses',
+                 schedule_type=Schedule.DAILY,
+                 next_run=datetime.datetime(date.year, date.month, date.day, 00, 00, 00, 000000))
 
-        schedule('coldfront.core.subscription.tasks.send_expiry_emails',
-            schedule_type=Schedule.DAILY,
-            next_run=datetime.datetime(date.year, date.month, date.day, 00, 00, 00, 000000))
+        schedule('coldfront.core.allocation.tasks.send_expiry_emails',
+                 schedule_type=Schedule.DAILY,
+                 next_run=datetime.datetime(date.year, date.month, date.day, 00, 00, 00, 000000))

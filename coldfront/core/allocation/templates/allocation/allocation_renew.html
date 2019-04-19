@@ -1,0 +1,98 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Renew Allocation
+{% endblock %}
+
+
+
+{% block content %}
+<h1>Renew allocation to {{allocation.get_parent_resource }} for project: {{allocation.project.title}}</h1>
+<hr>
+
+<div class="card border-light">
+  <div class="card-body">
+    <form action="{% url 'allocation-renew' allocation.pk %}" method="post">
+      {% csrf_token %}
+      {{ formset.management_form }}
+      {% if formset %}
+      <div class="table-responsive">
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Username</th>
+              <th>First Name</th>
+              <th>Last Name</th>
+              <th>Email</th>
+              <th>User Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for form in formset %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>{{ form.username.value }}</td>
+              <td>{{ form.first_name.value }}</td>
+              <td>{{ form.last_name.value }}</td>
+              <td>{{ form.email.value }}</td>
+              <td>{{ form.user_status }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% else %}
+
+      <div class="table-responsive">
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>First Name</th>
+              <th>Last Name</th>
+              <th>Email</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>{{ allocation.project.pi.username }}</td>
+              <td>{{ allocation.project.pi.first_name }}</td>
+              <td>{{ allocation.project.pi.last_name }}</td>
+              <td>{{ allocation.project.pi.email }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      There are no additional users on this allocation. To add new users, click submit to complete the renewal and and
+      return to the project page.
+      <hr>
+      {% endif %}
+      <div class="mb-3">
+        <button type="submit" class="btn btn-primary">Submit</button>
+        <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation.pk %}" role="button"><i
+            class="fas fa-long-arrow-left"></i> Back to Allocation</a>
+        <br>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  $("#selectAll").click(function () {
+    $("input[name^='userform-']").prop('checked', $(this).prop('checked'));
+  });
+
+  $("input[name^='userform-']").click(function (ele) {
+    var id = $(this).attr('id');
+    if (id != "selectAll") {
+      $("#selectAll").prop('checked', false);
+    }
+  });
+</script>
+
+{% endblock %}

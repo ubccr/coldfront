@@ -55,13 +55,14 @@ class ResourceAttributeType(TimeStampedModel):
 
 
 class Resource(TimeStampedModel):
-    parent_resource = models.ForeignKey('self', on_delete=models.CASCADE, blank=True, null=True)
+    parent_resource = models.ForeignKey(
+        'self', on_delete=models.CASCADE, blank=True, null=True)
     resource_type = models.ForeignKey(ResourceType, on_delete=models.CASCADE)
     name = models.CharField(max_length=128, unique=True)
     description = models.TextField()
     is_available = models.BooleanField(default=True)
     is_public = models.BooleanField(default=True)
-    is_subscribable = models.BooleanField(default=True)
+    is_allocatable = models.BooleanField(default=True)
     requires_payment = models.BooleanField(default=False)
     allowed_groups = models.ManyToManyField(Group, blank=True)
     allowed_users = models.ManyToManyField(User, blank=True)
@@ -74,9 +75,11 @@ class Resource(TimeStampedModel):
         otherwise, get required and non-required missing attributes
         """
         if required:
-            resource_attributes = ResourceAttributeType.objects.filter(resource_type=self.resource_type, required=True)
+            resource_attributes = ResourceAttributeType.objects.filter(
+                resource_type=self.resource_type, required=True)
         else:
-            resource_attributes = ResourceAttributeType.objects.filter(resource_type=self.resource_type)
+            resource_attributes = ResourceAttributeType.objects.filter(
+                resource_type=self.resource_type)
 
         missing_resource_attributes = []
 
@@ -90,24 +93,27 @@ class Resource(TimeStampedModel):
         return ResourceAttribute.objects.get(resource=self, resource_attribute_type__attribute="Status").value
 
     def get_attribute(self, name):
-        attr = self.resourceattribute_set.filter(resource_attribute_type__name=name).first()
+        attr = self.resourceattribute_set.filter(
+            resource_attribute_type__name=name).first()
         if attr:
             return attr.value
         return None
 
     def get_attribute_list(self, name):
-        attr = self.resourceattribute_set.filter(resource_attribute_type__name=name).all()
+        attr = self.resourceattribute_set.filter(
+            resource_attribute_type__name=name).all()
         return [a.value for a in attr]
 
     def __str__(self):
-        return '%s (%s)' %(self.name, self.resource_type.name)
+        return '%s (%s)' % (self.name, self.resource_type.name)
 
     class Meta:
         ordering = ['name', ]
 
 
 class ResourceAttribute(TimeStampedModel):
-    resource_attribute_type = models.ForeignKey(ResourceAttributeType, on_delete=models.CASCADE)
+    resource_attribute_type = models.ForeignKey(
+        ResourceAttributeType, on_delete=models.CASCADE)
     resource = models.ForeignKey(Resource, on_delete=models.CASCADE)
     value = models.CharField(max_length=512)
     history = HistoricalRecords()
@@ -117,16 +123,20 @@ class ResourceAttribute(TimeStampedModel):
         expected_value_type = self.resource_attribute_type.attribute_type.name.strip()
 
         if expected_value_type == "Int" and not self.value.isdigit():
-            raise ValidationError('Invalid Value "%s". Value must be an integer.' % (self.value))
+            raise ValidationError(
+                'Invalid Value "%s". Value must be an integer.' % (self.value))
         elif expected_value_type == "Active/Inactive" and self.value not in ["Active", "Inactive"]:
-            raise ValidationError('Invalid Value "%s". Allowed inputs are "Active" or "Inactive".' % (self.value))
+            raise ValidationError(
+                'Invalid Value "%s". Allowed inputs are "Active" or "Inactive".' % (self.value))
         elif expected_value_type == "Public/Private" and self.value not in ["Public", "Private"]:
-            raise ValidationError('Invalid Value "%s". Allowed inputs are "Public" or "Private".' % (self.value))
+            raise ValidationError(
+                'Invalid Value "%s". Allowed inputs are "Public" or "Private".' % (self.value))
         elif expected_value_type == "Date":
             try:
                 datetime.strptime(self.value.strip(), "%m/%d/%Y")
             except ValueError:
-                raise ValidationError('Invalid Value "%s". Date must be in format MM/DD/YYYY' % (self.value))
+                raise ValidationError(
+                    'Invalid Value "%s". Date must be in format MM/DD/YYYY' % (self.value))
 
     def __str__(self):
         return '%s: %s (%s)' % (self.resource_attribute_type, self.value, self.resource)
