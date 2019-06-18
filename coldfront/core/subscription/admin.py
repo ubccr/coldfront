@@ -37,7 +37,7 @@ class SubscriptionAttributeInline(admin.TabularInline):
 class SubscriptionAdminNoteInline(admin.TabularInline):
     model = SubscriptionAdminNote
     extra = 0
-    fields = ('comment', 'author', 'created'),
+    fields = ('note', 'author', 'created'),
     readonly_fields = ('author', 'created')
 
 
