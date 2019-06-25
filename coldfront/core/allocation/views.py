@@ -160,8 +160,6 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context['attributes_with_usage'] = attributes_with_usage
         context['attributes'] = attributes
 
-        print('guage_data', guage_data)
-
         # Can the user update the project?
         if self.request.user.is_superuser:
             context['is_allowed_to_update_project'] = True
@@ -728,7 +726,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                             allocation=allocation_obj, user=user_obj, status=allocation_user_active_status_choice)
 
                     allocation_activate_user.send(sender=self.__class__,
-                                                    allocation_user_pk=allocation_user_obj.pk)
+                                                  allocation_user_pk=allocation_user_obj.pk)
             messages.success(
                 request, 'Added {} users to allocation.'.format(users_added_count))
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
@@ -831,7 +829,7 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
                     allocation_user_obj.status = allocation_user_removed_status_choice
                     allocation_user_obj.save()
                     allocation_remove_user.send(sender=self.__class__,
-                                                  allocation_user_pk=allocation_user_obj.pk)
+                                                allocation_user_pk=allocation_user_obj.pk)
 
             messages.success(
                 request, 'Removed {} users from allocation.'.format(remove_users_count))
