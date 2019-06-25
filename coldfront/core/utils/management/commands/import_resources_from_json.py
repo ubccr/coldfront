@@ -84,7 +84,7 @@ class Command(BaseCommand):
                     description = ele['fields']['description']
                     is_available = bool(ele['fields']['is_available'])
                     is_public = bool(ele['fields']['is_public'])
-                    is_subscribable = bool(ele['fields']['is_subscribable'])
+                    is_allocatable = bool(ele['fields']['is_allocatable'])
                     requires_payment = False
                     resource_obj = Resource.objects.create(
                         id=pk,
@@ -95,7 +95,7 @@ class Command(BaseCommand):
                         description=description,
                         is_available=is_available,
                         is_public=is_public,
-                        is_allocatable=is_subscribable,
+                        is_allocatable=is_allocatable,
                         requires_payment=False
                     )
                     if parent_resource:
