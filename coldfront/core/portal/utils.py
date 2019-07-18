@@ -1,6 +1,6 @@
 import datetime
 
-from coldfront.core.subscription.models import Subscription
+from coldfront.core.allocation.models import Allocation
 
 
 def generate_publication_by_year_chart_data(publications_by_year):
@@ -42,21 +42,21 @@ def generate_total_grants_by_agency_chart_data(total_grants_by_agency):
     return grants_agency_chart_data
 
 
-def generate_resources_chart_data(subscriptions_count_by_resource_type):
+def generate_resources_chart_data(allocations_count_by_resource_type):
 
 
-    if subscriptions_count_by_resource_type:
-        cluster_label = "Cluster: %d" % (subscriptions_count_by_resource_type.get('Cluster', 0))
-        cloud_label = "Cloud: %d" % (subscriptions_count_by_resource_type.get('Cloud', 0))
-        server_label = "Server: %d" % (subscriptions_count_by_resource_type.get('Server', 0))
-        storage_label = "Storage: %d" % (subscriptions_count_by_resource_type.get('Storage', 0))
+    if allocations_count_by_resource_type:
+        cluster_label = "Cluster: %d" % (allocations_count_by_resource_type.get('Cluster', 0))
+        cloud_label = "Cloud: %d" % (allocations_count_by_resource_type.get('Cloud', 0))
+        server_label = "Server: %d" % (allocations_count_by_resource_type.get('Server', 0))
+        storage_label = "Storage: %d" % (allocations_count_by_resource_type.get('Storage', 0))
 
         resource_plot_data = {
             "columns": [
-                [cluster_label, subscriptions_count_by_resource_type.get('Cluster', 0)],
-                [storage_label, subscriptions_count_by_resource_type.get('Storage', 0)],
-                [cloud_label, subscriptions_count_by_resource_type.get('Cloud', 0)],
-                [server_label, subscriptions_count_by_resource_type.get('Server', 0)]
+                [cluster_label, allocations_count_by_resource_type.get('Cluster', 0)],
+                [storage_label, allocations_count_by_resource_type.get('Storage', 0)],
+                [cloud_label, allocations_count_by_resource_type.get('Cloud', 0)],
+                [server_label, allocations_count_by_resource_type.get('Server', 0)]
 
             ],
             "type": 'donut',
@@ -77,15 +77,15 @@ def generate_resources_chart_data(subscriptions_count_by_resource_type):
     return resource_plot_data
 
 
-def generate_subscriptions_chart_data():
+def generate_allocations_chart_data():
 
-    active_count = Subscription.objects.filter(status__name='Active').count()
-    new_count = Subscription.objects.filter(status__name='New').count()
-    renewal_requested_count = Subscription.objects.filter(status__name='Renewal Requested').count()
+    active_count = Allocation.objects.filter(status__name='Active').count()
+    new_count = Allocation.objects.filter(status__name='New').count()
+    renewal_requested_count = Allocation.objects.filter(status__name='Renewal Requested').count()
 
     now = datetime.datetime.now()
     start_time = datetime.date(now.year - 1, 1, 1)
-    expired_count = Subscription.objects.filter(
+    expired_count = Allocation.objects.filter(
         status__name='Expired', end_date__gte=start_time).count()
 
     active_label = "Active: %d" % (active_count)
@@ -93,7 +93,7 @@ def generate_subscriptions_chart_data():
     renewal_requested_label = "Renewal Requested: %d" % (renewal_requested_count)
     expired_label = "Expired: %d" % (expired_count)
 
-    subscription_chart_data = {
+    allocation_chart_data = {
         "columns": [
             [active_label, active_count],
             [new_label, new_count],
@@ -109,4 +109,4 @@ def generate_subscriptions_chart_data():
         }
     }
 
-    return subscription_chart_data
+    return allocation_chart_data

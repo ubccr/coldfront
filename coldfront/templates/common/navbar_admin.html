@@ -4,10 +4,10 @@
     <a class="dropdown-item" href="/admin">ColdFront Administration</a>
     <a id="navbar-user-search" class="dropdown-item" href="{% url 'user-search-home' %}">User Search</a>
     <a class="dropdown-item" href="{% url 'project-list' %}?show_all_projects=on">All Projects</a>
-    <a class="dropdown-item" href="{% url 'subscription-list' %}?show_all_subscriptions=on">All Subscriptions</a>
+    <a class="dropdown-item" href="{% url 'allocation-list' %}?show_all_allocations=on">All Allocations</a>
     <a id="navbar-project-reviews" class="dropdown-item" href="{% url 'project-review-list' %}">Project Reviews</a>
-    <a id="navbar-subscription-requests" class="dropdown-item" href="{% url 'subscription-request-list' %}">
-    Subscription Requests</a>
+    <a id="navbar-allocation-requests" class="dropdown-item" href="{% url 'allocation-request-list' %}">
+      Allocation Requests</a>
     <a id="navbar-grant-report" class="dropdown-item" href="{% url 'grant-report' %}">Grant Report</a>
   </div>
 </li>

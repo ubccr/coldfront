@@ -40,24 +40,24 @@ class ProjectAddUserForm(forms.Form):
     selected = forms.BooleanField(initial=False, required=False)
 
 
-class ProjectAddUsersToSubscriptionForm(forms.Form):
-    subscription = forms.MultipleChoiceField(
+class ProjectAddUsersToAllocationForm(forms.Form):
+    allocation = forms.MultipleChoiceField(
         widget=forms.CheckboxSelectMultiple(attrs={'checked': 'checked'}), required=False)
 
     def __init__(self, request_user, project_pk, *args, **kwargs):
         super().__init__(*args, **kwargs)
         project_obj = get_object_or_404(Project, pk=project_pk)
 
-        subscription_query_set = project_obj.subscription_set.filter(
-            status__name__in=['Active', 'New', 'Renewal Requested', ], resources__is_subscribable=True)
-        subscription_choices = [(subscription.id, "%s (%s) %s" % (subscription.get_parent_resource.name, subscription.get_parent_resource.resource_type.name,
-                                                                  subscription.description if subscription.description else '')) for subscription in subscription_query_set]
-        subscription_choices.insert(0, ('__select_all__', 'Select All'))
-        if subscription_query_set:
-            self.fields['subscription'].choices = subscription_choices
-            self.fields['subscription'].help_text = '<br/>Select subscriptions to add selected users to.'
+        allocation_query_set = project_obj.allocation_set.filter(
+            status__name__in=['Active', 'New', 'Renewal Requested', ], resources__is_allocatable=True)
+        allocation_choices = [(allocation.id, "%s (%s) %s" % (allocation.get_parent_resource.name, allocation.get_parent_resource.resource_type.name,
+                                                              allocation.description if allocation.description else '')) for allocation in allocation_query_set]
+        allocation_choices.insert(0, ('__select_all__', 'Select All'))
+        if allocation_query_set:
+            self.fields['allocation'].choices = allocation_choices
+            self.fields['allocation'].help_text = '<br/>Select allocations to add selected users to.'
         else:
-            self.fields['subscription'].widget = forms.HiddenInput()
+            self.fields['allocation'].widget = forms.HiddenInput()
 
 
 class ProjectRemoveUserForm(forms.Form):

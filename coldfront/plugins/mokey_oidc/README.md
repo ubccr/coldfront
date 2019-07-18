@@ -1,7 +1,7 @@
-# Mokey/Hydra OpenID Connect integration for Coldfront
+# Mokey/Hydra OpenID Connect integration for ColdFront
 
-Coldfront django plugin providing Mokey/Hydra OpenID Connect integration for
-Coldfront. [Mokey](https://github.com/ubccr/mokey) is self-service account
+ColdFront django plugin providing Mokey/Hydra OpenID Connect integration for
+ColdFront. [Mokey](https://github.com/ubccr/mokey) is self-service account
 management portal for [FreeIPA](https://www.freeipa.org). Mokey also supports
 the Login/Consent flow for [Hydra](https://github.com/ory/hydra) an OAuth 2.0
 and OpenID Connect provider. With this app enabled users are authenticated

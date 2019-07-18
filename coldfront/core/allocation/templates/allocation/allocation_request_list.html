@@ -1,0 +1,66 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+
+
+{% block title %}
+Allocation Review New and Pending Requests
+{% endblock %}
+
+
+{% block content %}
+<h1>Allocation Requests</h1>
+{% if allocation_list %}
+<div class="table-responsive">
+  <table class="table table-sm">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Date Requested/<br>Last Modified</th>
+        <th>Project Title</th>
+        <th>PI</th>
+        <th>Resource</th>
+        {% if PROJECT_ENABLE_PROJECT_REVIEW %}
+        <th style="white-space:nowrap;">Project Review Status</th>
+        {% endif %}
+        <th>Status</th>
+        <th>Allocation Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for allocation in allocation_list %}
+      <tr>
+        <td><a href="{% url 'allocation-detail' allocation.pk %}">{{allocation.pk}}</a></td>
+        <td>{{ allocation.modified|date:"M. d, Y" }}</td>
+        <td><a href="{% url 'project-detail' allocation.project.pk %}">{{allocation.project.title|truncatechars:50}}</a>
+        </td>
+        <td>{{allocation.project.pi.first_name}} {{allocation.project.pi.last_name}}
+          ({{allocation.project.pi.username}})</td>
+        <td>{{allocation.get_parent_resource}}</td>
+        {% if PROJECT_ENABLE_PROJECT_REVIEW %}
+        <td class="text-center">{{allocation.project|convert_status_to_icon}}</td>
+        {% endif %}
+        <td>{{allocation.status}}</td>
+        <td style="white-space:nowrap;">
+          <a href="{% url 'allocation-activate-request' allocation.pk %}" class="btn btn-success mr-1">Activate</a>
+          <a href="{% url 'allocation-deny-request' allocation.pk %}" class="btn btn-danger mr-1">Deny</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+  No new or pending allocation requests!
+</div>
+{% endif %}
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-admin").addClass("active");
+  $("#navbar-allocation-requests").addClass("active");
+</script>
+
+{% endblock %}

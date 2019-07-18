@@ -1,6 +1,6 @@
-# Coldfront - AUTHORS
+# ColdFront - AUTHORS
 
-## Coldfront was originally written and currently maintained by:
+## ColdFront was originally written and currently maintained by:
 
 - Andrew E. Bruno <aebruno2@buffalo.edu>
 - Dori Sajdak <djm29@buffalo.edu>

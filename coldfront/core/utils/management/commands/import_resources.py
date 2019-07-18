@@ -115,7 +115,7 @@ class Command(BaseCommand):
 
         for unsubscribable in ['Industry-scavenger', 'Chemistry-scavenger', 'Physics-scavenger', 'MAE-scavenger', 'Physics', 'Chemistry', 'MAE']:
             resource_obj = Resource.objects.get(name=unsubscribable)
-            resource_obj.is_subscribable = False
+            resource_obj.is_allocatable = False
             resource_obj.save()
 
 

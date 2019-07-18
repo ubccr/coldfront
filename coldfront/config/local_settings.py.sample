@@ -1,8 +1,8 @@
 """
-Local Coldfront settings
+Local ColdFront settings
 
 Here you can define custom database settings, add authentication backends,
-configure logging, and Coldfront plugins.
+configure logging, and ColdFront plugins.
 """
 #------------------------------------------------------------------------------
 # Secret Key (required set to something long and random)
@@ -75,11 +75,11 @@ LOGGING = {
 PROJECT_ENABLE_PROJECT_REVIEW = False
 
 #------------------------------------------------------------------------------
-# Subscription related
+# Allocation related
 #------------------------------------------------------------------------------
-SUBSCRIPTION_ENABLE_SUBSCRIPTION_RENEWAL = True
-SUBSCRIPTION_FUNCS_ON_EXPIRE = ['coldfront.core.subscription.utils.test_subscription_function', ]
-SUBSCRIPTION_DEFAULT_SUBSCRIPTION_LENGTH = 365 # DAYS
+ALLOCATION_ENABLE_ALLOCATION_RENEWAL = True
+ALLOCATION_FUNCS_ON_EXPIRE = ['coldfront.core.allocation.utils.test_allocation_function', ]
+ALLOCATION_DEFAULT_ALLOCATION_LENGTH = 365 # DAYS
 
 
 #------------------------------------------------------------------------------
@@ -128,7 +128,7 @@ LOCAL_SETTINGS_EXPORT = []
 # EMAIL_HOST_PASSWORD = ''
 # EMAIL_USE_TLS = False
 # EMAIL_TIMEOUT = 3
-# EMAIL_SUBJECT_PREFIX = '[Coldfront]'
+# EMAIL_SUBJECT_PREFIX = '[ColdFront]'
 # EMAIL_ADMIN_LIST = ['admin@localhost']
 # EMAIL_SENDER = 'coldfront@localhost'
 # EMAIL_TICKET_SYSTEM_ADDRESS = 'help@localhost'
@@ -136,7 +136,7 @@ LOCAL_SETTINGS_EXPORT = []
 # EMAIL_PROJECT_REVIEW_CONTACT = 'review@localhost'
 # EMAIL_DEVELOPMENT_EMAIL_LIST = ['dev1@localhost', 'dev2@localhost']
 # EMAIL_OPT_OUT_INSTRUCTION_URL = 'http://localhost/optout'
-# EMAIL_SUBSCRIPTION_EXPIRING_NOTIFICATION_DAYS = [7, 14, 30]
+# EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS = [7, 14, 30]
 # EMAIL_SIGNATURE = """
 # HPC Resources
 # http://localhost
@@ -182,21 +182,21 @@ LOCAL_SETTINGS_EXPORT = []
 # INVOICE_DEFAULT_STATUS = 'New'  # Override default 'Pending Payment' status
 
 # ------------------------------------------------------------------------------
-# Allow user to select account name for subscription
+# Allow user to select account name for allocation
 # ------------------------------------------------------------------------------
-SUBSCRIPTION_ACCOUNT_ENABLED = False
-# SUBSCRIPTION_ACCOUNT_MAPPING = {
+ALLOCATION_ACCOUNT_ENABLED = False
+# ALLOCATION_ACCOUNT_MAPPING = {
 #     'University HPC': 'slurm_account_name',
 #     'University Cloud': 'Cloud Account Name',
 # }
 
 LOCAL_SETTINGS_EXPORT += [
-    'SUBSCRIPTION_ACCOUNT_ENABLED'
+    'ALLOCATION_ACCOUNT_ENABLED'
 ]
 
 
 #===============================================================================
-# Coldfront Plugin Settings
+# ColdFront Plugin Settings
 #===============================================================================
 
 #------------------------------------------------------------------------------

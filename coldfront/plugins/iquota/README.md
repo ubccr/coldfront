@@ -1,9 +1,9 @@
-# iquota reporting for Coldfront
+# iquota reporting for ColdFront
 
-Coldfront plugin providing iquota reporting for Coldfront.
+ColdFront plugin providing iquota reporting for ColdFront.
 [iquota](https://github.com/ubccr/iquota) is a command line tool and associated
 server application for reporting quotas from Isilon nfs mounts using the OneFS
-API. User and group quotas are displayed on the Coldfront portal home page.
+API. User and group quotas are displayed on the ColdFront portal home page.
 
 ## Design
 

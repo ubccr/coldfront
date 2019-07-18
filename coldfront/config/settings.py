@@ -1,5 +1,5 @@
 """
-Default Django settings for Coldfront project.
+Default Django settings for ColdFront project.
 """
 import os
 import sys
@@ -7,7 +7,7 @@ import sys
 from django.contrib.messages import constants as messages
 
 #------------------------------------------------------------------------------
-# Django config for Coldfront
+# Django config for ColdFront
 #------------------------------------------------------------------------------
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -36,7 +36,7 @@ INSTALLED_APPS += [
     'simple_history',
 ]
 
-# Coldfront Apps
+# ColdFront Apps
 INSTALLED_APPS += [
     'coldfront.core.user',
     'coldfront.core.field_of_science',
@@ -44,7 +44,7 @@ INSTALLED_APPS += [
     'coldfront.core.portal',
     'coldfront.core.project',
     'coldfront.core.resource',
-    'coldfront.core.subscription',
+    'coldfront.core.allocation',
     'coldfront.core.grant',
     'coldfront.core.publication',
 ]

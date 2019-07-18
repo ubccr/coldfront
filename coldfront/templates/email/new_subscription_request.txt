@@ -1,2 +1,0 @@
-A new subscription has been requested for {{pi}}- {{resource}}. Please activate the subscription:
-{{url}}

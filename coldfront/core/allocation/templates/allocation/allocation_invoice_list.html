@@ -1,0 +1,41 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Allocation Invoice LIst
+{% endblock %}
+
+{% block content %}
+<h1>Allocations that require payment</h1>
+{% if allocation_list %}
+<div class="table-responsive">
+  <table class="table table-sm">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Resource</th>
+        <th>Status</th>
+        <th>PI</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for allocation in allocation_list %}
+      <tr>
+        <td><a target="_blank" href="{% url 'allocation-invoice-detail' allocation.pk %}">{{allocation.pk}}</td>
+        <td>{{allocation.get_resources_as_string}}</td>
+        <td>{{allocation.status}}</td>
+        <td>{{allocation.project.pi.username }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+  No allocations requiring payment!
+</div>
+{% endif %}
+
+{% endblock %}

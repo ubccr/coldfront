@@ -1,17 +1,17 @@
-# Coldfront - Resource Allocation System
+# ColdFront - Resource Allocation System
 
-Coldfront is an open source resource allocation system designed to provide a
+ColdFront is an open source resource allocation system designed to provide a
 central portal for administration, reporting, and measuring scientific impact
-of HPC resources. Coldfront was created to help HPC centers manage access to a
+of HPC resources. ColdFront was created to help HPC centers manage access to a
 diverse set of resources across large groups of users and provide a rich set of
-extensible meta data for comprehensive reporting. Coldfront is written in
+extensible meta data for comprehensive reporting. ColdFront is written in
 Python and released under the GPLv3 license.
 
 ## Features
 
-- Allocation/Subscription based system for managing access to resources
+- Allocation based system for managing access to resources
 - Collect Project, Grant, and Publication data from users
-- Define custom attributes on resources and subscriptions
+- Define custom attributes on resources and allocations
 - Email notifications for expiring/renewing access to resources
 - Integration with 3rd party systems for automation and access control
 - Center director approval system and annual project reviews
@@ -25,7 +25,7 @@ subscribe ccr-open-coldfront-list@listserv.buffalo.edu first_name last_name
 
 
 ## Quick Install
-1. Coldfront requires Python 3.6, memcached, and redis. 
+1. ColdFront requires Python 3.6, memcached, and redis. 
 
 ### CentOS (7.5)
 
@@ -43,7 +43,7 @@ sudo apt-get update
 sudo apt-get install python3.6 python3.6-venv memcached redis-server
 ``` 
 
-2. Clone Coldfront in a new directory and create a Python virtual environment for Coldfront
+2. Clone ColdFront in a new directory and create a Python virtual environment for ColdFront
 ```
 mkdir coldfront_app
 cd coldfront_app
@@ -102,18 +102,18 @@ Password for all users is also `teset1234`.
 ## Directory structure
 
 - coldfront
-    - core - The core Coldfront application
+    - core - The core ColdFront application
         - field_of_science
         - grant
         - portal
         - project
         - publication
         - resource
-        - subscription
+        - allocation
         - user
         - utils
     - libs - Helper libraries
-    - plugins - Plugins that can be configured in Coldfront
+    - plugins - Plugins that can be configured in ColdFront
         - freeipa
         - iquota
         - ldap_user_search
@@ -123,4 +123,4 @@ Password for all users is also `teset1234`.
 
 ## License
 
-Coldfront is released under the GPLv3 license. See the LICENSE file.
+ColdFront is released under the GPLv3 license. See the LICENSE file.

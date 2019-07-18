@@ -1,0 +1,64 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Allocation Review New Requests
+{% endblock %}
+
+
+{% block content %}
+<h1>Email</h1>
+<hr>
+
+<div class="card mb-3">
+  <div class="card-header">
+    <h4><i class="fas fa-list"></i> Allocation Information</h4>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table ">
+        <tr>
+          <th style="white-space:nowrap;">Project:</th>
+          <td><a href="{% url 'project-detail' allocation.project.pk %}">{{ allocation.project }}</a></td>
+        </tr>
+        <tr>
+          <th style="white-space:nowrap;">PI:</th>
+          <td>{{ allocation.project }}{{allocation.project.pi.first_name}} {{allocation.project.pi.last_name}}
+            ({{allocation.project.pi.username}}</td>
+        </tr>
+        <tr>
+          <th style="white-space:nowrap;">Resource:</th>
+          <td>{{ allocation.resources.first }}</td>
+        </tr>
+        <tr>
+          <th style="white-space:nowrap;">Justification:</th>
+          <td>{{ allocation.justification }}</td>
+        </tr>
+        <tr>
+          <th style="white-space:nowrap;">Date Requested:</th>
+          <td>{{ allocation.created }}</td>
+        </tr>
+        <tr>
+          <th style="white-space:nowrap;">Grants Last Updated:</th>
+          <td>{{allocation.project.latest_grant.created|date:"M-d-Y"|default:"No grants"}}</td>
+        </tr>
+        <tr>
+          <th style="white-space:nowrap;">Publications Last Updated:</th>
+          <td>{{allocation.project.latest_publication.created|date:"M-d-Y"|default:"No publications"}}</td>
+        </tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+
+<form method="post">{% csrf_token %}
+  {{form|crispy}}
+  <input class="btn btn-primary" type="submit" value="Email" />
+  <a class="btn btn-secondary" href="{% url 'allocation-review-pending-requests' %}" role="button">Cancel</a><br>
+</form>
+
+{% endblock %}

@@ -64,7 +64,7 @@ We do not have information about your research. Please provide a detailed descri
     @property
     def latest_grant(self):
         if self.grant_set.exists():
-            return self.grant_set.order_by('-created')[0]
+            return self.grant_set.order_by('-modified')[0]
         else:
             return None
 
