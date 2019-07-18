@@ -370,7 +370,8 @@ class AllocationListView(LoginRequiredMixin, ListView):
             if data.get('username'):
                 allocations = allocations.filter(
                     Q(project__pi__username__icontains=data.get('username')) |
-                    Q(allocationuser__user__username__icontains=data.get('username'))
+                    Q(allocationuser__user__username__icontains=data.get('username')) &
+                    Q(allocationuser__status__name='Active')
                 )
 
             # Resource Type

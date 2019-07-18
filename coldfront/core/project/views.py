@@ -174,7 +174,8 @@ class ProjectListView(LoginRequiredMixin, ListView):
             if data.get('username'):
                 projects = projects.filter(
                     Q(pi__username__icontains=data.get('username')) |
-                    Q(projectuser__user__username__icontains=data.get('username'))
+                    Q(projectuser__user__username__icontains=data.get('username')) &
+                    Q(projectuser__status__name='Active')
                 )
 
             # Field of Science
