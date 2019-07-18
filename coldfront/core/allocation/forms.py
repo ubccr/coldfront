@@ -2,6 +2,7 @@ from django import forms
 from django.shortcuts import get_object_or_404
 
 from coldfront.core.allocation.models import (Allocation, AllocationAccount,
+                                              AllocationAttributeType,
                                               AllocationStatusChoice)
 from coldfront.core.allocation.utils import get_user_resources
 from coldfront.core.project.models import Project
@@ -121,6 +122,12 @@ class AllocationSearchForm(forms.Form):
         queryset=Resource.objects.filter(
             is_allocatable=True).order_by('name'),
         required=False)
+    allocation_attribute_name = forms.ModelChoiceField(
+        label='Allocation Attribute Name',
+        queryset=AllocationAttributeType.objects.all().order_by('name'),
+        required=False)
+    allocation_attribute_value = forms.CharField(
+        label='Allocation Attribute Value', max_length=100, required=False)
     end_date = forms.DateField(
         label='End Date',
         widget=forms.DateInput(attrs={'class': 'datepicker'}),

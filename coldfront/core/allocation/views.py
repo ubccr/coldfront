@@ -27,12 +27,12 @@ from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationAddUserForm,
                                              AllocationAttributeDeleteForm,
                                              AllocationForm,
+                                             AllocationInvoiceNoteDeleteForm,
                                              AllocationInvoiceUpdateForm,
                                              AllocationRemoveUserForm,
                                              AllocationReviewUserForm,
                                              AllocationSearchForm,
-                                             AllocationUpdateForm,
-                                             AllocationInvoiceNoteDeleteForm)
+                                             AllocationUpdateForm)
 from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationAttribute,
                                               AllocationAttributeType,
@@ -383,6 +383,13 @@ class AllocationListView(LoginRequiredMixin, ListView):
             if data.get('resource_name'):
                 allocations = allocations.filter(
                     resources__in=data.get('resource_name'))
+
+            # Allocation Attribute Name
+            if data.get('allocation_attribute_name') and data.get('allocation_attribute_value'):
+                allocations = allocations.filter(
+                    Q(allocationattribute__allocation_attribute_type=data.get('allocation_attribute_name')) &
+                    Q(allocationattribute__value=data.get('allocation_attribute_value'))
+                )
 
             # End Date
             if data.get('end_date'):
