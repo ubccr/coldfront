@@ -77,7 +77,7 @@ class Command(BaseCommand):
                     pk = ele['pk']
                     created = parse_datetime(ele['fields']['created'])
                     modified = parse_datetime(ele['fields']['modified'])
-                    parent_resource = bool(ele['fields']['parent_resource']) if bool(
+                    parent_resource = (ele['fields']['parent_resource']) if bool(
                         ele['fields']['parent_resource']) else None
                     resource_type = ele['fields']['resource_type']
                     name = ele['fields']['name']
