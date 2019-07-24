@@ -138,6 +138,8 @@ Password for all users is also `teset1234`.
 ### Adding Publications
 ![Adding Publications](coldfront/docs/source/user_guide/images/adding_publications.gif "Adding Publications")
 
+### Adding a User to Subscription
+![Adding a User to Subscription](coldfront/docs/source/user_guide/images/adding_user_to_subscription.gif "Adding a User to Subscription")
 
 
 ## License
