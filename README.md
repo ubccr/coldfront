@@ -144,6 +144,8 @@ Password for all users is also `teset1234`.
 ### Managing a Subscription as an Admin
 ![Managing a Subscription as and Admin](coldfront/docs/source/user_guide/images/mangaging_subscription.gif "Managing a Subscription as an Admin")
 
+### Adding a Resource
+![Adding a Resource](coldfront/docs/source/user_guide/images/adding_resource.gif "Adding a Resource")
 
 
 ## License
