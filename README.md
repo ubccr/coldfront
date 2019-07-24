@@ -123,6 +123,9 @@ Password for all users is also `teset1234`.
 
 ## ColdFront Demonstration
 
+### Installation
+![Installation](coldfront/docs/source/user_guide/images/adding_project.gif "Installation")
+
 ### Adding a Project
 ![Adding Project](coldfront/docs/source/user_guide/images/adding_project.gif "Adding a project")
 
