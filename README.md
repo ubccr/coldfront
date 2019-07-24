@@ -60,19 +60,18 @@ pip install -r requirements.txt
 
 ```
 
-4. Copy config/local_settings.py.sample to config/local_settings.py. 
+4. Copy coldfront/config/local_settings.py.sample to coldfront/config/local_settings.py. 
 ```
-cp config/local_settings.py.sample config/local_settings.py
+cp coldfront/config/local_settings.py.sample coldfront/config/local_settings.py
 ```
-Open config/local_settings.py and update the following:
+Open coldfront/config/local_settings.py and update the following:
 * Update `SECRET_KEY`. Consider making the length at least 50 characters long. 
 * Update `TIME_ZONE` if necessary
-* Uncomment line `EMAIL_ADMIN_LIST`
-* Uncomment line `EMAIL_DIRECTOR_EMAIL_ADDRESS`
+* Uncomment `CENTER_NAME` and update it
 
 5. Copy config/local_strings.py.sample to config/local_strings.py and update if desired. 
 ```
-cp config/local_strings.py.sample config/local_strings.py
+cp coldfront/config/local_strings.py.sample coldfront/config/local_strings.py
 ```
 
 6. Run initial setup
@@ -120,6 +119,37 @@ Password for all users is also `teset1234`.
         - mokey_oidc
         - slurm
         - system_monitor
+
+
+## ColdFront Demonstration
+
+### Installation
+![Installation](coldfront/docs/source/user_guide/images/installation.gif "Installation")
+
+### Adding a Project
+![Adding Project](coldfront/docs/source/user_guide/images/adding_project.gif "Adding a project")
+
+### Adding Users
+![Adding Users](coldfront/docs/source/user_guide/images/adding_users.gif "Adding Users")
+
+### Requesting Allocation
+![Requesting Allocation](coldfront/docs/source/user_guide/images/requesting_allocation.gif "Requesting Allocation")
+
+### Adding a Grant
+![Adding a Grant](coldfront/docs/source/user_guide/images/adding_grant.gif "Adding a Grant")
+
+### Adding Publications
+![Adding Publications](coldfront/docs/source/user_guide/images/adding_publications.gif "Adding Publications")
+
+### Adding a User to Subscription
+![Adding a User to Subscription](coldfront/docs/source/user_guide/images/adding_user_to_subscription.gif "Adding a User to Subscription")
+
+### Managing a Subscription as an Admin
+![Managing a Subscription as and Admin](coldfront/docs/source/user_guide/images/mangaging_subscription.gif "Managing a Subscription as an Admin")
+
+### Adding a Resource
+![Adding a Resource](coldfront/docs/source/user_guide/images/adding_resource.gif "Adding a Resource")
+
 
 ## License
 
