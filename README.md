@@ -129,6 +129,10 @@ Password for all users is also `teset1234`.
 ### Adding Users
 ![Adding Users](coldfront/docs/source/user_guide/images/adding_users.gif "Adding Users")
 
+### Requesting Allocation
+![Requesting Allocation](coldfront/docs/source/user_guide/images/requesting_allocation.gif "Requesting Allocation")
+
+
 
 ## License
 
