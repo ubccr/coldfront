@@ -121,7 +121,7 @@ Password for all users is also `teset1234`.
         - system_monitor
 
 
-## ColdFront Training Videos
+## ColdFront Demonstration
 
 ### Adding a Project
 ![Adding Project](coldfront/docs/source/user_guide/images/adding_project.gif "Adding a project")
@@ -131,6 +131,12 @@ Password for all users is also `teset1234`.
 
 ### Requesting Allocation
 ![Requesting Allocation](coldfront/docs/source/user_guide/images/requesting_allocation.gif "Requesting Allocation")
+
+### Adding a Grant
+![Adding a Grant](coldfront/docs/source/user_guide/images/adding_grant.gif "Adding a Grant")
+
+### Adding Publications
+![Adding Publications](coldfront/docs/source/user_guide/images/adding_publications.gif "Adding Publications")
 
 
 
