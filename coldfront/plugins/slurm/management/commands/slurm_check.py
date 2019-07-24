@@ -149,6 +149,7 @@ class Command(BaseCommand):
             account,
             cluster,
             'Add',
+            specs,
         ]
 
         self.write('\t'.join(row))
@@ -176,6 +177,7 @@ class Command(BaseCommand):
             account,
             cluster,
             'Add',
+            specs,
         ]
 
         self.write('\t'.join(row))
@@ -282,6 +284,7 @@ class Command(BaseCommand):
             'account',
             'cluster',
             'slurm_action',
+            'slurm_specs',
         ]
 
         if options['header']:
