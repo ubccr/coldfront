@@ -45,7 +45,7 @@ Project Detail
       {% endif %}
 
       <div class="float-right">
-          {% if project.status.name in 'Active','New' %}
+          {% if project.status.name in 'Active, New' %}
             <a class="btn btn-info" href="{% url 'project-archive' project.id %}" role="button"><i class="fas fa-file-archive"></i> Archive Project</a>
           {% endif %}
       </div>
