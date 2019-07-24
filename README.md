@@ -120,6 +120,13 @@ Password for all users is also `teset1234`.
         - slurm
         - system_monitor
 
+
+## ColdFront Training Videos
+
+### Adding a project
+![Adding Project](coldfront/docs/source/user_guide/images/adding_project.gif "Adding a project")
+
+
 ## License
 
 ColdFront is released under the GPLv3 license. See the LICENSE file.
