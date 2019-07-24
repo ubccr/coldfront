@@ -60,19 +60,18 @@ pip install -r requirements.txt
 
 ```
 
-4. Copy config/local_settings.py.sample to config/local_settings.py. 
+4. Copy coldfront/config/local_settings.py.sample to coldfront/config/local_settings.py. 
 ```
-cp config/local_settings.py.sample config/local_settings.py
+cp coldfront/config/local_settings.py.sample coldfront/config/local_settings.py
 ```
-Open config/local_settings.py and update the following:
+Open coldfront/config/local_settings.py and update the following:
 * Update `SECRET_KEY`. Consider making the length at least 50 characters long. 
 * Update `TIME_ZONE` if necessary
-* Uncomment line `EMAIL_ADMIN_LIST`
-* Uncomment line `EMAIL_DIRECTOR_EMAIL_ADDRESS`
+* Uncomment `CENTER_NAME` and update it
 
 5. Copy config/local_strings.py.sample to config/local_strings.py and update if desired. 
 ```
-cp config/local_strings.py.sample config/local_strings.py
+cp coldfront/config/local_strings.py.sample coldfront/config/local_strings.py
 ```
 
 6. Run initial setup
