@@ -132,8 +132,8 @@ Password for all users is also `teset1234`.
 ### Adding Users
 ![Adding Users](coldfront/docs/source/user_guide/images/adding_users.gif "Adding Users")
 
-### Requesting Allocation
-![Requesting Allocation](coldfront/docs/source/user_guide/images/requesting_allocation.gif "Requesting Allocation")
+### Requesting an Allocation
+![Requesting an Allocation](coldfront/docs/source/user_guide/images/requesting_allocation.gif "Requesting an Allocation")
 
 ### Adding a Grant
 ![Adding a Grant](coldfront/docs/source/user_guide/images/adding_grant.gif "Adding a Grant")
@@ -141,11 +141,11 @@ Password for all users is also `teset1234`.
 ### Adding Publications
 ![Adding Publications](coldfront/docs/source/user_guide/images/adding_publications.gif "Adding Publications")
 
-### Adding a User to Allocation
-![Adding a User to Allocation](coldfront/docs/source/user_guide/images/adding_user_to_allocation.gif "Adding a User to Allocation")
+### Adding a User to an Allocation
+![Adding a User to Allocation](coldfront/docs/source/user_guide/images/adding_user_to_allocation.gif "Adding a User to an Allocation")
 
-### Managing a Allocation as an Admin
-![Managing a Allocation as and Admin](coldfront/docs/source/user_guide/images/managing_allocation.gif "Managing a Allocation as an Admin")
+### Managing an Allocation as an Admin
+![Managing an Allocation as and Admin](coldfront/docs/source/user_guide/images/managing_allocation.gif "Managing an Allocation as an Admin")
 
 ### Adding a Resource
 ![Adding a Resource](coldfront/docs/source/user_guide/images/adding_resource.gif "Adding a Resource")
