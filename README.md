@@ -141,11 +141,11 @@ Password for all users is also `teset1234`.
 ### Adding Publications
 ![Adding Publications](coldfront/docs/source/user_guide/images/adding_publications.gif "Adding Publications")
 
-### Adding a User to Subscription
-![Adding a User to Subscription](coldfront/docs/source/user_guide/images/adding_user_to_subscription.gif "Adding a User to Subscription")
+### Adding a User to Allocation
+![Adding a User to Allocation](coldfront/docs/source/user_guide/images/adding_user_to_allocation.gif "Adding a User to Allocation")
 
-### Managing a Subscription as an Admin
-![Managing a Subscription as and Admin](coldfront/docs/source/user_guide/images/managing_subscription.gif "Managing a Subscription as an Admin")
+### Managing a Allocation as an Admin
+![Managing a Allocation as and Admin](coldfront/docs/source/user_guide/images/managing_allocation.gif "Managing a Allocation as an Admin")
 
 ### Adding a Resource
 ![Adding a Resource](coldfront/docs/source/user_guide/images/adding_resource.gif "Adding a Resource")
