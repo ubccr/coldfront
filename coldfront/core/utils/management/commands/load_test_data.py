@@ -199,7 +199,7 @@ class Command(BaseCommand):
             univ_hpc.linked_resources.add(resource_obj)
             univ_hpc.save()
 
-        # publication_source = PublicationSource.objects.get(name='doi')
+        publication_source = PublicationSource.objects.get(name='doi')
         # for title, author, year, unique_id, source in (
         #     ('Angular momentum in QGP holography', 'Brett McInnes',
         #      2014, '10.1016/j.nuclphysb.2014.08.011', 'doi'),
