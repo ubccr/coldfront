@@ -146,6 +146,8 @@ Password for all users is also `teset1234`.
 ### Adding a Resource
 ![Adding a Resource](coldfront/docs/source/user_guide/images/adding_resource.gif "Adding a Resource")
 
+### Generate Slurm Association Data 
+![Generate Slurm Association Data](coldfront/docs/source/user_guide/images/slurm_dump.gif "Generate Slurm Association Data")
 
 ## License
 
