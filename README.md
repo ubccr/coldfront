@@ -24,7 +24,13 @@ If you would like to join our mailing list to receive news and updates, please s
 subscribe ccr-open-coldfront-list@listserv.buffalo.edu first_name last_name
 
 
+## Installation Demo
+![Installation](coldfront/docs/source/user_guide/images/installation.gif "Installation")
+
+[Click here for more demos](#demos)
+
 ## Quick Install
+
 1. ColdFront requires Python 3.6, memcached, and redis. 
 
 ### CentOS (7.5)
@@ -117,10 +123,8 @@ Password for all users is also `teset1234`.
         - system_monitor
 
 
-## ColdFront Demonstration
 
-### Installation
-![Installation](coldfront/docs/source/user_guide/images/installation.gif "Installation")
+## <a name="demos"></a>ColdFront Demonstration
 
 ### Adding a Project
 ![Adding Project](coldfront/docs/source/user_guide/images/adding_project.gif "Adding a project")
