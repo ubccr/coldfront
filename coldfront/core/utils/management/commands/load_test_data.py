@@ -181,9 +181,9 @@ class Command(BaseCommand):
             )
 
         resource_obj = Resource.objects.get(name='server-cgray')
-        resource_obj.add.allowed_users(User.objects.get(username='cgray'))
+        resource_obj.allowed_users.add(User.objects.get(username='cgray'))
         resource_obj = Resource.objects.get(name='server-sfoster')
-        resource_obj.add.allowed_users(User.objects.get(username='sfoster'))
+        resource_obj.allowed_users.add(User.objects.get(username='sfoster'))
 
         pi1 = User.objects.get(username='cgray')
         pi1.userprofile.is_pi = True
