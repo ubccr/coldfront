@@ -5,9 +5,9 @@ Here you can define custom database settings, add authentication backends,
 configure logging, and ColdFront plugins.
 """
 #------------------------------------------------------------------------------
-# Secret Key (required set to something long and random)
+# Secret Key -- Generate new key using: https://www.miniwebtool.com/django-secret-key-generator/
 #------------------------------------------------------------------------------
-SECRET_KEY = ''
+SECRET_KEY = 'vtri&lztlbinerr4+yg1yzm23ez@+ub6=4*63z1%d!)fg(g4x$' # UPDATE
 
 #------------------------------------------------------------------------------
 # Enable debugging. WARNING: These should be set to False in production
@@ -24,7 +24,7 @@ SESSION_COOKIE_SECURE = False
 #------------------------------------------------------------------------------
 # General Center Information
 #------------------------------------------------------------------------------
-# CENTER_NAME = 'HPC Resources'
+CENTER_NAME = 'HPC Resources'
 # CENTER_HELP_URL = 'http://localhost/help'
 # CENTER_PROJECT_RENEWAL_HELP_URL = 'http://localhost/help'
 # CENTER_BASE_URL = 'https://coldfront.io'
@@ -72,7 +72,7 @@ LOGGING = {
 #------------------------------------------------------------------------------
 # Enable Project Review
 #------------------------------------------------------------------------------
-PROJECT_ENABLE_PROJECT_REVIEW = False
+PROJECT_ENABLE_PROJECT_REVIEW = True
 
 #------------------------------------------------------------------------------
 # Allocation related
@@ -146,7 +146,7 @@ LOCAL_SETTINGS_EXPORT = []
 #------------------------------------------------------------------------------
 # Enable administrators to login as other users
 #------------------------------------------------------------------------------
-# EXTRA_AUTHENTICATION_BACKENDS += ['django_su.backends.SuBackend',]
+EXTRA_AUTHENTICATION_BACKENDS += ['django_su.backends.SuBackend',]
 
 #------------------------------------------------------------------------------
 # Example config for enabling LDAP user authentication using django-auth-ldap.
