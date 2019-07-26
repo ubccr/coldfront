@@ -46,7 +46,7 @@ def get_user_resources(user_obj):
         resources = Resource.objects.filter(
             Q(is_allocatable=True) &
             Q(is_available=True) &
-            (Q(is_public=True) | Q(allowed_groups__in=user_obj.groups.all()))
+            (Q(is_public=True) | Q(allowed_groups__in=user_obj.groups.all()) | Q(allowed_users__in=[user_obj,]))
         ).distinct()
 
     return resources

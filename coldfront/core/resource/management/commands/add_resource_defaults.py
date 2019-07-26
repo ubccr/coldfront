@@ -14,8 +14,6 @@ class Command(BaseCommand):
             AttributeType.objects.get_or_create(name=attribute_type)
 
         for resource_attribute_type, attribute_type in (
-            ('Access', 'Public/Private'),
-            ('AllowedGroups', 'Text'),
             ('Core Count', 'Int'),
             ('expiry_time', 'Int'),
             ('fee_applies', 'Yes/No'),

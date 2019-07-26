@@ -64,10 +64,6 @@ pip install -r requirements.txt
 ```
 cp coldfront/config/local_settings.py.sample coldfront/config/local_settings.py
 ```
-Open coldfront/config/local_settings.py and update the following:
-* Update `SECRET_KEY`. Consider making the length at least 50 characters long. 
-* Update `TIME_ZONE` if necessary
-* Uncomment `CENTER_NAME` and update it
 
 5. Copy config/local_strings.py.sample to config/local_strings.py and update if desired. 
 ```
@@ -79,7 +75,7 @@ cp coldfront/config/local_strings.py.sample coldfront/config/local_strings.py
 python manage.py initial_setup
 ```
 
-7. Optional: Add some test data
+7. OPTIONAL: Add some test data
 ```
 python manage.py load_test_data
 ```
@@ -150,6 +146,8 @@ Password for all users is also `teset1234`.
 ### Adding a Resource
 ![Adding a Resource](coldfront/docs/source/user_guide/images/adding_resource.gif "Adding a Resource")
 
+### Generate Slurm Association Data 
+![Generate Slurm Association Data](coldfront/docs/source/user_guide/images/slurm_dump.gif "Generate Slurm Association Data")
 
 ## License
 
