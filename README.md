@@ -27,7 +27,7 @@ subscribe ccr-open-coldfront-list@listserv.buffalo.edu first_name last_name
 ## Installation Demo
 ![Installation](coldfront/docs/source/user_guide/images/installation.gif "Installation")
 
-# <a name="demos"></a> More Demos
+[Click here for more demos](#demos)
 
 ## Quick Install
 
@@ -123,8 +123,8 @@ Password for all users is also `teset1234`.
         - system_monitor
 
 
-[Coldfront Demos](#demos)
-## ColdFront Demonstration
+
+## <a name="demos"></a>ColdFront Demonstration
 
 ### Adding a Project
 ![Adding Project](coldfront/docs/source/user_guide/images/adding_project.gif "Adding a project")
