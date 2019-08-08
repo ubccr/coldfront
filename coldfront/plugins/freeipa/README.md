@@ -30,13 +30,34 @@ ipaclient python library.
 
 ## Requirements
 
+### Install required system packages for dbus python
+
+- yum install dbus-devel glib2-devel libsss_simpleifp
+
+### Install required python packages
+
 - pip install django-q
 - pip install ipaclient
+- pip install dbus-python
 
-To run django-q:
+### Update sssd.conf to enable infopipe
+
+Edit file /etc/sssd/sssd.conf and add following:
 
 ```
-    python manage.py qcluster
+[sssd]
+services = nss, sudo, pam, ssh, ifp
+
+[ifp]
+allowed_uids = root, coldfront-user
+user_attributes = +mail, +givenname, +sn, +uid, +nsaccountlock
+```
+
+Then restart sssd:
+
+```
+$ systemctl restart sssd
+$ sss_cache -E
 ```
 
 ## Usage
