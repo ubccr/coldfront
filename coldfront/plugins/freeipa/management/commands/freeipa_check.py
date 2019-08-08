@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import dbus
 
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand, CommandError
@@ -111,30 +112,26 @@ class Command(BaseCommand):
         if len(active_groups) == 0 and len(removed_groups) == 0:
             return
 
-        logger.info("Checking FreeIPA user %s", user.username)
+        logger.info("Checking FreeIPA user=%s active_groups=%s removed_groups=%s", user.username, active_groups, removed_groups)
 
         freeipa_groups = []
         freeipa_status = 'Unknown'
         try:
-            res = api.Command.user_show(user.username)
-            logger.debug(res)
-            self.check_ipa_error(res)
-            for g in res['result'].get('memberof_group', ()):
-                freeipa_groups.append(g)
-            for g in res['result'].get('memberofindirect_group', ()):
-                freeipa_groups.append(g)
+            result = self.ifp.GetUserGroups(user.username)
+            logger.debug(result)
+            freeipa_groups = [str(x) for x in result]
 
-            if res['result'].get('nsaccountlock', False):
+            result = self.ifp.GetUserAttr(user.username, ["nsaccountlock"])
+            if 'nsAccountLock' in result and str(result['nsAccountLock'][0]) == 'TRUE':
                 freeipa_status = 'Disabled'
             else:
                 freeipa_status = 'Enabled'
-
-        except NotFound as e:
-            logger.warn("User %s not found in FreeIPA", user.username)
-            freeipa_status = 'NotFound'
-        except Exception as e:
-            logger.error("Failed to find user %s in FreeIPA: %s",
-                         user.username, e)
+        except dbus.exceptions.DBusException as e:
+            if 'No such user' in str(e):
+                logger.warn("User %s not found in FreeIPA", user.username)
+                freeipa_status = 'NotFound'
+            else:
+                logger.error("dbus error failed to find user %s in FreeIPA: %s", user.username, e)
             return
 
         for g in active_groups:
@@ -239,6 +236,10 @@ class Command(BaseCommand):
 
         if options['header']:
             self.write('\t'.join(header))
+
+        bus = dbus.SystemBus()
+        infopipe_obj = bus.get_object("org.freedesktop.sssd.infopipe", "/org/freedesktop/sssd/infopipe")
+        self.ifp = dbus.Interface(infopipe_obj, dbus_interface='org.freedesktop.sssd.infopipe')
 
         users = User.objects.filter(is_active=True)
         logger.info("Processing %s active users", len(users))
