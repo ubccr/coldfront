@@ -42,7 +42,7 @@ ipaclient python library.
 
 ### Update sssd.conf to enable infopipe
 
-Edit file /etc/sssd.conf and add following:
+Edit file /etc/sssd/sssd.conf and add following:
 
 ```
 [sssd]
