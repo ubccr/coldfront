@@ -8,7 +8,7 @@ from django.core.management.base import BaseCommand, CommandError
 from ipalib import api
 from ipalib.errors import NotFound
 
-from coldfront.core.allocation.models import Allocation
+from coldfront.core.allocation.models import Allocation, AllocationUser
 from coldfront.plugins.freeipa.utils import (CLIENT_KTNAME, FREEIPA_NOOP,
                                              UNIX_GROUP_ATTRIBUTE_NAME,
                                              AlreadyMemberError,
@@ -159,18 +159,30 @@ class Command(BaseCommand):
         if self.filter_user and self.filter_user != user.username:
             return
 
-        user_allocations = Allocation.objects.filter(
-            allocationuser__user=user,
-            status__name='Active',
-            allocationuser__status__name='Active',
-            allocationattribute__allocation_attribute_type__name=UNIX_GROUP_ATTRIBUTE_NAME
-        ).distinct()
+        user_allocations = AllocationUser.objects.filter(
+            user=user,
+            allocation__allocationattribute__allocation_attribute_type__name=UNIX_GROUP_ATTRIBUTE_NAME
+        )
 
         active_groups = []
-        for a in user_allocations:
-            for g in a.get_attribute_list(UNIX_GROUP_ATTRIBUTE_NAME):
-                if g not in active_groups:
-                    active_groups.append(g)
+        for ua in user_allocations:
+            if ua.status.name == 'Active' and ua.allocation.status.name == 'Active':
+                for g in ua.allocation.get_attribute_list(UNIX_GROUP_ATTRIBUTE_NAME):
+                    if g not in active_groups:
+                        active_groups.append(g)
+
+        removed_groups = []
+        for ua in user_allocations:
+            if ua.status.name == 'Active' and ua.allocation.status.name == 'Active':
+                continue
+
+            # XXX Skip new or renewal allocations??
+            if ua.allocation.status.name == 'New' or ua.allocation.status.name == 'Renewal Requested':
+                continue
+
+            for g in ua.allocation.get_attribute_list(UNIX_GROUP_ATTRIBUTE_NAME):
+                if g not in removed_groups and g not in active_groups:
+                    removed_groups.append(g)
 
         if self.filter_group:
             if self.filter_group in active_groups:
@@ -178,23 +190,6 @@ class Command(BaseCommand):
             else:
                 active_groups = []
 
-        user_allocations = Allocation.objects.filter(
-            allocationuser__user=user,
-            allocationattribute__allocation_attribute_type__name=UNIX_GROUP_ATTRIBUTE_NAME
-        ).exclude(
-            status__name__in=['New', 'Renewal Requested'],
-        ).exclude(
-            status__name='Active',
-            allocationuser__status__name='Active',
-        ).distinct()
-
-        removed_groups = []
-        for a in user_allocations:
-            for g in a.get_attribute_list(UNIX_GROUP_ATTRIBUTE_NAME):
-                if g not in removed_groups and g not in active_groups:
-                    removed_groups.append(g)
-
-        if self.filter_group:
             if self.filter_group in removed_groups:
                 removed_groups = [self.filter_group]
             else:
