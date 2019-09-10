@@ -184,9 +184,13 @@ class Command(BaseCommand):
 
     def _diff(self, cluster_a, cluster_b, action):
         for name, account in cluster_a.accounts.items():
+            if name == 'root':
+                continue
             if name in cluster_b.accounts:
                 total = 0
                 for uid, user in account.users.items():
+                    if uid == 'root':
+                        continue
                     if uid not in cluster_b.accounts[name].users:
                         if action == 'Remove':
                             self.remove_user(uid, name, cluster_a.name)
