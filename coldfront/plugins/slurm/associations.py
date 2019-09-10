@@ -93,6 +93,7 @@ class SlurmCluster(SlurmBase):
         """Create a new SlurmCluster from a ColdFront Resource model."""
         name = resource.get_attribute(SLURM_CLUSTER_ATTRIBUTE_NAME)
         specs = resource.get_attribute_list(SLURM_SPECS_ATTRIBUTE_NAME)
+        user_specs = resource.get_attribute_list(SLURM_USER_SPECS_ATTRIBUTE_NAME)
         if not name:
             raise(SlurmError('Resource {} missing slurm_cluster'.format(resource)))
 
@@ -100,7 +101,7 @@ class SlurmCluster(SlurmBase):
 
         # Process allocations
         for allocation in resource.allocation_set.filter(status__name='Active'):
-            cluster.add_allocation(allocation)
+            cluster.add_allocation(allocation, user_specs=user_specs)
 
         # Process child resources
         children = Resource.objects.filter(
@@ -108,11 +109,11 @@ class SlurmCluster(SlurmBase):
         for r in children:
             partition_specs = r.get_attribute_list(SLURM_SPECS_ATTRIBUTE_NAME)
             for allocation in r.allocation_set.filter(status__name='Active'):
-                cluster.add_allocation(allocation, specs=partition_specs)
+                cluster.add_allocation(allocation, specs=partition_specs, user_specs=user_specs)
 
         return cluster
 
-    def add_allocation(self, allocation, specs=None):
+    def add_allocation(self, allocation, specs=None, user_specs=None):
         if specs is None:
             specs = []
 
@@ -122,7 +123,7 @@ class SlurmCluster(SlurmBase):
             name = 'root'
 
         account = self.accounts.get(name, SlurmAccount(name))
-        account.add_allocation(allocation)
+        account.add_allocation(allocation, user_specs=user_specs)
         account.specs += specs
         self.accounts[name] = account
 
@@ -170,8 +171,11 @@ class SlurmAccount(SlurmBase):
 
         return SlurmAccount(name, specs=parts[1:])
 
-    def add_allocation(self, allocation):
+    def add_allocation(self, allocation, user_specs=None):
         """Add users from a ColdFront Allocation model to SlurmAccount"""
+        if user_specs is None:
+            user_specs = []
+
         name = allocation.get_attribute(SLURM_ACCOUNT_ATTRIBUTE_NAME)
         if not name:
             name = 'root'
@@ -182,10 +186,10 @@ class SlurmAccount(SlurmBase):
 
         self.specs += allocation.get_attribute_list(SLURM_SPECS_ATTRIBUTE_NAME)
 
-        user_specs = allocation.get_attribute_list(
-            SLURM_USER_SPECS_ATTRIBUTE_NAME)
+        allocation_user_specs = allocation.get_attribute_list(SLURM_USER_SPECS_ATTRIBUTE_NAME)
         for u in allocation.allocationuser_set.filter(status__name='Active'):
             user = SlurmUser(u.user.username)
+            user.specs += allocation_user_specs
             user.specs += user_specs
             self.add_user(user)
 
