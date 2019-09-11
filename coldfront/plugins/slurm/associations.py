@@ -1,4 +1,5 @@
 import datetime
+import logging
 import os
 import re
 import sys
@@ -10,6 +11,7 @@ from coldfront.plugins.slurm.utils import (SLURM_ACCOUNT_ATTRIBUTE_NAME,
                                            SLURM_USER_SPECS_ATTRIBUTE_NAME,
                                            SlurmError)
 
+logger = logging.getLogger(__name__)
 
 class SlurmParserError(SlurmError):
     pass
@@ -108,8 +110,9 @@ class SlurmCluster(SlurmBase):
             parent_resource_id=resource.id, resource_type__name='Cluster Partition')
         for r in children:
             partition_specs = r.get_attribute_list(SLURM_SPECS_ATTRIBUTE_NAME)
+            partition_user_specs = r.get_attribute_list(SLURM_USER_SPECS_ATTRIBUTE_NAME)
             for allocation in r.allocation_set.filter(status__name='Active'):
-                cluster.add_allocation(allocation, specs=partition_specs, user_specs=user_specs)
+                cluster.add_allocation(allocation, specs=partition_specs, user_specs=partition_user_specs)
 
         return cluster
 
@@ -122,6 +125,7 @@ class SlurmCluster(SlurmBase):
         if not name:
             name = 'root'
 
+        logger.warn("Adding allocation name=%s specs=%s user_specs=%s", name, specs, user_specs)
         account = self.accounts.get(name, SlurmAccount(name))
         account.add_allocation(allocation, user_specs=user_specs)
         account.specs += specs
