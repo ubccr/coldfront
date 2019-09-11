@@ -125,7 +125,7 @@ class SlurmCluster(SlurmBase):
         if not name:
             name = 'root'
 
-        logger.warn("Adding allocation name=%s specs=%s user_specs=%s", name, specs, user_specs)
+        logger.info("Adding allocation name=%s specs=%s user_specs=%s", name, specs, user_specs)
         account = self.accounts.get(name, SlurmAccount(name))
         account.add_allocation(allocation, user_specs=user_specs)
         account.specs += specs
