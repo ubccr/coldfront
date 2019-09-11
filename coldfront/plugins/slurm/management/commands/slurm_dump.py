@@ -17,6 +17,17 @@ class Command(BaseCommand):
         parser.add_argument("-c", "--cluster", help="Only output specific Slurm cluster")
 
     def handle(self, *args, **options):
+        verbosity = int(options['verbosity'])
+        root_logger = logging.getLogger('')
+        if verbosity == 0:
+            root_logger.setLevel(logging.ERROR)
+        elif verbosity == 2:
+            root_logger.setLevel(logging.INFO)
+        elif verbosity == 3:
+            root_logger.setLevel(logging.DEBUG)
+        else:
+            root_logger.setLevel(logging.WARN)
+
         out_dir = None
         if options['output']:
             out_dir = options['output']
