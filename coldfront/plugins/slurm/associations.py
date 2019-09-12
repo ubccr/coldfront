@@ -25,6 +25,15 @@ class SlurmBase:
         self.name = name
         self.specs = specs
 
+    def spec_list(self):
+        """Return unique list of Slurm Specs"""
+        items = []
+        for s in self.specs:
+            for i in s.split(':'):
+                items.append(i)
+
+        return list(set(items))
+
     def format_specs(self):
         """Format unique list of Slurm Specs"""
         items = []
@@ -32,7 +41,7 @@ class SlurmBase:
             for i in s.split(':'):
                 items.append(i)
 
-        return ':'.join([x for x in list(set(items))])
+        return ':'.join([x for x in self.spec_list()])
 
     def _write(self, out, data):
         try:
@@ -125,7 +134,7 @@ class SlurmCluster(SlurmBase):
         if not name:
             name = 'root'
 
-        logger.info("Adding allocation name=%s specs=%s user_specs=%s", name, specs, user_specs)
+        logger.debug("Adding allocation name=%s specs=%s user_specs=%s", name, specs, user_specs)
         account = self.accounts.get(name, SlurmAccount(name))
         account.add_allocation(allocation, user_specs=user_specs)
         account.specs += specs

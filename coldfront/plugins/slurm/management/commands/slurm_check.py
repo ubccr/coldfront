@@ -12,9 +12,8 @@ from coldfront.plugins.slurm.associations import SlurmCluster
 from coldfront.plugins.slurm.utils import (SLURM_ACCOUNT_ATTRIBUTE_NAME,
                                            SLURM_CLUSTER_ATTRIBUTE_NAME,
                                            SLURM_USER_SPECS_ATTRIBUTE_NAME,
-                                           SlurmError, slurm_add_account,
-                                           slurm_add_assoc, slurm_dump_cluster,
-                                           slurm_remove_account,
+                                           SlurmError, slurm_remove_qos,
+                                           slurm_dump_cluster, slurm_remove_account,
                                            slurm_remove_assoc)
 
 SLURM_IGNORE_USERS = import_from_settings('SLURM_IGNORE_USERS', [])
@@ -126,102 +125,96 @@ class Command(BaseCommand):
 
         self.write('\t'.join(row))
 
-    def add_user(self, user, account, cluster, specs):
+    def remove_qos(self, user, account, cluster, qos):
         if self._skip_user(user, account):
             return
 
         if self.sync:
             try:
-                spec_list = []
-                if len(specs) > 0:
-                    spec_list = specs.split(':')
-                slurm_add_assoc(user, cluster, account,
-                                specs=spec_list, noop=self.noop)
+                slurm_remove_qos(user, cluster, account, qos, noop=self.noop)
+                pass
             except SlurmError as e:
                 logger.error(
-                    "Failed adding Slurm association user %s account %s cluster %s: %s", user, account, cluster, e)
+                    "Failed removing Slurm qos %s for user %s account %s cluster %s: %s", qos, user, account, cluster, e)
             else:
                 logger.error(
-                    "Added Slurm association user %s account %s cluster %s successfully", user, account, cluster)
+                    "Removed Slurm qos %s for user %s account %s cluster %s successfully", qos, user, account, cluster)
 
         row = [
             user,
             account,
             cluster,
-            'Add',
-            specs,
+            'Remove',
+            qos
         ]
 
         self.write('\t'.join(row))
 
-    def add_account(self, account, cluster, specs):
-        if self._skip_account(account):
-            return
+    def _parse_qos(self, qos):
+        if qos.startswith('QOS+='):
+            qos = qos.replace('QOS+=', '')
+            qos = qos.replace("'", '')
+            return qos.split(',')
+        elif qos.startswith('QOS='):
+            qos = qos.replace('QOS=', '')
+            qos = qos.replace("'", '')
+            lst = []
+            for q in qos.split(','):
+                if q.startswith('+'):
+                    lst.append(q.replace('+', ''))
+            return lst
 
-        if self.sync:
-            try:
-                spec_list = []
-                if len(specs) > 0:
-                    spec_list = specs.split(':')
-                slurm_add_account(cluster, account,
-                                  specs=spec_list, noop=self.noop)
-            except SlurmError as e:
-                logger.error(
-                    "Failed adding Slurm account %s cluster %s: %s", account, cluster, e)
-            else:
-                logger.error(
-                    "Added Slurm account %s cluster %s successfully", account, cluster)
+        return []
+                    
+    def _diff_qos(self, account_name, cluster_name, user_a, user_b):
+        logger.debug("diff qos: cluster=%s account=%s uid=%s a=%s b=%s", cluster_name, account_name, user_a.name, user_a.spec_list(), user_b.spec_list())
 
-        row = [
-            '',
-            account,
-            cluster,
-            'Add',
-            specs,
-        ]
+        specs_a = []
+        for s in user_a.spec_list():
+            if s.startswith('QOS'):
+                specs_a += self._parse_qos(s)
 
-        self.write('\t'.join(row))
+        specs_b = []
+        for s in user_b.spec_list():
+            if s.startswith('QOS'):
+                specs_b += self._parse_qos(s)
 
-    def _diff(self, cluster_a, cluster_b, action):
+        specs_set_a = set(specs_a)
+        specs_set_b = set(specs_b)
+
+        diff = specs_set_a.difference(specs_set_b)
+        logger.debug("diff qos: cluster=%s account=%s uid=%s a=%s b=%s diff=%s", cluster_name, account_name, user_a.name, specs_set_a, specs_set_b, diff)
+            
+        if len(diff) > 0:
+            self.remove_qos(user_a.name, account_name, cluster_name, 'QOS-='+','.join([x for x in list(diff)]))
+
+    def _diff(self, cluster_a, cluster_b):
         for name, account in cluster_a.accounts.items():
             if name == 'root':
                 continue
+
             if name in cluster_b.accounts:
                 total = 0
                 for uid, user in account.users.items():
                     if uid == 'root':
                         continue
                     if uid not in cluster_b.accounts[name].users:
-                        if action == 'Remove':
-                            self.remove_user(uid, name, cluster_a.name)
-                        elif action == 'Add':
-                            self.add_user(
-                                uid, name, cluster_a.name, user.format_specs())
+                        self.remove_user(uid, name, cluster_a.name)
                         total += 1
+                    else:
+                        self._diff_qos(name, cluster_a.name, user, cluster_b.accounts[name].users[uid])
 
-                if action == 'Remove' and total == len(account.users):
+                if total == len(account.users):
                     self.remove_account(name, cluster_a.name)
             else:
-                if action == 'Add':
-                    self.add_account(name, cluster_a.name,
-                                     account.format_specs())
-
                 for uid, user in account.users.items():
-                    if action == 'Remove':
-                        self.remove_user(uid, name, cluster_a.name)
-                    elif action == 'Add':
-                        self.add_user(uid, name, cluster_a.name,
-                                      user.format_specs())
+                    self.remove_user(uid, name, cluster_a.name)
 
-                if action == 'Remove':
-                    self.remove_account(name, cluster_a.name)
+                self.remove_account(name, cluster_a.name)
 
     def check_consistency(self, slurm_cluster, coldfront_cluster):
         # Check for accounts in Slurm NOT in ColdFront
-        self._diff(slurm_cluster, coldfront_cluster, 'Remove')
-
-        # Check for accounts in Colfront NOT in Slurm
-        self._diff(coldfront_cluster, slurm_cluster, 'Add')
+        self._diff(slurm_cluster, coldfront_cluster)
 
     def _cluster_from_dump(self, cluster):
         slurm_cluster = None
