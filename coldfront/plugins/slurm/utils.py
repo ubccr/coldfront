@@ -12,6 +12,7 @@ SLURM_SPECS_ATTRIBUTE_NAME = import_from_settings('SLURM_SPECS_ATTRIBUTE_NAME', 
 SLURM_USER_SPECS_ATTRIBUTE_NAME = import_from_settings('SLURM_USER_SPECS_ATTRIBUTE_NAME', 'slurm_user_specs')
 SLURM_SACCTMGR_PATH = import_from_settings('SLURM_SACCTMGR_PATH', '/usr/bin/sacctmgr')
 SLURM_CMD_REMOVE_USER = SLURM_SACCTMGR_PATH + ' -Q -i delete user where name={} cluster={} account={}'
+SLURM_CMD_REMOVE_QOS = SLURM_SACCTMGR_PATH + ' -Q -i modify user where name={} cluster={} account={} set {}'
 SLURM_CMD_REMOVE_ACCOUNT = SLURM_SACCTMGR_PATH + ' -Q -i delete account where name={} cluster={}'
 SLURM_CMD_ADD_ACCOUNT = SLURM_SACCTMGR_PATH + ' -Q -i create account name={} cluster={}'
 SLURM_CMD_ADD_USER = SLURM_SACCTMGR_PATH + ' -Q -i create user name={} cluster={} account={}'
@@ -52,6 +53,10 @@ def _run_slurm_cmd(cmd, noop=True):
 
 def slurm_remove_assoc(user, cluster, account, noop=False):
     cmd = SLURM_CMD_REMOVE_USER.format(shlex.quote(user), shlex.quote(cluster), shlex.quote(account))
+    _run_slurm_cmd(cmd, noop=noop)
+
+def slurm_remove_qos(user, cluster, account, qos, noop=False):
+    cmd = SLURM_CMD_REMOVE_QOS.format(shlex.quote(user), shlex.quote(cluster), shlex.quote(account), shlex.quote(qos))
     _run_slurm_cmd(cmd, noop=noop)
 
 def slurm_remove_account(cluster, account, noop=False):
