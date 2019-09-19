@@ -109,9 +109,6 @@ class Command(BaseCommand):
                          user.username, e)
 
     def check_user_freeipa(self, user, active_groups, removed_groups):
-        if len(active_groups) == 0 and len(removed_groups) == 0:
-            return
-
         logger.info("Checking FreeIPA user=%s active_groups=%s removed_groups=%s", user.username, active_groups, removed_groups)
 
         freeipa_groups = []
@@ -134,6 +131,15 @@ class Command(BaseCommand):
                 logger.error("dbus error failed to find user %s in FreeIPA: %s", user.username, e)
             return
 
+        if freeipa_status == 'Disabled' and user.is_active:
+            logger.warn(
+                'User is active in coldfront but disabled in FreeIPA: %s', user.username)
+            self.sync_user_status(user, active=False)
+        elif freeipa_status == 'Enabled' and not user.is_active:
+            logger.warn(
+                'User is not active in coldfront but enabled in FreeIPA: %s', user.username)
+            self.sync_user_status(user, active=True)
+
         for g in active_groups:
             if g not in freeipa_groups:
                 logger.warn(
@@ -145,15 +151,6 @@ class Command(BaseCommand):
                 logger.warn(
                     'User %s should be removed from freeipa group: %s', user.username, g)
                 self.remove_group(user, g, freeipa_status)
-
-        if freeipa_status == 'Disabled' and user.is_active:
-            logger.warn(
-                'User is active in coldfront but disabled in FreeIPA: %s', user.username)
-            self.sync_user_status(user, active=False)
-        elif freeipa_status == 'Enabled' and not user.is_active:
-            logger.warn(
-                'User is not active in coldfront but enabled in FreeIPA: %s', user.username)
-            self.sync_user_status(user, active=True)
 
     def process_user(self, user):
         if self.filter_user and self.filter_user != user.username:
