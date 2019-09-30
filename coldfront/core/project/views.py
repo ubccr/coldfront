@@ -59,7 +59,6 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     model = Project
     template_name = 'project/project_detail.html'
     context_object_name = 'project'
-    # login_url = "/"  # redirect URL if fail test_func
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
