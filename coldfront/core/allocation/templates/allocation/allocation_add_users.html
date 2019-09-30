@@ -49,8 +49,7 @@ Add Users to Allocation
       <div>
         <button type="submit" class="btn btn-primary"><i class="fas
             fa-user-plus"></i> Add Selected Users to Allocation</button>
-        <a class="btn btn-secondary" href="{% url 'allocation-detail'
-          allocation.pk %}" role="button"><i class="fas fa-long-arrow-left"></i>
+        <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation.pk %}" role="button"><i class="fas fa-long-arrow-left"></i>
           Back to Allocation</a>
         <br>
       </div>
@@ -58,8 +57,7 @@ Add Users to Allocation
   </div>
 </div>
 {% else %}
-<a class="btn btn-secondary mb-3" href="{% url 'allocation-detail' allocation.pk
-  %}" role="button"><i class="fas fa-long-arrow-left"></i> Back to Allocation</a>
+<a class="btn btn-secondary mb-3" href="{% url 'allocation-detail' allocation.pk %}" role="button"><i class="fas fa-long-arrow-left"></i> Back to Allocation</a>
 <div class="alert alert-info">
   All users in project are already in this allocation!
 </div>
