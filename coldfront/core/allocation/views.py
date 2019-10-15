@@ -1237,13 +1237,15 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
                             sender=self.__class__, allocation_user_pk=allocation_user_obj.pk)
 
                     elif user_status == 'remove_from_project':
-                        allocation_user_obj = allocation_obj.allocationuser_set.get(
-                            user=user_obj)
-                        allocation_user_obj.status = allocation_user_removed_status_choice
-                        allocation_user_obj.save()
+                        for active_allocation in allocation_obj.project.allocation_set.filter(status__name__in=(
+                            'Active', 'Denied', 'New', 'Paid', 'Payment Pending', 
+                            'Payment Requested', 'Payment Declined', 'Renewal Requested', 'Unpaid',)):
 
-                        allocation_remove_user.send(
-                            sender=self.__class__, allocation_user_pk=allocation_user_obj.pk)
+                            allocation_user_obj = active_allocation.allocationuser_set.get(user=user_obj)
+                            allocation_user_obj.status = allocation_user_removed_status_choice
+                            allocation_user_obj.save()
+                            allocation_remove_user.send(
+                                sender=self.__class__, allocation_user_pk=allocation_user_obj.pk)
 
                         project_user_obj = ProjectUser.objects.get(
                             project=allocation_obj.project,
