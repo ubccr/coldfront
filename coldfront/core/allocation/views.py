@@ -1165,7 +1165,7 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
 
     def get_users_in_allocation(self, allocation_obj):
         users_in_allocation = allocation_obj.allocationuser_set.exclude(
-            status__name__in=['Removed']).exclude(user__pk__in=[allocation_obj.project.pi.pk, self.request.user.pk]).order_by('user__last_name')
+            status__name__in=['Removed']).exclude(user__pk__in=[allocation_obj.project.pi.pk, self.request.user.pk]).order_by('user__username')
 
         users = [
 
