@@ -54,6 +54,12 @@ def send_expiry_emails():
             if expire_notification and expire_notification.value == 'No':
                 continue
 
+            cloud_usage_notification = allocation_obj.allocationattribute_set.filter(
+                allocation_attribute_type__name='CLOUD_USAGE_NOTIFICATION').first()
+            if cloud_usage_notification and cloud_usage_notification.value == 'No':
+                continue
+
+
             allocation_renew_url = '{}/{}/{}/{}'.format(
                 CENTER_BASE_URL.strip('/'), 'allocation', allocation_obj.pk, 'renew')
 
