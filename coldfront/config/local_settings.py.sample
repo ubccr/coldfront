@@ -266,6 +266,7 @@ LOCAL_SETTINGS_EXPORT += [
 # OIDC_OP_TOKEN_ENDPOINT = "https://localhost/hydra/oauth2/token"
 # OIDC_OP_USER_ENDPOINT = "https://localhost/hydra/userinfo"
 # OIDC_VERIFY_SSL = True
+# OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS = 60 * 60
 
 #------------------------------------------------------------------------------
 # Enable Slurm support

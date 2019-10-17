@@ -85,7 +85,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
     model = Allocation
     template_name = 'allocation/allocation_detail.html'
     context_object_name = 'allocation'
-    login_url = '/'  # redirect URL if fail test_func
+    
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -471,7 +471,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
 class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     form_class = AllocationForm
     template_name = 'allocation/allocation_create.html'
-    login_url = '/'  # redirect URL if fail test_func
+    
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -629,7 +629,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
 class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'allocation/allocation_add_users.html'
-    login_url = '/'  # redirect URL if fail test_func
+    
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -742,7 +742,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
 class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'allocation/allocation_remove_users.html'
-    login_url = '/'  # redirect URL if fail test_func
+    
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -885,7 +885,7 @@ class AllocationAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Cre
 
 class AllocationAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'allocation/allocation_allocationattribute_delete.html'
-    login_url = '/'  # redirect URL if fail test_func
+    
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -1117,7 +1117,7 @@ class AllocationDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
 
 class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'allocation/allocation_renew.html'
-    login_url = '/'  # redirect URL if fail test_func
+    
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -1282,7 +1282,7 @@ class AllocationInvoiceListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
     model = Allocation
     template_name = 'allocation/allocation_invoice_list.html'
     context_object_name = 'allocation_list'
-    login_url = '/'  # redirect URL if fail test_func
+    
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -1307,7 +1307,7 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
     model = Allocation
     template_name = 'allocation/allocation_invoice_detail.html'
     context_object_name = 'allocation'
-    login_url = '/'  # redirect URL if fail test_func
+    
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -1355,7 +1355,7 @@ class AllocationAddInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, Crea
     model = AllocationUserNote
     template_name = 'allocation/allocation_add_invoice_note.html'
     fields = ('is_private', 'note',)
-    login_url = '/'  # redirect URL if fail test_func
+    
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -1392,7 +1392,7 @@ class AllocationUpdateInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, U
     model = AllocationUserNote
     template_name = 'allocation/allocation_update_invoice_note.html'
     fields = ('is_private', 'note',)
-    login_url = '/'  # redirect URL if fail test_func
+    
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -1511,7 +1511,7 @@ class AllocationAccountListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
     model = AllocationAccount
     template_name = 'allocation/allocation_account_list.html'
     context_object_name = 'allocationaccount_list'
-    login_url = '/'  # redirect URL if fail test_func
+    
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
