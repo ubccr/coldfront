@@ -17,10 +17,13 @@
         <li id="navbar-project-menu" class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">Project</a>
           <div class="dropdown-menu">
-            <a class="dropdown-item" href="{% url 'project-list' %}">Projects</a>
-            <a class="dropdown-item" href="{% url 'allocation-list' %}">Allocations</a>
+            <a id="navbar-project" class="dropdown-item" href="{% url 'project-list' %}">Projects</a>
+            <a id="navbar-allocation" class="dropdown-item" href="{% url 'allocation-list' %}">Allocations</a>
             {% if settings.ALLOCATION_ACCOUNT_ENABLED  %}
             <a class="dropdown-item" href="{% url 'allocation-account-list' %}">Allocation Accounts</a>
+            {% endif %}
+            {% if request.user.userprofile.is_pi  %}
+            <a id="navbar-user-allocation" class="dropdown-item" href="{% url 'user-list-allocations' %}">User Allocations</a>
             {% endif %}
           </div>
         </li>
