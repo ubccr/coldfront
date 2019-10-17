@@ -706,7 +706,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
              'email': ele.user.email,
              'role': ele.role}
 
-            for ele in project_obj.projectuser_set.filter(status__name='Active') if ele.user != self.request.user and ele.user != project_obj.pi
+            for ele in project_obj.projectuser_set.filter(status__name='Active').order_by('user__username') if ele.user != self.request.user and ele.user != project_obj.pi
         ]
 
         return users_to_remove
