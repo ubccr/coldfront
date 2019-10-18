@@ -115,7 +115,7 @@ class ResourceAttribute(TimeStampedModel):
     resource_attribute_type = models.ForeignKey(
         ResourceAttributeType, on_delete=models.CASCADE)
     resource = models.ForeignKey(Resource, on_delete=models.CASCADE)
-    value = models.CharField(max_length=512)
+    value = models.TextField()
     history = HistoricalRecords()
 
     def clean(self):

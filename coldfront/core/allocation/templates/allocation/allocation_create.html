@@ -22,6 +22,14 @@ Request New Allocation
 <form method="post">
   {% csrf_token %}
   {{form |crispy}}
+
+  <div id="eula-div" style="display: none;">
+  <textarea style="display:none;min-width:100%" id="eula"  rows="15">
+  </textarea>
+  <br>
+  <p class="font-weight-bold">By clicking submit you agree to the Terms and Conditions.</p>
+  </div>
+
   <input class="btn btn-primary" type="submit" value="Submit" />
   <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button">Back to Project</a><br>
 </form>
@@ -59,6 +67,7 @@ Request New Allocation
   var resources_form_default_quantities = {{ resources_form_default_quantities | safe }};
   var resources_form_label_texts = {{ resources_form_label_texts | safe }};
   var resources_with_accounts = {{ resources_with_accounts | safe }};
+  var resources_with_eula = {{ resources_with_eula | safe }};
 
   $(document).ready(function () {
     $('<br><input id="selectAll" class="check" type="checkbox"> <strong>Select All Users</strong>').insertAfter($("#div_id_users > label"))
@@ -147,6 +156,17 @@ Request New Allocation
     } else {
       $('#div_id_allocation_account').hide();
     }
+
+    if (resources_with_eula[resource_id]) {
+      $('#eula').text(resources_with_eula[resource_id])
+      $('#eula-div').show();
+      $('#eula').show();
+    } else {
+      $('#eula').hide();
+      $('#eula-div').hide();
+    }
+
+
   });
 </script>
 {% endblock %}
