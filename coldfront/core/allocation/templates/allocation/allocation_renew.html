@@ -72,6 +72,13 @@ Renew Allocation
       return to the project page.
       <hr>
       {% endif %}
+
+      <div id="eula-div" style="display: none;">
+        <textarea style="display:none;min-width:100%" id="eula"  rows="15">
+        </textarea>
+        <br>
+        <p class="font-weight-bold">By clicking submit you agree to the Terms and Conditions.</p>
+      </div>
       <div class="mb-3">
         <button type="submit" class="btn btn-primary">Submit</button>
         <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation.pk %}" role="button"><i
@@ -83,6 +90,16 @@ Renew Allocation
 </div>
 
 <script>
+  var resource_eula = {{ resource_eula | safe }};
+
+
+  $(document).ready(function () {
+    if (resource_eula['eula']) {
+      $('#eula').text(resource_eula['eula'])
+      $('#eula-div').show();
+      $('#eula').show();
+    }
+  });
   $("#selectAll").click(function () {
     $("input[name^='userform-']").prop('checked', $(this).prop('checked'));
   });
