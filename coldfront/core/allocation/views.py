@@ -774,11 +774,6 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk'))
 
-        if allocation_obj.is_locked and not self.request.user.is_superuser:
-            messages.error(
-                request, 'You cannot modify this allocation because it is locked! Contact support for details.')
-            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
-
         if allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', ]:
             messages.error(request, 'You cannot remove users from a allocation with status {}.'.format(
                 allocation_obj.status.name))
