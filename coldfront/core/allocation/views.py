@@ -773,7 +773,6 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
     def dispatch(self, request, *args, **kwargs):
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk'))
-
         if allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', ]:
             messages.error(request, 'You cannot remove users from a allocation with status {}.'.format(
                 allocation_obj.status.name))
