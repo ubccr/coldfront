@@ -515,6 +515,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         user_resources = get_user_resources(self.request.user)
         resources_form_default_quantities = {}
         resources_form_label_texts = {}
+        resources_with_eula = {}
         for resource in user_resources:
             if resource.resourceattribute_set.filter(resource_attribute_type__name='quantity_default_value').exists():
                 value = resource.resourceattribute_set.get(
@@ -525,10 +526,15 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     resource_attribute_type__name='quantity_label').value
                 resources_form_label_texts[resource.id] = mark_safe(
                     '<strong>{}*</strong>'.format(value))
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='eula').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='eula').value
+                resources_with_eula[resource.id] = value
 
         context['AllocationAccountForm'] = AllocationAccountForm()
         context['resources_form_default_quantities'] = resources_form_default_quantities
         context['resources_form_label_texts'] = resources_form_label_texts
+        context['resources_with_eula'] = resources_with_eula
         context['resources_with_accounts'] = list(Resource.objects.filter(
             name__in=list(ALLOCATION_ACCOUNT_MAPPING.keys())).values_list('id', flat=True))
 

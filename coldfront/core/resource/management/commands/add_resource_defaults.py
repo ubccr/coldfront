@@ -21,6 +21,7 @@ class Command(BaseCommand):
             ('Owner', 'Text'),
             ('quantity_default_value', 'Int'),
             ('quantity_label', 'Text'),
+            ('eula', 'Text'),
             ('ServiceEnd', 'Date'),
             ('ServiceStart', 'Date'),
             ('slurm_cluster', 'Text'),
