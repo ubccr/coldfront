@@ -1200,6 +1200,11 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
             formset = formset(initial=users_in_allocation, prefix='userform')
             context['formset'] = formset
 
+            context['resource_eula'] = {}
+            if allocation_obj.get_parent_resource.resourceattribute_set.filter(resource_attribute_type__name='eula').exists():
+                value = allocation_obj.get_parent_resource.resourceattribute_set.get(resource_attribute_type__name='eula').value
+                context['resource_eula'].update({'eula': value})
+
         context['allocation'] = allocation_obj
         return render(request, self.template_name, context)
 
