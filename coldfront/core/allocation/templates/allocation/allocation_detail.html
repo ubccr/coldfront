@@ -114,6 +114,15 @@ Allocation Detail
             <th style="white-space:nowrap;">Last Modified:</th>
             <td>{{ allocation.modified|date:"M. d, Y" }}</td>
           </tr>
+          <tr>
+            {% if allocation.is_locked %}
+              <th style="white-space:nowrap;">Locked</th>
+              <td><i class="fas fa-lock"></i></td>
+            {% else %}
+              <th style="white-space:nowrap;">Unlocked</th>
+              <td><i class="fas fa-lock-open"></i></td>
+            {% endif %}
+          </tr>
         </table>
       </div>
       {% if request.user.is_superuser %}
