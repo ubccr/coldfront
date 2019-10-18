@@ -85,7 +85,6 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
     model = Allocation
     template_name = 'allocation/allocation_detail.html'
     context_object_name = 'allocation'
-    
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -388,7 +387,8 @@ class AllocationListView(LoginRequiredMixin, ListView):
             if data.get('allocation_attribute_name') and data.get('allocation_attribute_value'):
                 allocations = allocations.filter(
                     Q(allocationattribute__allocation_attribute_type=data.get('allocation_attribute_name')) &
-                    Q(allocationattribute__value=data.get('allocation_attribute_value'))
+                    Q(allocationattribute__value=data.get(
+                        'allocation_attribute_value'))
                 )
 
             # End Date
@@ -471,7 +471,6 @@ class AllocationListView(LoginRequiredMixin, ListView):
 class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     form_class = AllocationForm
     template_name = 'allocation/allocation_create.html'
-    
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -635,7 +634,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
 class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'allocation/allocation_add_users.html'
-    
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -657,6 +655,12 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
     def dispatch(self, request, *args, **kwargs):
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk'))
+
+        if allocation_obj.is_locked and not self.request.user.is_superuser:
+            messages.error(
+                request, 'You cannot modify this allocation because it is locked! Contact support for details.')
+            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
+
         if allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid']:
             messages.error(request, 'You cannot add users to a allocation with status {}.'.format(
                 allocation_obj.status.name))
@@ -748,7 +752,6 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
 class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'allocation/allocation_remove_users.html'
-    
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -770,6 +773,12 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
     def dispatch(self, request, *args, **kwargs):
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk'))
+
+        if allocation_obj.is_locked and not self.request.user.is_superuser:
+            messages.error(
+                request, 'You cannot modify this allocation because it is locked! Contact support for details.')
+            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
+
         if allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', ]:
             messages.error(request, 'You cannot remove users from a allocation with status {}.'.format(
                 allocation_obj.status.name))
@@ -891,7 +900,6 @@ class AllocationAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Cre
 
 class AllocationAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'allocation/allocation_allocationattribute_delete.html'
-    
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -1123,7 +1131,6 @@ class AllocationDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
 
 class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'allocation/allocation_renew.html'
-    
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -1244,10 +1251,11 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
 
                     elif user_status == 'remove_from_project':
                         for active_allocation in allocation_obj.project.allocation_set.filter(status__name__in=(
-                            'Active', 'Denied', 'New', 'Paid', 'Payment Pending', 
-                            'Payment Requested', 'Payment Declined', 'Renewal Requested', 'Unpaid',)):
+                            'Active', 'Denied', 'New', 'Paid', 'Payment Pending',
+                                'Payment Requested', 'Payment Declined', 'Renewal Requested', 'Unpaid',)):
 
-                            allocation_user_obj = active_allocation.allocationuser_set.get(user=user_obj)
+                            allocation_user_obj = active_allocation.allocationuser_set.get(
+                                user=user_obj)
                             allocation_user_obj.status = allocation_user_removed_status_choice
                             allocation_user_obj.save()
                             allocation_remove_user.send(
@@ -1290,7 +1298,6 @@ class AllocationInvoiceListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
     model = Allocation
     template_name = 'allocation/allocation_invoice_list.html'
     context_object_name = 'allocation_list'
-    
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -1315,7 +1322,6 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
     model = Allocation
     template_name = 'allocation/allocation_invoice_detail.html'
     context_object_name = 'allocation'
-    
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -1363,7 +1369,6 @@ class AllocationAddInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, Crea
     model = AllocationUserNote
     template_name = 'allocation/allocation_add_invoice_note.html'
     fields = ('is_private', 'note',)
-    
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -1400,7 +1405,6 @@ class AllocationUpdateInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, U
     model = AllocationUserNote
     template_name = 'allocation/allocation_update_invoice_note.html'
     fields = ('is_private', 'note',)
-    
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -1519,7 +1523,6 @@ class AllocationAccountListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
     model = AllocationAccount
     template_name = 'allocation/allocation_account_list.html'
     context_object_name = 'allocationaccount_list'
-    
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""

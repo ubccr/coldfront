@@ -53,7 +53,7 @@ class AllocationAdmin(SimpleHistoryAdmin):
     readonly_fields_change = (
         'project', 'justification', 'created', 'modified',)
     fields_change = ('project', 'resources', 'quantity', 'justification',
-                     'status', 'start_date', 'end_date', 'description', 'created', 'modified',)
+                     'status', 'start_date', 'end_date', 'description', 'created', 'modified', 'is_locked')
     list_display = ('pk', 'project_title', 'project_pi', 'resource', 'quantity',
                     'justification', 'start_date', 'end_date', 'status', 'created', 'modified', )
     inlines = [AllocationUserInline,
@@ -61,7 +61,7 @@ class AllocationAdmin(SimpleHistoryAdmin):
                AllocationAdminNoteInline,
                AllocationUserNoteInline]
     list_filter = ('resources__resource_type__name',
-                   'status', 'resources__name', )
+                   'status', 'resources__name', 'is_locked')
     search_fields = ['project__pi__username', 'project__pi__first_name', 'project__pi__last_name', 'resources__name',
                      'allocationuser__user__first_name', 'allocationuser__user__last_name', 'allocationuser__user__username']
     filter_horizontal = ['resources', ]
