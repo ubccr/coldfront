@@ -131,7 +131,10 @@ class Allocation(TimeStampedModel):
 
     @property
     def get_parent_resource(self):
-        return self.resources.filter(is_allocatable=True).first()
+        if self.resources.count() == 1:
+            return self.resources.first()
+        else:
+            return self.resources.filter(is_allocatable=True).first()
 
     def get_attribute(self, name):
         attr = self.allocationattribute_set.filter(
