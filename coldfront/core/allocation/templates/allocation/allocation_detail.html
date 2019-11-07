@@ -126,7 +126,7 @@ Allocation Detail
         </table>
       </div>
       {% if request.user.is_superuser %}
-      <button type="submit" class="btn btn-success float-right"><i class="fas fa-sync"></i> Update</button>
+      <button type="submit" class="btn btn-success float-right"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
       {% endif %}
     </form>
 
@@ -136,13 +136,13 @@ Allocation Detail
 {% if attributes or attributes_with_usage or request.user.is_superuser %}
 <div class="card mb-3">
   <div class="card-header">
-    <h4 class="d-inline"><i class="fas fa-info-circle"></i> Allocation Attributes</h4>
+    <h4 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Attributes</h4>
     <div class="float-right">
       {% if request.user.is_superuser %}
       <a class="btn btn-success" href="{% url 'allocation-attribute-add' allocation.pk %}" role="button"><i
-          class="fas fa-plus"></i> Add Allocation Attribute</a>
+          class="fas fa-plus" aria-hidden="true"></i> Add Allocation Attribute</a>
       <a class="btn btn-danger" href="{% url 'allocation-attribute-delete' allocation.pk %}" role="button"><i
-          class="fas fa-minus"></i> Delete Allocation Attributes</a>
+          class="fas fa-minus" aria-hidden="true"></i> Delete Allocation Attributes</a>
       {% endif %}
     </div>
   </div>
@@ -160,7 +160,7 @@ Allocation Detail
           {% for attribute in attributes %}
           {% if attribute.allocation_attribute_type.is_private %}
           <tr style="background-color:#eee">
-            <td> <i class="fas fa-lock"></i> {{attribute}}</td>
+            <td><i class="fas fa-lock" aria-hidden="true"></i> {{attribute}}</td>
             <td>{{attribute.value}}</td>
           </tr>
           {% else %}
@@ -194,14 +194,14 @@ Allocation Detail
 <!-- Start Allocation Users -->
 <div class="card mb-3">
   <div class="card-header">
-    <h4 class="d-inline"><i class="fas fa-users"></i> Users in Allocation </h4> <span
+    <h4 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Users in Allocation </h4> <span
       class="badge badge-secondary">{{allocation_users.count}}</span>
     <div class="float-right">
       {% if allocation.project.status.name != 'Archived' and is_allowed_to_update_project and allocation.status.name in 'Active,New,Renewal Requested' %}
       <a class="btn btn-success" href="{% url 'allocation-add-users' allocation.pk %}" role="button"><i
-          class="fas fa-user-plus"></i> Add Users</a>
+          class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
       <a class="btn btn-danger" href="{% url 'allocation-remove-users' allocation.pk %}" role="button"><i
-          class="fas fa-user-times"></i></i> Remove Users</a>
+          class="fas fa-user-times" aria-hidden="true"></i> Remove Users</a>
       {% endif %}
     </div>
 
@@ -244,7 +244,7 @@ Allocation Detail
 <!-- Start Admin Messages -->
 <div class="card mb-3">
   <div class="card-header">
-    <h4 class="d-inline"><i class="fas fa-users"></i> Messages from System Administrators </h4> <span
+    <h4 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Messages from System Administrators</h4> <span
       class="badge badge-secondary">{{notes.count}}</span>
   </div>
   <div class="card-body">
@@ -272,7 +272,7 @@ Allocation Detail
       </table>
     </div>
     {% else %}
-    <div class="alert alert-info" role="alert"><i class="fa fa-info-circle"></i> There are no notes from system
+    <div class="alert alert-info" role="alert"><i class="fa fa-info-circle" aria-hidden="true"></i> There are no notes from system
       administrators.</div>
     {% endif %}
 

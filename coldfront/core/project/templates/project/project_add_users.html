@@ -18,7 +18,7 @@ Add Users to Project
   <form method="post" action="/search-ldap" id="post-form">
   {% csrf_token %}
   {{ user_search_form|crispy }}
-  <button id="search-button" type="submit" class="btn btn-success btn-block"><i class="fas fa-search"></i> Search</button>
+  <button id="search-button" type="submit" class="btn btn-success btn-block"><i class="fas fa-search" aria-hidden="true"></i> Search</button>
   </form>
 </div>
 

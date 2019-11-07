@@ -63,7 +63,7 @@
   <input id="search_by" type="hidden" name="search_by" value="{{search_by}}">
   <div class="mb-3">
     {% if matches %}
-    <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus"></i>
+    <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus" aria-hidden="true"></i>
       Add Selected Users to Project</button>
     {% endif %}
     <a class="btn btn-secondary" href="{% url 'project-detail' pk %}"

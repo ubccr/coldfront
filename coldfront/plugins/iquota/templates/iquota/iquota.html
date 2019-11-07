@@ -22,7 +22,7 @@ User: {{user_quota.username}} <span style="float:right">{{user_quota.used}} of {
 {% endfor %}
 
     <div id="iquota_inner_button">
-        <button id="quota-button" type="button" class="btn btn-primary"><i class="fas fa-sync"></i> Refresh Quota</button>
+        <button id="quota-button" type="button" class="btn btn-primary"><i class="fas fa-sync" aria-hidden="true"></i> Refresh Quota</button>
     </div>
 </div>
 
@@ -30,7 +30,7 @@ User: {{user_quota.username}} <span style="float:right">{{user_quota.used}} of {
 
         $("#quota-button").click(function() {
 
-            $('#iquota_inner_button').html('<button id="quota-button" type="button" class="btn btn-primary"><i class="fas fa-sync fa-spin fa-fw"></i> Refreshing Quota <span class="sr-only">...</span></button>');
+            $('#iquota_inner_button').html('<button id="quota-button" type="button" class="btn btn-primary"><i class="fas fa-sync fa-spin fa-fw" aria-hidden="true"></i> Refreshing Quota <span class="sr-only">...</span></button>');
 
             $.ajax({
                 url: "{% url 'get-isilon-quota' %}",
@@ -43,7 +43,7 @@ User: {{user_quota.username}} <span style="float:right">{{user_quota.used}} of {
                     $('#iquota_inner').html(data);
                 },
                 error: function(data) {
-                    $('#iquota_inner').html('<div class="alert alert-warning"><i class="fas fa-info-circle"></i> Error refreshing quota information.</div>');
+                    $('#iquota_inner').html('<div class="alert alert-warning"><i class="fas fa-info-circle" aria-hidden="true"></i> Error refreshing quota information.</div>');
                 },
             });
         });

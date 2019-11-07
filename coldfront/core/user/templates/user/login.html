@@ -24,7 +24,7 @@ Log In
 
   <div class="card border-primary">
     <div class="card-header bg-primary text-white">
-      <h5><i class="fas fa-lock"></i> Log In </h5>
+      <h5><i class="fas fa-lock" aria-hidden="true"></i> Log In </h5>
     </div>
     <div class="card-body">
       {% include "user/login_form.html" %} 
@@ -33,7 +33,7 @@ Log In
         <center><strong>OR</strong></center>
         <br>
         <a class="btn btn-primary btn-block" role="button" href="{% url 'oidc_authentication_init' %}?next={{request.GET.next}}">
-          <i class="fab fa-openid"></i> Log in via Mokey OpenID Connect
+          <i class="fab fa-openid" aria-hidden="true"></i> Log in via Mokey OpenID Connect
         </a> 
       {% endif %}
     </div>

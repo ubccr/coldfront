@@ -17,7 +17,7 @@ Project User Detail
 <form action="{% url 'project-user-detail' project_obj.pk project_user_obj.pk %}" method="post">
 {% csrf_token %}
 <div class="card">
-  <div class="card-header"><i class="fas fa-user"></i> User Detail</div>
+  <div class="card-header"><i class="fas fa-user" aria-hidden="true"></i> User Detail</div>
   <div class="card-body">
     <div class="table-responsive">
       <table class="table">

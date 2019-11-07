@@ -48,7 +48,7 @@ Remove Users from Allocation
         <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus"></i> Remove Selected Users from
           Allocation</button>
         <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation.pk %}" role="button"><i
-            class="fas fa-long-arrow-left"></i> Back to Allocation</a>
+            class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Allocation</a>
         <br>
       </div>
     </form>
@@ -56,7 +56,7 @@ Remove Users from Allocation
 </div>
 {% else %}
 <a class="btn btn-secondary mb-3" href="{% url 'allocation-detail' allocation.pk %}" role="button"><i
-    class="fas fa-long-arrow-left"></i> Back to Allocation</a>
+    class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Allocation</a>
 <div class="alert alert-info">
   No users to remove!
 </div>

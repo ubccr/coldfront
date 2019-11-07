@@ -35,8 +35,8 @@
       </div>
       {{ formset.management_form }}
        <div>
-        <button type="submit" class="btn btn-primary"><i class="fas fa-user-minus"></i> Add Selected Publications to Project</button>
-        <a class="btn btn-secondary" href="{% url 'project-detail' project_pk %}" role="button"><i class="fas fa-long-arrow-left"></i> Back to Project</a>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-user-minus" aria-hidden="true"></i> Add Selected Publications to Project</button>
+        <a class="btn btn-secondary" href="{% url 'project-detail' project_pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a>
         <input id="search_ids" type="hidden" name="search_ids" value="{{search_ids}}">
         <input id="pubs" type="hidden" name="pubs" value="{{pubs}}">
       </div>
@@ -45,7 +45,7 @@
   </div>
 </div>
 {% else %} 
-  <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left"></i> Back to Project</a> 
+  <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a> 
   <div class="alert alert-info">
     No users to remove!
   </div>
