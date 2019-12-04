@@ -26,7 +26,7 @@ setup(
         'bibtexparser==1.1.0',
         'blessed==1.15.0',
         'chardet==3.0.4',
-        'Django==2.2.4',
+        'Django==2.2.8',
         'django-crispy-forms==1.7.2',
         'django-model-utils==3.1.2',
         'django-picklefield==2.0',
