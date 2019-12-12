@@ -16,6 +16,15 @@ Python and released under the GPLv3 license.
 - Integration with 3rd party systems for automation and access control
 - Center director approval system and annual project reviews
 
+## Plug-in Documentation
+ - [Slurm](coldfront/plugins/slurm)
+ - [FreeIPA](coldfront/plugins/freeipa)
+ - [LDAP](coldfront/plugins/ldap_user_search)
+ - [Mokey/Hydra OpenID Connect](coldfront/plugins/mokey_oidc)
+ - [iQuota (Isilon)](coldfront/plugins/iquota)
+ - [XDMoD](coldfront/plugins/xdmod)
+ - [System Monitor](coldfront/plugins/system_monitor) (example of ways to integrate your own plug-ins)
+
 ## Contact Information
 If you would like a live demo followed by QA, please contact us at ccr-coldfront-admin-list@listserv.buffalo.edu. You can also contact us for general inquiries and installation troubleshooting. 
 
