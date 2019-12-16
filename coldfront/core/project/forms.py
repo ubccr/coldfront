@@ -49,7 +49,7 @@ class ProjectAddUsersToAllocationForm(forms.Form):
         project_obj = get_object_or_404(Project, pk=project_pk)
 
         allocation_query_set = project_obj.allocation_set.filter(
-            status__name__in=['Active', 'New', 'Renewal Requested', ], resources__is_allocatable=True)
+            status__name__in=['Active', 'New', 'Renewal Requested', ], resources__is_allocatable=True, is_locked=False)
         allocation_choices = [(allocation.id, "%s (%s) %s" % (allocation.get_parent_resource.name, allocation.get_parent_resource.resource_type.name,
                                                               allocation.description if allocation.description else '')) for allocation in allocation_query_set]
         allocation_choices.insert(0, ('__select_all__', 'Select All'))
