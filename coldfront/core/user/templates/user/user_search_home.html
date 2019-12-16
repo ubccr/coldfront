@@ -10,7 +10,7 @@
   <form method="post" action="/search-ldap" id="post-form">
   {% csrf_token %}
   {{ user_search_form|crispy }}
-  <button id="search-button" type="submit" class="btn btn-success btn-block"><i class="fas fa-search"></i> Search</button>
+  <button id="search-button" type="submit" class="btn btn-success btn-block"><i class="fas fa-search" aria-hidden="true"></i> Search</button>
   </form>
 </div>
 
@@ -39,7 +39,7 @@
 <script>
   $('#post-form').on('submit', function(event){
     event.preventDefault();
-    $("#search_results_inner").html('<div class="alert alert-info text-center"><i class="fas fa-sync fa-spin fa-fw"></i> Searching</div>')
+    $("#search_results_inner").html('<div class="alert alert-info text-center"><i class="fas fa-sync fa-spin fa-fw" aria-hidden="true"></i> Searching</div>')
     create_post();
 });
 

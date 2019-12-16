@@ -41,15 +41,15 @@ Delete Publications from Project
       </div>
       {{ formset.management_form }}
       <div>
-        <button type="submit" class="btn btn-danger"><i class="fas fa-minus"></i> Delete Selected Publications from Project</button>
-        <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left"></i> Back to Project</a>
+        <button type="submit" class="btn btn-danger"><i class="fas fa-minus" aria-hidden="true"></i> Delete Selected Publications from Project</button>
+        <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a>
         <br>
       </div>
     </form>
   </div>
 </div>
 {% else %} 
-  <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left"></i> Back to project</a> 
+  <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to project</a> 
   <div class="alert alert-info">
     No publications to delete!
   </div>

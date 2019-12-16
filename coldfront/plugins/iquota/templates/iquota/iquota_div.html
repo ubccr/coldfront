@@ -10,7 +10,7 @@
 <script>
 $("#quota-button").click(function() {
 
-  $('#iquota_inner_button').html('<button id="quota-button" type="button" class="btn btn-primary center-block"><i class="fas fa-sync fa-spin fa-fw"></i> Refreshing Quota <span class="sr-only">...</span></button>');
+  $('#iquota_inner_button').html('<button id="quota-button" type="button" class="btn btn-primary center-block"><i class="fas fa-sync fa-spin fa-fw" aria-hidden="true"></i> Refreshing Quota <span class="sr-only">...</span></button>');
   $.ajax({
     url: "{% url 'get-isilon-quota' %}",
     method: "POST",
@@ -22,7 +22,7 @@ $("#quota-button").click(function() {
       $('#iquota_inner').html(data);
     },
     error: function(data) {
-      $('#iquota_inner').html('<div class="alert alert-warning"><i class="fas fa-info-circle"></i> Error getting quota information.</div>');
+      $('#iquota_inner').html('<div class="alert alert-warning"><i class="fas fa-info-circle" aria-hidden="true"></i> Error getting quota information.</div>');
     },
   });
 });

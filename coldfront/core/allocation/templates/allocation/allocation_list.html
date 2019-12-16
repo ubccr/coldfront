@@ -9,9 +9,8 @@ Allocation List {% endblock %} {% block content %}
   <div class="card">
     <div class="card-header">
       <a id="expand_button" role="button" class="card-link " data-toggle="collapse" href="#collapseOne">
-        <i class="fas fa-filter"></i> Filter
+        <i class="fas fa-filter" aria-hidden="true"></i> Filter
         <i id="plus_minus" class="fas {{expand_accordion|get_icon}} float-right"></i>
-
       </a>
     </div>
     <div id="collapseOne" class="collapse {{expand_accordion}}" data-parent="#accordion">
