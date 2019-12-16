@@ -11,5 +11,5 @@ class PublicationSourceAdmin(SimpleHistoryAdmin):
 
 @admin.register(Publication)
 class PublicationAdmin(SimpleHistoryAdmin):
-    list_display = ('title', 'author', 'year')
+    list_display = ('title', 'author', 'journal', 'year')
     search_fields = ('project__pi__username', 'project__pi__last_name', 'title')

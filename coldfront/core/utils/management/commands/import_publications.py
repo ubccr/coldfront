@@ -31,7 +31,7 @@ class Command(BaseCommand):
                 if not line:
                     continue
 
-                created, modified, project_title, project_status, pi_username, publication_title, author, publication_year, doi = line.split(delimiter)
+                created, modified, project_title, project_status, pi_username, publication_title, author, journal, publication_year, doi = line.split(delimiter)
 
                 created = datetime.datetime.strptime(created.split('.')[0], '%m/%d/%Y')
                 # created = '{}-{}-{}'.format(created.year, created.month, created.day)
@@ -47,6 +47,7 @@ class Command(BaseCommand):
                         project=project_obj,
                         title=publication_title.encode("ascii", errors="ignore").decode(),
                         author=author.encode("ascii", errors="ignore").decode(),
+                        journal=author.encode("ascii", errors="ignore").decode(),
                         year=publication_year,
                         unique_id=doi,
                         source=doi_source
@@ -54,7 +55,7 @@ class Command(BaseCommand):
                 except Exception as e:
                     print(e)
                     print('Violate unique constraint')
-                    print(created, modified, project_title, project_status, pi_username, publication_title, author, publication_year, doi)
+                    print(created, modified, project_title, project_status, pi_username, publication_title, author, journal, publication_year, doi)
 
 
         print('Finished adding publications')

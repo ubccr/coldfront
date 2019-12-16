@@ -16,6 +16,7 @@ class PublicationResultForm(forms.Form):
     title = forms.CharField(max_length=1024, disabled=True)
     author = forms.CharField(max_length=1024, disabled=True)
     year = forms.CharField(max_length=4, disabled=True)
+    journal = forms.CharField(max_length=1024, disabled=True)
     unique_id = forms.CharField(max_length=255, disabled=True)
     source_pk = forms.IntegerField(widget=forms.HiddenInput(), disabled=True)
     selected = forms.BooleanField(initial=False, required=False)

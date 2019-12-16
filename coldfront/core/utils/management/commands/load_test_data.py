@@ -387,27 +387,31 @@ class Command(BaseCommand):
             status=ProjectUserStatusChoice.objects.get(name='Active')
         )
 
-        for title, author, year, unique_id, source in (
+        for title, author, year, journal, unique_id, source in (
             ('Lattice constants from semilocal density functionals with zero-point phonon correction',
              "Pan Hao and Yuan Fang and Jianwei Sun and G\'abor I. Csonka and Pier H. T. Philipsen and John P. Perdew",
              2012,
+             'Physical Review B',
              '10.1103/PhysRevB.85.014111',
              'doi'),
             ('Anisotropic magnetocapacitance in ferromagnetic-plate capacitors',
              "J. A. Haigh and C. Ciccarelli and A. C. Betz and A. Irvine and V. Nov\'ak and T. Jungwirth and J. Wunderlich",
              2015,
+             'Physical Review B',
              '10.1103/PhysRevB.91.140409',
              'doi'
              ),
             ('Interaction effects in topological superconducting wires supporting Majorana fermions',
              'E. M. Stoudenmire and Jason Alicea and Oleg A. Starykh and Matthew P.A. Fisher',
              2011,
+             'Physical Review B',
              '10.1103/PhysRevB.84.014503',
              'doi'
              ),
             ('Logarithmic correlations in quantum Hall plateau transitions',
              'Romain Vasseur',
              2015,
+             'Physical Review B',
              '10.1103/PhysRevB.92.014205',
              'doi'
              ),
@@ -417,6 +421,7 @@ class Command(BaseCommand):
                 title=title,
                 author=author,
                 year=year,
+                journal=journal,
                 unique_id=unique_id,
                 source=publication_source
             )
