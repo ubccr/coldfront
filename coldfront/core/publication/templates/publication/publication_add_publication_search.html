@@ -15,6 +15,8 @@ Add Publication to Project
 
 
 <div class="col">
+  <a class="btn btn-info" href="{% url 'add-publication-manually' project.pk %}" role="button"><i class="far fa-edit" aria-hidden="true"></i> Enter publication manually</a>
+
   <form id="post-form">
   {% csrf_token %}
   {{ publication_search_form|crispy }}
