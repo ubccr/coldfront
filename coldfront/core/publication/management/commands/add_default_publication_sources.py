@@ -10,5 +10,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         PublicationSource.objects.all().delete()
-        for name, url in [('doi', 'https://doi.org/'), ]:
+        for name, url in [
+                ('doi', 'https://doi.org/'),
+                ('manual', None),
+            ]:
             PublicationSource.objects.get_or_create(name=name, url=url)
