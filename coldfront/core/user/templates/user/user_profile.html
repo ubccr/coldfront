@@ -21,15 +21,15 @@ User Profile
     <table class="table">
       <tbody>
         <tr>
-          <th nowrap>University Role(s):</th>
+          <th scope="row" nowrap>University Role(s):</th>
           <td>{{group_list}}</td>
         </tr>
         <tr>
-          <th>Email:</th>
+          <th scope="row">Email:</th>
           <td>{{user.email}}</td>
         </tr>  
         <tr>
-          <th>PI Status:</th>
+          <th scope="row">PI Status:</th>
           <td>  {% if user.userprofile.is_pi %}
                   <span class="badge badge-success"> <i class="fas fa-check"></i> 
                 {% else %} 

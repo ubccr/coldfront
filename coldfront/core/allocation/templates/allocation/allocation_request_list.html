@@ -16,16 +16,16 @@ Allocation Review New and Pending Requests
   <table class="table table-sm">
     <thead>
       <tr>
-        <th>#</th>
-        <th>Date Requested/<br>Last Modified</th>
-        <th>Project Title</th>
-        <th>PI</th>
-        <th>Resource</th>
+        <th scope="col">#</th>
+        <th scope="col">Date Requested/<br>Last Modified</th>
+        <th scope="col">Project Title</th>
+        <th scope="col">PI</th>
+        <th scope="col">Resource</th>
         {% if PROJECT_ENABLE_PROJECT_REVIEW %}
-        <th class="text-nowrap">Project Review Status</th>
+        <th scope="col" class="text-nowrap">Project Review Status</th>
         {% endif %}
-        <th>Status</th>
-        <th>Allocation Actions</th>
+        <th scope="col">Status</th>
+        <th scope="col">Allocation Actions</th>
       </tr>
     </thead>
     <tbody>

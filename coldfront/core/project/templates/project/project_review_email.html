@@ -22,27 +22,27 @@ Email User
     <div class="table-responsive">
       <table class="table ">
         <tr>
-          <th class="text-nowrap">Project:</th>
+          <th scope="row" class="text-nowrap">Project:</th>
           <td><a href="{% url 'project-detail' project_review.project.pk %}">{{ project_review.project }}</a></td>
         </tr>
         <tr>
-          <th class="text-nowrap">PI:</th>
+          <th scope="row" class="text-nowrap">PI:</th>
           <td>{{project_review.project.pi.first_name}} {{project_review.project.pi.last_name}} ({{project_review.project.pi.username}})</td>
         </tr>
         <tr>
-          <th class="text-nowrap">Reason for not Updating Project</th>
+          <th scope="row" class="text-nowrap">Reason for not Updating Project</th>
           <td>{{ project_review.reason_for_not_updating_project}}</td>
         </tr>
         <tr>
-          <th class="text-nowrap">Date Review Submitted:</th>
+          <th scope="row" class="text-nowrap">Date Review Submitted:</th>
           <td>{{ project_review.created|date:"M-d-Y" }}</td>
         </tr>
         <tr>
-          <th class="text-nowrap">Grants Last Updated:</th>
+          <th scope="row" class="text-nowrap">Grants Last Updated:</th>
           <td>{{project_review.project.latest_grant.modified|date:"M-d-Y"|default:"No grants"}}</td>
         </tr>
         <tr>
-          <th class="text-nowrap">Publications Last Updated:</th>
+          <th scope="row" class="text-nowrap">Publications Last Updated:</th>
           <td>{{project_review.project.latest_publication.created|date:"M-d-Y"|default:"No publications"}}</td>
         </tr>
       </table>
