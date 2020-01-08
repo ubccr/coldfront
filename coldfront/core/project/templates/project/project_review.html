@@ -28,15 +28,15 @@ Review Project
   <div class="table-responsive">
     <table class="table table-bordered table-sm">
       <tr>
-        <th style="white-space:nowrap;">Grants Last Updated:</th>
+        <th class="text-nowrap">Grants Last Updated:</th>
         <td>{{project.latest_grant.modified|date:"M. d, Y"|default:"No grants"}}</td>
       </tr>
       <tr>
-        <th style="white-space:nowrap;">Publications Last Updated:</th>
+        <th class="text-nowrap">Publications Last Updated:</th>
         <td>{{project.latest_publication.created|date:"M. d, Y"|default:"No publications"}}</td>
       </tr>
       <tr>
-        <th style="white-space:nowrap;">Users in project:</th>
+        <th class="text-nowrap">Users in project:</th>
         <td>{{project_users}}</td>
       </tr>
     </table>

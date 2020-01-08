@@ -30,7 +30,7 @@
               <td>{{ user.username }}</td>
               <td>{{ user.first_name }}</td>
               <td>{{ user.first_name }}</td>
-              <td style="white-space:nowrap;">
+              <td class="text-nowrap">
                 {% for allocation in allocations %}
                   <a target="_blank" href="{% url 'allocation-detail' allocation.pk %}">{{ allocation.get_parent_resource.name }} ({{ allocation.get_parent_resource.resource_type.name }})</a>  {% if 'slurm' in allocation.get_information %} -- {{allocation.get_information}} {% else %} <br> {% endif %}
                 {% endfor %} 

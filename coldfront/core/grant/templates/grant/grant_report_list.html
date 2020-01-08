@@ -38,14 +38,14 @@ Grants Report
           {% for grant in grant_list %}
           <tr>
             <td style="min-width: 400px">{{ grant.title }}</td>
-            <td style="white-space:nowrap;"><a href="{% url 'project-detail' grant.project.pk %}">{{ grant.project.pi.first_name }} {{ grant.project.pi.last_name }}</a></td>
-            <td style="white-space:nowrap;">{{ grant.role }}</td>
-            <td style="white-space:nowrap;">{{ grant.grant_pi }}</td>
-            <td style="white-space:nowrap;">{{ grant.total_amount_awarded|intcomma }}</td>
-            <td style="white-space:nowrap;">{{ grant.funding_agency }}</td>
-            <td style="white-space:nowrap;">{{ grant.grant_number }}</td>
-            <td style="white-space:nowrap;">{{ grant.grant_start|date:"M. d, Y" }}</td>
-            <td style="white-space:nowrap;">{{ grant.grant_end|date:"M. d, Y" }}</td>
+            <td class="text-nowrap"><a href="{% url 'project-detail' grant.project.pk %}">{{ grant.project.pi.first_name }} {{ grant.project.pi.last_name }}</a></td>
+            <td class="text-nowrap">{{ grant.role }}</td>
+            <td class="text-nowrap">{{ grant.grant_pi }}</td>
+            <td class="text-nowrap">{{ grant.total_amount_awarded|intcomma }}</td>
+            <td class="text-nowrap">{{ grant.funding_agency }}</td>
+            <td class="text-nowrap">{{ grant.grant_number }}</td>
+            <td class="text-nowrap">{{ grant.grant_start|date:"M. d, Y" }}</td>
+            <td class="text-nowrap">{{ grant.grant_end|date:"M. d, Y" }}</td>
             <td>{{ grant.percent_credit }}</td>
             <td>{{ grant.direct_funding|intcomma }}</td>
           </tr>
