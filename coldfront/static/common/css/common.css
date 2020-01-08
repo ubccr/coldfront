@@ -31,6 +31,22 @@ main {
     padding-bottom: 40px;
 }
 
+#brand .container {
+  margin-bottom: 1px;
+}
+#brand h1 {
+  font-size: 1.75rem;
+  color: white;
+  padding-top: 20px;
+  font-weight: normal;
+  letter-spacing: 1px;
+}
+#brand h1 small {
+  color: white;
+  font-weight: lighter;
+  letter-spacing: 2px;
+}
+
 #footer {
   position: absolute;
   bottom: 0;
