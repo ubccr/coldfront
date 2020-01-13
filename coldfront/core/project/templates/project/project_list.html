@@ -41,23 +41,23 @@
   <table class="table table-sm">
     <thead>
       <tr>
-        <th style="white-space:nowrap;">
+        <th scope="col" class="text-nowrap">
           ID
           <a href="?order_by=id&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
           <a href="?order_by=id&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
         </th>
-        <th style="white-space:nowrap;">
+        <th scope="col" class="text-nowrap">
           PI
           <a href="?order_by=pi__username&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
           <a href="?order_by=pi__username&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
         </th>
-        <th>Title</th>
-        <th style="white-space:nowrap;">
+        <th scope="col">Title</th>
+        <th scope="col" class="text-nowrap">
           Field of Science
           <a href="?order_by=field_of_science&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
           <a href="?order_by=field_of_science&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
         </th>
-        <th style="white-space:nowrap;">
+        <th scope="col" class="text-nowrap">
           Status
           <a href="?order_by=status&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
           <a href="?order_by=status&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
@@ -69,7 +69,7 @@
       <tr>
         <td><a href="/project/{{project.id}}/">{{ project.id }}</a></td>
         <td>{{ project.pi.username }}</td>
-        <td style="text-align: justify; text-justify: inter-word;">{{ project.title }}
+        <td style="text-align: justify; text-justify: inter-word;">{{ project.title }}</td>
         <td>{{ project.field_of_science.description }}</td>
         <td>{{ project.status.name }}</td>
       </tr>

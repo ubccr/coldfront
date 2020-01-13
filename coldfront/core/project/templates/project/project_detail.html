@@ -190,7 +190,7 @@ Project Detail
           <tr>
             <td>{{ allocation.get_parent_resource.name }}</td>
             <td>{{ allocation.get_parent_resource.resource_type.name }}</td>
-            <td style="white-space:nowrap;">{{allocation.get_information}}</td>
+            <td class="text-nowrap">{{allocation.get_information}}</td>
             {% if allocation.status.name == 'Active' %}
               <td class="text-success">{{ allocation.status.name }}</td>
             {% elif  allocation.status.name == 'Expired' or allocation.status.name == 'Denied' %}
@@ -246,20 +246,20 @@ Project Detail
       <table class="table table-hover">
         <thead>
           <tr>
-            <th>Title</th>
-            <th style="white-space:nowrap;">Grant PI</th>
-            <th style="white-space:nowrap;">Project PI Role</th>
-             <th style="white-space:nowrap;">Award Amount</th>
-            <th style="white-space:nowrap;">Grant Start Date</th>
-            <th style="white-space:nowrap;">Grant End Date</th>
-            <th>Actions</th>
+            <th scope="col">Title</th>
+            <th scope="col" class="text-nowrap">Grant PI</th>
+            <th scope="col" class="text-nowrap">Project PI Role</th>
+            <th scope="col" class="text-nowrap">Award Amount</th>
+            <th scope="col" class="text-nowrap">Grant Start Date</th>
+            <th scope="col" class="text-nowrap">Grant End Date</th>
+            <th scope="col">Actions</th>
           </tr>
         </thead>
         <tbody>
           {% for grant in grants %}
           <tr>
             <td>{{ grant.title }}</td>
-            <td style="white-space:nowrap;">{{ grant.grant_pi }}</td>
+            <td class="text-nowrap">{{ grant.grant_pi }}</td>
             <td>{{ grant.role}}</td>
             <td>{{ grant.total_amount_awarded|intcomma}}</td>
             <td>{{ grant.grant_start|date:"M. d, Y" }}</td>
@@ -310,7 +310,7 @@ Project Detail
           <tr>
             <td><strong>Title: </strong>{{ publication.title }} <a target="_blank" href="{{publication.source.url}}{{publication.unique_id}}"><i class="fas fa-external-link-alt"></i></a> 
               <br><strong>Author: </strong>{{ publication.author}}</td>
-            <td style="white-space:nowrap;">{{ publication.year }}</td>
+            <td class="text-nowrap">{{ publication.year }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -335,9 +335,9 @@ Project Detail
         <table class="table table-hover">
           <thead>
             <tr>
-              <th>Comment</th>
-              <th>Administrator</th>
-              <th>Last Modified</th>
+              <th scope="col">Comment</th>
+              <th scope="col">Administrator</th>
+              <th scope="col">Last Modified</th>
             </tr>
           </thead>
           <tbody>

@@ -40,25 +40,25 @@ Allocation Detail
       <div class="table-responsive">
         <table class="table table-bordered table-sm">
           <tr>
-            <th style="white-space:nowrap;">Project:</th>
+            <th scope="row" class="text-nowrap">Project:</th>
             <td><a href="{% url 'project-detail' allocation.project.pk %}">{{ allocation.project }}</a></td>
           </tr>
           <tr>
-            <th style="white-space:nowrap;">Resource{{ allocation.resources.all|pluralize }} in allocation:</th>
+            <th scope="row" class="text-nowrap">Resource{{ allocation.resources.all|pluralize }} in allocation:</th>
             <td>{{ allocation.get_resources_as_string }}</td>
           </tr>
           {% if request.user.is_superuser %}
           <tr>
-            <th style="white-space:nowrap;">Quantity:</th>
+            <th scope="row" class="text-nowrap">Quantity:</th>
             <td>{{ allocation.quantity }}</td>
           </tr>
           {% endif %}
           <tr>
-            <th style="white-space:nowrap;">Justification:</th>
+            <th scope="row" class="text-nowrap">Justification:</th>
             <td>{{ allocation.justification }}</td>
           </tr>
           <tr>
-            <th style="white-space:nowrap;">Status:</th>
+            <th scope="row" class="text-nowrap">Status:</th>
             <td>
               {% if request.user.is_superuser %}
               {{ form.status }}
@@ -68,7 +68,7 @@ Allocation Detail
             </td>
           </tr>
           <tr>
-            <th style="white-space:nowrap;">Start Date:</th>
+            <th scope="row" class="text-nowrap">Start Date:</th>
             <td>
               {% if request.user.is_superuser %}
               {{ form.start_date }}
@@ -78,7 +78,7 @@ Allocation Detail
             </td>
           </tr>
           <tr>
-            <th style="white-space:nowrap;">End Date:</th>
+            <th scope="row" class="text-nowrap">End Date:</th>
             <td>
               {% if request.user.is_superuser %}
               {{ form.end_date }}
@@ -97,7 +97,7 @@ Allocation Detail
             </td>
           </tr>
           <tr>
-            <th style="white-space:nowrap;">Description:</th>
+            <th scope="row" class="text-nowrap">Description:</th>
             <td>
               {% if request.user.is_superuser %}
               {{ form.description }}
@@ -107,19 +107,19 @@ Allocation Detail
             </td>
           </tr>
           <tr>
-            <th style="white-space:nowrap;">Created:</th>
+            <th scope="row" class="text-nowrap">Created:</th>
             <td>{{ allocation.created|date:"M. d, Y" }}</td>
           </tr>
           <tr>
-            <th style="white-space:nowrap;">Last Modified:</th>
+            <th scope="row" class="text-nowrap">Last Modified:</th>
             <td>{{ allocation.modified|date:"M. d, Y" }}</td>
           </tr>
           <tr>
             {% if allocation.is_locked %}
-              <th style="white-space:nowrap;">Locked</th>
+              <th scope="row" class="text-nowrap">Locked</th>
               <td><i class="fas fa-lock"></i></td>
             {% else %}
-              <th style="white-space:nowrap;">Unlocked</th>
+              <th scope="row" class="text-nowrap">Unlocked</th>
               <td><i class="fas fa-lock-open"></i></td>
             {% endif %}
           </tr>
@@ -152,8 +152,8 @@ Allocation Detail
       <table class="table table-bordered table-sm">
         <thead>
           <tr>
-            <th>Attribute</th>
-            <th>Value</th>
+            <th scope="col">Attribute</th>
+            <th scope="col">Value</th>
           </tr>
         </thead>
         <tbody>
@@ -211,11 +211,11 @@ Allocation Detail
       <table class="table table-hover">
         <thead>
           <tr>
-            <th>Username</th>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Status</th>
-            <th>Last Modified</th>
+            <th scope="col">Username</th>
+            <th scope="col">Name</th>
+            <th scope="col">Email</th>
+            <th scope="col">Status</th>
+            <th scope="col">Last Modified</th>
           </tr>
         </thead>
         <tbody>
@@ -253,9 +253,9 @@ Allocation Detail
       <table class="table table-hover">
         <thead>
           <tr>
-            <th>Note</th>
-            <th>Administrator</th>
-            <th>Last Modified</th>
+            <th scope="col">Note</th>
+            <th scope="col">Administrator</th>
+            <th scope="col">Last Modified</th>
           </tr>
         </thead>
         <tbody>

@@ -35,7 +35,7 @@ Allocation Invoice Detail
       <div class="table-responsive">
         <table class="table table-bordered table-sm">
           <tr>
-            <th style="white-space:nowrap;">Project:</th>
+            <th scope="row" class="text-nowrap">Project:</th>
             <td>
               {% if request.user.is_superuser %}
               <a href="{% url 'project-detail' allocation.project.pk %}">{{ allocation.project }}</a></td>
@@ -44,34 +44,34 @@ Allocation Invoice Detail
             {% endif %}
           </tr>
           <tr>
-            <th style="white-space:nowrap;">Principal Investigator:</th>
+            <th scope="row" class="text-nowrap">Principal Investigator:</th>
             <td>
               {{ allocation.project.pi.first_name }} {{ allocation.project.pi.last_name }}
               ({{ allocation.project.pi.email }})
             </td>
           </tr>
           <tr>
-            <th style="white-space:nowrap;">Resource{{ allocation.resources.all|pluralize }} in allocation:</th>
+            <th scope="row" class="text-nowrap">Resource{{ allocation.resources.all|pluralize }} in allocation:</th>
             <td>{{ allocation.get_resources_as_string }}</td>
           </tr>
           <tr>
-            <th style="white-space:nowrap;">Quantity:</th>
+            <th scope="row" class="text-nowrap">Quantity:</th>
             <td>
               {{ allocation.quantity }}
             </td>
           </tr>
           <tr>
-            <th style="white-space:nowrap;">Status:</th>
+            <th scope="row" class="text-nowrap">Status:</th>
             <td>
               {{ form.status }}
             </td>
           </tr>
           <tr>
-            <th style="white-space:nowrap;">Created:</th>
+            <th scope="row" class="text-nowrap">Created:</th>
             <td>{{ allocation.created }}</td>
           </tr>
           <tr>
-            <th style="white-space:nowrap;">Last Modified:</th>
+            <th scope="row" class="text-nowrap">Last Modified:</th>
             <td>{{ allocation.modified }}</td>
           </tr>
         </table>
@@ -102,10 +102,10 @@ Allocation Invoice Detail
       <table class="table table-hover">
         <thead>
           <tr>
-            <th>Comment</th>
-            <th>Author</th>
-            <th>Last Modified</th>
-            <th>Actions</th>
+            <th scope="col">Comment</th>
+            <th scope="col">Author</th>
+            <th scope="col">Last Modified</th>
+            <th scope="col">Actions</th>
           </tr>
         </thead>
         <tbody>

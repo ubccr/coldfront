@@ -22,41 +22,41 @@ Project User Detail
     <div class="table-responsive">
       <table class="table">
         <tr>
-          <th>Username:</th>
+          <th scope="row">Username:</th>
           <td>{{project_user_obj.user.username}}</td>
         </tr>
         <tr>
-          <th>First Name:</th>
+          <th scope="row">First Name:</th>
           <td>{{project_user_obj.user.first_name}}</td>
         </tr>
         <tr>
-          <th>Last Name:</th>
+          <th scope="row">Last Name:</th>
           <td>{{project_user_obj.user.last_name}}</td>
         </tr>
         <tr>
-          <th>Email:</th>
+          <th scope="row">Email:</th>
           <td>{{project_user_obj.user.email}}</td>
         </tr>
         <tr>
-          <th>Status:</th>
+          <th scope="row">Status:</th>
           <td>{{project_user_obj.status.name}}</td>
         </tr>
         {% if project_user_obj.user == project_user_obj.project.pi %}
           <tr>
-            <th>Role:</th>
+            <th scope="row">Role:</th>
             <td>{{project_user_obj.role}}</td>
           </tr>
           <tr>
-            <th>Notifications Enabled:</th>
+            <th scope="row">Notifications Enabled:</th>
             <td>{{project_user_obj.enable_notifications|yesno:"Yes,No"}}</td>
           </tr>
         {% else %}
           <tr>
-            <th>Role:</th>
+            <th scope="row">Role:</th>
             <td>{{project_user_update_form.role}}</td>
           </tr>
           <tr>
-            <th>Enable Notifications:</th>
+            <th scope="row">Enable Notifications:</th>
             <td>{{project_user_update_form.enable_notifications}}</td>
           </tr>
         {% endif %}
