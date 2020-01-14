@@ -1479,8 +1479,7 @@ class AllocationDeleteInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, T
                         pk=note_form_data.get('pk'))
                     note_obj.delete()
 
-            return HttpResponseRedirect(reverse_lazy('allocation-invoice-detail', kwargs={'pk': allocation_obj.pk})
-                                        )
+        return HttpResponseRedirect(reverse_lazy('allocation-invoice-detail', kwargs={'pk': allocation_obj.pk}))
 
 
 class AllocationAccountCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
