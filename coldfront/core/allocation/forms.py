@@ -159,7 +159,7 @@ class AllocationReviewUserForm(forms.Form):
 
 class AllocationInvoiceNoteDeleteForm(forms.Form):
     pk = forms.IntegerField(required=False, disabled=True)
-    note = forms.CharField(max_length=64, disabled=True)
+    note = forms.CharField(widget=forms.Textarea, disabled=True)
     author = forms.CharField(
         max_length=512, required=False, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
