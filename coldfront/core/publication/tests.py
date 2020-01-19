@@ -6,6 +6,7 @@ from coldfront.core.test_helpers.factories import (
     PublicationSourceFactory,
 )
 from coldfront.core.publication.models import Publication
+from coldfront.core.publication.views import PublicationSearchResultView
 
 
 class TestPublication(TestCase):
@@ -89,3 +90,44 @@ class TestPublication(TestCase):
         all_pubs = Publication.objects.all()
         self.assertEqual(len(journals), len(all_pubs))
         self.assertNotEqual(0, len(all_pubs))
+
+
+class TestDataRetrieval(TestCase):
+    class Data:
+        """Collection of test data, separated for readability"""
+
+        def __init__(self):
+            self.expected_pubdata = [
+                {
+                    'unique_id': '10.1038/s41524-017-0032-0',
+                    'title': 'Construction of ground-state preserving sparse lattice models for predictive materials simulations',
+                    'author': 'Wenxuan Huang and Alexander Urban and Ziqin Rong and Zhiwei Ding and Chuan Luo and Gerbrand Ceder',
+                    'year': '2017',
+                    'journal': 'npj Computational Materials',
+                },
+            ]
+
+            # everything we might test will use this source
+            source = PublicationSourceFactory()
+            for pubdata_dict in self.expected_pubdata:
+                pubdata_dict['source_pk'] = source.pk
+
+    def setUp(self):
+        self.data = self.Data()
+
+    def run_target_method(self, unique_id, *args, **kwargs):
+        target_method = PublicationSearchResultView._search_id
+
+        # this method is defined as an instance method but doesn't use any instance data
+        # thus, we use None for its 'self' argument
+        return target_method(None, unique_id, *args, **kwargs)
+
+    def test_doi_retrieval(self):
+        expected_pubdata = self.data.expected_pubdata
+
+        self.assertNotEqual(0, len(expected_pubdata))  # check assumption
+        for pubdata_dict in expected_pubdata:
+            unique_id = pubdata_dict['unique_id']
+            with self.subTest(unique_id=unique_id):
+                retrieved_data = self.run_target_method(unique_id)
+                self.assertEqual(pubdata_dict, retrieved_data)
