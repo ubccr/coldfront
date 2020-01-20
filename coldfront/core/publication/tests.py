@@ -5,6 +5,9 @@ from coldfront.core.test_helpers.factories import (
     ProjectFactory,
     PublicationSourceFactory,
 )
+from coldfront.core.test_helpers.decorators import (
+    makes_remote_requests,
+)
 from coldfront.core.publication.models import Publication
 from coldfront.core.publication.views import PublicationSearchResultView
 
@@ -122,6 +125,7 @@ class TestDataRetrieval(TestCase):
         # thus, we use None for its 'self' argument
         return target_method(None, unique_id, *args, **kwargs)
 
+    @makes_remote_requests()
     def test_doi_retrieval(self):
         expected_pubdata = self.data.expected_pubdata
 
