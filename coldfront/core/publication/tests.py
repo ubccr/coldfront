@@ -1,5 +1,10 @@
+import contextlib
 import itertools
+from unittest.mock import Mock, sentinel, patch
+import bibtexparser.bibdatabase
+import bibtexparser.bparser
 from django.test import TestCase
+import doi2bib
 
 from coldfront.core.test_helpers.factories import (
     ProjectFactory,
@@ -10,6 +15,7 @@ from coldfront.core.test_helpers.decorators import (
 )
 from coldfront.core.publication.models import Publication
 from coldfront.core.publication.views import PublicationSearchResultView
+import coldfront.core.publication
 
 
 class TestPublication(TestCase):
@@ -115,6 +121,59 @@ class TestDataRetrieval(TestCase):
             for pubdata_dict in self.expected_pubdata:
                 pubdata_dict['source_pk'] = source.pk
 
+    class Mocks:
+        """Set of mocks for testing, for simplified setup in test cases
+
+        Our app uses multiple libraries together to provide us with data in a
+        form we can consume.
+        This class acts to encapsulate mocking and patching those libraries -
+        focusing tests instead on the post-library data that the app would be
+        using."""
+
+        def __init__(self, bibdatabase_first_entry, unique_id):
+            self._bibdatabase_first_entry = bibdatabase_first_entry.copy()
+            self._unique_id = unique_id
+
+            def mock_get_bib(unique_id):
+                # ensure specified unique_id is used here
+                if unique_id == self._unique_id:
+                    return sentinel.status, sentinel.bib_str
+            crossref = Mock(spec_set=doi2bib.crossref)
+            crossref.get_bib.side_effect = mock_get_bib
+
+            def mock_parse(thing_to_parse):
+                # ensure bib_str from get_bib() is used
+                if thing_to_parse is sentinel.bib_str:
+                    bibdatabase_cls = Mock(spec_set=bibtexparser.bibdatabase.BibDatabase)
+                    db = bibdatabase_cls()
+                    db.entries = [self._bibdatabase_first_entry.copy()]
+                    return db
+            bibtexparser_cls = Mock(spec_set=bibtexparser.bparser.BibTexParser)
+            bibtexparser_cls.return_value.parse.side_effect = mock_parse
+
+            as_text = Mock(spec_set=bibtexparser.bibdatabase.as_text)
+            as_text.side_effect = lambda bib_entry: 'as_text({})'.format(bib_entry)
+
+            self.crossref = crossref
+            self.bibtexparser_cls = bibtexparser_cls
+            self.as_text = as_text
+
+        @contextlib.contextmanager
+        def patch(self):
+            def dotpath(qualname):
+                module_under_test = coldfront.core.publication.views
+                return '{}.{}'.format(module_under_test.__name__, qualname)
+
+            with contextlib.ExitStack() as stack:
+                patches = [
+                    patch(dotpath('BibTexParser'), new=self.bibtexparser_cls),
+                    patch(dotpath('crossref'), new=self.crossref),
+                    patch(dotpath('as_text'), new=self.as_text),
+                ]
+                for p in patches:
+                    stack.enter_context(p)
+                yield
+
     def setUp(self):
         self.data = self.Data()
 
@@ -135,3 +194,37 @@ class TestDataRetrieval(TestCase):
             with self.subTest(unique_id=unique_id):
                 retrieved_data = self.run_target_method(unique_id)
                 self.assertEqual(pubdata_dict, retrieved_data)
+
+    def test_doi_extraction(self):
+        for pubdata in self.data.expected_pubdata:
+            # mutate test data so that it's definitely nonrealistic, thus
+            # assuring that we *are* mocking the right stuff
+            testdata = pubdata.copy()
+            for k in (k for k in testdata if k != 'source_pk'):
+                testdata[k] += '[not real]'
+
+            unique_id = testdata['unique_id']
+
+            # source_pk doesn't pertain to data returned from the remote api
+            mocked_bibdatabase_entry = testdata.copy()
+            del mocked_bibdatabase_entry['source_pk']
+
+            mocks = self.Mocks(mocked_bibdatabase_entry, unique_id)
+
+            # need to transform our expected data to check mock calls
+            expected_data = testdata.copy()
+            mock_as_text = mocks.as_text.side_effect
+            # we expect `as_text` to be run on...
+            for key in ('author', 'title', 'year', 'journal'):
+                transformed = mock_as_text(expected_data[key])
+
+                # check assumptions: the transformation is meaningful
+                assert transformed
+                assert transformed != expected_data[key]
+
+                expected_data[key] = transformed
+
+            with self.subTest(unique_id=unique_id):
+                with mocks.patch():
+                    retrieved_data = self.run_target_method(unique_id)
+                self.assertEqual(expected_data, retrieved_data)
