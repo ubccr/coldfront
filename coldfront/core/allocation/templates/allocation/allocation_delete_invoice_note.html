@@ -2,16 +2,13 @@
 {% load crispy_forms_tags %}
 {% load static %}
 
-{% block title %} <title>Delete Allocation Invoice Note </title> {% endblock %}
+{% block title %} Delete Allocation Invoice Note {% endblock %}
 
 
 {% block content %}
 
 <h3>Delete invoice notes for allocation to {{allocation.get_resources_as_string}} for PI
   {{allocation.project.pi.username}}</h3>
-<hr>
-
-<h3>Delete Study</h3>
 <hr>
 
 <div class="card border-light">
