@@ -215,7 +215,11 @@ class PublicationAddView(LoginRequiredMixin, UserPassesTestMixin, View):
                     ', '.join(publications_skipped))
 
             messages.success(request, msg)
-            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_pk}))
+        else:
+            for error in formset.errors:
+                messages.error(request, error)
+
+        return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_pk}))
 
 
 class PublicationDeletePublicationsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -294,7 +298,11 @@ class PublicationDeletePublicationsView(LoginRequiredMixin, UserPassesTestMixin,
 
             messages.success(request, 'Deleted {} publications from project.'.format(
                 publications_deleted_count))
-            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+        else:
+            for error in formset.errors:
+                messages.error(request, error)
+
+        return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
     def get_success_url(self):
         return reverse('project-detail', kwargs={'pk': self.object.project.id})
