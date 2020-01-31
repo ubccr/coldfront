@@ -186,6 +186,7 @@ class TestDataRetrieval(TestCase):
 
     @makes_remote_requests()
     def test_doi_retrieval(self):
+        # NOTE: this test does not use any mocks
         expected_pubdata = self.data.expected_pubdata
 
         self.assertNotEqual(0, len(expected_pubdata))  # check assumption
