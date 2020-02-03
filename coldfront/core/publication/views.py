@@ -117,13 +117,17 @@ class PublicationSearchResultView(LoginRequiredMixin, UserPassesTestMixin, Templ
             '{\\textemdash}', '-').replace('{\\textasciigrave}', ' ').replace('{\\textdaggerdbl}', ' ').replace('{\\textdagger}', ' ')
         title = as_text(bib_json['title']).replace('{\\textquotesingle}', "'").replace('{\\textendash}', '-').replace(
             '{\\textemdash}', '-').replace('{\\textasciigrave}', ' ').replace('{\\textdaggerdbl}', ' ').replace('{\\textdagger}', ' ')
+        journal = as_text(bib_json['journal']).replace('{\\textquotesingle}', "'").replace('{\\textendash}', '-').replace(
+            '{\\textemdash}', '-').replace('{\\textasciigrave}', ' ').replace('{\\textdaggerdbl}', ' ').replace('{\\textdagger}', ' ')
 
         author = re.sub("{|}", "", author)
         title = re.sub("{|}", "", title)
+        journal = re.sub("{|}", "", journal)
         pub_dict = {}
         pub_dict['author'] = author
         pub_dict['year'] = year
         pub_dict['title'] = title
+        pub_dict['journal'] = journal
         pub_dict['unique_id'] = unique_id
         pub_dict['source_pk'] = matching_source_obj.pk
 
@@ -198,6 +202,7 @@ class PublicationAddView(LoginRequiredMixin, UserPassesTestMixin, View):
                     title=form_data.get('title'),
                     author=form_data.get('author'),
                     year=form_data.get('year'),
+                    journal=form_data.get('journal'),
                     unique_id=form_data.get('unique_id'),
                     source=source_obj
                 )
