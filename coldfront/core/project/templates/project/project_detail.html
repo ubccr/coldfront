@@ -308,7 +308,11 @@ Project Detail
         <tbody>
           {% for publication in publications %}
           <tr>
-            <td><strong>Title: </strong>{{ publication.title }} <a target="_blank" rel="noopener" href="{{publication.source.url}}{{publication.unique_id}}"><i class="fas fa-external-link-alt"></i></a> 
+            <td>
+              <strong>Title: </strong>{{ publication.title }}
+              {% if publication.source.url %}
+                <a target="_blank" rel="noopener" href="{{publication.source.url}}{{publication.unique_id}}"><i class="fas fa-external-link-alt"></i></a>
+              {% endif %}
               <br><strong>Author: </strong>{{ publication.author}}
               <br><strong>Journal: </strong>{{ publication.journal}}
             </td>
