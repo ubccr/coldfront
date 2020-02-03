@@ -669,7 +669,16 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
             messages.success(
                 request, 'Added {} users to project.'.format(added_users_count))
-            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': pk}))
+        else:
+            if not formset.is_valid():
+                for error in formset.errors:
+                    messages.error(request, error)
+
+            if not allocation_form.is_valid():
+                for error in allocation_form.errors:
+                    messages.error(request, error)
+
+        return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': pk}))
 
 
 class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -775,7 +784,11 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
             messages.success(
                 request, 'Removed {} users from project.'.format(remove_users_count))
-            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': pk}))
+        else:
+            for error in formset.errors:
+                messages.error(request, error)
+
+        return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': pk}))
 
 
 class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):

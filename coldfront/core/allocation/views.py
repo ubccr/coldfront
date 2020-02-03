@@ -747,7 +747,11 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                                                   allocation_user_pk=allocation_user_obj.pk)
             messages.success(
                 request, 'Added {} users to allocation.'.format(users_added_count))
-            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
+        else:
+            for error in formset.errors:
+                messages.error(request, error)
+
+        return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
 
 class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -856,7 +860,11 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
             messages.success(
                 request, 'Removed {} users from allocation.'.format(remove_users_count))
-            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
+        else:
+            for error in formset.errors:
+                messages.error(request, error)
+
+        return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
 
 class AllocationAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
@@ -969,7 +977,11 @@ class AllocationAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Tem
 
             messages.success(request, 'Deleted {} attributes from allocation.'.format(
                 attributes_deleted_count))
-            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
+        else:
+            for error in formset.errors:
+                messages.error(request, error)
+
+        return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
 
 class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -1296,7 +1308,11 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
                 )
 
             messages.success(request, 'Allocation renewed successfully')
-            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': allocation_obj.project.pk}))
+        else:
+            if not formset.is_valid():
+                for error in formset.errors:
+                    messages.error(request, error)
+        return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': allocation_obj.project.pk}))
 
 
 class AllocationInvoiceListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
@@ -1367,7 +1383,10 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
             allocation_obj.status = form_data.get('status')
             allocation_obj.save()
             messages.success(request, 'Allocation updated!')
-            return HttpResponseRedirect(reverse('allocation-invoice-detail', kwargs={'pk': pk}))
+        else:
+            for error in form.errors:
+                messages.error(request, error)
+        return HttpResponseRedirect(reverse('allocation-invoice-detail', kwargs={'pk': pk}))
 
 
 class AllocationAddInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
@@ -1478,6 +1497,9 @@ class AllocationDeleteInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, T
                     note_obj = AllocationUserNote.objects.get(
                         pk=note_form_data.get('pk'))
                     note_obj.delete()
+        else:
+            for error in formset.errors:
+                messages.error(request, error)
 
         return HttpResponseRedirect(reverse_lazy('allocation-invoice-detail', kwargs={'pk': allocation_obj.pk}))
 
