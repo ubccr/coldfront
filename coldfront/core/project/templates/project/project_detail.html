@@ -39,7 +39,7 @@ Project Detail
     <div class="card-body">
       {% if project.status.name != 'Archived' %}
         <a class="btn btn-success" href="{% url 'project-add-users-search' project.pk %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
-        <a class="btn btn-success" href="{% url 'publication-search' project.pk %}" role="button"><i class="far fa-newspaper" aria-hidden="true"></i> Add Publication</a>
+        <a class="btn btn-success" href="{% url 'publication-search' project.pk %}" role="button"><i class="fas fa-newspaper" aria-hidden="true"></i> Add Publication</a>
         <a class="btn btn-success" href="{% url 'add-research-output' project.pk %}" role="button"><i class="far fa-newspaper" aria-hidden="true"></i> Add Research Output</a>
         <a class="btn btn-success" href="{% url 'grant-create' project.id %}" role="button"><i class="fas fa-trophy" aria-hidden="true"></i> Add Grant</a>
         <a class="btn btn-info" href="{% url 'project-update' project.pk %}" role="button"><i class="far fa-edit" aria-hidden="true"></i> Update Project Information</a>
@@ -330,7 +330,7 @@ Project Detail
 <!-- Start Project ResearchOutputs -->
 <div class="card mb-3">
   <div class="card-header">
-  <h4 class="d-inline"><i class="fas fa-newspaper"></i> <a name="research_outputs">Research Outputs</a> </h4> <span class="badge badge-secondary">{{ research_outputs.count}}</span>
+  <h4 class="d-inline"><i class="far fa-newspaper"></i> <a name="research_outputs">Research Outputs</a> </h4> <span class="badge badge-secondary">{{ research_outputs.count}}</span>
     <div class="float-right">
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
         <a class="btn btn-success" href="{% url 'add-research-output' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add Research Output</a>
