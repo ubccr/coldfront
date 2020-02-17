@@ -36,20 +36,22 @@ Project Detail
 
 {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
   <div class="card mb-3 bg-light">
+    <div class="card-header">
+      <h4 class="d-inline"><i class="fas fa-cubes"></i></a> <a name="manage-project">Manage Project</a></h4>
+      <div class="float-right">
+          {% if project.status.name in 'Active, New' %}
+            <a class="btn btn-info" href="{% url 'project-update' project.pk %}" role="button"><i class="far fa-edit" aria-hidden="true"></i> Update Project Information</a>
+            <a class="btn btn-info" href="{% url 'project-archive' project.id %}" role="button"><i class="fas fa-file-archive" aria-hidden="true"></i> Archive Project</a>
+          {% endif %}
+      </div>
+    </div>
     <div class="card-body">
       {% if project.status.name != 'Archived' %}
         <a class="btn btn-success" href="{% url 'project-add-users-search' project.pk %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
         <a class="btn btn-success" href="{% url 'publication-search' project.pk %}" role="button"><i class="fas fa-newspaper" aria-hidden="true"></i> Add Publication</a>
         <a class="btn btn-success" href="{% url 'add-research-output' project.pk %}" role="button"><i class="far fa-newspaper" aria-hidden="true"></i> Add Research Output</a>
         <a class="btn btn-success" href="{% url 'grant-create' project.id %}" role="button"><i class="fas fa-trophy" aria-hidden="true"></i> Add Grant</a>
-        <a class="btn btn-info" href="{% url 'project-update' project.pk %}" role="button"><i class="far fa-edit" aria-hidden="true"></i> Update Project Information</a>
       {% endif %}
-
-      <div class="float-right">
-          {% if project.status.name in 'Active, New' %}
-            <a class="btn btn-info" href="{% url 'project-archive' project.id %}" role="button"><i class="fas fa-file-archive" aria-hidden="true"></i> Archive Project</a>
-          {% endif %}
-      </div>
     </div>
   </div>
 
