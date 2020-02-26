@@ -74,7 +74,7 @@ class UserSearchHome(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         return context
 
     def test_func(self):
-        return self.request.user.is_superuser
+        return self.request.user.is_staff
 
 
 class UserSearchResults(LoginRequiredMixin, UserPassesTestMixin, View):
@@ -93,7 +93,7 @@ class UserSearchResults(LoginRequiredMixin, UserPassesTestMixin, View):
         return render(request, self.template_name, context)
 
     def test_func(self):
-        return self.request.user.is_superuser
+        return self.request.user.is_staff
 
 
 class UserListAllocations(LoginRequiredMixin, UserPassesTestMixin, TemplateView):

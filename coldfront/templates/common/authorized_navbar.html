@@ -29,6 +29,8 @@
         </li>
         {% if request.user.is_superuser %}
         {% include 'common/navbar_admin.html' %}
+        {% elif request.user.is_staff %}
+        {% include 'common/navbar_nonadmin_staff.html' %}
         {% elif perms.project.can_review_pending_project_reviews or perms.grant.can_view_all_grants %}
         {% include 'common/navbar_director.html' %}
         {% endif %}
