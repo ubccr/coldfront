@@ -3,8 +3,9 @@ import logging
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views import View
@@ -27,11 +28,36 @@ if EMAIL_ENABLED:
 class UserProfile(TemplateView):
     template_name = 'user/user_profile.html'
 
-    def get_context_data(self, **kwargs):
+    def dispatch(self, request, *args, viewed_username=None, **kwargs):
+        # viewing another user profile requires permissions
+        if viewed_username:
+            if request.user.is_superuser or request.user.is_staff:
+                # allow, via fallthrough
+                pass
+            else:
+                # redirect them to their own profile
+
+                # error if they tried to do something naughty
+                if not request.user.username == viewed_username:
+                    messages.error(request, "You aren't allowed to view other user profiles!")
+                # if they used their own username, no need to provide an error - just redirect
+
+                return HttpResponseRedirect(reverse('user-profile'))
+
+        return super().dispatch(request, *args, viewed_username=viewed_username, **kwargs)
+
+    def get_context_data(self, viewed_username=None, **kwargs):
         context = super().get_context_data(**kwargs)
+
+        if viewed_username:
+            viewed_user = get_object_or_404(User, username=viewed_username)
+        else:
+            viewed_user = self.request.user
+
         group_list = ', '.join(
-            [group.name for group in self.request.user.groups.all()])
+            [group.name for group in viewed_user.groups.all()])
         context['group_list'] = group_list
+        context['viewed_user'] = viewed_user
         return context
 
 
