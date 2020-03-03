@@ -117,12 +117,20 @@ class PublicationSearchResultView(LoginRequiredMixin, UserPassesTestMixin, Templ
             '{\\textemdash}', '-').replace('{\\textasciigrave}', ' ').replace('{\\textdaggerdbl}', ' ').replace('{\\textdagger}', ' ')
         title = as_text(bib_json['title']).replace('{\\textquotesingle}', "'").replace('{\\textendash}', '-').replace(
             '{\\textemdash}', '-').replace('{\\textasciigrave}', ' ').replace('{\\textdaggerdbl}', ' ').replace('{\\textdagger}', ' ')
-        journal = as_text(bib_json['journal']).replace('{\\textquotesingle}', "'").replace('{\\textendash}', '-').replace(
-            '{\\textemdash}', '-').replace('{\\textasciigrave}', ' ').replace('{\\textdaggerdbl}', ' ').replace('{\\textdagger}', ' ')
 
         author = re.sub("{|}", "", author)
         title = re.sub("{|}", "", title)
-        journal = re.sub("{|}", "", journal)
+
+        # not all bibtex entries will have a journal field
+        if 'journal' in bib_json:
+            journal = as_text(bib_json['journal']).replace('{\\textquotesingle}', "'").replace('{\\textendash}', '-').replace(
+                '{\\textemdash}', '-').replace('{\\textasciigrave}', ' ').replace('{\\textdaggerdbl}', ' ').replace('{\\textdagger}', ' ')
+            journal = re.sub("{|}", "", journal)
+        else:
+            # fallback: clearly indicate that data was absent
+            source_name = matching_source_obj.name
+            journal = '[no journal info from {}]'.format(source_name.upper())
+
         pub_dict = {}
         pub_dict['author'] = author
         pub_dict['year'] = year

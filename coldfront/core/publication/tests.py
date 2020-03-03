@@ -105,6 +105,8 @@ class TestDataRetrieval(TestCase):
     class Data:
         """Collection of test data, separated for readability"""
 
+        NO_JOURNAL_INFO_FROM_DOI = '[no journal info from DOI]'
+
         def __init__(self):
             self.expected_pubdata = [
                 {
@@ -113,6 +115,14 @@ class TestDataRetrieval(TestCase):
                     'author': 'Wenxuan Huang and Alexander Urban and Ziqin Rong and Zhiwei Ding and Chuan Luo and Gerbrand Ceder',
                     'year': '2017',
                     'journal': 'npj Computational Materials',
+                },
+                {
+                    'unique_id': '10.1145/2484762.2484798',
+                    'title': 'The institute for cyber-enabled research',
+                    'author': 'Dirk Colbry and Bill Punch and Wolfgang Bauer',
+                    'year': '2013',
+                    'journal': self.NO_JOURNAL_INFO_FROM_DOI,
+
                 },
             ]
 
@@ -198,9 +208,13 @@ class TestDataRetrieval(TestCase):
 
     def test_doi_extraction(self):
         for pubdata in self.data.expected_pubdata:
+            testdata = pubdata.copy()  # several adjustments required, below
+
+            # test cases with NO_JOURNAL_INFO_FROM_DOI need more setup, done later in context
+            is_nojournal_test = testdata['journal'] == self.data.NO_JOURNAL_INFO_FROM_DOI
+
             # mutate test data so that it's definitely nonrealistic, thus
             # assuring that we *are* mocking the right stuff
-            testdata = pubdata.copy()
             for k in (k for k in testdata if k != 'source_pk'):
                 testdata[k] += '[not real]'
 
@@ -210,13 +224,23 @@ class TestDataRetrieval(TestCase):
             mocked_bibdatabase_entry = testdata.copy()
             del mocked_bibdatabase_entry['source_pk']
 
+            # for no-journal tests, we emulate not having any 'journal' key in
+            # data returned from remote api
+            if is_nojournal_test:
+                del mocked_bibdatabase_entry['journal']
+
             mocks = self.Mocks(mocked_bibdatabase_entry, unique_id)
 
             # need to transform our expected data to check mock calls
             expected_data = testdata.copy()
             mock_as_text = mocks.as_text.side_effect
+
             # we expect `as_text` to be run on...
-            for key in ('author', 'title', 'year', 'journal'):
+            as_text_expected_on = ['author', 'title', 'year']
+            if not is_nojournal_test:
+                as_text_expected_on.append('journal')
+
+            for key in as_text_expected_on:
                 transformed = mock_as_text(expected_data[key])
 
                 # check assumptions: the transformation is meaningful
@@ -225,6 +249,11 @@ class TestDataRetrieval(TestCase):
 
                 expected_data[key] = transformed
 
+            # for no-journal tests, we expect a special string
+            if is_nojournal_test:
+                expected_data['journal'] = self.data.NO_JOURNAL_INFO_FROM_DOI
+
+            # finally done with setup... now to run the test...
             with self.subTest(unique_id=unique_id):
                 with mocks.patch():
                     retrieved_data = self.run_target_method(unique_id)
