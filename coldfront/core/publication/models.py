@@ -6,8 +6,8 @@ from coldfront.core.project.models import Project
 
 
 class PublicationSource(TimeStampedModel):
-    name = models.CharField(max_length=255)
-    url = models.URLField()
+    name = models.CharField(max_length=255, unique=True)
+    url = models.URLField(null=True, blank=True)
 
     def __str__(self):
         return self.name
