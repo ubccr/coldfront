@@ -1,0 +1,51 @@
+version: '3'
+
+services:
+  proxy:
+    # The official v2 Traefik docker image
+    image: traefik:v2.1
+    # Enables the web UI and tells Traefik to listen to docker
+    command: 
+#      - --api.insecure=true 
+      - --providers.docker
+      - --entrypoints.web.address=:80
+      - --entrypoints.web-secure.address=:443
+      - --providers.file.directory=/config/
+      - --providers.file.watch=true
+    ports:
+      # The HTTP port
+      - "80:80"
+      - "443:443"
+      # The Web UI (enabled by --api.insecure=true)
+#      - "8080:8080"
+    volumes:
+      # So that Traefik can listen to the Docker events
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /root/coldfront_app/traefik:/config/
+  static:
+    image: nginx
+    volumes:
+      - static:/usr/share/nginx/html/static:ro
+    labels:
+      - "traefik.http.routers.coldfront-static.rule=PathPrefix(`/static/`)"
+      - "traefik.http.routers.coldfront-static.tls=true"
+  django:
+    build: .
+    labels:
+      - "traefik.http.routers.django.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.django.tls=true"
+      - "traefik.enable=true"
+    expose:
+      - 80
+    command: /root/.local/bin/gunicorn -b 0.0.0.0:80 coldfront.config.wsgi
+    volumes:
+      - static:/usr/src/app/static_root
+      - /root/coldfront_app/coldfront/coldfront/config:/usr/src/app/coldfront/config
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: coldfront
+      POSTGRES_PASSWORD: ${POSTGRES_PW}
+volumes:
+  static:
