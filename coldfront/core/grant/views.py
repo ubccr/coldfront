@@ -17,7 +17,7 @@ from coldfront.core.grant.models import (Grant, GrantFundingAgency,
 from coldfront.core.project.models import Project
 
 
-class GrantCreateView(FormView):
+class GrantCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     form_class = GrantForm
     template_name = 'grant/grant_create.html'
 
