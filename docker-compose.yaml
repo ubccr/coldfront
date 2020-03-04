@@ -22,6 +22,11 @@ services:
       # So that Traefik can listen to the Docker events
       - /var/run/docker.sock:/var/run/docker.sock
       - ${TRAEFIK_CFG}:/config/
+    labels:
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https" 
+      - "traefik.http.routers.redirs.rule=hostregexp(`{host:.+}`)"  
+      - "traefik.http.routers.redirs.entrypoints=web"  
+      - "traefik.http.routers.redirs.middlewares=redirect-to-https"  
   static:
     image: nginx
     depends_on: 
