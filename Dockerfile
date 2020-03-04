@@ -34,13 +34,13 @@ COPY . \
      ./
 
 ## with sample config
-COPY ./coldfront/config/local_strings.py.sample \
-     ./coldfront/config/local_strings.py
-COPY ./coldfront/config/local_settings.py.sample \
-     ./coldfront/config/local_settings.py
+#COPY ./coldfront/config/local_strings.py.sample \
+#     ./coldfront/config/local_strings.py
+#COPY ./coldfront/config/local_settings.py.sample \
+#     ./coldfront/config/local_settings.py
 
-RUN ./manage.py initial_setup
-RUN ./manage.py load_test_data
+#RUN ./manage.py initial_setup
+#RUN ./manage.py load_test_data
 RUN ./manage.py collectstatic
 
 # TODO: ENTRYPOINT w/ helper script (see best practices)
