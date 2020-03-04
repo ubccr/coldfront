@@ -44,8 +44,6 @@ services:
       - "traefik.http.routers.django.rule=PathPrefix(`/`)"
       - "traefik.http.routers.django.tls=true"
       - "traefik.enable=true"
-    expose:
-      - 80
     command: /root/.local/bin/gunicorn -b 0.0.0.0:80 coldfront.config.wsgi
     volumes:
       - static:/usr/src/app/static_root

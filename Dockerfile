@@ -7,7 +7,7 @@
 # 3 means latest 3.x
 # (at time of writing, equivalent to 3.8-alpine)
 ARG PYTHON_TAG=3-alpine
-
+EXPOSE 80
 # largely arbitrary
 ARG COLDFRONT_DIR=/usr/src/app
 
