@@ -51,5 +51,8 @@ services:
     environment:
       POSTGRES_DB: coldfront
       POSTGRES_PASSWORD: ${POSTGRES_PW}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes: 
+      - ${POSTGRES_DBPATH}:/var/lib/postgresql/data
 volumes:
   static:
