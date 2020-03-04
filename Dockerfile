@@ -7,19 +7,19 @@
 # 3 means latest 3.x
 # (at time of writing, equivalent to 3.8-alpine)
 ARG PYTHON_TAG=3-alpine
-EXPOSE 80
+FROM python:${PYTHON_TAG} AS base-python
+FROM base-python
+
 # largely arbitrary
 ARG COLDFRONT_DIR=/usr/src/app
 
 
 # base python image is specified via build arg
-FROM python:${PYTHON_TAG} AS base-python
 
 
-FROM base-python
 
-ARG COLDFRONT_DIR
 WORKDIR "${COLDFRONT_DIR}"
+EXPOSE 80
 
 
 RUN apk update && apk add postgresql-dev gcc python3-dev musl-dev                                                             
