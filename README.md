@@ -42,7 +42,7 @@ subscribe ccr-open-coldfront-list@listserv.buffalo.edu first_name last_name
 
 1. ColdFront requires Python 3.6, memcached, and redis. 
 
-### CentOS (7.5)
+### CentOS (8)
 
 Install EPEL then install required packages:
 
