@@ -81,7 +81,7 @@ def xdmod_fetch_cloud_core_time(start, end, project, resources=None):
 
     url = '{}{}'.format(XDMOD_API_URL, _ENDPOINT_CORE_HOURS)
     payload = _DEFAULT_PARAMS
-    payload['project_filter'] = '"{}"'.format(project)
+    payload['project_filter'] = project
     payload['resource_filter'] = '"{}"'.format(','.join(resources))
     payload['start_date'] = start
     payload['end_date'] = end
