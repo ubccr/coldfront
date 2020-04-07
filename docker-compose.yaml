@@ -12,6 +12,7 @@ services:
       - --entrypoints.web-secure.address=:443
       - --providers.file.directory=/config/
       - --providers.file.watch=true
+#      - --log.level=DEBUG
     ports:
       # The HTTP port
       - "80:80"
@@ -48,6 +49,8 @@ services:
     volumes:
       - static:/usr/src/app/static_root
       - ${COLDFRONT_CFG}:/usr/src/app/coldfront/config
+      - /root/coldfront_import/local_data:/usr/src/app/local_data
+      - /root/coldfront_import/commands:/usr/src/app/coldfront/core/utils/management/commands
   db:
     image: postgres
     restart: always
