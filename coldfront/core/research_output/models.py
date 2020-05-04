@@ -43,8 +43,3 @@ class ResearchOutput(TimeStampedModel):
         self.title = self.title.strip()
 
         super().save(*args, **kwargs)
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=['project', 'title', 'description'], name='unique_entry_in_project'),
-        ]

@@ -54,8 +54,4 @@ class Migration(migrations.Migration):
             },
             bases=(simple_history.models.HistoricalChanges, models.Model),
         ),
-        migrations.AddConstraint(
-            model_name='researchoutput',
-            constraint=models.UniqueConstraint(fields=('project', 'title', 'description'), name='unique_entry_in_project'),
-        ),
     ]
