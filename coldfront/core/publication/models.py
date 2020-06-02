@@ -34,3 +34,6 @@ class Publication(TimeStampedModel):
 
     def __str__(self):
         return self.title
+
+    def display_uid(self):
+        return self.unique_id
