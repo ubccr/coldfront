@@ -1,4 +1,4 @@
-{% extends "common/base.html" %} 
+{% extends "common/base.html" %}
 {% load crispy_forms_tags %}
 {% load static %}
 
@@ -14,7 +14,7 @@ Delete Publications from Project
 {% if formset %}
 <div class="card border-light">
   <div class="card-body">
-  
+
     <form action="{% url 'publication-delete-publications' project.pk %}" method="post">
       {% csrf_token %}
       <div class="table-responsive">
@@ -48,8 +48,8 @@ Delete Publications from Project
     </form>
   </div>
 </div>
-{% else %} 
-  <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to project</a> 
+{% else %}
+  <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to project</a>
   <div class="alert alert-info">
     No publications to delete!
   </div>
@@ -64,8 +64,12 @@ $("input[name^='publicationform-']").click(function (ele) {
       $("#selectAll").prop('checked', false);
     }
 });
-
+$(document).ready(function () {
+  $('#selectAll').click(function(e){
+      var table= $(e.target).closest('table');
+      $('td input:checkbox',table).prop('checked',this.checked);
+  });
+});
 </script>
 
-{% endblock %} 
-
+{% endblock %}
