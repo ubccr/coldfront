@@ -4,7 +4,7 @@
 
 
 {% block title %}
-Delete Publications from Project
+Export Publications from Project
 {% endblock %}
 
 
@@ -31,7 +31,7 @@ Delete Publications from Project
           <tbody>
             {% for form in formset %}
             <tr>
-              <td>{{ form.selected }}</td>
+              <td class="checkBoxClass">{{ form.selected }}</td>
               <td>{{ form.title.value }}</td>
               <td>{{ form.year.value }}</td>
             </tr>
@@ -63,6 +63,12 @@ $("input[name^='publicationform-']").click(function (ele) {
     if ( id != "selectAll") {
       $("#selectAll").prop('checked', false);
     }
+});
+$(document).ready(function () {
+  $('#selectAll').click(function(e){
+      var table= $(e.target).closest('table');
+      $('td input:checkbox',table).prop('checked',this.checked);
+  });
 });
 
 </script>
