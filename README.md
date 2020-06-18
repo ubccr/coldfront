@@ -106,7 +106,7 @@ You can log in as `admin` with password `test1234`.
 You can log in as a PI using username `cgray` with password `test1234`.
 You can log in as another PI using username `sfoster` with password `test1234`.
 
-Password for all users is also `teset1234`. 
+Password for all users is also `test1234`. 
 
 
 ## Directory structure
