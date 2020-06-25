@@ -42,7 +42,28 @@ subscribe ccr-open-coldfront-list@listserv.buffalo.edu first_name last_name
 
 1. ColdFront requires Python 3.6, memcached, and redis. 
 
-### CentOS (7.5)
+### CentOS (7)
+
+Install EPEL then install required packages:
+
+```
+sudo yum install epel-release
+sudo yum install python36 python36-devel memcached redis
+
+# Install SQLite >= 3.8.3 from source since it is absent from the CentOS software repositories
+wget https://sqlite.org/2020/sqlite-autoconf-XXXXXXX.tar.gz
+tar -xzf sqlite-autoconf-XXXXXXX
+cd sqlite-autoconf-XXXXXXX
+./configure
+make
+make install
+
+#Check version
+sqlite3 --version
+``` 
+
+
+### CentOS (8)
 
 Install EPEL then install required packages:
 
