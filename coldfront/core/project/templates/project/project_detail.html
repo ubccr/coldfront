@@ -1,4 +1,4 @@
-{% extends "common/base.html" %} 
+{% extends "common/base.html" %}
 {% load crispy_forms_tags %}
 {% load humanize %}
 {% load static %}
@@ -19,7 +19,7 @@ Project Detail
 
 
 <div id="alert_div">
-  
+
 </div>
 
 {% if project.status.name == 'Archived' %}
@@ -63,18 +63,18 @@ Project Detail
 <div class="card mb-3">
   <div class="card-body">
     <h4 class="card-title">
-      Principal Investigator: 
+      Principal Investigator:
       {{ project.pi.first_name }}
       {{ project.pi.last_name }}
       ({{ project.pi.username }})
       <a href="mailto:{{ project.pi.email }} "><i class="far fa-envelope"></i></a></h4>
     <p class="card-text text-justify"><strong>Description: </strong>{{ project.description }}</p>
     <p class="card-text text-justify"><strong>Field of Science: </strong>{{ project.field_of_science }}</p>
-    <p class="card-text text-justify"><strong>Project Status: </strong>{{ project.status }} 
-        {% if project.last_project_review and  project.last_project_review.status.name == 'Pending'%} 
-          <span class="badge badge-pill badge-info">project review pending</span> 
+    <p class="card-text text-justify"><strong>Project Status: </strong>{{ project.status }}
+        {% if project.last_project_review and  project.last_project_review.status.name == 'Pending'%}
+          <span class="badge badge-pill badge-info">project review pending</span>
         {% endif %}
-    </p> 
+    </p>
     <p class="card-text text-justify"><strong>Created: </strong>{{ project.created|date:"M. d, Y" }}</p>
   </div>
 </div>
@@ -121,26 +121,26 @@ Project Detail
             {% else %}
               <td class="text-info">{{ user.status.name }}</td>
             {% endif %}
-            <td>  
+            <td>
               {% if is_allowed_to_update_project %}
-                <input type="checkbox" 
-                id="email_notifications_for_user_id_{{user.id}}" 
-                name="email_notifications_checkbox" 
-                value="{{ user.enable_notifications }}" 
+                <input type="checkbox"
+                id="email_notifications_for_user_id_{{user.id}}"
+                name="email_notifications_checkbox"
+                value="{{ user.enable_notifications }}"
                 {% if user.enable_notifications %} checked {% endif %}
                 {% if user.role.name == "Manager" %} disabled {% endif %}
                 {% if not request.user.is_superuser and user.role.name == "User" and request.user == user.user %} disabled {% endif %}>
               {% elif request.user == user.user %}
-                <input type="checkbox" 
-                id="email_notifications_for_user_id_{{user.id}}" 
-                name="email_notifications_checkbox" 
-                value="{{ user.enable_notifications }}" 
+                <input type="checkbox"
+                id="email_notifications_for_user_id_{{user.id}}"
+                name="email_notifications_checkbox"
+                value="{{ user.enable_notifications }}"
                 {% if user.enable_notifications %} checked {% endif %}>
               {% else %}
-                <input type="checkbox" 
-                id="email_notifications_for_user_id_{{user.id}}" 
-                name="email_notifications_checkbox" 
-                value="{{ user.enable_notifications }}" 
+                <input type="checkbox"
+                id="email_notifications_for_user_id_{{user.id}}"
+                name="email_notifications_checkbox"
+                value="{{ user.enable_notifications }}"
                 {% if user.enable_notifications %} checked {% endif %}
                 disabled>
               {% endif %}
@@ -157,7 +157,7 @@ Project Detail
         </tbody>
       </table>
     </div>
-    
+
   </div>
 </div>
 <!-- End Project Users -->
@@ -177,7 +177,7 @@ Project Detail
   <div class="card-body">
     {% if allocations %}
     <div class="table-responsive">
-      <table class="table table-hover">
+      <table id="allocation_table" class="table table-hover">
         <thead>
           <tr>
             <th>Resource Name</th>
@@ -185,7 +185,7 @@ Project Detail
             <th>Information</th>
             <th>Status</th>
             <th>End Date</th>
-            <th>Actions</th>
+            <th class="nosort">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -198,18 +198,18 @@ Project Detail
               <td class="text-success">{{ allocation.status.name }}</td>
             {% elif  allocation.status.name == 'Expired' or allocation.status.name == 'Denied' %}
               <td class="text-danger">{{ allocation.status.name }}</td>
-            {% else %} 
+            {% else %}
               <td class="text-info">{{ allocation.status.name }}</td>
             {% endif %}
             <td>{{allocation.end_date|date:"M. d, Y"}}</td>
             <td>
               <a href="{% url 'allocation-detail' allocation.pk %}"><i class="far fa-folder-open"></i></a>
-              {% if is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %} 
+              {% if is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
                 <a href="{% url 'allocation-renew' allocation.pk %}">
-                <span class="badge badge-warning"><i class="fas fa-redo-alt"></i> 
+                <span class="badge badge-warning"><i class="fas fa-redo-alt"></i>
                 Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} <br> Click to renew
                 </span>
-                </a> 
+                </a>
               {% endif %}
             </td>
           </tr>
@@ -246,7 +246,7 @@ Project Detail
   <div class="card-body">
     {% if grants %}
     <div class="table-responsive">
-      <table class="table table-hover">
+      <table id="grant_table" class="table table-hover">
         <thead>
           <tr>
             <th scope="col">Title</th>
@@ -255,7 +255,7 @@ Project Detail
             <th scope="col" class="text-nowrap">Award Amount</th>
             <th scope="col" class="text-nowrap">Grant Start Date</th>
             <th scope="col" class="text-nowrap">Grant End Date</th>
-            <th scope="col">Actions</th>
+            <th scope="col" class="nosort">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -401,10 +401,10 @@ Project Detail
           </tbody>
         </table>
       </div>
-    {% else %} 
+    {% else %}
       <div class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> There are no messages from system administrators.</div>
     {% endif %}
-    
+
   </div>
 </div>
 
@@ -427,13 +427,25 @@ function getCookie(name) {
 }
 
 $(document).ready(function(){
-    $('[data-toggle="popover"]').popover();   
+    $('[data-toggle="popover"]').popover();
 
     $('#publication-table').DataTable({
       "iDisplayLength": 25,
       "bSortClasses": false,
       "order": [[ 1, "desc" ]]
     });
+});
+$('#allocation_table').DataTable({
+'aoColumnDefs': [{
+    'bSortable': false,
+    'aTargets': ['nosort']
+}]
+});
+$('#grant_table').DataTable({
+'aoColumnDefs': [{
+    'bSortable': false,
+    'aTargets': ['nosort']
+}]
 });
 
 
