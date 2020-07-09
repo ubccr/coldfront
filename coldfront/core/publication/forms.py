@@ -34,3 +34,10 @@ class PublicationDeleteForm(forms.Form):
     title = forms.CharField(max_length=255, disabled=True)
     year = forms.CharField(max_length=30, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
+
+
+class PublicationExportForm(forms.Form):
+        title = forms.CharField(max_length=255, disabled=True)
+        year = forms.CharField(max_length=30, disabled=True)
+        unique_id = forms.CharField(max_length=255, disabled=True)
+        selected = forms.BooleanField(initial=False, required=False)

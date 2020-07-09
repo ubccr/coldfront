@@ -4,18 +4,18 @@
 
 
 {% block title %}
-Delete Publications from Project
+Export Publications from Project
 {% endblock %}
 
 
 
 {% block content %}
-<h1>Delete publications from project: {{project.title}}</h1> <hr>
+<h1>Export publications from project: {{project.title}}</h1> <hr>
 {% if formset %}
 <div class="card border-light">
   <div class="card-body">
 
-    <form action="{% url 'publication-delete-publications' project.pk %}" method="post">
+    <form action="{% url 'publication-export-publications' project.pk %}" method="post">
       {% csrf_token %}
       <div class="table-responsive">
         <table class="table table-sm table-hover">
@@ -41,7 +41,7 @@ Delete Publications from Project
       </div>
       {{ formset.management_form }}
       <div>
-        <button type="submit" class="btn btn-danger"><i class="fas fa-minus" aria-hidden="true"></i> Delete Selected Publications from Project</button>
+        <button type="submit" class="btn btn-success"><i class="fas fa-file-export" aria-hidden="true"></i> Export Selected Publications from Project</button>
         <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a>
         <br>
       </div>
@@ -70,6 +70,7 @@ $(document).ready(function () {
       $('td input:checkbox',table).prop('checked',this.checked);
   });
 });
+
 </script>
 
 {% endblock %}

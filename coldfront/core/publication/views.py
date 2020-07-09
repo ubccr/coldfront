@@ -3,16 +3,20 @@ import json
 import re
 
 import requests
+import os
+import io
+from io import StringIO
 from bibtexparser.bibdatabase import as_text
 from bibtexparser.bparser import BibTexParser
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db import IntegrityError
 from django.forms import formset_factory
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.views.generic import DetailView, ListView, TemplateView, View
+from django.views.static import serve
 
 from coldfront.core.project.models import Project
 from coldfront.core.publication.forms import (
@@ -20,6 +24,7 @@ from coldfront.core.publication.forms import (
     PublicationDeleteForm,
     PublicationResultForm,
     PublicationSearchForm,
+    PublicationExportForm,
 )
 from coldfront.core.publication.models import Publication, PublicationSource
 from doi2bib import crossref
@@ -394,6 +399,103 @@ class PublicationDeletePublicationsView(LoginRequiredMixin, UserPassesTestMixin,
 
             messages.success(request, 'Deleted {} publications from project.'.format(
                 publications_deleted_count))
+        else:
+            for error in formset.errors:
+                messages.error(request, error)
+
+        return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+
+    def get_success_url(self):
+        return reverse('project-detail', kwargs={'pk': self.object.project.id})
+
+
+class PublicationExportPublicationsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'publication/publication_export_publications.html'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        project_obj = get_object_or_404(
+            Project, pk=self.kwargs.get('project_pk'))
+
+        if project_obj.pi == self.request.user:
+            return True
+
+        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+            return True
+
+        messages.error(
+            self.request, 'You do not have permission to delete publications from this project.')
+
+    def get_publications_to_export(self, project_obj):
+
+        publications_do_delete = [
+            {'title': publication.title,
+             'year': publication.year,
+             'unique_id': publication.unique_id, }
+            for publication in project_obj.publication_set.all().order_by('-year')
+        ]
+
+        return publications_do_delete
+
+    def get(self, request, *args, **kwargs):
+        project_obj = get_object_or_404(
+            Project, pk=self.kwargs.get('project_pk'))
+
+        publications_do_export = self.get_publications_to_export(project_obj)
+        context = {}
+
+        if publications_do_export:
+            formset = formset_factory(
+                PublicationExportForm, max_num=len(publications_do_export))
+            formset = formset(initial=publications_do_export,
+                              prefix='publicationform')
+            context['formset'] = formset
+
+        context['project'] = project_obj
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        project_obj = get_object_or_404(
+            Project, pk=self.kwargs.get('project_pk'))
+
+        publications_do_export = self.get_publications_to_export(project_obj)
+        context = {}
+
+        formset = formset_factory(
+            PublicationExportForm, max_num=len(publications_do_export))
+        formset = formset(
+            request.POST, initial=publications_do_export, prefix='publicationform')
+
+        publications_deleted_count = 0
+        bib_text = ''
+        if formset.is_valid():
+            for form in formset:
+                publication_form_data = form.cleaned_data
+                if publication_form_data['selected']:
+
+                    publication_obj = Publication.objects.get(
+                        project=project_obj,
+                        title=publication_form_data.get('title'),
+                        year=publication_form_data.get('year'),
+                        unique_id=publication_form_data.get('unique_id'),
+                    )
+                    print("id is"+publication_obj.display_uid())
+                    temp_id = publication_obj.display_uid()
+                    status, bib_str = crossref.get_bib(publication_obj.display_uid())
+                    bp = BibTexParser(interpolate_strings=False)
+                    bib_database = bp.parse(bib_str)
+                    bib_text += bib_str
+            response = HttpResponse(content_type='text/plain')
+            response['Content-Disposition'] = 'attachment; filename=refs.bib'
+            buffer = io.StringIO()
+            buffer.write(bib_text)
+            output = buffer.getvalue()
+            buffer.close()
+            response.write(output)
+            return response
         else:
             for error in formset.errors:
                 messages.error(request, error)
