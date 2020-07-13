@@ -8,4 +8,7 @@
 
 ## Contributors
 
+- Dheeraj Bhatia
 - John Deangelis <jd225@buffalo.edu>
+- James Kruth
+- Shawn Rice
