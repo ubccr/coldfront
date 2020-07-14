@@ -67,36 +67,23 @@ $(document).ready(function () {
       var table= $(e.target).closest('table');
       $('td input:checkbox',table).prop('checked',this.checked);
   });
+
   $('#selectAll').trigger('click');
 
 });
 const checkboxes = [...document.querySelectorAll('input[type=checkbox]')]
 
-// function that tells you if any checkboxes in
-// the above list are checked
 function anyChecked() {
-  // this is where we're using an array method
-  // Array.prototype.some
   return checkboxes.some(x=>x.checked)
 }
-
-// to every single checkbox, add a click listener
-// again, using an Array method
-// Array.prototype.forEach
 checkboxes.forEach(checkbox => {
   checkbox.addEventListener('click', () => {
-    // when any checkbox is clicked,
-    // check if there's any checked checkboxes
     anyChecked()
-      // if so, enable the button
       ? submitbtn.removeAttribute('disabled')
-      // otherwise, disable it
       : submitbtn.setAttribute('disabled','')
   })
 })
 
-// do the same thing initially as well
-// to account for initially checked checkboxes
 anyChecked()
       ? submitbtn.removeAttribute('disabled')
       : submitbtn.setAttribute('disabled','')
