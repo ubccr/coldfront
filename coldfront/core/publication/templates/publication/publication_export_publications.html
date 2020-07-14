@@ -15,7 +15,7 @@ Export Publications from Project
 <div class="card border-light">
   <div class="card-body">
 
-    <form action="{% url 'publication-export-publications' project.pk %}" method="post">
+    <form id="export_checkbox" action="{% url 'publication-export-publications' project.pk %}" method="post">
       {% csrf_token %}
       <div class="table-responsive">
         <table class="table table-sm table-hover">
@@ -41,7 +41,7 @@ Export Publications from Project
       </div>
       {{ formset.management_form }}
       <div>
-        <button type="submit" class="btn btn-success"><i class="fas fa-file-export" aria-hidden="true"></i> Export Selected Publications from Project</button>
+        <button type="submit" class="btn btn-success" disabled="disabled" id="submitbtn"><i class="fas fa-file-export" aria-hidden="true"></i> Export Selected Publications from Project</button>
         <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a>
         <br>
       </div>
@@ -56,8 +56,6 @@ Export Publications from Project
 {% endif %}
 
 <script>
-
-
 $("input[name^='publicationform-']").click(function (ele) {
     var id = $(this).attr('id');
     if ( id != "selectAll") {
@@ -69,8 +67,39 @@ $(document).ready(function () {
       var table= $(e.target).closest('table');
       $('td input:checkbox',table).prop('checked',this.checked);
   });
-});
+  $('#selectAll').trigger('click');
 
+});
+const checkboxes = [...document.querySelectorAll('input[type=checkbox]')]
+
+// function that tells you if any checkboxes in
+// the above list are checked
+function anyChecked() {
+  // this is where we're using an array method
+  // Array.prototype.some
+  return checkboxes.some(x=>x.checked)
+}
+
+// to every single checkbox, add a click listener
+// again, using an Array method
+// Array.prototype.forEach
+checkboxes.forEach(checkbox => {
+  checkbox.addEventListener('click', () => {
+    // when any checkbox is clicked,
+    // check if there's any checked checkboxes
+    anyChecked()
+      // if so, enable the button
+      ? submitbtn.removeAttribute('disabled')
+      // otherwise, disable it
+      : submitbtn.setAttribute('disabled','')
+  })
+})
+
+// do the same thing initially as well
+// to account for initially checked checkboxes
+anyChecked()
+      ? submitbtn.removeAttribute('disabled')
+      : submitbtn.setAttribute('disabled','')
 </script>
 
 {% endblock %}
