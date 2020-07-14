@@ -66,6 +66,17 @@ $(document).ready(function () {
   $('#selectAll').click(function(e){
       var table= $(e.target).closest('table');
       $('td input:checkbox',table).prop('checked',this.checked);
+      checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('click', () => {
+          anyChecked()
+            ? submitbtn.removeAttribute('disabled')
+            : submitbtn.setAttribute('disabled','')
+        })
+      })
+
+      anyChecked()
+            ? submitbtn.removeAttribute('disabled')
+            : submitbtn.setAttribute('disabled','')
   });
 
   $('#selectAll').trigger('click');
