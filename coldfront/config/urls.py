@@ -30,7 +30,7 @@ urlpatterns = [
 if 'coldfront.plugins.iquota' in settings.EXTRA_APPS:
     urlpatterns.append(path('iquota/', include('coldfront.plugins.iquota.urls')))
 
-if 'coldfront.plugins.mokey_oidc' in settings.EXTRA_APPS:
+if 'mozilla_django_oidc' in settings.EXTRA_APPS:
     urlpatterns.append(path('oidc/', include('mozilla_django_oidc.urls')))
 
 if 'django_su.backends.SuBackend' in settings.EXTRA_AUTHENTICATION_BACKENDS:
