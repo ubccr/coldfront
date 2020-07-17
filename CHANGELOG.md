@@ -1,6 +1,9 @@
 # ColdFront Changelog
 
 ## [Unreleased]
+
+## [1.0.0] - 2020-07-17
+
 - Add test data
 - Fixed subscription breakdown by status plot failing due to missing resource
 - Add links to all projects and subscriptions for admin and director 
@@ -23,7 +26,9 @@
 - Show expired subscription on project detail page. Subscriptions are sorted by end date, so expired subscriptions will be at the bottom. 
 
 ## [0.0.1] - 2018-10-03
+
 - Initial release
 
-[Unreleased]: https://github.com/ubccr/coldfront/compare/v0.0.1...HEAD
+[Unreleased]: https://github.com/ubccr/coldfront/compare/v1.0.0...HEAD
 [0.0.1]: https://github.com/ubccr/coldfront/releases/tag/v0.0.1
+[1.0.0]: https://github.com/ubccr/coldfront/releases/tag/v1.0.0
