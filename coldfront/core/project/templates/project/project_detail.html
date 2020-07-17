@@ -201,7 +201,7 @@ Project Detail
             {% else %}
               <td class="text-info">{{ allocation.status.name }}</td>
             {% endif %}
-            <td>{{allocation.end_date|date:"M. d, Y"}}</td>
+            <td>{{allocation.end_date|date:"Y-m-d"}}</td>
             <td>
               <a href="{% url 'allocation-detail' allocation.pk %}"><i class="far fa-folder-open"></i></a>
               {% if is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
@@ -265,8 +265,8 @@ Project Detail
             <td class="text-nowrap">{{ grant.grant_pi }}</td>
             <td>{{ grant.role}}</td>
             <td>{{ grant.total_amount_awarded|intcomma}}</td>
-            <td>{{ grant.grant_start|date:"M. d, Y" }}</td>
-            <td>{{ grant.grant_end|date:"M. d, Y" }}</td>
+            <td>{{ grant.grant_start|date:"Y-m-d" }}</td>
+            <td>{{ grant.grant_end|date:"Y-m-d" }}</td>
             <td><a href="{% url 'grant-update' grant.id %}"><i class="far fa-edit"></i></a></td>
           </tr>
           {% endfor %}
