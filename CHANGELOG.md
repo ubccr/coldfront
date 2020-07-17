@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-## [1.0.0] - 2020-07-17
+## [1.0.1] - 2020-07-17
 
 - Add test data
 - Fixed subscription breakdown by status plot failing due to missing resource
@@ -29,6 +29,6 @@
 
 - Initial release
 
-[Unreleased]: https://github.com/ubccr/coldfront/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/ubccr/coldfront/compare/v1.0.1...HEAD
 [0.0.1]: https://github.com/ubccr/coldfront/releases/tag/v0.0.1
-[1.0.0]: https://github.com/ubccr/coldfront/releases/tag/v1.0.0
+[1.0.1]: https://github.com/ubccr/coldfront/releases/tag/v1.0.1
