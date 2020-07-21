@@ -1,5 +1,7 @@
 # ColdFront - Resource Allocation System
 
+[![Documentation Status](https://readthedocs.org/projects/coldfront/badge/?version=latest)](https://coldfront.readthedocs.io/en/latest/?badge=latest)
+
 ColdFront is an open source resource allocation system designed to provide a
 central portal for administration, reporting, and measuring scientific impact
 of HPC resources. ColdFront was created to help HPC centers manage access to a
