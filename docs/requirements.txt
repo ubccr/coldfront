@@ -1,0 +1,12 @@
+htmlmin==0.1.12
+Jinja2==2.11.1
+jsmin==2.2.2
+Markdown==3.1.1
+MarkupSafe==1.1.1
+mkdocs==1.0.4
+mkdocs-material==4.6.0
+mkdocs-minify-plugin==0.2.1
+Pygments==2.5.2
+pymdown-extensions==6.2.1
+PyYAML==5.3
+six==1.14.0
