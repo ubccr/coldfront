@@ -37,7 +37,7 @@ Project Detail
 {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
   <div class="card mb-3 bg-light">
     <div class="card-header">
-      <h4 class="d-inline"><i class="fas fa-cubes" aria-hidden="true"></i></a> <a name="manage-project">Manage Project</a></h4>
+      <h4 class="d-inline" id="manage-project"><i class="fas fa-cubes" aria-hidden="true"></i> Manage Project</h4>
       <div class="float-right">
           {% if project.status.name in 'Active, New' %}
             <a class="btn btn-info" href="{% url 'project-update' project.pk %}" role="button"><i class="far fa-edit" aria-hidden="true"></i> Update Project Information</a>
@@ -85,7 +85,7 @@ Project Detail
 <!-- Start Project Users -->
 <div class="card mb-3">
   <div class="card-header">
-  <h4 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> <a name="users">Users</a></h4> <span class="badge badge-secondary">{{project_users.count}}</span>
+  <h4 class="d-inline" id="users"><i class="fas fa-users" aria-hidden="true"></i> Users</h4> <span class="badge badge-secondary">{{project_users.count}}</span>
     <div class="float-right">
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
         <a class="btn btn-primary" href="{{mailto}}" role="button"><i class="far fa-envelope" aria-hidden="true"></i> Email Project Users</a>
@@ -229,7 +229,7 @@ Project Detail
 <!-- Start Project Grants -->
 <div class="card mb-3">
   <div class="card-header">
-  <h4 class="d-inline"><i class="fas fa-trophy" aria-hidden="true"></i> <a name="grants">Grants</a> </h4> <span class="badge badge-secondary">{{grants.count}}</span>
+  <h4 class="d-inline" id="grants"><i class="fas fa-trophy" aria-hidden="true"></i> Grants</h4> <span class="badge badge-secondary">{{grants.count}}</span>
     <div class="float-right">
       {% if project.latest_grant.modified %}
         <span class="badge badge-info">Last Updated: {{project.latest_grant.modified|date:"M. d, Y"}}</span>
@@ -284,7 +284,7 @@ Project Detail
 <!-- Start Project Publications -->
 <div class="card mb-3">
   <div class="card-header">
-  <h4 class="d-inline"><i class="fas fa-newspaper" aria-hidden="true"></i> <a name="publications">Publications</a> </h4> <span class="badge badge-secondary">{{publications.count}}</span>
+  <h4 class="d-inline" id="publications"><i class="fas fa-newspaper" aria-hidden="true"></i> Publications</h4> <span class="badge badge-secondary">{{publications.count}}</span>
     <div class="float-right">
       {% if project.latest_publication.created %}
         <span class="badge badge-info">Last Updated: {{project.latest_publication.created|date:"M. d, Y"}}</span>
@@ -337,7 +337,7 @@ Project Detail
 <!-- Start Project ResearchOutputs -->
 <div class="card mb-3">
   <div class="card-header">
-  <h4 class="d-inline"><i class="far fa-newspaper" aria-hidden="true"></i> <a name="research_outputs">Research Outputs</a> </h4> <span class="badge badge-secondary">{{ research_outputs.count}}</span>
+  <h4 class="d-inline" id="research_outputs"><i class="far fa-newspaper" aria-hidden="true"></i> Research Outputs</h4> <span class="badge badge-secondary">{{ research_outputs.count}}</span>
     <div class="float-right">
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
         <a class="btn btn-success" href="{% url 'add-research-output' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add Research Output</a>
