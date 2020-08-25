@@ -32,7 +32,7 @@ Allocation Detail
 
 <div class="card mb-3">
   <div class="card-header">
-    <h4><i class="fas fa-list"></i> Allocation Information</h4>
+    <h4><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h4>
   </div>
   <div class="card-body">
     <form method="post">
@@ -89,7 +89,7 @@ Allocation Detail
               {% if is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
               <a href="{% url 'allocation-renew' allocation.pk %}">
                 <span class="badge badge-warning">
-                  <i class="fas fa-redo-alt"></i>
+                  <i class="fas fa-redo-alt" aria-hidden="true"></i>
                   Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} - click to renew
                 </span>
               </a>
@@ -117,10 +117,10 @@ Allocation Detail
           <tr>
             {% if allocation.is_locked %}
               <th scope="row" class="text-nowrap">Locked</th>
-              <td><i class="fas fa-lock"></i></td>
+              <td><i class="fas fa-lock" aria-hidden="true"></i></td>
             {% else %}
               <th scope="row" class="text-nowrap">Unlocked</th>
-              <td><i class="fas fa-lock-open"></i></td>
+              <td><i class="fas fa-lock-open" aria-hidden="true"></i></td>
             {% endif %}
           </tr>
         </table>

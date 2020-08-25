@@ -36,13 +36,13 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
         <tr>
           <th scope="row">PI Status:</th>
           <td>  {% if viewed_user.userprofile.is_pi %}
-                  <span class="badge badge-success"><i class="fas fa-check"></i></span>
+                  <span class="badge badge-success"><i class="fas fa-check" aria-hidden="true"></i><span class="sr-only">Yes</span></span>
                 {% elif not user == viewed_user %}
-                  <span class="badge badge-danger"><i class="fas fa-times"></i></span>
+                  <span class="badge badge-danger"><i class="fas fa-times" aria-hidden="true"></i><span class="sr-only">No</span></span>
                 {% else %}
                   <form class="form-inline" method="post" action="{% url 'user-upgrade' %}">
                       <div class="form-group mb-2">
-                        <span class="badge badge-danger"><i class="fas fa-times"></i></span>
+                        <span class="badge badge-danger"><i class="fas fa-times" aria-hidden="true"></i><span class="sr-only">No</span></span>
                       </div>
                       <div class="form-group mx-sm-3 mb-2">
                           {% csrf_token %}
@@ -53,7 +53,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
           </td>
         </tr>
         <tr>
-          <th>Last Login:</th>
+          <th scope="row">Last Login:</th>
           <td>{{viewed_user.last_login}}</td>
         </tr>
       </tbody>

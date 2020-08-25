@@ -34,8 +34,8 @@ Allocation List {% endblock %} {% block content %}
       <tr>
         <th scope="col" class="text-nowrap">
           ID
-          <a href="?order_by=id&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-          <a href="?order_by=id&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+          <a href="?order_by=id&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort ID asc</span></a>
+          <a href="?order_by=id&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort ID desc</span></a>
         </th>
         <th scope="col" class="text-nowrap">
           Project
@@ -43,24 +43,24 @@ Allocation List {% endblock %} {% block content %}
         <th scope="col" class="text-nowrap">
           PI
           <a href="?order_by=project__pi__username&direction=asc&{{filter_parameters}}"><i
-              class="fas fa-sort-up"></i></a>
+              class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort PI asc</span></a>
           <a href="?order_by=project__pi__username&direction=des&{{filter_parameters}}"><i
-              class="fas fa-sort-down"></i></a>
+              class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort PI desc</span></a>
         </th>
         <th scope="col" class="text-nowrap">
           Resource Name
-          <a href="?order_by=resources&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-          <a href="?order_by=resources&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+          <a href="?order_by=resources&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Resource Name asc</span></a>
+          <a href="?order_by=resources&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Resource Name desc</span></a>
         </th>
         <th scope="col" class="text-nowrap">
           Status
-          <a href="?order_by=status__name&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-          <a href="?order_by=status__name&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+          <a href="?order_by=status__name&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Status asc</span></a>
+          <a href="?order_by=status__name&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Status desc</span></a>
         </th>
         <th scope="col" class="text-nowrap">
           End Date
-          <a href="?order_by=end_date&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-          <a href="?order_by=end_date&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+          <a href="?order_by=end_date&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort End Date asc</span></a>
+          <a href="?order_by=end_date&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort End Date desc</span></a>
         </th>
       </tr>
     </thead>

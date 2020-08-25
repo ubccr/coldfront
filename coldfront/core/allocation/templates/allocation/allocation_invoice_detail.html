@@ -114,7 +114,7 @@ Allocation Invoice Detail
             <td>{{ note.note }}</td>
             <td>{{ note.author.first_name }} {{ note.author.last_name }} ({{ note.author.username }})</td>
             <td>{{ note.modified }}</td>
-            <td><a href="{% url 'allocation-update-invoice-note' note.pk %}"><i class="fas fa-edit"></i></a></td>
+            <td><a href="{% url 'allocation-update-invoice-note' note.pk %}"><i class="fas fa-edit" alia-hidden="true"></i><span class="sr-only">Edit</span></a></td>
             {% endfor %}
         </tbody>
       </table>
