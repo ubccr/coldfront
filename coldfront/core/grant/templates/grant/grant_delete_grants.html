@@ -43,7 +43,7 @@ Delete Grants from Project
       </div>
       {{ formset.management_form }}
       <div>
-        <button type="submit" class="btn btn-danger"><i class="fas fa-minus"></i> Delete Selected Grants from Project</button>
+        <button type="submit" class="btn btn-danger"><i class="fas fa-minus" aria-hidden="true"></i> Delete Selected Grants from Project</button>
         <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a>
         <br>
       </div>
