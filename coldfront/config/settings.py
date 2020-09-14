@@ -3,6 +3,7 @@ Default Django settings for ColdFront project.
 """
 import os
 import sys
+from decimal import Decimal
 
 from django.contrib.messages import constants as messages
 
@@ -48,6 +49,7 @@ INSTALLED_APPS += [
     'coldfront.core.grant',
     'coldfront.core.publication',
     'coldfront.core.research_output',
+    'coldfront.core.statistics',
 ]
 
 #------------------------------------------------------------------------------
@@ -152,6 +154,15 @@ SU_LOGOUT_REDIRECT_URL = "/admin/auth/user/"
 
 
 SETTINGS_EXPORT = []
+
+#------------------------------------------------------------------------------
+# REST API settings
+#------------------------------------------------------------------------------
+
+DECIMAL_MAX_DIGITS = 11
+DECIMAL_MAX_PLACES = 2
+ALLOCATION_MIN = Decimal("0.00")
+ALLOCATION_MAX = Decimal("100000000.00")
 
 #------------------------------------------------------------------------------
 # Local settings overrides (see local_settings.py.sample)
