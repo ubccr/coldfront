@@ -37,6 +37,7 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectStatusChoice, ProjectUser,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice)
+from coldfront.core.utils.common import import_from_settings
 from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.user.forms import UserSearchForm
@@ -129,6 +130,9 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['allocations'] = allocations
         context['project_users'] = project_users
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
+        if(settings.ONDEMAND_URL != None):
+                print("I am publishing")
+                context['ondemand_url'] = settings.ONDEMAND_URL
         return context
 
 

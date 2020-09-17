@@ -284,3 +284,5 @@ LOCAL_SETTINGS_EXPORT += [
 # ]
 
 # XDMOD_API_URL = 'http://localhost'
+
+# ONDEMAND_URL = "https://ondemand.ccr.buffalo.edu"
