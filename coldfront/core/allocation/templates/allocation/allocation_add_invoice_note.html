@@ -8,7 +8,7 @@
 
 {% block content %}
 
-<h3>Add invoice note for allocation to {{allocation.get_resources_as_string}} for PI {{allocation.project.pi.username}}</h3> <hr>
+<h2>Add invoice note for allocation to {{allocation.get_resources_as_string}} for PI {{allocation.project.pi.username}}</h2> <hr>
 <form method="post">
     {% csrf_token %}
     {{ form|crispy }}

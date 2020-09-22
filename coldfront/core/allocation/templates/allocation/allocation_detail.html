@@ -17,7 +17,7 @@ Allocation Detail
 {% endif %}
 
 <div class="mb-3">
-  <h1>Allocation Detail</h1>
+  <h2>Allocation Detail</h2>
   <hr>
 </div>
 
@@ -32,7 +32,7 @@ Allocation Detail
 
 <div class="card mb-3">
   <div class="card-header">
-    <h4><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h4>
+    <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
   </div>
   <div class="card-body">
     <form method="post">
@@ -136,7 +136,7 @@ Allocation Detail
 {% if attributes or attributes_with_usage or request.user.is_superuser %}
 <div class="card mb-3">
   <div class="card-header">
-    <h4 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Attributes</h4>
+    <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Attributes</h3>
     <div class="float-right">
       {% if request.user.is_superuser %}
       <a class="btn btn-success" href="{% url 'allocation-attribute-add' allocation.pk %}" role="button"><i
@@ -194,7 +194,7 @@ Allocation Detail
 <!-- Start Allocation Users -->
 <div class="card mb-3">
   <div class="card-header">
-    <h4 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Users in Allocation </h4> <span
+    <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Users in Allocation </h3> <span
       class="badge badge-secondary">{{allocation_users.count}}</span>
     <div class="float-right">
       {% if allocation.project.status.name != 'Archived' and is_allowed_to_update_project and allocation.status.name in 'Active,New,Renewal Requested' %}
@@ -244,7 +244,7 @@ Allocation Detail
 <!-- Start Admin Messages -->
 <div class="card mb-3">
   <div class="card-header">
-    <h4 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Messages from System Administrators</h4> <span
+    <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Messages from System Administrators</h3> <span
       class="badge badge-secondary">{{notes.count}}</span>
   </div>
   <div class="card-body">

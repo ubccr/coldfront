@@ -6,7 +6,7 @@ User Projects and Managers{% if not user == viewed_user %}: {{ viewed_user.usern
 {% endblock %}
 
 {% block content %}
-<h1>User Projects and Managers{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif %}</h1>
+<h2>User Projects and Managers{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif %}</h2>
 
 {% with object_list as user_project_associations %}
 {% if not user_project_associations %}
@@ -18,7 +18,7 @@ User Projects and Managers{% if not user == viewed_user %}: {{ viewed_user.usern
 <div class="card mb-3">
   <!-- Start Project Heading -->
   <div class="card-header">
-    <h4 class="d-inline">{{ project.title }}</h4>
+    <h3 class="d-inline">{{ project.title }}</h3>
     {% if user == viewed_user or perms.project.can_view_all_projects %}
       <a href="{% url 'project-detail' project.pk %}" role="button"><i class="far fa-folder-open" aria-hidden="true"></i><span class="sr-only">Details</span></a>
     {% endif %}
