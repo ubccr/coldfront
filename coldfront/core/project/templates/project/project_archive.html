@@ -26,12 +26,12 @@ Archive Project
 
 <div class="alert alert-danger" role="alert">
   <form method="post">{% csrf_token %}
-    Are you sure you want to archive this project? This will expire all your
+    <p>Are you sure you want to archive this project? This will expire all your
     allocations on this project, which will disable your group's access to the
-    resources in those allocations. <br>
+    resources in those allocations.</p>
     <input class="btn btn-danger" type="submit" value="Yes" />
     <a class="btn btn-secondary" href="{% url 'project-detail' project.id %}"
-      role="button">Cancel</a><br>
+      role="button">Cancel</a>
   </form>
 </div>
 
