@@ -6,16 +6,12 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
 {% endblock %}
 
 {% block content %}
-<script>
-    $("#navbar-main > ul > li.active").removeClass("active");
-    $("#navbar-user").addClass("active");
-    $("#navbar-user-user-profile").addClass("active");
-</script>
-
 <h2>User Profile</h2>
 <hr>
+
 <div class="card">
-  <div class="card-header"><i class="fas fa-user" aria-hidden="true"></i>
+  <div class="card-header">
+    <i class="fas fa-user" aria-hidden="true"></i>
     {{ viewed_user.username }}
     <div class="float-right">
       <a class="btn btn-info" href="{% url 'user-projects-managers' viewed_user %}" role="button"><i class="far fa-user-circle" aria-hidden="true"></i> View user projects and managers</a>
@@ -45,13 +41,13 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
                 <span class="badge badge-danger"><i class="fas fa-times" aria-hidden="true"></i><span class="sr-only">No</span></span>
               {% else %}
                 <form class="form-inline" method="post" action="{% url 'user-upgrade' %}">
-                    <div class="form-group mb-2">
-                      <span class="badge badge-danger"><i class="fas fa-times" aria-hidden="true"></i><span class="sr-only">No</span></span>
-                    </div>
-                    <div class="form-group mx-sm-3 mb-2">
-                        {% csrf_token %}
-                        <button class="btn btn-secondary" type="submit"><i class="fas fa-chevron-circle-up" aria-hidden="true"></i> Upgrade Account</button>
-                    </div>
+                  <div class="form-group mb-2">
+                    <span class="badge badge-danger"><i class="fas fa-times" aria-hidden="true"></i><span class="sr-only">No</span></span>
+                  </div>
+                  <div class="form-group mx-sm-3 mb-2">
+                    {% csrf_token %}
+                    <button class="btn btn-secondary" type="submit"><i class="fas fa-chevron-circle-up" aria-hidden="true"></i> Upgrade Account</button>
+                  </div>
                 </form>
               {% endif %}
             </td>
@@ -66,5 +62,9 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
   </div>
 </div>
 
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-user").addClass("active");
+  $("#navbar-user-user-profile").addClass("active");
+</script>
 {% endblock %}
-

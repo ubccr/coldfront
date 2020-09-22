@@ -11,11 +11,11 @@ Request New Allocation
 
 {% block content %}
 <h2>Add account names that can be associated with allocations</h2>
+
 <form method="post">
   {% csrf_token %}
   {{form |crispy}}
   <input class="btn btn-primary" type="submit" value="Submit" />
   <a class="btn btn-secondary" href="{% url 'allocation-account-list' %}" role="button">Cancel</a><br>
 </form>
-
 {% endblock %}

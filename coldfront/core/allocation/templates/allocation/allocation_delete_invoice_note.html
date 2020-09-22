@@ -2,11 +2,12 @@
 {% load crispy_forms_tags %}
 {% load static %}
 
-{% block title %} Delete Allocation Invoice Note {% endblock %}
+{% block title %}
+Delete Allocation Invoice Note
+{% endblock %}
 
 
 {% block content %}
-
 <h3>Delete invoice notes for allocation to {{allocation.get_resources_as_string}} for PI
   {{allocation.project.pi.username}}</h3>
 <hr>
@@ -28,11 +29,11 @@
           </thead>
           <tbody>
             {% for form in formset %}
-            <tr>
-              <td>{{ form.selected }}</td>
-              <td>{{ form.note.value }}</td>
-              <td>{{ form.author.value }}</td>
-            </tr>
+              <tr>
+                <td>{{ form.selected }}</td>
+                <td>{{ form.note.value }}</td>
+                <td>{{ form.author.value }}</td>
+              </tr>
             {% endfor %}
           </tbody>
         </table>
@@ -59,5 +60,4 @@
     }
   });
 </script>
-
 {% endblock %}

@@ -1,4 +1,4 @@
-{% extends "common/base.html" %} 
+{% extends "common/base.html" %}
 {% load crispy_forms_tags %}
 {% load static %}
 
@@ -8,65 +8,55 @@ Add Users to Project
 {% endblock %}
 
 
-
 {% block content %}
 <h2>Add users to project: {{project.title}}</h2>
 <hr>
 
 <div class="row">
-
-<div class="col">
-  <form method="post" action="/search-ldap" id="post-form">
-  {% csrf_token %}
-  {{ user_search_form|crispy }}
-  <button id="search-button" type="submit" class="btn btn-success btn-block"><i class="fas fa-search" aria-hidden="true"></i> Search</button>
-  </form>
-</div>
-
+  <div class="col">
+    <form method="post" action="/search-ldap" id="post-form">
+      {% csrf_token %}
+      {{ user_search_form|crispy }}
+      <button id="search-button" type="submit" class="btn btn-success btn-block"><i class="fas fa-search" aria-hidden="true"></i> Search</button>
+    </form>
+  </div>
 </div>
 
 <br>
 <div class="row">
-<div class="col" id="search_results" >
-    <div class="card border-light">
-      <div class="card-body">
-        <div id="search_results_inner"></div>
+  <div class="col" id="search_results">
+      <div class="card border-light">
+        <div class="card-body">
+          <div id="search_results_inner"></div>
+        </div>
       </div>
-    </div>
-</div>
+  </div>
 </div>
 <div class="row">
-<div class="col" id="selected_users" >
-    <div class="card border-light">
-      <div class="card-body">
+  <div class="col" id="selected_users">
+      <div class="card border-light">
+        <div class="card-body">
+        </div>
       </div>
-    </div>
+  </div>
 </div>
-</div>
+{% endblock %}
 
 
-{% endblock %} 
-
-
-
-{% block javascript %} 
+{% block javascript %}
   {{ block.super }}
-  <script>
-    $("#navbar-main > ul > li.active").removeClass("active");
-    $("#navbar-ldap-home").addClass("active");
-  </script>
-
-
 <script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-ldap-home").addClass("active");
+
   $('#post-form').on('submit', function(event){
     event.preventDefault();
     $('#search_results').show();
     $("#search_results_inner").html('<div class="alert alert-info text-center"><i class="fas fa-sync fa-spin fa-fw" aria-hidden="true"></i> Searching</div>')
     create_post();
-});
+  });
 
   function create_post() {
-
     q = $('#id_q').val().trim();
     search_by = $("#post-form input[type='radio']:checked").val();
     if (q.indexOf(' ') >= 0) {
@@ -104,18 +94,12 @@ Add Users to Project
             console.log(xhr.status + ": " + xhr.responseText); // provide a bit more info about the error to the console
         }
     });
-};
+  };
 
-$(document).ready(function(){
-  $('#search_results').hide();
-  $('#selected_users').hide();
-  $('[data-toggle="popover"]').popover(); 
-});
+  $(document).ready(function(){
+    $('#search_results').hide();
+    $('#selected_users').hide();
+    $('[data-toggle="popover"]').popover(); 
+  });
 </script>
-
-
-
 {% endblock %}
-
-
-
