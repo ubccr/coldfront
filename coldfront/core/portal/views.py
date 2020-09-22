@@ -9,6 +9,7 @@ from django.views.decorators.cache import cache_page
 
 from coldfront.core.allocation.models import Allocation, AllocationUser
 from coldfront.core.grant.models import Grant
+from coldfront.core.utils.common import import_from_settings
 from coldfront.core.portal.utils import (generate_allocations_chart_data,
                                          generate_publication_by_year_chart_data,
                                          generate_resources_chart_data,
@@ -40,6 +41,9 @@ def home(request):
         ).distinct().order_by('-created')[:5]
         context['project_list'] = project_list
         context['allocation_list'] = allocation_list
+        if(settings.ONDEMAND_URL != None):
+            print("I am publishing")
+            context['ondemand_url'] = settings.ONDEMAND_URL
     else:
         template_name = 'portal/nonauthorized_home.html'
 
@@ -48,6 +52,7 @@ def home(request):
     if 'coldfront.plugins.system_monitor' in settings.EXTRA_APPS:
         from coldfront.plugins.system_monitor.utils import get_system_monitor_context
         context.update(get_system_monitor_context())
+    
 
     return render(request, template_name, context)
 
