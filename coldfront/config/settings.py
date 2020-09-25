@@ -52,6 +52,12 @@ INSTALLED_APPS += [
     'coldfront.core.statistics',
 ]
 
+# REST API
+INSTALLED_APPS += [
+    'rest_framework',
+    'coldfront.api',
+]
+
 #------------------------------------------------------------------------------
 # Django Middleware
 #------------------------------------------------------------------------------
@@ -163,6 +169,10 @@ DECIMAL_MAX_DIGITS = 11
 DECIMAL_MAX_PLACES = 2
 ALLOCATION_MIN = Decimal("0.00")
 ALLOCATION_MAX = Decimal("100000000.00")
+
+# For accounting purposes, the year begins on June 1st and ends on May 31st.
+ALLOCATION_YEAR_START_MONTH = 6
+ALLOCATION_YEAR_START_DAY = 1
 
 #------------------------------------------------------------------------------
 # Local settings overrides (see local_settings.py.sample)

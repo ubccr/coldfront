@@ -27,6 +27,9 @@ urlpatterns = [
 ]
 
 
+if 'coldfront.api' in settings.INSTALLED_APPS:
+    urlpatterns.append(path('api/', include('coldfront.api.urls')))
+
 if 'coldfront.plugins.iquota' in settings.EXTRA_APPS:
     urlpatterns.append(path('iquota/', include('coldfront.plugins.iquota.urls')))
 

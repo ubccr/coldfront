@@ -11,7 +11,9 @@ django-settings-export==1.2.1
 django-simple-history==2.7.2
 django-sslserver==0.20
 django-su==0.8.0
+djangorestframework==3.11.1
 doi2bib==0.3.0
+drf-yasg==1.17.1
 factory-boy==2.12.0
 Faker==3.0.0
 future==0.17.1
