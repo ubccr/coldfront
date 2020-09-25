@@ -315,10 +315,6 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         user = serializer.validated_data["userid"]
         account = serializer.validated_data["accountid"]
         allocation_objects = get_accounting_allocation_objects(user, account)
-        account_allocation = Decimal(
-            allocation_objects.allocation_attribute.value)
-        user_account_allocation = Decimal(
-            allocation_objects.allocation_user_attribute.value)
         account_usage = (
             AllocationAttributeUsage.objects.select_for_update().get(
                 pk=allocation_objects.allocation_attribute_usage.pk))
