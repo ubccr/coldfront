@@ -55,6 +55,8 @@ INSTALLED_APPS += [
 # REST API
 INSTALLED_APPS += [
     'rest_framework',
+    'django_filters',
+    'drf_yasg',
     'coldfront.api',
 ]
 
@@ -165,10 +167,28 @@ SETTINGS_EXPORT = []
 # REST API settings
 #------------------------------------------------------------------------------
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'coldfront.api.user.authentication.ExpiringTokenAuthentication',
+    ],
+    'DEFAULT_PAGINATION_CLASS': (
+        'rest_framework.pagination.PageNumberPagination'),
+    'PAGE_SIZE': 100,
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',),
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
+
 DECIMAL_MAX_DIGITS = 11
 DECIMAL_MAX_PLACES = 2
-ALLOCATION_MIN = Decimal("0.00")
-ALLOCATION_MAX = Decimal("100000000.00")
+ALLOCATION_MIN = Decimal('0.00')
+ALLOCATION_MAX = Decimal('100000000.00')
+
+# The number of hours for which a newly created authentication token will be
+# valid.
+TOKEN_EXPIRATION_HOURS = 24
 
 # For accounting purposes, the year begins on June 1st and ends on May 31st.
 ALLOCATION_YEAR_START_MONTH = 6
