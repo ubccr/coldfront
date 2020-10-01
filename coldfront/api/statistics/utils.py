@@ -78,15 +78,22 @@ def get_accounting_allocation_objects(user, project):
     allocation_attribute = AllocationAttribute.objects.get(
         allocation_attribute_type=allocation_attribute_type,
         allocation=allocation)
-    AllocationAttributeUsage.objects.get(
+    allocation_attribute_usage = AllocationAttributeUsage.objects.get(
         allocation_attribute=allocation_attribute)
     # Check that the allocation user has an attribute for Service Units
     # and an associated usage.
     allocation_user_attribute = AllocationUserAttribute.objects.get(
         allocation_attribute_type=allocation_attribute_type,
         allocation=allocation, allocation_user=allocation_user)
-    AllocationUserAttributeUsage.objects.get(
+    allocation_user_attribute_usage = AllocationUserAttributeUsage.objects.get(
         allocation_user_attribute=allocation_user_attribute)
+    return AccountingAllocationObjects(
+        allocation=allocation,
+        allocation_user=allocation_user,
+        allocation_attribute=allocation_attribute,
+        allocation_attribute_usage=allocation_attribute_usage,
+        allocation_user_attribute=allocation_user_attribute,
+        allocation_user_attribute_usage=allocation_user_attribute_usage)
 
 
 def get_allocation_year_range():

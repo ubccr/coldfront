@@ -586,7 +586,9 @@ def can_submit_job(request, job_cost, user_id, account_id):
 
     # If the account has allocation type Condo, allow the job, regardless of
     # cost.
-    if account.allowance_has_condo:
+    # if account.allowance_has_condo:
+    #     return affirmative
+    if account.name.startswith("co_"):
         return affirmative
 
     # Return whether or not both usages would not exceed their respective

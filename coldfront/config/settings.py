@@ -194,6 +194,9 @@ TOKEN_EXPIRATION_HOURS = 24
 ALLOCATION_YEAR_START_MONTH = 6
 ALLOCATION_YEAR_START_DAY = 1
 
+# Whether or not to allow all jobs, bypassing all checks.
+ALLOW_ALL_JOBS = False
+
 #------------------------------------------------------------------------------
 # Local settings overrides (see local_settings.py.sample)
 #------------------------------------------------------------------------------
