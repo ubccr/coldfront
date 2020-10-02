@@ -23,10 +23,21 @@ class NodeSerializer(serializers.ModelSerializer):
         }
 
 
+class JobUserSerializerField(serializers.Field):
+    """A serializer field that handles the conversion between a User
+    object and its cluster_uid, stored in its UserProfile object."""
+
+    def to_representation(self, user):
+        return UserProfile.objects.get(user=user).cluster_uid
+
+    def to_internal_value(self, cluster_uid):
+        return UserProfile.objects.get(cluster_uid=cluster_uid).user
+
+
 class JobSerializer(serializers.ModelSerializer):
     """A serializer for the Job model."""
 
-    userid = serializers.SerializerMethodField('get_user_cluster_uid')
+    userid = JobUserSerializerField()
     accountid = serializers.SlugRelatedField(
         slug_field='name', queryset=Project.objects.all())
     nodes = NodeSerializer(many=True, required=False)
@@ -49,14 +60,6 @@ class JobSerializer(serializers.ModelSerializer):
             'raw_time': {'required': False, 'allow_null': True},
             'cpu_time': {'required': False, 'allow_null': True}
         }
-
-    def get_user_cluster_uid(self, obj):
-        """Return the cluster_uid of the user who submitted the job."""
-        try:
-            user_profile = UserProfile.objects.get(user=obj.userid)
-        except UserProfile.DoesNotExist:
-            return ''
-        return user_profile.cluster_uid
 
     def create(self, validated_data):
         nodes_data = []
