@@ -242,33 +242,33 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
             # must be called for each, since the Job is valid in the Slurm
             # database. Therefore, overdrawing is permitted here.
 
-            new_account_usage = account_usage.usage + amount
+            new_account_usage = account_usage.value + amount
             if new_account_usage > account_allocation:
                 message = (
                     f"Project {account.name} allocation will be overdrawn. "
                     f"Allocation: {account_allocation}. Current usage: "
-                    f"{account_usage.usage}. Requested job amount: {amount}. "
+                    f"{account_usage.value}. Requested job amount: {amount}. "
                     f"This is permitted by design.")
                 logger.error(message)
             logger.info(
                 f"Setting usage for Project {account.name} to "
                 f"{new_account_usage}.")
-            account_usage.usage = new_account_usage
+            account_usage.value = new_account_usage
             account_usage.save()
 
-            new_user_account_usage = user_account_usage.usage + amount
+            new_user_account_usage = user_account_usage.value + amount
             if new_user_account_usage > user_account_allocation:
                 message = (
                     f"User {user} allocation for Project {account.name} will "
                     f"be overdrawn. Allocation: {user_account_allocation}. "
-                    f"Current usage: {user_account_usage.usage}. Requested "
+                    f"Current usage: {user_account_usage.value}. Requested "
                     f"job amount: {amount}. This is permitted by design.")
                 logger.error(message)
             logger.info(
                 f"Setting usage for User {user} and Project {account.name} to "
-                f"{user_account_usage.usage} + {amount} = "
+                f"{user_account_usage.value} + {amount} = "
                 f"{new_user_account_usage}.")
-            user_account_usage.usage = new_user_account_usage
+            user_account_usage.value = new_user_account_usage
             user_account_usage.save()
 
         self.perform_create(serializer)
@@ -332,17 +332,17 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                 logger.info(
                     f"No Job with jobslurmid {jobslurmid} yet exists. "
                     f"Creating it.")
-                new_account_usage = account_usage.usage + amount
+                new_account_usage = account_usage.value + amount
                 logger.info(
                     f"Setting usage for Project {account.name} to "
-                    f"{account_usage.usage} + {amount} = {new_account_usage}.")
-                account_usage.usage = new_account_usage
-                new_user_account_usage = user_account_usage.usage + amount
+                    f"{account_usage.value} + {amount} = {new_account_usage}.")
+                account_usage.value = new_account_usage
+                new_user_account_usage = user_account_usage.value + amount
                 logger.info(
                     f"Setting usage for User {user} and Project "
-                    f"{account.name} to {user_account_usage.usage} + {amount} "
+                    f"{account.name} to {user_account_usage.value} + {amount} "
                     f"= {new_user_account_usage}.")
-                user_account_usage.usage = new_user_account_usage
+                user_account_usage.value = new_user_account_usage
             else:
                 logger.info(
                     f"A Job with jobslurmid {jobslurmid} already exists. "
@@ -351,20 +351,20 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                 # cost is an upper bound of the actual cost.
                 difference = amount - job.amount
                 new_account_usage = max(
-                    account_usage.usage + difference, Decimal("0.00"))
+                    account_usage.value + difference, Decimal("0.00"))
                 logger.info(
                     f"Setting usage for Project {account.name} to max("
-                    f"{account_usage.usage} + ({amount} - {job.amount}), 0) = "
+                    f"{account_usage.value} + ({amount} - {job.amount}), 0) = "
                     f"{new_account_usage}.")
-                account_usage.usage = new_account_usage
+                account_usage.value = new_account_usage
                 new_user_account_usage = max(
-                    user_account_usage.usage + difference, Decimal("0.00"))
+                    user_account_usage.value + difference, Decimal("0.00"))
                 logger.info(
                     f"Setting usage for User {user} and Project "
-                    f"{account.name} to max({user_account_usage.usage} + "
+                    f"{account.name} to max({user_account_usage.value} + "
                     f"({amount} - {job.amount}), 0) = "
                     f"{new_user_account_usage}.")
-                user_account_usage.usage = new_user_account_usage
+                user_account_usage.value = new_user_account_usage
             account_usage.save()
             user_account_usage.save()
 
