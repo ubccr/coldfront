@@ -1,26 +1,24 @@
-{% extends "common/base.html" %} 
+{% extends "common/base.html" %}
 {% load crispy_forms_tags %}
 {% load static %}
 
 
 {% block title %}
-Email User 
+Email User
 {% endblock %}
 
 
 {% block content %}
-
-
-<h1>Email</h1>
+<h2>Email</h2>
 <hr>
 
 <div class="card mb-3">
   <div class="card-header">
-  <h4><i class="fas fa-list" aria-hidden="true"></i> Project Review Information</h4>
+    <h3><i class="fas fa-list" aria-hidden="true"></i> Project Review Information</h3>
   </div>
   <div class="card-body">
     <div class="table-responsive">
-      <table class="table ">
+      <table class="table">
         <tr>
           <th scope="row" class="text-nowrap">Project:</th>
           <td><a href="{% url 'project-detail' project_review.project.pk %}">{{ project_review.project }}</a></td>
@@ -47,21 +45,14 @@ Email User
         </tr>
       </table>
     </div>
-    
   </div>
 </div>
 
 
- <form method="post">{% csrf_token %}
+<form method="post">
+    {% csrf_token %}
     {{form|crispy}}
     <input class="btn btn-primary" type="submit" value="Email" />
-    <a class="btn btn-secondary" href="{% url 'project-review-list' %}" role="button">Cancel</a><br>
+    <a class="btn btn-secondary" href="{% url 'project-review-list' %}" role="button">Cancel</a>
 </form>
-
-
-
-<script>
-
-</script>
-
 {% endblock %}

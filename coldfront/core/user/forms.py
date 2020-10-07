@@ -10,5 +10,3 @@ class UserSearchForm(forms.Form):
     q = forms.CharField(label='Search String', min_length=2, widget=forms.Textarea(attrs={'rows': 4}),
                         help_text='Copy paste usernames separated by space or newline for multiple username searches!')
     search_by = forms.ChoiceField(choices=CHOICES, widget=forms.RadioSelect(), initial='username_only')
-
-    search_by.widget.attrs.update({'rows': 4})

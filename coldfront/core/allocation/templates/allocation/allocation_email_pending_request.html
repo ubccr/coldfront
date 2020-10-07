@@ -9,12 +9,12 @@ Allocation Review New Requests
 
 
 {% block content %}
-<h1>Email</h1>
+<h2>Email</h2>
 <hr>
 
 <div class="card mb-3">
   <div class="card-header">
-    <h4><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h4>
+    <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
   </div>
   <div class="card-body">
     <div class="table-responsive">
@@ -50,15 +50,13 @@ Allocation Review New Requests
         </tr>
       </table>
     </div>
-
   </div>
 </div>
 
-
-<form method="post">{% csrf_token %}
+<form method="post">
+  {% csrf_token %}
   {{form|crispy}}
   <input class="btn btn-primary" type="submit" value="Email" />
-  <a class="btn btn-secondary" href="{% url 'allocation-review-pending-requests' %}" role="button">Cancel</a><br>
+  <a class="btn btn-secondary" href="{% url 'allocation-review-pending-requests' %}" role="button">Cancel</a>
 </form>
-
 {% endblock %}

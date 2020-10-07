@@ -15,10 +15,10 @@
         </thead>
         <tbody>
           {% for resource, resource_allocation_count in allocations_count_by_resource.items %}
-          <tr>
-            <td>{{resource.name}} <strong>({{resource.resource_type.name}})</strong></td>
-            <td>{{resource_allocation_count}}</td>
-          </tr>
+            <tr>
+              <td>{{resource.name}} <strong>({{resource.resource_type.name}})</strong></td>
+              <td>{{resource_allocation_count}}</td>
+            </tr>
           {% endfor %}
         </tbody>
       </table>
@@ -39,7 +39,6 @@
       ]
     });
   });
-
 
   function drawAllocations() {
     var chart = c3.generate({

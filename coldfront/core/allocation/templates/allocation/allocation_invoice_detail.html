@@ -2,32 +2,33 @@
 {% load crispy_forms_tags %}
 {% load static %}
 
+
 {% block title %}
 Allocation Invoice Detail
 {% endblock %}
 
-{% block content %}
 
+{% block content %}
 {% if allocation.project.status.name == 'Archived' %}
-<div class="alert alert-warning" role="alert">
-  This is a allocation from an archived project! You cannot make any changes.
-</div>
+  <div class="alert alert-warning" role="alert">
+    This is a allocation from an archived project! You cannot make any changes.
+  </div>
 {% endif %}
 
 <div class="mb-3">
-  <h1>Allocation Invoice</h1>
+  <h2>Allocation Invoice</h2>
   <hr>
 </div>
 
 {% if form.non_field_errors %}
-<div class="alert alert-danger" role="alert">
-  {{ form.non_field_errors }}
-</div>
+  <div class="alert alert-danger" role="alert">
+    {{ form.non_field_errors }}
+  </div>
 {% endif %}
 
 <div class="card mb-3">
   <div class="card-header">
-    <h4><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h4>
+    <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
   </div>
   <div class="card-body">
     <form method="post">
@@ -38,10 +39,11 @@ Allocation Invoice Detail
             <th scope="row" class="text-nowrap">Project:</th>
             <td>
               {% if request.user.is_superuser %}
-              <a href="{% url 'project-detail' allocation.project.pk %}">{{ allocation.project }}</a></td>
-            {% else %}
-            {{ allocation.project }}
-            {% endif %}
+                <a href="{% url 'project-detail' allocation.project.pk %}">{{ allocation.project }}</a>
+              {% else %}
+                {{ allocation.project }}
+              {% endif %}
+            </td>
           </tr>
           <tr>
             <th scope="row" class="text-nowrap">Principal Investigator:</th>
@@ -77,54 +79,56 @@ Allocation Invoice Detail
         </table>
       </div>
       {% if request.user.is_superuser or perms.allocation.can_manage_invoice%}
-      <button type="submit" class="btn btn-success float-right"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
+        <button type="submit" class="btn btn-success float-right"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
       {% endif %}
     </form>
-
   </div>
 </div>
 
 <!-- Start Admin Messages -->
 <div class="card mb-3">
   <div class="card-header">
-    <h4 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Notes from Staff </h4> <span
-      class="badge badge-secondary">{{allocation.allocationusernote_set.count}}</span>
+    <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Notes from Staff</h3>
+    <span class="badge badge-secondary">{{allocation.allocationusernote_set.count}}</span>
     <div class="float-right">
-      <a class="btn btn-success" href="{% url 'allocation-add-invoice-note' allocation.pk %}" role="button"><i
-          class="fas fa-plus" aria-hidden="true"></i> Add Note</a>
-      <a class="btn btn-danger" href="{% url 'allocation-delete-invoice-note' allocation.pk %}" role="button"><i
-          class="fas fa-minus" aria-hidden="true"></i> Delete Notes</a>
+      <a class="btn btn-success" href="{% url 'allocation-add-invoice-note' allocation.pk %}" role="button">
+        <i class="fas fa-plus" aria-hidden="true"></i> Add Note
+      </a>
+      <a class="btn btn-danger" href="{% url 'allocation-delete-invoice-note' allocation.pk %}" role="button">
+        <i class="fas fa-minus" aria-hidden="true"></i> Delete Notes
+      </a>
     </div>
   </div>
   <div class="card-body">
     {% if allocation.allocationusernote_set.all %}
-    <div class="table-responsive">
-      <table class="table table-hover">
-        <thead>
-          <tr>
-            <th scope="col">Comment</th>
-            <th scope="col">Author</th>
-            <th scope="col">Last Modified</th>
-            <th scope="col">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for note in allocation.allocationusernote_set.all %}
-          <tr>
-            <td>{{ note.note }}</td>
-            <td>{{ note.author.first_name }} {{ note.author.last_name }} ({{ note.author.username }})</td>
-            <td>{{ note.modified }}</td>
-            <td><a href="{% url 'allocation-update-invoice-note' note.pk %}"><i class="fas fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th scope="col">Comment</th>
+              <th scope="col">Author</th>
+              <th scope="col">Last Modified</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for note in allocation.allocationusernote_set.all %}
+              <tr>
+                <td>{{ note.note }}</td>
+                <td>{{ note.author.first_name }} {{ note.author.last_name }} ({{ note.author.username }})</td>
+                <td>{{ note.modified }}</td>
+                <td><a href="{% url 'allocation-update-invoice-note' note.pk %}"><i class="fas fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
+              </tr>
             {% endfor %}
-        </tbody>
-      </table>
-    </div>
+          </tbody>
+        </table>
+      </div>
     {% else %}
-    <div class="alert alert-info" role="alert"><i class="fa fa-info-circle" aria-hidden="true"></i> There are no messages from system
-      administrators.</div>
+      <div class="alert alert-info" role="alert">
+        <i class="fa fa-info-circle" aria-hidden="true"></i> There are no messages from system administrators.
+      </div>
     {% endif %}
-
   </div>
 </div>
-
 {% endblock %}
+

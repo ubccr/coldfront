@@ -10,7 +10,6 @@ Add Allocation Attribute
 
 
 {% block content %}
-
 <h2>Adding allocation attribute to {{allocation.get_parent_resource}} for PI {{ allocation.project.pi.first_name }}
   {{ allocation.project.pi.last_name }} ({{ allocation.project.pi.username }})</h2>
 
@@ -21,5 +20,4 @@ Add Allocation Attribute
   <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation.pk %}" role="button">Back to
     Allocation</a><br>
 </form>
-
 {% endblock %}

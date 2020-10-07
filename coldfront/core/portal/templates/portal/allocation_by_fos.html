@@ -10,11 +10,11 @@
     </thead>
     <tbody>
       {% for key, val in allocations_by_fos.items %}
-      <tr>
-        <td>{{key}}</td>
-        <td>{{val}}</td>
-        <td>{{active_users_by_fos|get_value_from_dict:key}}</td>
-      </tr>
+        <tr>
+          <td>{{key}}</td>
+          <td>{{val}}</td>
+          <td>{{active_users_by_fos|get_value_from_dict:key}}</td>
+        </tr>
       {% endfor %}
     </tbody>
   </table>

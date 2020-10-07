@@ -10,24 +10,23 @@ Request New Allocation
 
 
 {% block content %}
-
-<h2>Request New Allocation <br><small> Project: {{ project.title }} </small>
-</h2>
+<h2>Request New Allocation <br><small>Project: {{ project.title }}</small></h2>
+<hr>
 
 <p class="text-justify">The following {% settings_value 'CENTER_NAME' %}
   resources are available to request for this project. If you need access to
   more than one of these, please submit a separate allocation request for each
   resource. For each request you must provide the justification for how you
   intend to use the resource to further the research goals of your project.</p>
+
 <form method="post">
   {% csrf_token %}
   {{form |crispy}}
 
   <div id="eula-div" style="display: none;">
-  <textarea style="display:none;min-width:100%" id="eula"  rows="15">
-  </textarea>
-  <br>
-  <p class="font-weight-bold">By clicking submit you agree to the Terms and Conditions.</p>
+    <textarea style="display:none;min-width:100%" id="eula"  rows="15"></textarea>
+    <br>
+    <p class="font-weight-bold">By clicking submit you agree to the Terms and Conditions.</p>
   </div>
 
   <input class="btn btn-primary" type="submit" value="Submit" />
@@ -35,15 +34,14 @@ Request New Allocation
 </form>
 
 <!-- Large modal -->
-<div id="Modal" class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel"
-  aria-hidden="true">
+<div id="Modal" class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="exampleModalLabel">Add New Account
-          Name</h5>
+        <h5 class="modal-title" id="exampleModalLabel">Add New Account Name</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span></button>
+          <span aria-hidden="true">&times;</span>
+        </button>
       </div>
       <div class="modal-body">
         <div id="error_div"></div>
@@ -54,7 +52,6 @@ Request New Allocation
           <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
         </form>
       </div>
-
     </div>
   </div>
   <div class="modal-footer">
@@ -165,8 +162,6 @@ Request New Allocation
       $('#eula').hide();
       $('#eula-div').hide();
     }
-
-
   });
 </script>
 {% endblock %}
