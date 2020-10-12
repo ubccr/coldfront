@@ -113,6 +113,8 @@ class Allocation(TimeStampedModel):
                 try:
                     percent = round(float(attribute.allocationattributeusage.value) /
                                     float(attribute.value) * 10000) / 100
+                except ZeroDivisionError:
+                    percent = 0
                 except ValueError:
                     percent = 'Invalid Value'
                     logger.error("Allocation attribute '%s' is not an int but has a usage",
