@@ -199,6 +199,9 @@ Project Detail
                   </span>
                   </a>
                 {% endif %}
+                {% if allocation.get_parent_resource.get_ondemand_status == 'Yes' and ondemand_url %}
+                <a href = "{{ ondemand_url }}" target="_blank"> <img src="/static/core/portal/imgs/ondemand.png" alt="ondemand cta" width="25" height="25"></a>
+              {% endif %}
               </td>
             </tr>
             {% endfor %}

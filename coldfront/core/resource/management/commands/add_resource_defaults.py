@@ -22,6 +22,7 @@ class Command(BaseCommand):
             ('quantity_default_value', 'Int'),
             ('quantity_label', 'Text'),
             ('eula', 'Text'),
+            ('OnDemand','Yes/No'),
             ('ServiceEnd', 'Date'),
             ('ServiceStart', 'Date'),
             ('slurm_cluster', 'Text'),
