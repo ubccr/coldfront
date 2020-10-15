@@ -441,10 +441,11 @@ response_400 = openapi.Response(
 @api_view(["GET"])
 @transaction.atomic
 def can_submit_job(request, job_cost, user_id, account_id):
-    """Given a Job cost, return True if adding it to the given user's usage
-    would not exceed his or her allocation and adding it to the given account's
-    usage would not exceed its allocation else False. If the ALLOW_ALL_JOBS
-    setting is set to True, skip all checks and simply return True.
+    """Given a Job cost, return True if adding it to the given user's
+    usage would not exceed his or her allocation and adding it to the
+    given account's usage would not exceed its allocation else False. If
+    the ALLOW_ALL_JOBS setting is set to True, skip all checks and
+    simply return True.
 
     Parameters:
         - request (HttpRequest): the Django request object
@@ -453,8 +454,8 @@ def can_submit_job(request, job_cost, user_id, account_id):
         - account_id (str): the name of the account
 
     Returns:
-        - JsonResponse mapping "success" to a boolean and "message" to an error
-        message.
+        - JsonResponse mapping "success" to a boolean and "message" to
+        an error message.
 
     Raises:
         - None
@@ -568,8 +569,8 @@ def can_submit_job(request, job_cost, user_id, account_id):
         return server_error
     except AllocationUser.DoesNotExist:
         message = (
-            f"User {user} is not a member of the compute allocation for "
-            f"account {account.name}.")
+            f"User {user} is not an active member of the compute allocation "
+            f"for account {account.name}.")
         return client_error(message)
     except (MultipleObjectsReturned, ObjectDoesNotExist):
         return server_error
