@@ -40,9 +40,12 @@ def home(request):
         ).distinct().order_by('-created')[:5]
         context['project_list'] = project_list
         context['allocation_list'] = allocation_list
-        if(settings.ONDEMAND_URL != None):
-            print(settings.ONDEMAND_URL)
-            context['ondemand_url'] = settings.ONDEMAND_URL
+        try:
+            if(settings.ONDEMAND_URL != None):
+                print(settings.ONDEMAND_URL)
+                context['ondemand_url'] = settings.ONDEMAND_URL
+        except AttributeError:
+            print("No Ondemand URL provided")
     else:
         template_name = 'portal/nonauthorized_home.html'
 
