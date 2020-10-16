@@ -44,28 +44,41 @@ TIME_ZONE = 'UTC'
 #------------------------------------------------------------------------------
 # Logging
 #------------------------------------------------------------------------------
+LOG_PATH = '/tmp/debug.log'
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{asctime}] {levelname} {module}.{funcName}: {message}',
+            'style': '{',
+        }
+    },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
         },
-        # 'file': {
-        #     'class': 'logging.FileHandler',
-        #     'filename': '/tmp/debug.log',
-        # },
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': LOG_PATH,
+            'formatter': 'verbose',
+        },
     },
     'loggers': {
         'django_auth_ldap': {
             'level': 'WARN',
             # 'handlers': ['console', 'file'],
-            'handlers': ['console', ],
+            'handlers': ['file', ],
         },
         'django': {
-            'handlers': ['console'],
+            'handlers': ['file'],
             'level': 'INFO',
         },
+        'coldfront': {
+            'handlers': ['file'],
+            'level': 'INFO',
+        }
     },
 }
 

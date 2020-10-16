@@ -56,4 +56,5 @@ def get_user_resources(user_obj):
 
 
 def test_allocation_function(allocation_pk):
-    print('test_allocation_function', allocation_pk)
+    pass
+    # print('test_allocation_function', allocation_pk)
