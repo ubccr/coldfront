@@ -28,10 +28,18 @@ class JobUserSerializerField(serializers.Field):
     object and its cluster_uid, stored in its UserProfile object."""
 
     def to_representation(self, user):
-        return UserProfile.objects.get(user=user).cluster_uid
+        try:
+            return UserProfile.objects.get(user=user).cluster_uid
+        except UserProfile.DoesNotExist:
+            raise serializers.ValidationError(
+                f'UserProfile for user {user.username} does not exist.')
 
     def to_internal_value(self, cluster_uid):
-        return UserProfile.objects.get(cluster_uid=cluster_uid).user
+        try:
+            return UserProfile.objects.get(cluster_uid=cluster_uid).user
+        except UserProfile.DoesNotExist:
+            raise serializers.ValidationError(
+                f'UserProfile for cluster_uid {cluster_uid} does not exist.')
 
 
 class JobSerializer(serializers.ModelSerializer):
@@ -128,14 +136,14 @@ class JobSerializer(serializers.ModelSerializer):
             self.logger.error(message)
             raise serializers.ValidationError(message)
 
-        # Check that necessary, expected objects exist.
+        # Validate that needed accounting objects exist.
         user = data['userid']
         account = data['accountid']
         try:
             get_accounting_allocation_objects(user, account)
         except ProjectUser.DoesNotExist:
             message = (
-                f'User {user.cluster_uid} is not a member of Project '
+                f'User {user.username} is not a member of account '
                 f'{account.name}.')
             self.logger.error(message)
             raise serializers.ValidationError(message)
@@ -148,19 +156,17 @@ class JobSerializer(serializers.ModelSerializer):
             self.logger.error(
                 f'Account {account.name} has more than one active compute '
                 f'allocation.')
-            raise serializers.ValidationError(
-                'An unexpected error occurred during request validation.')
+            raise serializers.ValidationError('Unexpected server error.')
         except AllocationUser.DoesNotExist:
             message = (
-                f'User {user} is not a member of the compute allocation for '
-                f'Account {account.name}.')
+                f'User {user.username} is not an active member of the compute '
+                f'allocation for account {account.name}.')
             self.logger.error(message)
             raise serializers.ValidationError(message)
         except (MultipleObjectsReturned, ObjectDoesNotExist) as e:
             self.logger.error(
                 f'Failed to retrieve a required database object. Details: {e}')
-            raise serializers.ValidationError(
-                'An unexpected error occurred during request validation.')
+            raise serializers.ValidationError('Unexpected server error.')
 
         return data
 
