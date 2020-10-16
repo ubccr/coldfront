@@ -140,7 +140,7 @@ class JobSerializer(serializers.ModelSerializer):
         user = data['userid']
         account = data['accountid']
         try:
-            get_accounting_allocation_objects(user, account)
+            get_accounting_allocation_objects(account, user=user)
         except ProjectUser.DoesNotExist:
             message = (
                 f'User {user.username} is not a member of account '
@@ -166,6 +166,9 @@ class JobSerializer(serializers.ModelSerializer):
         except (MultipleObjectsReturned, ObjectDoesNotExist) as e:
             self.logger.error(
                 f'Failed to retrieve a required database object. Details: {e}')
+            raise serializers.ValidationError('Unexpected server error.')
+        except TypeError as e:
+            self.logger.error(f'Incorrect input type. Details: {e}')
             raise serializers.ValidationError('Unexpected server error.')
 
         return data

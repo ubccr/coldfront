@@ -218,7 +218,8 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         # part of this atomic block.
         user = serializer.validated_data['userid']
         account = serializer.validated_data['accountid']
-        allocation_objects = get_accounting_allocation_objects(user, account)
+        allocation_objects = get_accounting_allocation_objects(
+            account, user=user)
         account_allocation = Decimal(
             allocation_objects.allocation_attribute.value)
         user_account_allocation = Decimal(
@@ -314,7 +315,8 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         # part of this atomic block.
         user = serializer.validated_data['userid']
         account = serializer.validated_data['accountid']
-        allocation_objects = get_accounting_allocation_objects(user, account)
+        allocation_objects = get_accounting_allocation_objects(
+            account, user=user)
         account_usage = (
             AllocationAttributeUsage.objects.select_for_update().get(
                 pk=allocation_objects.allocation_attribute_usage.pk))
@@ -556,7 +558,8 @@ def can_submit_job(request, job_cost, user_id, account_id):
 
     # Validate that needed accounting objects exist.
     try:
-        allocation_objects = get_accounting_allocation_objects(user, account)
+        allocation_objects = get_accounting_allocation_objects(
+            account, user=user)
     except ProjectUser.DoesNotExist:
         message = (
             f'User {user.username} is not a member of account {account.name}.')
@@ -580,6 +583,9 @@ def can_submit_job(request, job_cost, user_id, account_id):
     except (MultipleObjectsReturned, ObjectDoesNotExist) as e:
         logger.error(
             f'Failed to retrieve a required database object. Details: {e}')
+        return server_error
+    except TypeError as e:
+        logger.error(f'Incorrect input type. Details: {e}')
         return server_error
 
     # Retrieve compute allocation values.
