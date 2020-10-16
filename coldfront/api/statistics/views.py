@@ -32,76 +32,76 @@ import logging
 
 
 authorization_parameter = openapi.Parameter(
-    "Authorization",
+    'Authorization',
     openapi.IN_HEADER,
     description=(
-        "The authorization token for the requester. The token should be "
-        "preceded by 'Token ' (no quotes)."),
+        'The authorization token for the requester. The token should be '
+        'preceded by "Token " (no quotes).'),
     type=openapi.TYPE_STRING)
 
 user_parameter = openapi.Parameter(
-    "user",
+    'user',
     openapi.IN_QUERY,
-    description="The cluster username of the user who submitted the job.",
+    description='The cluster username of the user who submitted the job.',
     type=openapi.TYPE_STRING)
 
 account_parameter = openapi.Parameter(
-    "account",
+    'account',
     openapi.IN_QUERY,
-    description="The name of the account under which the job was submitted.",
+    description='The name of the account under which the job was submitted.',
     type=openapi.TYPE_STRING)
 
 jobstatus_parameter = openapi.Parameter(
-    "jobstatus",
+    'jobstatus',
     openapi.IN_QUERY,
-    description="The status of the job.",
+    description='The status of the job.',
     type=openapi.TYPE_STRING)
 
 max_amount_parameter = openapi.Parameter(
-    "max_amount",
+    'max_amount',
     openapi.IN_QUERY,
-    description="The maximum number of service units used by the job.",
+    description='The maximum number of service units used by the job.',
     type=openapi.TYPE_NUMBER)
 
 min_amount_parameter = openapi.Parameter(
-    "min_amount",
+    'min_amount',
     openapi.IN_QUERY,
-    description="The minimum number of service units used by the job.",
+    description='The minimum number of service units used by the job.',
     type=openapi.TYPE_NUMBER)
 
 partition_parameter = openapi.Parameter(
-    "partition",
+    'partition',
     openapi.IN_QUERY,
-    description="The partition on which the job ran.",
+    description='The partition on which the job ran.',
     type=openapi.TYPE_STRING)
 
 start_time_parameter = openapi.Parameter(
-    "start_time",
+    'start_time',
     openapi.IN_QUERY,
     description=(
-        "A starting time as a Unix timestamp: only jobs ending at or after "
-        "this time are included."),
+        'A starting time as a Unix timestamp: only jobs ending at or after '
+        'this time are included.'),
     type=openapi.TYPE_NUMBER)
 
 end_time_parameter = openapi.Parameter(
-    "end_time",
+    'end_time',
     openapi.IN_QUERY,
     description=(
-        "An ending time as a Unix timestamp: only jobs ending before or at "
-        "this time are included."),
+        'An ending time as a Unix timestamp: only jobs ending before or at '
+        'this time are included.'),
     type=openapi.TYPE_NUMBER)
 
 
 @method_decorator(
-    name="list",
+    name='list',
     decorator=swagger_auto_schema(
         manual_parameters=[
             user_parameter, account_parameter, jobstatus_parameter,
             max_amount_parameter, min_amount_parameter, partition_parameter,
             start_time_parameter, end_time_parameter],
         operation_description=(
-            "Returns jobs, with optional filtering by user, account, "
-            "job status, amount, partition, and end date.")))
+            'Returns jobs, with optional filtering by user, account, '
+            'job status, amount, partition, and end date.')))
 class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                  mixins.RetrieveModelMixin, mixins.UpdateModelMixin,
                  viewsets.GenericViewSet):
@@ -114,9 +114,9 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
     def get_queryset(self):
         # Begin with all jobs.
         jobs = Job.objects.all()
-        if self.action == "list":
+        if self.action == 'list':
             # Filter by user, if provided.
-            username = self.request.query_params.get("user", None)
+            username = self.request.query_params.get('user', None)
             if username:
                 user = User.objects.get(username=username)
                 if user:
@@ -125,7 +125,7 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                     jobs = Job.objects.none()
 
             # Filter by account, if provided.
-            account_name = self.request.query_params.get("account", None)
+            account_name = self.request.query_params.get('account', None)
             if account_name:
                 try:
                     account = Project.objects.get(name=account_name)
@@ -135,31 +135,31 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                     jobs = jobs.filter(accountid=account)
 
             # Filter by jobstatus, if provided.
-            jobstatus = self.request.query_params.get("jobstatus", None)
+            jobstatus = self.request.query_params.get('jobstatus', None)
             if jobstatus:
                 jobs = jobs.filter(jobstatus=jobstatus)
 
             # Filter by amount minimum and/or maximum, if provided.
             min_amount = self.request.query_params.get(
-                "min_amount", settings.ALLOCATION_MIN)
+                'min_amount', settings.ALLOCATION_MIN)
             if min_amount:
                 try:
                     min_amount = Decimal(min_amount)
                 except InvalidOperation as e:
                     raise serializers.ValidationError(
-                        f"Invalid minimum amount {min_amount}. Details: {e}")
+                        f'Invalid minimum amount {min_amount}. Details: {e}')
             max_amount = self.request.query_params.get(
-                "max_amount", settings.ALLOCATION_MAX)
+                'max_amount', settings.ALLOCATION_MAX)
             if max_amount:
                 try:
                     max_amount = Decimal(max_amount)
                 except InvalidOperation as e:
                     raise serializers.ValidationError(
-                        f"Invalid maximum amount {max_amount}. Details: {e}")
+                        f'Invalid maximum amount {max_amount}. Details: {e}')
             jobs = jobs.filter(amount__gte=min_amount, amount__lte=max_amount)
 
             # Filter by partition, if provided.
-            partition = self.request.query_params.get("partition", None)
+            partition = self.request.query_params.get('partition', None)
             if partition:
                 jobs = jobs.filter(partition=partition)
 
@@ -168,28 +168,28 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
             try:
                 default_start, default_end = get_allocation_year_range()
             except (TypeError, ValueError) as e:
-                raise ImproperlyConfigured(f"Invalid settings. Details: {e}")
+                raise ImproperlyConfigured(f'Invalid settings. Details: {e}')
             default_start_time = convert_datetime_to_unix_timestamp(
                 default_start)
             default_end_time = convert_datetime_to_unix_timestamp(default_end)
 
             # Use the user-provided times if provided, or the defaults.
             start_time = self.request.query_params.get(
-                "start_time", default_start_time)
+                'start_time', default_start_time)
             end_time = self.request.query_params.get(
-                "end_time", default_end_time)
+                'end_time', default_end_time)
 
             # Convert Unix timestamps to UTC datetimes.
             try:
                 start_time = datetime.utcfromtimestamp(float(start_time))
             except (TypeError, ValueError) as e:
                 raise serializers.ValidationError(
-                    f"Invalid starting timestamp {start_time}. Details: {e}")
+                    f'Invalid starting timestamp {start_time}. Details: {e}')
             try:
                 end_time = datetime.utcfromtimestamp((float(end_time)))
             except (TypeError, ValueError) as e:
                 raise serializers.ValidationError(
-                    f"Invalid ending timestamp {start_time}. Details: {e}")
+                    f'Invalid ending timestamp {start_time}. Details: {e}')
 
             # Filter on submitdate, keeping those that end between the given
             # times, inclusive.
@@ -197,12 +197,12 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                 submitdate__gte=start_time, submitdate__lte=end_time)
 
         # Return filtered jobs in ascending submitdate order.
-        return jobs.order_by("submitdate")
+        return jobs.order_by('submitdate')
 
     @swagger_auto_schema(
         manual_parameters=[authorization_parameter],
         operation_description=(
-            "Creates a new Job identified by the given Slurm ID."))
+            'Creates a new Job identified by the given Slurm ID.'))
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         """The method for POST (create) requests."""
@@ -212,12 +212,12 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         serializer.is_valid(raise_exception=True)
 
         logger.info(
-            f"New Job POST request with data: {serializer.validated_data}.")
+            f'New Job POST request with data: {serializer.validated_data}.')
 
         # These must exist because they are verified in JobSerializer.validate,
         # part of this atomic block.
-        user = serializer.validated_data["userid"]
-        account = serializer.validated_data["accountid"]
+        user = serializer.validated_data['userid']
+        account = serializer.validated_data['accountid']
         allocation_objects = get_accounting_allocation_objects(user, account)
         account_allocation = Decimal(
             allocation_objects.allocation_attribute.value)
@@ -231,43 +231,43 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                 pk=allocation_objects.allocation_user_attribute_usage.pk))
 
         # If amount is specified, update usages.
-        if "amount" in serializer.validated_data:
-            amount = Decimal(serializer.validated_data["amount"])
+        if 'amount' in serializer.validated_data:
+            amount = Decimal(serializer.validated_data['amount'])
 
-            # Because of Slurm limitations, "can_submit_job" and "create" are
+            # Because of Slurm limitations, 'can_submit_job' and 'create' are
             # called separately. As a result, it is possible to submit several
-            # jobs at the same time that individually pass "can_submit_job",
+            # jobs at the same time that individually pass 'can_submit_job',
             # placing them in the Slurm queue, but that overdraw allocations
-            # when their costs are summed. Once in the Slurm queue, "create"
+            # when their costs are summed. Once in the Slurm queue, 'create'
             # must be called for each, since the Job is valid in the Slurm
             # database. Therefore, overdrawing is permitted here.
 
             new_account_usage = account_usage.value + amount
             if new_account_usage > account_allocation:
                 message = (
-                    f"Project {account.name} allocation will be overdrawn. "
-                    f"Allocation: {account_allocation}. Current usage: "
-                    f"{account_usage.value}. Requested job amount: {amount}. "
-                    f"This is permitted by design.")
+                    f'Project {account.name} allocation will be overdrawn. '
+                    f'Allocation: {account_allocation}. Current usage: '
+                    f'{account_usage.value}. Requested job amount: {amount}. '
+                    f'This is permitted by design.')
                 logger.error(message)
             logger.info(
-                f"Setting usage for Project {account.name} to "
-                f"{new_account_usage}.")
+                f'Setting usage for Project {account.name} to '
+                f'{new_account_usage}.')
             account_usage.value = new_account_usage
             account_usage.save()
 
             new_user_account_usage = user_account_usage.value + amount
             if new_user_account_usage > user_account_allocation:
                 message = (
-                    f"User {user} allocation for Project {account.name} will "
-                    f"be overdrawn. Allocation: {user_account_allocation}. "
-                    f"Current usage: {user_account_usage.value}. Requested "
-                    f"job amount: {amount}. This is permitted by design.")
+                    f'User {user} allocation for Project {account.name} will '
+                    f'be overdrawn. Allocation: {user_account_allocation}. '
+                    f'Current usage: {user_account_usage.value}. Requested '
+                    f'job amount: {amount}. This is permitted by design.')
                 logger.error(message)
             logger.info(
-                f"Setting usage for User {user} and Project {account.name} to "
-                f"{user_account_usage.value} + {amount} = "
-                f"{new_user_account_usage}.")
+                f'Setting usage for User {user} and Project {account.name} to '
+                f'{user_account_usage.value} + {amount} = '
+                f'{new_user_account_usage}.')
             user_account_usage.value = new_user_account_usage
             user_account_usage.save()
 
@@ -279,24 +279,24 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
     @swagger_auto_schema(
         manual_parameters=[authorization_parameter],
         operation_description=(
-            "Updates one or more fields of the Job identified by the given "
-            "Slurm ID. This method is not supported."),
+            'Updates one or more fields of the Job identified by the given '
+            'Slurm ID. This method is not supported.'),
         auto_schema=None)
     @transaction.atomic
     def partial_update(self, request, *args, **kwargs):
         """The method for PATCH (partial update) requests."""
-        return Response({"failure": "This method is not supported."})
+        return Response({'failure': 'This method is not supported.'})
 
     @swagger_auto_schema(
         manual_parameters=[authorization_parameter],
         operation_description=(
-            "Updates all fields of the Job identified by the given Slurm ID."))
+            'Updates all fields of the Job identified by the given Slurm ID.'))
     @transaction.atomic
     def update(self, request, *args, **kwargs):
         """The method for PUT (update) requests."""
         logger = logging.getLogger(__name__)
 
-        partial = kwargs.pop("partial", False)
+        partial = kwargs.pop('partial', False)
         try:
             instance = self.get_object()
             serializer = self.get_serializer(
@@ -308,12 +308,12 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         serializer.is_valid(raise_exception=True)
 
         logger.info(
-            f"New Job PUT request with data: {serializer.validated_data}.")
+            f'New Job PUT request with data: {serializer.validated_data}.')
 
         # These must exist because they are verified in JobSerializer.validate,
         # part of this atomic block.
-        user = serializer.validated_data["userid"]
-        account = serializer.validated_data["accountid"]
+        user = serializer.validated_data['userid']
+        account = serializer.validated_data['accountid']
         allocation_objects = get_accounting_allocation_objects(user, account)
         account_usage = (
             AllocationAttributeUsage.objects.select_for_update().get(
@@ -323,47 +323,47 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                 pk=allocation_objects.allocation_user_attribute_usage.pk))
 
         # If amount is specified, update usages.
-        if "amount" in serializer.validated_data:
-            amount = Decimal(serializer.validated_data["amount"])
-            jobslurmid = serializer.validated_data["jobslurmid"]
+        if 'amount' in serializer.validated_data:
+            amount = Decimal(serializer.validated_data['amount'])
+            jobslurmid = serializer.validated_data['jobslurmid']
             try:
                 job = Job.objects.get(jobslurmid=jobslurmid)
             except Job.DoesNotExist:
                 logger.info(
-                    f"No Job with jobslurmid {jobslurmid} yet exists. "
-                    f"Creating it.")
+                    f'No Job with jobslurmid {jobslurmid} yet exists. '
+                    f'Creating it.')
                 new_account_usage = account_usage.value + amount
                 logger.info(
-                    f"Setting usage for Project {account.name} to "
-                    f"{account_usage.value} + {amount} = {new_account_usage}.")
+                    f'Setting usage for Project {account.name} to '
+                    f'{account_usage.value} + {amount} = {new_account_usage}.')
                 account_usage.value = new_account_usage
                 new_user_account_usage = user_account_usage.value + amount
                 logger.info(
-                    f"Setting usage for User {user} and Project "
-                    f"{account.name} to {user_account_usage.value} + {amount} "
-                    f"= {new_user_account_usage}.")
+                    f'Setting usage for User {user} and Project '
+                    f'{account.name} to {user_account_usage.value} + {amount} '
+                    f'= {new_user_account_usage}.')
                 user_account_usage.value = new_user_account_usage
             else:
                 logger.info(
-                    f"A Job with jobslurmid {jobslurmid} already exists. "
-                    f"Updating it.")
+                    f'A Job with jobslurmid {jobslurmid} already exists. '
+                    f'Updating it.')
                 # The difference should be non-positive because the estimated
                 # cost is an upper bound of the actual cost.
                 difference = amount - job.amount
                 new_account_usage = max(
-                    account_usage.value + difference, Decimal("0.00"))
+                    account_usage.value + difference, Decimal('0.00'))
                 logger.info(
-                    f"Setting usage for Project {account.name} to max("
-                    f"{account_usage.value} + ({amount} - {job.amount}), 0) = "
-                    f"{new_account_usage}.")
+                    f'Setting usage for Project {account.name} to max('
+                    f'{account_usage.value} + ({amount} - {job.amount}), 0) = '
+                    f'{new_account_usage}.')
                 account_usage.value = new_account_usage
                 new_user_account_usage = max(
-                    user_account_usage.value + difference, Decimal("0.00"))
+                    user_account_usage.value + difference, Decimal('0.00'))
                 logger.info(
-                    f"Setting usage for User {user} and Project "
-                    f"{account.name} to max({user_account_usage.value} + "
-                    f"({amount} - {job.amount}), 0) = "
-                    f"{new_user_account_usage}.")
+                    f'Setting usage for User {user} and Project '
+                    f'{account.name} to max({user_account_usage.value} + '
+                    f'({amount} - {job.amount}), 0) = '
+                    f'{new_user_account_usage}.')
                 user_account_usage.value = new_user_account_usage
             account_usage.save()
             user_account_usage.save()
@@ -371,8 +371,8 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         self.perform_update(serializer)
 
         if instance:
-            if getattr(instance, "_prefetched_objects_cache", None):
-                # If "prefetch_related" has been applied to a queryset, we need
+            if getattr(instance, '_prefetched_objects_cache', None):
+                # If 'prefetch_related' has been applied to a queryset, we need
                 # to forcibly invalidate the prefetch cache on the instance.
                 instance._prefetched_objects_cache = {}
 
@@ -380,65 +380,65 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
 
 
 job_cost_parameter = openapi.Parameter(
-    "job_cost",
+    'job_cost',
     openapi.IN_PATH,
     description=(
-        f"A string representation of a nonnegative decimal number with no "
-        f"greater than {settings.DECIMAL_MAX_DIGITS} total digits and no "
-        f"greater than {settings.DECIMAL_MAX_PLACES} decimal places."),
+        f'A string representation of a nonnegative decimal number with no '
+        f'greater than {settings.DECIMAL_MAX_DIGITS} total digits and no '
+        f'greater than {settings.DECIMAL_MAX_PLACES} decimal places.'),
     type=openapi.TYPE_STRING)
 
 user_id_parameter = openapi.Parameter(
-    "user_id",
+    'user_id',
     openapi.IN_PATH,
     description=(
-        "A string representation of the user's cluster UID, a five digit "
-        "number."),
+        'A string representation of the user\'s cluster UID, a five digit '
+        'number.'),
     type=openapi.TYPE_STRING)
 
 account_id_parameter = openapi.Parameter(
-    "account_id",
+    'account_id',
     openapi.IN_PATH,
-    description="The name of the account.",
+    description='The name of the account.',
     type=openapi.TYPE_STRING)
 
 response_200 = openapi.Response(
     description=(
-        f"A mapping from \"success\" to whether or not the job can be "
-        f"submitted and a mapping from \"message\" to reasoning."),
+        f'A mapping from \'success\' to whether or not the job can be '
+        f'submitted and a mapping from \'message\' to reasoning.'),
     schema=openapi.Schema(
         type=openapi.TYPE_OBJECT,
         properties=OrderedDict((
-            ("success", openapi.Schema(type=openapi.TYPE_BOOLEAN)),
-            ("message", openapi.Schema(
+            ('success', openapi.Schema(type=openapi.TYPE_BOOLEAN)),
+            ('message', openapi.Schema(
                 type=openapi.TYPE_STRING, x_nullable=True))))))
 
 response_400 = openapi.Response(
     description=(
-        f"A mapping from \"success\" to False and a mapping from \"message\" "
-        f"to an error message."),
+        f'A mapping from \'success\' to False and a mapping from \'message\' '
+        f'to an error message.'),
     schema=openapi.Schema(
         type=openapi.TYPE_OBJECT,
         properties=OrderedDict((
-            ("success", openapi.Schema(
+            ('success', openapi.Schema(
                 type=openapi.TYPE_BOOLEAN, default=False)),
-            ("message", openapi.Schema(
+            ('message', openapi.Schema(
                 type=openapi.TYPE_STRING, x_nullable=True))))))
 
 
 @swagger_auto_schema(
-    method="get",
+    method='get',
     manual_parameters=[
         job_cost_parameter, user_id_parameter, account_id_parameter,
         authorization_parameter],
     operation_description=(
-        "Returns whether or not a Job with the given cost can be submitted by "
-        "the given user for the given account."),
+        'Returns whether or not a Job with the given cost can be submitted by '
+        'the given user for the given account.'),
     responses={
         200: response_200,
         400: response_400
     })
-@api_view(["GET"])
+@api_view(['GET'])
 @transaction.atomic
 def can_submit_job(request, job_cost, user_id, account_id):
     """Given a Job cost, return True if adding it to the given user's
@@ -454,7 +454,7 @@ def can_submit_job(request, job_cost, user_id, account_id):
         - account_id (str): the name of the account
 
     Returns:
-        - JsonResponse mapping "success" to a boolean and "message" to
+        - JsonResponse mapping 'success' to a boolean and 'message' to
         an error message.
 
     Raises:
@@ -462,14 +462,14 @@ def can_submit_job(request, job_cost, user_id, account_id):
     """
     logger = logging.getLogger(__name__)
     logger.info(
-        f"New can_submit_job request with job_cost {job_cost}, user_id "
-        f"{user_id}, and account_id {account_id}.")
+        f'New can_submit_job request with job_cost {job_cost}, user_id '
+        f'{user_id}, and account_id {account_id}.')
 
     affirmative = JsonResponse(
         status=status.HTTP_200_OK,
         data={
-            "success": True,
-            "message": f"A job with job_cost {job_cost} can be submitted."
+            'success': True,
+            'message': f'A job with job_cost {job_cost} can be submitted.'
         })
 
     def non_affirmative(data_message):
@@ -478,8 +478,8 @@ def can_submit_job(request, job_cost, user_id, account_id):
         return JsonResponse(
             status=status.HTTP_200_OK,
             data={
-                "success": False,
-                "message": data_message
+                'success': False,
+                'message': data_message
             })
 
     def client_error(data_message):
@@ -488,15 +488,15 @@ def can_submit_job(request, job_cost, user_id, account_id):
         return JsonResponse(
             status=status.HTTP_400_BAD_REQUEST,
             data={
-                "success": False,
-                "message": data_message
+                'success': False,
+                'message': data_message
             })
 
     server_error = JsonResponse(
         status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         data={
-            "success": False,
-            "message": f"Unexpected server error."
+            'success': False,
+            'message': f'Unexpected server error.'
         })
 
     # If all jobs are allowed, bypass checks.
@@ -508,13 +508,13 @@ def can_submit_job(request, job_cost, user_id, account_id):
     user_id = user_id.strip()
     account_id = account_id.strip()
     if not job_cost or not isinstance(job_cost, str):
-        message = f"job_cost {job_cost} is not a nonempty string."
+        message = f'job_cost {job_cost} is not a nonempty string.'
         return client_error(message)
     if not user_id or not isinstance(user_id, str):
-        message = f"user_id {user_id} is not a nonempty string."
+        message = f'user_id {user_id} is not a nonempty string.'
         return client_error(message)
     if not account_id or not isinstance(account_id, str):
-        message = f"account_id {account_id} is not a nonempty string."
+        message = f'account_id {account_id} is not a nonempty string.'
         return client_error(message)
 
     # Validate job_cost.
@@ -522,36 +522,36 @@ def can_submit_job(request, job_cost, user_id, account_id):
         job_cost = Decimal(job_cost)
     except InvalidOperation as e:
         message = (
-            f"Encountered exception {e} when converting job_cost {job_cost} "
-            f"to a decimal.")
+            f'Encountered exception {e} when converting job_cost {job_cost} '
+            f'to a decimal.')
         return client_error(message)
     decimal_tuple = job_cost.as_tuple()
     if decimal_tuple.sign:
-        message = f"job_cost {job_cost} is not nonnegative."
+        message = f'job_cost {job_cost} is not nonnegative.'
         return client_error(message)
     if len(decimal_tuple.digits) > settings.DECIMAL_MAX_DIGITS:
         message = (
-            f"job_cost {job_cost} has greater than "
-            f"{settings.DECIMAL_MAX_DIGITS} digits.")
+            f'job_cost {job_cost} has greater than '
+            f'{settings.DECIMAL_MAX_DIGITS} digits.')
         return client_error(message)
     if abs(decimal_tuple.exponent) > settings.DECIMAL_MAX_PLACES:
         message = (
-            f"job_cost {job_cost} has greater than "
-            f"{settings.DECIMAL_MAX_PLACES} decimal places.")
+            f'job_cost {job_cost} has greater than '
+            f'{settings.DECIMAL_MAX_PLACES} decimal places.')
         return client_error(message)
 
     # Validate user_id.
     try:
         user = UserProfile.objects.get(cluster_uid=user_id).user
     except UserProfile.DoesNotExist:
-        message = f"No user exists with user_id {user_id}."
+        message = f'No user exists with user_id {user_id}.'
         return client_error(message)
 
     # Validate account_id.
     try:
         account = Project.objects.get(name=account_id)
     except Project.DoesNotExist:
-        message = f"No account exists with account_id {account_id}."
+        message = f'No account exists with account_id {account_id}.'
         return client_error(message)
 
     # Validate that needed accounting objects exist.
@@ -559,20 +559,27 @@ def can_submit_job(request, job_cost, user_id, account_id):
         allocation_objects = get_accounting_allocation_objects(user, account)
     except ProjectUser.DoesNotExist:
         message = (
-            f"No association exists between user {user} and account "
-            f"{account.name}.")
+            f'User {user.username} is not a member of account {account.name}.')
+        logger.error(message)
         return client_error(message)
     except Allocation.DoesNotExist:
-        message = f"Account {account.name} has no active compute allocation."
+        message = f'Account {account.name} has no active compute allocation.'
+        logger.error(message)
         return client_error(message)
     except Allocation.MultipleObjectsReturned:
+        logger.error(
+            f'Account {account.name} has more than one active compute '
+            f'allocation.')
         return server_error
     except AllocationUser.DoesNotExist:
         message = (
-            f"User {user} is not an active member of the compute allocation "
-            f"for account {account.name}.")
+            f'User {user.username} is not an active member of the compute '
+            f'allocation for account {account.name}.')
+        logger.error(message)
         return client_error(message)
-    except (MultipleObjectsReturned, ObjectDoesNotExist):
+    except (MultipleObjectsReturned, ObjectDoesNotExist) as e:
+        logger.error(
+            f'Failed to retrieve a required database object. Details: {e}')
         return server_error
 
     # Retrieve compute allocation values.
@@ -589,20 +596,20 @@ def can_submit_job(request, job_cost, user_id, account_id):
     # cost.
     # if account.allowance_has_condo:
     #     return affirmative
-    if account.name.startswith("co_"):
+    if account.name.startswith('co_'):
         return affirmative
 
     # Return whether or not both usages would not exceed their respective
     # allocations.
     if job_cost + account_usage > account_allocation:
         message = (
-            f"Adding job_cost {job_cost} to account balance {account_usage} "
-            f"would exceed account allocation {account_allocation}.")
+            f'Adding job_cost {job_cost} to account balance {account_usage} '
+            f'would exceed account allocation {account_allocation}.')
         return non_affirmative(message)
     if job_cost + user_account_usage > user_account_allocation:
         message = (
-            f"Adding job_cost {job_cost} to user balance {user_account_usage} "
-            f"would exceed user allocation {user_account_allocation}.")
+            f'Adding job_cost {job_cost} to user balance {user_account_usage} '
+            f'would exceed user allocation {user_account_allocation}.')
         return non_affirmative(message)
 
     return affirmative
