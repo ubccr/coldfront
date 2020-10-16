@@ -1,32 +1,17 @@
+from coldfront.api.statistics.tests.test_job_base import TestJobBase
 from coldfront.core.allocation.models import Allocation
-from coldfront.core.allocation.models import AllocationAttribute
-from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationAttributeUsage
 from coldfront.core.allocation.models import AllocationStatusChoice
-from coldfront.core.allocation.models import AllocationUser
-from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.allocation.models import AllocationUserStatusChoice
-from coldfront.core.allocation.models import AttributeType
-from coldfront.core.project.models import Project
-from coldfront.core.project.models import ProjectStatusChoice
-from coldfront.core.project.models import ProjectUser
-from coldfront.core.project.models import ProjectUserRoleChoice
-from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.resource.models import Resource
-from coldfront.core.resource.models import ResourceType
-from coldfront.core.user.models import ExpiringToken
-from coldfront.core.user.models import UserProfile
 from decimal import ConversionSyntax
 from decimal import Decimal
 from django.conf import settings
-from django.contrib.auth.models import User
-from django.core.management import call_command
-from django.test import TestCase
-from rest_framework.test import APIClient
+from django.test import override_settings
 
 
-class TestCanSubmitJobView(TestCase):
+class TestCanSubmitJobView(TestJobBase):
     """A suite for testing the can_submit_job view."""
 
     def assert_result(self, job_cost, user_id, account_id, status_code,
@@ -44,69 +29,6 @@ class TestCanSubmitJobView(TestCase):
     def get_url(job_cost, user_id, account_id):
         """Return the request URL for the given parameters."""
         return f'/api/can_submit_job/{job_cost}/{user_id}/{account_id}/'
-
-    def setUp(self):
-        """Set up test data."""
-        call_command('import_field_of_science_data')
-        call_command('add_default_project_choices')
-        call_command('add_resource_defaults')
-        call_command('add_allocation_defaults')
-
-        resource_type = ResourceType.objects.get(name='Cluster')
-        resource = Resource.objects.create(
-            resource_type=resource_type, name='Savio Compute')
-
-        attribute_type = AttributeType.objects.create(name='Decimal')
-        allocation_attribute_type = \
-            AllocationAttributeType.objects.create(
-                attribute_type=attribute_type, name='Service Units',
-                has_usage=True, is_unique=True)
-
-        self.user = User.objects.create(
-            username='user0', email='user0@nonexistent.com')
-        self.user_profile = UserProfile.objects.get(user=self.user)
-        self.user_profile.cluster_uid = '0'
-        self.user_profile.is_pi = True
-        self.user_profile.save()
-
-        project_status = ProjectStatusChoice.objects.get(name='Active')
-        self.account = Project.objects.create(
-            name='test_project', pi=self.user, status=project_status)
-
-        role = ProjectUserRoleChoice.objects.get(name='Manager')
-        status = ProjectUserStatusChoice.objects.get(name='Active')
-        self.project_user = ProjectUser.objects.create(
-            user=self.user, project=self.account, role=role, status=status)
-
-        status = AllocationStatusChoice.objects.get(name='Active')
-        self.allocation = Allocation.objects.create(
-            project=self.account, status=status)
-        self.allocation.resources.add(resource)
-        self.allocation.save()
-
-        self.account_allocation = AllocationAttribute.objects.create(
-            allocation_attribute_type=allocation_attribute_type,
-            allocation=self.allocation, value='100.00')
-
-        self.account_usage = AllocationAttributeUsage.objects.first()
-
-        status = AllocationUserStatusChoice.objects.get(name='Active')
-        self.allocation_user = AllocationUser.objects.create(
-            allocation=self.allocation, user=self.user, status=status)
-
-        self.user_account_allocation = \
-            AllocationUserAttribute.objects.create(
-                allocation_attribute_type=allocation_attribute_type,
-                allocation=self.allocation,
-                allocation_user=self.allocation_user, value='100.00')
-
-        self.user_account_usage = AllocationUserAttributeUsage.objects.first()
-
-        self.client = APIClient()
-        staff_user = User.objects.create(
-            username='staff', email='staff@nonexistent.com', is_staff=True)
-        self.token = ExpiringToken.objects.create(user=staff_user)
-        self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.token.key}')
 
     def test_other_requests_not_allowed(self):
         """Test that other requests (e.g. POST; PATCH; DELETE) are not
@@ -153,7 +75,7 @@ class TestCanSubmitJobView(TestCase):
 
     def test_invalid_account_id(self):
         """Test that requests with an invalid account_id value fail."""
-        self.account.delete()
+        self.project.delete()
         message = f'No account exists with account_id 0.'
         self.assert_result(
             '1.00', '0', '0', 400, False, message)
@@ -162,9 +84,7 @@ class TestCanSubmitJobView(TestCase):
         """Test that requests with an unrelated user and account
         fail."""
         self.project_user.delete()
-        message = (
-            f'No association exists between user user0 and account '
-            f'test_project.')
+        message = f'User user0 is not a member of account test_project.'
         self.assert_result('1.00', '0', 'test_project', 400, False, message)
 
     def test_no_active_compute_allocation(self):
@@ -211,7 +131,7 @@ class TestCanSubmitJobView(TestCase):
         resource = Resource.objects.get(name='Savio Compute')
         status = AllocationStatusChoice.objects.get(name='Active')
         allocation = Allocation.objects.create(
-            project=self.account, status=status)
+            project=self.project, status=status)
         allocation.resources.add(resource)
         allocation.save()
         self.assert_result('1.00', '0', 'test_project', 500, False, message)
@@ -234,58 +154,65 @@ class TestCanSubmitJobView(TestCase):
         self.assertEqual(
             self.user_account_usage.value, Decimal(settings.ALLOCATION_MIN))
         # Manually increase the usages.
-        self.account_usage.value = Decimal(self.account_allocation.value)
+        self.account_usage.value = Decimal(self.allocation_attribute.value)
         self.account_usage.save()
         self.user_account_usage.value = Decimal(
-            self.user_account_allocation.value)
+            self.allocation_user_attribute.value)
         self.user_account_usage.save()
         # If the account's usage would exceed its allocation, the request
         # should fail.
         message = (
-            'Adding job_cost 0.01 to account balance 100.00 would exceed '
-            'account allocation 100.00.')
+            'Adding job_cost 0.01 to account balance 1000.00 would exceed '
+            'account allocation 1000.00.')
         self.assert_result('0.01', '0', 'test_project', 200, False, message)
         # The usages should not have changed.
         self.user_account_usage.refresh_from_db()
         self.account_usage.refresh_from_db()
-        self.assertEqual(self.user_account_usage.value, Decimal('100.00'))
-        self.assertEqual(self.account_usage.value, Decimal('100.00'))
+        self.assertEqual(self.user_account_usage.value, Decimal('500.00'))
+        self.assertEqual(self.account_usage.value, Decimal('1000.00'))
         # Manually increase the account's allocation.
-        self.account_allocation.value = '200.00'
-        self.account_allocation.save()
+        self.allocation_attribute.value = '2000.00'
+        self.allocation_attribute.save()
         # If the user's usage would exceed his/her allocation, the request
         # should fail.
         message = (
-            'Adding job_cost 0.01 to user balance 100.00 would exceed user '
-            'allocation 100.00.')
+            'Adding job_cost 0.01 to user balance 500.00 would exceed user '
+            'allocation 500.00.')
         self.assert_result('0.01', '0', 'test_project', 200, False, message)
         # The usages should not have changed.
         self.user_account_usage.refresh_from_db()
         self.account_usage.refresh_from_db()
-        self.assertEqual(self.user_account_usage.value, Decimal('100.00'))
-        self.assertEqual(self.account_usage.value, Decimal('100.00'))
+        self.assertEqual(self.user_account_usage.value, Decimal('500.00'))
+        self.assertEqual(self.account_usage.value, Decimal('1000.00'))
 
     def test_success(self):
         """Test that requests without issue succeed."""
-        message = 'A job with job_cost 100.00 can be submitted.'
-        self.assert_result('100.00', '0', 'test_project', 200, True, message)
+        message = 'A job with job_cost 500.00 can be submitted.'
+        self.assert_result('500.00', '0', 'test_project', 200, True, message)
 
     def test_condo_jobs_always_allowed(self):
         """Test that requests under Condo accounts always succeed,
         regardless of cost."""
-        self.assertEqual(self.account_allocation.value, '100.00')
-        self.assertFalse(self.account.name.startswith('co_'))
-        message = (
-            f'Adding job_cost {settings.ALLOCATION_MAX} to account balance '
-            f'0.00 would exceed account allocation 100.00.')
-        self.assert_result(
-            str(settings.ALLOCATION_MAX), '0', 'test_project', 200, False,
-            message)
+        job_cost = str(settings.ALLOCATION_MAX)
 
-        self.account.name = 'co_project'
-        self.account.save()
+        self.assertEqual(self.allocation_attribute.value, '1000.00')
+        self.assertFalse(self.project.name.startswith('co_'))
         message = (
-            f'A job with job_cost {settings.ALLOCATION_MAX} can be submitted.')
-        self.assert_result(
-            str(settings.ALLOCATION_MAX), '0', 'co_project', 200, True,
-            message)
+            f'Adding job_cost {job_cost} to account balance 0.00 would exceed '
+            f'account allocation 1000.00.')
+        self.assert_result(job_cost, '0', 'test_project', 200, False, message)
+
+        self.project.name = 'co_project'
+        self.project.save()
+        message = f'A job with job_cost {job_cost} can be submitted.'
+        self.assert_result(job_cost, '0', 'co_project', 200, True, message)
+
+    @override_settings(ALLOW_ALL_JOBS=True)
+    def test_allow_all_jobs(self):
+        """Test that, when the ALLOW_ALL_JOBS setting is True, normally
+        failing requests succeed."""
+        job_cost = settings.ALLOCATION_MAX
+
+        self.assertEqual(self.allocation_attribute.value, '1000.00')
+        message = f'A job with job_cost {job_cost} can be submitted.'
+        self.assert_result(job_cost, '0', 'test_project', 200, True, message)
