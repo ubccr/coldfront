@@ -296,7 +296,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                         if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
                             email_receiver_list.append(
                                 allocation_user.user.email)
-                    print(email_receiver_list)
+                    
                     send_email_template(
                         'Allocation Denied',
                         'email/allocation_denied.txt',
