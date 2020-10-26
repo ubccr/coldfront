@@ -48,7 +48,6 @@ Project Detail
     <div class="card-body">
       {% if project.status.name != 'Archived' %}
         <a class="btn btn-success" href="{% url 'project-add-users-search' project.pk %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
-        <a class="btn btn-success" href="{% url 'add-research-output' project.pk %}" role="button"><i class="far fa-newspaper" aria-hidden="true"></i> Add Research Output</a>
       {% endif %}
     </div>
   </div>
@@ -221,48 +220,6 @@ Project Detail
   </div>
 </div>
 <!-- End Project Allocations -->
-
-<!-- Start Project ResearchOutputs -->
-<div class="card mb-3">
-  <div class="card-header">
-  <h4 class="d-inline"><i class="far fa-newspaper"></i> <a name="research_outputs">Research Outputs</a> </h4> <span class="badge badge-secondary">{{ research_outputs.count}}</span>
-    <div class="float-right">
-      {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
-        <a class="btn btn-success" href="{% url 'add-research-output' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add Research Output</a>
-        {% if research_outputs %}
-          <a class="btn btn-danger" href="{% url 'research-output-delete-research-outputs' project.pk %}" role="button"><i class="fas fa-minus" aria-hidden="true"></i> Delete Research Outputs</a>
-        {% endif %}
-      {% endif %}
-    </div>
-  </div>
-
-  <div class="card-body">
-    {% if research_outputs %}
-    <div class="table-responsive">
-      <table id="research-output-table" class="table table-hover">
-        <tbody>
-          {% for research_output in research_outputs %}
-          <tr>
-            <td title="Entered by {{ research_output.created_by }} on {{ research_output.created|date:"M. d, Y"}}">
-              {% if research_output.title %}
-                <strong>{{ research_output.title }}</strong>
-              {% endif %}
-              <div style="max-height: 120px; overflow: auto;">
-                {{ research_output.description | linebreaks }}
-              </div>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-     <div class="alert alert-info" role="alert"><i class="fas fa-info-circle"></i> There are no research outputs to display.</div>
-    {% endif %}
-  </div>
-</div>
-<!-- End Project ResearchOutputs -->
-
 
 <!-- Start Admin Messages -->
 <div class="card mb-3">

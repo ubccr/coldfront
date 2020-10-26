@@ -15,7 +15,7 @@ from coldfront.core.portal.utils import (generate_allocations_chart_data,
                                          generate_total_grants_by_agency_chart_data)
 from coldfront.core.project.models import Project
 # from coldfront.core.publication.models import Publication
-from coldfront.core.research_output.models import ResearchOutput
+# from coldfront.core.research_output.models import ResearchOutput
 
 
 def home(request):
