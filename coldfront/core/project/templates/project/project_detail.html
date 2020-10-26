@@ -48,7 +48,6 @@ Project Detail
     <div class="card-body">
       {% if project.status.name != 'Archived' %}
         <a class="btn btn-success" href="{% url 'project-add-users-search' project.pk %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
-        <a class="btn btn-success" href="{% url 'publication-search' project.pk %}" role="button"><i class="fas fa-newspaper" aria-hidden="true"></i> Add Publication</a>
         <a class="btn btn-success" href="{% url 'add-research-output' project.pk %}" role="button"><i class="far fa-newspaper" aria-hidden="true"></i> Add Research Output</a>
       {% endif %}
     </div>
@@ -102,7 +101,7 @@ Project Detail
             <th>Username</th>
             <th>Name</th>
             <th>Email</th>
-            <th>Role <a href="#" data-toggle="popover" title="Role" data-trigger="hover" data-content="Manager role grants user access to add/remove users, allocations, grants, and publications to the project."><i class="fas fa-info-circle"></i></a></th>
+            <th>Role <a href="#" data-toggle="popover" title="Role" data-trigger="hover" data-content="Manager role grants user access to add/remove users, and allocations to the project."><i class="fas fa-info-circle"></i></a></th>
             <th>Status</th>
             <th>Enable Notifications <a href="#" title="Enable Notifications" data-toggle="popover" data-trigger="hover" data-content="When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable)."><i class="fas fa-info-circle"></i></a></th>
             <th>Actions</th>
@@ -222,59 +221,6 @@ Project Detail
   </div>
 </div>
 <!-- End Project Allocations -->
-
-<!-- Start Project Publications -->
-<div class="card mb-3">
-  <div class="card-header">
-  <h4 class="d-inline"><i class="fas fa-newspaper"></i> <a name="publications">Publications</a> </h4> <span class="badge badge-secondary">{{publications.count}}</span>
-    <div class="float-right">
-      {% if project.latest_publication.created %}
-        <span class="badge badge-info">Last Updated: {{project.latest_publication.created|date:"M. d, Y"}}</span>
-      {% endif %}
-      {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
-        <a class="btn btn-success" href="{% url 'publication-search' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add Publication</a>
-        {% if publications %}
-        <a class="btn btn-success" href="{% url 'publication-export-publications' project.pk %}" role="button"><i class="fas fa-file-export" aria-hidden="true"></i> Export Publications</a>
-          <a class="btn btn-danger" href="{% url 'publication-delete-publications' project.pk %}" role="button"><i class="fas fa-minus" aria-hidden="true"></i> Delete Publications</a>
-        {% endif %}
-      {% endif %}
-    </div>
-
-  </div>
-  <div class="card-body">
-    {% if publications %}
-    <div class="table-responsive">
-      <table id="publication-table" class="table table-hover">
-        <thead>
-          <tr>
-            <th>Title, Author, and Journal</th>
-            <th>Year</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for publication in publications %}
-          <tr>
-            <td>
-              <strong>Title: </strong>{{ publication.title }}
-              {% if publication.source.url %}
-                <a target="_blank" rel="noopener" href="{{publication.source.url}}{{publication.unique_id}}"><i class="fas fa-external-link-alt"></i></a>
-              {% endif %}
-              <br><strong>Author: </strong>{{ publication.author}}
-              <br><strong>Journal: </strong>{{ publication.journal}}
-            </td>
-            <td class="text-nowrap">{{ publication.year }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-     <div class="alert alert-info" role="alert"><i class="fas fa-info-circle"></i> There are no publications to display.</div>
-    {% endif %}
-  </div>
-</div>
-<!-- End Project Publications -->
-
 
 <!-- Start Project ResearchOutputs -->
 <div class="card mb-3">

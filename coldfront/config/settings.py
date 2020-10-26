@@ -1,22 +1,23 @@
 """
 Default Django settings for ColdFront project.
 """
+import coldfront
 import os
 import sys
 
 from django.contrib.messages import constants as messages
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Django config for ColdFront
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 ALLOWED_HOSTS = ['*']
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Django Apps
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -46,13 +47,13 @@ INSTALLED_APPS += [
     'coldfront.core.resource',
     'coldfront.core.allocation',
     # 'coldfront.core.grant',
-    'coldfront.core.publication',
+    # 'coldfront.core.publication',
     'coldfront.core.research_output',
 ]
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Django Middleware
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -64,9 +65,9 @@ MIDDLEWARE = [
     'simple_history.middleware.HistoryRequestMiddleware',
 ]
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Database settings
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -74,16 +75,16 @@ DATABASES = {
     }
 }
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Authentication backends
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Django site settings
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 ROOT_URLCONF = 'coldfront.config.urls'
 
 TEMPLATES = [
@@ -109,7 +110,7 @@ TEMPLATES = [
 
 SESSION_COOKIE_AGE = 60 * 15
 SESSION_SAVE_EVERY_REQUEST = True
-SESSION_COOKIE_SAMESITE  = 'Strict'
+SESSION_COOKIE_SAMESITE = 'Strict'
 
 WSGI_APPLICATION = 'coldfront.config.wsgi.application'
 
@@ -153,9 +154,9 @@ SU_LOGOUT_REDIRECT_URL = "/admin/auth/user/"
 
 SETTINGS_EXPORT = []
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Local settings overrides (see local_settings.py.sample)
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 try:
     from coldfront.config.local_strings import *
 except ImportError:
@@ -188,7 +189,6 @@ if 'django_su.backends.SuBackend' in EXTRA_AUTHENTICATION_BACKENDS:
     INSTALLED_APPS.insert(0, 'django_su')
     TEMPLATES[0]['OPTIONS']['context_processors'].extend(['django_su.context_processors.is_su', ])
 
-import coldfront
 VERSION = coldfront.__version__
 
 try:

@@ -95,6 +95,7 @@ class ProjectReviewForm(forms.Form):
             grant_updated_in_last_year = None
         """
 
+        """
         if project_obj.publication_set.exists():
             latest_publication = project_obj.publication_set.order_by(
                 '-created')[0]
@@ -102,6 +103,7 @@ class ProjectReviewForm(forms.Form):
                 now - latest_publication.created).days < 365
         else:
             publication_updated_in_last_year = None
+        """
 
         """
         if grant_updated_in_last_year or publication_updated_in_last_year:

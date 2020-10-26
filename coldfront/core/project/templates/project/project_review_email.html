@@ -37,10 +37,6 @@ Email User
           <th scope="row" class="text-nowrap">Date Review Submitted:</th>
           <td>{{ project_review.created|date:"M-d-Y" }}</td>
         </tr>
-        <tr>
-          <th scope="row" class="text-nowrap">Publications Last Updated:</th>
-          <td>{{project_review.project.latest_publication.created|date:"M-d-Y"|default:"No publications"}}</td>
-        </tr>
       </table>
     </div>
 
