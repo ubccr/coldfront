@@ -8,7 +8,7 @@ from django.shortcuts import render
 from django.views.decorators.cache import cache_page
 
 from coldfront.core.allocation.models import Allocation, AllocationUser
-from coldfront.core.grant.models import Grant
+# from coldfront.core.grant.models import Grant
 from coldfront.core.portal.utils import (generate_allocations_chart_data,
                                          generate_publication_by_year_chart_data,
                                          generate_resources_chart_data,
@@ -71,6 +71,7 @@ def center_summary(request):
     # Research Outputs card
     context['total_research_outputs_count'] = ResearchOutput.objects.all().distinct().count()
 
+    """
     # Grants Card
     total_grants_by_agency_sum = list(Grant.objects.values(
         'funding_agency__name').annotate(total_amount=Sum('total_amount_awarded')))
@@ -100,6 +101,13 @@ def center_summary(request):
         int(sum(list(Grant.objects.filter(role='CoPI').values_list('total_amount_awarded', flat=True)))))
     context['grants_total_sp_only'] = intcomma(
         int(sum(list(Grant.objects.filter(role='SP').values_list('total_amount_awarded', flat=True)))))
+    """
+
+    context['grants_total_sp_only'] = 0
+    context['grants_total_copi_only'] = 0
+    context['grants_total_pi_only'] = 0
+    context['grants_total'] = 0
+    context['grants_agency_chart_data'] = 0
 
     return render(request, 'portal/center_summary.html', context)
 

@@ -45,7 +45,7 @@ INSTALLED_APPS += [
     'coldfront.core.project',
     'coldfront.core.resource',
     'coldfront.core.allocation',
-    'coldfront.core.grant',
+    # 'coldfront.core.grant',
     'coldfront.core.publication',
     'coldfront.core.research_output',
 ]
@@ -194,4 +194,4 @@ VERSION = coldfront.__version__
 try:
     SETTINGS_EXPORT = SETTINGS_EXPORT + LOCAL_SETTINGS_EXPORT
 except NameError:
-    SETTINGS_EXPORT = SETTINGS_EXPORT 
+    SETTINGS_EXPORT = SETTINGS_EXPORT

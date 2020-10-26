@@ -25,7 +25,7 @@ from coldfront.core.allocation.models import (Allocation,
                                               AllocationUserStatusChoice)
 from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user)
-from coldfront.core.grant.models import Grant
+# from coldfront.core.grant.models import Grant
 from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectAddUsersToAllocationForm,
                                           ProjectRemoveUserForm,
@@ -124,8 +124,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             project=self.object, status='Active').order_by('-year')
         context['research_outputs'] = ResearchOutput.objects.filter(
             project=self.object).order_by('-created')
-        context['grants'] = Grant.objects.filter(
-            project=self.object, status__name__in=['Active', 'Pending'])
+        # context['grants'] = Grant.objects.filter(project=self.object, status__name__in=['Active', 'Pending'])
         context['allocations'] = allocations
         context['project_users'] = project_users
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
