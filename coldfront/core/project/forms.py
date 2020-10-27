@@ -58,14 +58,14 @@ class ProjectAddUsersToAllocationForm(forms.Form):
         # print(type(allocation_choices)) list
         # print(type(allocation_choices[1])) tuple
         for allocation in allocation_query_set:
-            allocation_obj = ()
+            allocation_obj = []
             # slurm_account_name
             if(allocation.get_attribute("slurm_account_name")):
                 print(allocation.get_attribute("slurm_account_name"))
-                allocation_obj = allocation_obj + (allocation.get_attribute("slurm_account_name"),)
+                allocation_obj.append(str(allocation.get_attribute("slurm_account_name")))
             else:
                 with_grp_filter = [x for x in allocation.get_attribute_list("freeipa_group") if x.startswith("grp-")] 
-                allocation_obj = allocation_obj + (with_grp_filter,)
+                allocation_obj.append(str(with_grp_filter).strip("[]").replace("'", ""))
             allocation_obj = (allocation.id, "%s (%s) %s %s" %(allocation.get_parent_resource.name,allocation.get_parent_resource.resource_type.name,
                                                               allocation.description if allocation.description else '', allocation_obj))
             
