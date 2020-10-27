@@ -50,32 +50,13 @@ class ProjectAddUsersToAllocationForm(forms.Form):
 
         allocation_query_set = project_obj.allocation_set.filter(
             status__name__in=['Active', 'New', 'Renewal Requested', ], resources__is_allocatable=True, is_locked=False)
-        allocation_choices = [(allocation.id, "%s (%s) %s" % (allocation.get_parent_resource.name, allocation.get_parent_resource.resource_type.name,
-                                                              allocation.description if allocation.description else '')) for allocation in allocation_query_set]
+        allocation_choices = [(allocation.id, "%s (%s) %s %s" % (allocation.get_parent_resource.name, allocation.get_parent_resource.resource_type.name,
+                                                              allocation.description if allocation.description else '',allocation.get_attribute("slurm_account_name") if allocation.get_attribute("slurm_account_name") else [item for item in allocation.get_attribute_list("freeipa_group") if item.startswith('grp-')])) for allocation in allocation_query_set]
         allocation_choices.insert(0, ('__select_all__', 'Select All'))
         print(allocation_choices)
-        allocation_choices_2 = []
-        # print(type(allocation_choices)) list
-        # print(type(allocation_choices[1])) tuple
-        for allocation in allocation_query_set:
-            allocation_obj = []
-            # slurm_account_name
-            if(allocation.get_attribute("slurm_account_name")):
-                print(allocation.get_attribute("slurm_account_name"))
-                allocation_obj.append(str(allocation.get_attribute("slurm_account_name")))
-            else:
-                with_grp_filter = [x for x in allocation.get_attribute_list("freeipa_group") if x.startswith("grp-")] 
-                allocation_obj.append(str(with_grp_filter).strip("[]").replace("'", ""))
-            allocation_obj = (allocation.id, "%s (%s) %s %s" %(allocation.get_parent_resource.name,allocation.get_parent_resource.resource_type.name,
-                                                              allocation.description if allocation.description else '', allocation_obj))
-            
-            allocation_choices_2.append(allocation_obj)
-        
-        allocation_choices_2.insert(0, ('__select_all__', 'Select All', ""))
-        print(allocation_choices_2)
 
         if allocation_query_set:
-            self.fields['allocation'].choices = allocation_choices_2
+            self.fields['allocation'].choices = allocation_choices
             self.fields['allocation'].help_text = '<br/>Select allocations to add selected users to.'
         else:
             self.fields['allocation'].widget = forms.HiddenInput()
