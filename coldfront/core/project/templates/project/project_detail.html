@@ -170,7 +170,7 @@ Project Detail
             <tr>
               <th scope="col">Resource Name</th>
               <th scope="col">Resource Type</th>
-              <th scope="col">Information</th>
+              <th scope="col">Description</th>
               <th scope="col">Status</th>
               <th scope="col">End Date</th>
               <th scope="col" class="nosort">Actions</th>
@@ -181,7 +181,11 @@ Project Detail
             <tr>
               <td>{{ allocation.get_parent_resource.name }}</td>
               <td>{{ allocation.get_parent_resource.resource_type.name }}</td>
+              {% if allocation.description != None %}
+              <td class="text-nowrap">{{allocation.description}}</td>
+              {% else %}
               <td class="text-nowrap">{{allocation.get_information}}</td>
+              {% endif %}
               {% if allocation.status.name == 'Active' %}
                 <td class="text-success">{{ allocation.status.name }}</td>
               {% elif  allocation.status.name == 'Expired' or allocation.status.name == 'Denied' %}
