@@ -14,6 +14,7 @@ django-sslserver==0.20
 django-su==0.8.0
 djangorestframework==3.11.1
 doi2bib==0.3.0
+drf-nested-routers==0.91
 drf-yasg==1.17.1
 factory-boy==2.12.0
 Faker==3.0.0
