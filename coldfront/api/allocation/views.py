@@ -93,7 +93,7 @@ class HistoricalAllocationAttributeViewSet(mixins.ListModelMixin,
         if allocation_pk:
             allocation_attributes = allocation_attributes.filter(
                 allocation=allocation_pk)
-        return allocation_attributes
+        return allocation_attributes.order_by("-history_date")
 
 
 class HistoricalAllocationUserAttributeViewSet(mixins.ListModelMixin,
@@ -111,4 +111,4 @@ class HistoricalAllocationUserAttributeViewSet(mixins.ListModelMixin,
         if allocation_user_pk:
             allocation_user_attributes = allocation_user_attributes.filter(
                 allocation_user=allocation_user_pk)
-        return allocation_user_attributes
+        return allocation_user_attributes.order_by("-history_date")
