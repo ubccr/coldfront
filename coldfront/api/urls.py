@@ -18,7 +18,7 @@ from rest_framework_nested.routers import NestedSimpleRouter
 
 
 router = DefaultRouter()
-router.register(r'accounts', ProjectViewSet, basename='accounts')
+router.register(r'projects', ProjectViewSet, basename='projects')
 
 router.register(r'allocations', AllocationViewSet, basename='allocations')
 allocations_router = NestedSimpleRouter(
