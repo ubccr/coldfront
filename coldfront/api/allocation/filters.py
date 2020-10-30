@@ -1,9 +1,24 @@
 from coldfront.core.allocation.models import Allocation
+from coldfront.core.allocation.models import AllocationAttribute
+from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationUser
+from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
 from django.contrib.auth.models import User
 import django_filters
+
+
+class AllocationAttributeFilter(django_filters.FilterSet):
+    """A FilterSet for the AllocationAttribute model."""
+
+    type = django_filters.filters.ModelMultipleChoiceFilter(
+        field_name='allocation_attribute_type__name', to_field_name='name',
+        queryset=AllocationAttributeType.objects.all())
+
+    class Meta:
+        model = AllocationAttribute
+        fields = ('type',)
 
 
 class AllocationFilter(django_filters.FilterSet):
@@ -20,6 +35,18 @@ class AllocationFilter(django_filters.FilterSet):
     class Meta:
         model = Allocation
         fields = ('project', 'resources',)
+
+
+class AllocationUserAttributeFilter(django_filters.FilterSet):
+    """A FilterSet for the AllocationUserAttribute model."""
+
+    type = django_filters.filters.ModelMultipleChoiceFilter(
+        field_name='allocation_attribute_type__name', to_field_name='name',
+        queryset=AllocationAttributeType.objects.all())
+
+    class Meta:
+        model = AllocationUserAttribute
+        fields = ('type',)
 
 
 class AllocationUserFilter(django_filters.FilterSet):

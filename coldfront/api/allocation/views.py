@@ -1,4 +1,6 @@
+from coldfront.api.allocation.filters import AllocationAttributeFilter
 from coldfront.api.allocation.filters import AllocationFilter
+from coldfront.api.allocation.filters import AllocationUserAttributeFilter
 from coldfront.api.allocation.filters import AllocationUserFilter
 from coldfront.api.allocation.serializers import AllocationAttributeSerializer
 from coldfront.api.allocation.serializers import AllocationSerializer
@@ -22,6 +24,7 @@ class AllocationAttributeViewSet(mixins.ListModelMixin,
                                  viewsets.GenericViewSet):
     """A ViewSet for the AllocationAttribute model."""
 
+    filterset_class = AllocationAttributeFilter
     permission_classes = [IsAdminUserOrReadOnly]
     serializer_class = AllocationAttributeSerializer
 
@@ -51,6 +54,7 @@ class AllocationUserAttributeViewSet(mixins.ListModelMixin,
                                      viewsets.GenericViewSet):
     """A ViewSet for the AllocationUserAttribute model."""
 
+    filterset_class = AllocationUserAttributeFilter
     permission_classes = [IsAdminUserOrReadOnly]
     serializer_class = AllocationUserAttributeSerializer
 

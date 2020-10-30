@@ -45,15 +45,12 @@ class AllocationSerializer(serializers.ModelSerializer):
     project = serializers.SlugRelatedField(
         slug_field='name', queryset=Project.objects.all())
     resources = ResourceSerializer(many=True)
-    attributes = AllocationAttributeSerializer(
-        source='allocationattribute_set', many=True)
 
     class Meta:
         model = Allocation
         fields = (
             'id', 'project', 'resources', 'status', 'quantity', 'start_date',
-            'end_date', 'justification', 'description', 'is_locked',
-            'attributes',)
+            'end_date', 'justification', 'description', 'is_locked',)
 
 
 class AllocationUserAttributeUsageSerializer(serializers.ModelSerializer):
@@ -89,13 +86,11 @@ class AllocationUserSerializer(serializers.ModelSerializer):
     user = serializers.SlugRelatedField(
         slug_field='username', queryset=User.objects.all())
     project = serializers.CharField(source='allocation.project.name')
-    attributes = AllocationUserAttributeSerializer(
-        source='allocationuserattribute_set', many=True)
 
     class Meta:
         model = AllocationUser
         fields = (
-            'id', 'allocation', 'user', 'project', 'status', 'attributes',)
+            'id', 'allocation', 'user', 'project', 'status',)
 
 
 class HistoricalAllocationAttributeSerializer(serializers.ModelSerializer):
