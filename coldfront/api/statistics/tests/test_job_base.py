@@ -30,7 +30,7 @@ class TestJobBase(TestAPIBase):
         """Set up test data."""
         super().setUp()
 
-        # Create a user and a PI.
+        # Create a User and a PI.
         self.user = User.objects.create(
             username='user0', email='user0@nonexistent.com')
         self.user_profile = UserProfile.objects.get(user=self.user)
@@ -46,15 +46,16 @@ class TestJobBase(TestAPIBase):
         project_status = ProjectStatusChoice.objects.get(name='Active')
         self.project = Project.objects.create(
             name='test_project', pi=self.pi, status=project_status)
-        status = ProjectUserStatusChoice.objects.get(name='Active')
+        project_user_status = ProjectUserStatusChoice.objects.get(
+            name='Active')
         user_role = ProjectUserRoleChoice.objects.get(name='User')
         self.project_user = ProjectUser.objects.create(
             user=self.user, project=self.project, role=user_role,
-            status=status)
+            status=project_user_status)
         manager_role = ProjectUserRoleChoice.objects.get(name='Manager')
         ProjectUser.objects.create(
             user=self.pi, project=self.project, role=manager_role,
-            status=status)
+            status=project_user_status)
 
         # Create a compute allocation for the Project.
         allocation_objects = create_project_allocation(
