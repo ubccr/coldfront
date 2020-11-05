@@ -3,6 +3,7 @@ Default Django settings for ColdFront project.
 """
 import os
 import sys
+from decimal import Decimal
 
 from django.contrib.messages import constants as messages
 
@@ -48,6 +49,15 @@ INSTALLED_APPS += [
     'coldfront.core.grant',
     'coldfront.core.publication',
     'coldfront.core.research_output',
+    'coldfront.core.statistics',
+]
+
+# REST API
+INSTALLED_APPS += [
+    'rest_framework',
+    'django_filters',
+    'drf_yasg',
+    'coldfront.api',
 ]
 
 #------------------------------------------------------------------------------
@@ -152,6 +162,47 @@ SU_LOGOUT_REDIRECT_URL = "/admin/auth/user/"
 
 
 SETTINGS_EXPORT = []
+
+#------------------------------------------------------------------------------
+# Data import settings
+#------------------------------------------------------------------------------
+
+# The credentials needed to read from Google Sheets.
+GOOGLE_OAUTH2_KEY_FILE = ""
+
+#------------------------------------------------------------------------------
+# REST API settings
+#------------------------------------------------------------------------------
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'coldfront.api.user.authentication.ExpiringTokenAuthentication',
+    ],
+    'DEFAULT_PAGINATION_CLASS': (
+        'rest_framework.pagination.PageNumberPagination'),
+    'PAGE_SIZE': 100,
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',),
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
+
+DECIMAL_MAX_DIGITS = 11
+DECIMAL_MAX_PLACES = 2
+ALLOCATION_MIN = Decimal('0.00')
+ALLOCATION_MAX = Decimal('100000000.00')
+
+# The number of hours for which a newly created authentication token will be
+# valid.
+TOKEN_EXPIRATION_HOURS = 24
+
+# For accounting purposes, the year begins on June 1st and ends on May 31st.
+ALLOCATION_YEAR_START_MONTH = 6
+ALLOCATION_YEAR_START_DAY = 1
+
+# Whether or not to allow all jobs, bypassing all checks.
+ALLOW_ALL_JOBS = False
 
 #------------------------------------------------------------------------------
 # Local settings overrides (see local_settings.py.sample)
