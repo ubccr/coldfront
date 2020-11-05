@@ -3,6 +3,8 @@ from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationAttributeUsage
+from coldfront.core.allocation.models import AllocationStatusChoice
+from coldfront.core.allocation.models import AllocationUserStatusChoice
 from coldfront.core.allocation.models import AllocationUser
 from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.models import AllocationUserAttributeUsage
@@ -16,11 +18,9 @@ from rest_framework import serializers
 class AllocationAttributeUsageSerializer(serializers.ModelSerializer):
     """A serializer for the AllocationAttributeUsage model."""
 
-    id = serializers.ReadOnlyField()
-
     class Meta:
         model = AllocationAttributeUsage
-        fields = '__all__'
+        fields = ('allocation_attribute', 'value',)
 
 
 class AllocationAttributeSerializer(serializers.ModelSerializer):
@@ -45,6 +45,8 @@ class AllocationSerializer(serializers.ModelSerializer):
     project = serializers.SlugRelatedField(
         slug_field='name', queryset=Project.objects.all())
     resources = ResourceSerializer(many=True)
+    status = serializers.SlugRelatedField(
+        slug_field='name', queryset=AllocationStatusChoice.objects.all())
 
     class Meta:
         model = Allocation
@@ -56,11 +58,9 @@ class AllocationSerializer(serializers.ModelSerializer):
 class AllocationUserAttributeUsageSerializer(serializers.ModelSerializer):
     """A serializer for the AllocationUserAttributeUsage model."""
 
-    id = serializers.ReadOnlyField()
-
     class Meta:
         model = AllocationUserAttributeUsage
-        fields = '__all__'
+        fields = ('allocation_user_attribute', 'value',)
 
 
 class AllocationUserAttributeSerializer(serializers.ModelSerializer):
@@ -86,6 +86,8 @@ class AllocationUserSerializer(serializers.ModelSerializer):
     user = serializers.SlugRelatedField(
         slug_field='username', queryset=User.objects.all())
     project = serializers.CharField(source='allocation.project.name')
+    status = serializers.SlugRelatedField(
+        slug_field='name', queryset=AllocationUserStatusChoice.objects.all())
 
     class Meta:
         model = AllocationUser
@@ -97,17 +99,28 @@ class HistoricalAllocationAttributeSerializer(serializers.ModelSerializer):
     """A serializer for the HistoricalAllocationAttribute model."""
 
     id = serializers.ReadOnlyField()
+    allocation_attribute_type = serializers.SlugRelatedField(
+        slug_field='name', queryset=AllocationAttributeType.objects.all())
 
     class Meta:
         model = HistoricalAllocationAttribute
-        fields = '__all__'
+        fields = (
+            'history_id', 'id', 'value', 'history_date',
+            'history_change_reason', 'history_type',
+            'allocation_attribute_type', 'allocation', 'history_user',)
 
 
 class HistoricalAllocationUserAttributeSerializer(serializers.ModelSerializer):
     """A serializer for the HistoricalAllocationUserAttribute model."""
 
     id = serializers.ReadOnlyField()
+    allocation_attribute_type = serializers.SlugRelatedField(
+        slug_field='name', queryset=AllocationAttributeType.objects.all())
 
     class Meta:
         model = HistoricalAllocationUserAttribute
-        fields = '__all__'
+        fields = (
+            'history_id', 'id', 'value', 'history_date',
+            'history_change_reason', 'history_type',
+            'allocation_attribute_type', 'allocation', 'allocation_user',
+            'history_user',)

@@ -34,7 +34,7 @@ class AllocationAttributeViewSet(mixins.ListModelMixin,
         if allocation_pk:
             allocation_attributes = allocation_attributes.filter(
                 allocation=allocation_pk)
-        return allocation_attributes
+        return allocation_attributes.order_by('id')
 
 
 class AllocationViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin,
@@ -46,7 +46,7 @@ class AllocationViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin,
     serializer_class = AllocationSerializer
 
     def get_queryset(self):
-        return Allocation.objects.all()
+        return Allocation.objects.order_by('id')
 
 
 class AllocationUserAttributeViewSet(mixins.ListModelMixin,
@@ -64,7 +64,7 @@ class AllocationUserAttributeViewSet(mixins.ListModelMixin,
         if allocation_user_pk:
             allocation_user_attributes = allocation_user_attributes.filter(
                 allocation_user=allocation_user_pk)
-        return allocation_user_attributes
+        return allocation_user_attributes.order_by('id')
 
 
 class AllocationUserViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin,
@@ -76,7 +76,7 @@ class AllocationUserViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin,
     serializer_class = AllocationUserSerializer
 
     def get_queryset(self):
-        return AllocationUser.objects.all()
+        return AllocationUser.objects.order_by('id')
 
 
 class HistoricalAllocationAttributeViewSet(mixins.ListModelMixin,
