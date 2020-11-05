@@ -228,6 +228,9 @@ class GrantDownloadView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         rows = []
         grants = Grant.objects.prefetch_related('project', 'project__pi').all().order_by('-total_amount_awarded')
+        print(Grant.objects.prefetch_related('project', 'project__pi').filter())
+        
+
         for grant in grants:
             row = [
                 grant.title,

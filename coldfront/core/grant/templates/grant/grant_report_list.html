@@ -14,7 +14,7 @@ Grants Report
 <div class="card">
   <div class="card-header">
     <h4 class="d-inline"><i class="fas fa-trophy" aria-hidden="true"></i> Grants</h4>
-    <a class="btn btn-success float-right" href="{% url 'grant-download' %}" role="button"><i class="fas fa-download" aria-hidden="true"></i> Export to CSV</a>
+    <a class="btn btn-success float-right" id='Export_BTN' href="{% url 'grant-download'%}" role="button"><i class="fas fa-download" aria-hidden="true"></i> Export to CSV</a>
   </div>
   <div class="card-body">
     {% if grant_list %}
@@ -38,7 +38,7 @@ Grants Report
           <tbody>
             {% for grant in grant_list %}
               <tr>
-                <td style="min-width: 400px">{{ grant.title }}</td>
+                <td style="min-width: 400px" id='grant_id'>{{ grant.title }}</td>
                 <td class="text-nowrap"><a href="{% url 'project-detail' grant.project.pk %}">{{ grant.project.pi.first_name }} {{ grant.project.pi.last_name }}</a></td>
                 <td class="text-nowrap">{{ grant.role }}</td>
                 <td class="text-nowrap">{{ grant.grant_pi }}</td>
@@ -72,6 +72,44 @@ Grants Report
       "bSortClasses": false,
       "order": [[ 4, "desc" ]]
     });
+    $('#grants-table').on('search.dt', function() {
+    var value = $('.dataTables_filter input').val();
+    console.log(value); // <-- the value
+    var table=document.getElementsByTagName('table');
+    var oTable = document.getElementById('grants-table');
+
+    //gets rows of table
+    var rowLength = oTable.rows.length;
+    var grant_title = [];
+    //loops through rows    
+    for (i = 1; i < rowLength; i++){
+
+      //gets cells of current row
+      var oCells = oTable.rows.item(i).cells;
+
+      //gets amount of cells of current row
+      var cellLength = oCells.length;
+
+      //loops through each cell in current row
+      for(var j = 0; j < cellLength; j++){
+          /* get your cell info here */
+          var cellVal = oCells.item(0).innerHTML; 
+          console.log(cellVal);
+          grant_title.push(cellVal);
+      }
+    }
+
+    var Export_BTN= document.getElementById('Export_BTN');
+}); 
   });
+
+  function setCook(name, value) {
+    var cookie = [
+        name,
+        '=',
+        JSON.stringify(value)
+    ].join('');
+    document.cookie = cookie;
+}
 </script>
 {% endblock %}
