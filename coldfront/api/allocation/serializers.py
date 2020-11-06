@@ -26,7 +26,6 @@ class AllocationAttributeUsageSerializer(serializers.ModelSerializer):
 class AllocationAttributeSerializer(serializers.ModelSerializer):
     """A serializer for the AllocationAttribute model."""
 
-    id = serializers.ReadOnlyField()
     allocation_attribute_type = serializers.SlugRelatedField(
         slug_field='name', queryset=AllocationAttributeType.objects.all())
     usage = AllocationAttributeUsageSerializer(
@@ -41,7 +40,6 @@ class AllocationAttributeSerializer(serializers.ModelSerializer):
 class AllocationSerializer(serializers.ModelSerializer):
     """A serializer for the Allocation model."""
 
-    id = serializers.ReadOnlyField()
     project = serializers.SlugRelatedField(
         slug_field='name', queryset=Project.objects.all())
     resources = ResourceSerializer(many=True)
@@ -66,7 +64,6 @@ class AllocationUserAttributeUsageSerializer(serializers.ModelSerializer):
 class AllocationUserAttributeSerializer(serializers.ModelSerializer):
     """A serializer for the AllocationUserAttribute model."""
 
-    id = serializers.ReadOnlyField()
     allocation_attribute_type = serializers.SlugRelatedField(
         slug_field='name', queryset=AllocationAttributeType.objects.all())
     usage = AllocationUserAttributeUsageSerializer(
@@ -82,7 +79,6 @@ class AllocationUserAttributeSerializer(serializers.ModelSerializer):
 class AllocationUserSerializer(serializers.ModelSerializer):
     """A serializer for the AllocationUser model."""
 
-    id = serializers.ReadOnlyField()
     user = serializers.SlugRelatedField(
         slug_field='username', queryset=User.objects.all())
     project = serializers.CharField(source='allocation.project.name')
@@ -98,7 +94,6 @@ class AllocationUserSerializer(serializers.ModelSerializer):
 class HistoricalAllocationAttributeSerializer(serializers.ModelSerializer):
     """A serializer for the HistoricalAllocationAttribute model."""
 
-    id = serializers.ReadOnlyField()
     allocation_attribute_type = serializers.SlugRelatedField(
         slug_field='name', queryset=AllocationAttributeType.objects.all())
 
@@ -113,7 +108,6 @@ class HistoricalAllocationAttributeSerializer(serializers.ModelSerializer):
 class HistoricalAllocationUserAttributeSerializer(serializers.ModelSerializer):
     """A serializer for the HistoricalAllocationUserAttribute model."""
 
-    id = serializers.ReadOnlyField()
     allocation_attribute_type = serializers.SlugRelatedField(
         slug_field='name', queryset=AllocationAttributeType.objects.all())
 
