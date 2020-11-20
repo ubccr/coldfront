@@ -19,7 +19,7 @@ Allocation Review New and Pending Requests
         <th scope="col">#</th>
         <th scope="col">Date Requested/<br>Last Modified</th>
         <th scope="col">Project Title</th>
-        <th scope="col">PI</th>
+        <th scope="col">PIs</th>
         <th scope="col">Resource</th>
         {% if PROJECT_ENABLE_PROJECT_REVIEW %}
         <th scope="col" class="text-nowrap">Project Review Status</th>
@@ -35,8 +35,11 @@ Allocation Review New and Pending Requests
         <td>{{ allocation.modified|date:"M. d, Y" }}</td>
         <td><a href="{% url 'project-detail' allocation.project.pk %}">{{allocation.project.title|truncatechars:50}}</a>
         </td>
-        <td>{{allocation.project.pi.first_name}} {{allocation.project.pi.last_name}}
-          ({{allocation.project.pi.username}})</td>
+        <td>
+          {% for pi in allocation.project.pis %}
+            {{pi.first_name}} {{pi.last_name}} ({{pi.username}})<br>
+          {% endfor %}
+        </td>
         <td>{{allocation.get_parent_resource}}</td>
         {% if PROJECT_ENABLE_PROJECT_REVIEW %}
         <td class="text-center">{{allocation.project|convert_status_to_icon}}</td>

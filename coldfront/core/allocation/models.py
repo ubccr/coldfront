@@ -172,7 +172,7 @@ class Allocation(TimeStampedModel):
         return [a.value for a in attr]
 
     def __str__(self):
-        return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
+        return "%s (%s)" % (self.get_parent_resource.name, self.project.name)
 
 
 class AllocationAdminNote(TimeStampedModel):

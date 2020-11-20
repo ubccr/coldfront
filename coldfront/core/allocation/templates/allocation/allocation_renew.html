@@ -59,12 +59,14 @@ Renew Allocation
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>{{ allocation.project.pi.username }}</td>
-              <td>{{ allocation.project.pi.first_name }}</td>
-              <td>{{ allocation.project.pi.last_name }}</td>
-              <td>{{ allocation.project.pi.email }}</td>
-            </tr>
+            {% for pi in allocation.project.pis %}
+              <tr>
+                <td>{{ pi.username }}</td>
+                <td>{{ pi.first_name }}</td>
+                <td>{{ pi.last_name }}</td>
+                <td>{{ pi.email }}</td>
+              </tr>
+            {% endfor %}
           </tbody>
         </table>
       </div>
