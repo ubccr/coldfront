@@ -25,4 +25,5 @@ class Command(BaseCommand):
 
             extra_users = list(set(users_in_project)-set(users_in_allocation))
             if extra_users:
-                print(project.id, project.title, project.pi, extra_users)
+                pi_usernames = ', '.join([pi.username for pi in project.pis()])
+                print(project.id, project.title, pi_usernames, extra_users)
