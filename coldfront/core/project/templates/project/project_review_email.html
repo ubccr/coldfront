@@ -26,8 +26,12 @@ Email User
           <td><a href="{% url 'project-detail' project_review.project.pk %}">{{ project_review.project }}</a></td>
         </tr>
         <tr>
-          <th scope="row" class="text-nowrap">PI:</th>
-          <td>{{project_review.project.pi.first_name}} {{project_review.project.pi.last_name}} ({{project_review.project.pi.username}})</td>
+          <th scope="row" class="text-nowrap">PIs:</th>
+          <td>
+            {% for pi in project.pis %}
+              {{ pi.first_name }} {{ pi.last_name }} ({{ pi.username }})<br>
+            {% endfor %}
+          </td>
         </tr>
         <tr>
           <th scope="row" class="text-nowrap">Reason for not Updating Project</th>

@@ -29,7 +29,11 @@ Project Review List
       <tr>
         <td><a target="_blank" href="{% url 'project-detail' project_review.project.pk %}">{{project_review.project.title|truncatechars:50}}</a></td>
         <td >{{ project_review.created|date:"M. d, Y" }}</td>        
-        <td>{{project_review.project.pi.first_name}} {{project_review.project.pi.last_name}} ({{project_review.project.pi.username}})</td>
+        <td>
+          {% for pi in project.pis %}
+            {{ pi.first_name}} {{ pi.last_name}} ({{ pi.username }})<br>
+          {% endfor %}
+        </td>
         <td >{{ project_review.project.latest_grant.modified|date:"M. d, Y"|default:"No grants" }}</td>
         <td >{{ project_review.project.latest_publication.created|date:"M. d, Y"|default:"No publications" }}</td>
         <td >{{ project_review.reason_for_not_updating_project}}</td>

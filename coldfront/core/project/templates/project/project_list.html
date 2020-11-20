@@ -47,9 +47,7 @@
           <a href="?order_by=id&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
         </th>
         <th scope="col" class="text-nowrap">
-          PI
-          <a href="?order_by=pi__username&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-          <a href="?order_by=pi__username&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+          PIs
         </th>
         <th scope="col">Title</th>
         <th scope="col" class="text-nowrap">
@@ -68,7 +66,11 @@
       {% for project in project_list %}
       <tr>
         <td><a href="/project/{{project.id}}/">{{ project.id }}</a></td>
-        <td>{{ project.pi.username }}</td>
+        <td>
+          {% for pi in project.pis %}
+            {{ pi.username }}<br>
+          {% endfor %}
+        </td>
         <td style="text-align: justify; text-justify: inter-word;">{{ project.title }}</td>
         <td>{{ project.field_of_science.description }}</td>
         <td>{{ project.status.name }}</td>

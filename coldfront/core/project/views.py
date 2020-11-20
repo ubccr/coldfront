@@ -86,7 +86,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         elif self.object.projectuser_set.filter(user=self.request.user).exists():
             project_user = self.object.projectuser_set.get(
                 user=self.request.user)
-            if project_user.role.name == 'Manager':
+            if project_user.role.name in ('Principal Investigator', 'Manager'):
                 context['is_allowed_to_update_project'] = True
             else:
                 context['is_allowed_to_update_project'] = False
@@ -136,7 +136,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
 
     model = Project
     template_name = 'project/project_list.html'
-    prefetch_related = ['pi', 'status', 'field_of_science', ]
+    prefetch_related = ['status', 'field_of_science', ]
     context_object_name = 'project_list'
     paginate_by = 25
 
@@ -158,10 +158,10 @@ class ProjectListView(LoginRequiredMixin, ListView):
         if project_search_form.is_valid():
             data = project_search_form.cleaned_data
             if data.get('show_all_projects') and (self.request.user.is_superuser or self.request.user.has_perm('project.can_view_all_projects')):
-                projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
+                projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
                     status__name__in=['New', 'Active', ]).order_by(order_by)
             else:
-                projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
+                projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
                     Q(status__name__in=['New', 'Active', ]) &
                     Q(projectuser__user=self.request.user) &
                     Q(projectuser__status__name='Active')
@@ -169,15 +169,21 @@ class ProjectListView(LoginRequiredMixin, ListView):
 
             # Last Name
             if data.get('last_name'):
-                projects = projects.filter(
-                    pi__last_name__icontains=data.get('last_name'))
+                pi_project_users = ProjectUser.objects.filter(
+                    project__in=projects,
+                    role__name='Principal Investigator',
+                    user__last_name__icontains=data.get('last_name'))
+                project_ids = pi_project_users.values_list(
+                    'project_id', flat=True)
+                projects = projects.filter(id__in=project_ids)
 
             # Username
             if data.get('username'):
                 projects = projects.filter(
-                    Q(pi__username__icontains=data.get('username')) |
-                    Q(projectuser__user__username__icontains=data.get('username')) &
-                    Q(projectuser__status__name='Active')
+                    Q(projectuser__user__username__icontains=data.get(
+                        'username')) &
+                    (Q(projectuser__role__name='Principal Investigator') |
+                     Q(projectuser__status__name='Active'))
                 )
 
             # Field of Science
@@ -186,7 +192,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
                     field_of_science__description__icontains=data.get('field_of_science'))
 
         else:
-            projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
+            projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
                 Q(status__name__in=['New', 'Active', ]) &
                 Q(projectuser__user=self.request.user) &
                 Q(projectuser__status__name='Active')
@@ -250,7 +256,7 @@ class ProjectArchivedListView(LoginRequiredMixin, ListView):
 
     model = Project
     template_name = 'project/project_archived_list.html'
-    prefetch_related = ['pi', 'status', 'field_of_science', ]
+    prefetch_related = ['status', 'field_of_science', ]
     context_object_name = 'project_list'
     paginate_by = 10
 
@@ -272,11 +278,11 @@ class ProjectArchivedListView(LoginRequiredMixin, ListView):
         if project_search_form.is_valid():
             data = project_search_form.cleaned_data
             if data.get('show_all_projects') and (self.request.user.is_superuser or self.request.user.has_perm('project.can_view_all_projects')):
-                projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
+                projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
                     status__name__in=['Archived', ]).order_by(order_by)
             else:
 
-                projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
+                projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
                     Q(status__name__in=['Archived', ]) &
                     Q(projectuser__user=self.request.user) &
                     Q(projectuser__status__name='Active')
@@ -284,13 +290,19 @@ class ProjectArchivedListView(LoginRequiredMixin, ListView):
 
             # Last Name
             if data.get('last_name'):
-                projects = projects.filter(
-                    pi__last_name__icontains=data.get('last_name'))
+                pi_project_users = ProjectUser.objects.filter(
+                    project__in=projects,
+                    role__name='Principal Investigator',
+                    user__last_name__icontains=data.get('last_name'))
+                project_ids = pi_project_users.values_list(
+                    'project_id', flat=True)
+                projects = projects.filter(id__in=project_ids)
 
             # Username
             if data.get('username'):
                 projects = projects.filter(
-                    pi__username__icontains=data.get('username'))
+                    projectuser__user__username__icontains=data.get('username'),
+                    projectuser__role__name='Principal Investigator')
 
             # Field of Science
             if data.get('field_of_science'):
@@ -298,7 +310,7 @@ class ProjectArchivedListView(LoginRequiredMixin, ListView):
                     field_of_science__description__icontains=data.get('field_of_science'))
 
         else:
-            projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
+            projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
                 Q(status__name__in=['Archived', ]) &
                 Q(projectuser__user=self.request.user) &
                 Q(projectuser__status__name='Active')
@@ -369,10 +381,10 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
 
-        if project_obj.pi == self.request.user:
-            return True
-
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if project_obj.projectuser_set.filter(
+                user=self.request.user,
+                role__name__in=['Manager', 'Principal Investigator'],
+                status__name='Active').exists():
             return True
 
     def get_context_data(self, **kwargs):
@@ -416,7 +428,6 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
     def form_valid(self, form):
         project_obj = form.save(commit=False)
-        form.instance.pi = self.request.user
         form.instance.status = ProjectStatusChoice.objects.get(name='New')
         project_obj.save()
         self.object = project_obj
@@ -447,10 +458,10 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
 
         project_obj = self.get_object()
 
-        if project_obj.pi == self.request.user:
-            return True
-
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if project_obj.projectuser_set.filter(
+                user=self.request.user,
+                role__name__in=['Manager', 'Principal Investigator'],
+                status__name='Active').exists():
             return True
 
     def dispatch(self, request, *args, **kwargs):
@@ -475,10 +486,10 @@ class ProjectAddUsersSearchView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
 
-        if project_obj.pi == self.request.user:
-            return True
-
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if project_obj.projectuser_set.filter(
+                user=self.request.user,
+                role__name__in=['Manager', 'Principal Investigator'],
+                status__name='Active').exists():
             return True
 
     def dispatch(self, request, *args, **kwargs):
@@ -508,10 +519,10 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
 
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
 
-        if project_obj.pi == self.request.user:
-            return True
-
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if project_obj.projectuser_set.filter(
+                user=self.request.user,
+                role__name__in=['Manager', 'Principal Investigator'],
+                status__name='Active').exists():
             return True
 
     def dispatch(self, request, *args, **kwargs):
@@ -581,10 +592,10 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
 
-        if project_obj.pi == self.request.user:
-            return True
-
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if project_obj.projectuser_set.filter(
+                user=self.request.user,
+                role__name__in=['Manager', 'Principal Investigator'],
+                status__name='Active').exists():
             return True
 
     def dispatch(self, request, *args, **kwargs):
@@ -694,10 +705,10 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
 
-        if project_obj.pi == self.request.user:
-            return True
-
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if project_obj.projectuser_set.filter(
+                user=self.request.user,
+                role__name__in=['Manager', 'Principal Investigator'],
+                status__name='Active').exists():
             return True
 
     def dispatch(self, request, *args, **kwargs):
@@ -718,7 +729,10 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
              'email': ele.user.email,
              'role': ele.role}
 
-            for ele in project_obj.projectuser_set.filter(status__name='Active').order_by('user__username') if ele.user != self.request.user and ele.user != project_obj.pi
+            for ele in project_obj.projectuser_set.filter(
+                status__name='Active').exclude(
+                role__name='Principal Investigator').order_by(
+                'user__username') if ele.user != self.request.user
         ]
 
         return users_to_remove
@@ -766,7 +780,9 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     user_obj = User.objects.get(
                         username=user_form_data.get('username'))
 
-                    if project_obj.pi == user_obj:
+                    if project_obj.projectuser_set.filter(
+                            user=user_obj,
+                            role__name='Principal Investigator').exists():
                         continue
 
                     project_user_obj = project_obj.projectuser_set.get(
@@ -804,10 +820,10 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
 
-        if project_obj.pi == self.request.user:
-            return True
-
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if project_obj.projectuser_set.filter(
+                user=self.request.user,
+                role__name__in=['Manager', 'Principal Investigator'],
+                status__name='Active').exists():
             return True
 
     def get(self, request, *args, **kwargs):
@@ -841,7 +857,9 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             project_user_obj = project_obj.projectuser_set.get(
                 pk=project_user_pk)
 
-            if project_user_obj.user == project_user_obj.project.pi:
+            pi_role = ProjectUserRoleChoice.objects.get(
+                name='Principal Investigator')
+            if project_user_obj.role == pi_role:
                 messages.error(
                     request, 'PI role and email notification option cannot be changed.')
                 return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_user_pk}))
@@ -895,10 +913,10 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
 
-        if project_obj.pi == self.request.user:
-            return True
-
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if project_obj.projectuser_set.filter(
+                user=self.request.user,
+                role__name__in=['Manager', 'Principal Investigator'],
+                status__name='Active').exists():
             return True
 
         messages.error(
@@ -1063,7 +1081,8 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         project_review_obj = get_object_or_404(ProjectReview, pk=pk)
         form_data = form.cleaned_data
 
-        receiver_list = [project_review_obj.project.pi.email]
+        pi_users = project_review_obj.project.pis()
+        receiver_list = [pi_user.email for pi_user in pi_users]
         cc = form_data.get('cc').strip()
         if cc:
             cc = cc.split(',')
@@ -1078,11 +1097,12 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             cc
         )
 
-        messages.success(self.request, 'Email sent to {} {} ({})'.format(
-            project_review_obj.project.pi.first_name,
-            project_review_obj.project.pi.last_name,
-            project_review_obj.project.pi.username)
-        )
+        if receiver_list:
+            message = 'Email sent to:'
+            for i, pi in enumerate(pi_users):
+                message = message + (
+                    f'\n{pi.first_name} {pi.last_name} ({pi.username})')
+            messages.success(self.request, message)
         return super().form_valid(form)
 
     def get_success_url(self):
