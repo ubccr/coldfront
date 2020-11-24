@@ -216,7 +216,7 @@ class PublicationAddView(LoginRequiredMixin, UserPassesTestMixin, View):
         if formset.is_valid():
             for form in formset:
                 form_data = form.cleaned_data
-                re2 =  re.compile(r"[@_!#$%^&*()<>?/\|}{~:]=");
+                re2 =  re.compile(r"[@_!#$%^&*()<>?/\|}{~:]=")
                 if re2.match(str(form_data.get('title'))) == None:
                     messages.error(request, "This publication could not be added. If there are special characters or scientific formulas in the title, please add the publication manually.")
                     return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_pk}))
