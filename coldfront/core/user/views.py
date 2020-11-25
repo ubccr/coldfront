@@ -275,7 +275,7 @@ class UserListAllocations(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
 
 class CustomPasswordChangeView(PasswordChangeView):
 
-    template_name = 'user/password_change_form.html'
+    template_name = 'user/passwords/password_change_form.html'
     success_url = reverse_lazy('user-profile')
 
     def form_valid(self, form):
