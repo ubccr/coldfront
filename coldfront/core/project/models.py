@@ -29,6 +29,7 @@ class Project(TimeStampedModel):
 We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!
         '''
 
+    name = models.CharField(max_length=255, unique=True, blank=True, null=True)
     title = models.CharField(max_length=255,)
     pi = models.ForeignKey(User, on_delete=models.CASCADE,)
     description = models.TextField(
