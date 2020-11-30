@@ -13,12 +13,11 @@ from coldfront.core.allocation.models import (Allocation, AllocationAttribute,
                                               AllocationUser,
                                               AllocationUserStatusChoice)
 from coldfront.core.field_of_science.models import FieldOfScience
-from coldfront.core.grant.models import (Grant, GrantFundingAgency,
-                                         GrantStatusChoice)
+# from coldfront.core.grant.models import (Grant, GrantFundingAgency, GrantStatusChoice)
 from coldfront.core.project.models import (Project, ProjectStatusChoice,
                                            ProjectUser, ProjectUserRoleChoice,
                                            ProjectUserStatusChoice)
-from coldfront.core.publication.models import Publication, PublicationSource
+# from coldfront.core.publication.models import Publication, PublicationSource
 from coldfront.core.resource.models import (Resource, ResourceAttribute,
                                             ResourceAttributeType,
                                             ResourceType)
@@ -27,56 +26,56 @@ from coldfront.core.user.models import UserProfile
 base_dir = settings.BASE_DIR
 
 # first, last
-Users = ['Carl	Gray',  # PI#1
-         'Stephanie	Foster',  # PI#2
-         'Charles	Simmons',  # Director
-         'Andrea	Stewart',
-         'Alice	Rivera',
-         'Frank	Hernandez',
-         'Justin	James',
-         'Randy	Perry',
-         'Carol	Lee',
-         'Susan	Hughes',
-         'Jose	Martin',
-         'Joe	Roberts',
-         'Howard	Nelson',
-         'Patricia	Moore',
-         'Jessica	Alexander',
-         'Jesse	Russell',
-         'Shirley	Price',
-         'Julie	Phillips',
-         'Kathy	Jenkins',
-         'James	Hill',
-         'Tammy	Howard',
-         'Lisa	Coleman',
-         'Denise	Adams',
-         'Shawn	Williams',
-         'Ernest	Reed',
-         'Larry	Ramirez',
-         'Kathleen	Garcia',
-         'Jennifer	Jones',
-         'Irene	Anderson',
-         'Beverly	Mitchell',
-         'Peter	Patterson',
-         'Eugene	Griffin',
-         'Jimmy	Lewis',
-         'Margaret	Turner',
-         'Julia	Peterson',
-         'Amanda	Johnson',
-         'Christina	Morris',
-         'Cynthia	Carter',
-         'Wayne	Murphy',
-         'Ronald	Sanders',
-         'Lillian	Bell',
-         'Harold	Lopez',
-         'Roger	Wilson',
-         'Jane	Edwards',
-         'Billy	Perez',
-         'Jane	Butler',
-         'John	Smith',
-         'John	Long',
-         'Jane	Martinez',
-         'John	Cooper', ]
+Users = ['Carl  Gray',  # PI#1
+         'Stephanie     Foster',  # PI#2
+         'Charles       Simmons',  # Director
+         'Andrea        Stewart',
+         'Alice Rivera',
+         'Frank Hernandez',
+         'Justin        James',
+         'Randy Perry',
+         'Carol Lee',
+         'Susan Hughes',
+         'Jose  Martin',
+         'Joe   Roberts',
+         'Howard        Nelson',
+         'Patricia      Moore',
+         'Jessica       Alexander',
+         'Jesse Russell',
+         'Shirley       Price',
+         'Julie Phillips',
+         'Kathy Jenkins',
+         'James Hill',
+         'Tammy Howard',
+         'Lisa  Coleman',
+         'Denise        Adams',
+         'Shawn Williams',
+         'Ernest        Reed',
+         'Larry Ramirez',
+         'Kathleen      Garcia',
+         'Jennifer      Jones',
+         'Irene Anderson',
+         'Beverly       Mitchell',
+         'Peter Patterson',
+         'Eugene        Griffin',
+         'Jimmy Lewis',
+         'Margaret      Turner',
+         'Julia Peterson',
+         'Amanda        Johnson',
+         'Christina     Morris',
+         'Cynthia       Carter',
+         'Wayne Murphy',
+         'Ronald        Sanders',
+         'Lillian       Bell',
+         'Harold        Lopez',
+         'Roger Wilson',
+         'Jane  Edwards',
+         'Billy Perez',
+         'Jane  Butler',
+         'John  Smith',
+         'John  Long',
+         'Jane  Martinez',
+         'John  Cooper', ]
 
 
 dois = [
@@ -204,7 +203,7 @@ class Command(BaseCommand):
             univ_hpc.linked_resources.add(resource_obj)
             univ_hpc.save()
 
-        publication_source = PublicationSource.objects.get(name='doi')
+        # publication_source = PublicationSource.objects.get(name='doi')
         # for title, author, year, unique_id, source in (
         #     ('Angular momentum in QGP holography', 'Brett McInnes',
         #      2014, '10.1016/j.nuclphysb.2014.08.011', 'doi'),
@@ -416,34 +415,35 @@ class Command(BaseCommand):
              'doi'
              ),
         ):
-            Publication.objects.get_or_create(
-                project=project_obj,
-                title=title,
-                author=author,
-                year=year,
-                journal=journal,
-                unique_id=unique_id,
-                source=publication_source
-            )
+            # Publication.objects.get_or_create(
+                # project=project_obj,
+                # title=title,
+                # author=author,
+                # year=year,
+                # journal=journal,
+                # unique_id=unique_id,
+                # source=publication_source
+            # )
+            pass
 
         start_date = datetime.datetime.now()
         end_date = datetime.datetime.now() + relativedelta(days=900)
 
-        Grant.objects.get_or_create(
-            project=project_obj,
-            title='Quantum Halls',
-            grant_number='12345',
-            role='PI',
-            grant_pi_full_name='Stephanie Foster',
-            funding_agency=GrantFundingAgency.objects.get(
-                name='Department of Defense (DoD)'),
-            grant_start=start_date,
-            grant_end=end_date,
-            percent_credit=20.0,
-            direct_funding=200000.0,
-            total_amount_awarded=1000000.0,
-            status=GrantStatusChoice.objects.get(name='Active')
-        )
+        # Grant.objects.get_or_create(
+            # project=project_obj,
+            # title='Quantum Halls',
+            # grant_number='12345',
+            # role='PI',
+            # grant_pi_full_name='Stephanie Foster',
+            # funding_agency=GrantFundingAgency.objects.get(
+                # name='Department of Defense (DoD)'),
+            # grant_start=start_date,
+            # grant_end=end_date,
+            # percent_credit=20.0,
+            # direct_funding=200000.0,
+            # total_amount_awarded=1000000.0,
+            # status=GrantStatusChoice.objects.get(name='Active')
+        # )
 
         # Add university cloud
         allocation_obj, _ = Allocation.objects.get_or_create(
