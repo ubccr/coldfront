@@ -291,7 +291,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
                     email_receiver_list = []
                     for allocation_user in allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
-                        allocation_activate_user.send(
+                        allocation_remove_user.send(
                             sender=self.__class__, allocation_user_pk=allocation_user.pk)
                         if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
                             email_receiver_list.append(
