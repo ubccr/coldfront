@@ -53,6 +53,10 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
           </td>
         </tr>
         <tr>
+          <th>Change Password:</th>
+          <td><a href="{% url 'password-change' %}" class="btn btn-secondary">Change Password</a></td>
+        </tr>
+        <tr>
           <th>Last Login:</th>
           <td>{{viewed_user.last_login}}</td>
         </tr>
