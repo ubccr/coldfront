@@ -288,7 +288,6 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                         'signature': EMAIL_SIGNATURE,
                         'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
                     }
-
                     email_receiver_list = []
                     for allocation_user in allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
                         allocation_remove_user.send(
@@ -296,7 +295,6 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                         if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
                             email_receiver_list.append(
                                 allocation_user.user.email)
-                    
                     send_email_template(
                         'Allocation Denied',
                         'email/allocation_denied.txt',
@@ -1128,8 +1126,10 @@ class AllocationDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
             }
 
             email_receiver_list = []
-            for allocation_user in allocation_obj.project.projectuser_set.all():
-                if allocation_user.enable_notifications:
+            for allocation_user in allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
+                allocation_remove_user.send(
+                            sender=self.__class__, allocation_user_pk=allocation_user.pk)
+                if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
                     email_receiver_list.append(allocation_user.user.email)
 
             send_email_template(
@@ -1139,7 +1139,7 @@ class AllocationDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
                 EMAIL_SENDER,
                 email_receiver_list
             )
-
+            print(email_receiver_list)
         return HttpResponseRedirect(reverse('allocation-request-list'))
 
 
