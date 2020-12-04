@@ -104,6 +104,13 @@ class Resource(TimeStampedModel):
             resource_attribute_type__name=name).all()
         return [a.value for a in attr]
 
+    def get_ondemand_status(self):
+        ondemand = self.resourceattribute_set.filter(
+            resource_attribute_type__name='OnDemand').first()
+        if ondemand:
+            return ondemand.value
+        return None
+            
     def __str__(self):
         return '%s (%s)' % (self.name, self.resource_type.name)
 
