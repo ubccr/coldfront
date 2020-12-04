@@ -113,7 +113,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                     Q(status__name__in=['Active', 'Expired',
                                         'New', 'Renewal Requested',
                                         'Payment Pending', 'Payment Requested',
-                                        'Payment Declined', 'Paid']) &
+                                        'Payment Declined', 'Paid','Denied']) &
                     Q(allocationuser__user=self.request.user) &
                     Q(allocationuser__status__name__in=['Active', ])
                 ).distinct().order_by('-end_date')
