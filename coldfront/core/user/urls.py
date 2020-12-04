@@ -7,6 +7,7 @@ from django.contrib.auth.views import PasswordResetView
 from django.urls import path, reverse_lazy
 
 import coldfront.core.user.views as user_views
+from coldfront.core.user.forms import UserLoginForm
 
 EXTRA_APPS = settings.EXTRA_APPS
 
@@ -15,6 +16,7 @@ urlpatterns = [
     path('login',
          LoginView.as_view(
              template_name='user/login.html',
+             form_class=UserLoginForm,
              extra_context={'EXTRA_APPS': EXTRA_APPS},
              redirect_authenticated_user=True),
          name='login'
@@ -56,7 +58,18 @@ urlpatterns = [
     path('password-reset-complete/',
          PasswordResetCompleteView.as_view(
              template_name='user/passwords/password_reset_complete.html'),
-         name='password-reset-complete',
+         name='password-reset-complete'
+         ),
+
+    # Registration and activation views
+    path('register/',
+         user_views.UserRegistrationView.as_view(
+             template_name='user/registration.html'),
+         name='register'
+         ),
+    path('activate/<uidb64>/<token>/',
+         user_views.activate_user_account,
+         name='activate',
          ),
 
 ]
