@@ -4,12 +4,14 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
+from django.contrib.auth.views import PasswordChangeView
 from django.db.models import BooleanField, Prefetch
 from django.db.models.expressions import ExpressionWrapper, F, Q
 from django.db.models.functions import Lower
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
+from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import ListView, TemplateView
@@ -269,3 +271,13 @@ class UserListAllocations(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
         context['user_dict'] = user_dict
 
         return context
+
+
+class CustomPasswordChangeView(PasswordChangeView):
+
+    template_name = 'user/passwords/password_change_form.html'
+    success_url = reverse_lazy('user-profile')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Your password has been changed.')
+        return super().form_valid(form)
