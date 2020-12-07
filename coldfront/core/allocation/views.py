@@ -563,13 +563,13 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         usernames = form_data.get('users')
         pi_users = project_obj.pis()
         for pi_user in pi_users:
-            usernames.append(pi_user.user.username)
+            usernames.append(pi_user.username)
         usernames = list(set(usernames))
 
         users = [User.objects.get(username=username) for username in usernames]
         for pi_user in pi_users:
-            if pi_user.user not in users:
-                users.append(pi_user.user)
+            if pi_user not in users:
+                users.append(pi_user)
 
         if INVOICE_ENABLED and resource_obj.requires_payment:
             allocation_status_obj = AllocationStatusChoice.objects.get(
