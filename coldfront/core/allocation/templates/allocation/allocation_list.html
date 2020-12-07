@@ -41,11 +41,7 @@ Allocation List {% endblock %} {% block content %}
           Project
         </th>
         <th scope="col" class="text-nowrap">
-          PI
-          <a href="?order_by=project__pi__username&direction=asc&{{filter_parameters}}"><i
-              class="fas fa-sort-up"></i></a>
-          <a href="?order_by=project__pi__username&direction=des&{{filter_parameters}}"><i
-              class="fas fa-sort-down"></i></a>
+          PIs
         </th>
         <th scope="col" class="text-nowrap">
           Resource Name
@@ -70,8 +66,11 @@ Allocation List {% endblock %} {% block content %}
         <td><a target="_blank" href="/allocation/{{allocation.id}}/">{{ allocation.id }}</a></td>
         <td class="text-nowrap"><a target="_blank"
             href="/project/{{allocation.project.id}}/">{{ allocation.project.title|truncatechars:50 }}</a></td>
-        <td class="text-nowrap">{{allocation.project.pi.first_name}} {{allocation.project.pi.last_name}}
-          ({{allocation.project.pi.username}})</td>
+        <td class="text-nowrap">
+          {% for pi in allocation.project.pis %}
+            {{ pi.first_name }} {{ pi.last_name }} ({{ pi.username }})<br>
+          {% endfor %}
+        </td>
         <td class="text-nowrap">{{ allocation.get_parent_resource }}</td>
         <td class="text-nowrap">{{ allocation.status.name }}</td>
         <td class="text-nowrap">{{ allocation.end_date }}</td>

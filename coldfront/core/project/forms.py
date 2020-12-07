@@ -119,7 +119,8 @@ class ProjectReviewEmailForm(forms.Form):
     def __init__(self, pk, *args, **kwargs):
         super().__init__(*args, **kwargs)
         project_review_obj = get_object_or_404(ProjectReview, pk=int(pk))
-        self.fields['email_body'].initial = 'Dear {} {} \n{}'.format(
-            project_review_obj.project.pi.first_name, project_review_obj.project.pi.last_name, EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL)
+        self.fields['email_body'].initial = 'Dear {} managers \n{}'.format(
+            project_review_obj.project.name,
+            EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL)
         self.fields['cc'].initial = ', '.join(
             [EMAIL_DIRECTOR_EMAIL_ADDRESS] + EMAIL_ADMIN_LIST)

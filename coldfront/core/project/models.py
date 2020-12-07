@@ -31,7 +31,6 @@ We do not have information about your research. Please provide a detailed descri
 
     name = models.CharField(max_length=255, unique=True, blank=True, null=True)
     title = models.CharField(max_length=255,)
-    pi = models.ForeignKey(User, on_delete=models.CASCADE,)
     description = models.TextField(
         default=DEFAULT_DESCRIPTION,
         validators=[
@@ -108,6 +107,13 @@ We do not have information about your research. Please provide a detailed descri
             return True
 
         return False
+
+    def pis(self):
+        """Return a queryset of User objects that are PIs on this
+        project, ordered by username."""
+        pi_user_pks = self.projectuser_set.filter(
+            role__name='Principal Investigator').values_list('user', flat=True)
+        return User.objects.filter(pk__in=pi_user_pks).order_by('username')
 
     def __str__(self):
         return self.title

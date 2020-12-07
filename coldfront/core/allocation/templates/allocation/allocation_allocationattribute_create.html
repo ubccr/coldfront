@@ -11,8 +11,7 @@ Add Allocation Attribute
 
 {% block content %}
 
-<h2>Adding allocation attribute to {{allocation.get_parent_resource}} for PI {{ allocation.project.pi.first_name }}
-  {{ allocation.project.pi.last_name }} ({{ allocation.project.pi.username }})</h2>
+<h2>Adding allocation attribute to {{allocation.get_parent_resource}} for project {{ allocation.project.name }}</h2>
 
 <form method="post">
   {% csrf_token %}

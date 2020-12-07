@@ -28,7 +28,7 @@ class Command(BaseCommand):
         project_status_choices['New'] = ProjectStatusChoice.objects.get(name='New')
 
         project_user_role_choices = {}
-        project_user_role_choices['PI'] = ProjectUserRoleChoice.objects.get(name='Manager')
+        project_user_role_choices['PI'] = ProjectUserRoleChoice.objects.get(name='Principal Investigator')
         project_user_role_choices['U'] = ProjectUserRoleChoice.objects.get(name='User')
         project_user_role_choices['M'] = ProjectUserRoleChoice.objects.get(name='Manager')
         project_user_role_choices['Manager'] = ProjectUserRoleChoice.objects.get(name='Manager')
@@ -67,7 +67,6 @@ class Command(BaseCommand):
                     created=created,
                     modified=modified,
                     title=title.strip(),
-                    pi=pi_user_obj,
                     description=description.strip(),
                     field_of_science=field_of_science_obj,
                     status=project_status_choices[project_status]

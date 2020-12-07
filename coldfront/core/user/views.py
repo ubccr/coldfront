@@ -117,20 +117,15 @@ class UserProjectsManagersView(ListView):
             'project',
             'project__status',
             'project__field_of_science',
-            'project__pi',
         ).only(
             'status__name',
             'role__name',
             'project__title',
             'project__status__name',
             'project__field_of_science__description',
-            'project__pi__username',
-            'project__pi__first_name',
-            'project__pi__last_name',
-            'project__pi__email',
         ).annotate(
             is_project_pi=ExpressionWrapper(
-                Q(user=F('project__pi')),
+                Q(role__name='Principal Investigator'),
                 output_field=BooleanField(),
             ),
             is_project_manager=ExpressionWrapper(
@@ -140,7 +135,6 @@ class UserProjectsManagersView(ListView):
         ).order_by(
             '-is_project_pi',
             '-is_project_manager',
-            Lower('project__pi__username').asc(),
             Lower('project__title').asc(),
             # unlikely things will get to this point unless there's almost-duplicate projects
             '-project__pk',  # more performant stand-in for '-project__created'
@@ -148,13 +142,26 @@ class UserProjectsManagersView(ListView):
             Prefetch(
                 lookup='project__projectuser_set',
                 queryset=ProjectUser.objects.filter(
+                    role__name='Principal Investigator',
+                ).select_related(
+                    'status',
+                    'user',
+                ).only(
+                    'status__name',
+                    'user__username',
+                    'user__first_name',
+                    'user__last_name',
+                    'user__email',
+                ).order_by(
+                    'user__username',
+                ),
+                to_attr='project_pis',
+            ),
+            Prefetch(
+                lookup='project__projectuser_set',
+                queryset=ProjectUser.objects.filter(
                     role__name='Manager',
                     status__name__in=ongoing_projectuser_statuses,
-                ).exclude(
-                    user__pk__in=[
-                        F('project__pi__pk'),  # we assume pi is 'Manager' or can act like one - no need to list twice
-                        viewed_user.pk,  # we display elsewhere if the user is a manager of this project
-                    ],
                 ).select_related(
                     'status',
                     'user',
@@ -260,7 +267,11 @@ class UserListAllocations(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
 
         user_dict = {}
 
-        for project in Project.objects.filter(pi=self.request.user):
+        project_pks = ProjectUser.objects.filter(
+            user=self.requestuser,
+            role__name__in=['Manager', 'Principal Investigator'],
+            status__name='Active').values_list('project', flat=True)
+        for project in Project.objects.filter(pk__in=project_pks).distinct():
             for allocation in project.allocation_set.filter(status__name='Active'):
                 for allocation_user in allocation.allocationuser_set.filter(status__name='Active').order_by('user__username'):
                     if allocation_user.user not in user_dict:
