@@ -58,14 +58,6 @@ class Allocation(TimeStampedModel):
              'Can review allocation requests'),
             ('can_manage_invoice', 'Can manage invoice'),
         )
-    
-    def valid_description(self):
-        if(str(description).isEmpty() == True or description == None):
-            print("hiii"+str(description))
-            return False
-        else:    
-            print("hiii"+str(description))
-            return True
 
     def clean(self):
         if self.status.name == 'Expired':
