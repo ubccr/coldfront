@@ -60,11 +60,17 @@ Project Detail
 <div class="card mb-3">
   <div class="card-body">
     <h4 class="card-title">
-      Principal Investigator:
-      {{ project.pi.first_name }}
-      {{ project.pi.last_name }}
-      ({{ project.pi.username }})
-      <a href="mailto:{{ project.pi.email }} "><i class="far fa-envelope"></i></a></h4>
+      Principal Investigators:
+      <a href=""><i class="far fa-envelope"></i></a>
+    </h4>
+    <ul class="list-group">
+      {% for pi in project.pis %}
+        <li class="list-group-item">
+          {{ pi.first_name }} {{ pi.last_name }} ({{ pi.username }})
+        </li>
+      {% endfor %}
+    </ul>
+    <br>
     <p class="card-text text-justify"><strong>Description: </strong>{{ project.description }}</p>
     <p class="card-text text-justify"><strong>Field of Science: </strong>{{ project.field_of_science }}</p>
     <p class="card-text text-justify"><strong>Project Status: </strong>{{ project.status }}

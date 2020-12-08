@@ -66,7 +66,7 @@ class TestJobList(TestJobBase):
         allocation_amount = Decimal('1000.00')
         for i in range(self.num_projects):
             project = Project.objects.create(
-                name=f'PROJECT_{i}', pi=self.pi, status=project_status)
+                name=f'PROJECT_{i}', status=project_status)
             allocation_objects = create_project_allocation(
                 project, allocation_amount)
             allocation_pks[project.pk] = allocation_objects.allocation.pk
@@ -617,7 +617,7 @@ class TestJobSerializer(TestJobBase):
         data = self.data.copy()
         project_status = ProjectStatusChoice.objects.get(name='Active')
         project = Project.objects.create(
-            name='OTHER_PROJECT', pi=self.pi, status=project_status)
+            name='OTHER_PROJECT', status=project_status)
 
         data['accountid'] = project.name
         response = self.client.put(

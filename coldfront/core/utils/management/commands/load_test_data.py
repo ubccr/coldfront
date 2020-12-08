@@ -188,7 +188,6 @@ class Command(BaseCommand):
         pi1.userprofile.is_pi = True
         pi1.save()
         project_obj, _ = Project.objects.get_or_create(
-            pi=pi1,
             title='Angular momentum in QGP holography',
             description='We want to estimate the quark chemical potential of a rotating sample of plasma.',
             field_of_science=FieldOfScience.objects.get(
@@ -257,7 +256,7 @@ class Command(BaseCommand):
         project_user_obj, _ = ProjectUser.objects.get_or_create(
             user=pi1,
             project=project_obj,
-            role=ProjectUserRoleChoice.objects.get(name='Manager'),
+            role=ProjectUserRoleChoice.objects.get(name='Principal Investigator'),
             status=ProjectUserStatusChoice.objects.get(name='Active')
         )
 
@@ -372,7 +371,6 @@ class Command(BaseCommand):
         pi2.userprofile.is_pi = True
         pi2.save()
         project_obj, _ = Project.objects.get_or_create(
-            pi=pi2,
             title='Measuring critical behavior of quantum Hall transitions',
             description='This purpose of this project is to measure the critical behavior of quantum Hall transitions.',
             field_of_science=FieldOfScience.objects.get(description='Physics'),
@@ -382,7 +380,7 @@ class Command(BaseCommand):
         project_user_obj, _ = ProjectUser.objects.get_or_create(
             user=pi2,
             project=project_obj,
-            role=ProjectUserRoleChoice.objects.get(name='Manager'),
+            role=ProjectUserRoleChoice.objects.get(name='Principal Investigator'),
             status=ProjectUserStatusChoice.objects.get(name='Active')
         )
 

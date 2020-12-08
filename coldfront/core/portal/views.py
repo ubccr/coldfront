@@ -24,7 +24,6 @@ def home(request):
     if request.user.is_authenticated:
         template_name = 'portal/authorized_home.html'
         project_list = Project.objects.filter(
-            (Q(pi=request.user) & Q(status__name__in=['New', 'Active', ])) |
             (Q(status__name__in=['New', 'Active', ]) &
              Q(projectuser__user=request.user) &
              Q(projectuser__status__name__in=['Active', ]))
@@ -132,8 +131,11 @@ def allocation_by_fos(request):
     total_allocations_users = user_allocations.values(
         'user').distinct().count()
 
-    active_pi_count = Project.objects.filter(status__name__in=['Active', 'New']).values_list(
-        'pi__username', flat=True).distinct().count()
+    pis = set()
+    for project in Project.objects.filter(status__name__in=['Active', 'New']):
+        pis.update([pi.username for pi in project.pis()])
+    active_pi_count = len(pis)
+
     context = {}
     context['allocations_by_fos'] = dict(allocations_by_fos)
     context['active_users_by_fos'] = dict(active_users_by_fos)

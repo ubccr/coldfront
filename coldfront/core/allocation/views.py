@@ -148,7 +148,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         elif allocation_obj.project.projectuser_set.filter(user=self.request.user).exists():
             project_user = allocation_obj.project.projectuser_set.get(
                 user=self.request.user)
-            if project_user.role.name == 'Manager':
+            if project_user.role.name in ('Principal Investigator', 'Manager'):
                 context['is_allowed_to_update_project'] = True
             else:
                 context['is_allowed_to_update_project'] = False
@@ -165,7 +165,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         elif allocation_obj.project.projectuser_set.filter(user=self.request.user).exists():
             project_user = allocation_obj.project.projectuser_set.get(
                 user=self.request.user)
-            if project_user.role.name == 'Manager':
+            if project_user.role.name in ('Principal Investigator', 'Manager'):
                 context['is_allowed_to_update_project'] = True
             else:
                 context['is_allowed_to_update_project'] = False
@@ -350,9 +350,9 @@ class AllocationListView(LoginRequiredMixin, ListView):
 
             if data.get('show_all_allocations') and (self.request.user.is_superuser or self.request.user.has_perm('allocation.can_view_all_allocations')):
                 allocations = Allocation.objects.prefetch_related(
-                    'project', 'project__pi', 'status',).all().order_by(order_by)
+                    'project', 'status',).all().order_by(order_by)
             else:
-                allocations = Allocation.objects.prefetch_related('project', 'project__pi', 'status',).filter(
+                allocations = Allocation.objects.prefetch_related('project', 'status',).filter(
                     Q(project__status__name='Active') &
                     Q(project__projectuser__user=self.request.user) &
                     Q(project__projectuser__status__name='Active') &
@@ -368,9 +368,9 @@ class AllocationListView(LoginRequiredMixin, ListView):
             # username
             if data.get('username'):
                 allocations = allocations.filter(
-                    Q(project__pi__username__icontains=data.get('username')) |
-                    Q(allocationuser__user__username__icontains=data.get('username')) &
-                    Q(allocationuser__status__name='Active')
+                    Q(username__icontains=data.get('username')) &
+                    (Q(project__projectuser__role__name='Principal Investigator') |
+                     Q(allocationuser__status__name='Active'))
                 )
 
             # Resource Type
@@ -409,7 +409,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
                     status__in=data.get('status'))
 
         else:
-            allocations = Allocation.objects.prefetch_related('project', 'project__pi', 'status',).filter(
+            allocations = Allocation.objects.prefetch_related('project', 'status',).filter(
                 Q(allocationuser__user=self.request.user) &
                 Q(allocationuser__status__name='Active')
             ).order_by(order_by)
@@ -480,10 +480,10 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         project_obj = get_object_or_404(
             Project, pk=self.kwargs.get('project_pk'))
 
-        if project_obj.pi == self.request.user:
-            return True
-
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if project_obj.projectuser_set.filter(
+                user=self.request.user,
+                role__name__in=['Manager', 'Principal Investigator'],
+                status__name='Active').exists():
             return True
 
         messages.error(
@@ -561,12 +561,15 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             return self.form_invalid(form)
 
         usernames = form_data.get('users')
-        usernames.append(project_obj.pi.username)
+        pi_users = project_obj.pis()
+        for pi_user in pi_users:
+            usernames.append(pi_user.username)
         usernames = list(set(usernames))
 
         users = [User.objects.get(username=username) for username in usernames]
-        if project_obj.pi not in users:
-            users.append(project_obj.pi)
+        for pi_user in pi_users:
+            if pi_user not in users:
+                users.append(pi_user)
 
         if INVOICE_ENABLED and resource_obj.requires_payment:
             allocation_status_obj = AllocationStatusChoice.objects.get(
@@ -604,22 +607,26 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 user=user,
                 status=allocation_user_active_status)
 
-        pi_name = '{} {} ({})'.format(allocation_obj.project.pi.first_name,
-                                      allocation_obj.project.pi.last_name, allocation_obj.project.pi.username)
+        pi_names = []
+        for pi in allocation_obj.project.pis():
+            pi_names.append('{} {} ({})'.format(
+                pi.first_name, pi.last_name, pi.username))
+        pi_names = ', '.join(pi_names)
+
         resource_name = allocation_obj.get_parent_resource
         domain_url = get_domain_url(self.request)
         url = '{}{}'.format(domain_url, reverse('allocation-request-list'))
 
         if EMAIL_ENABLED:
             template_context = {
-                'pi': pi_name,
+                'pi': pi_names,
                 'resource': resource_name,
                 'url': url
             }
 
             send_email_template(
                 'New allocation request: {} - {}'.format(
-                    pi_name, resource_name),
+                    project_obj.name, resource_name),
                 'email/new_allocation_request.txt',
                 template_context,
                 EMAIL_SENDER,
@@ -643,10 +650,10 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk'))
 
-        if allocation_obj.project.pi == self.request.user:
-            return True
-
-        if allocation_obj.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if allocation_obj.project.projectuser_set.filter(
+                user=self.request.user,
+                role__name__in=['Manager', 'Principal Investigator'],
+                status__name='Active').exists():
             return True
 
         messages.error(
@@ -676,8 +683,9 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         missing_users = list(set(active_users_in_project) -
                              set(users_already_in_allocation))
-        missing_users = User.objects.filter(username__in=missing_users).exclude(
-            pk=allocation_obj.project.pi.pk)
+        missing_users = User.objects.filter(username__in=missing_users)
+        pi_pks = allocation_obj.project.pis().values_list('pk', flat=True)
+        missing_users = missing_users.exclude(pk__in=pi_pks)
 
         users_to_add = [
 
@@ -765,10 +773,10 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk'))
 
-        if allocation_obj.project.pi == self.request.user:
-            return True
-
-        if allocation_obj.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if allocation_obj.project.projectuser_set.filter(
+                user=self.request.user,
+                role__name__in=['Manager', 'Principal Investigator'],
+                status__name='Active').exists():
             return True
 
         messages.error(
@@ -794,8 +802,12 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
         users_to_remove = list(allocation_obj.allocationuser_set.exclude(
             status__name__in=['Removed', 'Error', ]).values_list('user__username', flat=True))
 
-        users_to_remove = User.objects.filter(username__in=users_to_remove).exclude(
-            pk__in=[allocation_obj.project.pi.pk, self.request.user.pk])
+        users_to_remove = User.objects.filter(username__in=users_to_remove)
+        exclude_pks = list(
+            allocation_obj.project.pis().values_list('pk', flat=True))
+        exclude_pks.append(self.request.user.pk)
+        users_to_remove = users_to_remove.exclude(pk__in=exclude_pks)
+
         users_to_remove = [
 
             {'username': user.username,
@@ -848,7 +860,8 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
                     user_obj = User.objects.get(
                         username=user_form_data.get('username'))
-                    if allocation_obj.project.pi == user_obj:
+                    if allocation_obj.project.pis().filter(
+                            pk=user_obj.pk).exists():
                         continue
 
                     allocation_user_obj = allocation_obj.allocationuser_set.get(
@@ -1038,11 +1051,10 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
         allocation_obj.end_date = end_date
         allocation_obj.save()
 
-        messages.success(request, 'Allocation to {} has been ACTIVATED for {} {} ({})'.format(
-            allocation_obj.get_parent_resource,
-            allocation_obj.project.pi.first_name,
-            allocation_obj.project.pi.last_name,
-            allocation_obj.project.pi.username)
+        messages.success(
+            request, 'Allocation to {} has been ACTIVATED for {}'.format(
+                allocation_obj.get_parent_resource,
+                allocation_obj.project.name)
         )
 
         resource_name = allocation_obj.get_parent_resource
@@ -1104,11 +1116,10 @@ class AllocationDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
         allocation_obj.end_date = None
         allocation_obj.save()
 
-        messages.success(request, 'Allocation to {} has been DENIED for {} {} ({})'.format(
-            allocation_obj.resources.first(),
-            allocation_obj.project.pi.first_name,
-            allocation_obj.project.pi.last_name,
-            allocation_obj.project.pi.username)
+        messages.success(
+            request, 'Allocation to {} has been DENIED for {}'.format(
+                allocation_obj.resources.first(),
+                allocation_obj.project.name)
         )
 
         resource_name = allocation_obj.get_parent_resource
@@ -1152,10 +1163,10 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk'))
 
-        if allocation_obj.project.pi == self.request.user:
-            return True
-
-        if allocation_obj.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if allocation_obj.project.projectuser_set.filter(
+                user=self.request.user,
+                role__name__in=['Manager', 'Principal Investigator'],
+                status__name='Active').exists():
             return True
 
         messages.error(
@@ -1190,7 +1201,12 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
 
     def get_users_in_allocation(self, allocation_obj):
         users_in_allocation = allocation_obj.allocationuser_set.exclude(
-            status__name__in=['Removed']).exclude(user__pk__in=[allocation_obj.project.pi.pk, self.request.user.pk]).order_by('user__username')
+            status__name__in=['Removed'])
+        exclude_pks = list(
+            allocation_obj.project.pis().values_list('pk', flat=True))
+        exclude_pks.append(self.request.user.pk)
+        users_in_allocation = users_in_allocation.exclude(
+            user__pk__in=exclude_pks).order_by('user__username')
 
         users = [
 
@@ -1284,8 +1300,12 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
                         project_user_obj.status = project_user_remove_status_choice
                         project_user_obj.save()
 
-            pi_name = '{} {} ({})'.format(allocation_obj.project.pi.first_name,
-                                          allocation_obj.project.pi.last_name, allocation_obj.project.pi.username)
+            pi_names = []
+            for pi in allocation_obj.project.pis():
+                pi_names.append('{} {} ({})'.format(
+                    pi.first_name, pi.last_name, pi.username))
+            pi_names = ', '.join(pi_names)
+
             resource_name = allocation_obj.get_parent_resource
             domain_url = get_domain_url(self.request)
             url = '{}{}'.format(domain_url, reverse(
@@ -1293,14 +1313,14 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
 
             if EMAIL_ENABLED:
                 template_context = {
-                    'pi': pi_name,
+                    'pi': pi_names,
                     'resource': resource_name,
                     'url': url
                 }
 
                 send_email_template(
                     'Allocation renewed: {} - {}'.format(
-                        pi_name, resource_name),
+                        allocation_obj.project.name, resource_name),
                     'email/allocation_renewed.txt',
                     template_context,
                     EMAIL_SENDER,
