@@ -58,6 +58,14 @@ class Allocation(TimeStampedModel):
              'Can review allocation requests'),
             ('can_manage_invoice', 'Can manage invoice'),
         )
+    
+    def valid_description(self):
+        if(str(description).isEmpty() == True or description == None):
+            print("hiii"+str(description))
+            return False
+        else:    
+            print("hiii"+str(description))
+            return True
 
     def clean(self):
         if self.status.name == 'Expired':
@@ -122,6 +130,8 @@ class Allocation(TimeStampedModel):
                     percent
                 )
                 html_string += string
+        if  len(self.description) > 0 :
+            return self.description
 
         return mark_safe(html_string)
 
