@@ -25,7 +25,7 @@ from coldfront.core.allocation.models import (Allocation,
                                               AllocationUserStatusChoice)
 from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user)
-from coldfront.core.grant.models import Grant
+# from coldfront.core.grant.models import Grant
 from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectAddUsersToAllocationForm,
                                           ProjectRemoveUserForm,
@@ -37,8 +37,8 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectStatusChoice, ProjectUser,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice)
-from coldfront.core.publication.models import Publication
-from coldfront.core.research_output.models import ResearchOutput
+# from coldfront.core.publication.models import Publication
+# from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.common import get_domain_url, import_from_settings
@@ -120,12 +120,11 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 allocations = Allocation.objects.prefetch_related(
                     'resources').filter(project=self.object)
 
-        context['publications'] = Publication.objects.filter(
-            project=self.object, status='Active').order_by('-year')
-        context['research_outputs'] = ResearchOutput.objects.filter(
-            project=self.object).order_by('-created')
-        context['grants'] = Grant.objects.filter(
-            project=self.object, status__name__in=['Active', 'Pending'])
+        # context['publications'] = Publication.objects.filter(
+            # project=self.object, status='Active').order_by('-year')
+        # context['research_outputs'] = ResearchOutput.objects.filter(
+            # project=self.object).order_by('-created')
+        # context['grants'] = Grant.objects.filter(project=self.object, status__name__in=['Active', 'Pending'])
         context['allocations'] = allocations
         context['project_users'] = project_users
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL

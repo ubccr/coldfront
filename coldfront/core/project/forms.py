@@ -86,13 +86,16 @@ class ProjectReviewForm(forms.Form):
         project_obj = get_object_or_404(Project, pk=project_pk)
         now = datetime.datetime.now(datetime.timezone.utc)
 
+        """
         if project_obj.grant_set.exists():
             latest_grant = project_obj.grant_set.order_by('-modified')[0]
             grant_updated_in_last_year = (
                 now - latest_grant.created).days < 365
         else:
             grant_updated_in_last_year = None
+        """
 
+        """
         if project_obj.publication_set.exists():
             latest_publication = project_obj.publication_set.order_by(
                 '-created')[0]
@@ -100,11 +103,14 @@ class ProjectReviewForm(forms.Form):
                 now - latest_publication.created).days < 365
         else:
             publication_updated_in_last_year = None
+        """
 
+        """
         if grant_updated_in_last_year or publication_updated_in_last_year:
             self.fields['reason'].widget = forms.HiddenInput()
         else:
             self.fields['reason'].required = True
+        """
 
 
 class ProjectReviewEmailForm(forms.Form):

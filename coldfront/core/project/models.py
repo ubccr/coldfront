@@ -13,6 +13,7 @@ from coldfront.core.utils.common import import_from_settings
 
 PROJECT_ENABLE_PROJECT_REVIEW = import_from_settings('PROJECT_ENABLE_PROJECT_REVIEW', False)
 
+
 class ProjectStatusChoice(TimeStampedModel):
     name = models.CharField(max_length=64)
 
@@ -49,7 +50,8 @@ We do not have information about your research. Please provide a detailed descri
 
     def clean(self):
         if 'Auto-Import Project'.lower() in self.title.lower():
-            raise ValidationError('You must update the project title. You cannot have "Auto-Import Project" in the title.')
+            raise ValidationError(
+                'You must update the project title. You cannot have "Auto-Import Project" in the title.')
 
         if 'We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!' in self.description:
             raise ValidationError('You must update the project description.')
@@ -63,17 +65,23 @@ We do not have information about your research. Please provide a detailed descri
 
     @property
     def latest_grant(self):
+        """
         if self.grant_set.exists():
             return self.grant_set.order_by('-modified')[0]
         else:
             return None
+        """
+        return None
 
     @property
     def latest_publication(self):
+        """
         if self.publication_set.exists():
             return self.publication_set.order_by('-created')[0]
         else:
             return None
+        """
+        return None
 
     @property
     def needs_review(self):

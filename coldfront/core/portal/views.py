@@ -8,14 +8,14 @@ from django.shortcuts import render
 from django.views.decorators.cache import cache_page
 
 from coldfront.core.allocation.models import Allocation, AllocationUser
-from coldfront.core.grant.models import Grant
+# from coldfront.core.grant.models import Grant
 from coldfront.core.portal.utils import (generate_allocations_chart_data,
                                          generate_publication_by_year_chart_data,
                                          generate_resources_chart_data,
                                          generate_total_grants_by_agency_chart_data)
 from coldfront.core.project.models import Project
-from coldfront.core.publication.models import Publication
-from coldfront.core.research_output.models import ResearchOutput
+# from coldfront.core.publication.models import Publication
+# from coldfront.core.research_output.models import ResearchOutput
 
 
 def home(request):
@@ -54,6 +54,7 @@ def home(request):
 def center_summary(request):
     context = {}
 
+    """
     # Publications Card
     publications_by_year = list(Publication.objects.filter(year__gte=1999).values(
         'unique_id', 'year').distinct().values('year').annotate(num_pub=Count('year')).order_by('-year'))
@@ -69,7 +70,13 @@ def center_summary(request):
 
     # Research Outputs card
     context['total_research_outputs_count'] = ResearchOutput.objects.all().distinct().count()
+    """
 
+    context['total_research_outputs_count'] = 0
+    context['total_publications_count'] = 0
+    context['publication_by_year_bar_chart_data'] = 0
+
+    """
     # Grants Card
     total_grants_by_agency_sum = list(Grant.objects.values(
         'funding_agency__name').annotate(total_amount=Sum('total_amount_awarded')))
@@ -99,6 +106,13 @@ def center_summary(request):
         int(sum(list(Grant.objects.filter(role='CoPI').values_list('total_amount_awarded', flat=True)))))
     context['grants_total_sp_only'] = intcomma(
         int(sum(list(Grant.objects.filter(role='SP').values_list('total_amount_awarded', flat=True)))))
+    """
+
+    context['grants_total_sp_only'] = 0
+    context['grants_total_copi_only'] = 0
+    context['grants_total_pi_only'] = 0
+    context['grants_total'] = 0
+    context['grants_agency_chart_data'] = 0
 
     return render(request, 'portal/center_summary.html', context)
 
