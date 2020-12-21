@@ -53,6 +53,21 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
           </td>
         </tr>
         <tr>
+          <th>User Access Agreement:</th>
+          <td>
+            {% if user.userprofile.access_agreement_signed_date is not None %}
+              <span class="badge badge-success">
+                <i class="fas fa-check"></i>
+              </span>
+            {% else %}
+              <span class="badge badge-danger">
+                <i class="fas fa-times"></i>
+              </span>
+              <a href="{% url 'user-access-agreement' %}" class="btn btn-secondary">Sign</a>
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
           <th>Change Password:</th>
           <td><a href="{% url 'password-change' %}" class="btn btn-secondary">Change Password</a></td>
         </tr>
