@@ -1,5 +1,8 @@
 import logging
+import pytz
+from datetime import datetime
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -9,7 +12,7 @@ from django.db.models import BooleanField, Prefetch
 from django.db.models.expressions import ExpressionWrapper, F, Q
 from django.db.models.functions import Lower
 from django.http import HttpResponseRedirect
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
@@ -17,6 +20,7 @@ from django.views import View
 from django.views.generic import ListView, TemplateView
 
 from coldfront.core.project.models import Project, ProjectUser
+from coldfront.core.user.forms import UserAccessAgreementForm
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.common import import_from_settings
@@ -292,3 +296,28 @@ class CustomPasswordChangeView(PasswordChangeView):
     def form_valid(self, form):
         messages.success(self.request, 'Your password has been changed.')
         return super().form_valid(form)
+
+
+@login_required
+def user_access_agreement(request):
+    profile = request.user.userprofile
+    if profile.access_agreement_signed_date is not None:
+        message = 'You have already signed the user access agreement form.'
+        messages.warning(request, message)
+        return redirect(reverse_lazy('user-profile'))
+    if request.method == 'POST':
+        form = UserAccessAgreementForm(request.POST)
+        if form.is_valid():
+            now = datetime.utcnow().astimezone(
+                pytz.timezone(settings.TIME_ZONE))
+            profile.access_agreement_signed_date = now
+            profile.save()
+            message = 'Thank you for signing the user access agreement form.'
+            messages.success(request, message)
+            return redirect(reverse_lazy('user-profile'))
+        else:
+            message = 'Incorrect answer. Please try again.'
+            messages.error(request, message)
+    else:
+        form = UserAccessAgreementForm()
+    return render(request, 'user/user_access_agreement.html', {'form': form})
