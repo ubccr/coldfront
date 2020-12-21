@@ -63,13 +63,21 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
               <span class="badge badge-danger">
                 <i class="fas fa-times"></i>
               </span>
-              <a href="{% url 'user-access-agreement' %}" class="btn btn-secondary">Sign</a>
+              <a href="{% url 'user-access-agreement' %}" class="btn btn-secondary">
+                <i class="far fa-edit" aria-hidden="true"></i>
+                Sign
+              </a>
             {% endif %}
           </td>
         </tr>
         <tr>
           <th>Change Password:</th>
-          <td><a href="{% url 'password-change' %}" class="btn btn-secondary">Change Password</a></td>
+          <td>
+            <a href="{% url 'password-change' %}" class="btn btn-secondary">
+              <i class="fas fa-lock" aria-hidden="true"></i>
+              Change Password
+            </a>
+          </td>
         </tr>
         <tr>
           <th>Last Login:</th>
