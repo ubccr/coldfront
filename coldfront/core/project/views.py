@@ -1106,3 +1106,137 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
     def get_success_url(self):
         return reverse('project-review-list')
+
+
+class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    login_url = '/'
+
+    def test_func(self):
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        user_obj = self.request.user
+        project_users = project_obj.projectuser_set.filter(user=user_obj)
+
+        if not project_users.exists():
+            return True
+
+        project_user = project_users.first()
+        if project_user.status.name == 'Active':
+            message = (
+                f'You are already a member of Project {project_obj.name}.')
+            messages.error(self.request, message)
+            return False
+
+        if project_user.status.name == 'Pending - Add':
+            message = (
+                f'You have already requested to join Project '
+                f'{project_obj.name}.')
+            messages.warning(self.request, message)
+            return False
+
+        return True
+
+    def get(self, *args, **kwargs):
+        return redirect(self.login_url)
+
+    def post(self, request, *args, **kwargs):
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        user_obj = self.request.user
+        project_users = project_obj.projectuser_set.filter(user=user_obj)
+        role = ProjectUserRoleChoice.objects.get(name='User')
+        status = ProjectUserStatusChoice.objects.get(name='Pending - Add')
+
+        if project_users.exists():
+            project_user = project_users.first()
+            project_user.role = role
+            project_user.status = status
+            project_user.save()
+        else:
+            project_user = ProjectUser.objects.create(
+                user=user_obj,
+                project=project_obj,
+                role=role,
+                status=status)
+
+        if project_obj.joins_require_approval:
+            message = (
+                f'You have requested to join Project {project_obj.name}. The '
+                f'managers have been notified and will approve or deny your '
+                f'request.')
+            messages.success(self.request, message)
+            next_view = reverse('user-projects-managers')
+        else:
+            status = ProjectUserStatusChoice.objects.get(name='Active')
+            project_user.status = status
+            project_user.save()
+            message = (
+                f'You have requested to join Project {project_obj.name}. Your '
+                f'request has automatically been approved.')
+            messages.success(self.request, message)
+            next_view = reverse(
+                'project-detail', kwargs={'pk': project_obj.pk})
+
+        return redirect(next_view)
+
+
+class ProjectJoinListView(ProjectListView):
+
+    template_name = 'project/project_join_list.html'
+
+    def get_queryset(self):
+
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            if direction == 'asc':
+                direction = ''
+            else:
+                direction = '-'
+            order_by = direction + order_by
+        else:
+            order_by = 'id'
+
+        project_search_form = ProjectSearchForm(self.request.GET)
+
+        projects = Project.objects.prefetch_related(
+            'field_of_science', 'status').filter(
+                status__name__in=['New', 'Active', ]).order_by(order_by)
+
+        if project_search_form.is_valid():
+            data = project_search_form.cleaned_data
+
+            # Last Name
+            if data.get('last_name'):
+                pi_project_users = ProjectUser.objects.filter(
+                    project__in=projects,
+                    role__name='Principal Investigator',
+                    user__last_name__icontains=data.get('last_name'))
+                project_ids = pi_project_users.values_list(
+                    'project_id', flat=True)
+                projects = projects.filter(id__in=project_ids)
+
+            # Username
+            if data.get('username'):
+                projects = projects.filter(
+                    Q(projectuser__user__username__icontains=data.get(
+                        'username')) &
+                    (Q(projectuser__role__name='Principal Investigator') |
+                     Q(projectuser__status__name='Active'))
+                )
+
+            # Field of Science
+            if data.get('field_of_science'):
+                projects = projects.filter(
+                    field_of_science__description__icontains=data.get(
+                        'field_of_science'))
+
+        return projects.distinct()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        projects = self.get_queryset()
+        not_joinable = projects.filter(
+            projectuser__user=self.request.user,
+            projectuser__status__name__in=['Pending - Add', 'Active', ]
+        ).values_list('name', flat=True)
+        context['not_joinable'] = not_joinable
+        return context
