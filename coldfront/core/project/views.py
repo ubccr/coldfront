@@ -485,6 +485,22 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
     def get_success_url(self):
         return reverse('project-detail', kwargs={'pk': self.object.pk})
 
+    def form_valid(self, form):
+        # If joins_require_approval is set to False, automatically approve all
+        # pending join requests.
+        joins_require_approval = form.cleaned_data['joins_require_approval']
+        if not joins_require_approval:
+            project_obj = self.get_object()
+            active_status = ProjectUserStatusChoice.objects.get(name='Active')
+            num_requests_approved = project_obj.projectuser_set.filter(
+                status__name='Pending - Add').update(status=active_status)
+            message = (
+                f'Join requests no longer require approval, so '
+                f'{num_requests_approved} pending requests were automatically '
+                f'approved.')
+            messages.warning(self.request, message)
+        return super().form_valid(form)
+
 
 class ProjectAddUsersSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'project/project_add_users.html'
