@@ -18,6 +18,7 @@ urlpatterns = [
     path('<int:pk>/user-detail/<int:project_user_pk>', project_views.ProjectUserDetail.as_view(), name='project-user-detail'),
     path('<int:pk>/review/', project_views.ProjectReviewView.as_view(), name='project-review'),
     path('<int:pk>/join/', project_views.ProjectJoinView.as_view(), name='project-join'),
+    path('<int:pk>/review-join-requests/', project_views.ProjectReviewJoinRequestsView.as_view(), name='project-review-join-requests'),
     path('project-review-list', project_views.ProjectReviewListView.as_view(),name='project-review-list'),
     path('project-review-complete/<int:project_review_pk>/', project_views.ProjectReviewCompleteView.as_view(),
          name='project-review-complete'),

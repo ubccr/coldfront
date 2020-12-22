@@ -1,0 +1,83 @@
+{% extends "common/base.html" %} 
+{% load crispy_forms_tags %} 
+{% load static %} 
+
+{% block title %} Review Project Join Requests {% endblock %}
+
+{% block content %}
+<h1>Review requests to join project: {{project.title}}</h1>
+<hr>
+{% if formset %}
+<div class="card border-light">
+  <div class="card-body">
+
+    <form action="{% url 'project-review-join-requests' project.pk %}" method="post">
+      {% csrf_token %}
+      <div class="table-responsive">
+        <table class="table table-sm table-hover">
+          <thead>
+            <tr>
+              <th>
+                <input type="checkbox" class="check" id="selectAll">
+              </th>
+              <th scope="col">#</th>
+              <th scope="col">Username</th>
+              <th scope="col">First Name</th>
+              <th scope="col">Last Name</th>
+              <th scope="col">Email</th>
+              <th scope="col">Role</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for form in formset %}
+            <tr>
+              <td>{{ form.selected }}</td>
+              <td>{{ forloop.counter }}</td>
+              <td>{{ form.username.value }}</td>
+              <td>{{ form.first_name.value }}</td>
+              <td>{{ form.last_name.value }}</td>
+              <td>{{ form.email.value }}</td>
+              <td>{{ form.role.value }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {{ formset.management_form }}
+       <div>
+         <button type="submit" value="approve" name="decision" class="btn btn-success">
+           <i class="fas fa-user-check" aria-hidden="true"></i>
+           Approve Selected Users
+         </button>
+         <button type="submit" value="deny" name="decision" class="btn btn-danger">
+           <i class="fas fa-user-times" aria-hidden="true"></i>
+           Deny Selected Users
+         </button>
+         <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button">
+           <i class="fas fa-long-arrow-left" aria-hidden="true"></i>
+           Back to Project
+         </a>
+         <br>
+      </div>
+    </form>
+  </div>
+</div>
+{% else %} 
+  <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a> 
+  <div class="alert alert-info">
+    No requests to review!
+  </div>
+{% endif %}
+<script>
+$("#selectAll").click(function() {
+  $("input[name^='userform-']").prop('checked', $(this).prop('checked'));
+});
+
+$("input[name^='userform-']").click(function(ele) {
+  var id = $(this).attr('id');
+  if (id != "selectAll") {
+    $("#selectAll").prop('checked', false);
+  }
+});
+</script>
+{% endblock %}
