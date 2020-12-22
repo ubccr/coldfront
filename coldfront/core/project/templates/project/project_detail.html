@@ -49,9 +49,10 @@ Project Detail
       {% if project.status.name != 'Archived' %}
         <a class="btn btn-success" href="{% url 'project-add-users-search' project.pk %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
         {% if project.joins_require_approval %}
-          <a class="btn btn-success" href="#" role="button">
+          <a class="btn btn-success" href="{% url 'project-review-join-requests' project.pk %}" role="button">
             <i class="fas fa-user-plus" aria-hidden="true"></i>
             Review Join Requests
+            &nbsp;<span class="badge badge-light">{{ num_join_requests }}</span>
           </a>
         {% endif %}
       {% endif %}
@@ -93,9 +94,11 @@ Project Detail
       {% else %}
         must be approved by a project manager.
       {% endif %}
-      <a href="{% url 'project-update' project.pk %}">
-        <i class="fas fa-edit" aria-hidden="true"></i>
-      </a>
+      {% if is_allowed_to_update_project %}
+        <a href="{% url 'project-update' project.pk %}">
+          <i class="fas fa-edit" aria-hidden="true"></i>
+        </a>
+      {% endif %}
     </p>
   </div>
 </div>
