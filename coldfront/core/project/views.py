@@ -447,7 +447,12 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Project
     template_name_suffix = '_update_form'
-    fields = ['title', 'description', 'field_of_science', ]
+    fields = [
+        'title',
+        'description',
+        'field_of_science',
+        'joins_require_approval',
+    ]
     success_message = 'Project updated.'
 
     def test_func(self):

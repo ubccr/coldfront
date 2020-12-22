@@ -48,6 +48,12 @@ Project Detail
     <div class="card-body">
       {% if project.status.name != 'Archived' %}
         <a class="btn btn-success" href="{% url 'project-add-users-search' project.pk %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
+        {% if project.joins_require_approval %}
+          <a class="btn btn-success" href="#" role="button">
+            <i class="fas fa-user-plus" aria-hidden="true"></i>
+            Review Join Requests
+          </a>
+        {% endif %}
       {% endif %}
     </div>
   </div>
@@ -79,6 +85,18 @@ Project Detail
         {% endif %}
     </p>
     <p class="card-text text-justify"><strong>Created: </strong>{{ project.created|date:"M. d, Y" }}</p>
+    <p class="card-text text-justify">
+      <strong>Requests to Join: </strong>
+      User requests to join the project
+      {% if not project.joins_require_approval %}
+        are automatically approved.
+      {% else %}
+        must be approved by a project manager.
+      {% endif %}
+      <a href="{% url 'project-update' project.pk %}">
+        <i class="fas fa-edit" aria-hidden="true"></i>
+      </a>
+    </p>
   </div>
 </div>
 
