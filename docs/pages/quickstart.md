@@ -88,4 +88,4 @@ Point your browser to http://localhost:8000
 - You can log in as `admin` with password `test1234`. 
 - You can log in as a PI using username `ccollins` with password `test1234`.
 - You can log in as center director using username `michardson` with password `test1234`.
-- Password for all users is also `teset1234`. 
+- Password for all users is also `test1234`. 
