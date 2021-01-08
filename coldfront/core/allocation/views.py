@@ -30,6 +30,7 @@ from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationInvoiceNoteDeleteForm,
                                              AllocationInvoiceUpdateForm,
                                              AllocationRemoveUserForm,
+                                             AllocationRequestClusterAccountForm,
                                              AllocationReviewUserForm,
                                              AllocationSearchForm,
                                              AllocationUpdateForm)
@@ -38,6 +39,7 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationAttributeType,
                                               AllocationStatusChoice,
                                               AllocationUser,
+                                              AllocationUserAttribute,
                                               AllocationUserNote,
                                               AllocationUserStatusChoice)
 from coldfront.core.allocation.signals import (allocation_activate_user,
@@ -1586,3 +1588,132 @@ class AllocationAccountListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
 
     def get_queryset(self):
         return AllocationAccount.objects.filter(user=self.request.user)
+
+
+class AllocationAddClusterAccountsView(LoginRequiredMixin, UserPassesTestMixin,
+                                       TemplateView):
+    template_name = 'allocation/allocation_add_cluster_accounts.html'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+
+        allocation_obj = get_object_or_404(
+            Allocation, pk=self.kwargs.get('pk'))
+
+        if allocation_obj.project.projectuser_set.filter(
+                user=self.request.user,
+                role__name__in=['Manager', 'Principal Investigator'],
+                status__name='Active').exists():
+            return True
+
+        if allocation_obj.allocationuser_set.filter(
+                user=self.request.user,
+                status__name='Active').exists():
+            return True
+
+        message = (
+            'You do not have permission to request cluster accounts under the '
+            'allocation.')
+        messages.error(self.request, message)
+
+    def dispatch(self, request, *args, **kwargs):
+        allocation_obj = get_object_or_404(
+            Allocation, pk=self.kwargs.get('pk'))
+
+        acceptable_statuses = [
+            'Active', 'New', 'Renewal Requested', 'Payment Pending',
+            'Payment Requested', 'Paid']
+        if allocation_obj.status.name not in acceptable_statuses:
+            message = (
+                f'You cannot request cluster accounts under an allocation '
+                f'with status {allocation_obj.status.name}.')
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
+        else:
+            return super().dispatch(request, *args, **kwargs)
+
+    def get_users_to_request_for(self, allocation_obj):
+        """Return a list of dictionaries representing active users in
+        the allocation who (a) do not have a pending or active cluster
+        account and (b) have the signed the access agreement form. If
+        the requesting user is a regular user, filter out other
+        users."""
+        pending_or_active_cluster_accounts = \
+            AllocationUserAttribute.objects.filter(
+                allocation=allocation_obj,
+                allocationattributetype__name='Cluster Account Status',
+                value__in=['Pending - Add', 'Active'])
+
+        allocation_users = allocation_obj.allocationuser_set.filter(
+            status__name='Active').exclude(
+            allocationuserattribute__in=pending_or_active_cluster_accounts)
+        user_pks = allocation_users.values_list('user__pk', flat=True)
+
+        requester = self.request.user
+        is_superuser = requester.is_superuser
+        is_manager_or_pi = allocation_obj.project.projectuser_set.filter(
+            user=requester,
+            role__name__in=['Manager', 'Principal Investigator'],
+            status__name='Active').exists()
+        if not (is_superuser or is_manager_or_pi):
+            user_pks = [requester.pk] if requester.pk in user_pks else []
+
+        kwargs = {
+            'pk__in': user_pks,
+            'userprofile__access_agreement_signed_date__isnull': False,
+        }
+        values = ['username', 'first_name', 'last_name', 'email']
+        return list(User.objects.filter(**kwargs).values(values))
+
+    def get(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        allocation_obj = get_object_or_404(Allocation, pk=pk)
+
+        users_to_request_for = self.get_users_to_request_for(allocation_obj)
+        context = {}
+
+        if users_to_request_for:
+            formset = formset_factory(
+                AllocationRequestClusterAccountForm,
+                max_num=len(users_to_request_for))
+            formset = formset(initial=users_to_request_for, prefix='userform')
+            context['formset'] = formset
+
+        context['allocation'] = allocation_obj
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        allocation_obj = get_object_or_404(Allocation, pk=pk)
+
+        users_to_request_for = self.get_users_to_request_for(allocation_obj)
+
+        formset = formset_factory(
+            AllocationRequestClusterAccountForm,
+            max_num=len(users_to_request_for))
+        formset = formset(
+            request.POST, initial=users_to_request_for, prefix='userform')
+
+        users_requested_for_count = 0
+
+        if formset.is_valid():
+
+            # TODO
+            # - Create an AllocationUserAttribute with type 'Cluster Account
+            # Status' and value 'Pending - Add'.
+            # - If one already exists, change its value to 'Pending - Add'.
+            # - Error out if the user is not in users_to_request_for.
+
+            message = (
+                f'Requested cluster accounts for {users_requested_for_count} '
+                f'users.')
+            messages.success(request, message)
+        else:
+            for error in formset.errors:
+                messages.error(request, error)
+
+        return HttpResponseRedirect(
+            reverse('allocation-detail', kwargs={'pk': pk}))
