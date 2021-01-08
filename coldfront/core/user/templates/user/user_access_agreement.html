@@ -1,0 +1,210 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load staticfiles %}
+
+{% block title %}
+User Access Agreement
+{% endblock %}
+
+{% block content %}
+<script>
+    $("#navbar-main > ul > li.active").removeClass("active");
+    $("#navbar-user").addClass("active");
+    $("#navbar-user-user-profile").addClass("active");
+</script>
+
+
+  <div class="card ">
+    <div class="card-header"><i class="fas fa-user" aria-hidden="true"></i>
+      User Access Agreement
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table">
+          <tbody>
+            <tr>
+              <th scope="row">Research IT must have a signed copy of this form for each user.</th>
+              <td>
+                <p>
+                  Everyone requesting access to the Savio cluster or any other resource managed by the Berkeley Research Computing (BRC) program must review and sign this access agreement form to obtain credentials to the resource.
+                </p>
+                <p>
+                  Enter the requested information in the form, review all policies, click Accept at the bottom of the page and submit.
+                </p>
+                <p>
+                  Email us at <a href="">research-it@berkeley.edu</a> if you have any questions or concerns.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">Access Agreement Form</th>
+              <td>
+                <p>
+                  This form identifies a set of University policies and articulates BRC-specific policies that govern your access to a BRC resource. In addition to the policies here, all users are subject to the <a href="http://policy.ucop.edu/doc/7000470/ElectronicCommunications">Electronic Communications Policy of the University of California</a>. Users are responsible for understanding and complying with requirements for handling sensitive and/or confidential data.
+                </p>
+                <p>
+                  The system you are being provided access to is for approved uses only as determined by the principal investigator and consistent with UC Berkeley policies. This system is only approved for unclassified, non-proprietary fundamental research.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">Computer Use</th>
+              <td>
+                <p>
+                  All users are subject to the provisions of the <a href="https://security.berkeley.edu/computer-use-policy">Campus Computer Use Policy</a>. In particular, users must not share their access credentials. No one may access the system with the credentials for another user.
+                </p>
+                <p>
+                  Storage or processing of classified information is prohibited by the Campus <a href="http://vcresearch.berkeley.edu/research-policies/policy-guidelines-governing-openness-and-freedom-to-publish">POLICY GUIDELINES GOVERNING OPENNESS AND FREEDOM TO PUBLISH</a> and may be subject to civil and criminal penalties.
+                </p>
+                <p>
+                  You have no expectation of privacy in your use of this system. Your actions, history, and userdata are subject to inspection and review by authorized parties per UC Berkeley Policy. UC Berkeley may share this information with law enforcement at its discretion.
+                </p>
+                <p>
+                  No incidental personal use is permitted on UC Berkeley Clusters.
+                </p>
+                <p>
+                  This system is provided without warranty or set service level. UC Berkeley will not be held liable in the event of any system failure or loss of data.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">Data Retention</th>
+              <td>
+                <p>
+                  When a PI requests that a user account be deleted, all associated permanent files (in home directories and UC Berkeley cluster systems) are deleted.
+                </p>
+                <p>
+                  When a PI (or project/group) requests the PI account or project be deleted, all associated permanent files (in home directories and UC Berkeley cluster systems) are deleted
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">User Accountability</th>
+              <td>
+                <p>
+                  You are accountable for your actions. Sanctions for policy violations may include termination of access, disciplinary action, and/or civil and criminal penalties.
+                </p>
+                <p>
+                  A user identifier (username and password) is required of all users. You must adhere to UC Berkeley password guidelines. Passwords must not be shared.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">Access</th>
+              <td>
+                <p>
+                  Users may be required to use a one-time password-generating device to gain access to their clusters. Users are not allowed to offer the OTP credentials to any other third party or host other than the UC Berkeley clusters they are authorized to access.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">Best Practices</th>
+              <td>
+                <p>
+                  Users must not store their Savio username or OTP credentials (PIN) unencrypted on any device used to generate one-time passwords.
+                </p>
+                <p>
+                  Users are asked to access the clusters directly from their workstations and laptops and avoid using other hosts as intermediate hops.
+                </p>
+                <p>
+                  Users should not leave their login sessions open and idle for long periods of time and should lock their screens while away from their workstations and laptops.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">Unauthorized Access</th>
+              <td>
+                <p>
+                  Users are not to attempt to receive unintended messages or access information by any unauthorized means, such as imitating another system, impersonating another user or other person, misusing legal user credentials (usernames, passwords, etc.), or by causing some system component to function incorrectly.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">Software Data and Use</th>
+              <td>
+                <p>
+                  All software and data used on UC Berkeley computers must be appropriately acquired and used according to the appropriate licensing. The licensee of software or data is responsible for ensuring that license constraints are met.
+                </p>
+                <p>
+                  Possession or use of illegally copied software within BRC resources is prohibited. Likewise, users shall not copy, store or transfer copyrighted software or data, except as permitted by the owner of the copyright.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">Altering Authorized Access</th>
+              <td>
+                <p>
+                  Users are prohibited from changing or circumventing access controls to allow themselves or others to perform actions outside their authorized privileges or to circumvent security systems.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">Data Modification or Destruction</th>
+              <td>
+                <p>
+                  Users are prohibited from taking unauthorized actions to intentionally modify, delete, or reconstruct information or programs.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">Malicious Software</th>
+              <td>
+                <p>
+                  Users must not intentionally introduce or use malicious software such as computer viruses, Trojan horses, or worms.
+                </p>
+                <p>
+                  Users are responsible for taking reasonable steps to ensure the integrity and security of software they introduce to the system.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">Denial of Service Actions</th>
+              <td>
+                <p>
+                  Users may not deliberately interfere with other users’ access to system resources.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">Notification</th>
+              <td>
+                <p>
+                  Users must notify UC Berkeley immediately when they become aware that any of the accounts used to access UC Berkeley have been compromised. UC Berkeley reserves the right to temporarily disable accounts without prior notification in the event of a security compromise.
+                </p>
+                <p>
+                  IMPORTANT: The number one threat to BRC resources is from a compromised device (like your desktop computer or mobile phone) which allows your username/password to be stolen or your session to be hijacked. You are responsible for taking reasonable steps to ensure the security of any system you use to access UC Berkeley (and BRC) systems.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">Tracking Usage of Computing Time</th>
+              <td>
+                <p>
+                  Tracking usage of computing time, on the UC Berkeley campus's Savio high-performance computing cluster, is done via abstract measurement units called "Service Units."
+                </p>
+                <p>
+                  A Service Unit (abbreviated as "SU") is equivalent to one “core hour”: that is, the use of one processor core, for one hour of wall-clock time, on one of Savio's standard, current generation compute nodes (currently savio2 nodes). With the exception of the savio2_htc and savio2_gpu queues which offer per-core scheduling of jobs, jobs are scheduled PER NODE, which is to say, reserving a node provides you with exclusive use of all the node's cores, and you will be charged for all of the cores on the node, regardless of how many you use. BRC offers tools including the <a href="http://research-it.berkeley.edu/services/high-performance-computing/user-guide/hthelper-script">ht_helper script</a> to help you keep nodes fully loaded.
+                </p>
+                <p>
+                  If you submit a job to a condo (using co_something), your SU usage is not tracked. If you submit a job using a Faculty Computing Allowance (fc_something) or purchased SU account (ac_something), your SU usage is deducted from the allocation on that account.
+                </p>
+                <p>
+                  Full details are available <a href="http://research-it.berkeley.edu/services/high-performance-computing/service-units-savio">here</a>.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">Submit</th>
+              <td>
+                <div>
+                  {% include "user/user_access_agreement_form.html" %}
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}

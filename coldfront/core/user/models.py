@@ -22,6 +22,8 @@ class UserProfile(models.Model):
         null=True
     )
 
+    access_agreement_signed_date = models.DateTimeField(blank=True, null=True)
+
 
 class ExpiringToken(Token):
     expiration = models.DateTimeField(blank=True, null=True)

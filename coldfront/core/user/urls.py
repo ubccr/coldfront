@@ -23,6 +23,9 @@ urlpatterns = [
          LogoutView.as_view(next_page=reverse_lazy('login')),
          name='logout'
          ),
+    path('user-access-agreement',
+         user_views.user_access_agreement,
+         name='user-access-agreement'),
     path('user-profile/', user_views.UserProfile.as_view(), name='user-profile'),
     path('user-profile/<str:viewed_username>', user_views.UserProfile.as_view(), name='user-profile'),
     path('user-projects-managers/', user_views.UserProjectsManagersView.as_view(), name='user-projects-managers'),
