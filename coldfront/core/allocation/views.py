@@ -1642,8 +1642,7 @@ class AllocationRequestClusterAccountsView(LoginRequiredMixin,
         the requesting user is a regular user, filter out other
         users."""
         pending_or_active_cluster_accounts = \
-            AllocationUserAttribute.objects.filter(
-                allocation=allocation_obj,
+            allocation_obj.allocationuserattribute_set.filter(
                 allocation_attribute_type__name='Cluster Account Status',
                 value__in=['Pending - Add', 'Active'])
 
@@ -1663,7 +1662,7 @@ class AllocationRequestClusterAccountsView(LoginRequiredMixin,
 
         kwargs = {
             'pk__in': user_pks,
-            'userprofile__access_agreement_signed_date__isnull': False,
+            # 'userprofile__access_agreement_signed_date__isnull': False,# TODO
         }
         values = ['username', 'first_name', 'last_name', 'email']
         return list(User.objects.filter(**kwargs).values(*values))
@@ -1699,13 +1698,55 @@ class AllocationRequestClusterAccountsView(LoginRequiredMixin,
 
         users_requested_for_count = 0
 
+        pending = 'Pending - Add'
+        active = 'Active'
+
         if formset.is_valid():
 
             # TODO
-            # - Create an AllocationUserAttribute with type 'Cluster Account
-            # Status' and value 'Pending - Add'.
-            # - If one already exists, change its value to 'Pending - Add'.
-            # - Error out if the user is not in users_to_request_for.
+            cluster_account_status = AllocationAttributeType.objects.get(
+                name='Cluster Account Status')
+            cluster_accounts = \
+                allocation_obj.allocationuserattribute_set.filter(
+                    allocation_attribute_type=cluster_account_status)
+            for form in formset:
+                user_form_data = form.cleaned_data
+                if user_form_data['selected']:
+
+                    user_obj = User.objects.get(
+                        username=user_form_data.get('username'))
+
+                    queryset = allocation_obj.allocationuser_set
+                    if not queryset.filter(user=user_obj).exists():
+                        message = (
+                            f'User {user_obj.username} is not a member of the '
+                            f'allocation.')
+                        messages.warning(request, message)
+                        continue
+                    allocation_user_obj = queryset.get(user=user_obj)
+
+                    queryset = cluster_accounts.filter(
+                        allocation_user=allocation_user_obj)
+                    if not queryset.exists():
+                        AllocationUserAttribute.objects.create(
+                            allocation_attribute_type=cluster_account_status,
+                            allocation=allocation_obj,
+                            allocation_user=allocation_user_obj,
+                            value=pending)
+                    else:
+                        cluster_account = queryset.get(
+                            allocation_user=allocation_user_obj)
+                        if cluster_account.value in [pending, active]:
+                            message = (
+                                f'User {user_obj.username} already has a '
+                                f'pending or active cluster account.')
+                            messages.warning(request, message)
+                            continue
+                        else:
+                            cluster_account.value = pending
+                            cluster_account.save()
+
+                    users_requested_for_count += 1
 
             message = (
                 f'Requested cluster accounts for {users_requested_for_count} '
@@ -1717,3 +1758,69 @@ class AllocationRequestClusterAccountsView(LoginRequiredMixin,
 
         return HttpResponseRedirect(
             reverse('allocation-detail', kwargs={'pk': pk}))
+
+
+class AllocationClusterAccountRequestListView(LoginRequiredMixin,
+                                              UserPassesTestMixin,
+                                              TemplateView):
+    template_name = 'allocation/allocation_cluster_account_request_list.html'
+    login_url = '/'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        permission = 'allocation.can_review_cluster_account_requests'
+        if self.request.user.has_perm(permission):
+            return True
+        message = (
+            'You do not have permission to review cluster account requests.')
+        messages.error(self.request, message)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        cluster_account_status = AllocationAttributeType.objects.get(
+            name='Cluster Account Status')
+        cluster_account_list = AllocationUserAttribute.objects.filter(
+            allocation_attribute_type=cluster_account_status,
+            value='Pending - Add')
+        context['cluster_account_list'] = cluster_account_list
+        return context
+
+
+class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,
+                                              UserPassesTestMixin, View):
+    login_url = '/'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        permission = 'allocation.can_review_cluster_account_requests'
+        if self.request.user.has_perm(permission):
+            return True
+        message = (
+            'You do not have permission to deny a cluster account request.')
+        messages.error(self.request, message)
+
+    def get(self, request, pk):
+        allocation_user_attribute_obj = get_object_or_404(
+            AllocationUserAttribute, pk=pk)
+        allocation_user_attribute_obj.value = 'Denied'
+        allocation_user_attribute_obj.save()
+
+        user_obj = allocation_user_attribute_obj.allocation_user.user
+        allocation_obj = allocation_user_attribute_obj.allocation
+        project_obj = allocation_obj.project
+        message = (
+            f'Cluster account request from User {user_obj.email} under '
+            f'Project {project_obj.name} and Allocation {allocation_obj.pk} '
+            f'has been DENIED.')
+        messages.success(request, message)
+
+        if EMAIL_ENABLED:
+            # TODO: Send an email to the user.
+            pass
+
+        return HttpResponseRedirect(
+            reverse('allocation-cluster-account-request-list'))

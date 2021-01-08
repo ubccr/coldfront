@@ -1,0 +1,66 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+
+
+{% block title %}
+Cluster Account Review New and Pending Requests
+{% endblock %}
+
+
+{% block content %}
+<h1>Cluster Account Requests</h1>
+{% if cluster_account_list %}
+<div class="table-responsive">
+  <table class="table table-sm">
+    <thead>
+      <tr>
+        <th scope="col">#</th>
+        <th scope="col">Date Requested/<br>Last Modified</th>
+        <th scope="col">User Email</th>
+        <th scope="col">Project</th>
+        <th scope="col">Allocation</th>
+        <th scope="col">Allocation Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for cluster_account in cluster_account_list %}
+      <tr>
+        <td>{{ cluster_account.pk }}</a></td>
+        <td>{{ cluster_account.modified|date:"M. d, Y" }}</td>
+        <td>{{ cluster_account.allocation_user.user.email }}</td>
+        <td>
+          <a href="{% url 'project-detail' cluster_account.allocation.project.pk %}">
+            {{ cluster_account.allocation.project.name }}
+          </a>
+        </td>
+        <td>
+          <a href="{% url 'allocation-detail' cluster_account.allocation.pk %}">
+            {{ cluster_account.allocation.pk }}
+          </a>
+        </td>
+        <td class="text-nowrap">
+          <a href="" class="btn btn-success mr-1">Activate</a>
+          <a href="{% url 'allocation-cluster-account-deny-request' cluster_account.pk %}" class="btn btn-danger mr-1">
+            Deny
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+  No new or pending cluster account requests!
+</div>
+{% endif %}
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-admin").addClass("active");
+  $("#navbar-allocation-requests").addClass("active");
+</script>
+
+{% endblock %}
