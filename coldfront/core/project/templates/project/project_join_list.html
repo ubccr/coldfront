@@ -1,27 +1,18 @@
-{% extends "common/base.html" %} {% load common_tags %} {% load crispy_forms_tags %} {% load static %} {% block title %} Project List {% endblock %} {% block content %}
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% load crispy_forms_tags %}
+{% load static %}
 
+{% block title %}
+Project List
+{% endblock %}
 
-
-<div class="card mb-3 bg-light">
-  <div class="card-body">
-    {% if user.userprofile.is_pi or user.is_superuser %}
-      <a class="btn btn-primary" href="{% url 'project-create' %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add a project</a>
-    {% endif %}
-    <a class="btn btn-primary" href="{% url 'project-join-list' %}" role="button">
-      <i class="fas fa-user-plus" aria-hidden="true"></i>
-      Join a project
-    </a>
-    <div class="float-right">
-      <a class="btn btn-primary" href="{% url 'project-archived-list' %}" role="button"><i class="fas fa-archive" aria-hidden="true"></i> View archived projects</a>
-    </div>
-  </div>
-</div>
-<h1>Projects</h1><hr>
+{% block content %}
+<h1>Join a Project</h1><hr>
 {% if expand_accordion == "show" or project_list or user.is_superuser%}
 <div class="mb-3" id="accordion">
   <div class="card">
     <div class="card-header">
-      
       <a id="expand_button" role="button" class="card-link " data-toggle="collapse" href="#collapseOne"> 
         <i class="fas fa-filter" aria-hidden="true"></i> Filter
         <i id="plus_minus" class="fas {{expand_accordion|get_icon}} float-right"></i>  
@@ -29,7 +20,7 @@
     </div>
     <div id="collapseOne" class="collapse {{expand_accordion}}" data-parent="#accordion">
       <div class="card-body">
-        <form id="filter_form" method="GET" action="{% url 'project-list' %}" autocomplete="off">
+        <form id="filter_form" method="GET" action="{% url 'project-join-list' %}" autocomplete="off">
           {{ project_search_form|crispy }}
           <input type="submit" class="btn btn-primary" value="Search">
           <button id="form_reset_button" type="button" class="btn btn-secondary">Reset</button>
@@ -65,6 +56,9 @@
           <a href="?order_by=status&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
           <a href="?order_by=status&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
         </th>
+        <th scope="col" class="text-nowrap">
+          Join
+        </th>
       </tr>
     </thead>
     <tbody>
@@ -79,6 +73,22 @@
         <td style="text-align: justify; text-justify: inter-word;">{{ project.title }}</td>
         <td>{{ project.field_of_science.description }}</td>
         <td>{{ project.status.name }}</td>
+        <td>
+          {% if project.name in not_joinable %}
+            <a href="#" class="btn btn-primary disabled">
+              <i class="fas fa-user-plus" aria-hidden="true"></i>
+              Join
+            </a>
+          {% else %}
+            <form action="{% url 'project-join' project.pk %}" method="post">
+              {% csrf_token %}
+              <button class="btn btn-primary" type="submit">
+                <i class="fas fa-user-plus" aria-hidden="true"></i>
+                Join
+              </button>
+            </form>
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>
