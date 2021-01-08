@@ -1590,9 +1590,9 @@ class AllocationAccountListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
         return AllocationAccount.objects.filter(user=self.request.user)
 
 
-class AllocationAddClusterAccountsView(LoginRequiredMixin, UserPassesTestMixin,
-                                       TemplateView):
-    template_name = 'allocation/allocation_add_cluster_accounts.html'
+class AllocationRequestClusterAccountsView(LoginRequiredMixin,
+                                           UserPassesTestMixin, TemplateView):
+    template_name = 'allocation/allocation_request_cluster_accounts.html'
 
     def test_func(self):
         """UserPassesTestMixin tests."""
@@ -1644,7 +1644,7 @@ class AllocationAddClusterAccountsView(LoginRequiredMixin, UserPassesTestMixin,
         pending_or_active_cluster_accounts = \
             AllocationUserAttribute.objects.filter(
                 allocation=allocation_obj,
-                allocationattributetype__name='Cluster Account Status',
+                allocation_attribute_type__name='Cluster Account Status',
                 value__in=['Pending - Add', 'Active'])
 
         allocation_users = allocation_obj.allocationuser_set.filter(
@@ -1666,7 +1666,7 @@ class AllocationAddClusterAccountsView(LoginRequiredMixin, UserPassesTestMixin,
             'userprofile__access_agreement_signed_date__isnull': False,
         }
         values = ['username', 'first_name', 'last_name', 'email']
-        return list(User.objects.filter(**kwargs).values(values))
+        return list(User.objects.filter(**kwargs).values(*values))
 
     def get(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
