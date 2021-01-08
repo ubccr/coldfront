@@ -14,7 +14,7 @@ Request Cluster Accounts under Allocation
 {% if formset %}
 <div class="card border-light">
   <div class="card-body">
-
+    <p>Select one or more users to request cluster accounts on behalf of. Users who have pending or active cluster accounts, or who have not signed the access agreement form, are not selectable.</p>
     <form action="{% url 'allocation-request-cluster-accounts' allocation.pk %}" method="post">
       {% csrf_token %}
       <div class="table-responsive">
