@@ -1,6 +1,7 @@
 import datetime
 import pprint
 
+from django import forms
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -30,7 +31,9 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectAddUsersToAllocationForm,
                                           ProjectRemoveUserForm,
                                           ProjectReviewEmailForm,
-                                          ProjectReviewForm, ProjectSearchForm,
+                                          ProjectReviewForm,
+                                          ProjectReviewUserJoinForm,
+                                          ProjectSearchForm,
                                           ProjectUserUpdateForm)
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectReviewStatusChoice,
@@ -119,6 +122,9 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             else:
                 allocations = Allocation.objects.prefetch_related(
                     'resources').filter(project=self.object)
+
+        context['num_join_requests'] = self.object.projectuser_set.filter(
+            status__name='Pending - Add').count()
 
         # context['publications'] = Publication.objects.filter(
             # project=self.object, status='Active').order_by('-year')
@@ -447,7 +453,12 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Project
     template_name_suffix = '_update_form'
-    fields = ['title', 'description', 'field_of_science', ]
+    fields = [
+        'title',
+        'description',
+        'field_of_science',
+        'joins_require_approval',
+    ]
     success_message = 'Project updated.'
 
     def test_func(self):
@@ -473,6 +484,22 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
 
     def get_success_url(self):
         return reverse('project-detail', kwargs={'pk': self.object.pk})
+
+    def form_valid(self, form):
+        # If joins_require_approval is set to False, automatically approve all
+        # pending join requests.
+        joins_require_approval = form.cleaned_data['joins_require_approval']
+        if not joins_require_approval:
+            project_obj = self.get_object()
+            active_status = ProjectUserStatusChoice.objects.get(name='Active')
+            num_requests_approved = project_obj.projectuser_set.filter(
+                status__name='Pending - Add').update(status=active_status)
+            message = (
+                f'Join requests no longer require approval, so '
+                f'{num_requests_approved} pending requests were automatically '
+                f'approved.')
+            messages.warning(self.request, message)
+        return super().form_valid(form)
 
 
 class ProjectAddUsersSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -1106,3 +1133,247 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
     def get_success_url(self):
         return reverse('project-review-list')
+
+
+class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    login_url = '/'
+
+    def test_func(self):
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        user_obj = self.request.user
+        project_users = project_obj.projectuser_set.filter(user=user_obj)
+
+        if not project_users.exists():
+            return True
+
+        project_user = project_users.first()
+        if project_user.status.name == 'Active':
+            message = (
+                f'You are already a member of Project {project_obj.name}.')
+            messages.error(self.request, message)
+            return False
+
+        if project_user.status.name == 'Pending - Add':
+            message = (
+                f'You have already requested to join Project '
+                f'{project_obj.name}.')
+            messages.warning(self.request, message)
+            return False
+
+        return True
+
+    def get(self, *args, **kwargs):
+        return redirect(self.login_url)
+
+    def post(self, request, *args, **kwargs):
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        user_obj = self.request.user
+        project_users = project_obj.projectuser_set.filter(user=user_obj)
+        role = ProjectUserRoleChoice.objects.get(name='User')
+        status = ProjectUserStatusChoice.objects.get(name='Pending - Add')
+
+        if project_users.exists():
+            project_user = project_users.first()
+            project_user.role = role
+            project_user.status = status
+            project_user.save()
+        else:
+            project_user = ProjectUser.objects.create(
+                user=user_obj,
+                project=project_obj,
+                role=role,
+                status=status)
+
+        if project_obj.joins_require_approval:
+            message = (
+                f'You have requested to join Project {project_obj.name}. The '
+                f'managers have been notified and will approve or deny your '
+                f'request.')
+            messages.success(self.request, message)
+            next_view = reverse('user-projects-managers')
+        else:
+            status = ProjectUserStatusChoice.objects.get(name='Active')
+            project_user.status = status
+            project_user.save()
+            message = (
+                f'You have requested to join Project {project_obj.name}. Your '
+                f'request has automatically been approved.')
+            messages.success(self.request, message)
+            next_view = reverse(
+                'project-detail', kwargs={'pk': project_obj.pk})
+
+        return redirect(next_view)
+
+
+class ProjectJoinListView(ProjectListView):
+
+    template_name = 'project/project_join_list.html'
+
+    def get_queryset(self):
+
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            if direction == 'asc':
+                direction = ''
+            else:
+                direction = '-'
+            order_by = direction + order_by
+        else:
+            order_by = 'id'
+
+        project_search_form = ProjectSearchForm(self.request.GET)
+
+        projects = Project.objects.prefetch_related(
+            'field_of_science', 'status').filter(
+                status__name__in=['New', 'Active', ]).order_by(order_by)
+
+        if project_search_form.is_valid():
+            data = project_search_form.cleaned_data
+
+            # Last Name
+            if data.get('last_name'):
+                pi_project_users = ProjectUser.objects.filter(
+                    project__in=projects,
+                    role__name='Principal Investigator',
+                    user__last_name__icontains=data.get('last_name'))
+                project_ids = pi_project_users.values_list(
+                    'project_id', flat=True)
+                projects = projects.filter(id__in=project_ids)
+
+            # Username
+            if data.get('username'):
+                projects = projects.filter(
+                    Q(projectuser__user__username__icontains=data.get(
+                        'username')) &
+                    (Q(projectuser__role__name='Principal Investigator') |
+                     Q(projectuser__status__name='Active'))
+                )
+
+            # Field of Science
+            if data.get('field_of_science'):
+                projects = projects.filter(
+                    field_of_science__description__icontains=data.get(
+                        'field_of_science'))
+
+        return projects.distinct()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        projects = self.get_queryset()
+        not_joinable = projects.filter(
+            projectuser__user=self.request.user,
+            projectuser__status__name__in=['Pending - Add', 'Active', ]
+        ).values_list('name', flat=True)
+        context['not_joinable'] = not_joinable
+        return context
+
+
+class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
+                                    TemplateView):
+    template_name = 'project/project_review_join_requests.html'
+
+    def test_func(self):
+        if self.request.user.is_superuser:
+            return True
+
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+
+        if project_obj.projectuser_set.filter(
+                user=self.request.user,
+                role__name__in=['Manager', 'Principal Investigator'],
+                status__name='Active').exists():
+            return True
+
+    def dispatch(self, request, *args, **kwargs):
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        if project_obj.status.name not in ['Active', 'New', ]:
+            message = 'You cannot review join requests to an archived project.'
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse('project-detail', kwargs={'pk': project_obj.pk}))
+        else:
+            return super().dispatch(request, *args, **kwargs)
+
+    @staticmethod
+    def get_users_to_review(project_obj):
+        users_to_review = [
+            {
+                'username': ele.user.username,
+                'first_name': ele.user.first_name,
+                'last_name': ele.user.last_name,
+                'email': ele.user.email,
+                'role': ele.role,
+            }
+            for ele in project_obj.projectuser_set.filter(
+                status__name='Pending - Add').order_by('user__username')
+        ]
+        return users_to_review
+
+    def get(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        project_obj = get_object_or_404(Project, pk=pk)
+
+        users_to_review = self.get_users_to_review(project_obj)
+        context = {}
+
+        if users_to_review:
+            formset = formset_factory(
+                ProjectReviewUserJoinForm, max_num=len(users_to_review))
+            formset = formset(initial=users_to_review, prefix='userform')
+            context['formset'] = formset
+
+        context['project'] = get_object_or_404(Project, pk=pk)
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        project_obj = get_object_or_404(Project, pk=pk)
+
+        users_to_review = self.get_users_to_review(project_obj)
+
+        formset = formset_factory(
+            ProjectReviewUserJoinForm, max_num=len(users_to_review))
+        formset = formset(
+            request.POST, initial=users_to_review, prefix='userform')
+
+        reviewed_users_count = 0
+
+        decision = request.POST.get('decision', None)
+        if decision not in ('approve', 'deny'):
+            return HttpResponse('', status=400)
+
+        if formset.is_valid():
+            if decision == 'approve':
+                status_name = 'Active'
+                message_verb = 'Approved'
+            else:
+                status_name = 'Denied'
+                message_verb = 'Denied'
+
+            project_user_active_status_choice = \
+                ProjectUserStatusChoice.objects.get(name=status_name)
+            for form in formset:
+                user_form_data = form.cleaned_data
+                if user_form_data['selected']:
+
+                    reviewed_users_count += 1
+
+                    user_obj = User.objects.get(
+                        username=user_form_data.get('username'))
+
+                    project_user_obj = project_obj.projectuser_set.get(
+                        user=user_obj)
+                    project_user_obj.status = project_user_active_status_choice
+                    project_user_obj.save()
+
+            message = (
+                f'{message_verb} {reviewed_users_count} user requests to join '
+                f'the project.')
+            messages.success(request, message)
+        else:
+            for error in formset.errors:
+                messages.error(request, error)
+
+        return HttpResponseRedirect(
+            reverse('project-detail', kwargs={'pk': pk}))
