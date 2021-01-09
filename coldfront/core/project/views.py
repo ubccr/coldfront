@@ -83,6 +83,13 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
+        # Can the user archive the project?
+        if self.request.user.is_superuser:
+            context['is_allowed_to_archive_project'] = True
+        else:
+            context['is_allowed_to_archive_project'] = False
+
         # Can the user update the project?
         if self.request.user.is_superuser:
             context['is_allowed_to_update_project'] = True
