@@ -323,7 +323,7 @@ class AllocationUserAttribute(TimeStampedModel):
                 allocation_user_attribute=self)
 
     def clean(self):
-        if self.allocation.allocation_attribute_type.is_unique:
+        if self.allocation_attribute_type.is_unique:
             kwargs = {
                 "allocation_attribute_type": self.allocation_attribute_type,
             }
