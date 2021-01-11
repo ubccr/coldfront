@@ -350,6 +350,11 @@ class AllocationAccountAdmin(SimpleHistoryAdmin):
     list_display = ('name', 'user', )
 
 
+class AllocationUserAttributeUsageInline(admin.TabularInline):
+    model = AllocationUserAttributeUsage
+    extra = 0
+
+
 @admin.register(AllocationUserAttribute)
 class AllocationUserAttributeAdmin(SimpleHistoryAdmin):
     readonly_fields_change = (
@@ -360,6 +365,7 @@ class AllocationUserAttributeAdmin(SimpleHistoryAdmin):
                     'allocation_attribute_type', 'value', 'created', 'modified',)
     list_filter = ('allocation_attribute_type', 'allocation__resources',
                    'allocation_user__user__username')
+    inlines = [AllocationUserAttributeUsageInline, ]
     search_fields = (
         'allocation_user__user__first_name',
         'allocation_user__user__last_name',
@@ -400,7 +406,6 @@ class AllocationUserAttributeAdmin(SimpleHistoryAdmin):
             return super().get_readonly_fields(request)
         else:
             return self.readonly_fields_change
-
 
 @admin.register(AllocationUserAttributeUsage)
 class AllocationUserAttributeUsageAdmin(SimpleHistoryAdmin):
