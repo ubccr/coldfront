@@ -1,12 +1,15 @@
 from django import forms
+from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 
 from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationAttributeType,
-                                              AllocationStatusChoice)
+                                              AllocationStatusChoice,
+                                              AllocationUserAttribute)
 from coldfront.core.allocation.utils import get_user_resources
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource, ResourceType
+from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import import_from_settings
 
 ALLOCATION_ACCOUNT_ENABLED = import_from_settings(
@@ -182,3 +185,33 @@ class AllocationRequestClusterAccountForm(forms.Form):
     last_name = forms.CharField(max_length=150, required=False, disabled=True)
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
+
+
+class AllocationClusterAccountRequestActivationForm(forms.Form):
+    username = forms.CharField(max_length=150, required=True)
+    cluster_uid = forms.CharField(max_length=10)
+
+    def __init__(self, request_user, allocation_user_attribute_pk, *args,
+                 **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = request_user
+        self.allocation_user_attribute_obj = get_object_or_404(
+            AllocationUserAttribute, pk=allocation_user_attribute_pk)
+
+    def clean_username(self):
+        username = self.cleaned_data['username']
+        queryset = User.objects.filter(username=username)
+        if queryset.exists():
+            if queryset.first().pk != self.user.pk:
+                raise forms.ValidationError(
+                    f'A user with username {username} already exists.')
+        return username
+
+    def clean_cluster_uid(self):
+        cluster_uid = self.cleaned_data['cluster_uid']
+        queryset = UserProfile.objects.filter(cluster_uid=cluster_uid)
+        if queryset.exists():
+            if queryset.first().pk != self.user.userprofile.pk:
+                raise forms.ValidationError(
+                    f'A user with cluster_uid {cluster_uid} already exists.')
+        return cluster_uid

@@ -26,6 +26,7 @@ from django.views.generic.edit import CreateView, FormView, UpdateView
 from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationAddUserForm,
                                              AllocationAttributeDeleteForm,
+                                             AllocationClusterAccountRequestActivationForm,
                                              AllocationForm,
                                              AllocationInvoiceNoteDeleteForm,
                                              AllocationInvoiceUpdateForm,
@@ -1662,7 +1663,7 @@ class AllocationRequestClusterAccountsView(LoginRequiredMixin,
 
         kwargs = {
             'pk__in': user_pks,
-            # 'userprofile__access_agreement_signed_date__isnull': False,# TODO
+            'userprofile__access_agreement_signed_date__isnull': False,
         }
         values = ['username', 'first_name', 'last_name', 'email']
         return list(User.objects.filter(**kwargs).values(*values))
@@ -1786,6 +1787,83 @@ class AllocationClusterAccountRequestListView(LoginRequiredMixin,
             value='Pending - Add')
         context['cluster_account_list'] = cluster_account_list
         return context
+
+
+class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
+                                                  UserPassesTestMixin,
+                                                  FormView):
+    form_class = AllocationClusterAccountRequestActivationForm
+    login_url = '/'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        permission = 'allocation.can_review_cluster_account_requests'
+        if self.request.user.has_perm(permission):
+            return True
+        message = (
+            'You do not have permission to activate a cluster account '
+            'request.')
+        messages.error(self.request, message)
+
+    def dispatch(self, request, *args, **kwargs):
+        allocation_user_attribute_obj = get_object_or_404(
+            AllocationUserAttribute, pk=self.kwargs.get('pk'))
+        status = allocation_user_attribute_obj.value
+        if status != 'Pending - Add':
+            message = f'Cluster account has unexpected status {status}.'
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse('allocation-cluster-account-request-list'))
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        allocation_user_attribute_obj = get_object_or_404(
+            AllocationUserAttribute, pk=self.kwargs.get('pk'))
+        context['cluster_account'] = allocation_user_attribute_obj
+        return context
+
+    def get_form(self, form_class=None):
+        """Return an instance of the form to be used in this view."""
+        if form_class is None:
+            form_class = self.get_form_class()
+        return form_class(
+            self.request.user, self.kwargs.get('pk'), **self.get_form_kwargs())
+
+    def form_valid(self, form):
+        form_data = form.cleaned_data
+        allocation_user_attribute_obj = get_object_or_404(
+            AllocationUserAttribute, pk=self.kwargs.get('pk'))
+        cluster_username = form_data.get('cluster_username')
+        cluster_uid = form_data.get('cluster_uid')
+
+        user_obj = allocation_user_attribute_obj.allocation_user.user
+        user_obj.username = cluster_username
+        user_obj.userprofile.cluster_uid = cluster_uid
+        user_obj.userprofile.save()
+        user_obj.save()
+
+        allocation_user_attribute_obj.value = 'Active'
+        allocation_user_attribute_obj.save()
+
+        allocation_obj = allocation_user_attribute_obj.allocation
+        project_obj = allocation_obj.project
+        message = (
+            f'Cluster account request from User {user_obj.email} under '
+            f'Project {project_obj.name} and Allocation {allocation_obj.pk} '
+            f'has been ACTIVATED.')
+        messages.success(self.request, message)
+
+        if EMAIL_ENABLED:
+            # TODO: Send an email to user.
+            pass
+
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('allocation-cluster-account-request-list')
 
 
 class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,
