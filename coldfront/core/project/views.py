@@ -405,6 +405,7 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
         project = get_object_or_404(Project, pk=pk)
 
         context['project'] = project
+        context['is_allowed_to_archive_project'] = self.request.user.is_superuser
 
         return context
 
