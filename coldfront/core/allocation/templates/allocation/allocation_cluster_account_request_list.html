@@ -41,7 +41,7 @@ Cluster Account Review New and Pending Requests
           </a>
         </td>
         <td class="text-nowrap">
-          <a href="" class="btn btn-success mr-1">Activate</a>
+          <a href="{% url 'allocation-cluster-account-activate-request' cluster_account.pk %}" class="btn btn-success mr-1">Activate</a>
           <a href="{% url 'allocation-cluster-account-deny-request' cluster_account.pk %}" class="btn btn-danger mr-1">
             Deny
           </a>
@@ -60,7 +60,7 @@ Cluster Account Review New and Pending Requests
 <script>
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-admin").addClass("active");
-  $("#navbar-allocation-requests").addClass("active");
+  $("#navbar-allocation-cluster-account-requests").addClass("active");
 </script>
 
 {% endblock %}
