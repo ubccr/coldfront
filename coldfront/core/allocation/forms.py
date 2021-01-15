@@ -1,5 +1,8 @@
 from django import forms
 from django.contrib.auth.models import User
+from django.contrib.auth.validators import UnicodeUsernameValidator
+from django.core.validators import MinLengthValidator
+from django.core.validators import RegexValidator
 from django.shortcuts import get_object_or_404
 
 from coldfront.core.allocation.models import (Allocation, AllocationAccount,
@@ -188,13 +191,26 @@ class AllocationRequestClusterAccountForm(forms.Form):
 
 
 class AllocationClusterAccountRequestActivationForm(forms.Form):
-    username = forms.CharField(max_length=150, required=True)
-    cluster_uid = forms.CharField(max_length=10)
+    username = forms.CharField(
+        max_length=150,
+        required=True,
+        validators=[
+            MinLengthValidator(3),
+            UnicodeUsernameValidator(),
+        ])
+    cluster_uid = forms.CharField(
+        label='Cluster UID',
+        max_length=10,
+        required=True,
+        validators=[
+            MinLengthValidator(3),
+            RegexValidator(
+                regex=r'^[0-9]+$', message='Cluster UID must be numeric.'),
+        ])
 
-    def __init__(self, request_user, allocation_user_attribute_pk, *args,
-                 **kwargs):
+    def __init__(self, user, allocation_user_attribute_pk, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.user = request_user
+        self.user = user
         self.allocation_user_attribute_obj = get_object_or_404(
             AllocationUserAttribute, pk=allocation_user_attribute_pk)
 
