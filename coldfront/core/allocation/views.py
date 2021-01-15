@@ -10,6 +10,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.core.validators import validate_email
+from django.core.validators import ValidationError
 from django.db import IntegrityError
 from django.db.models import Q
 from django.db.models.query import QuerySet
@@ -1704,7 +1706,6 @@ class AllocationRequestClusterAccountsView(LoginRequiredMixin,
 
         if formset.is_valid():
 
-            # TODO
             cluster_account_status = AllocationAttributeType.objects.get(
                 name='Cluster Account Status')
             cluster_accounts = \
@@ -1716,6 +1717,13 @@ class AllocationRequestClusterAccountsView(LoginRequiredMixin,
 
                     user_obj = User.objects.get(
                         username=user_form_data.get('username'))
+
+                    if not user_obj.userprofile.access_agreement_signed_date:
+                        message = (
+                            f'User {user_obj.username} has not signed the '
+                            f'access agreement.')
+                        messages.warning(request, message)
+                        continue
 
                     queryset = allocation_obj.allocationuser_set
                     if not queryset.filter(user=user_obj).exists():
@@ -1794,6 +1802,8 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
                                                   FormView):
     form_class = AllocationClusterAccountRequestActivationForm
     login_url = '/'
+    template_name = (
+        'allocation/allocation_activate_cluster_account_request.html')
 
     def test_func(self):
         """UserPassesTestMixin tests."""
@@ -1808,9 +1818,10 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
         messages.error(self.request, message)
 
     def dispatch(self, request, *args, **kwargs):
-        allocation_user_attribute_obj = get_object_or_404(
+        self.allocation_user_attribute_obj = get_object_or_404(
             AllocationUserAttribute, pk=self.kwargs.get('pk'))
-        status = allocation_user_attribute_obj.value
+        self.user_obj = self.allocation_user_attribute_obj.allocation_user.user
+        status = self.allocation_user_attribute_obj.value
         if status != 'Pending - Add':
             message = f'Cluster account has unexpected status {status}.'
             messages.error(request, message)
@@ -1818,49 +1829,59 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
                 reverse('allocation-cluster-account-request-list'))
         return super().dispatch(request, *args, **kwargs)
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        allocation_user_attribute_obj = get_object_or_404(
-            AllocationUserAttribute, pk=self.kwargs.get('pk'))
-        context['cluster_account'] = allocation_user_attribute_obj
-        return context
-
-    def get_form(self, form_class=None):
-        """Return an instance of the form to be used in this view."""
-        if form_class is None:
-            form_class = self.get_form_class()
-        return form_class(
-            self.request.user, self.kwargs.get('pk'), **self.get_form_kwargs())
-
     def form_valid(self, form):
         form_data = form.cleaned_data
-        allocation_user_attribute_obj = get_object_or_404(
-            AllocationUserAttribute, pk=self.kwargs.get('pk'))
-        cluster_username = form_data.get('cluster_username')
+        username = form_data.get('username')
         cluster_uid = form_data.get('cluster_uid')
 
-        user_obj = allocation_user_attribute_obj.allocation_user.user
-        user_obj.username = cluster_username
-        user_obj.userprofile.cluster_uid = cluster_uid
-        user_obj.userprofile.save()
-        user_obj.save()
+        self.user_obj.username = username
+        self.user_obj.userprofile.cluster_uid = cluster_uid
+        self.user_obj.userprofile.save()
+        self.user_obj.save()
 
-        allocation_user_attribute_obj.value = 'Active'
-        allocation_user_attribute_obj.save()
+        self.allocation_user_attribute_obj.value = 'Active'
+        self.allocation_user_attribute_obj.save()
 
-        allocation_obj = allocation_user_attribute_obj.allocation
+        allocation_obj = self.allocation_user_attribute_obj.allocation
         project_obj = allocation_obj.project
         message = (
-            f'Cluster account request from User {user_obj.email} under '
+            f'Cluster account request from User {self.user_obj.email} under '
             f'Project {project_obj.name} and Allocation {allocation_obj.pk} '
             f'has been ACTIVATED.')
         messages.success(self.request, message)
 
         if EMAIL_ENABLED:
-            # TODO: Send an email to user.
+            # TODO: Send an email to the user.
             pass
 
         return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['cluster_account'] = self.allocation_user_attribute_obj
+        return context
+
+    def get_form(self, form_class=None):
+        if form_class is None:
+            form_class = self.get_form_class()
+        return form_class(
+            self.user_obj, self.kwargs.get('pk'), **self.get_form_kwargs())
+
+    def get_initial(self):
+        user = self.user_obj
+        initial = {
+            'username': user.username,
+            'cluster_uid': user.userprofile.cluster_uid,
+        }
+        # If the user's username is an email address, because no cluster
+        # username has been set yet, leave the field blank.
+        try:
+            validate_email(user.username)
+        except ValidationError:
+            pass
+        else:
+            initial['username'] = ''
+        return initial
 
     def get_success_url(self):
         return reverse('allocation-cluster-account-request-list')
