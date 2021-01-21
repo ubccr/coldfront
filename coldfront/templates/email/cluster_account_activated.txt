@@ -1,0 +1,8 @@
+Dear {{ center_name }} user,
+
+Your cluster account request under project {{ project }} and allocation {{ allocation }} has been activated. You now have access to the cluster under this project and allocation.
+
+If you would like to opt out of future notifications, instructions can be found here: {{ opt_out_instruction_url }}.
+
+Thank you,
+{{ signature }}

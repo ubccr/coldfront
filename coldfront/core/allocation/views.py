@@ -1765,6 +1765,30 @@ class AllocationRequestClusterAccountsView(LoginRequiredMixin,
             for error in formset.errors:
                 messages.error(request, error)
 
+        if EMAIL_ENABLED:
+            if users_requested_for_count > 0:
+                project_name = allocation_obj.project.name
+                allocation_pk = allocation_obj.pk
+
+                domain_url = get_domain_url(self.request)
+                view_name = 'allocation-cluster-account-request-list'
+                url = f'{domain_url}{reverse(view_name)}'
+
+                subject = (
+                    f'New cluster account requests: {project_name} - '
+                    f'{allocation_pk}')
+                template = 'email/new_cluster_account_requests.txt'
+                template_context = {
+                    'project': project_name,
+                    'allocation': allocation_pk,
+                    'url': url,
+                }
+                sender = EMAIL_SENDER
+                receiver_list = [EMAIL_TICKET_SYSTEM_ADDRESS, ]
+
+                send_email_template(
+                    subject, template, template_context, sender, receiver_list)
+
         return HttpResponseRedirect(
             reverse('allocation-detail', kwargs={'pk': pk}))
 
@@ -1851,8 +1875,30 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
         messages.success(self.request, message)
 
         if EMAIL_ENABLED:
-            # TODO: Send an email to the user.
-            pass
+            subject = 'Cluster Account Activated'
+            template = 'email/cluster_account_activated.txt'
+            template_context = {
+                'center_name': EMAIL_CENTER_NAME,
+                'project': project_obj.name,
+                'allocation': allocation_obj.pk,
+                'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL,
+                'signature': EMAIL_SIGNATURE,
+            }
+            sender = EMAIL_SENDER
+
+            user_filter = Q(user=self.user_obj)
+            manager_pi_filter = Q(
+                role__name__in=['Manager', 'Principal Investigator'],
+                status__name='Active')
+            receiver_list = list(
+                project_obj.projectuser_set.filter(
+                    user_filter | manager_pi_filter, enable_notifications=True
+                ).values_list(
+                    'user__email', flat=True
+                ))
+
+            send_email_template(
+                subject, template, template_context, sender, receiver_list)
 
         return super().form_valid(form)
 
@@ -1918,8 +1964,36 @@ class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,
         messages.success(request, message)
 
         if EMAIL_ENABLED:
-            # TODO: Send an email to the user.
-            pass
+            domain_url = get_domain_url(self.request)
+            view_name = 'allocation-detail'
+            view = reverse(view_name, kwargs={'pk': allocation_obj.pk})
+            allocation_url = f'{domain_url}{view}'
+
+            subject = 'Cluster Account Denied'
+            template = 'email/cluster_account_denied.txt'
+            template_context = {
+                'center_name': EMAIL_CENTER_NAME,
+                'project': project_obj.name,
+                'allocation': allocation_obj.pk,
+                'allocation_url': allocation_url,
+                'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL,
+                'signature': EMAIL_SIGNATURE,
+            }
+            sender = EMAIL_SENDER
+
+            user_filter = Q(user=self.user_obj)
+            manager_pi_filter = Q(
+                role__name__in=['Manager', 'Principal Investigator'],
+                status__name='Active')
+            receiver_list = list(
+                project_obj.projectuser_set.filter(
+                    user_filter | manager_pi_filter, enable_notifications=True
+                ).values_list(
+                    'user__email', flat=True
+                ))
+
+            send_email_template(
+                subject, template, template_context, sender, receiver_list)
 
         return HttpResponseRedirect(
             reverse('allocation-cluster-account-request-list'))
