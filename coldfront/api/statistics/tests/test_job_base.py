@@ -45,7 +45,7 @@ class TestJobBase(TestAPIBase):
         # Create a Project and ProjectUsers.
         project_status = ProjectStatusChoice.objects.get(name='Active')
         self.project = Project.objects.create(
-            name='test_project', pi=self.pi, status=project_status)
+            name='test_project', status=project_status)
         status = ProjectUserStatusChoice.objects.get(name='Active')
         user_role = ProjectUserRoleChoice.objects.get(name='User')
         self.project_user = ProjectUser.objects.create(

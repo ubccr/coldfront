@@ -8,8 +8,8 @@
 
 {% block content %}
 
-<h3>Update invoice note for allocation to {{allocation.get_resources_as_string}} for PI
-  {{allocation.project.pi.username}}</h3>
+<h3>Update invoice note for allocation to {{allocation.get_resources_as_string}} for Project
+  {{allocation.project.name}}</h3>
 <hr>
 <form method="post">
   {% csrf_token %}

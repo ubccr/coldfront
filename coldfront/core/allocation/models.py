@@ -172,7 +172,7 @@ class Allocation(TimeStampedModel):
         return [a.value for a in attr]
 
     def __str__(self):
-        return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
+        return "%s (%s)" % (self.get_parent_resource.name, self.project.name)
 
 
 class AllocationAdminNote(TimeStampedModel):
@@ -323,7 +323,7 @@ class AllocationUserAttribute(TimeStampedModel):
                 allocation_user_attribute=self)
 
     def clean(self):
-        if self.allocation.allocation_attribute_type.is_unique:
+        if self.allocation_attribute_type.is_unique:
             kwargs = {
                 "allocation_attribute_type": self.allocation_attribute_type,
             }

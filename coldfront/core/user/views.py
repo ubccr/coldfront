@@ -1,5 +1,8 @@
 import logging
+import pytz
+from datetime import datetime
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -20,6 +23,7 @@ from django.views import View
 from django.views.generic import CreateView, ListView, TemplateView
 
 from coldfront.core.project.models import Project, ProjectUser
+from coldfront.core.user.forms import UserAccessAgreementForm
 from coldfront.core.user.forms import UserRegistrationForm
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
@@ -122,20 +126,15 @@ class UserProjectsManagersView(ListView):
             'project',
             'project__status',
             'project__field_of_science',
-            'project__pi',
         ).only(
             'status__name',
             'role__name',
             'project__title',
             'project__status__name',
             'project__field_of_science__description',
-            'project__pi__username',
-            'project__pi__first_name',
-            'project__pi__last_name',
-            'project__pi__email',
         ).annotate(
             is_project_pi=ExpressionWrapper(
-                Q(user=F('project__pi')),
+                Q(role__name='Principal Investigator'),
                 output_field=BooleanField(),
             ),
             is_project_manager=ExpressionWrapper(
@@ -145,7 +144,6 @@ class UserProjectsManagersView(ListView):
         ).order_by(
             '-is_project_pi',
             '-is_project_manager',
-            Lower('project__pi__username').asc(),
             Lower('project__title').asc(),
             # unlikely things will get to this point unless there's almost-duplicate projects
             '-project__pk',  # more performant stand-in for '-project__created'
@@ -153,13 +151,26 @@ class UserProjectsManagersView(ListView):
             Prefetch(
                 lookup='project__projectuser_set',
                 queryset=ProjectUser.objects.filter(
+                    role__name='Principal Investigator',
+                ).select_related(
+                    'status',
+                    'user',
+                ).only(
+                    'status__name',
+                    'user__username',
+                    'user__first_name',
+                    'user__last_name',
+                    'user__email',
+                ).order_by(
+                    'user__username',
+                ),
+                to_attr='project_pis',
+            ),
+            Prefetch(
+                lookup='project__projectuser_set',
+                queryset=ProjectUser.objects.filter(
                     role__name='Manager',
                     status__name__in=ongoing_projectuser_statuses,
-                ).exclude(
-                    user__pk__in=[
-                        F('project__pi__pk'),  # we assume pi is 'Manager' or can act like one - no need to list twice
-                        viewed_user.pk,  # we display elsewhere if the user is a manager of this project
-                    ],
                 ).select_related(
                     'status',
                     'user',
@@ -265,7 +276,11 @@ class UserListAllocations(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
 
         user_dict = {}
 
-        for project in Project.objects.filter(pi=self.request.user):
+        project_pks = ProjectUser.objects.filter(
+            user=self.requestuser,
+            role__name__in=['Manager', 'Principal Investigator'],
+            status__name='Active').values_list('project', flat=True)
+        for project in Project.objects.filter(pk__in=project_pks).distinct():
             for allocation in project.allocation_set.filter(status__name='Active'):
                 for allocation_user in allocation.allocationuser_set.filter(status__name='Active').order_by('user__username'):
                     if allocation_user.user not in user_dict:
@@ -328,3 +343,28 @@ def activate_user_account(request, uidb64=None, token=None):
             'Failed to activate account. Please contact an administrator.')
         messages.error(request, message)
     return redirect(reverse('login'))
+
+
+@login_required
+def user_access_agreement(request):
+    profile = request.user.userprofile
+    if profile.access_agreement_signed_date is not None:
+        message = 'You have already signed the user access agreement form.'
+        messages.warning(request, message)
+        return redirect(reverse_lazy('user-profile'))
+    if request.method == 'POST':
+        form = UserAccessAgreementForm(request.POST)
+        if form.is_valid():
+            now = datetime.utcnow().astimezone(
+                pytz.timezone(settings.TIME_ZONE))
+            profile.access_agreement_signed_date = now
+            profile.save()
+            message = 'Thank you for signing the user access agreement form.'
+            messages.success(request, message)
+            return redirect(reverse_lazy('user-profile'))
+        else:
+            message = 'Incorrect answer. Please try again.'
+            messages.error(request, message)
+    else:
+        form = UserAccessAgreementForm()
+    return render(request, 'user/user_access_agreement.html', {'form': form})
