@@ -146,7 +146,9 @@ class Command(BaseCommand):
             - Exception, if any errors occur
         """
         project_status = ProjectStatusChoice.objects.get(name='Active')
-        project_user_role = ProjectUserRoleChoice.objects.get(name='Manager')
+        principal_investigator_role = \
+            ProjectUserRoleChoice.objects.get(name='Principal Investigator')
+        manager_role = ProjectUserRoleChoice.objects.get(name='Manager')
         project_user_status = ProjectUserStatusChoice.objects.get(
             name='Active')
 
@@ -208,7 +210,7 @@ class Command(BaseCommand):
                 project = Project.objects.get(name=name)
             except Project.DoesNotExist:
                 project = Project.objects.create(
-                    name=name, pi=PIs[0], title=title, status=project_status)
+                    name=name, title=title, status=project_status)
                 self.logger.info(f'Project {name} was created.')
             else:
                 for key, value in project_kwargs.items():
@@ -222,13 +224,14 @@ class Command(BaseCommand):
                         user=pi, project=project)
                 except ProjectUser.DoesNotExist:
                     ProjectUser.objects.create(
-                        user=pi, project=project, role=project_user_role,
+                        user=pi, project=project,
+                        role=principal_investigator_role,
                         status=project_user_status)
                     self.logger.info(
                         f'Created a ProjectUser between User {pi.username} '
                         f'and Project {project.name}.')
                 else:
-                    project_user.role = project_user_role
+                    project_user.role = principal_investigator_role
                     project_user.status = project_user_status
                     project_user.save()
 
@@ -274,13 +277,14 @@ class Command(BaseCommand):
                         user=poc, project=project)
                 except ProjectUser.DoesNotExist:
                     ProjectUser.objects.create(
-                        user=poc, project=project, role=project_user_role,
+                        user=poc, project=project, role=manager_role,
                         status=project_user_status)
                     self.logger.info(
                         f'Created a ProjectUser between User {poc.username} '
                         f'and Project {project.name}.')
                 else:
-                    project_user.role = project_user_role
+                    if project_user.role != principal_investigator_role:
+                        project_user.role = manager_role
                     project_user.status = project_user_status
                     project_user.save()
 

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.forms import UserCreationForm
@@ -5,6 +7,7 @@ from django.contrib.auth.models import User
 from django.utils.html import mark_safe
 
 from coldfront.core.user.utils import send_account_activation_email
+from coldfront.core.user.models import UserProfile
 
 
 class UserSearchForm(forms.Form):
@@ -79,3 +82,41 @@ class UserLoginForm(AuthenticationForm):
                 'Your account has been created, but is inactive. Please click '
                 'the link sent to your email address to activate your '
                 'account.', code='inactive')
+
+
+class UserAccessAgreementForm(forms.Form):
+
+    POP_QUIZ_CHOICES = [
+        ('1', '1'),
+        ('2', '2'),
+        ('24', '24'),
+        ('48', '48'),
+    ]
+
+    pop_quiz_answer = forms.ChoiceField(
+        choices=POP_QUIZ_CHOICES,
+        help_text=(
+            'You run a job that uses 2 of the 24 cores of a savio2 node, for '
+            '1 hour. How many SUs have you used?'),
+        label='Service Unit usage pop quiz',
+        required=True,
+        widget=forms.RadioSelect())
+
+    acknowledgement = forms.BooleanField(
+        initial=False,
+        help_text=(
+            'I have read the UC Berkeley Policies and Procedures and '
+            'understand my responsibilities in the use of BRC computing '
+            'resources managed by the BRC Program.'),
+        label='Acknowledge & Sign',
+        required=True)
+
+    class Meta:
+        model = UserProfile
+        fields = ('pop_quiz_answer', 'acknowledgement', )
+
+    def clean_pop_quiz_answer(self):
+        pop_quiz_answer = int(self.cleaned_data['pop_quiz_answer'])
+        if pop_quiz_answer != 24:
+            raise forms.ValidationError('Incorrect answer.')
+        return pop_quiz_answer

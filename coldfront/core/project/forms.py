@@ -86,13 +86,16 @@ class ProjectReviewForm(forms.Form):
         project_obj = get_object_or_404(Project, pk=project_pk)
         now = datetime.datetime.now(datetime.timezone.utc)
 
+        """
         if project_obj.grant_set.exists():
             latest_grant = project_obj.grant_set.order_by('-modified')[0]
             grant_updated_in_last_year = (
                 now - latest_grant.created).days < 365
         else:
             grant_updated_in_last_year = None
+        """
 
+        """
         if project_obj.publication_set.exists():
             latest_publication = project_obj.publication_set.order_by(
                 '-created')[0]
@@ -100,11 +103,14 @@ class ProjectReviewForm(forms.Form):
                 now - latest_publication.created).days < 365
         else:
             publication_updated_in_last_year = None
+        """
 
+        """
         if grant_updated_in_last_year or publication_updated_in_last_year:
             self.fields['reason'].widget = forms.HiddenInput()
         else:
             self.fields['reason'].required = True
+        """
 
 
 class ProjectReviewEmailForm(forms.Form):
@@ -119,7 +125,17 @@ class ProjectReviewEmailForm(forms.Form):
     def __init__(self, pk, *args, **kwargs):
         super().__init__(*args, **kwargs)
         project_review_obj = get_object_or_404(ProjectReview, pk=int(pk))
-        self.fields['email_body'].initial = 'Dear {} {} \n{}'.format(
-            project_review_obj.project.pi.first_name, project_review_obj.project.pi.last_name, EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL)
+        self.fields['email_body'].initial = 'Dear {} managers \n{}'.format(
+            project_review_obj.project.name,
+            EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL)
         self.fields['cc'].initial = ', '.join(
             [EMAIL_DIRECTOR_EMAIL_ADDRESS] + EMAIL_ADMIN_LIST)
+
+
+class ProjectReviewUserJoinForm(forms.Form):
+    username = forms.CharField(max_length=150, disabled=True)
+    first_name = forms.CharField(max_length=30, required=False, disabled=True)
+    last_name = forms.CharField(max_length=150, required=False, disabled=True)
+    email = forms.EmailField(max_length=100, required=False, disabled=True)
+    role = forms.CharField(max_length=30, disabled=True)
+    selected = forms.BooleanField(initial=False, required=False)

@@ -1,28 +1,26 @@
-{% extends "common/base.html" %} {% load crispy_forms_tags %} {% load common_tags %}  {% load static %} {% block title %} Project List {% endblock %} {% block content %}
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% load crispy_forms_tags %}
+{% load static %}
 
+{% block title %}
+Project List
+{% endblock %}
 
-
-<div class="card mb-3 bg-light">
-  <div class="card-body">
-    <div class="float-left">
-      <a class="btn btn-primary" href="{% url 'project-list' %}" role="button"><i class="fas fa-arrow-left"></i> Back to active projects</a>
-    </div>
-  </div>
-</div>
-<h1>Archived Projects</h1><hr>
-
-{% if expand_accordion == "show" or project_list or user.is_superuser %}
+{% block content %}
+<h1>Join a Project</h1><hr>
+{% if expand_accordion == "show" or project_list or user.is_superuser%}
 <div class="mb-3" id="accordion">
   <div class="card">
     <div class="card-header">
       <a id="expand_button" role="button" class="card-link " data-toggle="collapse" href="#collapseOne"> 
         <i class="fas fa-filter" aria-hidden="true"></i> Filter
-        <i id="plus_minus" class="fas {{expand_accordion|get_icon}} float-right"></i>
+        <i id="plus_minus" class="fas {{expand_accordion|get_icon}} float-right"></i>  
       </a>
     </div>
     <div id="collapseOne" class="collapse {{expand_accordion}}" data-parent="#accordion">
       <div class="card-body">
-        <form id="filter_form" method="GET" action="{% url 'project-archived-list' %}">
+        <form id="filter_form" method="GET" action="{% url 'project-join-list' %}" autocomplete="off">
           {{ project_search_form|crispy }}
           <input type="submit" class="btn btn-primary" value="Search">
           <button id="form_reset_button" type="button" class="btn btn-secondary">Reset</button>
@@ -47,7 +45,7 @@
         <th scope="col" class="text-nowrap">
           PIs
         </th>
-        <th scope="col">Title and Description</th>
+        <th scope="col">Title</th>
         <th scope="col" class="text-nowrap">
           Field of Science
           <a href="?order_by=field_of_science&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
@@ -57,6 +55,9 @@
           Status
           <a href="?order_by=status&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
           <a href="?order_by=status&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+        </th>
+        <th scope="col" class="text-nowrap">
+          Join
         </th>
       </tr>
     </thead>
@@ -69,10 +70,25 @@
             {{ pi.username }}<br>
           {% endfor %}
         </td>
-        <td style="text-align: justify; text-justify: inter-word;"><strong>Title: </strong> {{ project.title }}
-          <br> <strong>Description: </strong>{{ project.description }}</td>
+        <td style="text-align: justify; text-justify: inter-word;">{{ project.title }}</td>
         <td>{{ project.field_of_science.description }}</td>
         <td>{{ project.status.name }}</td>
+        <td>
+          {% if project.name in not_joinable %}
+            <a href="#" class="btn btn-primary disabled">
+              <i class="fas fa-user-plus" aria-hidden="true"></i>
+              Join
+            </a>
+          {% else %}
+            <form action="{% url 'project-join' project.pk %}" method="post">
+              {% csrf_token %}
+              <button class="btn btn-primary" type="submit">
+                <i class="fas fa-user-plus" aria-hidden="true"></i>
+                Join
+              </button>
+            </form>
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>
@@ -91,11 +107,22 @@
   </ul>
   {% endif %}
 </div>
+{% elif expand_accordion == "show"%}
+<div class="alert alert-info">
+  No search results!
+</div>
 {% else %}
 <div class="alert alert-info">
-  There are no archived projects!
+  No projects to display!
 </div>
 {% endif %}
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-project-menu").addClass("active");
+   $("#navbar-project").addClass("active");
+</script>
+
 <script>
 $(document).on('click', '#form_reset_button', function() {
   resetForm($('#filter_form'));
@@ -108,7 +135,7 @@ function resetForm($form) {
 $("#expand_button").click(function() {
 
   $('#collapseOne').collapse();
-  icon = $(this).find("i");
+  icon = $("#plus_minus");
   icon.toggleClass("fa-plus fa-minus");
 
 });
