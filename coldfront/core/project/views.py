@@ -391,6 +391,9 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
         if self.request.user.is_superuser:
             return True
 
+        if self.request.method == 'POST':
+            return False
+
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
 
         if project_obj.projectuser_set.filter(
