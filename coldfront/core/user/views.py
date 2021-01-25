@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth.views import PasswordChangeView
 from django.db.models import BooleanField, Prefetch
 from django.db.models.expressions import ExpressionWrapper, F, Q
@@ -15,14 +16,18 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.urls import reverse_lazy
+from django.utils.encoding import force_text
+from django.utils.http import urlsafe_base64_decode
 from django.utils.decorators import method_decorator
 from django.views import View
-from django.views.generic import ListView, TemplateView
+from django.views.generic import CreateView, ListView, TemplateView
 
 from coldfront.core.project.models import Project, ProjectUser
 from coldfront.core.user.forms import UserAccessAgreementForm
+from coldfront.core.user.forms import UserRegistrationForm
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
+from coldfront.core.user.utils import send_account_activation_email
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
 
@@ -296,6 +301,48 @@ class CustomPasswordChangeView(PasswordChangeView):
     def form_valid(self, form):
         messages.success(self.request, 'Your password has been changed.')
         return super().form_valid(form)
+
+
+class UserRegistrationView(CreateView):
+
+    form_class = UserRegistrationForm
+    template_name = 'user/registration.html'
+    success_url = reverse_lazy('register')
+
+    def form_valid(self, form):
+        self.object = form.save()
+
+        send_account_activation_email(self.object)
+        message = (
+            'Thank you for registering. Please click the link sent to your '
+            'email address to activate your account.')
+        messages.success(self.request, message)
+
+        return HttpResponseRedirect(self.get_success_url())
+
+
+def activate_user_account(request, uidb64=None, token=None):
+    try:
+        user_id = int(force_text(urlsafe_base64_decode(uidb64)))
+        user = User.objects.get(id=user_id)
+    except:
+        user = None
+    if user and token:
+        if PasswordResetTokenGenerator().check_token(user, token):
+            user.is_active = True
+            user.save()
+            message = 'Your account has been activated. You may now log in.'
+            messages.success(request, message)
+        else:
+            message = (
+                'Invalid activation token. Please try again, or contact an '
+                'administrator if the problem persists.')
+            messages.error(request, message)
+    else:
+        message = (
+            'Failed to activate account. Please contact an administrator.')
+        messages.error(request, message)
+    return redirect(reverse('login'))
 
 
 @login_required

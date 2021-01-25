@@ -2,10 +2,17 @@ import abc
 import logging
 
 from django.contrib.auth.models import User
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.db.models import Q
+from django.urls import reverse
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from django.utils.module_loading import import_string
 
 from coldfront.core.utils.common import import_from_settings
+from coldfront.core.utils.mail import send_email_template
+
+from urllib.parse import urljoin
 
 logger = logging.getLogger(__name__)
 
@@ -114,3 +121,33 @@ class CombinedUserSearch:
             'usernames_not_found': usernames_not_found
         }
         return context
+
+
+def __account_activation_url(user):
+    domain = import_from_settings('CENTER_BASE_URL')
+    uidb64 = urlsafe_base64_encode(force_bytes(user.id))
+    token = PasswordResetTokenGenerator().make_token(user)
+    kwargs = {
+        'uidb64': uidb64,
+        'token': token,
+    }
+    view = reverse('activate', kwargs=kwargs)
+    return urljoin(domain, view)
+
+
+def send_account_activation_email(user):
+    email_enabled = import_from_settings('EMAIL_ENABLED', False)
+    if not email_enabled:
+        return
+
+    subject = 'Account Activation Required'
+    template_name = 'email/account_activation_required.txt'
+    context = {
+        'center_name': import_from_settings('CENTER_NAME', ''),
+        'activation_url': __account_activation_url(user),
+        'signature': import_from_settings('EMAIL_SIGNATURE', ''),
+    }
+    sender = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS', '')
+    receiver_list = [user.email, ]
+
+    send_email_template(subject, template_name, context, sender, receiver_list)

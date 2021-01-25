@@ -1,10 +1,9 @@
 {% extends "common/base.html" %}
 {% load staticfiles %} 
-{% load common_tags %}
-{% load crispy_forms_tags %}
+{% load common_tags %} 
 
 {% block title %} 
-Password Reset Sent
+Register
 {% endblock %} 
 
 {% block content %}
@@ -16,16 +15,15 @@ Password Reset Sent
 <div class="col-sm-6 offset-sm-3">
   <div class="card border-primary">
     <div class="card-header bg-primary text-white">
-      <h5>Password Reset Sent</h5>
+      <h5><i class="fas fa-lock" aria-hidden="true"></i> Register</h5>
     </div>
     <div class="card-body">
-      <p>
-        If the email address you entered is associated with an active account, please check the address for instructions to reset your password.
-      </p>
-      <p>
-        If you don't receive an email, please double check the address you entered and check your spam folder.
-      </p>
+      {% include "user/registration_form.html" %}
     </div>
+    <div class="text-center">
+      <a href="{% url 'login' %}">Already have an account?</a>
+    </div>
+    <br>
   </div>
 </div>
 {% endblock %}
