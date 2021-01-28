@@ -93,15 +93,26 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         # Can the user update the project?
         if self.request.user.is_superuser:
             context['is_allowed_to_update_project'] = True
+            context['is_allowed_to_update_notifications'] = True
         elif self.object.projectuser_set.filter(user=self.request.user).exists():
             project_user = self.object.projectuser_set.get(
                 user=self.request.user)
             if project_user.role.name in ('Principal Investigator', 'Manager'):
                 context['is_allowed_to_update_project'] = True
+
+                # Can disable notifications iff atlest one other PI / Manager has
+                # active notifications
+                context['is_allowed_to_update_notifications'] = False
+                for current_user in self.object.projectuser_set.filter(project=self.object.id, enable_notifications=True):
+                    if current_user.user != self.request.user and current_user.role.name in ('Principal Investigator', 'Manager'):
+                        context['is_allowed_to_update_notifications'] = True
+                        break
             else:
                 context['is_allowed_to_update_project'] = False
+                context['is_allowed_to_update_notifications'] = False
         else:
             context['is_allowed_to_update_project'] = False
+            context['is_allowed_to_update_notifications'] = False
 
         # Only show 'Active Users'
         project_users = self.object.projectuser_set.filter(
