@@ -156,6 +156,7 @@ Project Detail
                 value="{{ user.enable_notifications }}"
                 {% if user.enable_notifications %} checked {% endif %}
                 {% if user.role.name == "Manager" %} disabled {% endif %}
+                {% if not is_allowed_to_update_notifications %} disabled {% endif %}
                 {% if not request.user.is_superuser and user.role.name == "User" and request.user == user.user %} disabled {% endif %}>
               {% elif request.user == user.user %}
                 <input type="checkbox"
