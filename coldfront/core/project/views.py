@@ -598,12 +598,11 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
             context['user_search_string'] = user_search_string
             context['search_by'] = search_by
 
-        if len(user_search_string.split()) > 1:
-            users_already_in_project = []
-            for ele in user_search_string.split():
-                if ele in users_to_exclude:
-                    users_already_in_project.append(ele)
-            context['users_already_in_project'] = users_already_in_project
+        users_already_in_project = []
+        for ele in user_search_string.split():
+            if ele in users_to_exclude:
+                users_already_in_project.append(ele)
+        context['users_already_in_project'] = users_already_in_project
 
         # The following block of code is used to hide/show the allocation div in the form.
         if project_obj.allocation_set.filter(status__name__in=['Active', 'New', 'Renewal Requested']).exists():
