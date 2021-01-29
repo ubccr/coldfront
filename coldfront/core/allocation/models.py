@@ -60,6 +60,8 @@ class Allocation(TimeStampedModel):
             ('can_review_allocation_requests',
              'Can review allocation requests'),
             ('can_manage_invoice', 'Can manage invoice'),
+            ('can_review_cluster_account_requests',
+             'Can review cluster account requests'),
         )
 
     def clean(self):
