@@ -24,9 +24,12 @@ Allocation Review New Requests
           <td><a href="{% url 'project-detail' allocation.project.pk %}">{{ allocation.project }}</a></td>
         </tr>
         <tr>
-          <th scope="row" class="text-nowrap">PI:</th>
-          <td>{{ allocation.project }}{{allocation.project.pi.first_name}} {{allocation.project.pi.last_name}}
-            ({{allocation.project.pi.username}}</td>
+          <th scope="row" class="text-nowrap">PIs:</th>
+          <td>
+            {% for pi in allocation.project.pis %}
+              {{ pi.first_name }} {{ pi.last_name }} ({{ pi.username }})<br>
+            {% endfor %}
+          </td>
         </tr>
         <tr>
           <th scope="row" class="text-nowrap">Resource:</th>

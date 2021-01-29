@@ -47,7 +47,7 @@ class TestAllocationBase(TestAPIBase):
         for i in range(2):
             # Create a Project and ProjectUsers.
             project = Project.objects.create(
-                name=f'project{i}', pi=self.pi, status=project_status)
+                name=f'project{i}', status=project_status)
             setattr(self, f'project{i}', project)
             for j in range(2):
                 ProjectUser.objects.create(

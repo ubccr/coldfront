@@ -61,8 +61,8 @@ class UserActiveManagerOrHigherMixin(LoginRequiredMixin, UserPassesTestMixin):
         project_obj = get_object_or_404(
             Project, pk=self.kwargs.get('project_pk'))
 
-        if project_obj.pi == self.request.user:
-            return True
-
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if project_obj.projectuser_set.filter(
+                user=self.request.user,
+                role__name__in=['Manager', 'Principal Investigator'],
+                status__name='Active').exists():
             return True

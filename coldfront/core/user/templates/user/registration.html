@@ -1,0 +1,29 @@
+{% extends "common/base.html" %}
+{% load staticfiles %} 
+{% load common_tags %} 
+
+{% block title %} 
+Register
+{% endblock %} 
+
+{% block content %}
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-login").addClass("active");
+</script>
+
+<div class="col-sm-6 offset-sm-3">
+  <div class="card border-primary">
+    <div class="card-header bg-primary text-white">
+      <h5><i class="fas fa-lock" aria-hidden="true"></i> Register</h5>
+    </div>
+    <div class="card-body">
+      {% include "user/registration_form.html" %}
+    </div>
+    <div class="text-center">
+      <a href="{% url 'login' %}">Already have an account?</a>
+    </div>
+    <br>
+  </div>
+</div>
+{% endblock %}

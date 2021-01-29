@@ -1,3 +1,4 @@
+"""
 import contextlib
 import itertools
 from unittest.mock import Mock, sentinel, patch
@@ -17,10 +18,9 @@ from coldfront.core.publication.models import Publication
 from coldfront.core.publication.views import PublicationSearchResultView
 import coldfront.core.publication
 
-
 class TestPublication(TestCase):
     class Data:
-        """Collection of test data, separated for readability"""
+        """"""Collection of test data, separated for readability""""""
 
         def __init__(self):
             project = ProjectFactory()
@@ -103,7 +103,7 @@ class TestPublication(TestCase):
 
 class TestDataRetrieval(TestCase):
     class Data:
-        """Collection of test data, separated for readability"""
+        """"""Collection of test data, separated for readability""""""
 
         NO_JOURNAL_INFO_FROM_DOI = '[no journal info from DOI]'
 
@@ -132,13 +132,13 @@ class TestDataRetrieval(TestCase):
                 pubdata_dict['source_pk'] = source.pk
 
     class Mocks:
-        """Set of mocks for testing, for simplified setup in test cases
+        """"""Set of mocks for testing, for simplified setup in test cases
 
-        Our app uses multiple libraries together to provide us with data in a
-        form we can consume.
-        This class acts to encapsulate mocking and patching those libraries -
-        focusing tests instead on the post-library data that the app would be
-        using."""
+Our app uses multiple libraries together to provide us with data in a
+form we can consume.
+This class acts to encapsulate mocking and patching those libraries -
+focusing tests instead on the post-library data that the app would be
+using.""""""
 
         def __init__(self, bibdatabase_first_entry, unique_id):
             self._bibdatabase_first_entry = bibdatabase_first_entry.copy()
@@ -258,3 +258,4 @@ class TestDataRetrieval(TestCase):
                 with mocks.patch():
                     retrieved_data = self.run_target_method(unique_id)
                 self.assertEqual(expected_data, retrieved_data)
+"""

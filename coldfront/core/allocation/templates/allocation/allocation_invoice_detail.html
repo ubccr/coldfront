@@ -44,10 +44,11 @@ Allocation Invoice Detail
             {% endif %}
           </tr>
           <tr>
-            <th scope="row" class="text-nowrap">Principal Investigator:</th>
+            <th scope="row" class="text-nowrap">Principal Investigators:</th>
             <td>
-              {{ allocation.project.pi.first_name }} {{ allocation.project.pi.last_name }}
-              ({{ allocation.project.pi.email }})
+              {% for pi in allocation.project.pis %}
+                {{ pi.first_name }} {{ pi.last_name }} ({{ pi.email }})<br>
+              {% endfor %}
             </td>
           </tr>
           <tr>
