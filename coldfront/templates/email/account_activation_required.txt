@@ -1,0 +1,8 @@
+Dear {{center_name}} user,
+
+Thank you for registering for a ColdFront account. Please click on the link below to complete registration and activate your account.
+
+{{activation_url}}
+
+Thank you,
+{{signature}}

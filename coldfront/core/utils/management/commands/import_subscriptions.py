@@ -85,7 +85,7 @@ class Command(BaseCommand):
                 pi_user = User.objects.get(username=pi_username)
                 try:
                     project_obj = Project.objects.get(
-                        title=title.strip(), pi__username=pi_username.strip(), status__name=project_status)
+                        title=title.strip(), status__name=project_status)
                 except:
                     print(title.strip(), pi_username.strip())
 

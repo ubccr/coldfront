@@ -41,7 +41,7 @@ Project User Detail
           <th scope="row">Status:</th>
           <td>{{project_user_obj.status.name}}</td>
         </tr>
-        {% if project_user_obj.user == project_user_obj.project.pi %}
+        {% if project_user_obj.user in project_user_obj.project.pis %}
           <tr>
             <th scope="row">Role:</th>
             <td>{{project_user_obj.role}}</td>
@@ -64,7 +64,7 @@ Project User Detail
     </div>
   </div> 
   <div class="card-footer">
-    {% if project_user_obj.user != project_user_obj.project.pi %}
+    {% if project_user_obj.user not in project_user_obj.project.pis %}
       <button type="submit" class="btn btn-primary">Update</button>
     {% endif %}
     <a class="btn btn-secondary" href="{% url 'project-detail' project_obj.pk %}" role="button">Back to Project</a><br>

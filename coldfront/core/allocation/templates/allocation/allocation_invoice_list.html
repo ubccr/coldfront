@@ -17,7 +17,7 @@ Allocation Invoice LIst
         <th scope="col">ID</th>
         <th scope="col">Resource</th>
         <th scope="col">Status</th>
-        <th scope="col">PI</th>
+        <th scope="col">PIs</th>
       </tr>
     </thead>
     <tbody>
@@ -26,7 +26,11 @@ Allocation Invoice LIst
         <td><a target="_blank" href="{% url 'allocation-invoice-detail' allocation.pk %}">{{allocation.pk}}</td>
         <td>{{allocation.get_resources_as_string}}</td>
         <td>{{allocation.status}}</td>
-        <td>{{allocation.project.pi.username }}</td>
+        <td>
+          {% for pi in allocation.project.pis %}
+            {{ pi.username }}<br>
+          {% endfor %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>

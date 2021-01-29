@@ -45,17 +45,16 @@ class TestJobBase(TestAPIBase):
         # Create a Project and ProjectUsers.
         project_status = ProjectStatusChoice.objects.get(name='Active')
         self.project = Project.objects.create(
-            name='test_project', pi=self.pi, status=project_status)
-        project_user_status = ProjectUserStatusChoice.objects.get(
-            name='Active')
+            name='test_project', status=project_status)
+        status = ProjectUserStatusChoice.objects.get(name='Active')
         user_role = ProjectUserRoleChoice.objects.get(name='User')
         self.project_user = ProjectUser.objects.create(
             user=self.user, project=self.project, role=user_role,
-            status=project_user_status)
+            status=status)
         manager_role = ProjectUserRoleChoice.objects.get(name='Manager')
         ProjectUser.objects.create(
             user=self.pi, project=self.project, role=manager_role,
-            status=project_user_status)
+            status=status)
 
         # Create a compute allocation for the Project.
         allocation_objects = create_project_allocation(

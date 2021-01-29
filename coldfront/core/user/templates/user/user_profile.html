@@ -21,7 +21,13 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
       </div>
     </div>
     <div class="card-body">
-      <h4 class="card-title text-center">{{viewed_user.first_name}} {{viewed_user.last_name}}</h4>
+      <h4 class="card-title text-center">
+        {{viewed_user.first_name}}
+        {% if viewed_user.userprofile.middle_name %}
+          {{viewed_user.userprofile.middle_name }}
+        {% endif %}
+        {{viewed_user.last_name}}
+      </h4>
       <div class="table-responsive">
     <table class="table">
       <tbody>
@@ -52,6 +58,37 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
                 {% endif %}
           </td>
         </tr>
+        <tr>
+          <th>User Access Agreement:</th>
+          <td>
+            {% if user.userprofile.access_agreement_signed_date is not None %}
+              <span class="badge badge-success">
+                <i class="fas fa-check"></i>
+              </span>
+            {% else %}
+              <span class="badge badge-danger">
+                <i class="fas fa-times"></i>
+              </span>
+              {% if user == viewed_user %}
+                <a href="{% url 'user-access-agreement' %}" class="btn btn-secondary">
+                  <i class="far fa-edit" aria-hidden="true"></i>
+                  Sign
+                </a>
+              {% endif %}
+            {% endif %}
+          </td>
+        </tr>
+        {% if user == viewed_user %}
+          <tr>
+            <th>Change Password:</th>
+            <td>
+              <a href="{% url 'password-change' %}" class="btn btn-secondary">
+                <i class="fas fa-lock" aria-hidden="true"></i>
+                Change Password
+              </a>
+            </td>
+          </tr>
+        {% endif %}
         <tr>
           <th>Last Login:</th>
           <td>{{viewed_user.last_login}}</td>

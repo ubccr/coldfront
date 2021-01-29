@@ -1,22 +1,33 @@
 import logging
+import pytz
+from datetime import datetime
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.contrib.auth.views import PasswordChangeView
 from django.db.models import BooleanField, Prefetch
 from django.db.models.expressions import ExpressionWrapper, F, Q
 from django.db.models.functions import Lower
 from django.http import HttpResponseRedirect
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.urls import reverse_lazy
+from django.utils.encoding import force_text
+from django.utils.http import urlsafe_base64_decode
 from django.utils.decorators import method_decorator
 from django.views import View
-from django.views.generic import ListView, TemplateView
+from django.views.generic import CreateView, ListView, TemplateView
 
 from coldfront.core.project.models import Project, ProjectUser
+from coldfront.core.user.forms import UserAccessAgreementForm
+from coldfront.core.user.forms import UserRegistrationForm
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
+from coldfront.core.user.utils import send_account_activation_email
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
 
@@ -115,20 +126,15 @@ class UserProjectsManagersView(ListView):
             'project',
             'project__status',
             'project__field_of_science',
-            'project__pi',
         ).only(
             'status__name',
             'role__name',
             'project__title',
             'project__status__name',
             'project__field_of_science__description',
-            'project__pi__username',
-            'project__pi__first_name',
-            'project__pi__last_name',
-            'project__pi__email',
         ).annotate(
             is_project_pi=ExpressionWrapper(
-                Q(user=F('project__pi')),
+                Q(role__name='Principal Investigator'),
                 output_field=BooleanField(),
             ),
             is_project_manager=ExpressionWrapper(
@@ -138,7 +144,6 @@ class UserProjectsManagersView(ListView):
         ).order_by(
             '-is_project_pi',
             '-is_project_manager',
-            Lower('project__pi__username').asc(),
             Lower('project__title').asc(),
             # unlikely things will get to this point unless there's almost-duplicate projects
             '-project__pk',  # more performant stand-in for '-project__created'
@@ -146,13 +151,26 @@ class UserProjectsManagersView(ListView):
             Prefetch(
                 lookup='project__projectuser_set',
                 queryset=ProjectUser.objects.filter(
+                    role__name='Principal Investigator',
+                ).select_related(
+                    'status',
+                    'user',
+                ).only(
+                    'status__name',
+                    'user__username',
+                    'user__first_name',
+                    'user__last_name',
+                    'user__email',
+                ).order_by(
+                    'user__username',
+                ),
+                to_attr='project_pis',
+            ),
+            Prefetch(
+                lookup='project__projectuser_set',
+                queryset=ProjectUser.objects.filter(
                     role__name='Manager',
                     status__name__in=ongoing_projectuser_statuses,
-                ).exclude(
-                    user__pk__in=[
-                        F('project__pi__pk'),  # we assume pi is 'Manager' or can act like one - no need to list twice
-                        viewed_user.pk,  # we display elsewhere if the user is a manager of this project
-                    ],
                 ).select_related(
                     'status',
                     'user',
@@ -258,7 +276,11 @@ class UserListAllocations(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
 
         user_dict = {}
 
-        for project in Project.objects.filter(pi=self.request.user):
+        project_pks = ProjectUser.objects.filter(
+            user=self.requestuser,
+            role__name__in=['Manager', 'Principal Investigator'],
+            status__name='Active').values_list('project', flat=True)
+        for project in Project.objects.filter(pk__in=project_pks).distinct():
             for allocation in project.allocation_set.filter(status__name='Active'):
                 for allocation_user in allocation.allocationuser_set.filter(status__name='Active').order_by('user__username'):
                     if allocation_user.user not in user_dict:
@@ -269,3 +291,80 @@ class UserListAllocations(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
         context['user_dict'] = user_dict
 
         return context
+
+
+class CustomPasswordChangeView(PasswordChangeView):
+
+    template_name = 'user/passwords/password_change_form.html'
+    success_url = reverse_lazy('user-profile')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Your password has been changed.')
+        return super().form_valid(form)
+
+
+class UserRegistrationView(CreateView):
+
+    form_class = UserRegistrationForm
+    template_name = 'user/registration.html'
+    success_url = reverse_lazy('register')
+
+    def form_valid(self, form):
+        self.object = form.save()
+
+        send_account_activation_email(self.object)
+        message = (
+            'Thank you for registering. Please click the link sent to your '
+            'email address to activate your account.')
+        messages.success(self.request, message)
+
+        return HttpResponseRedirect(self.get_success_url())
+
+
+def activate_user_account(request, uidb64=None, token=None):
+    try:
+        user_id = int(force_text(urlsafe_base64_decode(uidb64)))
+        user = User.objects.get(id=user_id)
+    except:
+        user = None
+    if user and token:
+        if PasswordResetTokenGenerator().check_token(user, token):
+            user.is_active = True
+            user.save()
+            message = 'Your account has been activated. You may now log in.'
+            messages.success(request, message)
+        else:
+            message = (
+                'Invalid activation token. Please try again, or contact an '
+                'administrator if the problem persists.')
+            messages.error(request, message)
+    else:
+        message = (
+            'Failed to activate account. Please contact an administrator.')
+        messages.error(request, message)
+    return redirect(reverse('login'))
+
+
+@login_required
+def user_access_agreement(request):
+    profile = request.user.userprofile
+    if profile.access_agreement_signed_date is not None:
+        message = 'You have already signed the user access agreement form.'
+        messages.warning(request, message)
+        return redirect(reverse_lazy('user-profile'))
+    if request.method == 'POST':
+        form = UserAccessAgreementForm(request.POST)
+        if form.is_valid():
+            now = datetime.utcnow().astimezone(
+                pytz.timezone(settings.TIME_ZONE))
+            profile.access_agreement_signed_date = now
+            profile.save()
+            message = 'Thank you for signing the user access agreement form.'
+            messages.success(request, message)
+            return redirect(reverse_lazy('user-profile'))
+        else:
+            message = 'Incorrect answer. Please try again.'
+            messages.error(request, message)
+    else:
+        form = UserAccessAgreementForm()
+    return render(request, 'user/user_access_agreement.html', {'form': form})

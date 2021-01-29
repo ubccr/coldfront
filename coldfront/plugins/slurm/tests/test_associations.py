@@ -14,10 +14,10 @@ class AssociationTest(TestCase):
     @classmethod
     def setUpClass(cls):
         call_command('import_field_of_science_data')
-        call_command('add_default_grant_options')
+        # call_command('add_default_grant_options')
         call_command('add_default_project_choices')
         call_command('add_default_allocation_choices')
-        call_command('add_default_publication_sources')
+        # call_command('add_default_publication_sources')
         super(AssociationTest, cls).setUpClass()
 
     def test_allocations_to_slurm(self):
@@ -38,7 +38,7 @@ class AssociationTest(TestCase):
 # Parent - 'root'
 # Account - 'cs':MaxNodesPerJob=5:MaxJobs=4:MaxTRESMins=cpu=20:FairShare=399:MaxWallDuration=40:Description='Computer Science':Organization='LC'
 # Any of the options after a ':' can be left out and they can be in any order.
-# If you want to add any sub accounts just list the Parent THAT HAS ALREADY 
+# If you want to add any sub accounts just list the Parent THAT HAS ALREADY
 # BEEN CREATED before the account line in this fashion...
 # Parent - 'cs'
 # Account - 'test':MaxNodesPerJob=1:MaxJobs=1:MaxTRESMins=cpu=1:FairShare=1:MaxWallDuration=1:Description='Test Account':Organization='Test'
