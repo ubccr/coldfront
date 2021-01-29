@@ -568,16 +568,6 @@ class TestJobSerializer(TestJobBase):
         """Test that requests fails if there are too few or too many of
         a given database object than expected."""
         message = 'Unexpected server error.'
-        # The account has more than one allocation with Savio Compute as a
-        # resource.
-        resource = Resource.objects.get(name='Savio Compute')
-        status = AllocationStatusChoice.objects.get(name='Active')
-        allocation = Allocation.objects.create(
-            project=self.project, status=status)
-        allocation.resources.add(resource)
-        allocation.save()
-        self.assert_error_message(self.data, message)
-        allocation.delete()
         # There are multiple allocation user status choices named 'Active'.
         AllocationUserStatusChoice.objects.create(name='Active')
         self.assert_error_message(self.data, message)
