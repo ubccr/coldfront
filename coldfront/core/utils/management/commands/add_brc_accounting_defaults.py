@@ -18,9 +18,15 @@ class Command(BaseCommand):
         # Allocations to Savio must have 'Savio Compute' as a Resource.
         resource_type, _ = ResourceType.objects.get_or_create(
             name='Cluster', description='Cluster servers')
-        resource, _ = Resource.objects.get_or_create(
-            name='Savio Compute', resource_type=resource_type,
-            description='Savio cluster compute access')
+        try:
+            resource = Resource.objects.get(name='Savio Compute')
+        except Resource.DoesNotExist:
+            resource = Resource.objects.create(
+                name='Savio Compute', resource_type=resource_type)
+        resource.description = 'Savio cluster compute access'
+        # Each Project can only have one Allocation to this Resource.
+        resource.is_unique_per_project = True
+        resource.save()
 
         # Each Allocation has at most one 'Service Units' attribute of
         # type Decimal.

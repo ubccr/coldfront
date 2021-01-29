@@ -1,6 +1,6 @@
 from coldfront.api.statistics.utils import create_project_allocation
 from coldfront.api.statistics.utils import create_user_project_allocation
-from coldfront.api.utils.test_api_base import TestAPIBase
+from coldfront.api.utils.tests.test_api_base import TestAPIBase
 from coldfront.core.allocation.models import AllocationAttributeUsage
 from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.project.models import Project
@@ -30,7 +30,7 @@ class TestJobBase(TestAPIBase):
         """Set up test data."""
         super().setUp()
 
-        # Create a user and a PI.
+        # Create a User and a PI.
         self.user = User.objects.create(
             username='user0', email='user0@nonexistent.com')
         self.user_profile = UserProfile.objects.get(user=self.user)

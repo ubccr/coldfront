@@ -69,6 +69,9 @@ class Resource(TimeStampedModel):
     linked_resources = models.ManyToManyField('self', blank=True)
     history = HistoricalRecords()
 
+    # Each Project can only have one Allocation to this Resource.
+    is_unique_per_project = models.BooleanField(default=False)
+
     def get_missing_resource_attributes(self, required=False):
         """
         if required == True, get only the required missing attributes;
