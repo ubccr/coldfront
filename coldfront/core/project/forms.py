@@ -139,3 +139,163 @@ class ProjectReviewUserJoinForm(forms.Form):
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     role = forms.CharField(max_length=30, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
+
+
+
+
+
+from coldfront.core.project.models import ProjectUser
+from django.contrib.auth.models import User
+from django.core.validators import MinLengthValidator
+from django.core.validators import RegexValidator
+from django.forms import formset_factory
+
+
+class SavioProjectDetailsForm(forms.Form):
+
+    name = forms.CharField(
+        label='Name',
+        max_length=8,
+        required=True,
+        validators=[
+            MinLengthValidator(4),
+            RegexValidator(
+                r'^[0-9a-z]+$',
+                message=(
+                    'Name must contain only lowercase letters and numbers.'))
+        ])
+    title = forms.CharField(
+        label='Title',
+        max_length=255,
+        required=True,
+        validators=[
+            MinLengthValidator(4),
+        ])
+    description = forms.CharField(
+        label='Description',
+        validators=[MinLengthValidator(10)],
+        widget=forms.Textarea(attrs={'rows': 3}))
+
+    # TODO: Add field_of_science.
+
+
+class SavioProjectAllocationTypeForm(forms.Form):
+
+    FCA = "FCA"
+    CONDO = "CO"
+    CHOICES = (
+        (FCA, "Faculty Computing Allowance (FCA)"),
+        (CONDO, "Condo Allocation"),
+    )
+
+    allocation_type = forms.ChoiceField(                                # TODO: Make these allocation attribute types / similar.
+        choices=CHOICES,
+        label='Allocation Type',
+        widget=forms.Select())
+
+
+class SavioProjectExistingPIsForm(forms.Form):
+
+    PIs = forms.ModelMultipleChoiceField(
+        label='Principal Investigators',
+        queryset=User.objects.none(),
+        required=False,
+        widget=forms.SelectMultiple())
+
+    def __init__(self, *args, **kwargs):
+
+        self.allocation_type = kwargs.pop('allocation_type')
+
+        super().__init__(*args, **kwargs)
+
+        # PIs may only have one FCA, so only allow those without an active FCA
+        # to be selected.
+        queryset = User.objects.filter(userprofile__is_pi=True)
+        if self.allocation_type == 'FCA':
+            # TODO: What about pending PIs created via this form by others?
+            pi_role = ProjectUserRoleChoice.objects.get(
+                name='Principal Investigator')
+            pis_with_existing_fcas = set(ProjectUser.objects.filter(
+                role=pi_role,
+                project__name__startswith='fc_',
+                project__status__name__in=['New', 'Active']
+            ).values_list('user__username', flat=True))
+            self.fields['PIs'].queryset = queryset.exclude(
+                username__in=pis_with_existing_fcas)
+        else:
+            self.fields['PIs'].queryset = queryset
+
+    def clean(self):
+        cleaned_data = super().clean()
+        pis = self.cleaned_data['PIs']
+        for pi in pis:
+            if pi not in self.fields['PIs'].queryset:
+                raise forms.ValidationError(
+                    f'Invalid selection {pi.username}.')
+        return cleaned_data
+
+
+class SavioProjectNewPIsForm(forms.Form):
+
+    first_name = forms.CharField(max_length=30, required=True)
+    middle_name = forms.CharField(max_length=30, required=False)
+    last_name = forms.CharField(max_length=150, required=True)
+    email = forms.EmailField(max_length=100, required=True)
+
+
+SavioProjectNewPIsFormset = formset_factory(SavioProjectNewPIsForm)        # TODO: extra=2 means 2 forms are rendered
+
+
+class SavioProjectSurveyForm(forms.Form):
+
+    # TODO: This will not apply to Condo, probably.
+
+    # Question 3
+    scope_and_intent = forms.CharField(
+        label='Scope and intent of research needing computation',
+        validators=[MinLengthValidator(10)],
+        required=True,
+        widget=forms.Textarea(attrs={'rows': 3}))
+    computational_aspects = forms.CharField(
+        label='Computational aspects of the research',
+        validators=[MinLengthValidator(10)],
+        required=True,
+        widget=forms.Textarea(attrs={'rows': 3}))
+    existing_resources = forms.CharField(
+        label=(
+            'Existing computing resources (outside of SAVIO) currently being '
+            'used by this project. If you use cloud computing resources, we '
+            'would be interested in hearing about it.'),
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 3}))
+    system_needs = forms.MultipleChoiceField(
+        choices=(
+            ('intermittent_need', 'Meets intermittent or small need for compute cycles'),
+            ('cannot_purchase', 'Provides a resource since my group/area cannot purchase its own'),
+            ('additional_compute_beyond_cluster', 'Provides additional compute cycles beyond what is provided on my own cluster'),
+            ('larger_jobs', 'Provides ability to run larger-scale jobs than those I can\'t run on my own cluster'),
+            ('onramp', 'Provides an onramp to prepare for running on large systems or applying for grants and supercomputing center allocations'),
+            ('additional_compute', 'Provides additional compute cycles'),
+        ),
+        label=(
+            'Which of the following best describes your need for this '
+            'system:'),
+        required=False,
+        widget=forms.CheckboxSelectMultiple())
+
+    # Question 4
+    num_processor_cores = forms.CharField(
+        label=(
+            'How many processor cores does your application use? (min, max, '
+            'typical runs)'),
+        required=False)
+    memory_per_core = forms.CharField(
+        label='How much memory per core does your typical job require?',
+        required=False)
+    run_time = forms.CharField(
+        label='What is the run time of your typical job?', required=False)
+    processor_core_hours_year = forms.CharField(
+        label=(
+            'Estimate how many processor-core-hrs your research will need '
+            'over the year.'),
+        required=False)
