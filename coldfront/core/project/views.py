@@ -1387,3 +1387,78 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
 
         return HttpResponseRedirect(
             reverse('project-detail', kwargs={'pk': pk}))
+
+
+
+
+from coldfront.core.project.forms import SavioProjectAllocationTypeForm
+from coldfront.core.project.forms import SavioProjectDetailsForm
+from coldfront.core.project.forms import SavioProjectExistingPIsForm
+from coldfront.core.project.forms import SavioProjectNewPIsFormset
+from coldfront.core.project.forms import SavioProjectSurveyForm
+from formtools.wizard.views import SessionWizardView
+
+
+class SavioProjectRequestWizard(SessionWizardView):
+
+    FORMS = [
+        ('details', SavioProjectDetailsForm),
+        ('allocation_type', SavioProjectAllocationTypeForm),
+        ('existing_pis', SavioProjectExistingPIsForm),
+        ('new_pis', SavioProjectNewPIsFormset),
+        ('survey', SavioProjectSurveyForm),
+    ]
+
+    TEMPLATES = {
+        'details': 'project/savio_project_request/project_details.html',
+        'allocation_type': 'project/savio_project_request/project_allocation_type.html',
+        'existing_pis': 'project/savio_project_request/project_existing_pis.html',
+        'new_pis': 'project/savio_project_request/project_new_pis.html',
+        'survey': 'project/savio_project_request/project_survey.html',
+    }
+
+    form_list = [
+        SavioProjectDetailsForm,
+        SavioProjectAllocationTypeForm,
+        SavioProjectExistingPIsForm,
+        SavioProjectNewPIsFormset,
+        SavioProjectSurveyForm,
+    ]
+
+    # Non-required lookup table: form name --> step number
+    step_numbers_by_form_name = {
+        'details': 0,
+        'allocation_type': 1,
+        'existing_pis': 2,
+        'new_pis': 3,
+    }
+
+    def get_context_data(self, form, **kwargs):
+        context = super().get_context_data(form=form, **kwargs)
+        current_step = int(self.steps.current)
+        self.__set_data_from_previous_steps(current_step, context)
+        return context
+
+    def get_form_kwargs(self, step):
+        # TODO: Not all past data will be needed in all forms.
+        # TODO: Can't pass something as a kwarg to formset?
+        kwargs = {}
+        step = int(step)
+        if step == self.step_numbers_by_form_name['existing_pis']:
+            self.__set_data_from_previous_steps(step, kwargs)
+        return kwargs
+
+    def get_template_names(self):
+        return [self.TEMPLATES[self.FORMS[int(self.steps.current)][0]]]
+
+    def done(self, form_list, form_dict, **kwargs):
+        # TODO: Process form_list and form_dict.
+        return HttpResponseRedirect("/")    # TODO: Redirect appropriately.
+
+    def __set_data_from_previous_steps(self, step, dictionary):
+        allocation_type_form_step = \
+            self.step_numbers_by_form_name['allocation_type']
+        if step > allocation_type_form_step:
+            allocation_type_form_data = self.get_cleaned_data_for_step(
+                str(allocation_type_form_step))
+            dictionary.update(allocation_type_form_data)

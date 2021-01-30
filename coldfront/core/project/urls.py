@@ -25,3 +25,14 @@ urlpatterns = [
     path('project-review/<int:pk>/email', project_views.ProjectReivewEmailView.as_view(), name='project-review-email'),
 
 ]
+
+
+
+
+
+from coldfront.core.project.views import SavioProjectRequestWizard
+
+
+urlpatterns += [
+    path('savio-project-request/', SavioProjectRequestWizard.as_view()),
+]

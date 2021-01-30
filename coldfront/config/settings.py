@@ -61,6 +61,11 @@ INSTALLED_APPS += [
     'coldfront.api',
 ]
 
+# Savio-specific Additional Apps
+INSTALLED_APPS += [
+    'formtools',
+]
+
 # ------------------------------------------------------------------------------
 # Django Middleware
 # ------------------------------------------------------------------------------
