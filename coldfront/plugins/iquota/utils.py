@@ -33,9 +33,10 @@ class Iquota:
         except kerberos.GSSError as e:
             raise KerberosError('error initializing GSS client')
 
-    def _humanize_user_quota(self, user_used, user_limit):
+    def _humanize_user_quota(self, path, user_used, user_limit):
 
         user_quota = {
+            'path': path,
             'username': self.username,
             'used': humanize.naturalsize(user_used),
             'limit': humanize.naturalsize(user_limit),
@@ -49,27 +50,27 @@ class Iquota:
         token = self.gssclient_token()
 
         headers = {"Authorization": "Negotiate " + token}
-        url = "https://{}:{}/quota/user?user={}&path={}".format(
+        url = "https://{}:{}/quota?user={}".format(
             self.IQUOTA_API_HOST,
             self.IQUOTA_API_PORT,
-            self.username,
-            self.IQUOTA_USER_PATH)
+            self.username)
 
         r = requests.get(url, headers=headers, verify=self.IQUOTA_CA_CERT)
 
         try:
-            usage = r.json()['quotas'][0]
+            usage = r.json()[0]
         except KeyError as e:
             raise MissingQuotaError(
                 'Missing user quota for username: %s' % (self.username))
         else:
-            user_used = usage['usage']['logical']
-            user_limit = usage['thresholds']['soft']
-            return self._humanize_user_quota(user_used, user_limit)
+            user_used = usage['used']
+            user_limit = usage['soft_limit']
+            return self._humanize_user_quota(usage['path'], user_used, user_limit)
 
-    def _humanize_group_quota(self, group_user, group_limit):
+    def _humanize_group_quota(self, path, group_user, group_limit):
 
         group_quota = {
+            'path': path,
             'used': humanize.naturalsize(group_user),
             'limit': humanize.naturalsize(group_limit),
             'percent_used': round((group_user / group_limit) * 100)
@@ -83,30 +84,26 @@ class Iquota:
 
         headers = {"Authorization": "Negotiate " + token}
 
-        url = "https://{}:{}/quota/group?user={}&path={}&group={}".format(
+        url = "https://{}:{}/quota?group={}".format(
             self.IQUOTA_API_HOST,
             self.IQUOTA_API_PORT,
-            self.username,
-            self.IQUOTA_GROUP_PATH,
             group)
 
         r = requests.get(url, headers=headers, verify=self.IQUOTA_CA_CERT)
 
-        if 'code' in r.json() and r.json()['code'] == 'AEC_NOT_FOUND':
-            return None
         try:
-            usage = r.json()['quotas'][0]
+            usage = r.json()[0]
         except:
             return None
 
-        group_limit = usage['thresholds']['soft']
+        group_limit = usage['soft_limit']
 
         if group_limit < 1000000:  # 1.0 MB
             return None
 
-        group_used = usage['usage']['logical']
+        group_used = usage['used']
 
-        return self._humanize_group_quota(group_used, group_limit)
+        return self._humanize_group_quota(usage['path'], group_used, group_limit)
 
     def get_group_quotas(self):
 
@@ -117,6 +114,6 @@ class Iquota:
         for group in self.groups:
             group_quota = self._get_group_quota(group)
             if group_quota:
-                group_quotas[group] = group_quota
+                group_quotas[group_quota['path']] = group_quota
 
         return group_quotas

@@ -1,7 +1,7 @@
 
 <div id="iquota_inner">
 
-User: {{user_quota.username}} <span style="float:right">{{user_quota.used}} of {{user_quota.limit}}</span>
+{{user_quota.path}} <span style="float:right">{{user_quota.used}} of {{user_quota.limit}}</span>
 <div class="progress" style="height:38px;">
   <div class="progress-bar" style="width:{{user_quota.percent_used}}%;">
     {{user_quota.percent_used}}%
@@ -11,7 +11,7 @@ User: {{user_quota.username}} <span style="float:right">{{user_quota.used}} of {
 <br>
 
 {% for key, value in group_quotas.items %}
-    Group: {{key}} <span style="float:right">{{value.used}} of {{value.limit}}</span>
+    {{value.path}} <span style="float:right">{{value.used}} of {{value.limit}}</span>
     <div class="progress" style="height:38px;">
       <div class="progress-bar" style="width:{{value.percent_used}}%">
         {{value.percent_used}}%
