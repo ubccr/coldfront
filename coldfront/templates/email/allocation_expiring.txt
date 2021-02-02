@@ -1,6 +1,6 @@
 Dear {{center_name}} user,
 
-Your allocation for access to {{ allocation_type }} is expiring in {{ expiring_in_days }} days.
+Your allocation for access to {{ allocation_type }} is expiring in {{ expring_in_days }} days.
 Failure to renew the allocation before expiration will result in removal of access to this resource for all accounts
 under this project.
 To renew, login to ColdFront and complete the short process: {{ allocation_renew_url }}.
