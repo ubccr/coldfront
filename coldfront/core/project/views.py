@@ -325,6 +325,10 @@ class ProjectArchivedListView(LoginRequiredMixin, ListView):
                 projects = projects.filter(
                     field_of_science__description__icontains=data.get('field_of_science'))
 
+            # Project Title
+            if data.get('project_title'):
+                projects = projects.filter(title__icontains=data.get('project_title'))
+
         else:
             projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
                 Q(status__name__in=['Archived', ]) &
