@@ -1270,6 +1270,10 @@ class ProjectJoinListView(ProjectListView):
                     field_of_science__description__icontains=data.get(
                         'field_of_science'))
 
+            # Project Title
+            if data.get('project_title'):
+                projects = projects.filter(title__icontains=data.get('project_title'))
+
         return projects.distinct()
 
     def get_context_data(self, **kwargs):
