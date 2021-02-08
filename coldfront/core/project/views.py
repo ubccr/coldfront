@@ -1393,8 +1393,10 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
 
 from coldfront.core.project.forms import SavioProjectAllocationTypeForm
 from coldfront.core.project.forms import SavioProjectDetailsForm
-from coldfront.core.project.forms import SavioProjectExistingPIsForm
-from coldfront.core.project.forms import SavioProjectNewPIsFormset
+from coldfront.core.project.forms import SavioProjectExistingPIForm
+from coldfront.core.project.forms import SavioProjectNewPIForm
+from coldfront.core.project.forms import SavioProjectPoolAllocationsForm
+from coldfront.core.project.forms import SavioProjectPooledProjectSelectionForm
 from coldfront.core.project.forms import SavioProjectSurveyForm
 from formtools.wizard.views import SessionWizardView
 
@@ -1402,35 +1404,43 @@ from formtools.wizard.views import SessionWizardView
 class SavioProjectRequestWizard(SessionWizardView):
 
     FORMS = [
-        ('details', SavioProjectDetailsForm),
         ('allocation_type', SavioProjectAllocationTypeForm),
-        ('existing_pis', SavioProjectExistingPIsForm),
-        ('new_pis', SavioProjectNewPIsFormset),
+        ('existing_pi', SavioProjectExistingPIForm),
+        ('new_pi', SavioProjectNewPIForm),
+        ('pool_allocations', SavioProjectPoolAllocationsForm),
+        ('pooled_project_selection', SavioProjectPooledProjectSelectionForm),
+        ('details', SavioProjectDetailsForm),
         ('survey', SavioProjectSurveyForm),
     ]
 
     TEMPLATES = {
-        'details': 'project/savio_project_request/project_details.html',
         'allocation_type': 'project/savio_project_request/project_allocation_type.html',
-        'existing_pis': 'project/savio_project_request/project_existing_pis.html',
-        'new_pis': 'project/savio_project_request/project_new_pis.html',
+        'existing_pi': 'project/savio_project_request/project_existing_pi.html',
+        'new_pi': 'project/savio_project_request/project_new_pi.html',
+        'pool_allocations': 'project/savio_project_request/project_pool_allocations.html',
+        'pooled_project_selection': 'project/savio_project_request/project_pooled_project_selection.html',
+        'details': 'project/savio_project_request/project_details.html',
         'survey': 'project/savio_project_request/project_survey.html',
     }
 
     form_list = [
-        SavioProjectDetailsForm,
         SavioProjectAllocationTypeForm,
-        SavioProjectExistingPIsForm,
-        SavioProjectNewPIsFormset,
+        SavioProjectExistingPIForm,
+        SavioProjectNewPIForm,
+        SavioProjectPoolAllocationsForm,
+        SavioProjectPooledProjectSelectionForm,
+        SavioProjectDetailsForm,
         SavioProjectSurveyForm,
     ]
 
     # Non-required lookup table: form name --> step number
     step_numbers_by_form_name = {
-        'details': 0,
-        'allocation_type': 1,
-        'existing_pis': 2,
-        'new_pis': 3,
+        'allocation_type': 0,
+        'existing_pi': 1,
+        'new_pi': 2,
+        'pool_allocations': 3,
+        'pooled_project_selection': 4,
+        'details': 5,
     }
 
     def get_context_data(self, form, **kwargs):
@@ -1441,10 +1451,11 @@ class SavioProjectRequestWizard(SessionWizardView):
 
     def get_form_kwargs(self, step):
         # TODO: Not all past data will be needed in all forms.
-        # TODO: Can't pass something as a kwarg to formset?
         kwargs = {}
         step = int(step)
-        if step == self.step_numbers_by_form_name['existing_pis']:
+        if (step == self.step_numbers_by_form_name['existing_pi'] or
+                step == self.step_numbers_by_form_name[
+                    'pooled_project_selection']):
             self.__set_data_from_previous_steps(step, kwargs)
         return kwargs
 
@@ -1461,4 +1472,26 @@ class SavioProjectRequestWizard(SessionWizardView):
         if step > allocation_type_form_step:
             allocation_type_form_data = self.get_cleaned_data_for_step(
                 str(allocation_type_form_step))
-            dictionary.update(allocation_type_form_data)
+            if allocation_type_form_data:
+                dictionary.update(allocation_type_form_data)
+
+
+def show_details_form_condition(wizard):
+    step_name = 'pool_allocations'
+    step = str(SavioProjectRequestWizard.step_numbers_by_form_name[step_name])
+    cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
+    return not cleaned_data.get('pool', False)
+
+
+def show_new_pi_form_condition(wizard):
+    step_name = 'existing_pi'
+    step = str(SavioProjectRequestWizard.step_numbers_by_form_name[step_name])
+    cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
+    return cleaned_data.get('PI', None) is None
+
+
+def show_pooled_project_selection_form_condition(wizard):
+    step_name = 'pool_allocations'
+    step = str(SavioProjectRequestWizard.step_numbers_by_form_name[step_name])
+    cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
+    return cleaned_data.get('pool', False)

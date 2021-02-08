@@ -148,35 +148,6 @@ from coldfront.core.project.models import ProjectUser
 from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator
 from django.core.validators import RegexValidator
-from django.forms import formset_factory
-
-
-class SavioProjectDetailsForm(forms.Form):
-
-    name = forms.CharField(
-        label='Name',
-        max_length=8,
-        required=True,
-        validators=[
-            MinLengthValidator(4),
-            RegexValidator(
-                r'^[0-9a-z]+$',
-                message=(
-                    'Name must contain only lowercase letters and numbers.'))
-        ])
-    title = forms.CharField(
-        label='Title',
-        max_length=255,
-        required=True,
-        validators=[
-            MinLengthValidator(4),
-        ])
-    description = forms.CharField(
-        label='Description',
-        validators=[MinLengthValidator(10)],
-        widget=forms.Textarea(attrs={'rows': 3}))
-
-    # TODO: Add field_of_science.
 
 
 class SavioProjectAllocationTypeForm(forms.Form):
@@ -194,17 +165,17 @@ class SavioProjectAllocationTypeForm(forms.Form):
         widget=forms.Select())
 
 
-class SavioProjectExistingPIsForm(forms.Form):
+class SavioProjectExistingPIForm(forms.Form):
 
-    PIs = forms.ModelMultipleChoiceField(
-        label='Principal Investigators',
+    PI = forms.ModelChoiceField(
+        label='Principal Investigator',
         queryset=User.objects.none(),
         required=False,
-        widget=forms.SelectMultiple())
+        widget=forms.Select())
 
     def __init__(self, *args, **kwargs):
 
-        self.allocation_type = kwargs.pop('allocation_type')
+        self.allocation_type = kwargs.pop('allocation_type', None)
 
         super().__init__(*args, **kwargs)
 
@@ -220,22 +191,20 @@ class SavioProjectExistingPIsForm(forms.Form):
                 project__name__startswith='fc_',
                 project__status__name__in=['New', 'Active']
             ).values_list('user__username', flat=True))
-            self.fields['PIs'].queryset = queryset.exclude(
+            self.fields['PI'].queryset = queryset.exclude(
                 username__in=pis_with_existing_fcas)
         else:
-            self.fields['PIs'].queryset = queryset
+            self.fields['PI'].queryset = queryset
 
     def clean(self):
         cleaned_data = super().clean()
-        pis = self.cleaned_data['PIs']
-        for pi in pis:
-            if pi not in self.fields['PIs'].queryset:
-                raise forms.ValidationError(
-                    f'Invalid selection {pi.username}.')
+        pi = self.cleaned_data['PI']
+        if pi is not None and pi not in self.fields['PI'].queryset:
+            raise forms.ValidationError(f'Invalid selection {pi.username}.')
         return cleaned_data
 
 
-class SavioProjectNewPIsForm(forms.Form):
+class SavioProjectNewPIForm(forms.Form):
 
     first_name = forms.CharField(max_length=30, required=True)
     middle_name = forms.CharField(max_length=30, required=False)
@@ -243,7 +212,73 @@ class SavioProjectNewPIsForm(forms.Form):
     email = forms.EmailField(max_length=100, required=True)
 
 
-SavioProjectNewPIsFormset = formset_factory(SavioProjectNewPIsForm)        # TODO: extra=2 means 2 forms are rendered
+class SavioProjectPoolAllocationsForm(forms.Form):
+
+    pool = forms.BooleanField(
+        initial=False,
+        label='Yes, pool the PI\'s allocation with an existing project\'s.',
+        required=False)
+
+
+class SavioProjectPooledProjectSelectionForm(forms.Form):
+
+    project = forms.ModelChoiceField(
+        label='Project',
+        queryset=Project.objects.none(),
+        required=True,
+        widget=forms.Select())
+
+    def __init__(self, *args, **kwargs):
+        self.allocation_type = kwargs.pop('allocation_type', None)
+        super().__init__(*args, **kwargs)
+        projects = Project.objects.filter(
+            status__name__in=['Pending - Add', 'New', 'Active'])
+        if self.allocation_type == 'FCA':
+            projects = projects.filter(name__startswith='fc_')
+        elif self.allocation_type == 'CO':
+            projects = projects.filter(name__startswith='co_')
+        # TODO: Add handling for other types.
+        self.fields['project'].queryset = projects
+
+    def clean(self):
+        cleaned_data = super().clean()
+        project = self.cleaned_data['project']
+        if project not in self.fields['project'].queryset:
+            raise forms.ValidationError(f'Invalid selection {project.name}.')
+        return cleaned_data
+
+
+class SavioProjectDetailsForm(forms.Form):
+
+    name = forms.CharField(
+        help_text=(
+            'The unique name of the project on the cluster, which must '
+            'contain only lowercase letters and numbers.'),
+        label='Name',
+        max_length=8,
+        required=True,
+        validators=[
+            MinLengthValidator(4),
+            RegexValidator(
+                r'^[0-9a-z]+$',
+                message=(
+                    'Name must contain only lowercase letters and numbers.'))
+        ])
+    title = forms.CharField(
+        help_text='A unique, human-readable title for the project.',
+        label='Title',
+        max_length=255,
+        required=True,
+        validators=[
+            MinLengthValidator(4),
+        ])
+    description = forms.CharField(
+        help_text='A few sentences describing your project.',
+        label='Description',
+        validators=[MinLengthValidator(10)],
+        widget=forms.Textarea(attrs={'rows': 3}))
+
+    # TODO: Add field_of_science.
 
 
 class SavioProjectSurveyForm(forms.Form):
@@ -298,4 +333,88 @@ class SavioProjectSurveyForm(forms.Form):
         label=(
             'Estimate how many processor-core-hrs your research will need '
             'over the year.'),
+        required=False)
+    large_memory_nodes = forms.CharField(
+        label=(
+            'BRC has 4 512GB large memory nodes. What is your expected use of '
+            'these nodes?'),
+        required=False)
+    data_storage_space = forms.CharField(
+        help_text=(
+            'BRC provides each user with 10GB of backed up home directory '
+            'space; and free access to a not-backed-up shared Global Scratch '
+            'high performance parallel filesystem. Research projects that '
+            'need to share datasets among their team members can also be '
+            'allocated up to 30 GB of not-backed-up shared filesystem space '
+            'on request. Users needing more storage can be allocated space on '
+            'IST\'s utility storage tier (currently $50/TB/mo as of '
+            '7/1/2014). Please indicate if you need additional space and how '
+            'much.'),
+        label='Data Storage Space',
+        required=False)
+    io = forms.CharField(
+        help_text=(
+            'SAVIO provides a shared Lustre parallel filesystem for jobs '
+            'needing access to high performance storage.'),
+        label='Describe your applications I/O requirements',
+        required=False)
+    interconnect = forms.ChoiceField(
+        choices=(
+            ('', 'Select one...'),
+            ('1', '1 - Unimportant'),
+            ('2', '2'),
+            ('3', '3'),
+            ('4', '4'),
+            ('5', '5 - Important'),
+        ),
+        help_text=(
+            'Does your application require low latency communication between '
+            'nodes?'),
+        label='Interconnect performance')
+    network_to_internet = forms.CharField(
+        help_text=(
+            'Do you need to transfer large amounts of data to and/or from the '
+            'cluster? If yes, what is the max you you might transfer in a '
+            'day? What would be typical for a month? Do you have need for '
+            'file sharing of large datasets?'),
+        label='Network connection from SAVIO to the Internet',
+        required=False)
+    new_hardware_interest = forms.MultipleChoiceField(
+        choices=(
+            ('Intel Phi', 'Intel Phi'),
+            ('Nvidia GPU', 'Nvidia GPU'),
+        ),
+        help_text=(
+            'Please indicate which of the following hardware would be of '
+            'interest to you. BRC currently have some nodes equipped with '
+            'Nvidia GPUs and no Intel Phi, but it is under consideration. '),
+        label='Many-core, Intel Phi or Nvidia GPU',
+        required=False,
+        widget=forms.CheckboxSelectMultiple())
+    cloud_computing = forms.ChoiceField(
+        choices=(
+            ('', 'Select one...'),
+            ('1', '1 - Unimportant'),
+            ('2', '2'),
+            ('3', '3'),
+            ('4', '4'),
+            ('5', '5 - Important'),
+        ),
+        help_text=(
+            'BRC is developing a cloud computing offering. What is your '
+            'interest in using the cloud for your computation?'),
+        label='Cloud computing',
+        required=False)
+
+    # Question 5
+    software_source = forms.CharField(
+        help_text=(
+            'Specify your software applications. If you have need for '
+            'commercial software, please indicate that here.'),
+        label='What is the source of the software you use (or would use)?',
+        required=False)
+    outside_server_db_access = forms.CharField(
+        label=(
+            'Does your application require access to an outside web server or '
+            'database? If yes, please explain.'),
         required=False)
