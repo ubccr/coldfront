@@ -4,7 +4,7 @@
 
 
 {% block title %}
-Savio Project Request - Existing PIs
+Savio Project Request - Existing PI
 {% endblock %}
 
 
@@ -17,9 +17,9 @@ Savio Project Request - Existing PIs
 <script type='text/javascript' src="{% static 'tmp/selectize.min.js' %}"></script>
 <link rel='stylesheet' type='text/css' href="{% static 'tmp/selectize.bootstrap3.css' %}"/>
 
-<h1>Principal Investigators</h1><hr>
+<h1>Principal Investigator</h1><hr>
 
-<p>Select zero or more existing users to be the Principal Investigators of the project. If a user is not listed, you may also specify information for a new PI in the next step.</p>
+<p>Select an existing user to be the Principal Investigator of the project. If the desired user is not listed, you may skip this step and specify information for a new PI in the next step.</p>
 
 {% if allocation_type == 'FCA' %}
   <p>Note: Each PI may only have one active FCA at a time, so only those without one can be selected below.</p>
