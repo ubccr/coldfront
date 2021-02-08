@@ -4,7 +4,7 @@
 
 
 {% block title %}
-Savio Project Request - New PI
+Savio Project Request - Allocation Pooling
 {% endblock %}
 
 
@@ -12,10 +12,11 @@ Savio Project Request - New PI
 {{ wizard.form.media }}
 {% endblock %}
 
-{% block content %}
-<h1>Principal Investigator</h1><hr>
 
-<p>Provide details a new user, who will be a Principal Investigator for the project. An existing user should have been selected in the previous step.</p>
+{% block content %}
+<h1>Allocation Pooling</h1><hr>
+
+<p>You are pooling your allocation with an existing project's allocation. Please select the project from the dropdown below.</p>
 
 <form action="" method="post">
   {% csrf_token %}
@@ -25,7 +26,6 @@ Savio Project Request - New PI
       {{ wizard.form.management_form }}
       {% for form in wizard.form.forms %}
         {{ form|crispy }}
-        <hr>
       {% endfor %}
     {% else %}
       {{ wizard.form|crispy }}
