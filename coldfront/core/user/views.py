@@ -222,6 +222,18 @@ class UserUpgradeAccount(LoginRequiredMixin, UserPassesTestMixin, View):
 
     def post(self, request):
         if EMAIL_ENABLED:
+            profile = request.user.userprofile
+
+            # request already made
+            if profile.upgrade_request is not None:
+                messages.error(request, 'Upgrade request has already been made')
+                return HttpResponseRedirect(reverse('user-profile'))
+
+            # make new request
+            now = datetime.utcnow().astimezone(pytz.timezone(settings.TIME_ZONE))
+            profile.upgrade_request = now
+            profile.save()
+
             send_email_template(
                 'Upgrade Account Request',
                 'email/upgrade_account_request.txt',
