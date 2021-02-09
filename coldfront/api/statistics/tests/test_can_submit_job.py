@@ -28,7 +28,7 @@ class TestCanSubmitJobView(TestJobBase):
     @staticmethod
     def get_url(job_cost, user_id, account_id):
         """Return the request URL for the given parameters."""
-        return f'/api/can_submit_job/{job_cost}/{user_id}/{account_id}/'
+        return f'/api/jobs/can_submit_job/{job_cost}/{user_id}/{account_id}/'
 
     def test_other_requests_not_allowed(self):
         """Test that other requests (e.g. POST; PATCH; DELETE) are not
@@ -126,16 +126,6 @@ class TestCanSubmitJobView(TestJobBase):
         """Test that requests fails if there are too few or too many of
         a given database object than expected."""
         message = 'Unexpected server error.'
-        # The account has more than one allocation with Savio Compute as a
-        # resource.
-        resource = Resource.objects.get(name='Savio Compute')
-        status = AllocationStatusChoice.objects.get(name='Active')
-        allocation = Allocation.objects.create(
-            project=self.project, status=status)
-        allocation.resources.add(resource)
-        allocation.save()
-        self.assert_result('1.00', '0', 'test_project', 500, False, message)
-        allocation.delete()
         # There are multiple allocation user status choices named 'Active'.
         AllocationUserStatusChoice.objects.create(name='Active')
         self.assert_result('1.00', '0', 'test_project', 500, False, message)

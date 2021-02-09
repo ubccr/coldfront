@@ -1,0 +1,72 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+
+
+{% block title %}
+Activate Cluster Account
+{% endblock %}
+
+
+{% block content %}
+<h1>Activate Cluster Account</h1>
+
+<p>This form activates a cluster account for a user under a particular project and allocation in the ColdFront database. It handles initial account requests as well as requests to modify existing accounts (e.g., to add access to another project). Please confirm that backend setup for the request has been completed before proceeding.</p>
+
+<div class="card mb-3">
+  <div class="card-header">
+    <h4>
+      <i class="fas fa-info-circle" aria-hidden="true"></i>
+      Request Information
+    </h4>
+  </div>
+  <div class="card-body">
+    {% with user=cluster_account.allocation_user.user %}
+      <p class="card-text text-justify">
+        <strong>User:</strong>
+        <a href="{% url 'user-profile' user.username %}">{{ user.first_name }} {{user.last_name }}</a>
+        ({{ user.email }})
+      </p>
+    {% endwith %}
+    {% with project=cluster_account.allocation.project %}
+      <p class="card-text text-justify">
+        <strong>Project:</strong>
+        <a href="{% url 'project-detail' project.pk %}">{{ project.name }}</a>
+      </p>
+    {% endwith %}
+    {% with allocation=cluster_account.allocation %}
+      <p class="card-text text-justify">
+        <strong>Allocation:</strong>
+        <a href="{% url 'allocation-detail' allocation.pk %}">{{ allocation.pk }}</a>
+      </p>
+    {% endwith %}
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">
+    <h4>
+      <i class="fas fa-user-check" aria-hidden="true"></i>
+      Confirm
+    </h4>
+  </div>
+  <div class="card-body">
+    <p class="card-text text-justify">
+      Please confirm the user's username and cluster UID.
+    </p>
+    <form method="post">
+      {% csrf_token %}
+      {{form|crispy}}
+      <input class="btn btn-success" type="submit" value="Activate">
+      <a class="btn btn-secondary" href="{% url 'allocation-cluster-account-request-list' %}" role="button">Cancel</a>
+    </form>
+  </div>
+</div>
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-admin").addClass("active");
+</script>
+
+{% endblock %}

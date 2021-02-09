@@ -203,6 +203,10 @@ Allocation Detail
       <a class="btn btn-danger" href="{% url 'allocation-remove-users' allocation.pk %}" role="button"><i
           class="fas fa-user-times" aria-hidden="true"></i> Remove Users</a>
       {% endif %}
+      <a class="btn btn-info" href="{% url 'allocation-request-cluster-accounts' allocation.pk %}" role="button">
+        <i class="fas fa-terminal" aria-hidden="true"></i>
+        Request Cluster Accounts
+      </a>
     </div>
 
   </div>

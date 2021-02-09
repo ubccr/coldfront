@@ -26,6 +26,7 @@ class Command(BaseCommand):
         for name, attribute_type, has_usage, is_private in (
             ('Cloud Account Name', 'Text', False, False),
             ('CLOUD_USAGE_NOTIFICATION', 'Yes/No', False, True),
+            ('Cluster Account Status', 'Text', False, False),
             ('Core Usage (Hours)', 'Int', True, False),
             ('Cloud Storage Quota (TB)', 'Float', True, False),
             ('EXPIRE NOTIFICATION', 'Yes/No', False, True),
@@ -47,3 +48,7 @@ class Command(BaseCommand):
         ):
             AllocationAttributeType.objects.get_or_create(name=name, attribute_type=AttributeType.objects.get(
                 name=attribute_type), has_usage=has_usage, is_private=is_private)
+
+        # Make 'Cluster Account Status' unique.
+        AllocationAttributeType.objects.filter(
+            name='Cluster Account Status').update(is_unique=True)

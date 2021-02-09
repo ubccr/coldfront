@@ -107,6 +107,7 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                  viewsets.GenericViewSet):
     """A ViewSet for the Job model, intended for allocation accounting
     purposes."""
+
     pagination_class = JobPagination
     permission_classes = [IsAdminUserOrReadOnly]
     serializer_class = JobSerializer
