@@ -25,7 +25,7 @@ Python and released under the GPLv3 license.
  - [Mokey/Hydra OpenID Connect](coldfront/plugins/mokey_oidc)
  - [iQuota](coldfront/plugins/iquota)
  - [Open OnDemand](https://github.com/ubccr/coldfront/tree/master/coldfront/plugins/ondemand)
- - [Open DMoD](coldfront/plugins/xdmod)
+ - [Open XDMoD](coldfront/plugins/xdmod)
  - [System Monitor](coldfront/plugins/system_monitor) (example of ways to integrate your own plug-ins)
 
 
