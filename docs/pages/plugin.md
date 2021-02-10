@@ -9,6 +9,6 @@ For details, see the documentation for each plugin below:
 - [FreeIPA](https://github.com/ubccr/coldfront/tree/master/coldfront/plugins/freeipa)
 - [LDAP](https://github.com/ubccr/coldfront/tree/master/coldfront/plugins/ldap_user_search)
 - [Mokey/Hydra OpenID Connect](https://github.com/ubccr/coldfront/tree/master/coldfront/plugins/mokey_oidc)
-- [iQuota (Isilon)](https://github.com/ubccr/coldfront/tree/master/coldfront/plugins/iquota)
-- [XDMoD](https://github.com/ubccr/coldfront/tree/master/coldfront/plugins/xdmod)
+- [iQuota](https://github.com/ubccr/coldfront/tree/master/coldfront/plugins/iquota)
+- [Open XDMoD](https://github.com/ubccr/coldfront/tree/master/coldfront/plugins/xdmod)
 - [System Monitor](https://github.com/ubccr/coldfront/tree/master/coldfront/plugins/system_monitor) (example of ways to integrate your own plug-ins)
