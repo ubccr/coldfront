@@ -23,11 +23,10 @@ Python and released under the GPLv3 license.
  - [FreeIPA](coldfront/plugins/freeipa)
  - [LDAP](coldfront/plugins/ldap_user_search)
  - [Mokey/Hydra OpenID Connect](coldfront/plugins/mokey_oidc)
- - [iQuota (Isilon)](coldfront/plugins/iquota)
- - [XDMoD](coldfront/plugins/xdmod)
+ - [iQuota](coldfront/plugins/iquota)
+ - [Open OnDemand](https://github.com/ubccr/coldfront/tree/master/coldfront/plugins/ondemand)
+ - [Open DMoD](coldfront/plugins/xdmod)
  - [System Monitor](coldfront/plugins/system_monitor) (example of ways to integrate your own plug-ins)
-
-
 
 
 ## Installation
