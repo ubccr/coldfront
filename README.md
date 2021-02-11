@@ -31,7 +31,7 @@ Python and released under the GPLv3 license.
 
 ## Installation
 
-[Quick Start Instructions](docs/pages/quickstart)
+[Quick Start Instructions](docs/pages/quickstart.md)
 
 
 ## Directory structure
@@ -60,7 +60,7 @@ Python and released under the GPLv3 license.
 
 ## ColdFront Demos
 
-[Animated gifs demonstrating ColdFront features](docs/pages/demos)
+[Animated gifs demonstrating ColdFront features](docs/pages/demos.md)
 
 
 
