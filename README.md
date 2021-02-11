@@ -24,14 +24,14 @@ Python and released under the GPLv3 license.
  - [LDAP](coldfront/plugins/ldap_user_search)
  - [Mokey/Hydra OpenID Connect](coldfront/plugins/mokey_oidc)
  - [iQuota](coldfront/plugins/iquota)
- - [Open OnDemand](https://github.com/ubccr/coldfront/tree/master/coldfront/plugins/ondemand)
+ - [Open OnDemand](coldfront/plugins/ondemand)
  - [Open XDMoD](coldfront/plugins/xdmod)
  - [System Monitor](coldfront/plugins/system_monitor) (example of ways to integrate your own plug-ins)
 
 
 ## Installation
 
-[Quick Start Instructions](coldfront/docs/pages/quickstart)
+[Quick Start Instructions](docs/pages/quickstart)
 
 
 ## Directory structure
@@ -60,7 +60,7 @@ Python and released under the GPLv3 license.
 
 ## ColdFront Demos
 
-[Animated gifs demonstrating ColdFront features](coldfront/docs/pages/demos)
+[Animated gifs demonstrating ColdFront features](docs/pages/demos)
 
 
 
