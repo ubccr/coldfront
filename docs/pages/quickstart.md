@@ -3,7 +3,7 @@
 Installing ColdFront is easy.  Here we document the process to start up a developement server.  Additional configuration should be made if planning to use this in production.  More details coming soon!
 
 ## Installation demo
-![Installation](coldfront/docs/source/user_guide/images/installation.gif "Installation")
+![Installation](../../coldfront/docs/source/user_guide/images/installation.gif "Installation")
 
 
 
