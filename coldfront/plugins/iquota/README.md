@@ -7,7 +7,7 @@ quotas are displayed on the ColdFront portal home page.
 
 ## Design
 
-This app uses the iquota API to report user and group quotas. Kerberos is used
+This app uses the iquota API to report quotas. Kerberos is used
 to authenticate to the API and a valid keytab file is required.
 
 ## Requirements
@@ -28,6 +28,6 @@ file:
     IQUOTA_CA_CERT = '/etc/ipa/ca.crt'
     IQUOTA_API_HOST = 'localhost'
     IQUOTA_API_PORT = '8080'
-    IQUOTA_USER_PATH = '/ifs/user'
-    IQUOTA_GROUP_PATH = '/ifs/projects'
+    IQUOTA_USER_PATH = '/nfs/user'
+    IQUOTA_GROUP_PATH = '/nfs/projects'
 ```

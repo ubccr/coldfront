@@ -1,6 +1,6 @@
-# XDMoD integration for ColdFront
+# Open XDMoD integration for ColdFront
 
-ColdFront django plugin providing XDMoD integration for ColdFront.  [Open
+ColdFront django plugin providing Open XDMoD integration for ColdFront.  [Open
 XDMoD](https://open.xdmod.org) is an open source tool to facilitate the
 management of high performance computing resources and provides monitoring of
 standard metrics such as utilization. This plugin syncs utilization data with
@@ -8,8 +8,8 @@ ColdFront allocation attributes.
 
 ## Design
 
-XDMoD provides reporting on a rich set of metrics. Currently, this plugin
-supports 2 metrics in XDMoD focused on reporting usage data for HPC Jobs and
+Open XDMoD provides reporting on a rich set of metrics. Currently, this plugin
+supports 2 metrics in Open XDMoD focused on reporting usage data for HPC Jobs and
 Cloud core time.
 
 ## Usage
