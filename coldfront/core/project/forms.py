@@ -370,7 +370,8 @@ class SavioProjectSurveyForm(forms.Form):
         help_text=(
             'Does your application require low latency communication between '
             'nodes?'),
-        label='Interconnect performance')
+        label='Interconnect performance',
+        required=False)
     network_to_internet = forms.CharField(
         help_text=(
             'Do you need to transfer large amounts of data to and/or from the '

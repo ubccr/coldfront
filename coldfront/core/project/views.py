@@ -1464,7 +1464,33 @@ class SavioProjectRequestWizard(SessionWizardView):
 
     def done(self, form_list, form_dict, **kwargs):
         # TODO: Process form_list and form_dict.
-        return HttpResponseRedirect("/")    # TODO: Redirect appropriately.
+        data = [form.cleaned_data for form in form_list]
+        """
+        {'allocation_type': 'FCA'}
+        {'PI': <User: username>}
+        {'pool': True}
+        {'project': <Project: project_name>}
+        {'scope_and_intent': 'string',
+         'computational_aspects': 'string',
+         'existing_resources': '',
+         'system_needs': [],
+         'num_processor_cores': '',
+         'memory_per_core': '',
+         'run_time': '',
+         'processor_core_hours_year': '',
+         'large_memory_nodes': '',
+         'data_storage_space': '',
+         'io': '',
+         'interconnect': '',
+         'network_to_internet': '',
+         'new_hardware_interest': [],
+         'cloud_computing': '',
+         'software_source': '',
+         'outside_server_db_access': ''}
+        """
+        # Cleaned data will depend on which forms were submitted
+        # The keys of form_dict are the unmodified step numbers
+        return HttpResponseRedirect('/')    # TODO: Redirect appropriately.
 
     def __set_data_from_previous_steps(self, step, dictionary):
         allocation_type_form_step = \
