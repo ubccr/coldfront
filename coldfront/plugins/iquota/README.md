@@ -2,7 +2,8 @@
 
 ColdFront plugin providing iquota reporting for ColdFront.
 [iquota](https://github.com/ubccr/iquota) is a command line tool and associated
-server application for reporting quotas from nfs mounts.
+server application for reporting quotas from CCR storage nfs mounts. Storage
+quotas are displayed on the ColdFront portal home page.
 
 ## Design
 
