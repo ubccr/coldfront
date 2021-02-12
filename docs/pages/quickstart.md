@@ -2,10 +2,6 @@
 
 Installing ColdFront is easy.  Here we document the process to start up a developement server.  Additional configuration should be made if planning to use this in production.  More details coming soon!
 
-## Installation demo
-![Installation](../../coldfront/docs/source/user_guide/images/installation.gif "Installation")
-
-
 
 #### Step 1 - Install ColdFront requirements  
 ColdFront requires Python 3.6, memcached, and redis.  This procedure varies based on operating system.  We've provided steps for 3 popular OS versions.  ColdFront will most likely work on any Linux-based OS.

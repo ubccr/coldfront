@@ -1,3 +1,0 @@
-# Resources
-
-!!! info "Coming soon"
