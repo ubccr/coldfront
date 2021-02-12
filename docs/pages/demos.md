@@ -1,15 +1,15 @@
 This is a collection of animated gifs demonstrating common functions in ColdFront
 
 [Installation](#installation)  
-[Adding Projects](#adding-projects)  
-[Adding Users to Projects](#adding-users-to-projects)  
+[Adding a Project](#adding-a-project)  
+[Adding Users to a Project](#adding-users-to-a-project)  
 [Requesting an Allocation](#requesting-an-allocation)  
 [Adding a Grant](#adding-a-grant)  
 [Adding Publications](#adding-publications)  
 [Adding a User to an Allocation](#adding-a-user-to-an-allocation)  
 [Managing an Allocation as an Admin](#managing-an-allocation-as-an-admin)  
 [Adding a Resource](#adding-a-resource)  
-[Generate Slurm Association Data](#gnerate-slurm-association-data)  
+[Generate Slurm Association Data](#generate-slurm-association-data)  
 
 
 ## Installation
@@ -20,8 +20,8 @@ This is a collection of animated gifs demonstrating common functions in ColdFron
 ![Adding Projects](../../coldfront/docs/source/user_guide/images/adding_project.gif "Adding a project")
 
 
-### Adding Users
-![Adding Users to Projects](../../coldfront/docs/source/user_guide/images/adding_users.gif "Adding Users")
+### Adding Users to a Project
+![Adding Users to a Project](../../coldfront/docs/source/user_guide/images/adding_users.gif "Adding Users")
 
 
 ### Requesting an Allocation
