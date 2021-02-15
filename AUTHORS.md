@@ -8,7 +8,9 @@
 
 ## Contributors
 
+- Aryansh Sharma
 - Dheeraj Bhatia
+- Dylan Hayward
 - John Deangelis <jd225@buffalo.edu>
 - James Kruth
 - Shawn Rice
