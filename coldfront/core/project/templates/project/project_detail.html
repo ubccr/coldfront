@@ -319,7 +319,7 @@ Project Detail
     {% endif %}
   </div>
 </div>
-<!-- End Project Grants -->
+<!-- End Project Publications -->
 
 
 <!-- Start Project ResearchOutputs -->
@@ -395,6 +395,7 @@ Project Detail
     {% endif %}
   </div>
 </div>
+<!-- End Admin Messages -->
 
 <script>
   function getCookie(name) {
@@ -417,6 +418,9 @@ Project Detail
     $('[data-toggle="popover"]').popover();
 
     $('#publication-table').DataTable({
+      "aLengthMenu": [
+        [10, 25, 50, 100, -1],
+        [10, 25, 50, 100, "All"]],
       "iDisplayLength": 25,
       "bSortClasses": false,
       "order": [[ 1, "desc" ]]

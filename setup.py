@@ -15,7 +15,7 @@ setup(
     url='http://coldfront.io',
     project_urls={
         'Bug Tracker': 'https://github.com/ubccr/coldfront/issues',
-        'Documentation': 'https://ubccr.github.io/coldfront-docs/',
+        'Documentation': 'https://coldfront.readthedocs.io',
         'Source Code': 'https://github.com/ubccr/coldfront',
     },
     author='Andrew E. Bruno, Dori Sajdak, Mohammad Zia',
