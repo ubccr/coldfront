@@ -237,7 +237,7 @@ class PublicationAddView(LoginRequiredMixin, UserPassesTestMixin, View):
                 msg += 'Added {} publication{} to project.'.format(
                     publications_added, 's' if publications_added > 1 else '')
             if publications_skipped:
-                msg += 'Skipped adding: {}'.format(
+                msg += 'Publication already exists on this project. Skipped adding: {}'.format(
                     ', '.join(publications_skipped))
 
             messages.success(request, msg)
