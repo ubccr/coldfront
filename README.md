@@ -34,35 +34,9 @@ Python and released under the GPLv3 license.
 [Quick Start Instructions](docs/pages/quickstart.md)
 
 
-## Directory structure
-
-- coldfront
-    - core - The core ColdFront application
-        - field_of_science
-        - grant
-        - portal
-        - project
-        - publication
-        - resource
-        - allocation
-        - user
-        - utils
-    - libs - Helper libraries
-    - plugins - Plugins that can be configured in ColdFront
-        - freeipa
-        - iquota
-        - ldap_user_search
-        - mokey_oidc
-        - slurm
-        - system_monitor
-
-
-
 ## ColdFront Demos
 
 [Animated gifs demonstrating ColdFront features](docs/pages/demos.md)
-
-
 
 ## Contact Information
 If you would like a live demo followed by QA, please contact us at ccr-coldfront-admin-list@listserv.buffalo.edu. You can also contact us for general inquiries and installation troubleshooting.
