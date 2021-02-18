@@ -1,5 +1,6 @@
 import datetime
 import pprint
+import pytz
 
 from django import forms
 from django.conf import settings
@@ -8,6 +9,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.db import IntegrityError
 from django.db.models import Q
 from django.forms import formset_factory
 from django.http import (HttpResponse, HttpResponseForbidden,
@@ -42,10 +44,13 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserStatusChoice)
 # from coldfront.core.publication.models import Publication
 # from coldfront.core.research_output.models import ResearchOutput
+from coldfront.core.resource.models import Resource
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email, send_email_template
+
+import logging
 
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
@@ -1441,7 +1446,10 @@ class SavioProjectRequestWizard(SessionWizardView):
         'pool_allocations': 3,
         'pooled_project_selection': 4,
         'details': 5,
+        'survey': 6,
     }
+
+    logger = logging.getLogger(__name__)
 
     def get_context_data(self, form, **kwargs):
         context = super().get_context_data(form=form, **kwargs)
@@ -1464,7 +1472,16 @@ class SavioProjectRequestWizard(SessionWizardView):
 
     def done(self, form_list, form_dict, **kwargs):
         # TODO: Process form_list and form_dict.
-        data = [form.cleaned_data for form in form_list]
+
+        redirect_url = '/'
+        return HttpResponseRedirect(redirect_url)
+
+
+
+        unexpected_failure_message = (
+            'Unexpected failure. Please contact an administrator.')
+
+        data = iter([form.cleaned_data for form in form_list])
         """
         {'allocation_type': 'FCA'}
         {'PI': <User: username>}
@@ -1490,7 +1507,105 @@ class SavioProjectRequestWizard(SessionWizardView):
         """
         # Cleaned data will depend on which forms were submitted
         # The keys of form_dict are the unmodified step numbers
-        return HttpResponseRedirect('/')    # TODO: Redirect appropriately.
+        form_data = [{} for _ in range(len(self.form_list))]
+        for step in sorted(form_dict.keys()):
+            form_data[int(step)] = next(data)
+
+        allocation_type = form_data[
+            self.step_numbers_by_form_name[
+                'allocation_type']]['allocation_type']
+        try:
+            allocation_attribute_type = AllocationAttributeType.objects.get(
+                name=allocation_type)
+        except AllocationAttributeType.DoesNotExist:
+            self.logger.error(
+                f'Form received unexpected allocation type {allocation_type}.')
+            messages.error(unexpected_failure_message)
+            return HttpResponseRedirect(redirect_url)
+
+        existing_pi_step = self.step_numbers_by_form_name['existing_pi']
+        existing_pi_data = form_data[existing_pi_step]
+        if existing_pi_data:
+            pi = existing_pi_data['PI']
+        else:
+            new_pi_step = self.step_numbers_by_form_name['new_pi']
+            new_pi_data = form_data[new_pi_step]
+            try:
+                email = new_pi_data['email']
+                pi = User.objects.create(
+                    username=email,
+                    first_name=new_pi_data['first_name'],
+                    last_name=new_pi_data['last_name'],
+                    email=email,
+                    is_active=False)
+            except IntegrityError:
+                self.logger.error(f'User {email} unexpectedly exists.')
+                messages.error(unexpected_failure_message)
+                return HttpResponseRedirect(redirect_url)
+            try:
+                pi_profile = pi.userprofile
+            except UserProfile.DoesNotExist:
+                self.logger.error(
+                    f'User {email} unexpectedly has no UserProfile.')
+                messages.error(unexpected_failure_message)
+                return HttpResponseRedirect(redirect_url)
+            pi_profile.upgrade_request = datetime.utcnow().astimezone(
+                pytz.timezone(settings.TIME_ZONE))
+            # TODO: Consider sending an email as a normal PI request would.
+            pi_profile.save()
+
+        pool = form_data[
+            self.step_numbers_by_form_name['pool_allocations']]['pool']
+
+        resource = Resource.objects.get(name='Savio Compute')
+
+        if pool:
+            project_step = self.step_numbers_by_form_name[
+                'pooled_project_selection']
+            project_data = form_data[project_step]
+            project = project_data['project']
+
+            allocations = Allocation.objects.filter(
+                project=project, resources__pk__exact=resource.pk)
+            if allocations.count() == 0:
+                self.logger.error(
+                    f'Project {project.name} unexpectedly has no Allocation '
+                    f'to Resource {resource.name}.')
+                messages.error(unexpected_failure_message)
+                return HttpResponseRedirect(redirect_url)
+            elif allocations.count() == 1:
+                allocation = allocations.first()
+            else:
+                self.logger.error(
+                    f'Project {project.name} unexpectedly has more than one '
+                    f'Allocation to Resource {resource.name}.')
+                messages.error(unexpected_failure_message)
+                return HttpResponseRedirect(redirect_url)
+
+        else:
+            project_step = self.step_numbers_by_form_name['details']
+            project_data = form_data[project_step]
+            try:
+                project = Project.objects.create(
+                    name=project_data['name'], title=project_data['title'],
+                    description=project_data['description'])
+            except IntegrityError:
+                self.logger.error(
+                    f'Project {project_data["name"]} unexpectedly already '
+                    f'exists.')
+                messages.error(unexpected_failure_message)
+                return HttpResponseRedirect(redirect_url)
+
+            allocation = Allocation.objects.create(project=project)
+            # TODO: Set start_date and end_date upon approval.
+
+            allocation.resources.add(resource)
+            allocation.save()
+
+        # for k in sorted(form_dict.keys()):
+        #     print(self.form_list[k])
+        # print(data)
+        return HttpResponseRedirect(redirect_url)    # TODO: Redirect appropriately.
 
     def __set_data_from_previous_steps(self, step, dictionary):
         allocation_type_form_step = \
