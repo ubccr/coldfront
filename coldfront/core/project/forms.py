@@ -159,7 +159,9 @@ class SavioProjectAllocationTypeForm(forms.Form):
         (CONDO, "Condo Allocation"),
     )
 
-    allocation_type = forms.ChoiceField(                                # TODO: Make these allocation attribute types / similar.
+    # TODO: Make these allocation attribute types / similar.
+
+    allocation_type = forms.ChoiceField(
         choices=CHOICES,
         label='Allocation Type',
         widget=forms.Select())
@@ -210,6 +212,15 @@ class SavioProjectNewPIForm(forms.Form):
     middle_name = forms.CharField(max_length=30, required=False)
     last_name = forms.CharField(max_length=150, required=True)
     email = forms.EmailField(max_length=100, required=True)
+
+    def clean_email(self):
+        cleaned_data = super().clean()
+        email = cleaned_data['email'].lower()
+        if (User.objects.filter(username=email).exists() or
+                User.objects.filter(email=email).exists()):
+            raise forms.ValidationError(
+                'A user with that email address already exists.')
+        return email
 
 
 class SavioProjectPoolAllocationsForm(forms.Form):
