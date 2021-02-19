@@ -1395,7 +1395,7 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
 
 
 
-
+from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.project.forms import SavioProjectAllocationTypeForm
 from coldfront.core.project.forms import SavioProjectDetailsForm
 from coldfront.core.project.forms import SavioProjectExistingPIForm
@@ -1403,6 +1403,8 @@ from coldfront.core.project.forms import SavioProjectNewPIForm
 from coldfront.core.project.forms import SavioProjectPoolAllocationsForm
 from coldfront.core.project.forms import SavioProjectPooledProjectSelectionForm
 from coldfront.core.project.forms import SavioProjectSurveyForm
+from coldfront.core.project.models import SavioProjectAllocationRequest
+from coldfront.core.user.models import UserProfile
 from formtools.wizard.views import SessionWizardView
 
 
@@ -1471,143 +1473,160 @@ class SavioProjectRequestWizard(SessionWizardView):
         return [self.TEMPLATES[self.FORMS[int(self.steps.current)][0]]]
 
     def done(self, form_list, form_dict, **kwargs):
-        # TODO: Process form_list and form_dict.
-
         redirect_url = '/'
         return HttpResponseRedirect(redirect_url)
 
-
-
-        unexpected_failure_message = (
-            'Unexpected failure. Please contact an administrator.')
-
+        # Retrieve form data; include empty dictionaries for skipped steps.
         data = iter([form.cleaned_data for form in form_list])
-        """
-        {'allocation_type': 'FCA'}
-        {'PI': <User: username>}
-        {'pool': True}
-        {'project': <Project: project_name>}
-        {'scope_and_intent': 'string',
-         'computational_aspects': 'string',
-         'existing_resources': '',
-         'system_needs': [],
-         'num_processor_cores': '',
-         'memory_per_core': '',
-         'run_time': '',
-         'processor_core_hours_year': '',
-         'large_memory_nodes': '',
-         'data_storage_space': '',
-         'io': '',
-         'interconnect': '',
-         'network_to_internet': '',
-         'new_hardware_interest': [],
-         'cloud_computing': '',
-         'software_source': '',
-         'outside_server_db_access': ''}
-        """
-        # Cleaned data will depend on which forms were submitted
-        # The keys of form_dict are the unmodified step numbers
         form_data = [{} for _ in range(len(self.form_list))]
         for step in sorted(form_dict.keys()):
             form_data[int(step)] = next(data)
 
-        allocation_type = form_data[
-            self.step_numbers_by_form_name[
-                'allocation_type']]['allocation_type']
         try:
-            allocation_attribute_type = AllocationAttributeType.objects.get(
-                name=allocation_type)
-        except AllocationAttributeType.DoesNotExist:
-            self.logger.error(
-                f'Form received unexpected allocation type {allocation_type}.')
-            messages.error(unexpected_failure_message)
+            allocation_attribute_type = self.__get_allocation_attribute_type(
+                form_data)
+            pi = self.__handle_pi_data(form_data)
+            pooling_requested = self.__get_pooling_requested(form_data)
+            if pooling_requested:
+                project = self.__handle_pool_with_existing_project(form_data)
+            else:
+                project = self.__handle_create_new_project(form_data)
+            survey_data = self.__get_survey_data(form_data)
+        except Exception as e:
+            logger.exception(e)
+            message = 'Unexpected failure. Please contact an administrator.'
+            messages.error(message)
             return HttpResponseRedirect(redirect_url)
 
-        existing_pi_step = self.step_numbers_by_form_name['existing_pi']
-        existing_pi_data = form_data[existing_pi_step]
-        if existing_pi_data:
-            pi = existing_pi_data['PI']
-        else:
-            new_pi_step = self.step_numbers_by_form_name['new_pi']
-            new_pi_data = form_data[new_pi_step]
-            try:
-                email = new_pi_data['email']
-                pi = User.objects.create(
-                    username=email,
-                    first_name=new_pi_data['first_name'],
-                    last_name=new_pi_data['last_name'],
-                    email=email,
-                    is_active=False)
-            except IntegrityError:
-                self.logger.error(f'User {email} unexpectedly exists.')
-                messages.error(unexpected_failure_message)
-                return HttpResponseRedirect(redirect_url)
-            try:
-                pi_profile = pi.userprofile
-            except UserProfile.DoesNotExist:
-                self.logger.error(
-                    f'User {email} unexpectedly has no UserProfile.')
-                messages.error(unexpected_failure_message)
-                return HttpResponseRedirect(redirect_url)
-            pi_profile.upgrade_request = datetime.utcnow().astimezone(
-                pytz.timezone(settings.TIME_ZONE))
-            # TODO: Consider sending an email as a normal PI request would.
-            pi_profile.save()
+        # TODO: Add exception handling.
+        SavioProjectAllocationRequest.objects.create(
+            requester=self.request.user,
+            allocation_attribute_type=allocation_attribute_type,
+            pi=pi,
+            project=project,
+            pool=pooling_requested,
+            survey_answers=survey_data)
 
-        pool = form_data[
-            self.step_numbers_by_form_name['pool_allocations']]['pool']
-
-        resource = Resource.objects.get(name='Savio Compute')
-
+        message = (
+            'Thank you for your submission. It will be reviewed and processed '
+            'by administrators.')
         if pool:
-            project_step = self.step_numbers_by_form_name[
-                'pooled_project_selection']
-            project_data = form_data[project_step]
-            project = project_data['project']
+            message = message + (
+                f' The managers of Project {project} must also approve it '
+                f'your pool request.')
+        messages.success(message)
 
-            allocations = Allocation.objects.filter(
-                project=project, resources__pk__exact=resource.pk)
-            if allocations.count() == 0:
-                self.logger.error(
-                    f'Project {project.name} unexpectedly has no Allocation '
-                    f'to Resource {resource.name}.')
-                messages.error(unexpected_failure_message)
-                return HttpResponseRedirect(redirect_url)
-            elif allocations.count() == 1:
-                allocation = allocations.first()
-            else:
-                self.logger.error(
-                    f'Project {project.name} unexpectedly has more than one '
-                    f'Allocation to Resource {resource.name}.')
-                messages.error(unexpected_failure_message)
-                return HttpResponseRedirect(redirect_url)
+        return HttpResponseRedirect(redirect_url)
 
-        else:
-            project_step = self.step_numbers_by_form_name['details']
-            project_data = form_data[project_step]
-            try:
-                project = Project.objects.create(
-                    name=project_data['name'], title=project_data['title'],
-                    description=project_data['description'])
-            except IntegrityError:
-                self.logger.error(
-                    f'Project {project_data["name"]} unexpectedly already '
-                    f'exists.')
-                messages.error(unexpected_failure_message)
-                return HttpResponseRedirect(redirect_url)
+    def __get_allocation_attribute_type(self, form_data):
+        """TODO"""
+        step_number = self.step_numbers_by_form_name['allocation_type']
+        data = form_data[step_number]
+        allocation_type = data['allocation_type']
+        try:
+            return AllocationAttributeType.objects.get(name=allocation_type)
+        except AllocationAttributeType.DoesNotExist as e:
+            self.logger.error(
+                f'Form received unexpected allocation type {allocation_type}.')
+            raise e
 
-            allocation = Allocation.objects.create(project=project)
-            # TODO: Set start_date and end_date upon approval.
+    def __get_pooling_requested(self, form_data):
+        step_number = self.step_numbers_by_form_name['pool_allocations']
+        data = form_data[step_number]
+        return data['pool']
 
-            allocation.resources.add(resource)
-            allocation.save()
+    def __get_survey_data(self, form_data):
+        step_number = self.step_numbers_by_form_name['survey']
+        return form_data[step_number]
 
-        # for k in sorted(form_dict.keys()):
-        #     print(self.form_list[k])
-        # print(data)
-        return HttpResponseRedirect(redirect_url)    # TODO: Redirect appropriately.
+    def __handle_pi_data(self, form_data):
+        """TODO"""
+        # If an existing PI was selected, return the existing User object.
+        step_number = self.step_numbers_by_form_name['existing_pi']
+        data = form_data[step_number]
+        if data:
+            return data['PI']
+
+        # Create a new User object intended to be a new PI.
+        step_number = self.step_numbers_by_form_name['new_pi']
+        data = form_data[step_number]
+        try:
+            email = data['email']
+            pi = User.objects.create(
+                username=email,
+                first_name=data['first_name'],
+                last_name=data['last_name'],
+                email=email,
+                is_active=False)
+        except IntegrityError as e:
+            self.logger.error(f'User {email} unexpectedly exists.')
+            raise e
+
+        # Set the user's middle name in the UserProfile; generate a PI request.
+        try:
+            pi_profile = pi.userprofile
+        except UserProfile.DoesNotExist as e:
+            self.logger.error(
+                f'User {email} unexpectedly has no UserProfile.')
+            raise e
+        pi_profile.middle_name = data['middle_name']
+        pi_profile.upgrade_request = datetime.utcnow().astimezone(
+            pytz.timezone(settings.TIME_ZONE))
+        pi_profile.save()
+
+        return pi
+
+    def __handle_create_new_project(self, form_data):
+        """TODO"""
+        step_number = self.step_numbers_by_form_name['details']
+        data = form_data[step_number]
+
+        # Create the new Project.
+        try:
+            project = Project.objects.create(
+                name=data['name'],
+                title=data['title'],
+                description=data['description'])
+        except IntegrityError as e:
+            self.logger.error(
+                f'Project {project["name"]} unexpectedly already '
+                f'exists.')
+            raise e
+
+        # Create an allocation to the "Savio Compute" resource.
+        status = AllocationStatusChoice.objects.get(name='New')
+        allocation = Allocation.objects.create(project=project, status=status)
+        resource = Resource.objects.get(name='Savio Compute')
+        allocation.resources.add(resource)
+        allocation.save()
+
+        return project
+
+    def __handle_pool_with_existing_project(self, form_data):
+        """TODO"""
+        step_number = \
+            self.step_numbers_by_form_name['pooled_project_selection']
+        data = form_data[step_number]
+        project = data['project']
+
+        # Validate that the project has exactly one allocation to the "Savio
+        # Compute" resource.
+        resource = Resource.objects.get(name='Savio Compute')
+        allocations = Allocation.objects.filter(
+            project=project, resources__pk__exact=resource.pk)
+        try:
+            assert allocations.count() == 1
+        except AssertionError as e:
+            number = "no" if allocations.count() == 0 else "more than one"
+            self.logger.error(
+                f'Project {project.name} unexpectedly has {number} Allocation '
+                f'to Resource {resource.name}')
+            raise e
+
+        return project
 
     def __set_data_from_previous_steps(self, step, dictionary):
+        """TODO"""
         allocation_type_form_step = \
             self.step_numbers_by_form_name['allocation_type']
         if step > allocation_type_form_step:

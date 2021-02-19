@@ -207,3 +207,27 @@ class ProjectUser(TimeStampedModel):
     class Meta:
         unique_together = ('user', 'project')
         verbose_name_plural = "Project User Status"
+
+
+class SavioProjectAllocationRequest(TimeStampedModel):
+    requester = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='requester')
+    allocation_attribute_type = models.ForeignKey(
+        'allocation.AllocationAttributeType', on_delete=models.CASCADE)
+    pi = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pi')
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    pool = models.BooleanField(default=False)
+    # survey_answers = models.JSONField()       # TODO: Upgrade to Django 3.1+
+    poolee_approval_time = models.DateTimeField(blank=True, null=True)
+    admin_approval_time = models.DateTimeField(blank=True, null=True)
+
+    # TODO: Consider adding: history = HistoricalRecords()
+
+    def __str__(self):
+        # TODO: Include the word "Pooled" if applicable
+        return f''
+
+    class Meta:
+        # TODO: unique_together?
+        verbose_name = 'Savio Project Allocation Request'
+        verbose_name_plural = 'Savio Project Allocation Requests'
