@@ -10,8 +10,9 @@ base_dir = settings.BASE_DIR
 class Command(BaseCommand):
 
     def handle(self, *args, **options):
-        print('Adding users ...')
+        print('Adding users now ...')
         file_path = os.path.join(base_dir, 'local_data', 'users.tsv')
+        print("line 13:",file_path)
         User.objects.all().delete()
         Group.objects.all().delete()
         with open(file_path, 'r') as fp:
@@ -24,7 +25,7 @@ class Command(BaseCommand):
                     groups = groups[0]
                 else:
                     groups = ''
-                # print(username, first_name, last_name, email, is_active, is_staff, is_superuser, groups)
+                print(username, first_name, last_name, email, is_active, is_staff, is_superuser, groups)
                 group_objs = []
                 for group in groups.split(','):
                     group_obj, _ = Group.objects.get_or_create(name=group.strip())
@@ -45,6 +46,6 @@ class Command(BaseCommand):
                     user_obj.is_pi = True
                 user_obj.save()
 
-                # print(user_obj)
+                print(user_obj)
 
         print('Finished adding users.')
