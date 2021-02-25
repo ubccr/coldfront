@@ -13,7 +13,7 @@ the following tasks:
   servers, storage, and software licenses
 - Add/remove user access to/from allocated resources without requiring system
   administrator interaction
-- Elevate selected users to 'manager' status, allowing them to handle some of the PI tasks such as request new resource allocations, add/remove users to/from resource allocations, add project data like grants and publications
+- Elevate selected users to 'manager' status, allowing them to handle some of the PI tasks such as request new resource allocations, add/remove users to/from resource allocations, add project data such as grants and publications
 - Monitor resource utilization such as storage and cloud usage
 - Receive email notifications for expiring/renewing access to resources as well as notifications when allocations change status - i.e. activated, expired, denied
 - Provide information such as grants, publications, and other reportable data

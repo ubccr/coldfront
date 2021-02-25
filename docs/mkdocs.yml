@@ -37,7 +37,7 @@ nav:
     - Plugins: plugin.md
     - Demos: demos.md
     - User Manual:
-        - Resources: manual/resources/resources.md
         - Projects: manual/projects/projects.md
+        - Resources: manual/resources/resources.md
         - Allocations: manual/allocations/allocations.md
         - Users: manual/users/users.md

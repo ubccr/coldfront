@@ -10,11 +10,11 @@ Python and released under the GPLv3 license.
 ## Features
 
 - Allocation based system for managing access to resources
-- Collect Project, Grant, and Publication data from users
+- Collect Project, Grant, Publication, and other research output data from researchers
 - Define custom attributes on resources and allocations
 - Email notifications for expiring/renewing access to resources
 - Integration with 3rd party systems for automation and access control
-- Center director approval system and annual project reviews
+- Center director approval system and annual project review process
 
 ## Contact Us
 
