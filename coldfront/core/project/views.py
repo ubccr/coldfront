@@ -1473,8 +1473,8 @@ class SavioProjectRequestWizard(SessionWizardView):
         return [self.TEMPLATES[self.FORMS[int(self.steps.current)][0]]]
 
     def done(self, form_list, form_dict, **kwargs):
+        """TODO"""
         redirect_url = '/'
-        return HttpResponseRedirect(redirect_url)
 
         # Retrieve form data; include empty dictionaries for skipped steps.
         data = iter([form.cleaned_data for form in form_list])
@@ -1483,8 +1483,7 @@ class SavioProjectRequestWizard(SessionWizardView):
             form_data[int(step)] = next(data)
 
         try:
-            allocation_attribute_type = self.__get_allocation_attribute_type(
-                form_data)
+            allocation_type = self.__get_allocation_type(form_data)
             pi = self.__handle_pi_data(form_data)
             pooling_requested = self.__get_pooling_requested(form_data)
             if pooling_requested:
@@ -1492,43 +1491,42 @@ class SavioProjectRequestWizard(SessionWizardView):
             else:
                 project = self.__handle_create_new_project(form_data)
             survey_data = self.__get_survey_data(form_data)
+
+            # Store transformed form data in a request.
+            SavioProjectAllocationRequest.objects.create(
+                requester=self.request.user,
+                allocation_type=allocation_type,
+                pi=pi,
+                project=project,
+                pool=pooling_requested,
+                )# survey_answers=survey_data)
         except Exception as e:
-            logger.exception(e)
+            self.logger.exception(e)
             message = 'Unexpected failure. Please contact an administrator.'
-            messages.error(message)
-            return HttpResponseRedirect(redirect_url)
-
-        # TODO: Add exception handling.
-        SavioProjectAllocationRequest.objects.create(
-            requester=self.request.user,
-            allocation_attribute_type=allocation_attribute_type,
-            pi=pi,
-            project=project,
-            pool=pooling_requested,
-            survey_answers=survey_data)
-
-        message = (
-            'Thank you for your submission. It will be reviewed and processed '
-            'by administrators.')
-        if pool:
-            message = message + (
-                f' The managers of Project {project} must also approve it '
-                f'your pool request.')
-        messages.success(message)
+            messages.error(self.request, message)
+        else:
+            message = (
+                'Thank you for your submission. It will be reviewed and '
+                'processed by administrators.')
+            if pooling_requested:
+                message = message + (
+                    f' The managers of Project {project.name} must also '
+                    f'approve your pool request.')
+            messages.success(self.request, message)
 
         return HttpResponseRedirect(redirect_url)
 
-    def __get_allocation_attribute_type(self, form_data):
+    def __get_allocation_type(self, form_data):
         """TODO"""
         step_number = self.step_numbers_by_form_name['allocation_type']
         data = form_data[step_number]
         allocation_type = data['allocation_type']
-        try:
-            return AllocationAttributeType.objects.get(name=allocation_type)
-        except AllocationAttributeType.DoesNotExist as e:
-            self.logger.error(
-                f'Form received unexpected allocation type {allocation_type}.')
-            raise e
+        for choice, _ in SavioProjectAllocationRequest.ALLOCATION_TYPE_CHOICES:
+            if allocation_type == choice:
+                return allocation_type
+        self.logger.error(
+            f'Form received unexpected allocation type {allocation_type}.')
+        raise ValueError(f'Invalid allocation type {allocation_type}.')
 
     def __get_pooling_requested(self, form_data):
         step_number = self.step_numbers_by_form_name['pool_allocations']
@@ -1582,9 +1580,11 @@ class SavioProjectRequestWizard(SessionWizardView):
         data = form_data[step_number]
 
         # Create the new Project.
+        status = ProjectStatusChoice.objects.get(name='New')
         try:
             project = Project.objects.create(
                 name=data['name'],
+                status=status,
                 title=data['title'],
                 description=data['description'])
         except IntegrityError as e:
@@ -1655,3 +1655,44 @@ def show_pooled_project_selection_form_condition(wizard):
     step = str(SavioProjectRequestWizard.step_numbers_by_form_name[step_name])
     cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
     return cleaned_data.get('pool', False)
+
+
+class SavioProjectRequestListView(LoginRequiredMixin, UserPassesTestMixin,
+                                  TemplateView):
+    template_name = 'project/savio_project_request/project_request_list.html'
+    login_url = '/'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        message = 'You do not have permission to vview the previous page.'
+        messages.error(self.request, message)
+        return False
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # TODO: Filter out processed ones.
+        savio_project_request_list = \
+            SavioProjectAllocationRequest.objects.all()
+        context['savio_project_request_list'] = savio_project_request_list
+        return context
+
+
+class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
+                                    DetailView):
+    model = SavioProjectAllocationRequest
+    template_name = 'project/savio_project_request/project_request_detail.html'
+    context_object_name = 'request'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        message = 'You do not have permission to view the previous page.'
+        messages.error(self.request, message)
+        return False
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context

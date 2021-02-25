@@ -145,6 +145,7 @@ class ProjectReviewUserJoinForm(forms.Form):
 
 
 from coldfront.core.project.models import ProjectUser
+from coldfront.core.project.models import SavioProjectAllocationRequest
 from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator
 from django.core.validators import RegexValidator
@@ -152,17 +153,8 @@ from django.core.validators import RegexValidator
 
 class SavioProjectAllocationTypeForm(forms.Form):
 
-    FCA = "FCA"
-    CONDO = "CO"
-    CHOICES = (
-        (FCA, "Faculty Computing Allowance (FCA)"),
-        (CONDO, "Condo Allocation"),
-    )
-
-    # TODO: Make these allocation attribute types / similar.
-
     allocation_type = forms.ChoiceField(
-        choices=CHOICES,
+        choices=SavioProjectAllocationRequest.ALLOCATION_TYPE_CHOICES,
         label='Allocation Type',
         widget=forms.Select())
 
