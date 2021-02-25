@@ -212,16 +212,24 @@ class ProjectUser(TimeStampedModel):
 class SavioProjectAllocationRequest(TimeStampedModel):
     requester = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='requester')
-    allocation_attribute_type = models.ForeignKey(
-        'allocation.AllocationAttributeType', on_delete=models.CASCADE)
+
+    FCA = 'FCA'
+    CO = 'CO'
+    ALLOCATION_TYPE_CHOICES = (
+        # TODO: Add the rest.
+        (FCA, 'Faculty Compute Allowance (FCA)'),
+        (CO, 'Condo Allocation'),
+    )
+    allocation_type = models.CharField(
+        max_length=16, choices=ALLOCATION_TYPE_CHOICES)
+
     pi = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pi')
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     pool = models.BooleanField(default=False)
     # survey_answers = models.JSONField()       # TODO: Upgrade to Django 3.1+
     poolee_approval_time = models.DateTimeField(blank=True, null=True)
     admin_approval_time = models.DateTimeField(blank=True, null=True)
-
-    # TODO: Consider adding: history = HistoricalRecords()
+    history = HistoricalRecords()
 
     def __str__(self):
         # TODO: Include the word "Pooled" if applicable
