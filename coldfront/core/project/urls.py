@@ -28,8 +28,8 @@ urlpatterns = [
 
 
 
-
-
+from coldfront.core.project.views import SavioProjectRequestDetailView
+from coldfront.core.project.views import SavioProjectRequestListView
 from coldfront.core.project.views import SavioProjectRequestWizard
 from coldfront.core.project.views import show_details_form_condition
 from coldfront.core.project.views import show_new_pi_form_condition
@@ -43,4 +43,9 @@ urlpatterns += [
             '4': show_pooled_project_selection_form_condition,
             '5': show_details_form_condition,
             })),
+    path('savio-project-request-list/', SavioProjectRequestListView.as_view(),
+         name='savio-project-request-list'),
+    path('savio-project-request/<int:pk>/',
+         SavioProjectRequestDetailView.as_view(),
+         name='savio-project-request-detail'),
 ]
