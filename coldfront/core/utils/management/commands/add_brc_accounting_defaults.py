@@ -1,3 +1,4 @@
+from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AttributeType
 from coldfront.core.resource.models import Resource
@@ -37,3 +38,18 @@ class Command(BaseCommand):
         allocation_attribute_type.has_usage = True
         allocation_attribute_type.is_unique = True
         allocation_attribute_type.save()
+
+        # Each Allocation has at most one 'Savio Allocation Type' attribute of
+        # type Text.
+        attribute_type, _ = AttributeType.objects.get_or_create(name='Text')
+        allocation_attribute_type, _ = \
+            AllocationAttributeType.objects.get_or_create(
+                name='Savio Allocation Type', attribute_type=attribute_type)
+        # TODO: Set is_required to True.
+        allocation_attribute_type.is_required = False
+        allocation_attribute_type.is_unique = True
+        allocation_attribute_type.save()
+
+        # Create attributes with type 'Savio Allocation Type'.
+        allocation_attribute, _ = AllocationAttribute.objects.get_or_create(
+            allocation_attribute_type=allocation_attribute_type)
