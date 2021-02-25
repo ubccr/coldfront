@@ -40,14 +40,16 @@ nav:
     - Plugins: plugin.md
     - Demos: demos.md
     - User Manual:
-        - Projects: manual/projects/projects.md
+        - Projects: 
+            - Projects: manual/projects/projects.md
             - Grants: manual/projects/grants.md
             - Publications: manual/projects/publications.md
             - Research Outputs: manual/projects/researchoutputs.md
             - Project Review: manual/projects/projectreview.md
         - Resources: manual/resources/resources.md
         - Allocations: manual/allocations/allocations.md
-        - Users: manual/users/users.md
+        - Users:
+            - Users: manual/users/users.d
             - PI: manual/users/pi.md
             - Manager: manual/users/manager.md
             - Staff: manual/users/staff.md
