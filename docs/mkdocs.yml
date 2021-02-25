@@ -9,6 +9,9 @@ edit_uri: ''
 
 theme:
   name: 'readthedocs'
+  highlightjs: true
+  prev_next_buttons_location: both
+  navigation_depth: 4
   logo: 'images/logo.png'
   favicon: 'images/favicon.png'
 
@@ -38,6 +41,16 @@ nav:
     - Demos: demos.md
     - User Manual:
         - Projects: manual/projects/projects.md
+            - Grants: manual/projects/grants.md
+            - Publications: manual/projects/publications.md
+            - Research Outputs: manual/projects/researchoutputs.md
+            - Project Review: manual/projects/projectreview.md
         - Resources: manual/resources/resources.md
         - Allocations: manual/allocations/allocations.md
         - Users: manual/users/users.md
+            - PI: manual/users/pi.md
+            - Manager: manual/users/manager.md
+            - Staff: manual/users/staff.md
+            - Director: manual/users/director.md
+            - Billing: manual/users/biling.md
+            - System Administrators: manual/users/sysadmins.md
