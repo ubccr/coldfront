@@ -236,7 +236,7 @@ class SavioProjectAllocationRequest(TimeStampedModel):
     pi = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pi')
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     pool = models.BooleanField(default=False)
-    # survey_answers = models.JSONField()       # TODO: Upgrade to Django 3.1+
+    survey_answers = models.JSONField()
     status = models.ForeignKey(
         SavioProjectAllocationRequestStatusChoice, on_delete=models.CASCADE,
         verbose_name='Status')
