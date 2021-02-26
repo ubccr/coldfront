@@ -1,4 +1,4 @@
-# Resources
+# What are Resources?
 
 The list of resources in ColdFront is everything that your center maintains and provides access to your user community.  These can be shared resources such as clusters and storage or they can be individual servers that only a single user or small group has access to.  A base install of ColdFront comes with the following types of resources:  Cluster, Cluster Partition, Server, Storage, Cloud, Software.  Additional resource types can be added and might include Database (for shared databases that a center restricts access to) or Instrument (for shared scientific instruments you need to manage access for).  Resources are managed in the ColdFront Administration Dashboard under Resources.
 

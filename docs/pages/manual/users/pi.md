@@ -1,4 +1,4 @@
-## Principal Investigator (PI) or Project Owner
+# PI or Project Owner
 
 ColdFront affords PIs (or project owners) the ability to manage the access they and their group have to your center's resources.  PIs are permitted to add users to their group, request new allocations, renew expiring allocations, and provide information such as publications and grant data, as required by your center's policies.  PIs can maintain all their research information under one project or you can require them to separate the work into multiple projects, dependent on your center's processes.  
 

@@ -1,4 +1,4 @@
-## Grants
+## Grant Information
 
 Grant data is useful to Center Directors for making the case for enabling science at an organization.  How much funding is your organization able to obtain based on having access to your center's HPC resources?  You may ask your PIs to enter all grants they have been awarded or only those for which they need your center's resources.  This is a policy decision and should be communicated to your researchers.  
 

@@ -1,4 +1,4 @@
-# Allocations
+# What are Allocations?
 
 Allocations in ColdFront are what provides the users access to a resource.  Allocations can contain attributes such as expiration dates that trigger email notifications.  Other attributes such has unix group, Slurm account, or storage quotas allow ColdFront plugins to interact with backend APIs and system processes.
 
@@ -41,7 +41,7 @@ Admins have the ability to update the status, start & end dates, and description
 ![Admin Allocation View](../../images/allocationAdmin.PNG "AllocationAdminView")
 
 
-### Creating new allocation attribute types  
+## Creating new allocation attribute types  
 
 ColdFront has a set of allocation attributes that tie into plugins.  You can add new allocation attributes in the ColdFront Administration Dashboard under Allocations - Allocation Attribute Types  
 

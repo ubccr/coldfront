@@ -1,4 +1,4 @@
-## Users
+# Users
 
 There are different types of users in ColdFront.  Users are members of projects and allocations.  Users classified as "PI" status are allowed to create and manage projects, request allocations, manage users on their projects/allocations, and complete annual project reviews.  Users can be enabled as managers on projects.  There are multiple levels of permissions for Center staff, directors/administrators, and system administrators.
 
@@ -9,4 +9,4 @@ Documentation for each different type of user and associated permissions:
 [Director](director.md)  
 [Staff](staff.md)  
 [Billing Staff](billing.md)  
-[System Administrators](sysadmin.md)  
+[System Administrators](sysadmins.md)  
