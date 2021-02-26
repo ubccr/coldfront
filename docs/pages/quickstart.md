@@ -3,7 +3,7 @@
 Installing ColdFront is easy.  Here we document the process to start up a developement server.  Additional configuration should be made if planning to use this in production.  More details coming soon!
 
 
-#### Step 1 - Install ColdFront requirements  
+#### Step 1 - Install Requirements  
 ColdFront requires Python 3.6, memcached, and redis.  This procedure varies based on operating system.  We've provided steps for 3 popular OS versions.  ColdFront will most likely work on any Linux-based OS.
 
 ##### CentOS 7
@@ -43,7 +43,8 @@ sudo apt-get update
 sudo apt-get install python3.6 python3.6-venv memcached redis-server
 ```
 
-#### Step 2 Clone ColdFront in a new directory and create a Python virtual environment for ColdFront
+#### Step 2 Clone ColdFront
+Clone ColdFront github repo in a new directory and create a Python virtual environment for ColdFront
 ```
 mkdir coldfront_app
 cd coldfront_app
@@ -51,7 +52,8 @@ git clone https://github.com/ubccr/coldfront.git
 python3.6 -mvenv venv
 ```
 
-#### Step 3 - Activate the virtual environment and install the required Python packages
+#### Step 3 - Install required Python packages
+Activate the virtual environment and install the required Python packages
 ```
 source venv/bin/activate
 cd coldfront
@@ -60,7 +62,8 @@ pip install wheel
 pip install -r requirements.txt
 ```
 
-#### Step 4 - Copy coldfront/config/local_settings.py.sample to coldfront/config/local_settings.py.
+#### Step 4 - ColdFront base settings
+Copy coldfront/config/local_settings.py.sample to coldfront/config/local_settings.py
 ```
 cp coldfront/config/local_settings.py.sample coldfront/config/local_settings.py
 ```
@@ -69,12 +72,14 @@ Update `SECRET_KEY` - Consider making the length at least 50 characters long
 Update `TIME_ZONE` if necessary
 
 
-#### Step 5 - Copy config/local_strings.py.sample to config/local_strings.py and update if desired.
+#### Step 5 - Coldfront optional configuration
+Copy config/local_strings.py.sample to config/local_strings.py and update if desired.
 ```
 cp coldfront/config/local_strings.py.sample coldfront/config/local_strings.py
 ```
 
-#### Step 6 - Run initial setup - This will create the necessary tables in the ColdFront database.
+#### Step 6 - Run initial setup 
+Run initial setup - This will create the necessary tables in the ColdFront database.
 ```
 python manage.py initial_setup
 ```

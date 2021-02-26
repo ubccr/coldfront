@@ -1,4 +1,4 @@
-## Research Outputs
+# Research Outputs
 
 Research Outputs can be anything related to the project work that doesn't fall under the publication section.  This may include magazine or newspaper articles, media coverage, databases, software, or other products created.    Research Outputs added to the list can't be edited.  If changes are required, the incorrect entry should be deleted and then re-added.
 

@@ -1,4 +1,4 @@
-## Publications
+## Publication Information
 
 Publications can be added to a project by the PI or manager.  Publications can be uploaded using a DOI number or they can be entered in manually.  PIs and managers can remove publications they no longer wish to have on their project and export the full list or a selection of the publications to a CSV file.  Center directors and system administrators are able to access the list of all publications added in ColdFront.  The Center Summary contains summary information about the publications and is available to logged in as well as non-authenticated users.
 
@@ -35,16 +35,16 @@ PIs and managers can export the full list, or a selected subset, of publications
 ![Export Publication List](../../images/exportpubs.PNG)  
 
 
-### Center Publications Summary  
+## Center Publications Summary  
 
 The Center Summary provides a graph of total publications entered into ColdFront by publication date.  This chart is available to both logged in users and those not authenticated
 
 ![Center Publication Summary](../../images/centersummarypubs.PNG)
 
 
-### Viewing All Allocations - Center Staff
+## Viewing All Allocations - Center Staff
 
-System administrators will be able to see all allocations.  There are additional settings for center directors/administrators and those with 'staff status' enabled that you can add to allow them to view all allocations as well.  See the documentation on [director permissions](../user/director.md) and [staff permissions](../user/staff.md) for information on how to configure this.
+System administrators will be able to see all allocations.  There are additional settings for center directors/administrators and those with 'staff status' enabled that you can add to allow them to view all allocations as well.  See the documentation on [director permissions](../users/director.md) and [staff permissions](../users/staff.md) for information on how to configure this.
 
 System administrators can choose 'All Allocations' from the Admin menu.  Staff and center directors can choose 'All Allocations' from the 'Staff' menu.
 

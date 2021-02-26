@@ -1,4 +1,4 @@
-# Projects
+# What are Projects?
 
 Projects in ColdFront are a container that includes users, allocations, publications, grants, and other research output.  At minimum, in order for a user to get access to a resource, there must be a project, a PI, and an allocation to the resource.  Projects can be used to support your center's policies and procedures.  You may want your PIs to maintain only one project with all users and allocations managed with it or you might rather have PIs create new projects for every research project they're working on and request allocations specific to that project.  Whatever your Center's process is, ColdFront will help streamline and automate it.
 
@@ -26,7 +26,7 @@ More details about allocations can be [found here](../allocations/allocations.md
 ### Grants
 All grants entered for a project with the status of 'active' or 'pending' are displayed in this section.  PIs and managers can add and delete grants.  High level details about the grants are provided and the list can be sorted by Title, Grant PI, Grant Role, Award Amount, Grant Start Date and Grant End Date.  More detailed grant information can be viewed by clicking on the folder icon next to the grant.  The PI or manager can edit the grant information here and change the status between 'pending', 'active' and 'archived.'  Once archived it is no longer visible on the project.
 ![GrantList](../../images/grantlist.PNG)
-More details about grants can be [found here](../grants/grants.md)
+More details about grants can be [found here](grants.md)
 
 ### Publications
 Publications can be added and deleted by PIs or managers on a project.  A DOI search feature provides a simple way to import publications on a project.  For the rare times a publication does not have a searchable DOI, there is an option for adding publication information in manually.  The publication list can be sorted by year of publication and also exported as a CSV file.  Publications added to the list can't be edited.  If changes are required, the publication should be deleted and then re-added.
