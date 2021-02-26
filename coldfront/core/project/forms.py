@@ -4,7 +4,8 @@ from django import forms
 from django.shortcuts import get_object_or_404
 
 from coldfront.core.project.models import (Project, ProjectReview,
-                                           ProjectUserRoleChoice)
+                                           ProjectUserRoleChoice,
+                                           SavioProjectAllocationRequestStatusChoice)
 from coldfront.core.utils.common import import_from_settings
 
 EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL = import_from_settings(
@@ -177,7 +178,6 @@ class SavioProjectExistingPIForm(forms.Form):
         # to be selected.
         queryset = User.objects.filter(userprofile__is_pi=True)
         if self.allocation_type == 'FCA':
-            # TODO: What about pending PIs created via this form by others?
             pi_role = ProjectUserRoleChoice.objects.get(
                 name='Principal Investigator')
             pis_with_existing_fcas = set(ProjectUser.objects.filter(
@@ -185,8 +185,17 @@ class SavioProjectExistingPIForm(forms.Form):
                 project__name__startswith='fc_',
                 project__status__name__in=['New', 'Active']
             ).values_list('user__username', flat=True))
+            status = SavioProjectAllocationRequestStatusChoice.objects.get(
+                name='Pending')
+            pis_with_pending_requests = set(
+                SavioProjectAllocationRequest.objects.filter(
+                    allocation_type=SavioProjectAllocationRequest.FCA,
+                    status=status
+                ).values_list('pi__username', flat=True))
+            exclude_usernames = set.union(
+                pis_with_existing_fcas, pis_with_pending_requests)
             self.fields['PI'].queryset = queryset.exclude(
-                username__in=pis_with_existing_fcas)
+                username__in=exclude_usernames)
         else:
             self.fields['PI'].queryset = queryset
 
@@ -282,6 +291,23 @@ class SavioProjectDetailsForm(forms.Form):
         widget=forms.Textarea(attrs={'rows': 3}))
 
     # TODO: Add field_of_science.
+
+    def __init__(self, *args, **kwargs):
+        self.allocation_type = kwargs.pop('allocation_type', None)
+        super().__init__(*args, **kwargs)
+
+    def clean_name(self):
+        cleaned_data = super().clean()
+        name = cleaned_data['name'].lower()
+        # TODO: Add the rest.
+        if self.allocation_type == SavioProjectAllocationRequest.FCA:
+            name = f'fc_{name}'
+        elif self.allocation_type == SavioProjectAllocationRequest.CO:
+            name = f'co_{name}'
+        if Project.objects.filter(name=name):
+            raise forms.ValidationError(
+                f'A project with name {name} already exists.')
+        return name
 
 
 class SavioProjectSurveyForm(forms.Form):

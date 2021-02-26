@@ -1464,9 +1464,15 @@ class SavioProjectRequestWizard(SessionWizardView):
         # TODO: Not all past data will be needed in all forms.
         kwargs = {}
         step = int(step)
-        if (step == self.step_numbers_by_form_name['existing_pi'] or
-                step == self.step_numbers_by_form_name[
-                    'pooled_project_selection']):
+        # The names of steps that require the past data.
+        step_names = [
+            'existing_pi',
+            'pooled_project_selection',
+            'details',
+        ]
+        step_numbers = [
+            self.step_numbers_by_form_name[name] for name in step_names]
+        if step in step_numbers:
             self.__set_data_from_previous_steps(step, kwargs)
         return kwargs
 
@@ -1492,7 +1498,8 @@ class SavioProjectRequestWizard(SessionWizardView):
             if pooling_requested:
                 project = self.__handle_pool_with_existing_project(form_data)
             else:
-                project = self.__handle_create_new_project(form_data)
+                project = self.__handle_create_new_project(
+                    form_data, allocation_type)
             survey_data = self.__get_survey_data(form_data)
 
             # Store transformed form data in a request.
@@ -1573,7 +1580,7 @@ class SavioProjectRequestWizard(SessionWizardView):
 
         return pi
 
-    def __handle_create_new_project(self, form_data):
+    def __handle_create_new_project(self, form_data, allocation_type):
         """TODO"""
         step_number = self.step_numbers_by_form_name['details']
         data = form_data[step_number]
@@ -1588,8 +1595,7 @@ class SavioProjectRequestWizard(SessionWizardView):
                 description=data['description'])
         except IntegrityError as e:
             self.logger.error(
-                f'Project {project["name"]} unexpectedly already '
-                f'exists.')
+                f'Project {project["name"]} unexpectedly already exists.')
             raise e
 
         # Create an allocation to the "Savio Compute" resource.
@@ -1709,24 +1715,22 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             return HttpResponseRedirect(
                 reverse('savio-project-request-detail', kwargs={'pk': pk}))
 
-        # TODO: Set the appropriate redirect_url.
-        redirect_url = '/'
-
         try:
-            self.__update_project(request_obj)
+            project = self.__update_project(request_obj)
             self.__create_project_users(request_obj)
-            self.__update_allocation(request_obj)
+            allocation = self.__update_allocation(request_obj)
         except Exception as e:
             self.logger.exception(e)
             message = 'Unexpected failure. Please contact an administrator.'
             messages.error(self.request, message)
         else:
-            # TODO
             message = (
-                ''
-            )
+                f'Project {project.name} and Allocation {allocation.pk} have '
+                f'been activated.')
             messages.success(self.request, message)
 
+        # TODO: Set the appropriate redirect_url.
+        redirect_url = '/'
         return HttpResponseRedirect(redirect_url)
 
     def __create_project_users(self, request_obj):
@@ -1751,6 +1755,9 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             project=project, user=pi, defaults=defaults)
 
     def __update_allocation(self, request_obj):
+        """Set the allocation's start and end dates. Set its attribute
+        type. If not pooling, set its service units values; otherwise,
+        increase it."""
         project = request_obj.project
         allocation_type = request_obj.allocation_type
         pool = request_obj.pool
@@ -1800,9 +1807,12 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             allocation_attribute.value = str(value)
         allocation_attribute.save()
 
+        return allocation
+
     def __update_project(self, request_obj):
         """Set the Project to active, and store the survey answers."""
         project = request_obj.project
         project.status = ProjectStatusChoice.objects.get(name='Active')
         project.save()
         # TODO: Store the survey answers.
+        return project
