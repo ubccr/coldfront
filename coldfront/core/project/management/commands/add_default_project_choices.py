@@ -5,7 +5,8 @@ from django.core.management.base import BaseCommand
 from coldfront.core.project.models import (ProjectReviewStatusChoice,
                                             ProjectStatusChoice,
                                             ProjectUserRoleChoice,
-                                            ProjectUserStatusChoice)
+                                            ProjectUserStatusChoice,
+                                            SavioProjectAllocationRequestStatusChoice)
 
 
 class Command(BaseCommand):
@@ -27,3 +28,8 @@ class Command(BaseCommand):
         ProjectUserStatusChoice.objects.all().delete()
         for choice in ['Active', 'Pending - Add', 'Pending - Remove', 'Denied', 'Removed', ]:
             ProjectUserStatusChoice.objects.get_or_create(name=choice)
+
+        SavioProjectAllocationRequestStatusChoice.objects.all().delete()
+        for choice in ['Approved', 'Pending', 'Denied', ]:
+            SavioProjectAllocationRequestStatusChoice.objects.get_or_create(
+                name=choice)

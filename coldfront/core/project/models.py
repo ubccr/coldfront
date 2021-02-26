@@ -209,6 +209,16 @@ class ProjectUser(TimeStampedModel):
         verbose_name_plural = "Project User Status"
 
 
+class SavioProjectAllocationRequestStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]
+
+
 class SavioProjectAllocationRequest(TimeStampedModel):
     requester = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='requester')
@@ -227,8 +237,9 @@ class SavioProjectAllocationRequest(TimeStampedModel):
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     pool = models.BooleanField(default=False)
     # survey_answers = models.JSONField()       # TODO: Upgrade to Django 3.1+
-    poolee_approval_time = models.DateTimeField(blank=True, null=True)
-    admin_approval_time = models.DateTimeField(blank=True, null=True)
+    status = models.ForeignKey(
+        SavioProjectAllocationRequestStatusChoice, on_delete=models.CASCADE,
+        verbose_name='Status')
     history = HistoricalRecords()
 
     def __str__(self):
