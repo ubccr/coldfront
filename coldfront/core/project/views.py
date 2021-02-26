@@ -23,6 +23,7 @@ from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 
 from coldfront.core.allocation.models import (Allocation,
+                                              AllocationAttribute,
                                               AllocationStatusChoice,
                                               AllocationUser,
                                               AllocationUserStatusChoice)
@@ -1474,6 +1475,8 @@ class SavioProjectRequestWizard(SessionWizardView):
 
     def done(self, form_list, form_dict, **kwargs):
         """TODO"""
+
+        # TODO: Set the appropriate redirect_url.
         redirect_url = '/'
 
         # Retrieve form data; include empty dictionaries for skipped steps.
@@ -1508,10 +1511,6 @@ class SavioProjectRequestWizard(SessionWizardView):
             message = (
                 'Thank you for your submission. It will be reviewed and '
                 'processed by administrators.')
-            if pooling_requested:
-                message = message + (
-                    f' The managers of Project {project.name} must also '
-                    f'approve your pool request.')
             messages.success(self.request, message)
 
         return HttpResponseRedirect(redirect_url)
@@ -1617,7 +1616,7 @@ class SavioProjectRequestWizard(SessionWizardView):
         try:
             assert allocations.count() == 1
         except AssertionError as e:
-            number = "no" if allocations.count() == 0 else "more than one"
+            number = 'no' if allocations.count() == 0 else 'more than one'
             self.logger.error(
                 f'Project {project.name} unexpectedly has {number} Allocation '
                 f'to Resource {resource.name}')
@@ -1683,7 +1682,10 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
                                     DetailView):
     model = SavioProjectAllocationRequest
     template_name = 'project/savio_project_request/project_request_detail.html'
+    login_url = '/'
     context_object_name = 'request'
+
+    logger = logging.getLogger(__name__)
 
     def test_func(self):
         """UserPassesTestMixin tests."""
@@ -1696,3 +1698,111 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         return context
+
+    def post(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        request_obj = get_object_or_404(SavioProjectAllocationRequest, pk=pk)
+
+        if not self.request.user.is_superuser:
+            message = 'You do not have permission to activate the request.'
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse('savio-project-request-detail', kwargs={'pk': pk}))
+
+        # TODO: Set the appropriate redirect_url.
+        redirect_url = '/'
+
+        try:
+            self.__update_project(request_obj)
+            self.__create_project_users(request_obj)
+            self.__update_allocation(request_obj)
+        except Exception as e:
+            self.logger.exception(e)
+            message = 'Unexpected failure. Please contact an administrator.'
+            messages.error(self.request, message)
+        else:
+            # TODO
+            message = (
+                ''
+            )
+            messages.success(self.request, message)
+
+        return HttpResponseRedirect(redirect_url)
+
+    def __create_project_users(self, request_obj):
+        """Create active ProjectUsers with the appropriate roles for the
+        requester and/or the PI."""
+        project = request_obj.project
+        requester = request_obj.requester
+        pi = request_obj.pi
+        # get_or_create's 'defaults' arguments are only considered if a create
+        # is required.
+        defaults = {
+            'status': ProjectUserStatusChoice.objects.get(name='Active')
+        }
+        if requester.pk != pi.pk:
+            defaults['role'] = ProjectUserRoleChoice.objects.get(
+                name='Manager')
+            requester_project_user, _ = ProjectUser.objects.get_or_create(
+                project=project, user=requester, defaults=defaults)
+        defaults['role'] = ProjectUserRoleChoice.objects.get(
+            name='Principal Investigator')
+        pi_project_user, _ = ProjectUser.objects.get_or_create(
+            project=project, user=pi, defaults=defaults)
+
+    def __update_allocation(self, request_obj):
+        project = request_obj.project
+        allocation_type = request_obj.allocation_type
+        pool = request_obj.pool
+
+        resource = Resource.objects.get(name='Savio Compute')
+        allocations = Allocation.objects.filter(
+            project=project, resources__pk__exact=resource.pk)
+        try:
+            assert allocations.count() == 1
+        except AssertionError as e:
+            number = 'no' if allocations.count() == 0 else 'more than one'
+            self.logger.error(
+                f'Project {project.name} unexpectedly has {number} Allocation '
+                f'to Resource {resource.name}')
+            raise e
+
+        allocation = allocations.first()
+        allocation.status = AllocationStatusChoice.objects.get(name='Active')
+        # TODO: Set start_date and end_date.
+        # allocation.start_date = datetime.utcnow().astimezone(
+        #     pytz.timezone(settings.TIME_ZONE))
+        # allocation.end_date =
+        allocation.save()
+
+        # Set the allocation's allocation type.
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Savio Allocation Type')
+        allocation_attribute, _ = \
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=allocation_attribute_type,
+                allocation=allocation, defaults={'value': allocation_type})
+
+        # Set or increase the allocation's service units.
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Service Units')
+        allocation_attribute, _ = \
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=allocation_attribute_type,
+                allocation=allocation)
+        # TODO: Pass the value here somehow. Put it in the form with default.
+        from decimal import Decimal
+        value = Decimal('0.00')
+        if pool:
+            existing_value = Decimal(allocation_attribute.value)
+            allocation_attribute.value = str(existing_value + value)
+        else:
+            allocation_attribute.value = str(value)
+        allocation_attribute.save()
+
+    def __update_project(self, request_obj):
+        """Set the Project to active, and store the survey answers."""
+        project = request_obj.project
+        project.status = ProjectStatusChoice.objects.get(name='Active')
+        project.save()
+        # TODO: Store the survey answers.
