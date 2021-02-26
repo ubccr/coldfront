@@ -42,7 +42,8 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectReviewStatusChoice,
                                            ProjectStatusChoice, ProjectUser,
                                            ProjectUserRoleChoice,
-                                           ProjectUserStatusChoice)
+                                           ProjectUserStatusChoice,
+                                           SavioProjectAllocationRequestStatusChoice)
 # from coldfront.core.publication.models import Publication
 # from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.resource.models import Resource
@@ -1503,13 +1504,16 @@ class SavioProjectRequestWizard(SessionWizardView):
             survey_data = self.__get_survey_data(form_data)
 
             # Store transformed form data in a request.
+            status = SavioProjectAllocationRequestStatusChoice.objects.get(
+                name='Pending')
             SavioProjectAllocationRequest.objects.create(
                 requester=self.request.user,
                 allocation_type=allocation_type,
                 pi=pi,
                 project=project,
                 pool=pooling_requested,
-                )# survey_answers=survey_data)
+                survey_answers=survey_data,
+                status=status)
         except Exception as e:
             self.logger.exception(e)
             message = 'Unexpected failure. Please contact an administrator.'
