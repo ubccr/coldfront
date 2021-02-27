@@ -43,6 +43,9 @@ Project List
           <a href="?order_by=id&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
         </th>
         <th scope="col" class="text-nowrap">
+          Name
+        </th>
+        <th scope="col" class="text-nowrap">
           PIs
         </th>
         <th scope="col">Title</th>
@@ -65,6 +68,7 @@ Project List
       {% for project in project_list %}
       <tr>
         <td><a href="/project/{{project.id}}/">{{ project.id }}</a></td>
+        <td>{{ project.name }}</td>
         <td>
           {% for pi in project.pis %}
             {{ pi.username }}<br>
