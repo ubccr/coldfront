@@ -99,7 +99,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             if project_user.role.name in ('Principal Investigator', 'Manager'):
                 context['is_allowed_to_update_project'] = True
 
-                # Can disable self-notifications iff atlest one other PI / Manager
+                # Can disable self-notifications iff atleast one other PI / Manager
                 # has active notifications
                 context['is_allowed_to_update_self_notifications'] = \
                     not project_user.enable_notifications or\
@@ -921,19 +921,20 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 old_role = project_user_obj.role
                 new_role = ProjectUserRoleChoice.objects.get(name=form_data.get('role'))
                 only_manager = not project_obj.projectuser_set.filter(~Q(pk=project_user_pk),
-                                                                      role__name__in=['Manager']).exists()
+                                                                      role__name='Manager').exists()
 
                 # the only manager of this project, is demoting himself
                 if old_role.name == 'Manager' and new_role.name != 'Manager' and only_manager:
-                    project_pis = project_obj.projectuser_set.filter(role__name__in=['Principal Investigator'])
+                    project_pis = project_obj.projectuser_set.filter(role__name='Principal Investigator')
 
                     if not project_pis.exists():
                         # no pis exist, cannot demote
-                        old_role = new_role
-                        messages.info(request, 'There are no PIs on this project, cannot step down from Manager role.')
+                        new_role = old_role
+                        messages.error(request, 'The project must have at least one PI or manager with notifications enabled.')
                     else:
                         # update all pis to receive notifications
-                        messages.info(request, 'Stepping down from Manager role, all PIs now receive notifications.')
+                        messages.warning(request, 'User {} is no longer a manager. All PIs will now receive notifications.'\
+                                .format(project_user_obj.user.username))
                         for pi in project_pis:
                             pi.enable_notifications = True
                             pi.save()
