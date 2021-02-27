@@ -207,6 +207,10 @@ class ProjectListView(LoginRequiredMixin, ListView):
             if data.get('project_title'):
                 projects = projects.filter(title__icontains=data.get('project_title'))
 
+            # Project Name
+            if data.get('project_name'):
+                projects = projects.filter(name__icontains=data.get('project_name'))
+
         else:
             projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
                 Q(status__name__in=['New', 'Active', ]) &
@@ -328,6 +332,10 @@ class ProjectArchivedListView(LoginRequiredMixin, ListView):
             # Project Title
             if data.get('project_title'):
                 projects = projects.filter(title__icontains=data.get('project_title'))
+
+            # Project Name
+            if data.get('project_name'):
+                projects = projects.filter(name__icontains=data.get('project_name'))
 
         else:
             projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
@@ -1277,6 +1285,10 @@ class ProjectJoinListView(ProjectListView):
             # Project Title
             if data.get('project_title'):
                 projects = projects.filter(title__icontains=data.get('project_title'))
+
+            # Project Name
+            if data.get('project_name'):
+                projects = projects.filter(name__icontains=data.get('project_name'))
 
         return projects.distinct()
 
