@@ -49,9 +49,9 @@ def home(request):
     else:
         template_name = 'portal/nonauthorized_home.html'
 
-    context['EXTRA_APPS'] = settings.EXTRA_APPS
+    context['EXTRA_APPS'] = settings.INSTALLED_APPS
 
-    if 'coldfront.plugins.system_monitor' in settings.EXTRA_APPS:
+    if 'coldfront.plugins.system_monitor' in settings.INSTALLED_APPS:
         from coldfront.plugins.system_monitor.utils import get_system_monitor_context
         context.update(get_system_monitor_context())
 
