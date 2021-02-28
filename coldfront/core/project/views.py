@@ -130,12 +130,12 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['allocations'] = allocations
         context['project_users'] = project_users
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
+
         try:
-            if(settings.ONDEMAND_URL != None):
-                print(settings.ONDEMAND_URL)
-                context['ondemand_url'] = settings.ONDEMAND_URL
+            context['ondemand_url'] = settings.ONDEMAND_URL
         except AttributeError:
-            print("NO ONDEMAND URL provided")
+            pass
+
         return context
 
 
