@@ -1,4 +1,5 @@
-from coldfront.config.env import ENV, PROJECT_ROOT
+import os
+from coldfront.config.env import ENV
 
 #------------------------------------------------------------------------------
 # Database settings
@@ -16,7 +17,7 @@ from coldfront.config.env import ENV, PROJECT_ROOT
 DATABASES = {
     'default': ENV.db_url(
         var='DB_URL',
-        default='sqlite:///'+PROJECT_ROOT('coldfront.db')
+        default='sqlite:///'+os.path.join(os.getcwd(), 'coldfront.db')
     )
 }
 
