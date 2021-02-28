@@ -1,5 +1,5 @@
-from coldfront.config.settings import ENV
-from coldfront.config.base import INSTALLED_APPS, TEMPLATES
+from coldfront.config.env import ENV
+from coldfront.config.base import INSTALLED_APPS, TEMPLATES, DEVELOP
 
 #------------------------------------------------------------------------------
 # ColdFront authentication configs

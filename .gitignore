@@ -18,3 +18,4 @@ coldfront.db
 *.code-workspace
 .vscode
 db.json
+.env

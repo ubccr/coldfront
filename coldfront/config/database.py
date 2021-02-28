@@ -1,4 +1,4 @@
-from coldfront.config.settings import ENV, PROJECT_ROOT
+from coldfront.config.env import ENV, PROJECT_ROOT
 
 #------------------------------------------------------------------------------
 # Database settings

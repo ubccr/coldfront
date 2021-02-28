@@ -1,25 +1,8 @@
-import environ
+import os
 from split_settings.tools import optional, include
+from coldfront.config.env import ENV, PROJECT_ROOT
 
-ENV = environ.Env()
-PROJECT_ROOT = environ.Path(__file__) - 3
-
-# Default paths to environment files
-configPaths = [
-    PROJECT_ROOT.path('.env'),
-    environ.Path('/etc/coldfront/coldfront.env'),
-]
-
-if ENV.str('COLDFRONT_ENV', default='') != '':
-    configPaths.insert(0, environ.Path(ENV.str('COLDFRONT_ENV')))
-
-for cfg in configPaths:
-    try:
-        cfg.file('')
-        ENV.read_env(cfg())
-    except FileNotFoundError:
-        pass
-
+# ColdFront split settings
 coldfront_configs = [
     'base.py',
     'database.py',
@@ -27,35 +10,45 @@ coldfront_configs = [
     'email.py',
     'logging.py',
     'core.py',
-
-    optional('local_settings.py'),
-
-    # XXX Deprecated. removing soon
-    optional('local_strings.py'),
-
-    # Allow system wide settings for production deployments
-    optional('/etc/coldfront/local_settings.py'),
 ]
 
-if ENV.bool('COLDFRONT_PLUGIN_SLURM_ENABLE', default=False):
-    coldfront_configs.append('plugins/slurm.py')
+# ColdFront plugin settings
+plugin_configs = {
+    'COLDFRONT_PLUGIN_SLURM_ENABLE': 'plugins/slurm.py',
+    'COLDFRONT_PLUGIN_IQUOTA_ENABLE': 'plugins/iquota.py',
+    'COLDFRONT_PLUGIN_FREEIPA_ENABLE': 'plugins/freeipa.py',
+    'COLDFRONT_PLUGIN_MOKEY_ENABLE': 'plugins/mokey.py',
+    'COLDFRONT_PLUGIN_SYSMON_ENABLE': 'plugins/system_montior.py',
+    'COLDFRONT_PLUGIN_XDMOD_ENABLE': 'plugins/xdmod.py',
+    'COLDFRONT_PLUGIN_OOD_ENABLE': 'plugins/ondemand.py',
+}
 
-if ENV.bool('COLDFRONT_PLUGIN_IQUOTA_ENABLE', default=False):
-    coldfront_configs.append('plugins/iquota.py')
+# This allows plugins to be enabled via environment variables. Can alternatively
+# add the relevant configs to local_settings.py
+for key, pc in plugin_configs.items():
+    if ENV.bool(key, default=False):
+        coldfront_configs.append(pc)
 
-if ENV.bool('COLDFRONT_PLUGIN_FREEIPA_ENABLE', default=False):
-    coldfront_configs.append('plugins/freeipa.py')
+# Local settings overrides
+local_configs = [
+    # Local settings relative to coldfront.config package
+    'local_settings.py',
 
-if ENV.bool('COLDFRONT_PLUGIN_MOKEY_ENABLE', default=False):
-    coldfront_configs.append('plugins/mokey.py')
+     # XXX Deprecated. removing soon
+    'local_strings.py',
 
-if ENV.bool('COLDFRONT_PLUGIN_SYSMON_ENABLE', default=False):
-    coldfront_configs.append('plugins/system_montior.py')
+     # System wide settings for production deployments
+    '/etc/coldfront/local_settings.py',
 
-if ENV.bool('COLDFRONT_PLUGIN_XDMOD_ENABLE', default=False):
-    coldfront_configs.append('plugins/xdmod.py')
+    # Local settings relative to coldfront project root 
+    PROJECT_ROOT('local_settings.py')
+]
 
-if ENV.bool('COLDFRONT_PLUGIN_OOD_ENABLE', default=False):
-    coldfront_configs.append('plugins/ondemand.py')
+if ENV.str('COLDFRONT_CONFIG', default='') != '':
+    # Local settings from path specified via environment variable
+    local_configs.append(environ.Path(ENV.str('COLDFRONT_CONFIG'))())
+
+for lc in local_configs:
+    coldfront_configs.append(optional(lc))
 
 include(*coldfront_configs)

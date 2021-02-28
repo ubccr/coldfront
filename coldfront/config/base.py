@@ -4,7 +4,7 @@ Base Django settings for ColdFront project.
 import os
 import coldfront
 from django.core.management.utils import get_random_secret_key
-from coldfront.config.settings import ENV, PROJECT_ROOT
+from coldfront.config.env import ENV, PROJECT_ROOT
 
 #------------------------------------------------------------------------------
 # Base Django config for ColdFront
@@ -13,9 +13,13 @@ VERSION = coldfront.VERSION
 ALLOWED_HOSTS = ['*']
 DEBUG = ENV.bool('COLDFRONT_DEBUG', default=False)
 DEVELOP = ENV.bool('COLDFRONT_DEVELOP', default=False)
-SECRET_KEY = ENV.str('COLDFRONT_SECRET_KEY', default=get_random_secret_key())
 WSGI_APPLICATION = 'coldfront.config.wsgi.application'
 ROOT_URLCONF = 'coldfront.config.urls'
+
+
+SECRET_KEY = ENV.str('COLDFRONT_SECRET_KEY', default='')
+if len(SECRET_KEY) == 0:
+    SECRET_KEY = get_random_secret_key()
 
 #------------------------------------------------------------------------------
 # Locale settings
