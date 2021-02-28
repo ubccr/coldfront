@@ -1,10 +1,10 @@
 from coldfront.config.env import ENV
-from coldfront.config.base import INSTALLED_APPS, TEMPLATES
+from coldfront.config.base import INSTALLED_APPS, AUTHENTICATION_BACKENDS, TEMPLATES
 
 #------------------------------------------------------------------------------
-# ColdFront authentication settings
+# ColdFront default authentication settings
 #------------------------------------------------------------------------------
-AUTHENTICATION_BACKENDS = [
+AUTHENTICATION_BACKENDS += [
     'django.contrib.auth.backends.ModelBackend',
 ]
 

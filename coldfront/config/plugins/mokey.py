@@ -1,5 +1,4 @@
-from coldfront.config.base import INSTALLED_APPS, MIDDLEWARE
-from coldfront.config.auth import AUTHENTICATION_BACKENDS
+from coldfront.config.base import INSTALLED_APPS, MIDDLEWARE, AUTHENTICATION_BACKENDS
 from coldfront.config.env import ENV
 
 #------------------------------------------------------------------------------

@@ -34,9 +34,6 @@ local_configs = [
     # Local settings relative to coldfront.config package
     'local_settings.py',
 
-     # XXX Deprecated. removing soon
-    'local_strings.py',
-
      # System wide settings for production deployments
     '/etc/coldfront/local_settings.py',
 
