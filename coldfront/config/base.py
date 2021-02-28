@@ -11,13 +11,13 @@ from coldfront.config.env import ENV, PROJECT_ROOT
 #------------------------------------------------------------------------------
 VERSION = coldfront.VERSION
 ALLOWED_HOSTS = ['*']
-DEBUG = ENV.bool('COLDFRONT_DEBUG', default=False)
-DEVELOP = ENV.bool('COLDFRONT_DEVELOP', default=False)
+DEBUG = ENV.bool('DEBUG', default=False)
+DEVELOP = ENV.bool('DEVELOP', default=False)
 WSGI_APPLICATION = 'coldfront.config.wsgi.application'
 ROOT_URLCONF = 'coldfront.config.urls'
 
 
-SECRET_KEY = ENV.str('COLDFRONT_SECRET_KEY', default='')
+SECRET_KEY = ENV.str('SECRET_KEY', default='')
 if len(SECRET_KEY) == 0:
     SECRET_KEY = get_random_secret_key()
 

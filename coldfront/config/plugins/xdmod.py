@@ -8,4 +8,4 @@ INSTALLED_APPS += [
     'coldfront.plugins.xdmod',
 ]
 
-XDMOD_API_URL = ENV.str('COLDFRONT_PLUGIN_XDMOD_API_URL')
+XDMOD_API_URL = ENV.str('XDMOD_API_URL')

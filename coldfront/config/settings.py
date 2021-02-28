@@ -14,13 +14,13 @@ coldfront_configs = [
 
 # ColdFront plugin settings
 plugin_configs = {
-    'COLDFRONT_PLUGIN_SLURM_ENABLE': 'plugins/slurm.py',
-    'COLDFRONT_PLUGIN_IQUOTA_ENABLE': 'plugins/iquota.py',
-    'COLDFRONT_PLUGIN_FREEIPA_ENABLE': 'plugins/freeipa.py',
-    'COLDFRONT_PLUGIN_MOKEY_ENABLE': 'plugins/mokey.py',
-    'COLDFRONT_PLUGIN_SYSMON_ENABLE': 'plugins/system_montior.py',
-    'COLDFRONT_PLUGIN_XDMOD_ENABLE': 'plugins/xdmod.py',
-    'COLDFRONT_PLUGIN_OOD_ENABLE': 'plugins/ondemand.py',
+    'PLUGIN_SLURM_ENABLE': 'plugins/slurm.py',
+    'PLUGIN_IQUOTA_ENABLE': 'plugins/iquota.py',
+    'PLUGIN_FREEIPA_ENABLE': 'plugins/freeipa.py',
+    'PLUGIN_MOKEY_ENABLE': 'plugins/mokey.py',
+    'PLUGIN_SYSMON_ENABLE': 'plugins/system_montior.py',
+    'PLUGIN_XDMOD_ENABLE': 'plugins/xdmod.py',
+    'PLUGIN_OOD_ENABLE': 'plugins/ondemand.py',
 }
 
 # This allows plugins to be enabled via environment variables. Can alternatively
