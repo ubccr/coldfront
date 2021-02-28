@@ -1,24 +1,23 @@
+from coldfront.config.env import ENV
+
 #------------------------------------------------------------------------------
 # Email/Notification settings
 #------------------------------------------------------------------------------
-# EMAIL_ENABLED = True
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_HOST = 'localhost'
-# EMAIL_PORT = 25
-# EMAIL_HOST_USER = ''
-# EMAIL_HOST_PASSWORD = ''
-# EMAIL_USE_TLS = False
-# EMAIL_TIMEOUT = 3
-# EMAIL_SUBJECT_PREFIX = '[ColdFront]'
-# EMAIL_ADMIN_LIST = ['admin@localhost']
-# EMAIL_SENDER = 'coldfront@localhost'
-# EMAIL_TICKET_SYSTEM_ADDRESS = 'help@localhost'
-# EMAIL_DIRECTOR_EMAIL_ADDRESS = 'director@localhost'
-# EMAIL_PROJECT_REVIEW_CONTACT = 'review@localhost'
-# EMAIL_DEVELOPMENT_EMAIL_LIST = ['dev1@localhost', 'dev2@localhost']
-# EMAIL_OPT_OUT_INSTRUCTION_URL = 'http://localhost/optout'
-# EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS = [7, 14, 30]
-# EMAIL_SIGNATURE = """
-# HPC Resources
-# http://localhost
-# """
+EMAIL_ENABLED = ENV.bool('EMAIL_ENABLED', default=False)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = ENV.str('EMAIL_HOST', default='localhost')
+EMAIL_PORT = ENV.int('EMAIL_PORT', default=25)
+EMAIL_HOST_USER = ENV.str('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = ENV.str('EMAIL_HOST_PASSWORD', default='')
+EMAIL_USE_TLS = ENV.bool('EMAIL_USE_TLS', default=False)
+EMAIL_TIMEOUT = ENV.int('EMAIL_TIMEOUT', default=3)
+EMAIL_SUBJECT_PREFIX = ENV.str('EMAIL_SUBJECT_PREFIX', default='[ColdFront]')
+EMAIL_ADMIN_LIST = ENV.list('EMAIL_ADMIN_LIST', default=['admin@localhost'])
+EMAIL_SENDER = ENV.str('EMAIL_SENDER', default='coldfront@localhost')
+EMAIL_TICKET_SYSTEM_ADDRESS = ENV.str('EMAIL_TICKET_SYSTEM_ADDRESS', default='help@localhost')
+EMAIL_DIRECTOR_EMAIL_ADDRESS = ENV.str('EMAIL_DIRECTOR_EMAIL_ADDRESS', default='director@localhost')
+EMAIL_PROJECT_REVIEW_CONTACT = ENV.str('EMAIL_PROJECT_REVIEW_CONTACT', default='review@localhost')
+EMAIL_DEVELOPMENT_EMAIL_LIST = ENV.list('EMAIL_DEVELOPMENT_EMAIL_LIST', default=['dev1@localhost', 'dev2@localhost'])
+EMAIL_OPT_OUT_INSTRUCTION_URL = ENV.str('EMAIL_OPT_OUT_INSTRUCTION_URL', default='http://localhost/optout')
+EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS = ENV.list('EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS', cast=int, default=[7, 14, 30])
+EMAIL_SIGNATURE = ENV.str('EMAIL_SIGNATURE', default='', multiline=True)

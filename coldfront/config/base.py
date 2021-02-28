@@ -10,11 +10,10 @@ from coldfront.config.env import ENV, PROJECT_ROOT
 # Base Django config for ColdFront
 #------------------------------------------------------------------------------
 VERSION = coldfront.VERSION
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ENV.list('ALLOWED_HOSTS', default=['*'])
 DEBUG = ENV.bool('DEBUG', default=False)
 WSGI_APPLICATION = 'coldfront.config.wsgi.application'
 ROOT_URLCONF = 'coldfront.config.urls'
-
 
 SECRET_KEY = ENV.str('SECRET_KEY', default='')
 if len(SECRET_KEY) == 0:
@@ -23,8 +22,8 @@ if len(SECRET_KEY) == 0:
 #------------------------------------------------------------------------------
 # Locale settings
 #------------------------------------------------------------------------------
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'America/New_York'
+LANGUAGE_CODE = ENV.str('LANGUAGE_CODE', default='en-us')
+TIME_ZONE = ENV.str('TIME_ZONE', default='America/New_York')
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True

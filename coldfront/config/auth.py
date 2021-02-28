@@ -2,7 +2,7 @@ from coldfront.config.env import ENV
 from coldfront.config.base import INSTALLED_APPS, TEMPLATES
 
 #------------------------------------------------------------------------------
-# ColdFront authentication configs
+# ColdFront authentication settings
 #------------------------------------------------------------------------------
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
@@ -27,31 +27,3 @@ if ENV.bool('ENABLE_SU', default=True):
     AUTHENTICATION_BACKENDS += ['django_su.backends.SuBackend',]
     INSTALLED_APPS.insert(0, 'django_su')
     TEMPLATES[0]['OPTIONS']['context_processors'].extend(['django_su.context_processors.is_su', ])
-
-#------------------------------------------------------------------------------
-# Example config for enabling LDAP user authentication using django-auth-ldap.
-# This will enable LDAP user/password logins. Set this in local_settings.py
-#------------------------------------------------------------------------------
-# import ldap
-# from django_auth_ldap.config import GroupOfNamesType, LDAPSearch
-# from coldfront.config.base import AUTHENTICATION_BACKENDS
-#
-# AUTH_LDAP_SERVER_URI = 'ldap://localhost'
-# AUTH_LDAP_USER_SEARCH_BASE = 'cn=users,cn=accounts,dc=localhost,dc=localdomain'
-# AUTH_LDAP_START_TLS = True
-# AUTH_LDAP_BIND_AS_AUTHENTICATING_USER=True
-# AUTH_LDAP_MIRROR_GROUPS = True
-# AUTH_LDAP_USER_SEARCH = LDAPSearch(
-#     AUTH_LDAP_USER_SEARCH_BASE, ldap.SCOPE_ONELEVEL, '(uid=%(user)s)')
-# AUTH_LDAP_GROUP_SEARCH_BASE = 'cn=groups,cn=accounts,dc=localhost,dc=localdomain'
-# AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
-#     AUTH_LDAP_GROUP_SEARCH_BASE, ldap.SCOPE_ONELEVEL, '(objectClass=groupOfNames)')
-# AUTH_LDAP_GROUP_TYPE = GroupOfNamesType()
-# AUTH_LDAP_USER_ATTR_MAP = {
-#     'username': 'uid',
-#     'first_name': 'givenName',
-#     'last_name': 'sn',
-#     'email': 'mail',
-# }
-#
-# AUTHENTICATION_BACKENDS += ['django_auth_ldap.backend.LDAPBackend',]
