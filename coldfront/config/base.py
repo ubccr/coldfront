@@ -12,7 +12,6 @@ from coldfront.config.env import ENV, PROJECT_ROOT
 VERSION = coldfront.VERSION
 ALLOWED_HOSTS = ['*']
 DEBUG = ENV.bool('DEBUG', default=False)
-DEVELOP = ENV.bool('DEVELOP', default=False)
 WSGI_APPLICATION = 'coldfront.config.wsgi.application'
 ROOT_URLCONF = 'coldfront.config.urls'
 
