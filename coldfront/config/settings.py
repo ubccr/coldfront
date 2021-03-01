@@ -7,10 +7,12 @@ coldfront_configs = [
     'base.py',
     'database.py',
     'auth.py',
-    'email.py',
     'logging.py',
     'core.py',
 ]
+
+if ENV.bool('EMAIL_ENABLED', default=False):
+    coldfront_configs.append('email.py')
 
 # ColdFront plugin settings
 plugin_configs = {
