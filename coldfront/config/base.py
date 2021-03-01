@@ -10,6 +10,7 @@ from coldfront.config.env import ENV, PROJECT_ROOT
 # Base Django config for ColdFront
 #------------------------------------------------------------------------------
 VERSION = coldfront.VERSION
+BASE_DIR = PROJECT_ROOT()
 ALLOWED_HOSTS = ENV.list('ALLOWED_HOSTS', default=['*'])
 DEBUG = ENV.bool('DEBUG', default=False)
 WSGI_APPLICATION = 'coldfront.config.wsgi.application'
