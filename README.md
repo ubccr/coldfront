@@ -18,30 +18,18 @@ Python and released under the GPLv3 license.
 - Integration with 3rd party systems for automation and access control
 - Center director approval system and annual project reviews
 
-## Plug-in Documentation
- - [Slurm](coldfront/plugins/slurm)
- - [FreeIPA](coldfront/plugins/freeipa)
- - [LDAP](coldfront/plugins/ldap_user_search)
- - [Mokey/Hydra OpenID Connect](coldfront/plugins/mokey_oidc)
- - [iQuota](coldfront/plugins/iquota)
- - [Open OnDemand](coldfront/plugins/ondemand)
- - [Open XDMoD](coldfront/plugins/xdmod)
- - [System Monitor](coldfront/plugins/system_monitor) (example of ways to integrate your own plug-ins)
+## Documentation
 
-
-## Installation
-
-[Quick Start Instructions](docs/pages/quickstart.md)
-
-
-## ColdFront Demos
-
-[Animated gifs demonstrating ColdFront features](docs/pages/demos.md)
+For more information on installing and using ColdFront see our [documentation here](https://coldfront.readthedocs.io)
 
 ## Contact Information
-If you would like a live demo followed by QA, please contact us at ccr-coldfront-admin-list@listserv.buffalo.edu. You can also contact us for general inquiries and installation troubleshooting.
+If you would like a live demo followed by QA, please contact us at
+ccr-coldfront-admin-list@listserv.buffalo.edu. You can also contact us for
+general inquiries and installation troubleshooting.
 
-If you would like to join our mailing list to receive news and updates, please send an email to listserv@listserv.buffalo.edu with no subject, and the following command in the body of the message:
+If you would like to join our mailing list to receive news and updates, please
+send an email to listserv@listserv.buffalo.edu with no subject, and the
+following command in the body of the message:
 
 subscribe ccr-open-coldfront-list@listserv.buffalo.edu first_name last_name
 
