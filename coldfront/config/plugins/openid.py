@@ -2,16 +2,27 @@ from coldfront.config.base import INSTALLED_APPS, MIDDLEWARE, AUTHENTICATION_BAC
 from coldfront.config.env import ENV
 
 #------------------------------------------------------------------------------
-# Enable Mokey/Hydra OpenID Connect Authentication Backend
+# Enable OpenID Connect Authentication Backend
 #------------------------------------------------------------------------------
 INSTALLED_APPS += [
     'mozilla_django_oidc',
-    'coldfront.plugins.mokey_oidc',
 ]
 
-AUTHENTICATION_BACKENDS += [
-    'coldfront.plugins.mokey_oidc.auth.OIDCMokeyAuthenticationBackend',
-]
+if ENV.bool('PLUGIN_MOKEY', default=False):
+    #------------------------------------------------------------------------------
+    # Enable Mokey/Hydra OpenID Connect Authentication Backend
+    #------------------------------------------------------------------------------
+    INSTALLED_APPS += [
+        'coldfront.plugins.mokey_oidc',
+    ]
+
+    AUTHENTICATION_BACKENDS += [
+        'coldfront.plugins.mokey_oidc.auth.OIDCMokeyAuthenticationBackend',
+    ]
+else:
+    AUTHENTICATION_BACKENDS += [
+        'mozilla_django_oidc.auth.OIDCAuthenticationBackend',
+    ]
 
 MIDDLEWARE += [
     'mozilla_django_oidc.middleware.SessionRefresh',
