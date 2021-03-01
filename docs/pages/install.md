@@ -2,8 +2,7 @@
 
 This section describes the various methods of installing ColdFront. New
 releases of ColdFront may introduce breaking changes. Please refer to the
-[upgrading section](upgrading.md) and changelog for more information. For more
-information on configuring ColdFront [see here](config.md).
+[upgrading section](upgrading.md) and changelog for more information.
 
 ## Downloading
 
