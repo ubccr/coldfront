@@ -129,6 +129,12 @@ disabled:
 
 #### LDAP Auth
 
+!!! warning "Required"
+    LDAP authentication backend requires `ldap3` and `django_auth_ldap`. 
+    ```
+    $ pip install ldap3 django_auth_ldap
+    ```
+
 | Name                 | Description                          |
 | :--------------------|:-------------------------------------|
 | PLUGIN_AUTH_LDAP     | Enable LDAP Authentication Backend. Default False |
@@ -139,6 +145,12 @@ disabled:
 | AUTH_LDAP_MIRROR_GROUPS | Enable/disable mirroring of groups. Default True  |
 
 #### OpenID Connect Auth
+
+!!! warning "Required"
+    OpenID Connect authentication backend requires `mozilla_django_oidc`.
+    ```
+    $ pip install mozilla_django_oidc
+    ```
 
 | Name                 | Description                          |
 | :--------------------|:-------------------------------------|
