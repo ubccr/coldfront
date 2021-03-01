@@ -1,4 +1,7 @@
 {% extends "common/base.html" %} {% load common_tags %} {% load crispy_forms_tags %} {% load static %} {% block title %} Project List {% endblock %} {% block content %}
+        <th scope="col" class="text-nowrap">
+          Name
+        </th>
 
 
 
@@ -21,10 +24,10 @@
 <div class="mb-3" id="accordion">
   <div class="card">
     <div class="card-header">
-      
-      <a id="expand_button" role="button" class="card-link " data-toggle="collapse" href="#collapseOne"> 
+
+      <a id="expand_button" role="button" class="card-link " data-toggle="collapse" href="#collapseOne">
         <i class="fas fa-filter" aria-hidden="true"></i> Filter
-        <i id="plus_minus" class="fas {{expand_accordion|get_icon}} float-right"></i>  
+        <i id="plus_minus" class="fas {{expand_accordion|get_icon}} float-right"></i>
       </a>
     </div>
     <div id="collapseOne" class="collapse {{expand_accordion}}" data-parent="#accordion">
@@ -52,6 +55,9 @@
           <a href="?order_by=id&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
         </th>
         <th scope="col" class="text-nowrap">
+          Name
+        </th>
+        <th scope="col" class="text-nowrap">
           PIs
         </th>
         <th scope="col">Title</th>
@@ -71,6 +77,7 @@
       {% for project in project_list %}
       <tr>
         <td><a href="/project/{{project.id}}/">{{ project.id }}</a></td>
+        <td>{{ project.name }}</td>
         <td>
           {% for pi in project.pis %}
             {{ pi.username }}<br>
