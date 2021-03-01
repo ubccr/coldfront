@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
 from setuptools import setup, find_packages
+import coldfront
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(
     name='coldfront',
-    version='1.0.2',
+    version=coldfront.VERSION,
     description='HPC Resource Allocation System ',
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -20,6 +21,7 @@ setup(
     },
     author='Andrew E. Bruno, Dori Sajdak, Mohammad Zia',
     license='GNU General Public License v3 (GPLv3)',
+    python_requires='>=3.6',
     packages=find_packages(),
     install_requires=[
         'arrow==0.13.1',
