@@ -69,20 +69,20 @@ more advanced configuration use `local_settings.py`.
 
 The following settings are ColdFront specific settings related to the core application.
 
-| Name                 | Description                          |
-| :--------------------|:-------------------------------------|
-| CENTER_NAME          | The display name of your center      |
-| CENTER_HELP_URL      | The URL of your help ticketing system |
-| CENTER_PROJECT_RENEWAL_HELP_URL  | The URL of the article describing project renewals |
-| CENTER_BASE_URL      | The base URL of your center. |
-| PROJECT_ENABLE_PROJECT_REVIEW    | Enable or disable project reviews. Default True|
-| ALLOCATION_ENABLE_ALLOCATION_RENEWAL    | Enable or disable allocation renewals. Default True |
-| ALLOCATION_DEFAULT_ALLOCATION_LENGTH    | Default number of days an allocation is active for. Default 365 |
-| ALLOCATION_ACCOUNT_ENABLED    | Allow user to select account name for allocation. Default True |
-| INVOICE_ENABLED    | Enable or disable invoices. Default True |
-| ONDEMAND_URL    | The URL to your Open OnDemand installation |
-| LOGIN_FAIL_MESSAGE    | Custom message when user fails to login. Here you can paint a custom link to your user account portal |
-| ENABLE_SU    | Enable administrators to login as other users. Default True |
+| Name                                   | Description                                    |
+| :--------------------------------------|:-----------------------------------------------|
+| CENTER_NAME                            | The display name of your center                |
+| CENTER_HELP_URL                        | The URL of your help ticketing system          |
+| CENTER_PROJECT_RENEWAL_HELP_URL        | The URL of the article describing project renewals |
+| CENTER_BASE_URL                        | The base URL of your center.                   |
+| PROJECT_ENABLE_PROJECT_REVIEW          | Enable or disable project reviews. Default True|
+| ALLOCATION_ENABLE_ALLOCATION_RENEWAL   | Enable or disable allocation renewals. Default True |
+| ALLOCATION_DEFAULT_ALLOCATION_LENGTH   | Default number of days an allocation is active for. Default 365 |
+| ALLOCATION_ACCOUNT_ENABLED             | Allow user to select account name for allocation. Default True |
+| INVOICE_ENABLED                        | Enable or disable invoices. Default True       |
+| ONDEMAND_URL                           | The URL to your Open OnDemand installation     |
+| LOGIN_FAIL_MESSAGE                     | Custom message when user fails to login. Here you can paint a custom link to your user account portal |
+| ENABLE_SU                              | Enable administrators to login as other users. Default True |
 
 
 ### Database settings
@@ -106,24 +106,24 @@ DB_URL=sqlite:////usr/share/coldfront/coldfront.db
 The following settings configure emails in ColdFront. By default email is
 disabled:
 
-| Name                 | Description                          |
-| :--------------------|:-------------------------------------|
-| EMAIL_ENABLED        | Enable/disable email. Default False  |
-| EMAIL_HOST           | Hostname of smtp server |
-| EMAIL_PORT           | smtp port
-| EMAIL_HOST_USER      | Username for smtp |
-| EMAIL_HOST_PASSWORD  | password for smtp |
-| EMAIL_USE_TLS        | Enable/disable tls. Default False  |
-| EMAIL_SENDER        | Default sender email address |
-| EMAIL_SUBJECT_PREFIX | Prefix to add to subject line |
-| EMAIL_ADMIN_LIST        | List of admin email addresses. |
-| EMAIL_TICKET_SYSTEM_ADDRESS        | Email address of ticketing system |
-| EMAIL_DIRECTOR_EMAIL_ADDRESS        | Email address for director | 
-| EMAIL_PROJECT_REVIEW_CONTACT        | Email address of review contact |
-| EMAIL_DEVELOPMENT_EMAIL_LIST        | List of emails to send when in debug mode |
-| EMAIL_OPT_OUT_INSTRUCTION_URL        | URL of article regarding opt out |
-| EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS        | List of days to send email notifications for expiring allocatioins. Default 7,14,30 |
-| EMAIL_SIGNATURE        | Email signature to add to outgoing emails |
+| Name                            | Description                               |
+| :-------------------------------|:------------------------------------------|
+| EMAIL_ENABLED                   | Enable/disable email. Default False       |
+| EMAIL_HOST                      | Hostname of smtp server                   |
+| EMAIL_PORT                      | smtp port                                 |
+| EMAIL_HOST_USER                 | Username for smtp                         |
+| EMAIL_HOST_PASSWORD             | password for smtp                         |
+| EMAIL_USE_TLS                   | Enable/disable tls. Default False         |
+| EMAIL_SENDER                    | Default sender email address              |
+| EMAIL_SUBJECT_PREFIX            | Prefix to add to subject line             |
+| EMAIL_ADMIN_LIST                | List of admin email addresses.            |
+| EMAIL_TICKET_SYSTEM_ADDRESS     | Email address of ticketing system         |
+| EMAIL_DIRECTOR_EMAIL_ADDRESS    | Email address for director                | 
+| EMAIL_PROJECT_REVIEW_CONTACT    | Email address of review contact           |
+| EMAIL_DEVELOPMENT_EMAIL_LIST    | List of emails to send when in debug mode |
+| EMAIL_OPT_OUT_INSTRUCTION_URL   | URL of article regarding opt out          |
+| EMAIL_SIGNATURE                 | Email signature to add to outgoing emails |
+| EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS   | List of days to send email notifications for expiring allocatioins. Default 7,14,30 |
 
 ### Plugin settings
 
@@ -135,14 +135,14 @@ disabled:
     $ pip install ldap3 django_auth_ldap
     ```
 
-| Name                 | Description                          |
-| :--------------------|:-------------------------------------|
-| PLUGIN_AUTH_LDAP     | Enable LDAP Authentication Backend. Default False |
-| AUTH_LDAP_SERVER_URI | URI of LDAP server |
-| AUTH_LDAP_START_TLS | Enable/disable start tls. Default True  |
-| AUTH_LDAP_USER_SEARCH_BASE | User search base dn |
-| AUTH_LDAP_GROUP_SEARCH_BASE | Group search base dn |
-| AUTH_LDAP_MIRROR_GROUPS | Enable/disable mirroring of groups. Default True  |
+| Name                        | Description                             |
+| :---------------------------|:----------------------------------------|
+| PLUGIN_AUTH_LDAP            | Enable LDAP Authentication Backend. Default False |
+| AUTH_LDAP_SERVER_URI        | URI of LDAP server                      |
+| AUTH_LDAP_START_TLS         | Enable/disable start tls. Default True  |
+| AUTH_LDAP_USER_SEARCH_BASE  | User search base dn                     |
+| AUTH_LDAP_GROUP_SEARCH_BASE | Group search base dn                    |
+| AUTH_LDAP_MIRROR_GROUPS     | Enable/disable mirroring of groups. Default True  |
 
 #### OpenID Connect Auth
 
@@ -152,17 +152,17 @@ disabled:
     $ pip install mozilla_django_oidc
     ```
 
-| Name                 | Description                          |
-| :--------------------|:-------------------------------------|
-| PLUGIN_AUTH_OIDC     | Enable OpenID Connect Authentication Backend. Default False |
-| OIDC_OP_JWKS_ENDPOINT | URL of JWKS endpoint |
-| OIDC_RP_SIGN_ALGO | Signature algorithm |
-| OIDC_RP_CLIENT_ID | Client ID |
-| OIDC_RP_CLIENT_SECRET | Client secret |
-| OIDC_OP_AUTHORIZATION_ENDPOINT | OAuth2 authorization endpoint |
-| OIDC_OP_TOKEN_ENDPOINT | OAuth2 token endpoint |
-| OIDC_OP_USER_ENDPOINT | OAuth2 userinfo endpoint |
-| OIDC_VERIFY_SSL | Verify ssl Deafult True |
+| Name                           | Description                          |
+| :------------------------------|:-------------------------------------|
+| PLUGIN_AUTH_OIDC               | Enable OpenID Connect Authentication Backend. Default False |
+| OIDC_OP_JWKS_ENDPOINT          | URL of JWKS endpoint                 |
+| OIDC_RP_SIGN_ALGO              | Signature algorithm                  |
+| OIDC_RP_CLIENT_ID              | Client ID                            |
+| OIDC_RP_CLIENT_SECRET          | Client secret                        |
+| OIDC_OP_AUTHORIZATION_ENDPOINT | OAuth2 authorization endpoint        |
+| OIDC_OP_TOKEN_ENDPOINT         | OAuth2 token endpoint                |
+| OIDC_OP_USER_ENDPOINT          | OAuth2 userinfo endpoint             |
+| OIDC_VERIFY_SSL                | Verify ssl Deafult True              |
 | OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS | Token lifetime in seconds. Default 3600 |
 
 #### Mokey
@@ -177,40 +177,40 @@ disabled:
 
 #### Slurm
 
-| Name                 | Description                          |
-| :--------------------|:-------------------------------------|
-| PLUGIN_SLURM     | Enable Slurm integration. Default False |
-| SLURM_SACCTMGR_PATH | Path to sacctmgr command. Default `/usr/bin/sacctmgr` |
-| SLURM_NOOP | Enable/disable noop. Default False  |
-| SLURM_IGNORE_USERS | List of user accounts to ignore when generating Slurm associations |
+| Name                  | Description                          |
+| :---------------------|:-------------------------------------|
+| PLUGIN_SLURM          | Enable Slurm integration. Default False |
+| SLURM_SACCTMGR_PATH   | Path to sacctmgr command. Default `/usr/bin/sacctmgr` |
+| SLURM_NOOP            | Enable/disable noop. Default False   |
+| SLURM_IGNORE_USERS    | List of user accounts to ignore when generating Slurm associations |
 | SLURM_IGNORE_ACCOUNTS | List of Slurm accounts to ignore when generating Slurm associations |
 
 #### XDMoD
 
-| Name                 | Description                          |
-| :--------------------|:-------------------------------------|
-| PLUGIN_XDMOD     | Enable XDMoD integration. Default False |
-| XDMOD_API_URL | URL to XDMoD API |
+| Name                 | Description                             |
+| :--------------------|:----------------------------------------|
+| PLUGIN_XDMOD         | Enable XDMoD integration. Default False |
+| XDMOD_API_URL        | URL to XDMoD API                        |
 
 #### FreeIPA
 
-| Name                 | Description                          |
-| :--------------------|:-------------------------------------|
-| PLUGIN_FREEIPA     | Enable FreeIPA integration. Default False |
-| FREEIPA_KTNAME | Path to keytab file |
-| FREEIPA_SERVER | Hostname of FreeIPA server |
-| FREEIPA_USER_SEARCH_BASE | User search base dn |
-| FREEIPA_ENABLE_SIGNALS | Enable/Disable signals. Default False |
+| Name                     | Description                               |
+| :------------------------|:------------------------------------------|
+| PLUGIN_FREEIPA           | Enable FreeIPA integration. Default False |
+| FREEIPA_KTNAME           | Path to keytab file                       |
+| FREEIPA_SERVER           | Hostname of FreeIPA server                |
+| FREEIPA_USER_SEARCH_BASE | User search base dn                       |
+| FREEIPA_ENABLE_SIGNALS   | Enable/Disable signals. Default False     |
 
 #### iquota
 
-| Name                 | Description                          |
-| :--------------------|:-------------------------------------|
-| PLUGIN_IQUOTA     | Enable iquota integration. Default False |
-| IQUOTA_KEYTAB | Path to keytab file |
-| IQUOTA_CA_CERT | Path to ca cert |
-| IQUOTA_API_HOST | Hostname of iquota server |
-| IQUOTA_API_PORT | Port of iquota server |
+| Name            | Description                              |
+| :---------------|:-----------------------------------------|
+| PLUGIN_IQUOTA   | Enable iquota integration. Default False |
+| IQUOTA_KEYTAB   | Path to keytab file                      |
+| IQUOTA_CA_CERT  | Path to ca cert                          |
+| IQUOTA_API_HOST | Hostname of iquota server                |
+| IQUOTA_API_PORT | Port of iquota server                    |
 
 ## Advanced Configuration
 

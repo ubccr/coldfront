@@ -76,7 +76,7 @@ by default.
 ## Intializing the ColdFront database
 
 ColdFront supports MariaDB/MySQL, PostgreSQL, and SQLite. See the complete
-guide on configuring ColdFront for more details. By default, ColdFront will use
+guide on [configuring ColdFront](config.md) for more details. By default, ColdFront will use
 SQLite and create a database file in your current working directory.
 
 After configuring your database of choice you must first initialize the
