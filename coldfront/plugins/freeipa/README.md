@@ -62,20 +62,13 @@ $ sss_cache -E
 
 ## Usage
 
-To enable this plugin add or uncomment the following in your local\_settings.py
-file:
+To enable this plugin set the following environment variables:
 
 ```
-    EXTRA_APPS += [
-        'coldfront.plugin.freeipa',
-    ]
-    FREEIPA_NOOP = False
-    FREEIPA_ENABLE_SIGNALS = False
-    FREEIPA_KTNAME = '/path/to/user.keytab'
-    FREEIPA_GROUP_ATTRIBUTE_NAME = 'freeipa_group' 
-    FREEIPA_SERVER = 'freeipa.localhost.localdomain'
-    FREEIPA_USER_SEARCH_BASE = 'cn=users,cn=accounts,dc=example,dc=edu'
-    ADDITIONAL_USER_SEARCH_CLASSES = ['coldfront.plugin.freeipa.search.LDAPUserSearch',]
+PLUGIN_FREEIPA=True
+FREEIPA_KTNAME='/path/to/user.keytab'
+FREEIPA_SERVER='freeipa.localhost.localdomain'
+FREEIPA_USER_SEARCH_BASE='cn=users,cn=accounts,dc=example,dc=edu'
 ```
 
 The "FREEIPA\_KTNAME" should be the path to the keytab file for a user in
@@ -83,9 +76,7 @@ FreeIPA with the appropriate permissions for modifying group membership. The
 easiest way to do this in FreeIPA is to create a new role for ColdFront with
 the "Modify Group membership" privilege. Then create a user account
 specifically for use with ColdFront and assign them this role. Then export a
-keytab for that user. "FREEIPA\_GROUP\_ATTRIBUTE\_NAME" is optional and is the
-name of the allocation attribute for the unix group. Default is
-"freeipa\_group".
+keytab for that user.
 
 ## CLI Usage
 
