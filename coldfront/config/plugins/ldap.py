@@ -1,7 +1,12 @@
-import ldap
 from coldfront.config.auth import AUTHENTICATION_BACKENDS
 from coldfront.config.env import ENV
-from django_auth_ldap.config import GroupOfNamesType, LDAPSearch
+from django.core.exceptions import ImproperlyConfigured
+
+try:
+    import ldap
+    from django_auth_ldap.config import GroupOfNamesType, LDAPSearch
+except ImportError:
+    raise ImproperlyConfigured('Please run: pip install ldap3 django_auth_ldap')
 
 #------------------------------------------------------------------------------
 # LDAP user authentication using django-auth-ldap.  This will enable LDAP
