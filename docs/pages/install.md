@@ -137,4 +137,4 @@ $ coldfront load_test_data
     Do not run with this data loaded in production environment. The default
     user accounts are created with weak passwords and should only be used for
     testing purposes. If you do decide to use the test data, delete the user
-    accounts created and minimum.
+    accounts created at minimum.

@@ -17,7 +17,7 @@ discrepancies.
 
 ## Design
 
-FreeIPA unix groups can be set on a per allocation basis using using a
+FreeIPA unix groups can be set on a per allocation basis using an
 allocation attribute named "freeipa\_group".  The value of this attribute
 must be a valid unix group in FreeIPA. Any users added/removed from the
 allocation will then automatically be added/removed from the group in

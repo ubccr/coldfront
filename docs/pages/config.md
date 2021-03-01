@@ -7,7 +7,7 @@ plugins. For information on installing ColdFront [see here](install.md).
 
 ## Configuration files
 
-You can set environment varialbes via a file and ColdFront by default will look
+You can set environment variables via a file and ColdFront by default will look
 for the following files:
 
 - `.env` in the ColdFront project root
@@ -59,10 +59,10 @@ more advanced configuration use `local_settings.py`.
 
 | Name                 | Description                          |
 | :--------------------|:-------------------------------------|
-| ALLOWED_HOSTS        | A list of strings representing the host/domain names that ColdFront can server. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#allowed-hosts) |
+| ALLOWED_HOSTS        | A list of strings representing the host/domain names that ColdFront can serve. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#allowed-hosts) |
 | DEBUG                | Turn on/off debug mode. Never deploy a site into production with DEBUG turned on. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#debug) |
 | SECRET_KEY           | This is used to provide cryptographic signing, and should be set to a unique, unpredictable value. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#secret-key). If you don't provide this one will be generated each time ColdFront starts. |
-| LANGUAGE_CODE        | A string representing the language code. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#language-code1)
+| LANGUAGE_CODE        | A string representing the language code. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#language-code)
 | TIME_ZONE            | A string representing the time zone for this installation. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#std:setting-TIME_ZONE) |
 
 ### ColdFront core settings
@@ -123,7 +123,7 @@ disabled:
 | EMAIL_DEVELOPMENT_EMAIL_LIST    | List of emails to send when in debug mode |
 | EMAIL_OPT_OUT_INSTRUCTION_URL   | URL of article regarding opt out          |
 | EMAIL_SIGNATURE                 | Email signature to add to outgoing emails |
-| EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS   | List of days to send email notifications for expiring allocatioins. Default 7,14,30 |
+| EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS   | List of days to send email notifications for expiring allocations. Default 7,14,30 |
 
 ### Plugin settings
 
@@ -162,7 +162,7 @@ disabled:
 | OIDC_OP_AUTHORIZATION_ENDPOINT | OAuth2 authorization endpoint        |
 | OIDC_OP_TOKEN_ENDPOINT         | OAuth2 token endpoint                |
 | OIDC_OP_USER_ENDPOINT          | OAuth2 userinfo endpoint             |
-| OIDC_VERIFY_SSL                | Verify ssl Deafult True              |
+| OIDC_VERIFY_SSL                | Verify ssl Default True              |
 | OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS | Token lifetime in seconds. Default 3600 |
 
 #### Mokey
