@@ -143,7 +143,6 @@ disabled:
 | Name                 | Description                          |
 | :--------------------|:-------------------------------------|
 | PLUGIN_AUTH_OIDC     | Enable OpenID Connect Authentication Backend. Default False |
-| PLUGIN_MOKEY         | Enable Mokey/Hydra OpenID Connect Authentication Backend |
 | OIDC_OP_JWKS_ENDPOINT | URL of JWKS endpoint |
 | OIDC_RP_SIGN_ALGO | Signature algorithm |
 | OIDC_RP_CLIENT_ID | Client ID |
@@ -158,11 +157,11 @@ disabled:
 
 !!! warning "Required"
     Mokey depends on the OpenID Connect plugin above. You must also enable the
-    OpenID Connect plugin.
+    OpenID Connect plugin via `PLUGIN_AUTH_OIDC=True`.
 
 | Name                 | Description                          |
 | :--------------------|:-------------------------------------|
-| PLUGIN_MOKEY         | Enable Mokey/Hydra OpenID Connect Authentication Backend |
+| PLUGIN_MOKEY         | Enable Mokey/Hydra OpenID Connect Authentication Backend. Default False|
 
 #### Slurm
 
