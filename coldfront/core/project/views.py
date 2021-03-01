@@ -1723,6 +1723,11 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             project = self.__update_project(request_obj)
             self.__create_project_users(request_obj)
             allocation = self.__update_allocation(request_obj)
+
+            request_obj.status = \
+                SavioProjectAllocationRequestStatusChoice.objects.get(
+                    name='Active')
+            request_obj.save()
         except Exception as e:
             self.logger.exception(e)
             message = 'Unexpected failure. Please contact an administrator.'
