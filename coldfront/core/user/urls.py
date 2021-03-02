@@ -4,7 +4,7 @@ from django.urls import path, reverse_lazy
 
 import coldfront.core.user.views as user_views
 
-EXTRA_APPS = settings.EXTRA_APPS
+EXTRA_APPS = settings.INSTALLED_APPS
 
 
 urlpatterns = [

@@ -14,14 +14,11 @@ Cloud core time.
 
 ## Usage
 
-To enable this plugin add or uncomment the following in your local\_settings.py
-file:
+To enable this plugin set the following environment variables:
 
 ```
-    EXTRA_APPS += [
-        'coldfront.plugins.xdmod',
-    ]
-    XDMOD_API_URL = 'https://localhost'
+PLUGIN_XDMOD=True
+XDMOD_API_URL='https://localhost'
 ```
 
 ## CLI Usage

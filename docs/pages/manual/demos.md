@@ -1,6 +1,5 @@
 This is a collection of animated gifs demonstrating common functions in ColdFront
 
-[Installation](#installation)  
 [Adding a Project](#adding-a-project)  
 [Adding Users to a Project](#adding-users-to-a-project)  
 [Requesting an Allocation](#requesting-an-allocation)  
@@ -10,10 +9,6 @@ This is a collection of animated gifs demonstrating common functions in ColdFron
 [Managing an Allocation as an Admin](#managing-an-allocation-as-an-admin)  
 [Adding a Resource](#adding-a-resource)  
 [Generate Slurm Association Data](#generate-slurm-association-data)  
-
-
-### Installation
-![Installation](../images/installation.gif "Installation")
 
 
 ### Adding a Project

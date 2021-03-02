@@ -20,6 +20,10 @@ theme:
     - navigation.tabs.sticky
     - navigation.indexes
 
+plugins: 
+  - search
+  - awesome-pages
+
 markdown_extensions:
   - footnotes
   - admonition

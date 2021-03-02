@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
 from setuptools import setup, find_packages
+import coldfront
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(
     name='coldfront',
-    version='1.0.2',
+    version=coldfront.VERSION,
     description='HPC Resource Allocation System ',
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -20,6 +21,7 @@ setup(
     },
     author='Andrew E. Bruno, Dori Sajdak, Mohammad Zia',
     license='GNU General Public License v3 (GPLv3)',
+    python_requires='>=3.6',
     packages=find_packages(),
     install_requires=[
         'arrow==0.13.1',
@@ -28,11 +30,13 @@ setup(
         'chardet==3.0.4',
         'Django==2.2.13',
         'django-crispy-forms==1.7.2',
+        'django-environ==0.4.5',
         'django-model-utils==3.1.2',
         'django-picklefield==2.0',
         'django-q==1.0.1',
         'django-settings-export==1.2.1',
         'django-simple-history==2.7.2',
+        'django-split-settings==1.0.1',
         'django-sslserver==0.20',
         'django-su==0.8.0',
         'doi2bib==0.3.0',
