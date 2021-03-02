@@ -115,8 +115,7 @@ account you created.
 
 !!! danger "Danger"
     Do not run this in production. For more information on deploying ColdFront
-    in production see here.
-
+    in production [see here](deploy.md).
 
 ## Loading the sample test data
 
