@@ -3,6 +3,7 @@ Base Django settings for ColdFront project.
 """
 import os
 import coldfront
+from django.core.exceptions import ImproperlyConfigured
 from django.core.management.utils import get_random_secret_key
 from coldfront.config.env import ENV, PROJECT_ROOT
 
@@ -107,18 +108,30 @@ TEMPLATES = [
     },
 ]
 
+# Add local site templates files if set
+CUSTOM_TEMPLATES = ENV.str('CUSTOM_TEMPLATES', default='')
+if len(CUSTOM_TEMPLATES) > 0:
+    if os.path.isdir(CUSTOM_TEMPLATES):
+        TEMPLATES[0].DIRS.insert(0, CUSTOM_TEMPLATES)
+    else:
+        raise ImproperlyConfigured('CUSTOM_TEMPLATES should be a path to a directory')
+
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
 SETTINGS_EXPORT = []
 
 STATIC_URL = '/static/'
-STATIC_ROOT = PROJECT_ROOT('static_root')
+STATIC_ROOT = ENV.str('STATIC_ROOT', default=PROJECT_ROOT('static_root'))
 STATICFILES_DIRS = [
     PROJECT_ROOT('coldfront/static'),
 ]
 
-# Add local site static files
-if os.path.isdir(PROJECT_ROOT('site/static')):
-    STATICFILES_DIRS.insert(0, PROJECT_ROOT('site/static'))
+# Add local site static files if set
+SITE_STATIC = ENV.str('SITE_STATIC', default='')
+if len(SITE_STATIC) > 0:
+    if os.path.isdir(SITE_STATIC):
+        STATICFILES_DIRS.insert(0, SITE_STATIC)
+    else:
+        raise ImproperlyConfigured('SITE_STATIC should be a path to a directory')
 
 # Add system site static files
 if os.path.isdir('/usr/share/coldfront/site/static'):

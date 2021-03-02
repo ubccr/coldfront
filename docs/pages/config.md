@@ -65,6 +65,14 @@ more advanced configuration use `local_settings.py`.
 | LANGUAGE_CODE        | A string representing the language code. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#language-code)
 | TIME_ZONE            | A string representing the time zone for this installation. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#std:setting-TIME_ZONE) |
 
+### Template settings
+
+| Name                 | Description                          |
+| :--------------------|:-------------------------------------|
+| STATIC_ROOT          | Path to the directory where collectstatic will collect static files for deployment. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#std:setting-STATIC_ROOT) |
+| CUSTOM_TEMPLATES     | Path to a directory of custom templates. Add custom templates here. This path will be added to TEMPLATES DIRS. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#std:setting-TEMPLATES-DIRS) |
+| SITE_STATIC          | Path to a directory of custom static files. Add custom css here. This path will be added to STATICFILES_DIRS [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#std:setting-STATICFILES_DIRS) |
+
 ### ColdFront core settings
 
 The following settings are ColdFront specific settings related to the core application.
