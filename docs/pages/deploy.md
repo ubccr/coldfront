@@ -18,11 +18,11 @@ installing ColdFront and related files.
 # chown coldfront.coldfront /srv/coldfront
 ```
 
-This guide uses nginx. So be sure you have nginx installed:
-
-```
-# yum/apt install nginx
-```
+!!! note
+    This guide uses nginx. So be sure you have nginx installed:
+    ```
+    # yum/apt install nginx
+    ```
 
 ## Install ColdFront in a virtual environment
 
@@ -36,22 +36,11 @@ This guide uses nginx. So be sure you have nginx installed:
 
 ## Configure ColdFront
 
-Choose a database backend. ColdFront supports MariaDB/MySQL, PostgreSQL, or
-SQLite. Install your preferred database and set the connection details using
-the `DB_URL` variable below.
+Create a config file for ColdFront. For a complete list of settings [see
+here](config.md).
 
-!!! note "Note: Install python database drivers"
-    Be sure to install the database drivers associated with your db. For example:
-    ```
-    $ source /srv/coldfront/venv/bin/activate
-    $ pip install mysqlclient
-    $ pip install psycopg2
-    ```
-
-Create a config file for ColdFront and set at least the following variables.
-For a complete list of settings [see here](config.md).
-
-Create the file `/srv/coldfront/coldfront.env`:
+Create the file `/srv/coldfront/coldfront.env` and set at least the following
+variables:
 
 ```bash
 
@@ -74,6 +63,18 @@ SECRET_KEY=
     generated. You can create a good secret key using the following command:
     ```
     $ python3 -c "import secrets; print(secrets.token_urlsafe())"
+    ```
+
+Choose a database backend. ColdFront supports MariaDB/MySQL, PostgreSQL, or
+SQLite. Install your preferred database and set the connection details using
+the `DB_URL` variable above.
+
+!!! note "Note: Install python database drivers"
+    Be sure to install the database drivers associated with your db. For example:
+    ```
+    $ source /srv/coldfront/venv/bin/activate
+    $ pip install mysqlclient
+    $ pip install psycopg2
     ```
 
 ## Intializing the ColdFront database
@@ -143,7 +144,7 @@ WantedBy=multi-user.target
 ```
 
 !!! note
-    Adjust the number of workers for your needs using the `--workers` flag above.
+    Adjust the number of workers for your site specific needs using the `--workers` flag above.
 
 ## Start/enable ColdFront Gunicorn workers
 
