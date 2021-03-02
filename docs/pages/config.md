@@ -70,7 +70,7 @@ more advanced configuration use `local_settings.py`.
 | Name                 | Description                          |
 | :--------------------|:-------------------------------------|
 | STATIC_ROOT          | Path to the directory where collectstatic will collect static files for deployment. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#std:setting-STATIC_ROOT) |
-| CUSTOM_TEMPLATES     | Path to a directory of custom templates. Add custom templates here. This path will be added to TEMPLATES DIRS. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#std:setting-TEMPLATES-DIRS) |
+| SITE_TEMPLATES     | Path to a directory of custom templates. Add custom templates here. This path will be added to TEMPLATES DIRS. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#std:setting-TEMPLATES-DIRS) |
 | SITE_STATIC          | Path to a directory of custom static files. Add custom css here. This path will be added to STATICFILES_DIRS [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#std:setting-STATICFILES_DIRS) |
 
 ### ColdFront core settings
@@ -242,4 +242,37 @@ DATABASES = {
         'PORT': '',
     },
 }
+```
+
+## Custom Branding
+
+The default HTML templates and css can be easily customized to add your own
+site specific branding or even modify the functionality of ColdFront. To
+override the stock templates in ColdFront, create a directory and add your
+custom templates. Then set the following environment variable:
+
+```
+SITE_TEMPLATES=/path/to/your/templates
+```
+
+You can also override any static files such as CSS or images by creating a
+directory and adding your custom static assets. Then set the following
+environment variable:
+
+```
+SITE_STATIC=/path/to/static/files
+```
+
+As a simple example, to change the default background color from blue to black.
+Create a common.css with the following styles and set the environment variable:
+
+```
+$ mkdir -p site/static/common/css
+$ tee site/static/common/css/common.css <<EOF
+.bg-primary {
+  background-color: #000 !important;
+}
+EOF
+
+$ DEBUG=True SITE_STATIC=site coldfront runserver
 ```
