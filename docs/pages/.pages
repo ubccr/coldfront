@@ -1,0 +1,7 @@
+nav:
+  - index.md
+  - install.md
+  - config.md
+  - upgrading.md
+  - plugin.md
+  - manual
