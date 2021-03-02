@@ -109,12 +109,12 @@ TEMPLATES = [
 ]
 
 # Add local site templates files if set
-CUSTOM_TEMPLATES = ENV.str('CUSTOM_TEMPLATES', default='')
-if len(CUSTOM_TEMPLATES) > 0:
-    if os.path.isdir(CUSTOM_TEMPLATES):
-        TEMPLATES[0].DIRS.insert(0, CUSTOM_TEMPLATES)
+SITE_TEMPLATES = ENV.str('SITE_TEMPLATES', default='')
+if len(SITE_TEMPLATES) > 0:
+    if os.path.isdir(SITE_TEMPLATES):
+        TEMPLATES[0].DIRS.insert(0, SITE_TEMPLATES)
     else:
-        raise ImproperlyConfigured('CUSTOM_TEMPLATES should be a path to a directory')
+        raise ImproperlyConfigured('SITE_TEMPLATES should be a path to a directory')
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
 SETTINGS_EXPORT = []
