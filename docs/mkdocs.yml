@@ -1,7 +1,7 @@
 site_name: ColdFront
 docs_dir: 'pages'
 site_description: 'HPC Resource Allocation Management System'
-site_url: 'https://github.com/ubccr/coldfront'
+site_url: 'https://coldfront.readthedocs.io'
 copyright: 'Copyright &copy; 2021 Center for Computational Research, University at Buffalo'
 repo_name: 'ubccr/coldfront'
 repo_url: 'https://github.com/ubccr/coldfront'
