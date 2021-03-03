@@ -1,8 +1,10 @@
 # ColdFront Changelog
 
-## [1.0.3] - Unreleased
+## [1.0.3] - 2021-03-02
 
 - Refactor ColdFront settings. See [PR #264](https://github.com/ubccr/coldfront/pull/264)
+- Lots of documenation updates. [See here](https://coldfront.readthedocs.io)
+- Fix setuptools for pip installs
 
 ## [1.0.2] - 2021-02-15
 
@@ -37,7 +39,6 @@
 
 - Initial release
 
-[Unreleased]: https://github.com/ubccr/coldfront/compare/v1.0.1...HEAD
 [0.0.1]: https://github.com/ubccr/coldfront/releases/tag/v0.0.1
 [1.0.1]: https://github.com/ubccr/coldfront/releases/tag/v1.0.1
 [1.0.2]: https://github.com/ubccr/coldfront/releases/tag/v1.0.2
