@@ -289,7 +289,7 @@ class UserListAllocations(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
         user_dict = {}
 
         project_pks = ProjectUser.objects.filter(
-            user=self.requestuser,
+            user=self.request.user,
             role__name__in=['Manager', 'Principal Investigator'],
             status__name='Active').values_list('project', flat=True)
         for project in Project.objects.filter(pk__in=project_pks).distinct():
