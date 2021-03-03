@@ -58,6 +58,7 @@ setup(
             'coldfront = coldfront:manage',
         ],
     },
+    include_package_data = True,
     classifiers=[
         'Programming Language :: Python :: 3',
         'Framework :: Django :: 2.2',
