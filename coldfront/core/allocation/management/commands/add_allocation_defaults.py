@@ -44,6 +44,10 @@ class Command(BaseCommand):
             ('Storage_Group_Name', 'Text', False, False),
             ('SupportersQOS', 'Yes/No', False, False),
             ('SupportersQOSExpireDate', 'Date', False, False),
+            ('Tier 0', 'Text', False, False),
+            ('Tier 1', 'Text', False, False),
+            ('Tier 2', 'Text', False, False),
+            ('Tier 3', 'Text', False, False),
         ):
             AllocationAttributeType.objects.get_or_create(name=name, attribute_type=AttributeType.objects.get(
                 name=attribute_type), has_usage=has_usage, is_private=is_private)

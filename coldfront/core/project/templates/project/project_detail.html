@@ -97,6 +97,7 @@ Project Detail
             <th scope="col">Email</th>
             <th scope="col">Role <a href="#" data-toggle="popover" title="Role" data-trigger="hover" data-content="Manager role grants user access to add/remove users, allocations, grants, and publications to the project."><i class="fas fa-info-circle" aria-hidden="true"></i><span class="sr-only">Manager role grants user access to add/remove users, allocations, grants, and publications to the project.</span></a></th>
             <th scope="col">Status</th>
+            <th scope="col">Usage</th>
             <th scope="col">Enable Notifications <a href="#" title="Enable Notifications" data-toggle="popover" data-trigger="hover" data-content="When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable)."><i class="fas fa-info-circle" aria-hidden="true"></i><span class="sr-only">When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable).</span></a></th>
             <th scope="col">Actions</th>
           </tr>
@@ -108,11 +109,19 @@ Project Detail
               <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
               <td>{{ user.user.email }}</td>
               <td>{{ user.role.name }}</td>
+              
+
               {% if user.status.name == 'Active' %}
                 <td class="text-success">{{ user.status.name }}</td>
               {% else %}
                 <td class="text-info">{{ user.status.name }}</td>
               {% endif %}
+
+              <td>
+                <!-- usage information -->
+                {{UserDataUsage.usage}}
+              </td>
+
               <td>
                 {% if is_allowed_to_update_project %}
                   <input type="checkbox"
