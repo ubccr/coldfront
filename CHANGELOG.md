@@ -1,5 +1,9 @@
 # ColdFront Changelog
 
+## [Unreleased]
+
+- Fix [#235](https://github.com/ubccr/coldfront/issues/235)
+
 ## [1.0.3] - 2021-03-02
 
 - Refactor ColdFront settings. See [PR #264](https://github.com/ubccr/coldfront/pull/264)
@@ -43,3 +47,4 @@
 [1.0.1]: https://github.com/ubccr/coldfront/releases/tag/v1.0.1
 [1.0.2]: https://github.com/ubccr/coldfront/releases/tag/v1.0.2
 [1.0.3]: https://github.com/ubccr/coldfront/releases/tag/v1.0.3
+[Unreleased]: https://github.com/ubccr/coldfront/compare/v1.0.3...HEAD

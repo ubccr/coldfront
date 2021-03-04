@@ -40,6 +40,9 @@ class Command(BaseCommand):
             if options['cluster'] and options['cluster'] != attr.value:
                 continue
 
+            if not attr.resource.is_available:
+                continue
+
             cluster = SlurmCluster.new_from_resource(attr.resource)
             if not out_dir:
                 cluster.write(self.stdout)
