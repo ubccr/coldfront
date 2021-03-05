@@ -11,6 +11,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand
 from django.core.validators import validate_email
+from django.db.models import Q
 import logging
 import os
 
@@ -309,9 +310,15 @@ class Command(BaseCommand):
                 'last_name': valid_user['last_name'],
             }
 
-            user, created = User.objects.get_or_create(username=username)
-            if created:
-                self.logger.info(f'User {username} was created.')
+            users_with_username = User.objects.filter(username=username)
+            if users_with_username.exists():
+                user = users_with_username.first()
+            else:
+                user, created = User.objects.get_or_create(
+                    email=user_kwargs['email'])
+                user.username = username
+                if created:
+                    self.logger.info(f'User {username} was created.')
             for key, value in user_kwargs.items():
                 setattr(user, key, value)
             user.save()
