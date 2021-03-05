@@ -163,19 +163,26 @@ class Command(BaseCommand):
 
         active_groups = []
         for ua in user_allocations:
+            if ua.status.name != 'Active':
+                logger.info("Skipping inactive allocation to %s for user %s", ua.allocation.get_resources_as_string, user.username)
+                continue
+
+            if ua.allocation.status.name != 'Active':
+                logger.info("Skipping allocation to %s for user %s because they are not an active user", ua.allocation.get_resources_as_string, user.username)
+                continue
+
             all_resources_inactive = True
             for r in ua.allocation.resources.all():
                 if r.is_available:
                     all_resources_inactive = False
 
             if all_resources_inactive:
-                logger.warn("Skipping allocation to %s for user %s due to all resources being inactive", ua.allocation.get_resources_as_string, user.username)
+                logger.info("Skipping allocation to %s for user %s due to all resources being inactive", ua.allocation.get_resources_as_string, user.username)
                 continue
 
-            if ua.status.name == 'Active' and ua.allocation.status.name == 'Active':
-                for g in ua.allocation.get_attribute_list(UNIX_GROUP_ATTRIBUTE_NAME):
-                    if g not in active_groups:
-                        active_groups.append(g)
+            for g in ua.allocation.get_attribute_list(UNIX_GROUP_ATTRIBUTE_NAME):
+                if g not in active_groups:
+                    active_groups.append(g)
 
         removed_groups = []
         for ua in user_allocations:
