@@ -163,6 +163,15 @@ class Command(BaseCommand):
 
         active_groups = []
         for ua in user_allocations:
+            all_resources_inactive = True
+            for r in ua.allocation.resources.all():
+                if r.is_available:
+                    all_resources_inactive = False
+
+            if all_resources_inactive:
+                logger.warn("Skipping allocation to %s for user %s due to all resources being inactive", ua.allocation.get_resources_as_string, user.username)
+                continue
+
             if ua.status.name == 'Active' and ua.allocation.status.name == 'Active':
                 for g in ua.allocation.get_attribute_list(UNIX_GROUP_ATTRIBUTE_NAME):
                     if g not in active_groups:
