@@ -285,6 +285,9 @@ class AllocationUser(TimeStampedModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     status = models.ForeignKey(AllocationUserStatusChoice, on_delete=models.CASCADE,
                                verbose_name='Allocation User Status')
+    usage = models.TextField()	
+    unit = models.TextField()
+    
     history = HistoricalRecords()
 
     def __str__(self):

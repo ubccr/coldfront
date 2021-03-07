@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
+from coldfront.core.project.models import Project
 
 
 class UserProfile(models.Model):
@@ -12,6 +13,5 @@ class UserDataUsage(models.Model):
     # user = models.ForeignKey(User)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     usage = models.FloatField()
-    # project = models.CharField(Project, on_delete=models.CASCADE)
-    # project = models.OneToOneField(project) # either or;
-
+    project = models.ForeignKey(Project, on_delete=models.CASCADE,)
+    

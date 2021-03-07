@@ -97,13 +97,17 @@ Project Detail
             <th scope="col">Email</th>
             <th scope="col">Role <a href="#" data-toggle="popover" title="Role" data-trigger="hover" data-content="Manager role grants user access to add/remove users, allocations, grants, and publications to the project."><i class="fas fa-info-circle" aria-hidden="true"></i><span class="sr-only">Manager role grants user access to add/remove users, allocations, grants, and publications to the project.</span></a></th>
             <th scope="col">Status</th>
-            <th scope="col">Usage</th>
+            <!-- This is what I want to add - a usage column  -->
+            <th scope="col">Usages</th> 
             <th scope="col">Enable Notifications <a href="#" title="Enable Notifications" data-toggle="popover" data-trigger="hover" data-content="When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable)."><i class="fas fa-info-circle" aria-hidden="true"></i><span class="sr-only">When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable).</span></a></th>
             <th scope="col">Actions</th>
           </tr>
         </thead>
         <tbody>
-          {% for user in project_users %}
+          <!-- where is project_users coming from?
+          it's coming from views.py under class ProjectDetailView; rendered project_user object -->
+          project_user is giving out userid
+          {% for user in project_users %} 
             <tr>
               <td>{{ user.user.username }}</td>
               <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
@@ -119,7 +123,10 @@ Project Detail
 
               <td>
                 <!-- usage information -->
-                {{UserDataUsage.usage}}
+                <p>1</p>
+                <!-- if user's user name matches with project's user name, 
+                get that user's data usage information -->
+              {% if user.user.username == }
               </td>
 
               <td>

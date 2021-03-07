@@ -215,6 +215,8 @@ class Migration(migrations.Migration):
                 ('role', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='project.ProjectUserRoleChoice')),
                 ('status', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='project.ProjectUserStatusChoice', verbose_name='Status')),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                ('usage', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+
             ],
             options={
                 'verbose_name_plural': 'Project User Status',
