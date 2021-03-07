@@ -104,12 +104,13 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 context['is_allowed_to_update_self_notifications'] = \
                     not project_user.enable_notifications or\
                     self.object.projectuser_set.filter(~Q(user=self.request.user),
-                                                       enable_notifications=True).exists()
+                                                       enable_notifications=True,
+                                                       role__name__in=['Principal Investigator', 'Manager']).exists()
 
                 context['username'] = project_user.user.username
             else:
                 context['is_allowed_to_update_project'] = False
-                context['is_allowed_to_update_self_notifications'] = False
+                context['is_allowed_to_update_self_notifications'] = True
         else:
             context['is_allowed_to_update_project'] = False
             context['is_allowed_to_update_self_notifications'] = False
@@ -923,21 +924,24 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 only_manager = not project_obj.projectuser_set.filter(~Q(pk=project_user_pk),
                                                                       role__name='Manager').exists()
 
-                # the only manager of this project, is demoting himself
-                if old_role.name == 'Manager' and new_role.name != 'Manager' and only_manager:
-                    project_pis = project_obj.projectuser_set.filter(role__name='Principal Investigator')
+                if old_role.name == 'Manager' and only_manager:
+                    if new_role.name == 'User':
+                        project_pis = project_obj.projectuser_set.filter(role__name='Principal Investigator')
 
-                    if not project_pis.exists():
-                        # no pis exist, cannot demote
-                        new_role = old_role
-                        messages.error(request, 'The project must have at least one PI or manager with notifications enabled.')
-                    else:
-                        # update all pis to receive notifications
-                        messages.warning(request, 'User {} is no longer a manager. All PIs will now receive notifications.'\
-                                .format(project_user_obj.user.username))
-                        for pi in project_pis:
-                            pi.enable_notifications = True
-                            pi.save()
+                        if not project_pis.exists():
+                            # no pis exist, cannot demote
+                            new_role = old_role
+                            messages.error(
+                                request, 'The project must have at least one PI or manager with notifications enabled.')
+                        else:
+                            messages.warning(request, 'User {} is no longer a manager. All PIs will now receive notifications.'
+                                             .format(project_user_obj.user.username))
+                            for pi in project_pis:
+                                pi.enable_notifications = True
+                                pi.save()
+
+                    elif new_role.name == 'Principal Investigator':
+                        project_user_obj.enable_notifications = True
 
                 project_user_obj.role = new_role
                 project_user_obj.save()
