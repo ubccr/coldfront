@@ -2,6 +2,7 @@ import datetime
 
 from django import forms
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
 
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserRoleChoice)
@@ -36,7 +37,8 @@ class ProjectAddUserForm(forms.Form):
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     source = forms.CharField(max_length=16, disabled=True)
     role = forms.ModelChoiceField(
-        queryset=ProjectUserRoleChoice.objects.all(), empty_label=None)
+        queryset=ProjectUserRoleChoice.objects.all().filter(~Q(name='Principal Investigator')),
+        empty_label=None)
     selected = forms.BooleanField(initial=False, required=False)
 
 
@@ -71,7 +73,8 @@ class ProjectRemoveUserForm(forms.Form):
 
 class ProjectUserUpdateForm(forms.Form):
     role = forms.ModelChoiceField(
-        queryset=ProjectUserRoleChoice.objects.all(), empty_label=None)
+        queryset=ProjectUserRoleChoice.objects.all().filter(~Q(name='Principal Investigator')),
+        empty_label=None)
     enable_notifications = forms.BooleanField(initial=False, required=False)
 
 
