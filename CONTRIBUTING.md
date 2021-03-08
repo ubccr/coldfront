@@ -6,9 +6,10 @@ allowing a merge to production.
 
 Branching
 In order to create a new branch, run:
-$ cd /path/to/coldfront
-$ git fetch origin
-$ git checkout -b $initials_$purpose origin/master
+
+    $ cd /path/to/coldfront
+    $ git fetch origin
+    $ git checkout -b $initials_$purpose origin/master
 Now you can make and commit changes to the puppet codebase in your branch.
 
 Branch Naming
@@ -22,14 +23,14 @@ $purpose: the rest of your branch name, ideally related to what you intend to do
 If this happens, simply rename your
 branch and push again. For example, if you pushed branch my-new-branch you can
 rename the branch using:
-$ git checkout -b my_new_branch my-new-branch
+    $ git checkout -b my_new_branch my-new-branch
 Dont forget to clean up the branch with the invalid branch name! See the
 Cleaning up section below for detailed instructions on deleting
 branches.
 
 Pushing and deploying
 When you're ready to test your changes, simply push them to the upstream repo:
-$ git push origin example_branch
+    $ git push origin example_branch
 
 This will kick off an asynchronous gitlab pipeline which runs a number of
 validation checks on your branch. Assuming those checks pass, your branch will
