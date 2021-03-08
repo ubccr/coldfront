@@ -20,6 +20,10 @@ $initials: this is a consistent set of initials to map to you for alerting purpo
 
 $purpose: the rest of your branch name, ideally related to what you intend to do
 
+    $ git add <changed files or .> 
+    $ git commit -m 'message'
+    
+
 If this happens, simply rename your
 branch and push again. For example, if you pushed branch my-new-branch you can
 rename the branch using:
