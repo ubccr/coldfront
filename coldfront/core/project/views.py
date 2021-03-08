@@ -93,15 +93,27 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         # Can the user update the project?
         if self.request.user.is_superuser:
             context['is_allowed_to_update_project'] = True
+            context['is_allowed_to_update_self_notifications'] = True
         elif self.object.projectuser_set.filter(user=self.request.user).exists():
-            project_user = self.object.projectuser_set.get(
-                user=self.request.user)
+            project_user = self.object.projectuser_set.get(user=self.request.user)
             if project_user.role.name in ('Principal Investigator', 'Manager'):
                 context['is_allowed_to_update_project'] = True
+
+                # Can disable self-notifications iff atleast one other PI / Manager
+                # has active notifications
+                context['is_allowed_to_update_self_notifications'] = \
+                    not project_user.enable_notifications or\
+                    self.object.projectuser_set.filter(~Q(user=self.request.user),
+                                                       enable_notifications=True,
+                                                       role__name__in=['Principal Investigator', 'Manager']).exists()
+
+                context['username'] = project_user.user.username
             else:
                 context['is_allowed_to_update_project'] = False
+                context['is_allowed_to_update_self_notifications'] = True
         else:
             context['is_allowed_to_update_project'] = False
+            context['is_allowed_to_update_self_notifications'] = False
 
         # Only show 'Active Users'
         project_users = self.object.projectuser_set.filter(
@@ -133,10 +145,8 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['num_join_requests'] = self.object.projectuser_set.filter(
             status__name='Pending - Add').count()
 
-        # context['publications'] = Publication.objects.filter(
-            # project=self.object, status='Active').order_by('-year')
-        # context['research_outputs'] = ResearchOutput.objects.filter(
-            # project=self.object).order_by('-created')
+        # context['publications'] = Publication.objects.filter(project=self.object, status='Active').order_by('-year')
+        # context['research_outputs'] = ResearchOutput.objects.filter(project=self.object).order_by('-created')
         # context['grants'] = Grant.objects.filter(project=self.object, status__name__in=['Active', 'Pending'])
         context['allocations'] = allocations
         context['project_users'] = project_users
@@ -893,6 +903,7 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             context['project_obj'] = project_obj
             context['project_user_update_form'] = project_user_update_form
             context['project_user_obj'] = project_user_obj
+            context['project_user_is_manager'] = project_user_obj.role.name == 'Manager'
 
             return render(request, self.template_name, context)
 
@@ -918,15 +929,37 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
             project_user_update_form = ProjectUserUpdateForm(request.POST,
                                                              initial={'role': project_user_obj.role.name,
-                                                                      'enable_notifications': project_user_obj.enable_notifications}
-                                                             )
+                                                                      'enable_notifications': project_user_obj.enable_notifications})
 
             if project_user_update_form.is_valid():
                 form_data = project_user_update_form.cleaned_data
-                project_user_obj.enable_notifications = form_data.get(
-                    'enable_notifications')
-                project_user_obj.role = ProjectUserRoleChoice.objects.get(
-                    name=form_data.get('role'))
+                project_user_obj.enable_notifications = form_data.get('enable_notifications')
+
+                old_role = project_user_obj.role
+                new_role = ProjectUserRoleChoice.objects.get(name=form_data.get('role'))
+                only_manager = not project_obj.projectuser_set.filter(~Q(pk=project_user_pk),
+                                                                      role__name='Manager').exists()
+
+                if old_role.name == 'Manager' and only_manager:
+                    if new_role.name == 'User':
+                        project_pis = project_obj.projectuser_set.filter(role__name='Principal Investigator')
+
+                        if not project_pis.exists():
+                            # no pis exist, cannot demote
+                            new_role = old_role
+                            messages.error(
+                                request, 'The project must have at least one PI or manager with notifications enabled.')
+                        else:
+                            messages.warning(request, 'User {} is no longer a manager. All PIs will now receive notifications.'
+                                             .format(project_user_obj.user.username))
+                            for pi in project_pis:
+                                pi.enable_notifications = True
+                                pi.save()
+
+                    elif new_role.name == 'Principal Investigator':
+                        project_user_obj.enable_notifications = True
+
+                project_user_obj.role = new_role
                 project_user_obj.save()
 
                 messages.success(request, 'User details updated.')
