@@ -13,14 +13,14 @@ from coldfront.core.project.models import (Project, ProjectStatusChoice,
                                             ProjectUser, ProjectUserRoleChoice,
                                             ProjectUserStatusChoice)
 
-
+from coldfront.core.allocation.models import AllocationUser
 
 base_dir = settings.BASE_DIR
 
-for user in User.objects.all():
-    user.set_password('test1234')
-    #print(user.username)
-    user.save()
+# for user in User.objects.all():
+#     user.set_password('test1234')
+#     #print(user.username)
+#     user.save()
 
 class Command(BaseCommand):
 
@@ -38,7 +38,18 @@ class Command(BaseCommand):
             for row in csv_reader:
                 try:
                     username = row[0]
+                    user_usage = row[6]
                     user = User.objects.get(username=username)
+                    print("line43",user.username)
+                    # AllocationUser.objects.get()
+                    a = AllocationUser.objects.get(user = user)
+                    a.save()
+                    print(a.usage)
+                    a.usage = "111"
+                    print(a.usage)
+                    print("line 47 testing", a.usage, a.u)
+                    print("line42", username, "has usage", user_usage)
+
                     print(username, "already exist, don't add to database")
                     # if the user exists, I only need to append this existing user's group
                     if not user.groups.filter(name = lab_name).exists():
@@ -54,6 +65,8 @@ class Command(BaseCommand):
                     full_name = row[1] 
                     full_name_list = full_name.split()
                     first_name = full_name_list[0]
+                    user_usage = row[6]
+                    print("line58", username, "has usage", user_usage)
                     if (len(full_name_list) > 1):
                         last_name = full_name_list[1]
                         # print("2,",last_name)
