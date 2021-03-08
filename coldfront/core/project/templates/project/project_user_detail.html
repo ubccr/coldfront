@@ -1,4 +1,4 @@
-{% extends "common/base.html" %} 
+{% extends "common/base.html" %}
 {% load crispy_forms_tags %}
 {% load static %}
 
@@ -55,14 +55,21 @@ Project User Detail
             <th scope="row">Role:</th>
             <td>{{project_user_update_form.role}}</td>
           </tr>
-          <tr>
-            <th scope="row">Enable Notifications:</th>
-            <td>{{project_user_update_form.enable_notifications}}</td>
-          </tr>
+          {% if project_user_is_manager %}
+              <tr>
+                <th scope="row">Notifications Enabled:</th>
+                <td>{{project_user_obj.enable_notifications|yesno:"Yes,No"}}</td>
+              </tr>
+          {% else %}
+              <tr>
+                <th scope="row">Enable Notifications:</th>
+                <td>{{project_user_update_form.enable_notifications}}</td>
+              </tr>
+          {% endif %}
         {% endif %}
       </table>
     </div>
-  </div> 
+  </div>
   <div class="card-footer">
     {% if project_user_obj.user not in project_user_obj.project.pis %}
       <button type="submit" class="btn btn-primary">Update</button>
