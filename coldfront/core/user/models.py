@@ -8,10 +8,9 @@ class UserProfile(models.Model):
     is_pi = models.BooleanField(default=False)
     
 
-
 class UserDataUsage(models.Model):
     # user = models.ForeignKey(User)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     usage = models.FloatField()
     project = models.ForeignKey(Project, on_delete=models.CASCADE,)
-    
+

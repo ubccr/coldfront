@@ -279,15 +279,15 @@ class AllocationUserStatusChoice(TimeStampedModel):
         ordering = ['name', ]
 
 
-class AllocationUser(TimeStampedModel):
+class AllocationUser(TimeStampedModel): #allocation user and user are both database models; one provided by django one is a custom one;
     """ AllocationUser. """
-    allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
+    allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE) 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     status = models.ForeignKey(AllocationUserStatusChoice, on_delete=models.CASCADE,
                                verbose_name='Allocation User Status')
-    usage = models.TextField()	
-    unit = models.TextField()
-    
+    usage = models.TextField(max_length = 220, null=True, default = None)
+    unit = models.TextField(max_length = 220, null=True, default = None)
+    # unit = models.TextField()
     history = HistoricalRecords()
 
     def __str__(self):

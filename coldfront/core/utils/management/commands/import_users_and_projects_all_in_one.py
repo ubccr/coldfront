@@ -36,7 +36,16 @@ class Command(BaseCommand):
             for row in csv_reader:
                 try:
                     username = row[0]
-                    user = User.objects.get(username=username)
+                    usage = 666
+                    user = User.objects.get(username=username) #user is an instance of my user object
+
+                    # draft
+                    # I have a user object that's linked to my allocationuser object;
+                    # how do i lookup user.username 
+                    # then get the instance from my allocationuser table; 
+                    # go through foreign key examples
+                    # allocation_user = AllocationUser.get()
+
                     print(username, "already exist, don't add to database")
                     # if the user exists, I only need to append this existing user's group
                     if not user.groups.filter(name = lab_name).exists():
