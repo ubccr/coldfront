@@ -25,10 +25,6 @@ class Command(BaseCommand):
         pi_name = input("Please type pi username:")
         file_name = lab_name + '.csv'
         file_path = os.path.join(base_dir, 'local_data', file_name)
-        #question begin: why are we deleting all projects
-        # Project.objects.all().delete()
-        # ProjectUser.objects.all().delete()
-        #question end: why are we deleting all projects
 
         project_status_choices = {}
         project_status_choices['Active'] = ProjectStatusChoice.objects.get(name='Active')
@@ -60,15 +56,12 @@ class Command(BaseCommand):
             for row in csv_reader:
                 user = row[0]
                 if (row[3] == 'FACULTY'):
-                    pi_potential_name = row[3] #need to fix this line because might contain bugs
+                    pi_potential_name = row[3] 
                     user_info = user_info + user + ',PI' + ',PI' + ',ACT;'
 
-                    #print("if statement,", user_info)
                 else:
                     user_info = user_info + user + ',U' + ',U' + ',ACT;'
-                    #print("else statement,", user_info)
-            print("line64",user_info)
-
+                  
         
         with open (file_path, 'r') as read_obj:
             csv_reader = reader(read_obj) # opt out the first line
@@ -78,8 +71,8 @@ class Command(BaseCommand):
             modified = "2021-03-01 10:00:00" # feeding dummy data for now
             title = lab_name
             pi_username = lab_name.split("_")
-            pi_username = pi_username[0] # put in my username for now
-            pi_username = pi_potential_name #this line contains bugs
+            pi_username = pi_username[0] # put in username 
+            pi_username = pi_potential_name 
             pi_username = pi_name
             description = "could I have 1 TB of data, please?"
             field_of_science = "Other"
@@ -90,14 +83,7 @@ class Command(BaseCommand):
             modified = datetime.datetime.strptime(modified.split('.')[0], '%Y-%m-%d %H:%M:%S')
             
             pi_user_obj = User.objects.get(username=pi_username)
-            
-            # try:
-            #     pi_user_obj = User.objects.get(username=pi_username)
-                
-            # except ObjectDoesNotExist:
-            #     print("couldn't make the project because user does not exist yet. You need to add user first then add project.")
-            #     continue
-                
+             
             pi_user_obj.is_pi = True
             pi_user_obj.save()
 
@@ -133,7 +119,7 @@ class Command(BaseCommand):
                     status=project_user_status_choices[project_user_status],
                     enable_notifications=enable_email
                 )
-            # #when import a project, we can import the user to project as well 
+            # when import a project, we can import the user to project as well 
             if not project_obj.projectuser_set.filter(user=pi_user_obj).exists():
                 project_user_obj = ProjectUser.objects.create(
                     user=pi_user_obj,
@@ -147,7 +133,7 @@ class Command(BaseCommand):
                 project_user_obj.status=project_user_status_choices['ACT']
                 project_user_obj.save()
 
-                # print(project_obj)
+               
 
         print('Finished adding projects')
        

@@ -15,20 +15,15 @@ from coldfront.core.project.models import (Project, ProjectStatusChoice,
 
 base_dir = settings.BASE_DIR
 
-for user in User.objects.all():
-    user.set_password('test1234')
-    #print(user.username)
-    user.save()
 
 class Command(BaseCommand):
 
     def handle(self, *args, **options):
         print('Adding users now ...')
-        # read 'kuang_lab.csv' file
         lab_name = 'kovac_lab'
         file_name = lab_name + '.csv'
         file_path = os.path.join(base_dir, 'local_data', file_name)
-        print("line 13:",file_path)
+        
         # open file in read mode
         with open (file_path, 'r') as read_obj:
             csv_reader = reader(read_obj) # opt out the first line
@@ -39,21 +34,14 @@ class Command(BaseCommand):
                     usage = 666
                     user = User.objects.get(username=username) #user is an instance of my user object
 
-                    # draft
-                    # I have a user object that's linked to my allocationuser object;
-                    # how do i lookup user.username 
-                    # then get the instance from my allocationuser table; 
-                    # go through foreign key examples
-                    # allocation_user = AllocationUser.get()
-
                     print(username, "already exist, don't add to database")
-                    # if the user exists, I only need to append this existing user's group
+                    # if the user exists, only need to append this existing user's group
                     if not user.groups.filter(name = lab_name).exists():
                         my_group = Group.objects.get(name=lab_name)
                         my_group.user_set.add(user)
                         print ("not exist in kovac_lab")
                     continue
-                # the type of row is 
+               
                 except ObjectDoesNotExist:
                     print(type(row))
                     print("suppose to be userID:",row[0])
@@ -63,10 +51,10 @@ class Command(BaseCommand):
                     first_name = full_name_list[0]
                     if (len(full_name_list) > 1):
                         last_name = full_name_list[1]
-                        print("2,",last_name)
+                     
                     else:
                         last_name = "N/A"
-                        print("1,",last_name)
+             
                         
                     email = row[2] 
                     is_active = True

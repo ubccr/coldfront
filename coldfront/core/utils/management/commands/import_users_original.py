@@ -16,21 +16,15 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         print('Adding users now ...')
         file_path = os.path.join(base_dir, 'local_data', 'users.tsv')
-        print("line 13:",file_path)
+        print("file path is:",file_path)
 
-        # Question begin : why do we delete existing users when we import users?
-        # User.objects.all().delete()
-        # Group.objects.all().delete()
-        # Question end : why do we delete existing users when we import users?
-
+    
         with open(file_path, 'r') as fp:
             for line in fp:
                 if line.startswith('#'):
                     continue
                 username, first_name, last_name, email, is_active, is_staff, is_superuser, *groups = line.strip().split('#')
-                print("line30", username, first_name, last_name, email, is_active, is_staff, is_superuser, *groups)
-                print("line31",groups)
-                print("line32",type(*groups))
+            
                 if groups:
                     print("found", groups)
                     groups = groups[0]
@@ -39,24 +33,21 @@ class Command(BaseCommand):
                     print("did not found groups")
                     groups = ''
 
-                 # duplicated user # duplicated user
+                 # duplicated user 
                 try:
                     user = User.objects.get(username=username)
                     print(username, "already exist")
                     print(username, first_name, last_name, email, is_active, is_staff, is_superuser, groups)
-                    # things to do.
-                    # if user exist, get the user's' group_obj.get the group, then 
-                    # group_objs.append(group_obj)
-                    
+                  
                     continue
-                    # do we want to update groups as well? 
+                 
                 except ObjectDoesNotExist:
-                    print("create new")
+                    print("adding new object")
                     print(username, first_name, last_name, email, is_active, is_staff, is_superuser, groups)
                     
                 
                 group_objs = []
-                print("line53")
+            
                 for group in groups.split(','):
                     group_obj, _ = Group.objects.get_or_create(name=group.strip())
                     group_objs.append(group_obj)
@@ -70,7 +61,7 @@ class Command(BaseCommand):
                     is_staff=is_staff,
                     is_superuser=is_superuser,
                 )
-                print("line67")
+        
                 print(group_objs)
 
                 

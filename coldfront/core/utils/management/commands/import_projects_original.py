@@ -5,13 +5,10 @@ from django.conf import settings
 from django.contrib.auth.models import Group, User
 from django.core.management.base import BaseCommand
 
-from csv import reader
-
 from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.project.models import (Project, ProjectStatusChoice,
                                             ProjectUser, ProjectUserRoleChoice,
                                             ProjectUserStatusChoice)
-from coldfront.core.user.models import (UserProfile)
 
 base_dir = settings.BASE_DIR
 
@@ -20,15 +17,12 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         print('Adding projects ...')
-        delimiter = ','
-        lab_name = input("Please type lab name: ")
-        file_name = lab_name + '.csv'
-        file_path = os.path.join(base_dir, 'local_data', file_name)
-        #question begin: why are we deleting all projects
-        # Project.objects.all().delete()
-        # ProjectUser.objects.all().delete()
-        #question end: why are we deleting all projects
-
+        delimiter = '\t'
+        file_path = os.path.join(base_dir, 'local_data', 'project_and_associated_users.tsv')
+      
+        Project.objects.all().delete()
+        ProjectUser.objects.all().delete()
+     
         project_status_choices = {}
         project_status_choices['Active'] = ProjectStatusChoice.objects.get(name='Active')
         project_status_choices['Archived'] = ProjectStatusChoice.objects.get(name='Archived')
@@ -51,39 +45,20 @@ class Command(BaseCommand):
         for choice in ['Active', 'Pending Remove', 'Denied', 'Removed', ]:
             ProjectUserStatusChoice.objects.get_or_create(name=choice)
 
-        user_info = ""
-        with open (file_path, 'r') as read_obj:
-            csv_reader = reader(read_obj) # opt out the first line
-            first_line = read_obj.readline()  # skip firstline
-            for row in csv_reader:
-                user = row[0]
-                if (row[3] == 'FACULTY'):
-                    user_info = user_info + user + ',PI' + ',PI' + ',ACT;'
-                    #print("if statement,", user_info)
-                else:
-                    user_info = user_info + user + ',U' + ',U' + ',ACT;'
-                    #print("else statement,", user_info)
-            print("line64",user_info)
-
-        
-        with open (file_path, 'r') as read_obj:
-            csv_reader = reader(read_obj) # opt out the first line
-            first_line = read_obj.readline()  
-            # for row in csv_reader:
-                #print(row)
-                #print(row[0]) # print userID, such as: pchan, kuang etc
-                created = "2021-02-01 10:00:00" # feeding dummy data for now
-                modified = "2021-03-01 10:00:00" # feeding dummy data for now
-                title = lab_name
-                pi_username = lab_name # put in my username for now
-                description = "could I have 1 TB of data, please?"
-                field_of_science = "Other"
-                project_status = "New"
-                #user_info = row[0] + ",PI,PI,ACT"
-
-                created = datetime.datetime.strptime(created.split('.')[0], '%Y-%m-%d %H:%M:%S')
-                modified = datetime.datetime.strptime(modified.split('.')[0], '%Y-%m-%d %H:%M:%S')
+        with open(file_path, 'r') as fp:
+     
+            for line in fp:
+                line = line.strip()
+                if not line:
+                    continue
+                if line.startswith('#'):
+                    continue
+                # read description separated by space
+                created, modified, title, pi_username, description, field_of_science, project_status, user_info = line.split(delimiter)
                
+                created = datetime.datetime.strptime(created.split('.')[0], '%Y-%m-%d %H:%M:%S')
+              
+                modified = datetime.datetime.strptime(modified.split('.')[0], '%Y-%m-%d %H:%M:%S')
                 pi_user_obj = User.objects.get(username=pi_username)
                 
                 try:
@@ -120,6 +95,7 @@ class Command(BaseCommand):
                     
                     except ObjectDoesNotExist:
                         print("couldn't add user", username)
+                    
                         continue
                     
                     project_user_obj = ProjectUser.objects.create(
@@ -129,7 +105,7 @@ class Command(BaseCommand):
                         status=project_user_status_choices[project_user_status],
                         enable_notifications=enable_email
                     )
-                # #when import a project, we can import the user to project as well 
+                #when import a project, we can import the user to project as well 
                 if not project_obj.projectuser_set.filter(user=pi_user_obj).exists():
                     project_user_obj = ProjectUser.objects.create(
                         user=pi_user_obj,
@@ -143,7 +119,6 @@ class Command(BaseCommand):
                     project_user_obj.status=project_user_status_choices['ACT']
                     project_user_obj.save()
 
-                    # print(project_obj)
+               
 
         print('Finished adding projects')
-       
