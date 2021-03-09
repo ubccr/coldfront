@@ -285,9 +285,8 @@ class AllocationUser(TimeStampedModel): #allocation user and user are both datab
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     status = models.ForeignKey(AllocationUserStatusChoice, on_delete=models.CASCADE,
                                verbose_name='Allocation User Status')
-    usage = models.TextField(max_length = 220, null=True, default = None)
-    unit = models.TextField(max_length = 220, null=True, default = None)
-    # unit = models.TextField()
+    usage = models.FloatField()
+    unit = models.FloatField()
     history = HistoricalRecords()
 
     def __str__(self):
