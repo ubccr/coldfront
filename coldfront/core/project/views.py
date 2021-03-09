@@ -129,9 +129,8 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             project=self.object, status__name__in=['Active', 'Pending'])
         context['allocations'] = allocations
         context['project_users'] = project_users # context dictionary; key is project_users; project_users is a variable name
-        print("this is line 132 on view.py")
-        print(type(project_users))
-        print(type(project_users[0]))
+        # print(type(project_users))
+        # print(type(project_users[0]))
        
 
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
