@@ -15,8 +15,6 @@ class Iquota:
         self.IQUOTA_API_HOST = import_from_settings('IQUOTA_API_HOST')
         self.IQUOTA_API_PORT = import_from_settings('IQUOTA_API_PORT')
         self.IQUOTA_CA_CERT = import_from_settings('IQUOTA_CA_CERT')
-        self.IQUOTA_USER_PATH = import_from_settings('IQUOTA_USER_PATH')
-        self.IQUOTA_GROUP_PATH = import_from_settings('IQUOTA_GROUP_PATH')
         self.IQUOTA_KEYTAB = import_from_settings('IQUOTA_KEYTAB')
         self.username = username
         self.groups = groups

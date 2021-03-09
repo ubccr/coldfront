@@ -1,3 +1,0 @@
-# Projects
-
-!!! info "Coming soon"

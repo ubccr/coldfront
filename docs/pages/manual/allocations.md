@@ -1,3 +1,0 @@
-# Allocations
-
-!!! info "Coming soon"

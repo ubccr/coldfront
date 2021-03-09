@@ -1,8 +1,8 @@
 site_name: ColdFront
 docs_dir: 'pages'
-site_description: 'HPC Resource Allocation System'
-site_url: 'https://github.com/ubccr/coldfront'
-copyright: 'Copyright &copy; 2019 Center for Computational Research, University at Buffalo'
+site_description: 'HPC Resource Allocation Management System'
+site_url: 'https://coldfront.readthedocs.io'
+copyright: 'Copyright &copy; 2021 Center for Computational Research, University at Buffalo'
 repo_name: 'ubccr/coldfront'
 repo_url: 'https://github.com/ubccr/coldfront'
 edit_uri: ''
@@ -12,15 +12,23 @@ theme:
   logo: 'images/logo.png'
   favicon: 'images/favicon.png'
   palette:
-    primary: 'blue'
+        primary: 'blue'
+
+  features:
+    - toc.integrate
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.indexes
+
+plugins: 
+  - search
+  - awesome-pages
 
 markdown_extensions:
   - footnotes
   - admonition
   - codehilite:
       guess_lang: false
-  - toc:
-      permalink: true
   - pymdownx.arithmatex
   - pymdownx.caret
   - pymdownx.critic
@@ -31,14 +39,3 @@ markdown_extensions:
   - pymdownx.smartsymbols
   - pymdownx.superfences
   - pymdownx.tilde
-
-nav:
-    - What is ColdFront?: index.md
-    - Introduction: intro.md
-    - Quick Start: quickstart.md
-    - Plugins: plugin.md
-    - User Manual:
-        - Resources: manual/resources.md
-        - Projects: manual/projects.md
-        - Allocations: manual/allocations.md
-        - Users: manual/users.md

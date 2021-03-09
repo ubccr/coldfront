@@ -62,7 +62,7 @@ class ProjectUserAdmin(SimpleHistoryAdmin):
             # We are adding an object
             return super().get_inline_instances(request)
         else:
-            return [inline(self.model, self.admin_site) for inline in self.inlines_change]
+            return [inline(self.model, self.admin_site) for inline in self.inlines]
 
 
 class ProjectUserInline(admin.TabularInline):

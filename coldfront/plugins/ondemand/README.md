@@ -10,12 +10,10 @@ This plugin allows for resources in ColdFront to be "OnDemand enabled" so users 
 
 ## Usage
 
-To enable this plugin add or uncomment the following in your local\_settings.py
-file and update with your center's OnDemand URL:
+To enable this plugin set the following environment variable:
 
 ```
-vi coldfront/config/local_settings.py
-ONDEMAND_URL = "https://ondemand.example.com"
+ONDEMAND_URL="https://ondemand.example.com"
 ```
 To configure a resource as "OnDemand enabled" add the OnDemand attribute to the resource in the ColdFront admin interface as shown here using the sample data:  
 Resource=cluster  

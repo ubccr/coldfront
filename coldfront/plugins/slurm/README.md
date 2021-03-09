@@ -33,15 +33,11 @@ specifications on an individual user basis is not currently supported.
 
 ## Usage
 
-To enable this plugin add or uncomment the following in your local\_settings.py
-file:
+To enable this plugin set the following environment variables:
 
 ```
-    EXTRA_APPS += [
-        'coldfront.plugins.slurm',
-    ]
-    SLURM_NOOP = False
-    SLURM_SACCTMGR_PATH = '/usr/bin/sacctmgr' 
+PLUGIN_SLURM=True
+SLURM_SACCTMGR_PATH='/usr/bin/sacctmgr' 
 ```
 
 To generate Slurm association data from ColdFront run the following command:

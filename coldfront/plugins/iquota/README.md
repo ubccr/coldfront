@@ -16,18 +16,12 @@ to authenticate to the API and a valid keytab file is required.
 
 ## Usage
 
-To enable this plugin add or uncomment the following in your local\_settings.py
-file:
+To enable this plugin set the following environment variables:
 
 ```
-    EXTRA_APPS += [
-        'coldfront.plugins.iquota'
-    ]
-
-    IQUOTA_KEYTAB = '/path/to/user.keytab'
-    IQUOTA_CA_CERT = '/etc/ipa/ca.crt'
-    IQUOTA_API_HOST = 'localhost'
-    IQUOTA_API_PORT = '8080'
-    IQUOTA_USER_PATH = '/nfs/user'
-    IQUOTA_GROUP_PATH = '/nfs/projects'
+PLUGIN_IQUOTA=True
+IQUOTA_KEYTAB='/path/to/user.keytab'
+IQUOTA_CA_CERT='/etc/ipa/ca.crt'
+IQUOTA_API_HOST='localhost'
+IQUOTA_API_PORT='8080'
 ```

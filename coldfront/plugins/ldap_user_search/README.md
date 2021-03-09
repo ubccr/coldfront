@@ -21,9 +21,8 @@ in local\_settings.py.
 
 ## Usage
 
-To enable this plugin add or uncomment the following in your
-local\_settings.py file:
+To enable this plugin add the following in your `local_settings.py` file:
 
 ```
-    ADDITIONAL_USER_SEARCH_CLASSES = ['coldfront.plugins.ldap_user_search.utils.LDAPUserSearch',]
+ADDITIONAL_USER_SEARCH_CLASSES = ['coldfront.plugins.ldap_user_search.utils.LDAPUserSearch',]
 ```
