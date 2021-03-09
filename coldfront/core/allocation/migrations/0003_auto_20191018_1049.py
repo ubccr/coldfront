@@ -20,10 +20,5 @@ class Migration(migrations.Migration):
             name='is_locked',
             field=models.BooleanField(default=False),
         ),
-        # adding a field called allocationUserStorage
-        # migrations.AddField(
-        #     model_name='allocationUserStorage',
-        #     name='is_locked',
-        #     field=models.BooleanField(default=False),
-        # ),
+
     ]
