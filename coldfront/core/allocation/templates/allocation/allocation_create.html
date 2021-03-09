@@ -19,6 +19,38 @@ Request New Allocation
   resource. For each request you must provide the justification for how you
   intend to use the resource to further the research goals of your project.</p>
 
+<p class="text-justify">Tier 0:  Bulk - Lustre </p>
+<ul>
+  <li>Features: High-performance, single copy, network attached to cluster via (Lustre/NFS), quota (files + size), Starfish data management web access, Globus transfer access.</li>
+  <li>Mount point(s): <i>Other (varies)</i></li>
+  <li>Quota: 1-1024 TB</li>
+  <li>Cost: $50/TB/yr (excluding scratch)
+  </li>
+</ul>  
+
+<p class="text-justify">Tier 1: Enterprise - Isilon</p>
+<ul>
+  <li>Features:  Tiered performance, snapshot, DR copy, network attached to cluster (NFS), quota, SMB, Superna Eyeglass data management web access, Globus transfer access.</li>
+  <li>Mount point: <i>/n/pi_lab</i></li>
+  <li>Quota: 1-1024 TB</li>
+  <li>Cost: $250/TB/yr </li>
+</ul>  
+
+<p class="text-justify">Tier 2: Lab Share - Ceph </p>
+<ul>
+  <li>Features: Regular performance, object store, DR copy, network attached to cluster (NFS), SMB, encrypted at rest.</li>
+  <li>Mount point: <i>/n/pi_lab</i> </li>
+  <li>Quota: 1-1024 TB</li>
+  <li>Cost: $100/TB/yr </li>
+</ul>  
+
+<p class="text-justify">Tier 3: Attic Storage - Tape </p>
+<ul>
+  <li>Features: Low performance, S3 object store access, single copy, network attached to data transfer nodes, Globus transfer access.</li>
+  <li>Availability July 2021</li>
+  <li>Cost: estimate $8/TB/yr</li>
+</ul>  
+
 <form method="post">
   {% csrf_token %}
   {{form |crispy}}
