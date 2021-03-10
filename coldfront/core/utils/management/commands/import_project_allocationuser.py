@@ -38,18 +38,19 @@ class Command(BaseCommand):
                     user = User.objects.get(username=username)
                     print("line37.9", user.username)
                     # a = AllocationUser()
-                    AllocationUser.objects.create()
-                    a = AllocationUser.objects.get(usage = 1)
-                    print("line41",a.user)
-                    a_draft = AllocationUser.objects.filter(allocation=1)
-                    print("line38.1", a_draft.user.username)
-                    print("line38 my username is", username)
-                    a_draft = AllocationUser.objects.get(username=username)
-                    # AllocationUser.objects.get()
-                    # a = AllocationUser.objects.get(user = user)
-                    a_draft.save()
-                    print("line45",a_draft.user.usage)
+                    allocation_draft = AllocationUser.objects.create(
+                        allocation = allocation,
+                        user = user,
+                        status = status,
+                        usage = usage,
+                        unit = unit,
+                        history = history
 
+
+                    )
+
+                    allocation_draft.save()
+                    
                   
                     print(username, "already exist, don't add to database")
                     # if the user exists, I only need to append this existing user's group
