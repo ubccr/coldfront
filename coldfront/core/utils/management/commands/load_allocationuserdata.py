@@ -26,58 +26,6 @@ from coldfront.core.user.models import UserProfile
 
 base_dir = settings.BASE_DIR
 
-# first, last
-Users = ['Carl	Gray',  # PI#1
-         'Stephanie	Foster',  # PI#2
-         'Charles	Simmons',  # Director
-         'Andrea	Stewart',
-         'Alice	Rivera',
-         'Frank	Hernandez',
-         'Justin	James',
-         'Randy	Perry',
-         'Carol	Lee',
-         'Susan	Hughes',
-         'Jose	Martin',
-         'Joe	Roberts',
-         'Howard	Nelson',
-         'Patricia	Moore',
-         'Jessica	Alexander',
-         'Jesse	Russell',
-         'Shirley	Price',
-         'Julie	Phillips',
-         'Kathy	Jenkins',
-         'James	Hill',
-         'Tammy	Howard',
-         'Lisa	Coleman',
-         'Denise	Adams',
-         'Shawn	Williams',
-         'Ernest	Reed',
-         'Larry	Ramirez',
-         'Kathleen	Garcia',
-         'Jennifer	Jones',
-         'Irene	Anderson',
-         'Beverly	Mitchell',
-         'Peter	Patterson',
-         'Eugene	Griffin',
-         'Jimmy	Lewis',
-         'Margaret	Turner',
-         'Julia	Peterson',
-         'Amanda	Johnson',
-         'Christina	Morris',
-         'Cynthia	Carter',
-         'Wayne	Murphy',
-         'Ronald	Sanders',
-         'Lillian	Bell',
-         'Harold	Lopez',
-         'Roger	Wilson',
-         'Jane	Edwards',
-         'Billy	Perez',
-         'Jane	Butler',
-         'John	Smith',
-         'John	Long',
-         'Jane	Martinez',
-         'John	Cooper', ]
-
 
 dois = [
     '10.1016/j.nuclphysb.2014.08.011',

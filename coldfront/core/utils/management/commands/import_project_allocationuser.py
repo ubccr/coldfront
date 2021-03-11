@@ -45,8 +45,6 @@ class Command(BaseCommand):
                         usage = usage,
                         unit = unit,
                         history = history
-
-
                     )
 
                     allocation_draft.save()

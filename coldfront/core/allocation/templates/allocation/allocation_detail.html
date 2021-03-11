@@ -200,7 +200,9 @@ Allocation Detail
         <a class="btn btn-danger" href="{% url 'allocation-remove-users' allocation.pk %}" role="button">
           <i class="fas fa-user-times" aria-hidden="true"></i> Remove Users
         </a>
-      {% endif %}
+      {% endif %}Users in Allocation
+
+  
     </div>
   </div>
   <div class="card-body">
@@ -222,7 +224,7 @@ Allocation Detail
               <td>{{ user.user.username }}</td>
               <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
               <td>{{ user.user.email }}</td>
-              <td>{{ user.usage }}{{ user.unit }}</td>
+              <td>{{ user.usage_bytes }}{{ user.unit }}</td>
 
               {% if user.status.name == 'Active' %}
                 <td class="text-success">{{ user.status.name }}</td>
