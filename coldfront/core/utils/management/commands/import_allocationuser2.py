@@ -27,6 +27,22 @@ from coldfront.core.user.models import UserProfile
 
 base_dir = settings.BASE_DIR
 
+def splitString(str): 
+  
+    alpha = "" 
+    num = "" 
+    special = "" 
+    for i in range(len(str)): 
+        if (str[i].isdigit()): 
+            num = num+ str[i] 
+        elif((str[i] >= 'A' and str[i] <= 'Z') or
+             (str[i] >= 'a' and str[i] <= 'z')): 
+            alpha += str[i] 
+        else: 
+            num += str[i] 
+  
+    return(num, alpha)
+
 class Command(BaseCommand):
 
     def handle(self, *args, **options):
@@ -51,9 +67,10 @@ class Command(BaseCommand):
         )
         # don't create a new project (if project exist, don't create new project); otherwise, create one;
         # check get_or_create function; just do Project.objects.get();
-        lab_name = "holman_lab" # lab name: giribet_lab, kovac_lab etc
+        # lab_name = "holman_lab" # lab name: giribet_lab, kovac_lab etc
+        lab_name = input("lab name is:")
         file_name = lab_name + '.json'
-        file_name = "holman_lab.json"
+        # file_name = "holman_lab.json"
         file_path = os.path.join(base_dir, 'local_data', file_name)
         print("this is my file path", file_path)
 
@@ -108,6 +125,9 @@ class Command(BaseCommand):
             print(type(data[0]))
             print(data[0]['user'])
             print("line99")
+            print("line111")
+            print(data[0]['usage'])
+            print(type(data[0]['usage']))
             
             for user_lst in data: #user_lst is lst
                 print(user_lst) # this is a lst
@@ -117,6 +137,8 @@ class Command(BaseCommand):
                     # thus I am creating a user object
                     fullname = user_lst['name']
                     fullname_lst = fullname.split()
+                    usage_string = user_lst['usage']
+                    num, alpha = splitString(usage_string) 
                     if (len(fullname_lst) > 1):
                         first_name = fullname_lst[0]
                         last_name = fullname_lst[1]
@@ -127,7 +149,7 @@ class Command(BaseCommand):
                         username = user_lst['user'],
                         first_name = first_name,
                         last_name = last_name,
-                        email = first_name + "_" + last_name + "notactive@fas.edu",
+                        email = first_name + "_" + last_name + "NotActive@fas.edu",
                         is_active = False,
                         is_staff = True,
                         is_superuser = False,
@@ -135,19 +157,25 @@ class Command(BaseCommand):
                     allocation_user_obj = AllocationUser.objects.create(
                         allocation=allocation_obj,
                         user=User.objects.get(username=user_lst['user']),
-                        status=AllocationUserStatusChoice.objects.get(name='Active'),
-                        usage_bytes = user_lst['logical_usage']
+                        status=AllocationUserStatusChoice.objects.get(name='Inactive'),
+                        usage_bytes = user_lst['logical_usage'],
+                        usage = num,
+                        unit = alpha
                     )
                     User.objects.get(username=user_lst['user']).save()
                     allocation_user_obj.save()
                 else:
                     print(user_lst['user'], "exists")
+                    usage_string = user_lst['usage']
+                    num, alpha = splitString(usage_string) 
                     # load allocation user
                     allocation_user_obj = AllocationUser.objects.create(
                         allocation=allocation_obj,
                         user=User.objects.get(username=user_lst['user']),
                         status=AllocationUserStatusChoice.objects.get(name='Active'),
-                        usage_bytes = user_lst['logical_usage']
+                        usage_bytes = user_lst['logical_usage'],
+                        usage = num,
+                        unit = alpha
                     )
                     User.objects.get(username=user_lst['user']).save()
                     allocation_user_obj.save()

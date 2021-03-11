@@ -224,7 +224,7 @@ Allocation Detail
               <td>{{ user.user.username }}</td>
               <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
               <td>{{ user.user.email }}</td>
-              <td>{{ user.usage_bytes }}{{ user.unit }}</td>
+              <td>{{ user.usage }}{{ user.unit }}</td>
 
               {% if user.status.name == 'Active' %}
                 <td class="text-success">{{ user.status.name }}</td>
