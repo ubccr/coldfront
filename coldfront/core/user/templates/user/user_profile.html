@@ -38,7 +38,18 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
         <tr>
           <th scope="row">Email:</th>
           <td>{{viewed_user.email}}</td>
-        </tr>  
+        </tr>
+        <tr>
+          <th scope="row">Cluster Username:</th>
+          {% if user.userprofile.access_agreement_signed_date is not None %}
+            <td>
+              <p>{{viewed_user.username}}</p>
+              <p>Use this username to authenticate to this portal and to the cluster.</p>
+            </td>
+          {% else %}
+            <td>You do not have a cluster account.</td>
+          {% endif %}
+        </tr>
         <tr>
           <th scope="row">PI Status:</th>
           <td>  {% if viewed_user.userprofile.is_pi %}
