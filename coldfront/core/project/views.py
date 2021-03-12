@@ -151,6 +151,10 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['allocations'] = allocations
         context['project_users'] = project_users
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
+
+        savio_compute_allocation = allocations.filter(resources__name='Savio Compute').first()
+        context['savio_compute_allocation_pk'] = savio_compute_allocation.pk
+
         return context
 
 

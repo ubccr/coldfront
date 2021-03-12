@@ -196,19 +196,6 @@ Allocation Detail
   <div class="card-header">
     <h4 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Users in Allocation </h4> <span
       class="badge badge-secondary">{{allocation_users.count}}</span>
-    <div class="float-right">
-      {% if allocation.project.status.name != 'Archived' and is_allowed_to_update_project and allocation.status.name in 'Active,New,Renewal Requested' %}
-      <a class="btn btn-success" href="{% url 'allocation-add-users' allocation.pk %}" role="button"><i
-          class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
-      <a class="btn btn-danger" href="{% url 'allocation-remove-users' allocation.pk %}" role="button"><i
-          class="fas fa-user-times" aria-hidden="true"></i> Remove Users</a>
-      {% endif %}
-      <a class="btn btn-info" href="{% url 'allocation-request-cluster-accounts' allocation.pk %}" role="button">
-        <i class="fas fa-terminal" aria-hidden="true"></i>
-        Request Cluster Accounts
-      </a>
-    </div>
-
   </div>
   <div class="card-body">
     <div class="table-responsive">
