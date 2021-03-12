@@ -90,18 +90,22 @@ class Iquota:
         r = requests.get(url, headers=headers, verify=self.IQUOTA_CA_CERT)
 
         try:
-            usage = r.json()[0]
+            usage = r.json()
+            check = usage[0]
         except:
-            return None
+            return []
 
-        group_limit = usage['soft_limit']
+        quotas = []
+        for q in usage:
+            group_limit = q['soft_limit']
+            group_used = q['used']
 
-        if group_limit < 1000000:  # 1.0 MB
-            return None
+            if group_limit == 0:
+                continue
 
-        group_used = usage['used']
+            quotas.append(self._humanize_group_quota(q['path'], group_used, group_limit))
 
-        return self._humanize_group_quota(usage['path'], group_used, group_limit)
+        return quotas
 
     def get_group_quotas(self):
 
@@ -111,7 +115,7 @@ class Iquota:
         group_quotas = {}
         for group in self.groups:
             group_quota = self._get_group_quota(group)
-            if group_quota:
-                group_quotas[group_quota['path']] = group_quota
+            for g in group_quota:
+                group_quotas[g['path']] = g
 
         return group_quotas
