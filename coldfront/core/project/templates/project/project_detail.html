@@ -119,10 +119,30 @@ Project Detail
         <a class="btn btn-success" href="{% url 'project-add-users-search' project.id %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
         <a class="btn btn-danger" href="{% url 'project-remove-users' project.id %}" role="button"><i class="fas fa-user-times" aria-hidden="true"></i> Remove Users</a>
       {% endif %}
-      <a class="btn btn-info" href="{% url 'allocation-request-cluster-accounts' savio_compute_allocation_pk %}" role="button">
-        <i class="fas fa-terminal" aria-hidden="true"></i>
-        Request Cluster Accounts
-      </a>
+      {% if cluster_accounts_requestable %}
+        <a
+            class="btn btn-info"
+            href="{% url 'allocation-request-cluster-accounts' savio_compute_allocation_pk %}"
+            role="button"
+            data-toggle="tooltip"
+            data-placement="top"
+            title="{{ cluster_accounts_tooltip }}">
+          <i class="fas fa-terminal" aria-hidden="true"></i>
+          Request Cluster Access
+        </a>
+      {% else %}
+        <button
+            class="btn btn-info"
+            href=""
+            role="button"
+            data-toggle="tooltip"
+            data-placement="top"
+            title="{{ cluster_accounts_tooltip }}"
+            disabled>
+          <i class="fas fa-terminal" aria-hidden="true"></i>
+          Request Cluster Access
+        </button>
+      {% endif %}
     </div>
 
   </div>
