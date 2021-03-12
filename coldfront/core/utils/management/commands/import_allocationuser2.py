@@ -149,7 +149,7 @@ class Command(BaseCommand):
                         username = user_lst['user'],
                         first_name = first_name,
                         last_name = last_name,
-                        email = first_name + "_" + last_name + "NotActive@fas.edu",
+                        email = first_name + "_" + last_name + "_NotActive@fas.edu",
                         is_active = False,
                         is_staff = True,
                         is_superuser = False,
