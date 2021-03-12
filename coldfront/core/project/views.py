@@ -1282,12 +1282,40 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             status = ProjectUserStatusChoice.objects.get(name='Active')
             project_user.status = status
             project_user.save()
-            message = (
-                f'You have requested to join Project {project_obj.name}. Your '
-                f'request has automatically been approved.')
-            messages.success(self.request, message)
-            next_view = reverse(
-                'project-detail', kwargs={'pk': project_obj.pk})
+
+            allocations = project_obj.allocation_set.filter(
+                resources__name='Savio Compute', status__name='Active')
+            if allocations.count() != 1:
+                message = (
+                    'Unexpected server error. Please contact an '
+                    'administrator.')
+                messages.error(self.request, message)
+            else:
+                allocation = allocations.first()
+                allocation_user_active_status_choice = \
+                    AllocationUserStatusChoice.objects.get(name='Active')
+                if allocation.allocationuser_set.filter(
+                        user=user_obj).exists():
+                    allocation_user_obj = allocation.allocationuser_set.get(
+                        user=user_obj)
+                    allocation_user_obj.status = \
+                        allocation_user_active_status_choice
+                    allocation_user_obj.save()
+                else:
+                    allocation_user_obj = AllocationUser.objects.create(
+                        allocation=allocation,
+                        user=user_obj,
+                        status=allocation_user_active_status_choice)
+                allocation_activate_user.send(
+                    sender=self.__class__,
+                    allocation_user_pk=allocation_user_obj.pk)
+
+                message = (
+                    f'You have requested to join Project {project_obj.name}. '
+                    f'Your request has automatically been approved.')
+                messages.success(self.request, message)
+                next_view = reverse(
+                    'project-detail', kwargs={'pk': project_obj.pk})
 
         return redirect(next_view)
 
@@ -1448,6 +1476,21 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
 
             project_user_active_status_choice = \
                 ProjectUserStatusChoice.objects.get(name=status_name)
+            allocation_user_active_status_choice = \
+                AllocationUserStatusChoice.objects.get(name='Active')
+
+            allocations = project_obj.allocation_set.filter(
+                resources__name='Savio Compute', status__name='Active')
+            if allocations.count() != 1:
+                message = (
+                    'Unexpected server error. Please contact an '
+                    'administrator.')
+                messages.error(self.request, message)
+                return HttpResponseRedirect(
+                    reverse('project-detail', kwargs={'pk': pk}))
+            else:
+                allocation = allocations.first()
+
             for form in formset:
                 user_form_data = form.cleaned_data
                 if user_form_data['selected']:
@@ -1461,6 +1504,22 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
                         user=user_obj)
                     project_user_obj.status = project_user_active_status_choice
                     project_user_obj.save()
+
+                    if allocation.allocationuser_set.filter(
+                            user=user_obj).exists():
+                        allocation_user_obj = \
+                            allocation.allocationuser_set.get(user=user_obj)
+                        allocation_user_obj.status = \
+                            allocation_user_active_status_choice
+                        allocation_user_obj.save()
+                    else:
+                        allocation_user_obj = AllocationUser.objects.create(
+                            allocation=allocation,
+                            user=user_obj,
+                            status=allocation_user_active_status_choice)
+                    allocation_activate_user.send(
+                        sender=self.__class__,
+                        allocation_user_pk=allocation_user_obj.pk)
 
             message = (
                 f'{message_verb} {reviewed_users_count} user requests to join '
