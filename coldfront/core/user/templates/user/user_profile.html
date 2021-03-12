@@ -64,6 +64,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
             {% if user.userprofile.access_agreement_signed_date is not None %}
               <span class="badge badge-success">
                 <i class="fas fa-check"></i>
+                {{ user.userprofile.access_agreement_signed_date }}
               </span>
             {% else %}
               <span class="badge badge-danger">
