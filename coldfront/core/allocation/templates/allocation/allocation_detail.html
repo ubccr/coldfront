@@ -205,7 +205,6 @@ Allocation Detail
             <th scope="col">Username</th>
             <th scope="col">Name</th>
             <th scope="col">Email</th>
-            <th scope="col">Status</th>
             <th scope="col">Last Modified</th>
           </tr>
         </thead>
@@ -215,13 +214,6 @@ Allocation Detail
             <td>{{ user.user.username }}</td>
             <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
             <td>{{ user.user.email }}</td>
-            {% if user.status.name == 'Active' %}
-            <td class="text-success">{{ user.status.name }}</td>
-            {% elif user.status.name == 'Denied' or user.status.name == 'Error' %}
-            <td class="text-danger">{{ user.status.name }}</td>
-            {% else %}
-            <td class="text-info">{{ user.status.name }}</td>
-            {% endif %}
             <td>{{ user.modified|date:"M. d, Y" }}</td>
           </tr>
           {% endfor %}
