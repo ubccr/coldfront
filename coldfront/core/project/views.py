@@ -1277,7 +1277,7 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 f'managers have been notified and will approve or deny your '
                 f'request.')
             messages.success(self.request, message)
-            next_view = reverse('user-projects-managers')
+            next_view = reverse('project-join-list')
         else:
             status = ProjectUserStatusChoice.objects.get(name='Active')
             project_user.status = status
