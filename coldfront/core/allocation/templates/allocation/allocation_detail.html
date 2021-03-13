@@ -202,18 +202,18 @@ Allocation Detail
       <table class="table table-hover">
         <thead>
           <tr>
-            <th scope="col">Username</th>
             <th scope="col">Name</th>
             <th scope="col">Email</th>
+            <th scope="col">Username</th>
             <th scope="col">Last Modified</th>
           </tr>
         </thead>
         <tbody>
           {% for user in allocation_users %}
           <tr>
-            <td>{{ user.user.username }}</td>
             <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
             <td>{{ user.user.email }}</td>
+            <td>{{ user.user.username }}</td>
             <td>{{ user.modified|date:"M. d, Y" }}</td>
           </tr>
           {% endfor %}
