@@ -37,10 +37,6 @@ Project User Detail
           <th scope="row">Email:</th>
           <td>{{project_user_obj.user.email}}</td>
         </tr>
-        <tr>
-          <th scope="row">Status:</th>
-          <td>{{project_user_obj.status.name}}</td>
-        </tr>
         {% if project_user_obj.user in project_user_obj.project.pis %}
           <tr>
             <th scope="row">Role:</th>
