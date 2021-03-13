@@ -164,7 +164,11 @@ Project Detail
             <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
             <td>{{ user.user.email }}</td>
             <td>{{ user.role.name }}</td>
-            <td>{{ user.user.username }}</td>
+            {% if user.user.userprofile.cluster_uid is not None %}
+              <td>{{ user.user.username }}</td>
+            {% else %}
+              <td>No cluster account.</td>
+            {% endif %}
             <td>
               {% if is_allowed_to_update_project %}
                 <a href="{% url 'project-user-detail' project.pk user.id %}"><i class="fas fa-user-edit"></i></a>
