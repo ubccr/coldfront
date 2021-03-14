@@ -75,11 +75,18 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
             {% if user.userprofile.access_agreement_signed_date is not None %}
               <span class="badge badge-success">
                 <i class="fas fa-check"></i>
-                {{ user.userprofile.access_agreement_signed_date }}
+                Signed {{ user.userprofile.access_agreement_signed_date }}
               </span>
+              {% if user == viewed_user %}
+                <a href="{% url 'user-access-agreement' %}" class="btn btn-secondary">
+                  <i class="far fa-edit" aria-hidden="true"></i>
+                  Review
+                </a>
+              {% endif %}
             {% else %}
               <span class="badge badge-danger">
                 <i class="fas fa-times"></i>
+                Unsigned
               </span>
               {% if user == viewed_user %}
                 <a href="{% url 'user-access-agreement' %}" class="btn btn-secondary">
