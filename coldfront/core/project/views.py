@@ -23,6 +23,7 @@ from django.views.generic.edit import FormView
 from coldfront.core.allocation.models import (Allocation,
                                               AllocationStatusChoice,
                                               AllocationUser,
+                                              AllocationUserAttribute,
                                               AllocationUserStatusChoice)
 from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user)
@@ -921,6 +922,22 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             context['project_user_obj'] = project_user_obj
             context['project_user_is_manager'] = project_user_obj.role.name == 'Manager'
 
+            try:
+                allocation_obj = self.__get_compute_allocation(project_obj)
+            except (Allocation.DoesNotExist,
+                    Allocation.MultipleObjectsReturned,
+                    AllocationUserAttribute.MultipleObjectsReturned):
+                allocation_obj = None
+                cluster_access_status = 'Error'
+            else:
+                try:
+                    cluster_access_status = self.__get_cluster_access_status(
+                        allocation_obj, project_user_obj.user).value
+                except AllocationUserAttribute.DoesNotExist:
+                    cluster_access_status = 'None'
+            context['allocation_obj'] = allocation_obj
+            context['cluster_access_status'] = cluster_access_status
+
             return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
@@ -980,6 +997,21 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
                 messages.success(request, 'User details updated.')
                 return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_obj.pk, 'project_user_pk': project_user_obj.pk}))
+
+    @staticmethod
+    def __get_compute_allocation(project_obj):
+        if project_obj.name.startswith('vector_'):
+            resource_name = 'Vector Compute'
+        else:
+            resource_name = 'Savio Compute'
+        return project_obj.allocation_set.get(resources__name=resource_name)
+
+    @staticmethod
+    def __get_cluster_access_status(allocation_obj, user_obj):
+        return allocation_obj.allocationuserattribute_set.get(
+            allocation_user__user=user_obj,
+            allocation_attribute_type__name='Cluster Account Status',
+            value__in=['Pending - Add', 'Active'])
 
 
 def project_update_email_notification(request):
