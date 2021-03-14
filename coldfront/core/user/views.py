@@ -363,7 +363,6 @@ def user_access_agreement(request):
     if profile.access_agreement_signed_date is not None:
         message = 'You have already signed the user access agreement form.'
         messages.warning(request, message)
-        return redirect(reverse_lazy('user-profile'))
     if request.method == 'POST':
         form = UserAccessAgreementForm(request.POST)
         if form.is_valid():
@@ -373,7 +372,7 @@ def user_access_agreement(request):
             profile.save()
             message = 'Thank you for signing the user access agreement form.'
             messages.success(request, message)
-            return redirect(reverse_lazy('user-profile'))
+            return redirect(reverse_lazy('home'))
         else:
             message = 'Incorrect answer. Please try again.'
             messages.error(request, message)
