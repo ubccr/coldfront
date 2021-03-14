@@ -29,16 +29,17 @@ def home(request):
              Q(projectuser__status__name__in=['Active', ]))
         ).distinct().order_by('-created')[:5]
 
-        allocation_list = Allocation.objects.filter(
-            Q(status__name__in=['Active', 'New', 'Renewal Requested', ]) &
-            Q(project__status__name__in=['Active', 'New']) &
-            Q(project__projectuser__user=request.user) &
-            Q(project__projectuser__status__name__in=['Active', ]) &
-            Q(allocationuser__user=request.user) &
-            Q(allocationuser__status__name__in=['Active', ])
-        ).distinct().order_by('-created')[:5]
+## We do not need to display Allocations for the users at the home page -Krishna
+##        allocation_list = Allocation.objects.filter(
+##            Q(status__name__in=['Active', 'New', 'Renewal Requested', ]) &
+##            Q(project__status__name__in=['Active', 'New']) &
+##            Q(project__projectuser__user=request.user) &
+##            Q(project__projectuser__status__name__in=['Active', ]) &
+##            Q(allocationuser__user=request.user) &
+##            Q(allocationuser__status__name__in=['Active', ])
+##        ).distinct().order_by('-created')[:5]
         context['project_list'] = project_list
-        context['allocation_list'] = allocation_list
+##        context['allocation_list'] = allocation_list
     else:
         template_name = 'portal/nonauthorized_home.html'
 

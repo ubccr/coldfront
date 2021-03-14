@@ -132,7 +132,7 @@
 
   <div class="col-lg-6 mt-2">
     <a href="{% url 'project-list' %}">
-      <h3>Projects &raquo;</h3>
+      <h3>My BRC Cluster Projects &raquo;</h3>
     </a>
     <hr>
     {% if project_list %}
@@ -146,7 +146,7 @@
       {% endfor %}
     </ul>
     {% else %}
-    <div class="alert alert-info" role="alert"><i class="fa fa-info-circle" aria-hidden="true"></i> There are no projects to display.</div>
+    <div class="alert alert-info" role="alert"><i class="fa fa-info-circle" aria-hidden="true"></i> There are no projects to display. You are not part of any BRC cluster projects at this time. Please click Join Projects to join any of the existing projects. If you are registered as a PI in this system you can request to setup a new project.</div>
     {% if user.userprofile.is_pi or user.is_superuser %}
     <a class="btn btn-primary btn-block" href="{% url 'project-create' %}" role="button">Add a project</a>
     <hr>
@@ -155,6 +155,7 @@
     {% endif %}
   </div>
 
+<!-- We do not need to display allocations for the users in the home page -krishna.
   <div class="col-lg-6 mt-2">
     <a href="{% url 'allocation-list' %}">
       <h3>Allocations &raquo;</h3>
@@ -208,6 +209,8 @@
     </div>
     {% endif %}
   </div>
+-->
+
 </div>
 <div class="row">
   {% include "portal/extra_app_templates.html" %}
