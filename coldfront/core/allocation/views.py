@@ -1581,44 +1581,99 @@ class AllocationAccountListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
         return AllocationAccount.objects.filter(user=self.request.user)
 
 
-class AllocationRequestClusterAccountsView(LoginRequiredMixin,
-                                           UserPassesTestMixin, TemplateView):
+class AllocationRequestClusterAccountListView(LoginRequiredMixin,
+                                              UserPassesTestMixin,
+                                              TemplateView):
     template_name = 'allocation/allocation_request_cluster_accounts.html'
+    login_url = '/'
 
     def test_func(self):
         """UserPassesTestMixin tests."""
-        if self.request.user.is_superuser:
+        user = self.request.user
+        if user.is_superuser:
+            return True
+        if user.userprofile.access_agreement_signed_date:
+            return True
+        message = 'You have not signed the access agreement form.'
+        messages.error(self.request, message)
+
+    def get_context_data(self, **kwargs):
+        user = self.request.user
+        context = super().get_context_data(**kwargs)
+        allocation_list = Allocation.objects.filter(
+            Q(status__name__in=['Active', 'New', 'Renewal Requested', ]) &
+            Q(project__status__name__in=['Active', 'New']) &
+            Q(project__projectuser__user=user) &
+            Q(project__projectuser__status__name__in=['Active', ]) &
+            Q(allocationuser__user=user) &
+            Q(allocationuser__status__name__in=['Active', ]) &
+            Q(resources__name__in=['Savio Compute', 'Vector Compute'])
+        ).distinct()
+        context['allocation_list'] = allocation_list
+        not_requestable = set()
+        for allocation in allocation_list:
+            if allocation.allocationuserattribute_set.filter(
+                    allocation_user__user=user,
+                    allocation_attribute_type__name='Cluster Account Status',
+                    value__in=['Pending - Add', 'Active']).exists():
+                not_requestable.add(allocation.pk)
+        context['not_requestable'] = not_requestable
+        return context
+
+
+class AllocationRequestClusterAccountView(LoginRequiredMixin,
+                                          UserPassesTestMixin, View):
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        user = self.request.user
+
+        if user.is_superuser:
             return True
 
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk'))
-
-        if allocation_obj.project.projectuser_set.filter(
-                user=self.request.user,
-                role__name__in=['Manager', 'Principal Investigator'],
-                status__name='Active').exists():
-            return True
-
         if allocation_obj.allocationuser_set.filter(
                 user=self.request.user,
                 status__name='Active').exists():
             return True
-
-        message = (
-            'You do not have permission to request cluster accounts under the '
-            'allocation.')
-        messages.error(self.request, message)
+        else:
+            message = (
+                'You do not have permission to request cluster access under '
+                'the allocation.')
+            messages.error(self.request, message)
+            return False
 
     def dispatch(self, request, *args, **kwargs):
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk'))
+        user_obj = get_object_or_404(User, pk=self.kwargs.get('user_pk'))
+        project_obj = allocation_obj.project
+
+        redirect = HttpResponseRedirect(
+            reverse('project-detail', kwargs={'pk': project_obj.pk}))
+
+        if not user_obj.userprofile.access_agreement_signed_date:
+            message = (
+                f'User {user_obj.username} has not signed the access '
+                f'agreement.')
+            messages.error(self.request, message)
+            return redirect
+
+        if not allocation_obj.allocationuser_set.filter(
+                user=user_obj, status__name='Active').exists():
+            message = (
+                f'User {user_obj.username} is not a member of allocation '
+                f'{allocation_obj.pk}.')
+            messages.error(self.request, message)
+            return redirect
 
         acceptable_statuses = [
             'Active', 'New', 'Renewal Requested', 'Payment Pending',
             'Payment Requested', 'Paid']
         if allocation_obj.status.name not in acceptable_statuses:
             message = (
-                f'You cannot request cluster accounts under an allocation '
+                f'You cannot request cluster access under an allocation '
                 f'with status {allocation_obj.status.name}.')
             messages.error(request, message)
             return HttpResponseRedirect(
@@ -1626,159 +1681,52 @@ class AllocationRequestClusterAccountsView(LoginRequiredMixin,
         else:
             return super().dispatch(request, *args, **kwargs)
 
-    def get_users_to_request_for(self, allocation_obj):
-        """Return a list of dictionaries representing active users in
-        the allocation who (a) do not have a pending or active cluster
-        account and (b) have the signed the access agreement form. If
-        the requesting user is a regular user, filter out other
-        users."""
-        pending_or_active_cluster_accounts = \
-            allocation_obj.allocationuserattribute_set.filter(
-                allocation_attribute_type__name='Cluster Account Status',
-                value__in=['Pending - Add', 'Active'])
-
-        allocation_users = allocation_obj.allocationuser_set.filter(
-            status__name='Active').exclude(
-            allocationuserattribute__in=pending_or_active_cluster_accounts)
-        user_pks = allocation_users.values_list('user__pk', flat=True)
-
-        requester = self.request.user
-        is_superuser = requester.is_superuser
-        is_manager_or_pi = allocation_obj.project.projectuser_set.filter(
-            user=requester,
-            role__name__in=['Manager', 'Principal Investigator'],
-            status__name='Active').exists()
-        if not (is_superuser or is_manager_or_pi):
-            user_pks = [requester.pk] if requester.pk in user_pks else []
-
-        kwargs = {
-            'pk__in': user_pks,
-            'userprofile__access_agreement_signed_date__isnull': False,
-        }
-        values = ['username', 'first_name', 'last_name', 'email']
-        return list(User.objects.filter(**kwargs).values(*values))
-
-    def get(self, request, *args, **kwargs):
-        pk = self.kwargs.get('pk')
-        allocation_obj = get_object_or_404(Allocation, pk=pk)
-
-        users_to_request_for = self.get_users_to_request_for(allocation_obj)
-        context = {}
-
-        if users_to_request_for:
-            formset = formset_factory(
-                AllocationRequestClusterAccountForm,
-                max_num=len(users_to_request_for))
-            formset = formset(initial=users_to_request_for, prefix='userform')
-            context['formset'] = formset
-
-        context['allocation'] = allocation_obj
-        return render(request, self.template_name, context)
-
     def post(self, request, *args, **kwargs):
-        pk = self.kwargs.get('pk')
-        allocation_obj = get_object_or_404(Allocation, pk=pk)
-
-        users_to_request_for = self.get_users_to_request_for(allocation_obj)
-
-        formset = formset_factory(
-            AllocationRequestClusterAccountForm,
-            max_num=len(users_to_request_for))
-        formset = formset(
-            request.POST, initial=users_to_request_for, prefix='userform')
-
-        users_requested_for_count = 0
+        allocation_obj = get_object_or_404(
+            Allocation, pk=self.kwargs.get('pk'))
+        user_obj = get_object_or_404(User, pk=self.kwargs.get('user_pk'))
+        project_obj = allocation_obj.project
+        allocation_user_obj = AllocationUser.objects.get(
+            allocation=allocation_obj, user=user_obj)
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Cluster Account Status')
 
         pending = 'Pending - Add'
         active = 'Active'
 
-        if formset.is_valid():
+        redirect = HttpResponseRedirect(
+            reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
-            cluster_account_status = AllocationAttributeType.objects.get(
-                name='Cluster Account Status')
-            cluster_accounts = \
-                allocation_obj.allocationuserattribute_set.filter(
-                    allocation_attribute_type=cluster_account_status)
-            for form in formset:
-                user_form_data = form.cleaned_data
-                if user_form_data['selected']:
-
-                    user_obj = User.objects.get(
-                        username=user_form_data.get('username'))
-
-                    if not user_obj.userprofile.access_agreement_signed_date:
-                        message = (
-                            f'User {user_obj.username} has not signed the '
-                            f'access agreement.')
-                        messages.warning(request, message)
-                        continue
-
-                    queryset = allocation_obj.allocationuser_set
-                    if not queryset.filter(user=user_obj).exists():
-                        message = (
-                            f'User {user_obj.username} is not a member of the '
-                            f'allocation.')
-                        messages.warning(request, message)
-                        continue
-                    allocation_user_obj = queryset.get(user=user_obj)
-
-                    queryset = cluster_accounts.filter(
-                        allocation_user=allocation_user_obj)
-                    if not queryset.exists():
-                        AllocationUserAttribute.objects.create(
-                            allocation_attribute_type=cluster_account_status,
-                            allocation=allocation_obj,
-                            allocation_user=allocation_user_obj,
-                            value=pending)
-                    else:
-                        cluster_account = queryset.get(
-                            allocation_user=allocation_user_obj)
-                        if cluster_account.value in [pending, active]:
-                            message = (
-                                f'User {user_obj.username} already has a '
-                                f'pending or active cluster account.')
-                            messages.warning(request, message)
-                            continue
-                        else:
-                            cluster_account.value = pending
-                            cluster_account.save()
-
-                    users_requested_for_count += 1
-
+        try:
+            access = allocation_obj.allocationuserattribute_set.get(
+                allocation_user__user=user_obj,
+                allocation_attribute_type=allocation_attribute_type)
+            if access.value in [pending, active]:
+                message = (
+                    f'User {user_obj.username} already has a pending or '
+                    f'active cluster access under Project {project_obj.name}.')
+                messages.warning(self.request, message)
+            else:
+                access.value = pending
+                access.save()
+        except AllocationUserAttribute.DoesNotExist:
+            AllocationUserAttribute.objects.create(
+                allocation_attribute_type=allocation_attribute_type,
+                allocation=allocation_obj,
+                allocation_user=allocation_user_obj,
+                value=pending)
+        except AllocationUserAttribute.MultipleObjectsReturned:
             message = (
-                f'Requested cluster accounts for {users_requested_for_count} '
-                f'users.')
-            messages.success(request, message)
-        else:
-            for error in formset.errors:
-                messages.error(request, error)
+                'Unexpected server error. Please contact an administrator.')
+            messages.error(self.request, message)
+            return redirect
 
-        if EMAIL_ENABLED:
-            if users_requested_for_count > 0:
-                project_name = allocation_obj.project.name
-                allocation_pk = allocation_obj.pk
+        message = (
+            f'Requested cluster access under Project {project_obj.name} for '
+            f'User {user_obj.username}.')
+        messages.success(self.request, message)
 
-                domain_url = get_domain_url(self.request)
-                view_name = 'allocation-cluster-account-request-list'
-                url = f'{domain_url}{reverse(view_name)}'
-
-                subject = (
-                    f'New cluster account requests: {project_name} - '
-                    f'{allocation_pk}')
-                template = 'email/new_cluster_account_requests.txt'
-                template_context = {
-                    'project': project_name,
-                    'allocation': allocation_pk,
-                    'url': url,
-                }
-                sender = EMAIL_SENDER
-                receiver_list = [EMAIL_TICKET_SYSTEM_ADDRESS, ]
-
-                send_email_template(
-                    subject, template, template_context, sender, receiver_list)
-
-        return HttpResponseRedirect(
-            reverse('allocation-detail', kwargs={'pk': pk}))
+        return redirect
 
 
 class AllocationClusterAccountRequestListView(LoginRequiredMixin,
