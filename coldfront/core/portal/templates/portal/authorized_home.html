@@ -1,4 +1,133 @@
 {% extends "common/base.html" %} {% load common_tags %} {% block content %}
+
+<div class="row">
+  <div class="col-lg-12">
+    <h3>Welcome</h3>
+    <hr>
+    <p>If you would like to set up or update your access to the cluster, please complete the following steps.</p>
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Task</th>
+          <th scope="col">Status</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1. Sign the access agreement.</td>
+          {% if user.userprofile.access_agreement_signed_date is not None %}
+            <td>
+              <span class="badge badge-success">
+                <i class="fas fa-check"></i>
+                Signed {{ user.userprofile.access_agreement_signed_date }}
+              </span>
+            </td>
+            <td>
+              <a href="{% url 'user-access-agreement' %}" class="btn btn-primary">
+                Review
+              </a>
+            </td>
+          {% else %}
+            <td>
+              <span class="badge badge-danger">
+                <i class="fas fa-times"></i>
+                Unsigned
+              </span>
+            </td>
+            <td>
+              <a href="{% url 'user-access-agreement' %}" class="btn btn-primary">
+                <i class="fas fa-edit" aria-hidden="true"></i>
+                Sign
+              </a>
+            </td>
+          {% endif %}
+        </tr>
+        <tr>
+          <td>2. Join a project.</td>
+          {% if user.userprofile.access_agreement_signed_date is not None %}
+            <td>
+              {% if project_list %}
+                <span class="badge badge-success">
+                  <i class="fas fa-check"></i>
+                  {{ project_list|length }} Project(s)
+                </span>
+              {% else %}
+                <span class="badge badge-danger">
+                  <i class="fas fa-times"></i>
+                  {{ project_list|length }} Project(s)
+                </span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'project-join-list' %}" class="btn btn-primary">
+                Join
+              </a>
+            </td>
+          {% else %}
+            <td>
+              <span class="badge badge-danger">
+                <i class="fas fa-times"></i>
+                {{ project_list|length }} Project(s)
+              </span>
+            </td>
+            <td>
+              <button class="btn btn-primary" disabled="true">
+                Join
+              </button>
+            </td>
+          {% endif %}
+        </tr>
+        <tr>
+          <td>3. Request access to specific projects on the cluster.</td>
+          {% if user.userprofile.access_agreement_signed_date is not None and allocation_list %}
+            <td>
+              {% if user.userprofile.cluster_uid is not None %}
+                <span class="badge badge-success">
+                  <i class="fas fa-check"></i>
+                  {{ user.username }}
+                </span>
+              {% else %}
+                <span class="badge badge-danger">
+                  <i class="fas fa-times"></i>
+                  No Cluster Account
+                </span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'allocation-request-cluster-accounts' %}" class="btn btn-primary">
+                Request
+              </a>
+            </td>
+          {% else %}
+            <td>
+              {% if user.userprofile.cluster_uid is not None %}
+                <span class="badge badge-success">
+                  <i class="fas fa-check"></i>
+                  {{ user.username }}
+                </span>
+              {% else %}
+                <span class="badge badge-danger">
+                  <i class="fas fa-times"></i>
+                  No Cluster Account
+                </span>
+              {% endif %}
+            </td>
+            <td>
+              <button class="btn btn-primary" disabled="true">
+                Request
+              </button>
+            </td>
+          {% endif %}
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+
+</div>
+<br><br>
+
 <div class="row">
 
   <div class="col-lg-6 mt-2">
