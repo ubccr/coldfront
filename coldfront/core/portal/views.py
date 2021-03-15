@@ -23,11 +23,19 @@ def home(request):
     context = {}
     if request.user.is_authenticated:
         template_name = 'portal/authorized_home.html'
+
         project_list = Project.objects.filter(
             (Q(status__name__in=['New', 'Active', ]) &
              Q(projectuser__user=request.user) &
              Q(projectuser__status__name__in=['Active', ]))
-        ).distinct().order_by('-created')[:5]
+        ).distinct().order_by('-created')
+
+        savio_projects, vector_projects = set(), set()
+        for project in project_list:
+            if project.name.startswith('vector_'):
+                vector_projects.add(project.name)
+            else:
+                savio_projects.add(project.name)
 
         allocation_list = Allocation.objects.filter(
            Q(status__name__in=['Active', 'New', 'Renewal Requested', ]) &
@@ -36,8 +44,10 @@ def home(request):
            Q(project__projectuser__status__name__in=['Active', ]) &
            Q(allocationuser__user=request.user) &
            Q(allocationuser__status__name__in=['Active', ])
-        ).distinct().order_by('-created')[:5]
+        ).distinct().order_by('-created')
         context['project_list'] = project_list
+        context['savio_projects'] = savio_projects
+        context['vector_projects'] = vector_projects
         context['allocation_list'] = allocation_list
     else:
         template_name = 'portal/nonauthorized_home.html'
