@@ -58,3 +58,10 @@ def get_user_resources(user_obj):
 def test_allocation_function(allocation_pk):
     pass
     # print('test_allocation_function', allocation_pk)
+
+
+def get_allocation_user_cluster_access_status(allocation_obj, user_obj):
+    return allocation_obj.allocationuserattribute_set.get(
+        allocation_user__user=user_obj,
+        allocation_attribute_type__name='Cluster Account Status',
+        value__in=['Pending - Add', 'Active'])
