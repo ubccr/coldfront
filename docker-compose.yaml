@@ -44,11 +44,14 @@ services:
     labels:
       - "traefik.http.routers.django.rule=PathPrefix(`/`)"
       - "traefik.http.routers.django.tls=true"
+      - "traefik.http.middlewares.setSSL.headers.customRequestHeaders.X-Forwarded-Proto:https"
+      - "traefik.http.routers.django.middlewares=setSSL"
       - "traefik.enable=true"
     command: /root/.local/bin/gunicorn -b 0.0.0.0:80 coldfront.config.wsgi
     volumes:
       - static:/usr/src/app/static_root
       - ${COLDFRONT_CFG}:/usr/src/app/coldfront/config
+      - /srv/coldfront/coldfront/plugins/mokey_oidc:/usr/src/app/coldfront/plugins/mokey_oidc
       - /root/coldfront_import/local_data:/usr/src/app/local_data
       - /root/coldfront_import/commands:/usr/src/app/coldfront/core/utils/management/commands
   db:

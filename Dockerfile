@@ -22,7 +22,7 @@ WORKDIR "${COLDFRONT_DIR}"
 EXPOSE 80
 
 
-RUN apk update && apk add postgresql-dev gcc python3-dev musl-dev                                                             
+RUN apk update && apk add postgresql-dev gcc python3-dev musl-dev libffi-dev
 
 ## basic requirements
 COPY requirements.txt \

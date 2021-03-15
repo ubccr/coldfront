@@ -14,6 +14,7 @@ DENY_GROUPS = import_from_settings('MOKEY_OIDC_DENY_GROUPS', [])
 class OIDCMokeyAuthenticationBackend(OIDCAuthenticationBackend):
 
     def _sync_groups(self, user, groups):
+        logger.error("1grouchy")
         is_pi = False
         user.groups.clear()
         for group_name in groups:
@@ -25,8 +26,10 @@ class OIDCMokeyAuthenticationBackend(OIDCAuthenticationBackend):
         user.userprofile.is_pi = is_pi
 
     def create_user(self, claims):
+        logger.error("2grouchy")
         email = claims.get('email')
-        username = claims.get('uid')
+        #username = claims.get('uid')
+        username = claims.get('email').split("@")[0]
         if not username:
             logger.error("Failed to create user. username not found in mokey oidc id_token claims: %s", claims)
             return None
@@ -47,6 +50,7 @@ class OIDCMokeyAuthenticationBackend(OIDCAuthenticationBackend):
         return user
 
     def update_user(self, user, claims):
+        logger.error("3grouchy")
         user.first_name = claims.get('first', '')
         user.last_name = claims.get('last', '')
         email = claims.get('email')
@@ -63,7 +67,9 @@ class OIDCMokeyAuthenticationBackend(OIDCAuthenticationBackend):
         return user
 
     def filter_users_by_claims(self, claims):
-        uid = claims.get('uid')
+        logger.error("4grouchy")
+        #uid = claims.get('uid')
+        uid=claims.get('email').split("@")[0]
         if not uid:
             return self.UserModel.objects.none()
 
@@ -73,6 +79,7 @@ class OIDCMokeyAuthenticationBackend(OIDCAuthenticationBackend):
             return self.UserModel.objects.none()
 
     def verify_claims(self, claims):
+        logger.error("5grouchy")
         verified = super(OIDCMokeyAuthenticationBackend, self).verify_claims(claims)
 
         if len(ALLOWED_GROUPS) == 0 and len(DENY_GROUPS) == 0:
