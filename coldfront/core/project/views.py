@@ -8,7 +8,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db.models import Q
+from django.db.models import Case, CharField, F, Q, Value, When
 from django.forms import formset_factory
 from django.http import (HttpResponse, HttpResponseForbidden,
                          HttpResponseRedirect)
@@ -25,6 +25,7 @@ from coldfront.core.allocation.models import (Allocation,
                                               AllocationUser,
                                               AllocationUserAttribute,
                                               AllocationUserStatusChoice)
+from coldfront.core.allocation.utils import get_allocation_user_cluster_access_status
 from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user)
 # from coldfront.core.grant.models import Grant
@@ -41,6 +42,7 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectStatusChoice, ProjectUser,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice)
+from coldfront.core.project.utils import get_project_compute_allocation
 # from coldfront.core.publication.models import Publication
 # from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.user.forms import UserSearchForm
@@ -104,9 +106,39 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         else:
             context['is_allowed_to_update_project'] = False
 
+        # Retrieve cluster access statuses.
+        cluster_access_statuses = {}
+        try:
+            allocation_obj = get_project_compute_allocation(self.object)
+            statuses = \
+                allocation_obj.allocationuserattribute_set.select_related(
+                    'allocation_user__user'
+                ).filter(
+                    allocation_attribute_type__name='Cluster Account Status',
+                    value__in=['Pending - Add', 'Active'])
+            for status in statuses:
+                username = status.allocation_user.user.username
+                cluster_access_statuses[username] = status.value
+        except (Allocation.DoesNotExist, Allocation.MultipleObjectsReturned):
+            pass
+
+        whens = [
+            When(user__username=username, then=Value(status))
+            for username, status in cluster_access_statuses.items()
+        ]
+
         # Only show 'Active Users'
-        project_users = self.object.projectuser_set.filter(
-            status__name='Active').order_by('user__username')
+        project_users = self.object.projectuser_set.select_related(
+            'user'
+        ).filter(
+            status__name='Active'
+        ).annotate(
+            cluster_access_status=Case(
+                *whens,
+                default=Value('None'),
+                output_field=CharField(),
+            )
+        ).order_by('user__username')
 
         context['mailto'] = 'mailto:' + \
             ','.join([user.user.email for user in project_users])
@@ -198,12 +230,25 @@ class ProjectListView(LoginRequiredMixin, ListView):
             data = project_search_form.cleaned_data
             if data.get('show_all_projects') and (self.request.user.is_superuser or self.request.user.has_perm('project.can_view_all_projects')):
                 projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
-                    status__name__in=['New', 'Active', ]).order_by(order_by)
+                    status__name__in=['New', 'Active', ]
+                ).annotate(
+                    cluster_name=Case(
+                        When(name__startswith='vector_', then=Value('Vector')),
+                        default=Value('Savio'),
+                        output_field=CharField(),
+                    )
+                ).order_by(order_by)
             else:
                 projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
                     Q(status__name__in=['New', 'Active', ]) &
                     Q(projectuser__user=self.request.user) &
                     Q(projectuser__status__name='Active')
+                ).annotate(
+                    cluster_name=Case(
+                        When(name__startswith='vector_', then=Value('Vector')),
+                        default=Value('Savio'),
+                        output_field=CharField(),
+                    ),
                 ).order_by(order_by)
 
             # Last Name
@@ -238,11 +283,21 @@ class ProjectListView(LoginRequiredMixin, ListView):
             if data.get('project_name'):
                 projects = projects.filter(name__icontains=data.get('project_name'))
 
+            # Cluster Name
+            if data.get('cluster_name'):
+                projects = projects.filter(cluster_name__icontains=data.get('cluster_name'))
+
         else:
             projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
                 Q(status__name__in=['New', 'Active', ]) &
                 Q(projectuser__user=self.request.user) &
                 Q(projectuser__status__name='Active')
+            ).annotate(
+                cluster_name=Case(
+                    When(name__startswith='vector_', then=Value('Vector')),
+                    default=Value('Savio'),
+                    output_field=CharField(),
+                ),
             ).order_by(order_by)
 
         return projects.distinct()
@@ -923,18 +978,20 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             context['project_user_is_manager'] = project_user_obj.role.name == 'Manager'
 
             try:
-                allocation_obj = self.__get_compute_allocation(project_obj)
+                allocation_obj = get_project_compute_allocation(project_obj)
             except (Allocation.DoesNotExist,
-                    Allocation.MultipleObjectsReturned,
-                    AllocationUserAttribute.MultipleObjectsReturned):
+                    Allocation.MultipleObjectsReturned):
                 allocation_obj = None
                 cluster_access_status = 'Error'
             else:
                 try:
-                    cluster_access_status = self.__get_cluster_access_status(
-                        allocation_obj, project_user_obj.user).value
+                    cluster_access_status = \
+                        get_allocation_user_cluster_access_status(
+                            allocation_obj, project_user_obj.user).value
                 except AllocationUserAttribute.DoesNotExist:
                     cluster_access_status = 'None'
+                except AllocationUserAttribute.MultipleObjectsReturned:
+                    cluster_access_status = 'Error'
             context['allocation_obj'] = allocation_obj
             context['cluster_access_status'] = cluster_access_status
 
@@ -997,21 +1054,6 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
                 messages.success(request, 'User details updated.')
                 return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_obj.pk, 'project_user_pk': project_user_obj.pk}))
-
-    @staticmethod
-    def __get_compute_allocation(project_obj):
-        if project_obj.name.startswith('vector_'):
-            resource_name = 'Vector Compute'
-        else:
-            resource_name = 'Savio Compute'
-        return project_obj.allocation_set.get(resources__name=resource_name)
-
-    @staticmethod
-    def __get_cluster_access_status(allocation_obj, user_obj):
-        return allocation_obj.allocationuserattribute_set.get(
-            allocation_user__user=user_obj,
-            allocation_attribute_type__name='Cluster Account Status',
-            value__in=['Pending - Add', 'Active'])
 
 
 def project_update_email_notification(request):
@@ -1361,7 +1403,14 @@ class ProjectJoinListView(ProjectListView):
 
         projects = Project.objects.prefetch_related(
             'field_of_science', 'status').filter(
-                status__name__in=['New', 'Active', ]).order_by(order_by)
+                status__name__in=['New', 'Active', ]
+        ).annotate(
+            cluster_name=Case(
+                When(name__startswith='vector_', then=Value('Vector')),
+                default=Value('Savio'),
+                output_field=CharField(),
+            ),
+        ).order_by(order_by)
 
         if project_search_form.is_valid():
             data = project_search_form.cleaned_data
@@ -1398,6 +1447,10 @@ class ProjectJoinListView(ProjectListView):
             # Project Name
             if data.get('project_name'):
                 projects = projects.filter(name__icontains=data.get('project_name'))
+
+            # Cluster Name
+            if data.get('cluster_name'):
+                projects = projects.filter(cluster_name__icontains=data.get('cluster_name'))
 
         return projects.distinct()
 
