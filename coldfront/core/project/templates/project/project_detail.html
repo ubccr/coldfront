@@ -153,7 +153,9 @@ Project Detail
               {% if user.user.userprofile.cluster_uid is not None %}
                 {{ user.user.username }}
               {% else %}
-                No cluster account.
+                <span class="badge badge-danger">
+                  No cluster account.
+                </span>
               {% endif %}
             </td>
             <td>
