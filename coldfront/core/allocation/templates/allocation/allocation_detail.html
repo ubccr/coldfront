@@ -216,7 +216,11 @@ Allocation Detail
             {% if user.user.userprofile.cluster_uid is not None %}
               <td>{{ user.user.username }}</td>
             {% else %}
-              <td>No cluster account.</td>
+              <td>
+                <span class="badge badge-danger">
+                  No cluster account.
+                </span>
+              </td>
             {% endif %}
             <td>{{ user.modified|date:"M. d, Y" }}</td>
           </tr>
