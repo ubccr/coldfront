@@ -44,7 +44,7 @@
           {% endif %}
         </tr>
         <tr>
-          <td>2. Join a project.</td>
+          <td>2. Create or join a project.</td>
           {% if user.userprofile.access_agreement_signed_date is not None %}
             <td>
               {% if project_list %}
@@ -60,6 +60,9 @@
               {% endif %}
             </td>
             <td>
+              <a href="{% url 'savio-project-request' %}" class="btn btn-primary">
+                Create
+              </a>
               <a href="{% url 'project-join-list' %}" class="btn btn-primary">
                 Join
               </a>
@@ -72,6 +75,9 @@
               </span>
             </td>
             <td>
+              <button class="btn btn-primary" disabled="true">
+                Create
+              </button>
               <button class="btn btn-primary" disabled="true">
                 Join
               </button>
@@ -199,10 +205,6 @@
         <i class="fa fa-info-circle" aria-hidden="true"></i>
         You are not part of any BRC cluster projects at this time. Please click Join Projects to join any of the existing projects. If you are registered as a PI in this system you can request to setup a new project.
       </div>
-<!--    {% if user.userprofile.is_pi or user.is_superuser %}-->
-<!--    <a class="btn btn-primary btn-block" href="{% url 'project-create' %}" role="button">Add a project</a>-->
-<!--    <hr>-->
-<!--    {% endif %}-->
     {% endif %}
   </div>
 
