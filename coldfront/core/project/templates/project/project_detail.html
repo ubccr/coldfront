@@ -82,6 +82,14 @@ Project Detail
     </ul>
     <br>
     <p class="card-text text-justify"><strong>Description: </strong>{{ project.description }}</p>
+    <p class="card-text text-justify">
+      <strong>Cluster: </strong>
+      {% if project.name|slice:":1" == "v" %}
+        Vector
+      {% else %}
+        Savio
+      {% endif %}
+    </p>
     <p class="card-text text-justify"><strong>Field of Science: </strong>{{ project.field_of_science }}</p>
     <p class="card-text text-justify"><strong>Project Status: </strong>{{ project.status }}
         {% if project.last_project_review and  project.last_project_review.status.name == 'Pending'%}
@@ -127,49 +135,40 @@ Project Detail
       <table class="table table-hover">
         <thead>
           <tr>
-            <th>Username</th>
             <th>Name</th>
             <th>Email</th>
             <th>Role <a href="#" data-toggle="popover" title="Role" data-trigger="hover" data-content="Manager role grants user access to add/remove users, and allocations to the project."><i class="fas fa-info-circle"></i></a></th>
-            <th>Status</th>
-            <th>Enable Notifications <a href="#" title="Enable Notifications" data-toggle="popover" data-trigger="hover" data-content="When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable)."><i class="fas fa-info-circle"></i></a></th>
+            <th>Cluster Username</th>
+            <th>Project Access on Cluster</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {% for user in project_users %}
           <tr>
-            <td>{{ user.user.username }}</td>
             <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
             <td>{{ user.user.email }}</td>
             <td>{{ user.role.name }}</td>
-            {% if user.status.name == 'Active' %}
-              <td class="text-success">{{ user.status.name }}</td>
-            {% else %}
-              <td class="text-info">{{ user.status.name }}</td>
-            {% endif %}
             <td>
-              {% if is_allowed_to_update_project %}
-                <input type="checkbox"
-                id="email_notifications_for_user_id_{{user.id}}"
-                name="email_notifications_checkbox"
-                value="{{ user.enable_notifications }}"
-                {% if user.enable_notifications %} checked {% endif %}
-                {% if user.role.name == "Manager" %} disabled {% endif %}
-                {% if not request.user.is_superuser and user.role.name == "User" and request.user == user.user %} disabled {% endif %}>
-              {% elif request.user == user.user %}
-                <input type="checkbox"
-                id="email_notifications_for_user_id_{{user.id}}"
-                name="email_notifications_checkbox"
-                value="{{ user.enable_notifications }}"
-                {% if user.enable_notifications %} checked {% endif %}>
+              {% if user.user.userprofile.cluster_uid is not None %}
+                {{ user.user.username }}
               {% else %}
-                <input type="checkbox"
-                id="email_notifications_for_user_id_{{user.id}}"
-                name="email_notifications_checkbox"
-                value="{{ user.enable_notifications }}"
-                {% if user.enable_notifications %} checked {% endif %}
-                disabled>
+                No cluster account.
+              {% endif %}
+            </td>
+            <td>
+              {% if user.cluster_access_status == "Active" %}
+                <span class="badge badge-success">
+                  Active
+                </span>
+              {% elif user.cluster_access_status == "Pending - Add" %}
+                <span class="badge badge-warning">
+                  Pending
+                </span>
+              {% else %}
+                <span class="badge badge-danger">
+                  No Access
+                </span>
               {% endif %}
             </td>
             <td>
@@ -177,8 +176,6 @@ Project Detail
                 <a href="{% url 'project-user-detail' project.pk user.id %}"><i class="fas fa-user-edit"></i></a>
               {% endif %}
             </td>
-
-
           </tr>
           {% endfor %}
         </tbody>
@@ -194,12 +191,6 @@ Project Detail
 <div class="card mb-3">
   <div class="card-header">
   <h4 class="d-inline"><i class="fas fa-server"></i> Allocations </h4> <span class="badge badge-secondary">{{allocations.count}}</span>
-    <div class="float-right">
-      {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
-        <a class="btn btn-success" href="{% url 'allocation-create' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Request Resource Allocation</a>
-      {% endif %}
-    </div>
-
   </div>
   <div class="card-body">
     {% if allocations %}
@@ -212,7 +203,7 @@ Project Detail
             <th>Information</th>
             <th>Status</th>
             <th>End Date</th>
-            <th class="nosort">Actions</th>
+            <th class="nosort">More Details</th>
           </tr>
         </thead>
         <tbody>
@@ -345,8 +336,7 @@ $("[id^=email_notifications_for_user_id_]").change(function() {
     }
   });
 
-
-
+  location.reload();
 });
 
 </script>

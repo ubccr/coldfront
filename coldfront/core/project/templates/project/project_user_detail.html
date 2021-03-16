@@ -1,4 +1,4 @@
-{% extends "common/base.html" %} 
+{% extends "common/base.html" %}
 {% load crispy_forms_tags %}
 {% load static %}
 
@@ -12,7 +12,7 @@ Project User Detail
 
 <h1>Project User Detail</h1>
 
-<h3>Project: {{project.title}}</h3> <hr>
+<h3>Project: {{project_obj.name}}</h3> <hr>
 
 <form action="{% url 'project-user-detail' project_obj.pk project_user_obj.pk %}" method="post">
 {% csrf_token %}
@@ -21,10 +21,6 @@ Project User Detail
   <div class="card-body">
     <div class="table-responsive">
       <table class="table">
-        <tr>
-          <th scope="row">Username:</th>
-          <td>{{project_user_obj.user.username}}</td>
-        </tr>
         <tr>
           <th scope="row">First Name:</th>
           <td>{{project_user_obj.user.first_name}}</td>
@@ -37,32 +33,31 @@ Project User Detail
           <th scope="row">Email:</th>
           <td>{{project_user_obj.user.email}}</td>
         </tr>
-        <tr>
-          <th scope="row">Status:</th>
-          <td>{{project_user_obj.status.name}}</td>
-        </tr>
         {% if project_user_obj.user in project_user_obj.project.pis %}
           <tr>
             <th scope="row">Role:</th>
             <td>{{project_user_obj.role}}</td>
-          </tr>
-          <tr>
-            <th scope="row">Notifications Enabled:</th>
-            <td>{{project_user_obj.enable_notifications|yesno:"Yes,No"}}</td>
           </tr>
         {% else %}
           <tr>
             <th scope="row">Role:</th>
             <td>{{project_user_update_form.role}}</td>
           </tr>
-          <tr>
-            <th scope="row">Enable Notifications:</th>
-            <td>{{project_user_update_form.enable_notifications}}</td>
-          </tr>
+          {% if project_user_is_manager %}
+              <tr>
+                <th scope="row">Notifications Enabled:</th>
+                <td>{{project_user_obj.enable_notifications|yesno:"Yes,No"}}</td>
+              </tr>
+          {% else %}
+              <tr>
+                <th scope="row">Enable Notifications:</th>
+                <td>{{project_user_update_form.enable_notifications}}</td>
+              </tr>
+          {% endif %}
         {% endif %}
       </table>
     </div>
-  </div> 
+  </div>
   <div class="card-footer">
     {% if project_user_obj.user not in project_user_obj.project.pis %}
       <button type="submit" class="btn btn-primary">Update</button>
@@ -72,5 +67,57 @@ Project User Detail
 </div>
 </form>
 
+<br>
+<form action="{% url 'allocation-request-cluster-account' allocation_obj.pk project_user_obj.user.pk %}" method="post">
+  {% csrf_token %}
+  <div class="card">
+    <div class="card-header">
+      <i class="fas fa-terminal" aria-hidden="true"></i>
+      Cluster Access
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table">
+          <tr>
+            <th scope="row">Cluster Username:</th>
+            {% if project_user_obj.user.userprofile.cluster_uid is not None %}
+              <td>
+                {{project_user_obj.user.username}}
+              </td>
+            {% else %}
+              <td>
+                No cluster account.
+              </td>
+            {% endif %}
+          </tr>
+          <tr>
+            <th scope="row">Project Access on Cluster:</th>
+            <td>
+              {% if cluster_access_status == 'Active' %}
+                <span class="badge badge-success">
+                  Active
+                </span>
+              {% elif cluster_access_status == 'Pending - Add' %}
+                <span class="badge badge-warning">
+                  Pending
+                </span>
+              {% elif cluster_access_status == 'None' %}
+                <form action="{% url 'allocation-request-cluster-account' allocation_obj.pk project_user_obj.user.pk %}" method="post">
+                  {% csrf_token %}
+                  <button class="btn btn-primary" type="submit">
+                    <i class="fas fa-terminal" aria-hidden="true"></i>
+                    Request Cluster Access
+                  </button>
+                </form>
+              {% else %}
+                Failed to retrieve status. Please contact an administrator.
+              {% endif %}
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</form>
 
 {% endblock%}

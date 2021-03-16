@@ -16,18 +16,23 @@ class Command(BaseCommand):
     logger = logging.getLogger(__name__)
 
     def handle(self, *args, **options):
-        # Allocations to Savio must have 'Savio Compute' as a Resource.
         resource_type, _ = ResourceType.objects.get_or_create(
             name='Cluster', description='Cluster servers')
-        try:
-            resource = Resource.objects.get(name='Savio Compute')
-        except Resource.DoesNotExist:
-            resource = Resource.objects.create(
-                name='Savio Compute', resource_type=resource_type)
-        resource.description = 'Savio cluster compute access'
-        # Each Project can only have one Allocation to this Resource.
-        resource.is_unique_per_project = True
-        resource.save()
+        resources = [
+            ('Savio Compute', 'Savio cluster compute access'),
+            ('Vector Compute', 'Vector cluster compute access'),
+        ]
+        for name, description in resources:
+            # Allocations to a cluster must have the corresponding Resource.
+            try:
+                resource = Resource.objects.get(name=name)
+            except Resource.DoesNotExist:
+                resource = Resource.objects.create(
+                    name=name, resource_type=resource_type)
+            resource.description = description
+            # Each Project can only have one Allocation to this Resource.
+            resource.is_unique_per_project = True
+            resource.save()
 
         # Each Allocation has at most one 'Service Units' attribute of
         # type Decimal.
