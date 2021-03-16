@@ -3,7 +3,7 @@
   background: #E2E2E2;
 }
 
-/*.navbar-custom {
+.navbar-custom {
   background-color: #FFFFFF;
   font-weight: bold;
   height: 50px;
@@ -13,7 +13,7 @@
   background: #E2E2E2;
 }
 
-*/
+
 
 
 
@@ -53,7 +53,7 @@ main {
   width: 100%;
   /* Set the fixed height of the footer here */
   height: 150px;
-  background-color: #4582EC;
+  background-color: #A51C30;
   color: #ffffff;
   padding-top: 15px;
 }
@@ -138,4 +138,8 @@ body > main > div > div.card.border-primary > div.card-body > form > div.alert.a
 .django-hijack-button-default:active {
 	position:relative;
 	top:1px;
+}
+.bg-primary {
+  
+  background-color: #A51C30 !important;
 }

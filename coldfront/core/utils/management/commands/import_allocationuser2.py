@@ -49,7 +49,7 @@ class Command(BaseCommand):
         user1 = User.objects.get(username='shiwei')
         resource_type_obj = ResourceType.objects.get(name="Storage")
         parent_resource_obj = None
-        name = "FAS RC"
+        name = "holylfs04"
         description = "FAS RC Research Computing"
         is_available = True
         is_public = True
@@ -106,7 +106,7 @@ class Command(BaseCommand):
             justification='test test test test test.'
         )
         allocation_obj.resources.add(
-            Resource.objects.get(name='FAS RC'))
+            Resource.objects.get(name='holylfs04'))
         allocation_obj.save()
 
 #begin: input allocation usage data
