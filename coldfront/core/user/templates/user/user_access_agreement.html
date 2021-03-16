@@ -193,14 +193,16 @@ User Access Agreement
                 </p>
               </td>
             </tr>
-            <tr>
-              <th scope="row">Submit</th>
-              <td>
-                <div>
-                  {% include "user/user_access_agreement_form.html" %}
-                </div>
-              </td>
-            </tr>
+            {% if user.userprofile.access_agreement_signed_date is None %}
+              <tr>
+                <th scope="row">Submit</th>
+                <td>
+                  <div>
+                    {% include "user/user_access_agreement_form.html" %}
+                  </div>
+                </td>
+              </tr>
+            {% endif %}
           </tbody>
         </table>
       </div>

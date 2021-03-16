@@ -18,3 +18,11 @@ def add_project_user_status_choices(apps, schema_editor):
 
     for choice in ['Active', 'Pending Remove', 'Denied', 'Removed', ]:
         ProjectUserStatusChoice.objects.get_or_create(name=choice)
+
+
+def get_project_compute_allocation(project_obj):
+    if project_obj.name.startswith('vector_'):
+        resource_name = 'Vector Compute'
+    else:
+        resource_name = 'Savio Compute'
+    return project_obj.allocation_set.get(resources__name=resource_name)
