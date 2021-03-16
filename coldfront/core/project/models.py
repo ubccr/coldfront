@@ -50,7 +50,7 @@ We do not have information about your research. Please provide a detailed descri
     requires_review = models.BooleanField(default=True)
     history = HistoricalRecords()
 
-    joins_require_approval = models.BooleanField(default=False)
+    joins_require_approval = models.BooleanField(default=True)
 
     def clean(self):
         if 'Auto-Import Project'.lower() in self.title.lower():
