@@ -1,6 +1,15 @@
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/css/bootstrap.css">
+    <link rel="stylesheet" href="//cdn.datatables.net/1.10.16/css/dataTables.bootstrap4.min.css">
+  </head>
+  
 {% extends "common/base.html" %}
 {% load crispy_forms_tags %}
 {% load static %}
+{% load django_tables2 %}
+{% render_table table %}
+
 
 
 {% block title %}
@@ -34,6 +43,7 @@ Allocation Detail
     <form method="post">
       {% csrf_token %}
       <div class="table-responsive">
+        <div class = "container mb-3 mt-3">
         <table class="table table-bordered table-sm">
           <tr>
             <th scope="row" class="text-nowrap">Project:</th>
@@ -121,6 +131,7 @@ Allocation Detail
           </tr>
         </table>
       </div>
+      </div>
       {% if request.user.is_superuser %}
         <button type="submit" class="btn btn-success float-right"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
       {% endif %}
@@ -200,22 +211,26 @@ Allocation Detail
         <a class="btn btn-danger" href="{% url 'allocation-remove-users' allocation.pk %}" role="button">
           <i class="fas fa-user-times" aria-hidden="true"></i> Remove Users
         </a>
-      {% endif %}Users in Allocation
+      {% endif %}
 
   
     </div>
   </div>
   <div class="card-body">
     <div class="table-responsive">
-      <table class="table table-hover">
+    <div class = "container mb-3 mt-3">
+      <!-- <table  class="table table-hover mydatatable" > -->
+        <table id = "mydatatable" class = "table table-striped table-bordered">
         <thead>
           <tr>
             <th scope="col">Username</th>
             <th scope="col">Name</th>
             <th scope="col">Email</th>
+            <th scope="col">Bytes</th>
+
             <th scope="col">Usage</th>
             <th scope="col">Status</th>
-            <th scope="col">Last Modified</th>
+            <!-- <th scope="col">Last Modified</th> -->
           </tr>
         </thead>
         <tbody>
@@ -224,6 +239,8 @@ Allocation Detail
               <td>{{ user.user.username }}</td>
               <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
               <td>{{ user.user.email }}</td>
+              <td>{{ user.usage_bytes }}</td>
+
               <td>{{ user.usage }}{{ user.unit }}</td>
 
               {% if user.status.name == 'Active' %}
@@ -233,14 +250,47 @@ Allocation Detail
               {% else %}
                 <td class="text-info">{{ user.status.name }}</td>
               {% endif %}
-              <td>{{ user.modified|date:"M. d, Y" }}</td>
+              <!-- <td>{{ user.modified|date:"M. d, Y" }}</td> -->
             </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
+
+    </div>
   </div>
 </div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.css"/>
+ 
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/pdfmake.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.js"></script>
+
+<!-- 
+  <script src="//code.jquery.com/jquery-1.12.4.js"></script>
+  <script src="//cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
+  <script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script> -->
+  <!-- <script>
+      $(document).ready(function() {
+          $('#mydatatable').DataTable();
+      });
+  </script> -->
+
+  <script>
+      $(document).ready( function () {
+      $('#mydatatable').DataTable({
+      
+      dom: 'B<"clear">lfrtip',
+      buttons: {
+          name: 'primary',
+          buttons: [  'csv', 'excel', 'pdf' ]
+      
+          }}
+      );
+      } );
+      </script>
 
 <!-- Start Admin Messages -->
 <div class="card mb-3">
@@ -302,4 +352,30 @@ Allocation Detail
   }
   $(".datepicker").datepicker({ dateFormat: 'yy-mm-dd' });
 </script>
+{% endblock %}
+
+
+{% block js %}
+<!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.css"/>
+ 
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/pdfmake.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.js"></script> -->
+
+<!-- 
+<script>
+$(document).ready( function () {
+$('#mydatatable').DataTable({
+
+dom: 'B<"clear">lfrtip',
+buttons: {
+    name: 'primary',
+    buttons: [ 'copy', 'csv', 'excel', 'pdf' ]
+
+    }}
+);
+} );
+</script> -->
+</div>
 {% endblock %}

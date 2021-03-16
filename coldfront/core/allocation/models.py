@@ -15,6 +15,8 @@ from simple_history.models import HistoricalRecords
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import import_from_settings
+from table import Table
+from table.columns import Column
 
 logger = logging.getLogger(__name__)
 

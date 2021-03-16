@@ -1353,7 +1353,80 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
 
         if self.request.user.has_perm('allocation.can_manage_invoice'):
             return True
+    def get_context_data(self, **kwargs):
+            context = super().get_context_data(**kwargs)
+            pk = self.kwargs.get('pk')
+            allocation_obj = get_object_or_404(Allocation, pk=pk)
+            allocation_users = allocation_obj.allocationuser_set.exclude(
+                status__name__in=['Removed']).order_by('user__username')
 
+            if self.request.user.is_superuser:
+                attributes_with_usage = [attribute for attribute in allocation_obj.allocationattribute_set.all(
+                ).order_by('allocation_attribute_type__name') if hasattr(attribute, 'allocationattributeusage')]
+
+                attributes = [attribute for attribute in allocation_obj.allocationattribute_set.all(
+                ).order_by('allocation_attribute_type__name')]
+
+            else:
+                attributes_with_usage = [attribute for attribute in allocation_obj.allocationattribute_set.filter(
+                    allocation_attribute_type__is_private=False) if hasattr(attribute, 'allocationattributeusage')]
+
+                attributes = [attribute for attribute in allocation_obj.allocationattribute_set.filter(
+                    allocation_attribute_type__is_private=False)]
+
+            guage_data = []
+            invalid_attributes = []
+            for attribute in attributes_with_usage:
+                try:
+                    guage_data.append(generate_guauge_data_from_usage(attribute.allocation_attribute_type.name,
+                                                                    float(attribute.value), float(attribute.allocationattributeusage.value)))
+                except ValueError:
+                    logger.error("Allocation attribute '%s' is not an int but has a usage",
+                                attribute.allocation_attribute_type.name)
+                    invalid_attributes.append(attribute)
+
+            for a in invalid_attributes:
+                attributes_with_usage.remove(a)
+
+            if self.request.user.is_superuser:
+                context['is_allowed_to_update_project'] = True
+            elif allocation_obj.project.projectuser_set.filter(user=self.request.user).exists():
+                project_user = allocation_obj.project.projectuser_set.get(
+                    user=self.request.user)
+                if project_user.role.name == 'Manager':
+                    context['is_allowed_to_update_project'] = True
+                else:
+                    context['is_allowed_to_update_project'] = False
+            else:
+                context['is_allowed_to_update_project'] = False
+
+            context['guage_data'] = guage_data
+            context['attributes_with_usage'] = attributes_with_usage
+            context['attributes'] = attributes
+
+            # Can the user update the project?
+            if self.request.user.is_superuser:
+                context['is_allowed_to_update_project'] = True
+            elif allocation_obj.project.projectuser_set.filter(user=self.request.user).exists():
+                project_user = allocation_obj.project.projectuser_set.get(
+                    user=self.request.user)
+                if project_user.role.name == 'Manager':
+                    context['is_allowed_to_update_project'] = True
+                else:
+                    context['is_allowed_to_update_project'] = False
+            else:
+                context['is_allowed_to_update_project'] = False
+            context['allocation_users'] = allocation_users
+
+            if self.request.user.is_superuser:
+                notes = allocation_obj.allocationusernote_set.all()
+            else:
+                notes = allocation_obj.allocationusernote_set.filter(
+                    is_private=False)
+
+            context['notes'] = notes
+            context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
+            return context
     def get(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
@@ -1403,6 +1476,83 @@ class AllocationAddInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, Crea
 
         if self.request.user.has_perm('allocation.can_manage_invoice'):
             return True
+
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        pk = self.kwargs.get('pk')
+        allocation_obj = get_object_or_404(Allocation, pk=pk)
+        allocation_users = allocation_obj.allocationuser_set.exclude(
+            status__name__in=['Removed']).order_by('user__username')
+
+        if self.request.user.is_superuser:
+            attributes_with_usage = [attribute for attribute in allocation_obj.allocationattribute_set.all(
+            ).order_by('allocation_attribute_type__name') if hasattr(attribute, 'allocationattributeusage')]
+
+            attributes = [attribute for attribute in allocation_obj.allocationattribute_set.all(
+            ).order_by('allocation_attribute_type__name')]
+
+        else:
+            attributes_with_usage = [attribute for attribute in allocation_obj.allocationattribute_set.filter(
+                allocation_attribute_type__is_private=False) if hasattr(attribute, 'allocationattributeusage')]
+
+            attributes = [attribute for attribute in allocation_obj.allocationattribute_set.filter(
+                allocation_attribute_type__is_private=False)]
+
+        guage_data = []
+        invalid_attributes = []
+        for attribute in attributes_with_usage:
+            try:
+                guage_data.append(generate_guauge_data_from_usage(attribute.allocation_attribute_type.name,
+                                                                  float(attribute.value), float(attribute.allocationattributeusage.value)))
+            except ValueError:
+                logger.error("Allocation attribute '%s' is not an int but has a usage",
+                             attribute.allocation_attribute_type.name)
+                invalid_attributes.append(attribute)
+
+        for a in invalid_attributes:
+            attributes_with_usage.remove(a)
+
+        if self.request.user.is_superuser:
+            context['is_allowed_to_update_project'] = True
+        elif allocation_obj.project.projectuser_set.filter(user=self.request.user).exists():
+            project_user = allocation_obj.project.projectuser_set.get(
+                user=self.request.user)
+            if project_user.role.name == 'Manager':
+                context['is_allowed_to_update_project'] = True
+            else:
+                context['is_allowed_to_update_project'] = False
+        else:
+            context['is_allowed_to_update_project'] = False
+
+        context['guage_data'] = guage_data
+        context['attributes_with_usage'] = attributes_with_usage
+        context['attributes'] = attributes
+
+        # Can the user update the project?
+        if self.request.user.is_superuser:
+            context['is_allowed_to_update_project'] = True
+        elif allocation_obj.project.projectuser_set.filter(user=self.request.user).exists():
+            project_user = allocation_obj.project.projectuser_set.get(
+                user=self.request.user)
+            if project_user.role.name == 'Manager':
+                context['is_allowed_to_update_project'] = True
+            else:
+                context['is_allowed_to_update_project'] = False
+        else:
+            context['is_allowed_to_update_project'] = False
+        context['allocation_users'] = allocation_users
+
+        if self.request.user.is_superuser:
+            notes = allocation_obj.allocationusernote_set.all()
+        else:
+            notes = allocation_obj.allocationusernote_set.filter(
+                is_private=False)
+
+        context['notes'] = notes
+        context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
+        return context
+
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
