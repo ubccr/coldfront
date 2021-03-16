@@ -11,7 +11,8 @@ from simple_history.models import HistoricalRecords
 from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.utils.common import import_from_settings
 
-PROJECT_ENABLE_PROJECT_REVIEW = import_from_settings('PROJECT_ENABLE_PROJECT_REVIEW', False)
+PROJECT_ENABLE_PROJECT_REVIEW = import_from_settings(
+    'PROJECT_ENABLE_PROJECT_REVIEW', False)
 
 
 class ProjectStatusChoice(TimeStampedModel):
@@ -42,13 +43,14 @@ We do not have information about your research. Please provide a detailed descri
         ],
     )
 
-    field_of_science = models.ForeignKey(FieldOfScience, on_delete=models.CASCADE, default=FieldOfScience.DEFAULT_PK)
+    field_of_science = models.ForeignKey(
+        FieldOfScience, on_delete=models.CASCADE, default=FieldOfScience.DEFAULT_PK)
     status = models.ForeignKey(ProjectStatusChoice, on_delete=models.CASCADE)
     force_review = models.BooleanField(default=False)
     requires_review = models.BooleanField(default=True)
     history = HistoricalRecords()
 
-    joins_require_approval = models.BooleanField(default=False)
+    joins_require_approval = models.BooleanField(default=True)
 
     def clean(self):
         if 'Auto-Import Project'.lower() in self.title.lower():
@@ -133,7 +135,8 @@ We do not have information about your research. Please provide a detailed descri
 
         permissions = (
             ("can_view_all_projects", "Can view all projects"),
-            ("can_review_pending_project_reviews", "Can review pending project reviews"),
+            ("can_review_pending_project_reviews",
+             "Can review pending project reviews"),
         )
 
 
@@ -167,7 +170,8 @@ class ProjectReviewStatusChoice(TimeStampedModel):
 
 class ProjectReview(TimeStampedModel):
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    status = models.ForeignKey(ProjectReviewStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
+    status = models.ForeignKey(
+        ProjectReviewStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
     reason_for_not_updating_project = models.TextField(blank=True, null=True)
     history = HistoricalRecords()
 
@@ -197,7 +201,8 @@ class ProjectUser(TimeStampedModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     role = models.ForeignKey(ProjectUserRoleChoice, on_delete=models.CASCADE)
-    status = models.ForeignKey(ProjectUserStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
+    status = models.ForeignKey(
+        ProjectUserStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
     enable_notifications = models.BooleanField(default=True)
     history = HistoricalRecords()
 
