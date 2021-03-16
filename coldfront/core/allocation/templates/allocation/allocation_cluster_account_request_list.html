@@ -19,6 +19,7 @@ Cluster Account Review New and Pending Requests
         <th scope="col">#</th>
         <th scope="col">Date Requested/<br>Last Modified</th>
         <th scope="col">User Email</th>
+        <th scope="col">Cluster Username</th>
         <th scope="col">Project</th>
         <th scope="col">Allocation</th>
         <th scope="col">Allocation Actions</th>
@@ -30,6 +31,15 @@ Cluster Account Review New and Pending Requests
         <td>{{ cluster_account.pk }}</a></td>
         <td>{{ cluster_account.modified|date:"M. d, Y" }}</td>
         <td>{{ cluster_account.allocation_user.user.email }}</td>
+        <td>
+          {% if cluster_account.allocation_user.user.userprofile.cluster_uid %}
+            {{ cluster_account.allocation_user.user.username }}
+          {% else %}
+            <span class="badge badge-danger">
+              No cluster account.
+            </span>
+          {% endif %}
+        </td>
         <td>
           <a href="{% url 'project-detail' cluster_account.allocation.project.pk %}">
             {{ cluster_account.allocation.project.name }}
