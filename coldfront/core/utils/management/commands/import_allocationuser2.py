@@ -115,7 +115,7 @@ class Command(BaseCommand):
             name='Tier 0')
 
         allocation_attribute_type_obj = AllocationAttributeType.objects.get(
-            name='Cloud Storage Quota (TB)')
+            name='Storage Quota (TB)')
         allocation_attribute_obj, _ = AllocationAttribute.objects.get_or_create(
             allocation_attribute_type=allocation_attribute_type_obj,
             allocation=allocation_obj,
@@ -126,8 +126,8 @@ class Command(BaseCommand):
 
 
 
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-        name='quantity_default_value'), resource=Resource.objects.get(name='Budgetstorage'), value=10)
+        # ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
+        # name='quantity_default_value'), resource=Resource.objects.get(name='Budgetstorage'), value=10)
 #end: input allocation usage data
 
         # reading in data from JSON file, adding users
