@@ -173,7 +173,7 @@ class Command(BaseCommand):
                         status=AllocationUserStatusChoice.objects.get(name='Inactive'),
                         usage_bytes = user_lst['logical_usage'],
                         usage = num,
-                        unit = alpha
+                        unit = alpha,
                     )
                     User.objects.get(username=user_lst['user']).save()
                     allocation_user_obj.save()

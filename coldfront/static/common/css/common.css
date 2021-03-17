@@ -150,5 +150,32 @@ body > main > div > div.card.border-primary > div.card-body > form > div.alert.a
 .btn-primary {
   
   background-color: #A51C30 !important;
+  border-color: white;
 }
 
+.text-nowrap {
+  color: black !important;
+}
+.btn-success {
+  background-color:#A51C30 !important;
+}  
+#expand_button {
+  color:#A51C30 !important;
+}
+.dropdown-item.active {
+  background-color: #A51C30 !important;
+}
+h2 a {
+  color: #A51C30 !important;
+}
+
+tr td a {
+  color: #A51C30 !important;
+}
+
+
+.page-item.active .page-link {
+  /* color: #A51C30 !important; */
+  background-color:#A51C30 !important;
+  border-color: white;
+}
