@@ -204,7 +204,7 @@
 
               <td data-sort = "{{user.usage_bytes}}">{{ user.usage }}{{ user.unit }}</td>
               <td>{{ user.usage_bytes | div:1099511627776|div:156.07|mul:100|get_digit:"0" }}</td>
-              <td>{{ user.usage_bytes | div:1099511627776|mul:50| div:12}}</td>
+              <td>{{ user.usage_bytes | div:1099511627776|mul:50| div:12|get_digit:"0"}}</td>
               
             
 
@@ -377,7 +377,6 @@
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/pdfmake.min.js"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js"></script>
 <script type="text/javascript" src="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.js"></script> -->
-
 <!-- 
 <script>
 $(document).ready( function () {
@@ -386,11 +385,34 @@ $('#mydatatable').DataTable({
 dom: 'B<"clear">lfrtip',
 buttons: {
     name: 'primary',
-    buttons: [ 'copy', 'csv', 'excel', 'pdf' ]
-
+    buttons: [  'pdf' ],
+    paging: false,
+    iDisplayLength: -1,
     }}
 );
-} );
-</script> -->
+
+
+</script>  -->
+
+<script>
+    $(document).ready( function () {
+    $('#mydatatable').DataTable({
+    
+    dom: 'B<"clear">lfrtip',
+    buttons: {
+        name: 'primary',
+        buttons: [  'csv', 'excel', 'pdf' ]
+    
+        }
+        
+    }
+    paging: false,
+    );
+    } );
+</script>
+
+
+
+
 </div>
 {% endblock %}
