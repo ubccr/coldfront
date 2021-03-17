@@ -174,8 +174,10 @@ class Command(BaseCommand):
         resource = Resource.objects.get(name='Savio Compute')
         allocation_status_choice = AllocationStatusChoice.objects.get(
             name='Active')
-        allocation_attribute_type = AllocationAttributeType.objects.get(
+        service_units = AllocationAttributeType.objects.get(
             name='Service Units')
+        cluster_account_status = AllocationAttributeType.objects.get(
+            name='Cluster Account Status')
         allocation_user_status_choice = AllocationUserStatusChoice.objects.get(
             name='Active')
 
@@ -204,12 +206,12 @@ class Command(BaseCommand):
         # value.
         allocation_attribute, created = \
             AllocationAttribute.objects.get_or_create(
-                allocation_attribute_type=allocation_attribute_type,
+                allocation_attribute_type=service_units,
                 allocation=allocation)
         if created:
             self.logger.info(
                 f'AllocationAttribute with type '
-                f'{allocation_attribute_type.name} for Allocation '
+                f'{service_units.name} for Allocation '
                 f'{allocation.pk} was created.')
         allocation_attribute.value = str(value)
         allocation_attribute.save()
@@ -223,8 +225,12 @@ class Command(BaseCommand):
                 f'Unexpected: No AllocationAttributeUsage object exists for '
                 f'AllocationAttribute {allocation_attribute.pk}.')
 
-        # Set allocations for each of the project's users.
-        for project_user in ProjectUser.objects.filter(project=project):
+        # Set allocations and cluster account statuses for each of the
+        # project's users.
+        project_users = ProjectUser.objects.prefetch_related(
+            'status', 'user__userprofile'
+        ).filter(project=project, status__name='Active')
+        for project_user in project_users:
             # Create or retrieve the allocation user.
             try:
                 allocation_user = AllocationUser.objects.get(
@@ -243,13 +249,12 @@ class Command(BaseCommand):
             # Set its value.
             allocation_user_attribute, created = \
                 AllocationUserAttribute.objects.get_or_create(
-                    allocation_attribute_type=allocation_attribute_type,
+                    allocation_attribute_type=service_units,
                     allocation=allocation, allocation_user=allocation_user)
             if created:
                 self.logger.info(
-                    f'AllocationUserAttribute with type '
-                    f'{allocation_attribute_type.name} for AllocationUser '
-                    f'{allocation_user.pk } was created.')
+                    f'AllocationUserAttribute with type {service_units.name} '
+                    f'for AllocationUser {allocation_user.pk} was created.')
             allocation_user_attribute.value = str(value)
             allocation_user_attribute.save()
 
@@ -263,9 +268,27 @@ class Command(BaseCommand):
                     f'exists for AllocationUserAttribute '
                     f'{allocation_user_attribute}.')
 
-    def create_vector_allocations(self):
+            # If the user has a cluster_uid, create or retrieve the allocation
+            # user's Cluster Account Status attribute. Set its value to
+            # 'Active'.
+            if not project_user.user.userprofile.cluster_uid:
+                continue
+            allocation_user_attribute, created = \
+                AllocationUserAttribute.objects.get_or_create(
+                    allocation_attribute_type=cluster_account_status,
+                    allocation=allocation, allocation_user=allocation_user)
+            if created:
+                self.logger.info(
+                    f'AllocationUserAttribute with type '
+                    f'{cluster_account_status.name} for AllocationUser '
+                    f'{allocation_user.pk} was created.')
+            allocation_user_attribute.value = 'Active'
+            allocation_user_attribute.save()
+
+    def create_vector_allocations(self, allocation_user_status_choice=None):
         """Create allocations to the Vector Compute resource for Vector
-        projects.
+        projects, allocation users, and allocation user attributes
+        denoting that each user has cluster access.
 
         Parameters:
             - None
@@ -282,8 +305,13 @@ class Command(BaseCommand):
         resource = Resource.objects.get(name='Vector Compute')
         allocation_status_choice = AllocationStatusChoice.objects.get(
             name='Active')
+        cluster_account_status = AllocationAttributeType.objects.get(
+            name='Cluster Account Status')
+        allocation_user_status_choice = AllocationUserStatusChoice.objects.get(
+            name='Active')
         projects = Project.objects.prefetch_related(
             'allocation_set__status', 'allocation_set__resources',
+            'projectuser_set',
         ).filter(name__startswith='vector_', status__name='Active')
         for project in projects:
             allocations = project.allocation_set.filter(resources=resource)
@@ -303,3 +331,38 @@ class Command(BaseCommand):
                 raise MultipleObjectsReturned(
                     f'Unexpected: Project {project.name} has more than one '
                     f'Allocation to Resource {resource.name}.')
+
+            # Set cluster account statuses for each of the project's users.
+            project_users = project.projectuser_set.prefetch_related(
+                'status', 'user__userprofile').filter(status__name='Active')
+            for project_user in project_users:
+                # Create or retrieve the allocation user.
+                try:
+                    allocation_user = AllocationUser.objects.get(
+                        allocation=allocation, user=project_user.user)
+                except AllocationUser.DoesNotExist:
+                    allocation_user = AllocationUser.objects.create(
+                        allocation=allocation, user=project_user.user,
+                        status=allocation_user_status_choice)
+                    self.logger.info(
+                        f'AllocationUser for Allocation {allocation.pk} and '
+                        f'User {project_user.user.username} was created.')
+                else:
+                    allocation_user.status = allocation_user_status_choice
+                    allocation_user.save()
+                # If the user has a cluster_uid, create or retrieve the
+                # allocation user's Cluster Account Status attribute. Set its
+                # value to 'Active'.
+                if not project_user.user.userprofile.cluster_uid:
+                    continue
+                allocation_user_attribute, created = \
+                    AllocationUserAttribute.objects.get_or_create(
+                        allocation_attribute_type=cluster_account_status,
+                        allocation=allocation, allocation_user=allocation_user)
+                if created:
+                    self.logger.info(
+                        f'AllocationUserAttribute with type '
+                        f'{cluster_account_status.name} for AllocationUser '
+                        f'{allocation_user.pk} was created.')
+                allocation_user_attribute.value = 'Active'
+                allocation_user_attribute.save()
