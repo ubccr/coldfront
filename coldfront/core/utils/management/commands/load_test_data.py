@@ -424,7 +424,7 @@ class Command(BaseCommand):
             allocation=allocation_obj,
             value=1000)
 
-        allocation_attribute_obj.allocationattributeusage.value = 200
+        allocation_attribute_obj.allocationattributeusage.value = 244
         allocation_attribute_obj.allocationattributeusage.save()
 
         allocation_user_obj = AllocationUser.objects.create(
@@ -456,7 +456,7 @@ class Command(BaseCommand):
             allocation=allocation_obj,
             value=20)
 
-        allocation_attribute_obj.allocationattributeusage.value = 10
+        allocation_attribute_obj.allocationattributeusage.value = 13
         allocation_attribute_obj.allocationattributeusage.save()
 
         allocation_attribute_type_obj = AllocationAttributeType.objects.get(

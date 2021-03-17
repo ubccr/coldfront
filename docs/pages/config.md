@@ -270,6 +270,7 @@ Create a common.css with the following styles and set the environment variable:
 $ mkdir -p site/static/common/css
 $ tee site/static/common/css/common.css <<EOF
 .bg-primary {
+  
   background-color: #000 !important;
 }
 EOF

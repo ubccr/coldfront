@@ -24,7 +24,6 @@ from coldfront.core.resource.models import (Resource, ResourceAttribute,
                                             ResourceAttributeType,
                                             ResourceType)
 from coldfront.core.user.models import UserProfile
-
 base_dir = settings.BASE_DIR
 
 def splitString(str): 
@@ -50,7 +49,7 @@ class Command(BaseCommand):
         user1 = User.objects.get(username='shiwei')
         resource_type_obj = ResourceType.objects.get(name="Storage")
         parent_resource_obj = None
-        name = "FAS RC"
+        name = "holylfs04"
         description = "FAS RC Research Computing"
         is_available = True
         is_public = True
@@ -104,30 +103,44 @@ class Command(BaseCommand):
             status=AllocationStatusChoice.objects.get(name='Active'),
             start_date=start_date,
             end_date=end_date,
-            justification='Test justification reasoning.'
+            justification='test test test test test.'
         )
         allocation_obj.resources.add(
-            Resource.objects.get(name='FAS RC'))
+            Resource.objects.get(name='holylfs04'))
         allocation_obj.save()
+
+#begin: input allocation usage data
+
+        allocation_attribute_type_obj = AllocationAttributeType.objects.get(
+            name='Tier 0')
+
+        allocation_attribute_type_obj = AllocationAttributeType.objects.get(
+            name='Cloud Storage Quota (TB)')
+        allocation_attribute_obj, _ = AllocationAttribute.objects.get_or_create(
+            allocation_attribute_type=allocation_attribute_type_obj,
+            allocation=allocation_obj,
+            value=200)
+
+        allocation_attribute_obj.allocationattributeusage.value = 156.07
+        allocation_attribute_obj.allocationattributeusage.save()
+
+
+
+        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
+        name='quantity_default_value'), resource=Resource.objects.get(name='Budgetstorage'), value=10)
+#end: input allocation usage data
 
         # reading in data from JSON file, adding users
         with open (file_path) as json_file:
             data = json.load(json_file)
-            print("line88")
-            print(data)
-            print("line89")
-            print(type(data))
-            print("line89.1")
-            print(len(data))
-            print("line90")
-            print(data[0])
-            print("line96")
-            print(type(data[0]))
-            print(data[0]['user'])
-            print("line99")
-            print("line111")
-            print(data[0]['usage'])
-            print(type(data[0]['usage']))
+            # print(data)
+            # print(type(data))
+            # print(len(data))
+            # print(data[0])
+            # print(type(data[0]))
+            # print(data[0]['user'])
+            # print(data[0]['usage'])
+            # print(type(data[0]['usage']))
             
             for user_lst in data: #user_lst is lst
                 print(user_lst) # this is a lst
