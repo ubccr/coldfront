@@ -60,6 +60,8 @@ class Command(BaseCommand):
                 raise Project.DoesNotExist(
                     f'Project {name} unexpectedly does not exist.')
             self.set_allocations(project, value)
+        # Create allocations for active Vector projects.
+        self.create_vector_allocations()
 
     @staticmethod
     def get_allocation_data():
@@ -260,3 +262,44 @@ class Command(BaseCommand):
                     f'Unexpected: No AllocationUserAttributeUsage object '
                     f'exists for AllocationUserAttribute '
                     f'{allocation_user_attribute}.')
+
+    def create_vector_allocations(self):
+        """Create allocations to the Vector Compute resource for Vector
+        projects.
+
+        Parameters:
+            - None
+
+        Returns:
+            - None
+
+        Raises:
+            - ObjectDoesNotExist, if an expected database object does
+            not exist
+            - MultipleObjectsReturned, if a given Project has more than
+            allocation to the Vector Compute resource
+        """
+        resource = Resource.objects.get(name='Vector Compute')
+        allocation_status_choice = AllocationStatusChoice.objects.get(
+            name='Active')
+        projects = Project.objects.prefetch_related(
+            'allocation_set__status', 'allocation_set__resources',
+        ).filter(name__startswith='vector_', status__name='Active')
+        for project in projects:
+            allocations = project.allocation_set.filter(resources=resource)
+            if allocations.count() == 0:
+                allocation = Allocation.objects.create(
+                    project=project, status=allocation_status_choice)
+                allocation.resources.add(resource)
+                allocation.save()
+                self.logger.info(
+                    f'Allocation for Project {project.name} to Resource '
+                    f'{resource.name} was created.')
+            elif allocations.count() == 1:
+                allocation = allocations.first()
+                allocation.status = allocation_status_choice
+                allocation.save()
+            else:
+                raise MultipleObjectsReturned(
+                    f'Unexpected: Project {project.name} has more than one '
+                    f'Allocation to Resource {resource.name}.')
