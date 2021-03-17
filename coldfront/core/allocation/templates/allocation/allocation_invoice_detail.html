@@ -103,12 +103,12 @@
       <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Attributes</h3>
       <div class="float-right">
         {% if request.user.is_superuser %}
-          <a class="btn btn-success" href="{% url 'allocation-attribute-add' allocation.pk %}" role="button">
-            <i class="fas fa-plus" aria-hidden="true"></i> Add Allocation Attribute
+          <!-- <a class="btn btn-success" href="{% url 'allocation-attribute-add' allocation.pk %}" role="button">
+            <i class="fas fa-plus" aria-hidden="true"></i>
           </a>
           <a class="btn btn-danger" href="{% url 'allocation-attribute-delete' allocation.pk %}" role="button">
-            <i class="fas fa-minus" aria-hidden="true"></i> Delete Allocation Attributes
-          </a>
+            <i class="fas fa-minus" aria-hidden="true"></i> 
+          </a> -->
         {% endif %}
       </div>
     </div>
@@ -199,10 +199,10 @@
             <tr>
               <td>{{ user.user.username }}</td>
               <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
-              <!-- <td>{{ user.user.email }}</td> -->
-              <td>{{ user.usage_bytes}}</td>
+              <td>{{ user.user.email }}</td>
+              <!-- <td>{{ user.usage_bytes}}</td> -->
 
-              <td>{{ user.usage }}{{ user.unit }}</td>
+              <td data-sort = "{{user.usage_bytes}}">{{ user.usage }}{{ user.unit }}</td>
               <td>{{ user.usage_bytes | div:1099511627776|div:156.07|mul:100|get_digit:"0" }}</td>
               <td>{{ user.usage_bytes | div:1099511627776|mul:50| div:12}}</td>
               
@@ -250,7 +250,7 @@
       dom: 'B<"clear">lfrtip',
       buttons: {
           name: 'primary',
-          buttons: [  'csv', 'excel', 'pdf' ]
+          // buttons: [  'csv', 'excel', 'pdf' ]
       
           }}
       );

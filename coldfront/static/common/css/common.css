@@ -143,3 +143,12 @@ body > main > div > div.card.border-primary > div.card-body > form > div.alert.a
   
   background-color: #A51C30 !important;
 }
+.page-item.active {
+  
+  background-color: #A51C30 !important;
+}
+.btn-primary {
+  
+  background-color: #A51C30 !important;
+}
+

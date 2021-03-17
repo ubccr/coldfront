@@ -226,7 +226,7 @@ Allocation Detail
             <th scope="col">Username</th>
             <th scope="col">Name</th>
             <th scope="col">Email</th>
-            <th scope="col">Bytes</th>
+            <!-- <th scope="col">Bytes</th> -->
 
             <th scope="col">Usage</th>
             <th scope="col">Status</th>
@@ -239,9 +239,9 @@ Allocation Detail
               <td>{{ user.user.username }}</td>
               <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
               <td>{{ user.user.email }}</td>
-              <td>{{ user.usage_bytes }}</td>
+              <!-- <td>{{ user.usage_bytes }}</td> -->
 
-              <td>{{ user.usage }}{{ user.unit }}</td>
+              <td data-sort = "{{user.usage_bytes}}">{{ user.usage }}{{ user.unit }}</td>
 
               {% if user.status.name == 'Active' %}
                 <td class="text-success">{{ user.status.name }}</td>
