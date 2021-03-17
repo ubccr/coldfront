@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'django_tables2',
     'table',
-    'rest_framework_datatables'
+    'rest_framework_datatables',
 ]
 
 # Additional Apps
