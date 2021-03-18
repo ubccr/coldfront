@@ -50,6 +50,16 @@ from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email_template
 
+
+from django.shortcuts import render
+from io import BytesIO
+from django.http import HttpResponse
+from django.template.loader import get_template
+from django.views import View
+from xhtml2pdf import pisa
+
+
+
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
     'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
 ALLOCATION_DEFAULT_ALLOCATION_LENGTH = import_from_settings(
@@ -1340,7 +1350,8 @@ class AllocationInvoiceListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
             status__name__in=['Paid', 'Payment Pending', 'Payment Requested', 'Payment Declined', ])
         return allocations
 
-
+# this is the view class thats rendering allocation_invoice_detail.
+# each view class has a view template that renders
 class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     model = Allocation
     template_name = 'allocation/allocation_invoice_detail.html'
@@ -1353,6 +1364,7 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
 
         if self.request.user.has_perm('allocation.can_manage_invoice'):
             return True
+    # get context data is where you create all the variables for allocation_invoice_detail.html page
     def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
             pk = self.kwargs.get('pk')
@@ -1718,3 +1730,69 @@ class AllocationAccountListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
 
     def get_queryset(self):
         return AllocationAccount.objects.filter(user=self.request.user)
+
+def render_to_pdf(template_src, context_dict={}):
+	template = get_template(template_src)
+	html  = template.render(context_dict)
+	result = BytesIO()
+	pdf = pisa.pisaDocument(BytesIO(html.encode("ISO-8859-1")), result)
+	if not pdf.err:
+		return HttpResponse(result.getvalue(), content_type='application/pdf')
+	return None
+
+
+data = {
+	"company": "FAS Research Computing",
+	"address": "38 Oxford St",
+	"city": "Cambridge",
+	"state": "MA",
+	"zipcode": "02138",
+
+
+	"phone": "617-871-9977",
+	"email": "test@harvard.edu",
+	"website": "www.rc.fas.harvard.edu",
+	}
+
+
+# one_allocation = Allocation.objects.get(id=81)
+dict_obj = []
+
+# one_allocation_users = AllocationUser.objects.filter(allocation__pk = 81)
+# print(one_allocation_users)
+# print(one_allocation)
+# Article.objects.filter(reporter__pk=1)
+# print("hello world line 1756")
+# print("print line 1756",type(all_users))
+#Opens up page as PDF
+# for e in one_allocation_users:
+#     print(e.user.username)
+#     print(e.usage_bytes)
+# I can access the allocation id in ViewPDF function now
+class ViewPDF(View):
+
+    def get(self, request, *args, **kwargs):
+        print("line magic 1773",kwargs)
+        pdf = render_to_pdf('allocation/pdf_template.html', data)
+        return HttpResponse(pdf, content_type='application/pdf')
+
+
+#Automaticly downloads to PDF file
+class DownloadPDF(View):
+	def get(self, request, *args, **kwargs):
+		
+		pdf = render_to_pdf('allocation/pdf_template.html', data)
+
+		response = HttpResponse(pdf, content_type='allocation/pdf')
+		filename = "Invoice_%s.pdf" %("12341231")
+		content = "attachment; filename='%s'" %(filename)
+		response['Content-Disposition'] = content
+		return response
+
+# class PDFUserDetailView(PDFTemplateResponseMixin, DetailView):
+#     template_name = 'allocation/pdf_detail.html'
+#     context_object_name = data
+
+def index(request):
+	context = {}
+	return render(request, 'app/index.html', context)

@@ -76,14 +76,14 @@ class Command(BaseCommand):
                 csv_reader = reader(read_obj) # opt out the first line
                 first_line = read_obj.readline()  
             
-                created = "2021-02-01 10:00:00" # feeding dummy data for now
-                modified = "2021-03-01 10:00:00" # feeding dummy data for now
+                created = "2021-04-01 10:00:00" # feeding dummy data for now
+                modified = "2021-04-30 10:00:00" # feeding dummy data for now
                 title = lab_name
                 pi_username = lab_name.split("_")
                 pi_username = pi_username[0] # put in username 
                 pi_username = pi_potential_name 
                 pi_username = pi_name
-                description = "could I have 1 TB of data, please?"
+                description = "Storage allocation for " + lab_name
                 field_of_science = "Other"
                 project_status = "New"
                     

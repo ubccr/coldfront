@@ -173,9 +173,30 @@ tr td a {
   color: #A51C30 !important;
 }
 
+.border-primary {
+  border-color: black;
+}
+
+.card mb-3 border-primary .border-primary {
+  border-color: black;
+}
 
 .page-item.active .page-link {
   /* color: #A51C30 !important; */
   background-color:#A51C30 !important;
   border-color: white;
+}
+
+.header img {
+  float: left;
+  width: 100px;
+  height: 100px;
+  background: #555;
+  padding-right: 20px;
+}
+
+.header h1 {
+  position: relative;
+  top: 18px;
+  left: 10px;
 }

@@ -42,6 +42,7 @@ class Command(BaseCommand):
                         #(username, "already exist, don't add to database")
                         # if the user exists, I only need to append this existing user's group
                         if not user.groups.filter(name = lab_name).exists():
+                            print("line 45",lab_name)
                             my_group = Group.objects.get(name=lab_name)
                             my_group.user_set.add(user)
                             print ("user do not exist in", lab_name)
@@ -89,4 +90,4 @@ class Command(BaseCommand):
                         if group_objs:
                             user_obj.groups.add(*group_objs) # add the group object to the user
                         user_obj.save()
-            print('Finished adding users.')
+            print('Finished adding users for lab:', lab)
