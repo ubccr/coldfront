@@ -24,6 +24,9 @@ from coldfront.core.resource.models import (Resource, ResourceAttribute,
                                             ResourceAttributeType,
                                             ResourceType)
 from coldfront.core.user.models import UserProfile
+
+from csv import reader
+
 base_dir = settings.BASE_DIR
 
 def splitString(str): 
@@ -45,15 +48,31 @@ def splitString(str):
 class Command(BaseCommand):
 
     def handle(self, *args, **options):
-        pi1 = User.objects.get(username='xzhuang')
-        user1 = User.objects.get(username='shiwei')
+        lab_username_dict = {
+            "zhuang_lab": "xzhuang",
+            "moorcroft_lab": "prm",
+            "kuang_lab": "kuang",
+            "kovac_lab": "akovacs",
+            "holman_lab": "mholman",
+            "giribet_lab": "ggiribet",
+            "edwards_lab": "sedwards",
+            "denolle_lab": "mdenolle",
+            "wofsy_lab": "steven_wofsy"
+        }
+       
+
+        lab_name = input("Lab name is: ")
+        pi1 = User.objects.get(username=lab_username_dict[lab_name])
+        file_name = lab_name + '.json'
         resource_type_obj = ResourceType.objects.get(name="Storage")
         parent_resource_obj = None
         name = "holylfs04"
-        description = "FAS RC Research Computing"
+        description = "Service Type: Storage"
         is_available = True
         is_public = True
         is_allocatable = True
+
+        file_name_quota = "Quota.csv" 
 
         Resource.objects.get_or_create(
             resource_type=resource_type_obj,
@@ -67,11 +86,24 @@ class Command(BaseCommand):
         # don't create a new project (if project exist, don't create new project); otherwise, create one;
         # check get_or_create function; just do Project.objects.get();
         # lab_name = "holman_lab" # lab name: giribet_lab, kovac_lab etc
-        lab_name = input("lab name is:")
-        file_name = lab_name + '.json'
+       
         # file_name = "holman_lab.json"
         file_path = os.path.join(base_dir, 'local_data', file_name)
+        file_path_quota = os.path.join(base_dir, 'local_data', file_name_quota)
         print("this is my file path", file_path)
+        print("quota file path is:", file_path_quota)
+        # putting quota information in a dictionary
+        # open file in read mode
+        
+        lab_allocation_usage_dict = dict()
+        with open(file_path_quota, 'r') as read_obj:
+            # pass the file object to reader() to get the reader object
+            csv_reader = reader(read_obj)
+            first_line = read_obj.readline()  #opt out first line
+            # Iterate over each row in the csv using reader object
+            for row in csv_reader:
+                # row variable is a list that represents a row in csv
+                lab_allocation_usage_dict[row[0]] = (int(row[1]), float(row[2]))
 
         filtered_query = Project.objects.filter(title = lab_name)
         found_project = False # set default value to false
@@ -85,7 +117,7 @@ class Command(BaseCommand):
             project_obj, _ = Project.objects.get_or_create(
                 pi = pi1,
                 title = lab_name,
-                description= lab_name + ' test description',
+                description= lab_name + ' storage allocation',
                 field_of_science=FieldOfScience.objects.get(
                     description='Other'),
                 status=ProjectStatusChoice.objects.get(name='Active'),
@@ -103,14 +135,15 @@ class Command(BaseCommand):
             status=AllocationStatusChoice.objects.get(name='Active'),
             start_date=start_date,
             end_date=end_date,
-            justification='test test test test test.'
+            justification='Allocation Information for ' + lab_name
         )
         allocation_obj.resources.add(
             Resource.objects.get(name='holylfs04'))
         allocation_obj.save()
 
 #begin: input allocation usage data
-
+        lab_allocation = lab_allocation_usage_dict[lab_name][0]
+        lab_usage = lab_allocation_usage_dict[lab_name][1]
         allocation_attribute_type_obj = AllocationAttributeType.objects.get(
             name='Tier 0')
 
@@ -119,10 +152,19 @@ class Command(BaseCommand):
         allocation_attribute_obj, _ = AllocationAttribute.objects.get_or_create(
             allocation_attribute_type=allocation_attribute_type_obj,
             allocation=allocation_obj,
-            value=200)
+            value=lab_allocation)
 
-        allocation_attribute_obj.allocationattributeusage.value = 156.07
+        allocation_attribute_obj.allocationattributeusage.value = lab_usage
         allocation_attribute_obj.allocationattributeusage.save()
+
+        allocation_attribute_type_obj = AllocationAttributeType.objects.get(
+            name= 'Tier 0 - $50/TB/yr')
+        allocation_attribute_obj, _ = AllocationAttribute.objects.get_or_create(
+            allocation_attribute_type=allocation_attribute_type_obj,
+            allocation=allocation_obj,
+            value='$50/TB/yr')
+
+    
 
 
 
@@ -188,7 +230,7 @@ class Command(BaseCommand):
                         status=AllocationUserStatusChoice.objects.get(name='Active'),
                         usage_bytes = user_lst['logical_usage'],
                         usage = num,
-                        unit = alpha
+                        unit = alpha,
                     )
                     User.objects.get(username=user_lst['user']).save()
                     allocation_user_obj.save()

@@ -2,7 +2,7 @@
     <meta charset="utf-8">
     <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/css/bootstrap.css">
     <link rel="stylesheet" href="//cdn.datatables.net/1.10.16/css/dataTables.bootstrap4.min.css">
-  </head>
+</head>
   
 {% extends "common/base.html" %}
 {% load crispy_forms_tags %}
@@ -26,8 +26,11 @@
   </div>
 {% endif %}
 
+
 <div class="mb-3">
     <h2>Allocation Invoice</h2>
+    <!-- <a class="btn btn-info" href="{% url 'pdf_view' allocation.id %}" target="_blank">View Invoice</a> -->
+
     <hr>
   </div>
   
@@ -103,12 +106,7 @@
       <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Attributes</h3>
       <div class="float-right">
         {% if request.user.is_superuser %}
-          <!-- <a class="btn btn-success" href="{% url 'allocation-attribute-add' allocation.pk %}" role="button">
-            <i class="fas fa-plus" aria-hidden="true"></i>
-          </a>
-          <a class="btn btn-danger" href="{% url 'allocation-attribute-delete' allocation.pk %}" role="button">
-            <i class="fas fa-minus" aria-hidden="true"></i> 
-          </a> -->
+       
         {% endif %}
       </div>
     </div>
@@ -205,17 +203,7 @@
               <td data-sort = "{{user.usage_bytes}}">{{ user.usage }}{{ user.unit }}</td>
               <td>{{ user.usage_bytes | div:1099511627776|div:156.07|mul:100|get_digit:"0" }}</td>
               <td>{{ user.usage_bytes | div:1099511627776|mul:50| div:12|get_digit:"0"}}</td>
-              
-            
-
-              <!-- {% if user.status.name == 'Active' %}
-                <td class="text-success">{{ user.status.name }}</td>
-              {% elif user.status.name == 'Denied' or user.status.name == 'Error' %}
-                <td class="text-danger">{{ user.status.name }}</td>
-              {% else %}
-                <td class="text-info">{{ user.status.name }}</td>
-              {% endif %} -->
-              <!-- <td>{{ user.modified|date:"M. d, Y" }}</td> -->
+          
             </tr>
           {% endfor %}
         </tbody>
@@ -233,15 +221,6 @@
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js"></script>
 <script type="text/javascript" src="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.js"></script>
 
-<!-- 
-  <script src="//code.jquery.com/jquery-1.12.4.js"></script>
-  <script src="//cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
-  <script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script> -->
-  <!-- <script>
-      $(document).ready(function() {
-          $('#mydatatable').DataTable();
-      });
-  </script> -->
 
   <script>
       $(document).ready( function () {
@@ -250,50 +229,13 @@
       dom: 'B<"clear">lfrtip',
       buttons: {
           name: 'primary',
-          // buttons: [  'csv', 'excel', 'pdf' ]
+          buttons: [ 'pdf' ]
       
-          }}
+          },
+          iDisplayLength: -1}
       );
       } );
       </script>
-
-<!-- Start Admin Messages -->
-<!-- <div class="card mb-3">
-  <div class="card-header">
-    <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Messages from System Administrators</h3>
-    <span class="badge badge-secondary">{{notes.count}}</span>
-  </div>
-  <div class="card-body">
-    {% if notes %}
-      <div class="table-responsive">
-        <table class="table table-hover">
-          <thead>
-            <tr>
-              <th scope="col">Note</th>
-              <th scope="col">Administrator</th>
-              <th scope="col">Last Modified</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for note in notes %}
-              {% if not note.is_private or request.user.is_superuser %}
-                <tr>
-                  <td>{{ note.note }}</td>
-                  <td>{{ note.author.first_name }} {{ note.author.last_name }}</td>
-                  <td>{{ note.modified }}</td>
-                </tr>
-              {% endif %}
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    {% else %}
-      <div class="alert alert-info" role="alert">
-        <i class="fa fa-info-circle" aria-hidden="true"></i> There are no notes from system administrators.
-      </div>
-    {% endif %}
-  </div>
-</div> -->
 
 
 <div class="card mb-3">
@@ -371,48 +313,6 @@
 
 
 {% block js %}
-<!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.css"/>
- 
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/pdfmake.min.js"></script>
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js"></script>
-<script type="text/javascript" src="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.js"></script> -->
-<!-- 
-<script>
-$(document).ready( function () {
-$('#mydatatable').DataTable({
-
-dom: 'B<"clear">lfrtip',
-buttons: {
-    name: 'primary',
-    buttons: [  'pdf' ],
-    paging: false,
-    iDisplayLength: -1,
-    }}
-);
-
-
-</script>  -->
-
-<script>
-    $(document).ready( function () {
-    $('#mydatatable').DataTable({
-    
-    dom: 'B<"clear">lfrtip',
-    buttons: {
-        name: 'primary',
-        buttons: [  'csv', 'excel', 'pdf' ]
-    
-        }
-        
-    }
-    paging: false,
-    );
-    } );
-</script>
-
-
-
 
 </div>
 {% endblock %}

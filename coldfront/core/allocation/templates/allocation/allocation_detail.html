@@ -228,11 +228,16 @@ Allocation Detail
             <th scope="col">Email</th>
             <!-- <th scope="col">Bytes</th> -->
 
-            <th scope="col">Usage</th>
-            <th scope="col">Status</th>
+            <th scope="col">Logical Usage</th>
+            <th scope="col">Percentage Usage</th>
+
+            <!-- <th scope="col">Status</th> -->
             <!-- <th scope="col">Last Modified</th> -->
           </tr>
         </thead>
+
+        
+
         <tbody>
           {% for user in allocation_users %}
             <tr>
@@ -241,19 +246,34 @@ Allocation Detail
               <td>{{ user.user.email }}</td>
               <!-- <td>{{ user.usage_bytes }}</td> -->
 
-              <td data-sort = "{{user.usage_bytes}}">{{ user.usage }}{{ user.unit }}</td>
-
-              {% if user.status.name == 'Active' %}
+              <td data-sort = "{{user.usage_bytes}}" name = "usage_bytes">{{ user.usage }}{{ user.unit }}</td>
+              <td>0</td>
+              <!-- {% if user.status.name == 'Active' %}Total
                 <td class="text-success">{{ user.status.name }}</td>
               {% elif user.status.name == 'Denied' or user.status.name == 'Error' %}
                 <td class="text-danger">{{ user.status.name }}</td>
               {% else %}
                 <td class="text-info">{{ user.status.name }}</td>
-              {% endif %}
+              {% endif %} -->
               <!-- <td>{{ user.modified|date:"M. d, Y" }}</td> -->
             </tr>
           {% endfor %}
         </tbody>
+        <!-- Total : <input type="text" name="total" id="total"/> -->
+        
+        <script type="text/javascript">
+          function findTotal(){
+              var arr = document.getElementsByName('usage_bytes');
+              var tot=0;
+              for(var i=0;i<arr.length;i++){
+                  if(parseInt(arr[i].value))
+                      tot += parseInt(arr[i].value);
+              }
+              document.getElementById('total').value = tot;
+          }
+          
+          </script>
+  
       </table>
     </div>
 
@@ -268,15 +288,7 @@ Allocation Detail
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js"></script>
 <script type="text/javascript" src="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.js"></script>
 
-<!-- 
-  <script src="//code.jquery.com/jquery-1.12.4.js"></script>
-  <script src="//cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
-  <script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script> -->
-  <!-- <script>
-      $(document).ready(function() {
-          $('#mydatatable').DataTable();
-      });
-  </script> -->
+
 
   <script>
       $(document).ready( function () {
