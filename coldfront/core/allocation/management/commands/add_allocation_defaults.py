@@ -25,6 +25,7 @@ class Command(BaseCommand):
 
         for name, attribute_type, has_usage, is_private in (
             ('Storage Quota (TB)', 'Float', True, False),
+            ('Storage Usage (bytes)', 'Float', True, False),
             ('Paid', 'Float', False, False),
             ('Storage Quota (GB)', 'Int', False, False),
             ('Storage_Group_Name', 'Text', False, False),
