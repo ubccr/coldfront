@@ -204,11 +204,9 @@
               <!-- <td>{{ user.usage_bytes}}</td> -->
 
               <td data-sort = "{{user.usage_bytes}}">{{ user.usage }}{{ user.unit }}</td>
-              <!-- <td>{{ user.usage_bytes | div:1099511627776|div:156.07|mul:100|get_digit:"0" }}</td>
-              <td>{{ user.usage_bytes | div:1099511627776|mul:50| div:12|get_digit:"0"}}</td>
-           -->
-              <td>{{user.usage_bytes|mul:100 | div:user.allocation_group_usage_bytes}}</td>
-              <td>{{user.usage_bytes| div:1099511627776|mul:50| div:12}}</td>
+        
+              <td>{{user.usage_bytes|mul:100 | div:user.allocation_group_usage_bytes|floatformat:2}}</td>
+              <td>{{user.usage_bytes| div:1099511627776|mul:50| div:12|floatformat:2}}</td>
             </tr>
           {% endfor %}
         </tbody>
@@ -328,7 +326,7 @@ window.onload = function () {
                 filename: 'invoice.pdf',
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { scale: 2 },
-                jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
+                jsPDF: { unit: 'in', format: 'legal', orientation: 'landscape' }
             };
             html2pdf().from(invoice).set(opt).save();
         })

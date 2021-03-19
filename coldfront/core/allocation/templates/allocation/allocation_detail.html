@@ -252,12 +252,9 @@ Allocation Detail
 
               <td data-sort = "{{user.usage_bytes}}" name = "usage_bytes">{{ user.usage }}{{ user.unit }}</td>
               
-              <!-- <td>{{ user.usage_bytes | div:1099511627776|mul:50| div:12|get_digit:"0"}}</td> -->
-              <td>{{user.usage_bytes|mul:100 | div:user.allocation_group_usage_bytes}}</td>
-              <td>{{user.usage_bytes| div:1099511627776|mul:50| div:12}}</td>
-              <!-- <td>{{ user.usage_bytes | div:1099511627776|div:156.07|mul:100|get_digit:"0" }}</td>
-              <td>{{ user.usage_bytes | div:1099511627776|mul:50| div:12|get_digit:"0"}}</td>
-           -->
+              <td>{{user.usage_bytes|mul:100 | div:user.allocation_group_usage_bytes|floatformat:2}}</td>
+              <td>{{user.usage_bytes| div:1099511627776|mul:50| div:12|floatformat:2}}</td>
+             
               <!-- {% if user.status.name == 'Active' %}
                 <td class="text-success">{{ user.status.name }}</td>
               {% elif user.status.name == 'Denied' or user.status.name == 'Error' %}
