@@ -95,15 +95,20 @@ class Command(BaseCommand):
         # putting quota information in a dictionary
         # open file in read mode
         
-        lab_allocation_usage_dict = dict()
+        lab_allocation_usage_dict = dict() # dictionary, key is string, value is list
         with open(file_path_quota, 'r') as read_obj:
             # pass the file object to reader() to get the reader object
             csv_reader = reader(read_obj)
             first_line = read_obj.readline()  #opt out first line
             # Iterate over each row in the csv using reader object
+            
             for row in csv_reader:
+                lst = [] 
                 # row variable is a list that represents a row in csv
-                lab_allocation_usage_dict[row[0]] = (int(row[1]), float(row[2]))
+                lst.append(int(row[1]))
+                lst.append(float(row[2]))
+                lst.append(float(row[3]))
+                lab_allocation_usage_dict[row[0]] = lst
 
         filtered_query = Project.objects.filter(title = lab_name)
         found_project = False # set default value to false
@@ -144,6 +149,8 @@ class Command(BaseCommand):
 #begin: input allocation usage data
         lab_allocation = lab_allocation_usage_dict[lab_name][0]
         lab_usage = lab_allocation_usage_dict[lab_name][1]
+        lab_usage_in_bytes = lab_allocation_usage_dict[lab_name][2]
+       
         allocation_attribute_type_obj = AllocationAttributeType.objects.get(
             name='Tier 0')
 
@@ -163,7 +170,12 @@ class Command(BaseCommand):
             allocation_attribute_type=allocation_attribute_type_obj,
             allocation=allocation_obj,
             value='$50/TB/yr')
-
+        # allocation_attribute_type_obj = AllocationAttributeType.objects.get(
+        #     name= 'Storage Usage (bytes)')
+        # allocation_attribute_obj, _ = AllocationAttribute.objects.get_or_create(
+        #     allocation_attribute_type=allocation_attribute_type_obj,
+        #     allocation=allocation_obj,
+        #     value=lab_usage_in_bytes)
     
 
 
@@ -183,10 +195,13 @@ class Command(BaseCommand):
             # print(data[0]['user'])
             # print(data[0]['usage'])
             # print(type(data[0]['usage']))
-            
+            allocation_group_usage_bytes = 0
+            var1 = 0
             for user_lst in data: #user_lst is lst
                 print(user_lst) # this is a lst
                 user_query = User.objects.filter(username = user_lst['user'])
+                
+                
                 if not user_query:
                     print("this user does not exist")
                     # thus I am creating a user object
@@ -209,6 +224,7 @@ class Command(BaseCommand):
                         is_staff = True,
                         is_superuser = False,
                     )
+
                     allocation_user_obj = AllocationUser.objects.create(
                         allocation=allocation_obj,
                         user=User.objects.get(username=user_lst['user']),
@@ -216,6 +232,8 @@ class Command(BaseCommand):
                         usage_bytes = user_lst['logical_usage'],
                         usage = num,
                         unit = alpha,
+                        allocation_group_usage_bytes = lab_usage_in_bytes,
+                       
                     )
                     User.objects.get(username=user_lst['user']).save()
                     allocation_user_obj.save()
@@ -224,6 +242,7 @@ class Command(BaseCommand):
                     usage_string = user_lst['usage']
                     num, alpha = splitString(usage_string) 
                     # load allocation user
+                  
                     allocation_user_obj = AllocationUser.objects.create(
                         allocation=allocation_obj,
                         user=User.objects.get(username=user_lst['user']),
@@ -231,9 +250,16 @@ class Command(BaseCommand):
                         usage_bytes = user_lst['logical_usage'],
                         usage = num,
                         unit = alpha,
+        
+                        allocation_group_usage_bytes = lab_usage_in_bytes,
+                        
                     )
+                
+                    print("line255", var1)
                     User.objects.get(username=user_lst['user']).save()
                     allocation_user_obj.save()
-        
+                print("line251", allocation_user_obj.allocation_group_usage_bytes)
+            print("line261", allocation_user_obj.allocation_group_usage_bytes)
+
         
 
