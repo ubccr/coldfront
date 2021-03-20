@@ -1,6 +1,4 @@
 
-
-
 def add_project_status_choices(apps, schema_editor):
     ProjectStatusChoice = apps.get_model('project', 'ProjectStatusChoice')
 
