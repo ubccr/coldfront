@@ -21,6 +21,7 @@ from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 
 from coldfront.core.allocation.models import (Allocation,
+                                              AllocationAttributeType,
                                               AllocationStatusChoice,
                                               AllocationUser,
                                               AllocationUserAttribute,
@@ -597,18 +598,77 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
     def form_valid(self, form):
         # If joins_require_approval is set to False, automatically approve all
         # pending join requests.
-        joins_require_approval = form.cleaned_data['joins_require_approval']
-        if not joins_require_approval:
-            project_obj = self.get_object()
-            active_status = ProjectUserStatusChoice.objects.get(name='Active')
-            num_requests_approved = project_obj.projectuser_set.filter(
-                status__name='Pending - Add').update(status=active_status)
-            message = (
-                f'Join requests no longer require approval, so '
-                f'{num_requests_approved} pending requests were automatically '
-                f'approved.')
-            messages.warning(self.request, message)
+        if not form.cleaned_data['joins_require_approval']:
+            if not self.__approve_pending_join_requests():
+                return False
         return super().form_valid(form)
+
+    def __approve_pending_join_requests(self):
+        project_obj = self.get_object()
+        active_status = ProjectUserStatusChoice.objects.get(name='Active')
+
+        project_user_objs = project_obj.projectuser_set.filter(
+            status__name='Pending - Add')
+        for project_user_obj in project_user_objs:
+            project_user_obj.status = active_status
+            project_user_obj.save()
+
+        message = (
+            f'Join requests no longer require approval, so '
+            f'{project_user_objs.count()} pending requests were automatically '
+            f'approved.')
+
+        if project_user_objs.exists():
+            allocations = project_obj.allocation_set.filter(
+                resources__name='Savio Compute', status__name='Active')
+            if allocations.count() != 1:
+                message = (
+                    'Unexpected server error. Please contact an '
+                    'administrator.')
+                messages.error(self.request, message)
+                return False
+
+            allocation = allocations.first()
+            allocation_user_active_status_choice = \
+                AllocationUserStatusChoice.objects.get(name='Active')
+            cluster_access_allocation_attribute_type = \
+                AllocationAttributeType.objects.get(
+                    name='Cluster Account Status')
+
+            for project_user_obj in project_user_objs:
+                user_obj = project_user_obj.user
+
+                if allocation.allocationuser_set.filter(
+                        user=user_obj).exists():
+                    allocation_user_obj = allocation.allocationuser_set.get(
+                        user=user_obj)
+                    allocation_user_obj.status = \
+                        allocation_user_active_status_choice
+                    allocation_user_obj.save()
+                else:
+                    allocation_user_obj = AllocationUser.objects.create(
+                        allocation=allocation,
+                        user=user_obj,
+                        status=allocation_user_active_status_choice)
+                allocation_activate_user.send(
+                    sender=self.__class__,
+                    allocation_user_pk=allocation_user_obj.pk)
+
+                # Generate a request for cluster access.
+                queryset = allocation_user_obj.allocationuserattribute_set
+                cluster_access_status, _ = queryset.get_or_create(
+                    allocation_attribute_type=(
+                        cluster_access_allocation_attribute_type),
+                    allocation=allocation)
+                cluster_access_status.value = 'Pending - Add'
+                cluster_access_status.save()
+
+            message = message + (
+                ' BRC staff have been notified to set up cluster access for '
+                'each request.')
+
+        messages.warning(self.request, message)
+        return True
 
 
 class ProjectAddUsersSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -1320,6 +1380,8 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         project_users = project_obj.projectuser_set.filter(user=user_obj)
         role = ProjectUserRoleChoice.objects.get(name='User')
         status = ProjectUserStatusChoice.objects.get(name='Pending - Add')
+        cluster_access_allocation_attribute_type = \
+            AllocationAttributeType.objects.get(name='Cluster Account Status')
 
         if project_users.exists():
             project_user = project_users.first()
@@ -1372,9 +1434,19 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     sender=self.__class__,
                     allocation_user_pk=allocation_user_obj.pk)
 
+                # Generate a request for cluster access.
+                queryset = allocation_user_obj.allocationuserattribute_set
+                cluster_access_status, _ = queryset.get_or_create(
+                    allocation_attribute_type=(
+                        cluster_access_allocation_attribute_type),
+                    allocation=allocation)
+                cluster_access_status.value = 'Pending - Add'
+                cluster_access_status.save()
+
                 message = (
                     f'You have requested to join Project {project_obj.name}. '
-                    f'Your request has automatically been approved.')
+                    f'Your request has automatically been approved. BRC staff '
+                    f'have been notified to set up cluster access.')
                 messages.success(self.request, message)
                 next_view = reverse(
                     'project-detail', kwargs={'pk': project_obj.pk})
@@ -1564,6 +1636,10 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
             else:
                 allocation = allocations.first()
 
+            cluster_access_allocation_attribute_type = \
+                AllocationAttributeType.objects.get(
+                    name='Cluster Account Status')
+
             for form in formset:
                 user_form_data = form.cleaned_data
                 if user_form_data['selected']:
@@ -1594,9 +1670,19 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
                         sender=self.__class__,
                         allocation_user_pk=allocation_user_obj.pk)
 
+                    # Generate a request for cluster access.
+                    queryset = allocation_user_obj.allocationuserattribute_set
+                    cluster_access_status, _ = queryset.get_or_create(
+                        allocation_attribute_type=(
+                            cluster_access_allocation_attribute_type),
+                        allocation=allocation)
+                    cluster_access_status.value = 'Pending - Add'
+                    cluster_access_status.save()
+
             message = (
                 f'{message_verb} {reviewed_users_count} user requests to join '
-                f'the project.')
+                f'the project. BRC staff have been notified to set up cluster '
+                f'access for each request.')
             messages.success(request, message)
         else:
             for error in formset.errors:
