@@ -21,11 +21,13 @@ from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 
 from coldfront.core.allocation.models import (Allocation,
+                                              AllocationAttributeType,
                                               AllocationStatusChoice,
                                               AllocationUser,
                                               AllocationUserAttribute,
                                               AllocationUserStatusChoice)
-from coldfront.core.allocation.utils import get_allocation_user_cluster_access_status
+from coldfront.core.allocation.utils import (get_allocation_user_cluster_access_status,
+                                             request_project_cluster_access)
 from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user)
 # from coldfront.core.grant.models import Grant
@@ -597,18 +599,57 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
     def form_valid(self, form):
         # If joins_require_approval is set to False, automatically approve all
         # pending join requests.
-        joins_require_approval = form.cleaned_data['joins_require_approval']
-        if not joins_require_approval:
-            project_obj = self.get_object()
-            active_status = ProjectUserStatusChoice.objects.get(name='Active')
-            num_requests_approved = project_obj.projectuser_set.filter(
-                status__name='Pending - Add').update(status=active_status)
-            message = (
-                f'Join requests no longer require approval, so '
-                f'{num_requests_approved} pending requests were automatically '
-                f'approved.')
-            messages.warning(self.request, message)
+        if not form.cleaned_data['joins_require_approval']:
+            if not self.__approve_pending_join_requests():
+                return False
         return super().form_valid(form)
+
+    def __approve_pending_join_requests(self):
+        project_obj = self.get_object()
+        active_status = ProjectUserStatusChoice.objects.get(name='Active')
+
+        project_user_objs = project_obj.projectuser_set.filter(
+            status__name='Pending - Add')
+        for project_user_obj in project_user_objs:
+            project_user_obj.status = active_status
+            project_user_obj.save()
+
+        message = (
+            f'Join requests no longer require approval, so '
+            f'{project_user_objs.count()} pending requests were automatically '
+            f'approved.')
+
+        if project_user_objs.exists():
+
+            error_message = (
+                'Unexpected server error. Please contact an administrator.')
+
+            try:
+                allocation_obj = get_project_compute_allocation(project_obj)
+            except (Allocation.DoesNotExist,
+                    Allocation.MultipleObjectsReturned):
+                messages.error(self.request, error_message)
+                return False
+
+            for project_user_obj in project_user_objs:
+                user_obj = project_user_obj.user
+                try:
+                    request_project_cluster_access(allocation_obj, user_obj)
+                except ValueError:
+                    message = (
+                        f'User {user_obj.username} already has cluster access '
+                        f'under Project {project_obj.name}.')
+                    messages.warning(self.request, message)
+                except Exception:
+                    messages.error(self.request, error_message)
+                    return False
+
+            message = message + (
+                ' BRC staff have been notified to set up cluster access for '
+                'each request.')
+
+        messages.warning(self.request, message)
+        return True
 
 
 class ProjectAddUsersSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -1345,39 +1386,36 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             project_user.status = status
             project_user.save()
 
-            allocations = project_obj.allocation_set.filter(
-                resources__name='Savio Compute', status__name='Active')
-            if allocations.count() != 1:
-                message = (
-                    'Unexpected server error. Please contact an '
-                    'administrator.')
-                messages.error(self.request, message)
-            else:
-                allocation = allocations.first()
-                allocation_user_active_status_choice = \
-                    AllocationUserStatusChoice.objects.get(name='Active')
-                if allocation.allocationuser_set.filter(
-                        user=user_obj).exists():
-                    allocation_user_obj = allocation.allocationuser_set.get(
-                        user=user_obj)
-                    allocation_user_obj.status = \
-                        allocation_user_active_status_choice
-                    allocation_user_obj.save()
-                else:
-                    allocation_user_obj = AllocationUser.objects.create(
-                        allocation=allocation,
-                        user=user_obj,
-                        status=allocation_user_active_status_choice)
-                allocation_activate_user.send(
-                    sender=self.__class__,
-                    allocation_user_pk=allocation_user_obj.pk)
+            next_view = reverse(
+                'project-detail', kwargs={'pk': project_obj.pk})
 
+            error_message = (
+                'Unexpected server error. Please contact an administrator.')
+
+            try:
+                allocation_obj = get_project_compute_allocation(project_obj)
+            except (Allocation.DoesNotExist,
+                    Allocation.MultipleObjectsReturned):
+                messages.error(self.request, error_message)
+                return redirect(next_view)
+
+            try:
+                request_project_cluster_access(allocation_obj, user_obj)
+            except ValueError:
+                message = (
+                    f'User {user_obj.username} already has cluster access '
+                    f'under Project {project_obj.name}.')
+                messages.warning(self.request, message)
+            except Exception:
+                messages.error(self.request, error_message)
+            else:
                 message = (
                     f'You have requested to join Project {project_obj.name}. '
-                    f'Your request has automatically been approved.')
+                    f'Your request has automatically been approved. BRC staff '
+                    f'have been notified to set up cluster access.')
                 messages.success(self.request, message)
-                next_view = reverse(
-                    'project-detail', kwargs={'pk': project_obj.pk})
+            next_view = reverse(
+                'project-detail', kwargs={'pk': project_obj.pk})
 
         return redirect(next_view)
 
@@ -1549,54 +1587,45 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
 
             project_user_active_status_choice = \
                 ProjectUserStatusChoice.objects.get(name=status_name)
-            allocation_user_active_status_choice = \
-                AllocationUserStatusChoice.objects.get(name='Active')
 
-            allocations = project_obj.allocation_set.filter(
-                resources__name='Savio Compute', status__name='Active')
-            if allocations.count() != 1:
-                message = (
-                    'Unexpected server error. Please contact an '
-                    'administrator.')
-                messages.error(self.request, message)
+            error_message = (
+                'Unexpected server error. Please contact an administrator.')
+
+            try:
+                allocation_obj = get_project_compute_allocation(project_obj)
+            except (Allocation.DoesNotExist,
+                    Allocation.MultipleObjectsReturned):
+                messages.error(self.request, error_message)
                 return HttpResponseRedirect(
                     reverse('project-detail', kwargs={'pk': pk}))
-            else:
-                allocation = allocations.first()
 
             for form in formset:
                 user_form_data = form.cleaned_data
                 if user_form_data['selected']:
-
                     reviewed_users_count += 1
-
                     user_obj = User.objects.get(
                         username=user_form_data.get('username'))
-
                     project_user_obj = project_obj.projectuser_set.get(
                         user=user_obj)
                     project_user_obj.status = project_user_active_status_choice
                     project_user_obj.save()
-
-                    if allocation.allocationuser_set.filter(
-                            user=user_obj).exists():
-                        allocation_user_obj = \
-                            allocation.allocationuser_set.get(user=user_obj)
-                        allocation_user_obj.status = \
-                            allocation_user_active_status_choice
-                        allocation_user_obj.save()
-                    else:
-                        allocation_user_obj = AllocationUser.objects.create(
-                            allocation=allocation,
-                            user=user_obj,
-                            status=allocation_user_active_status_choice)
-                    allocation_activate_user.send(
-                        sender=self.__class__,
-                        allocation_user_pk=allocation_user_obj.pk)
+                    try:
+                        request_project_cluster_access(
+                            allocation_obj, user_obj)
+                    except ValueError:
+                        message = (
+                            f'User {user_obj.username} already has cluster '
+                            f'access under Project {project_obj.name}.')
+                        messages.warning(self.request, message)
+                    except Exception:
+                        messages.error(self.request, error_message)
+                        return HttpResponseRedirect(
+                            reverse('project-detail', kwargs={'pk': pk}))
 
             message = (
                 f'{message_verb} {reviewed_users_count} user requests to join '
-                f'the project.')
+                f'the project. BRC staff have been notified to set up cluster '
+                f'access for each request.')
             messages.success(request, message)
         else:
             for error in formset.errors:
