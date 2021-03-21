@@ -811,6 +811,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             request.user, project_obj.pk, request.POST, prefix='allocationform')
 
         added_users_count = 0
+        cluster_access_requests_count = 0
         if formset.is_valid() and allocation_form.is_valid():
             project_user_active_status_choice = ProjectUserStatusChoice.objects.get(
                 name='Active')
@@ -858,8 +859,37 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                         allocation_activate_user.send(sender=self.__class__,
                                                       allocation_user_pk=allocation_user_obj.pk)
 
+                    # Request cluster access for the user.
+                    error_message = (
+                        'Unexpected server error. Please contact an '
+                        'administrator.')
+                    try:
+                        allocation_obj = get_project_compute_allocation(
+                            project_obj)
+                    except (Allocation.DoesNotExist,
+                            Allocation.MultipleObjectsReturned):
+                        messages.error(self.request, error_message)
+                        continue
+
+                    try:
+                        request_project_cluster_access(
+                            allocation_obj, user_obj)
+                    except ValueError:
+                        message = (
+                            f'User {user_obj.username} already has cluster '
+                            f'access under Project {project_obj.name}.')
+                        messages.warning(self.request, message)
+                    except Exception:
+                        messages.error(self.request, error_message)
+                    else:
+                        cluster_access_requests_count += 1
+
             messages.success(
                 request, 'Added {} users to project.'.format(added_users_count))
+            message = (
+                f'Requested cluster access under project for '
+                f'{cluster_access_requests_count} users.')
+            messages.success(request, message)
         else:
             if not formset.is_valid():
                 for error in formset.errors:
