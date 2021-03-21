@@ -165,11 +165,11 @@ class ProjectUpdateForm(forms.ModelForm):
         widget=TimeDurationWidget(
             show_days=True, show_hours=True, show_minutes=False,
             show_seconds=False),
-        required=True,
+        required=False,
         help_text=(
             'Requests to join the project will automatically be approved '
             'after a delay period, allowing managers to review them. The '
-            'default is 6 hours.'))
+            'default is 6 hours. An empty input is interpreted as 0.'))
 
     class Meta:
         model = Project
