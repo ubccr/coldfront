@@ -205,6 +205,9 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['cluster_accounts_requestable'] = cluster_accounts_requestable
         context['cluster_accounts_tooltip'] = cluster_accounts_tooltip
 
+        context['joins_auto_approved'] = (
+            self.object.joins_auto_approval_delay == datetime.timedelta())
+
         return context
 
 
