@@ -38,10 +38,12 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectReviewForm,
                                           ProjectReviewUserJoinForm,
                                           ProjectSearchForm,
+                                          ProjectUpdateForm,
                                           ProjectUserUpdateForm)
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectReviewStatusChoice,
                                            ProjectStatusChoice, ProjectUser,
+                                           ProjectUserJoinRequest,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice)
 from coldfront.core.project.utils import get_project_compute_allocation
@@ -564,12 +566,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Project
     template_name_suffix = '_update_form'
-    fields = [
-        'title',
-        'description',
-        'field_of_science',
-        'joins_require_approval',
-    ]
+    form_class = ProjectUpdateForm
     success_message = 'Project updated.'
 
     def test_func(self):
@@ -597,9 +594,10 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
         return reverse('project-detail', kwargs={'pk': self.object.pk})
 
     def form_valid(self, form):
-        # If joins_require_approval is set to False, automatically approve all
+        # If joins_auto_approval_delay is set to 0, automatically approve all
         # pending join requests.
-        if not form.cleaned_data['joins_require_approval']:
+        delay = form.cleaned_data['joins_auto_approval_delay']
+        if delay == datetime.timedelta():
             if not self.__approve_pending_join_requests():
                 return False
         return super().form_valid(form)
@@ -1365,6 +1363,14 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         if project_users.exists():
             project_user = project_users.first()
             project_user.role = role
+            # If the user is Active on the project, raise a warning and exit.
+            if project_user.status.name == 'Active':
+                message = (
+                    f'You already already an Active member of Project '
+                    f'{project_obj.name}.')
+                messages.warning(self.request, message)
+                next_view = reverse('project-join-list')
+                return redirect(next_view)
             project_user.status = status
             project_user.save()
         else:
@@ -1374,21 +1380,21 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 role=role,
                 status=status)
 
-        if project_obj.joins_require_approval:
+        # Create a join request, whose 'created' timestamp is used to determine
+        # when to auto-approve the request.
+        ProjectUserJoinRequest.objects.create(project_user=project_user)
+
+        if project_obj.joins_auto_approval_delay != datetime.timedelta():
             message = (
                 f'You have requested to join Project {project_obj.name}. The '
-                f'managers have been notified and will approve or deny your '
-                f'request.')
+                f'managers have been notified. The request will automatically '
+                f'be approved after a delay period, unless managers '
+                f'explicitly deny it.')
             messages.success(self.request, message)
             next_view = reverse('project-join-list')
         else:
-            status = ProjectUserStatusChoice.objects.get(name='Active')
-            project_user.status = status
-            project_user.save()
-
             next_view = reverse(
                 'project-detail', kwargs={'pk': project_obj.pk})
-
             error_message = (
                 'Unexpected server error. Please contact an administrator.')
 
@@ -1398,6 +1404,10 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     Allocation.MultipleObjectsReturned):
                 messages.error(self.request, error_message)
                 return redirect(next_view)
+
+            status = ProjectUserStatusChoice.objects.get(name='Active')
+            project_user.status = status
+            project_user.save()
 
             try:
                 request_project_cluster_access(allocation_obj, user_obj)
