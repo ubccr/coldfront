@@ -155,6 +155,7 @@ class ProjectReviewUserJoinForm(forms.Form):
     last_name = forms.CharField(max_length=150, required=False, disabled=True)
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     role = forms.CharField(max_length=30, disabled=True)
+    auto_approval_time = forms.DateTimeField(disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
 
 

@@ -1545,6 +1545,7 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
 
     @staticmethod
     def get_users_to_review(project_obj):
+        delay = project_obj.joins_auto_approval_delay
         users_to_review = [
             {
                 'username': ele.user.username,
@@ -1552,6 +1553,7 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
                 'last_name': ele.user.last_name,
                 'email': ele.user.email,
                 'role': ele.role,
+                'auto_approval_time': ele.created + delay,
             }
             for ele in project_obj.projectuser_set.filter(
                 status__name='Pending - Add').order_by('user__username')
