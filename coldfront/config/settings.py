@@ -36,6 +36,7 @@ INSTALLED_APPS += [
     'sslserver',
     'django_q',
     'simple_history',
+    'durationwidget',
 ]
 
 # ColdFront Apps
