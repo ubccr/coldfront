@@ -36,7 +36,7 @@ class Command(BaseCommand):
             'project', 'project__allocation_set', 'projectuserjoinrequest_set'
         ).filter(status=pending_status)
 
-        num_processed = project_user_objs.counts()
+        num_processed = project_user_objs.count()
         num_successes, num_failures = 0, 0
 
         now = datetime.utcnow().astimezone(pytz.timezone(settings.TIME_ZONE))
@@ -49,25 +49,29 @@ class Command(BaseCommand):
             try:
                 queryset = project_user_obj.projectuserjoinrequest_set
                 join_request = queryset.latest('created')
-            except ProjectUserJoinRequest:
+            except ProjectUserJoinRequest.DoesNotExist:
                 message = (
-                    f'ProjectUser {project_user_obj.pk} had no corresponding '
+                    f'ProjectUser {project_user_obj.pk} has no corresponding '
                     f'ProjectUserJoinRequest.')
+                self.stderr.write(self.style.ERROR(message))
                 self.logger.error(message)
                 num_failures = num_failures + 1
                 continue
 
             # If the request has completed the Project's delay period, auto-
             # approve the user and request cluster access.
-            if join_request.created + project_obj.delay <= now:
+            delay = project_obj.joins_auto_approval_delay
+            if join_request.created + delay <= now:
                 # Retrieve the compute Allocation for the Project.
                 try:
-                    allocation_obj = get_project_compute_allocation
+                    allocation_obj = get_project_compute_allocation(
+                        project_obj)
                 except (Allocation.DoesNotExist,
                         Allocation.MultipleObjectsReturned):
                     message = (
                         f'Project {project_obj.name} has no compute '
                         f'allocation.')
+                    self.stderr.write(self.style.ERROR(message))
                     self.logger.error(message)
                     num_failures = num_failures + 1
                     continue
@@ -77,11 +81,18 @@ class Command(BaseCommand):
                 # Request cluster access for the ProjectUser.
                 try:
                     request_project_cluster_access(allocation_obj, user_obj)
+                    message = (
+                        f'Created a cluster access request for User '
+                        f'{user_obj.username} under Project '
+                        f'{project_obj.name}.')
+                    self.stdout.write(self.style.SUCCESS(message))
+                    self.logger.info(message)
                     num_successes = num_successes + 1
                 except ValueError:
                     message = (
                         f'User {user_obj.username} already has cluster access '
                         f'under Project {project_obj.name}.')
+                    self.stderr.write(self.style.WARNING(message))
                     self.logger.warning(message)
                     num_failures = num_failures + 1
                 except Exception as e:
@@ -89,6 +100,8 @@ class Command(BaseCommand):
                         f'Failed to request cluster access for User '
                         f'{user_obj.username} under Project '
                         f'{project_obj.name}. Details:')
+                    self.stderr.write(self.style.ERROR(message))
+                    self.stderr.write(self.style.ERROR(str(e)))
                     self.logger.error(message)
                     self.logger.exception(e)
                     num_failures = num_failures + 1
@@ -121,5 +134,8 @@ class Command(BaseCommand):
             send_email_template(
                 subject, template_name, context, sender, receiver_list)
         except Exception as e:
-            self.logger.error('Failed to send notification email. Details:')
+            message = 'Failed to send notification email. Details:'
+            self.stderr.write(self.style.ERROR(message))
+            self.stderr.write(self.style.ERROR(str(e)))
+            self.logger.error(message)
             self.logger.exception(e)
