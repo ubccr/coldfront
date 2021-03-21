@@ -147,7 +147,7 @@ def send_account_activation_email(user):
         'activation_url': __account_activation_url(user),
         'signature': import_from_settings('EMAIL_SIGNATURE', ''),
     }
-    sender = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS', '')
+    sender = import_from_settings('EMAIL_SENDER', ''),
     receiver_list = [user.email, ]
 
     send_email_template(subject, template_name, context, sender, receiver_list)
