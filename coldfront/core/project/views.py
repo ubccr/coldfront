@@ -46,7 +46,8 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserJoinRequest,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice)
-from coldfront.core.project.utils import get_project_compute_allocation
+from coldfront.core.project.utils import (auto_approve_project_join_requests,
+                                          get_project_compute_allocation)
 # from coldfront.core.publication.models import Publication
 # from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.user.forms import UserSearchForm
@@ -1643,3 +1644,34 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
 
         return HttpResponseRedirect(
             reverse('project-detail', kwargs={'pk': pk}))
+
+
+class ProjectAutoApproveJoinRequestsView(LoginRequiredMixin,
+                                         UserPassesTestMixin, View):
+
+    def test_func(self):
+        if self.request.user.is_superuser or self.request.user.is_staff:
+            return True
+        message = (
+            'You do not have permission to automatically approve project '
+            'requests.')
+        messages.error(self.request, message)
+
+    def post(self, request, *args, **kwargs):
+        results = auto_approve_project_join_requests()
+        num_processed = len(results)
+        num_successes, num_failures = 0, 0
+        for result in results:
+            if result.success:
+                num_successes = num_successes + 1
+            else:
+                num_failures = num_failures + 1
+        message = (
+            f'{num_processed} pending join requests were processed. '
+            f'{num_successes} succeeded. {num_failures} failed.')
+        if num_failures == 0:
+            messages.success(request, message)
+        else:
+            messages.error(request, message)
+        return HttpResponseRedirect(
+            reverse('allocation-cluster-account-request-list'))
