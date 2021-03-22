@@ -303,7 +303,7 @@ class SavioProjectDetailsForm(forms.Form):
             'The unique name of the project on the cluster, which must '
             'contain only lowercase letters and numbers.'),
         label='Name',
-        max_length=8,
+        max_length=12,
         required=True,
         validators=[
             MinLengthValidator(4),
