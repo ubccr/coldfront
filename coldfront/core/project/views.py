@@ -49,7 +49,7 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserJoinRequest,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice,
-                                           SavioProjectAllocationRequestStatusChoice)
+                                           SavioProjectAllocationRequestStatusChoice,
                                            ProjectUserStatusChoice)
 from coldfront.core.project.utils import (auto_approve_project_join_requests,
                                           get_project_compute_allocation)
