@@ -51,7 +51,7 @@ Project Detail
     <div class="card-body">
       {% if project.status.name != 'Archived' %}
         <a class="btn btn-success" href="{% url 'project-add-users-search' project.pk %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
-        {% if project.joins_require_approval %}
+        {% if not joins_auto_approved %}
           <a class="btn btn-success" href="{% url 'project-review-join-requests' project.pk %}" role="button">
             <i class="fas fa-user-plus" aria-hidden="true"></i>
             Review Join Requests
@@ -100,10 +100,10 @@ Project Detail
     <p class="card-text text-justify">
       <strong>Requests to Join: </strong>
       User requests to join the project
-      {% if not project.joins_require_approval %}
+      {% if joins_auto_approved %}
         are automatically approved.
       {% else %}
-        must be approved by a project manager.
+        are automatically approved after a delay.
       {% endif %}
       {% if is_allowed_to_update_project %}
         <a href="{% url 'project-update' project.pk %}">

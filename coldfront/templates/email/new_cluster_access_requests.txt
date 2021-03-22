@@ -1,0 +1,5 @@
+There are new cluster access requests after pending requests to join projects were automatically approved after a delay.
+
+{{ num_processed }} pending join requests were processed. {{ num_successes }} succeeded. {{ num_failures }} failed.
+
+Please activate or deny the cluster access requests: {{ review_url }}.

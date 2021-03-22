@@ -1,1 +1,0 @@
-One or more cluster accounts have been requested under project {{ project }} and allocation {{ allocation }}. Please activate or deny the requests: {{ url }}.
