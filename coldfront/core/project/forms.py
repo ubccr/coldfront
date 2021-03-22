@@ -300,8 +300,9 @@ class SavioProjectDetailsForm(forms.Form):
 
     name = forms.CharField(
         help_text=(
-            'The unique name of the project on the cluster, which must '
-            'contain only lowercase letters and numbers.'),
+            'The unique name of the project, which must contain only '
+            'lowercase letters and numbers. This will be used to set up the '
+            'project\'s SLURM scheduler account.'),
         label='Name',
         max_length=12,
         required=True,
