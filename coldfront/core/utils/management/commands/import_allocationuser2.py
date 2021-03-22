@@ -66,7 +66,7 @@ class Command(BaseCommand):
         file_name = lab_name + '.json'
         resource_type_obj = ResourceType.objects.get(name="Storage")
         parent_resource_obj = None
-        name = "holylfs04"
+        name = "holylfs04/tier0"
         description = "Service Type: Storage"
         is_available = True
         is_public = True
@@ -143,7 +143,7 @@ class Command(BaseCommand):
             justification='Allocation Information for ' + lab_name
         )
         allocation_obj.resources.add(
-            Resource.objects.get(name='holylfs04'))
+            Resource.objects.get(name='holylfs04/tier0'))
         allocation_obj.save()
 
 #begin: input allocation usage data
