@@ -38,13 +38,16 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectReviewForm,
                                           ProjectReviewUserJoinForm,
                                           ProjectSearchForm,
+                                          ProjectUpdateForm,
                                           ProjectUserUpdateForm)
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectReviewStatusChoice,
                                            ProjectStatusChoice, ProjectUser,
+                                           ProjectUserJoinRequest,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice)
-from coldfront.core.project.utils import get_project_compute_allocation
+from coldfront.core.project.utils import (auto_approve_project_join_requests,
+                                          get_project_compute_allocation)
 # from coldfront.core.publication.models import Publication
 # from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.user.forms import UserSearchForm
@@ -201,6 +204,9 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['savio_compute_allocation_pk'] = savio_compute_allocation_pk
         context['cluster_accounts_requestable'] = cluster_accounts_requestable
         context['cluster_accounts_tooltip'] = cluster_accounts_tooltip
+
+        context['joins_auto_approved'] = (
+            self.object.joins_auto_approval_delay == datetime.timedelta())
 
         return context
 
@@ -564,12 +570,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Project
     template_name_suffix = '_update_form'
-    fields = [
-        'title',
-        'description',
-        'field_of_science',
-        'joins_require_approval',
-    ]
+    form_class = ProjectUpdateForm
     success_message = 'Project updated.'
 
     def test_func(self):
@@ -597,9 +598,10 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
         return reverse('project-detail', kwargs={'pk': self.object.pk})
 
     def form_valid(self, form):
-        # If joins_require_approval is set to False, automatically approve all
+        # If joins_auto_approval_delay is set to 0, automatically approve all
         # pending join requests.
-        if not form.cleaned_data['joins_require_approval']:
+        delay = form.cleaned_data['joins_auto_approval_delay']
+        if delay == datetime.timedelta():
             if not self.__approve_pending_join_requests():
                 return False
         return super().form_valid(form)
@@ -809,6 +811,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             request.user, project_obj.pk, request.POST, prefix='allocationform')
 
         added_users_count = 0
+        cluster_access_requests_count = 0
         if formset.is_valid() and allocation_form.is_valid():
             project_user_active_status_choice = ProjectUserStatusChoice.objects.get(
                 name='Active')
@@ -856,8 +859,37 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                         allocation_activate_user.send(sender=self.__class__,
                                                       allocation_user_pk=allocation_user_obj.pk)
 
+                    # Request cluster access for the user.
+                    error_message = (
+                        'Unexpected server error. Please contact an '
+                        'administrator.')
+                    try:
+                        allocation_obj = get_project_compute_allocation(
+                            project_obj)
+                    except (Allocation.DoesNotExist,
+                            Allocation.MultipleObjectsReturned):
+                        messages.error(self.request, error_message)
+                        continue
+
+                    try:
+                        request_project_cluster_access(
+                            allocation_obj, user_obj)
+                    except ValueError:
+                        message = (
+                            f'User {user_obj.username} already has cluster '
+                            f'access under Project {project_obj.name}.')
+                        messages.warning(self.request, message)
+                    except Exception:
+                        messages.error(self.request, error_message)
+                    else:
+                        cluster_access_requests_count += 1
+
             messages.success(
                 request, 'Added {} users to project.'.format(added_users_count))
+            message = (
+                f'Requested cluster access under project for '
+                f'{cluster_access_requests_count} users.')
+            messages.success(request, message)
         else:
             if not formset.is_valid():
                 for error in formset.errors:
@@ -1365,6 +1397,14 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         if project_users.exists():
             project_user = project_users.first()
             project_user.role = role
+            # If the user is Active on the project, raise a warning and exit.
+            if project_user.status.name == 'Active':
+                message = (
+                    f'You already already an Active member of Project '
+                    f'{project_obj.name}.')
+                messages.warning(self.request, message)
+                next_view = reverse('project-join-list')
+                return redirect(next_view)
             project_user.status = status
             project_user.save()
         else:
@@ -1374,21 +1414,21 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 role=role,
                 status=status)
 
-        if project_obj.joins_require_approval:
+        # Create a join request, whose 'created' timestamp is used to determine
+        # when to auto-approve the request.
+        ProjectUserJoinRequest.objects.create(project_user=project_user)
+
+        if project_obj.joins_auto_approval_delay != datetime.timedelta():
             message = (
                 f'You have requested to join Project {project_obj.name}. The '
-                f'managers have been notified and will approve or deny your '
-                f'request.')
+                f'managers have been notified. The request will automatically '
+                f'be approved after a delay period, unless managers '
+                f'explicitly deny it.')
             messages.success(self.request, message)
             next_view = reverse('project-join-list')
         else:
-            status = ProjectUserStatusChoice.objects.get(name='Active')
-            project_user.status = status
-            project_user.save()
-
             next_view = reverse(
                 'project-detail', kwargs={'pk': project_obj.pk})
-
             error_message = (
                 'Unexpected server error. Please contact an administrator.')
 
@@ -1398,6 +1438,10 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     Allocation.MultipleObjectsReturned):
                 messages.error(self.request, error_message)
                 return redirect(next_view)
+
+            status = ProjectUserStatusChoice.objects.get(name='Active')
+            project_user.status = status
+            project_user.save()
 
             try:
                 request_project_cluster_access(allocation_obj, user_obj)
@@ -1531,6 +1575,7 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
 
     @staticmethod
     def get_users_to_review(project_obj):
+        delay = project_obj.joins_auto_approval_delay
         users_to_review = [
             {
                 'username': ele.user.username,
@@ -1538,6 +1583,7 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
                 'last_name': ele.user.last_name,
                 'email': ele.user.email,
                 'role': ele.role,
+                'auto_approval_time': ele.created + delay,
             }
             for ele in project_obj.projectuser_set.filter(
                 status__name='Pending - Add').order_by('user__username')
@@ -1633,3 +1679,34 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
 
         return HttpResponseRedirect(
             reverse('project-detail', kwargs={'pk': pk}))
+
+
+class ProjectAutoApproveJoinRequestsView(LoginRequiredMixin,
+                                         UserPassesTestMixin, View):
+
+    def test_func(self):
+        if self.request.user.is_superuser or self.request.user.is_staff:
+            return True
+        message = (
+            'You do not have permission to automatically approve project '
+            'requests.')
+        messages.error(self.request, message)
+
+    def post(self, request, *args, **kwargs):
+        results = auto_approve_project_join_requests()
+        num_processed = len(results)
+        num_successes, num_failures = 0, 0
+        for result in results:
+            if result.success:
+                num_successes = num_successes + 1
+            else:
+                num_failures = num_failures + 1
+        message = (
+            f'{num_processed} pending join requests were processed. '
+            f'{num_successes} succeeded. {num_failures} failed.')
+        if num_failures == 0:
+            messages.success(request, message)
+        else:
+            messages.error(request, message)
+        return HttpResponseRedirect(
+            reverse('allocation-cluster-account-request-list'))
