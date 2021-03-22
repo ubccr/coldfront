@@ -50,7 +50,9 @@ We do not have information about your research. Please provide a detailed descri
     requires_review = models.BooleanField(default=True)
     history = HistoricalRecords()
 
-    joins_require_approval = models.BooleanField(default=True)
+    JOINS_AUTO_APPROVAL_DELAY = datetime.timedelta(hours=6)
+    joins_auto_approval_delay = models.DurationField(
+        default=JOINS_AUTO_APPROVAL_DELAY)
 
     def clean(self):
         if 'Auto-Import Project'.lower() in self.title.lower():
@@ -59,6 +61,9 @@ We do not have information about your research. Please provide a detailed descri
 
         if 'We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!' in self.description:
             raise ValidationError('You must update the project description.')
+
+        if self.joins_auto_approval_delay < datetime.timedelta():
+            raise ValidationError('Delay must be non-negative.')
 
     @property
     def last_project_review(self):
@@ -212,3 +217,19 @@ class ProjectUser(TimeStampedModel):
     class Meta:
         unique_together = ('user', 'project')
         verbose_name_plural = "Project User Status"
+
+
+class ProjectUserJoinRequest(TimeStampedModel):
+    """A model to track when a user requested to join a project."""
+
+    project_user = models.ForeignKey(ProjectUser, on_delete=models.CASCADE)
+
+    def __str__(self):
+        user = self.project_user.user
+        return (
+            f'{user.first_name} {user.last_name} ({user.username}) '
+            f'({self.created})')
+
+    class Meta:
+        verbose_name = 'Project User Join Request'
+        verbose_name_plural = 'Project User Join Requests'

@@ -8,6 +8,8 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserRoleChoice)
 from coldfront.core.utils.common import import_from_settings
 
+from durationwidget.widgets import TimeDurationWidget
+
 EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL = import_from_settings(
     'EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL')
 EMAIL_ADMIN_LIST = import_from_settings('EMAIL_ADMIN_LIST', [])
@@ -153,4 +155,25 @@ class ProjectReviewUserJoinForm(forms.Form):
     last_name = forms.CharField(max_length=150, required=False, disabled=True)
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     role = forms.CharField(max_length=30, disabled=True)
+    auto_approval_time = forms.DateTimeField(disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
+
+
+class ProjectUpdateForm(forms.ModelForm):
+
+    joins_auto_approval_delay = forms.DurationField(
+        label='Auto-Approval Delay for Join Requests',
+        widget=TimeDurationWidget(
+            show_days=True, show_hours=True, show_minutes=False,
+            show_seconds=False),
+        required=False,
+        help_text=(
+            'Requests to join the project will automatically be approved '
+            'after a delay period, allowing managers to review them. The '
+            'default is 6 hours. An empty input is interpreted as 0.'))
+
+    class Meta:
+        model = Project
+        fields = (
+            'title', 'description', 'field_of_science',
+            'joins_auto_approval_delay',)
