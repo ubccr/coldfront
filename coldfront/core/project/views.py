@@ -1076,7 +1076,7 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         if project_obj.status.name not in ['Active', 'New', ]:
             messages.error(request, 'You cannot update a user in an archived project.')
-            return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_obj.pk}))
+            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
         if project_obj.projectuser_set.filter(id=project_user_pk).exists():
             project_user_obj = project_obj.projectuser_set.get(pk=project_user_pk)
