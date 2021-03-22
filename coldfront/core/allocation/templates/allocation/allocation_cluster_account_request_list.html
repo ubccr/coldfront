@@ -10,7 +10,29 @@ Cluster Account Review New and Pending Requests
 
 
 {% block content %}
-<h1>Cluster Account Requests</h1>
+<h1>Cluster Access Requests</h1>
+
+<div class="table-responsive">
+  <table class="table table-sm">
+    <tbody>
+      <tr>
+        <td>
+          Below is a list of pending cluster access requests. Requests are created when project join requests that have completed their delay period are automatically approved, which occurs periodically. You may manually perform this step using the Refresh button.
+        </td>
+        <td>
+          <form method="post" action="{% url 'project-auto-approve-join-requests' %}">
+            {% csrf_token %}
+            <button class="btn btn-primary mr-1" type="submit">
+              <i class="fas fa-sync" aria-hidden="true"></i>
+              Refresh
+            </button>
+          </form>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
 {% if cluster_account_list %}
 <div class="table-responsive">
   <table class="table table-sm">

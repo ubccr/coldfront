@@ -26,6 +26,7 @@
               <th scope="col">Last Name</th>
               <th scope="col">Email</th>
               <th scope="col">Role</th>
+              <th scope="col">Auto-Approval Time (UTC)</th>
             </tr>
           </thead>
           <tbody>
@@ -38,6 +39,7 @@
               <td>{{ form.last_name.value }}</td>
               <td>{{ form.email.value }}</td>
               <td>{{ form.role.value }}</td>
+              <td>{{ form.auto_approval_time.value }}</td>
             </tr>
             {% endfor %}
           </tbody>
