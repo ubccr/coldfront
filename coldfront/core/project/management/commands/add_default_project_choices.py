@@ -6,7 +6,7 @@ from coldfront.core.project.models import (ProjectReviewStatusChoice,
                                             ProjectStatusChoice,
                                             ProjectUserRoleChoice,
                                             ProjectUserStatusChoice,
-                                            SavioProjectAllocationRequestStatusChoice)
+                                            ProjectAllocationRequestStatusChoice)
 
 
 class Command(BaseCommand):
@@ -29,7 +29,7 @@ class Command(BaseCommand):
         for choice in ['Active', 'Pending - Add', 'Pending - Remove', 'Denied', 'Removed', ]:
             ProjectUserStatusChoice.objects.get_or_create(name=choice)
 
-        SavioProjectAllocationRequestStatusChoice.objects.all().delete()
+        ProjectAllocationRequestStatusChoice.objects.all().delete()
         for choice in ['Approved', 'Pending', 'Denied', ]:
-            SavioProjectAllocationRequestStatusChoice.objects.get_or_create(
+            ProjectAllocationRequestStatusChoice.objects.get_or_create(
                 name=choice)

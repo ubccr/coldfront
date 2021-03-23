@@ -235,7 +235,7 @@ class ProjectUserJoinRequest(TimeStampedModel):
         verbose_name_plural = 'Project User Join Requests'
 
 
-class SavioProjectAllocationRequestStatusChoice(TimeStampedModel):
+class ProjectAllocationRequestStatusChoice(TimeStampedModel):
     name = models.CharField(max_length=64)
 
     def __str__(self):
@@ -247,7 +247,7 @@ class SavioProjectAllocationRequestStatusChoice(TimeStampedModel):
 
 class SavioProjectAllocationRequest(TimeStampedModel):
     requester = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='requester')
+        User, on_delete=models.CASCADE, related_name='savio_requester')
 
     FCA = 'FCA'
     CO = 'CO'
@@ -259,12 +259,13 @@ class SavioProjectAllocationRequest(TimeStampedModel):
     allocation_type = models.CharField(
         max_length=16, choices=ALLOCATION_TYPE_CHOICES)
 
-    pi = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pi')
+    pi = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='savio_pi')
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     pool = models.BooleanField(default=False)
     survey_answers = models.JSONField()
     status = models.ForeignKey(
-        SavioProjectAllocationRequestStatusChoice, on_delete=models.CASCADE,
+        ProjectAllocationRequestStatusChoice, on_delete=models.CASCADE,
         verbose_name='Status')
     history = HistoricalRecords()
 
@@ -276,3 +277,25 @@ class SavioProjectAllocationRequest(TimeStampedModel):
         # TODO: unique_together?
         verbose_name = 'Savio Project Allocation Request'
         verbose_name_plural = 'Savio Project Allocation Requests'
+
+
+class VectorProjectAllocationRequest(TimeStampedModel):
+    requester = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='vector_requester')
+
+    pi = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='vector_pi')
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    status = models.ForeignKey(
+        ProjectAllocationRequestStatusChoice, on_delete=models.CASCADE,
+        verbose_name='Status')
+    history = HistoricalRecords()
+
+    def __str__(self):
+        # TODO
+        return f''
+
+    class Meta:
+        # TODO: unique_together?
+        verbose_name = 'Vector Project Allocation Request'
+        verbose_name_plural = 'Vector Project Allocation Requests'

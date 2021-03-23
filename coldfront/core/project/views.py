@@ -49,7 +49,7 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserJoinRequest,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice,
-                                           SavioProjectAllocationRequestStatusChoice,
+                                           ProjectAllocationRequestStatusChoice,
                                            ProjectUserStatusChoice)
 from coldfront.core.project.utils import (auto_approve_project_join_requests,
                                           get_project_compute_allocation)
@@ -1828,7 +1828,7 @@ class SavioProjectRequestWizard(SessionWizardView):
             survey_data = self.__get_survey_data(form_data)
 
             # Store transformed form data in a request.
-            status = SavioProjectAllocationRequestStatusChoice.objects.get(
+            status = ProjectAllocationRequestStatusChoice.objects.get(
                 name='Pending')
             SavioProjectAllocationRequest.objects.create(
                 requester=self.request.user,
@@ -2049,7 +2049,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             allocation = self.__update_allocation(request_obj)
 
             request_obj.status = \
-                SavioProjectAllocationRequestStatusChoice.objects.get(
+                ProjectAllocationRequestStatusChoice.objects.get(
                     name='Active')
             request_obj.save()
         except Exception as e:

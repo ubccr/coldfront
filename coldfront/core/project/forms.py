@@ -6,7 +6,7 @@ from django.db.models import Q
 
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserRoleChoice,
-                                           SavioProjectAllocationRequestStatusChoice)
+                                           ProjectAllocationRequestStatusChoice)
 from coldfront.core.utils.common import import_from_settings
 
 from durationwidget.widgets import TimeDurationWidget
@@ -221,7 +221,7 @@ class SavioProjectExistingPIForm(forms.Form):
                 project__name__startswith='fc_',
                 project__status__name__in=['New', 'Active']
             ).values_list('user__username', flat=True))
-            status = SavioProjectAllocationRequestStatusChoice.objects.get(
+            status = ProjectAllocationRequestStatusChoice.objects.get(
                 name='Pending')
             pis_with_pending_requests = set(
                 SavioProjectAllocationRequest.objects.filter(
