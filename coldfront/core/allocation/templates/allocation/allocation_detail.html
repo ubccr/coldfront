@@ -55,12 +55,12 @@ Allocation Detail
             <th scope="row" class="text-nowrap">Resource{{ allocation.resources.all|pluralize }} in allocation:</th>
             <td>{{ allocation.get_resources_as_string }}</td>
           </tr>
-          {% if request.user.is_superuser %}
+          <!-- {% if request.user.is_superuser %}
             <tr>
               <th scope="row" class="text-nowrap">Quantity:</th>
               <td>{{ allocation.quantity }}</td>
             </tr>
-          {% endif %}
+          {% endif %} -->
           <tr>
             <th scope="row" class="text-nowrap">Justification:</th>
             <td>{{ allocation.justification }}</td>
@@ -76,7 +76,7 @@ Allocation Detail
             </td>
           </tr>
           <tr>
-            <th scope="row" class="text-nowrap">Start Date:</th>
+            <th scope="row" class="text-nowrap">Service Start Date:</th>
             <td>
               {% if request.user.is_superuser %}
                 {{ form.start_date }}
@@ -86,7 +86,7 @@ Allocation Detail
             </td>
           </tr>
           <tr>
-            <th scope="row" class="text-nowrap">End Date:</th>
+            <th scope="row" class="text-nowrap">Service End Date:</th>
             <td>
               {% if request.user.is_superuser %}
                 {{ form.end_date }}
@@ -114,14 +114,14 @@ Allocation Detail
               {% endif %}
             </td>
           </tr>
-          <tr>
+          <!-- <tr>
             <th scope="row" class="text-nowrap">Created:</th>
             <td>{{ allocation.created|date:"M. d, Y" }}</td>
           </tr>
           <tr>
             <th scope="row" class="text-nowrap">Last Modified:</th>
             <td>{{ allocation.modified|date:"M. d, Y" }}</td>
-          </tr>
+          </tr> -->
           <tr>
             {% if allocation.is_locked %}
               <th scope="row" class="text-nowrap">Locked</th>
@@ -254,7 +254,7 @@ Allocation Detail
               
               <td>{{user.usage_bytes|mul:100 | div:user.allocation_group_usage_bytes|floatformat:2}}</td>
               <td>{{user.usage_bytes| div:1099511627776|mul:50| div:12|floatformat:2}}</td>
-             
+              
               <!-- {% if user.status.name == 'Active' %}
                 <td class="text-success">{{ user.status.name }}</td>
               {% elif user.status.name == 'Denied' or user.status.name == 'Error' %}
@@ -264,6 +264,7 @@ Allocation Detail
               {% endif %} -->
               <!-- <td>{{ user.modified|date:"M. d, Y" }}</td> -->
             </tr>
+            {{break}}
           {% endfor %}
           <!-- <td> total</td> -->
         </tbody>
