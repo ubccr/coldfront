@@ -1741,7 +1741,13 @@ class ProjectRequestView(LoginRequiredMixin, TemplateView):
 
     def get(self, request, *args, **kwargs):
         # TODO
-        context = {}
+        context = dict()
+        context['savio_requests'] = \
+            SavioProjectAllocationRequest.objects.filter(
+                Q(requester=request.user) | Q(pi=request.user))
+        context['vector_requests'] = \
+            VectorProjectAllocationRequest.objects.filter(
+                Q(requester=request.user) | Q(pi=request.user))
         return render(request, self.template_name, context)
 
 

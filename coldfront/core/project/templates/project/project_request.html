@@ -20,31 +20,48 @@ Project Request
   <div class="col-lg-6 mt-2">
     <h2>Savio</h2>
     <hr>
-    <ul class="list-group">
-      <li class="list-group-item">
-        Request 1
-      </li>
-      <li class="list-group-item">
-        Request 2
-      </li>
-    </ul>
-    <br>
+    {% if savio_requests %}
+      <ul class="list-group">
+        {% for savio_request in savio_requests %}
+          <li class="list-group-item">
+            {{ savio_request.project.name }} {% if savio_request.pool %}(Pooled){% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="alert alert-info" role="alert">
+        <i class="fa fa-info-circle" aria-hidden="true"></i>
+        No pending requests.
+      </div>
+    {% endif %}
+  </div>
+  <div class="col-lg-6 mt-2">
+    <h2>Vector</h2>
+    <hr>
+    {% if vector_requests %}
+      <ul class="list-group">
+        {% for vector_request in vector_requests %}
+          <li class="list-group-item">
+            {{ vector_request.project.name }}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="alert alert-info" role="alert">
+        <i class="fa fa-info-circle" aria-hidden="true"></i>
+        No pending requests.
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-6 mt-2">
     <a href="{% url 'savio-project-request' %}" class="btn btn-primary">
       Create
     </a>
   </div>
   <div class="col-lg-6 mt-2">
-    <h2>Vector</h2>
-    <hr>
-    <ul class="list-group">
-      <li class="list-group-item">
-        Request 1
-      </li>
-      <li class="list-group-item">
-        Request 2
-      </li>
-    </ul>
-    <br>
     <a href="{% url 'vector-project-request' %}" class="btn btn-primary">
       Create
     </a>
