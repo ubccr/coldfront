@@ -232,6 +232,7 @@ class Command(BaseCommand):
                         usage_bytes = user_lst['logical_usage'],
                         usage = num,
                         unit = alpha,
+                        allocation_group_quota = lab_allocation,
                         allocation_group_usage_bytes = lab_usage_in_bytes,
                        
                     )
@@ -250,7 +251,7 @@ class Command(BaseCommand):
                         usage_bytes = user_lst['logical_usage'],
                         usage = num,
                         unit = alpha,
-        
+                        allocation_group_quota = lab_allocation,
                         allocation_group_usage_bytes = lab_usage_in_bytes,
                         
                     )

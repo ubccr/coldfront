@@ -292,6 +292,7 @@ class AllocationUser(TimeStampedModel): #allocation user and user are both datab
     # usage = models.DecimalField(max_digits=6, decimal_places=2, default=0)
     usage = models.FloatField(default = 0)
     allocation_group_usage_bytes = models.IntegerField(blank=True, null=True)
+    allocation_group_quota = models.IntegerField(blank=True, null=True)
     unit = models.TextField(max_length=20, default="N/A Unit")
     history = HistoricalRecords()
 
