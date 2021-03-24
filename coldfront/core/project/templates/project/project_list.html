@@ -10,10 +10,19 @@
     {% if user.userprofile.is_pi or user.is_superuser %}
       <a class="btn btn-primary" href="{% url 'project-create' %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add a project</a>
     {% endif %}
-    <a class="btn btn-primary" href="{% url 'project-join-list' %}" role="button">
-      <i class="fas fa-user-plus" aria-hidden="true"></i>
-      Join a project
-    </a>
+
+    {% if user_agreement_signed %}
+      <a class="btn btn-primary" href="{% url 'project-join-list' %}" role="button">
+        <i class="fas fa-user-plus" aria-hidden="true"></i>
+        Join a project
+      </a>
+    {% else %}
+      <button class="btn btn-primary" disabled="true">
+        <i class="fas fa-user-plus" aria-hidden="true"></i>
+        Join a project
+      </button>
+    {% endif %}
+
     <div class="float-right">
       <a class="btn btn-primary" href="{% url 'project-archived-list' %}" role="button"><i class="fas fa-archive" aria-hidden="true"></i> View archived projects</a>
     </div>
