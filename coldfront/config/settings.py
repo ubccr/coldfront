@@ -230,6 +230,13 @@ ALLOCATION_YEAR_START_DAY = 1
 ALLOW_ALL_JOBS = False
 
 # ------------------------------------------------------------------------------
+# myBRC settings
+# ------------------------------------------------------------------------------
+
+# The username of the user to set as the PI for all Vector projects.
+VECTOR_PI_USERNAME = "channsoden@berkeley.edu"
+
+# ------------------------------------------------------------------------------
 # Local settings overrides (see local_settings.py.sample)
 # ------------------------------------------------------------------------------
 try:

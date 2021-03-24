@@ -1,0 +1,54 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Project Request
+{% endblock %}
+
+
+{% block content %}
+
+<h1>Create a Project</h1>
+<hr>
+
+<p>Request to create a new Savio or Vector project, and view pending requests.</p>
+
+<hr>
+<div class="row">
+  <div class="col-lg-6 mt-2">
+    <h2>Savio</h2>
+    <hr>
+    <ul class="list-group">
+      <li class="list-group-item">
+        Request 1
+      </li>
+      <li class="list-group-item">
+        Request 2
+      </li>
+    </ul>
+    <br>
+    <a href="{% url 'savio-project-request' %}" class="btn btn-primary">
+      Create
+    </a>
+  </div>
+  <div class="col-lg-6 mt-2">
+    <h2>Vector</h2>
+    <hr>
+    <ul class="list-group">
+      <li class="list-group-item">
+        Request 1
+      </li>
+      <li class="list-group-item">
+        Request 2
+      </li>
+    </ul>
+    <br>
+    <a href="{% url 'vector-project-request' %}" class="btn btn-primary">
+      Create
+    </a>
+  </div>
+</div>
+
+{% endblock %}

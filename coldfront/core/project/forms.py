@@ -485,3 +485,47 @@ class SavioProjectSurveyForm(forms.Form):
             'Does your application require access to an outside web server or '
             'database? If yes, please explain.'),
         required=False)
+
+
+class VectorProjectDetailsForm(forms.Form):
+
+    name = forms.CharField(
+        help_text=(
+            'The unique name of the project, which must contain only '
+            'lowercase letters and numbers. This will be used to set up the '
+            'project\'s SLURM scheduler account.'),
+        label='Name',
+        max_length=12,
+        required=True,
+        validators=[
+            MinLengthValidator(4),
+            RegexValidator(
+                r'^[0-9a-z]+$',
+                message=(
+                    'Name must contain only lowercase letters and numbers.'))
+        ])
+
+    title = forms.CharField(
+        help_text='A unique, human-readable title for the project.',
+        label='Title',
+        max_length=255,
+        required=True,
+        validators=[
+            MinLengthValidator(4),
+        ])
+    description = forms.CharField(
+        help_text='A few sentences describing your project.',
+        label='Description',
+        validators=[MinLengthValidator(10)],
+        widget=forms.Textarea(attrs={'rows': 3}))
+
+    # TODO: Add field_of_science.
+
+    def clean_name(self):
+        cleaned_data = super().clean()
+        name = cleaned_data['name'].lower()
+        name = f'vector_{name}'
+        if Project.objects.filter(name=name):
+            raise forms.ValidationError(
+                f'A project with name {name} already exists.')
+        return name
