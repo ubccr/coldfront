@@ -1408,7 +1408,7 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             # If the user is Active on the project, raise a warning and exit.
             if project_user.status.name == 'Active':
                 message = (
-                    f'You already already an Active member of Project '
+                    f'You are already an Active member of Project '
                     f'{project_obj.name}.')
                 messages.warning(self.request, message)
                 next_view = reverse('project-join-list')
@@ -1729,9 +1729,20 @@ from coldfront.core.project.forms import SavioProjectNewPIForm
 from coldfront.core.project.forms import SavioProjectPoolAllocationsForm
 from coldfront.core.project.forms import SavioProjectPooledProjectSelectionForm
 from coldfront.core.project.forms import SavioProjectSurveyForm
+from coldfront.core.project.forms import VectorProjectDetailsForm
 from coldfront.core.project.models import SavioProjectAllocationRequest
+from coldfront.core.project.models import VectorProjectAllocationRequest
 from coldfront.core.user.models import UserProfile
 from formtools.wizard.views import SessionWizardView
+
+
+class ProjectRequestView(LoginRequiredMixin, TemplateView):
+    template_name = 'project/project_request.html'
+
+    def get(self, request, *args, **kwargs):
+        # TODO
+        context = {}
+        return render(request, self.template_name, context)
 
 
 class SavioProjectRequestWizard(SessionWizardView):
@@ -1923,7 +1934,7 @@ class SavioProjectRequestWizard(SessionWizardView):
                 description=data['description'])
         except IntegrityError as e:
             self.logger.error(
-                f'Project {project["name"]} unexpectedly already exists.')
+                f'Project {data["name"]} unexpectedly already exists.')
             raise e
 
         # Create an allocation to the "Savio Compute" resource.
@@ -1999,7 +2010,7 @@ class SavioProjectRequestListView(LoginRequiredMixin, UserPassesTestMixin,
         """UserPassesTestMixin tests."""
         if self.request.user.is_superuser:
             return True
-        message = 'You do not have permission to vview the previous page.'
+        message = 'You do not have permission to view the previous page.'
         messages.error(self.request, message)
         return False
 
@@ -2148,4 +2159,62 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         project.status = ProjectStatusChoice.objects.get(name='Active')
         project.save()
         # TODO: Store the survey answers.
+        return project
+
+
+class VectorProjectRequestView(LoginRequiredMixin, FormView):
+    form_class = VectorProjectDetailsForm
+    template_name = 'project/vector_project_request/project_details.html'
+    login_url = '/'
+
+    logger = logging.getLogger(__name__)
+
+    def form_valid(self, form):
+        try:
+            project = self.__handle_create_new_project(form.cleaned_data)
+            # Store form data in a request.
+            pi = User.objects.get(username=settings.VECTOR_PI_USERNAME)
+            status = ProjectAllocationRequestStatusChoice.objects.get(
+                name='Pending')
+            VectorProjectAllocationRequest.objects.create(
+                requester=self.request.user,
+                pi=pi,
+                project=project,
+                status=status)
+        except Exception as e:
+            self.logger.exception(e)
+            message = 'Unexpected failure. Please contact an administrator.'
+            messages.error(self.request, message)
+        else:
+            message = (
+                'Thank you for your submission. It will be reviewed and '
+                'processed by administrators.')
+            messages.success(self.request, message)
+
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('home')
+
+    def __handle_create_new_project(self, data):
+        """TODO"""
+        status = ProjectStatusChoice.objects.get(name='New')
+        try:
+            project = Project.objects.create(
+                name=data['name'],
+                status=status,
+                title=data['title'],
+                description=data['description'])
+        except IntegrityError as e:
+            self.logger.error(
+                f'Project {data["name"]} unexpectedly already exists.')
+            raise e
+
+        # Create an allocation to the "Vector Compute" resource.
+        status = AllocationStatusChoice.objects.get(name='New')
+        allocation = Allocation.objects.create(project=project, status=status)
+        resource = Resource.objects.get(name='Vector Compute')
+        allocation.resources.add(resource)
+        allocation.save()
+
         return project

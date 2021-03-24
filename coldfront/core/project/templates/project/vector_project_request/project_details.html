@@ -1,0 +1,22 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Vector Project Request - Project Details
+{% endblock %}
+
+
+{% block content %}
+<h1>New Project Details</h1><hr>
+
+<p>You are creating a new project. Please provide the following details:</p>
+
+<form action="" method="post">
+  {% csrf_token %}
+  {{ form|crispy }}
+  <input class="btn btn-primary" type="submit" value="Submit" />
+</form>
+
+{% endblock %}
