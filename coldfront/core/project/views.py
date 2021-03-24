@@ -313,6 +313,10 @@ class ProjectListView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
 
         context = super().get_context_data(**kwargs)
+
+        # block access to joining projects until user-acess-agreement has been signed
+        context['user_agreement_signed'] = self.request.user.userprofile.access_agreement_signed_date is not None
+
         projects_count = self.get_queryset().count()
         context['projects_count'] = projects_count
 
