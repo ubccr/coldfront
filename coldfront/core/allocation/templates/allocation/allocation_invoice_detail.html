@@ -102,47 +102,58 @@
               <th scope="row" class="text-nowrap">Service Period:</th>
               <td>
                
-<form action="/action_page.php">
+
+  <script>
+    function onLoad2() {
+      //method for button times
+      if (document.getElementById('1month').checked ) {
+        var price = {{ allocation_users.0.allocation_group_quota }} * 1 / 12 * 50;
+        var n = price.toFixed(2);
+        console.log(price);
+        document.getElementById("totalamount").innerHTML = n;
+      }
+      
+
+      if (document.getElementById('2month').checked ) {
+        var price = {{ allocation_users.0.allocation_group_quota }} * 2 / 12 * 50; 
+        var n = price.toFixed(2);
+        console.log(price);
+        document.getElementById("totalamount").innerHTML = n;
   
-  <input type="radio" id="1month" name="gender" value="male">
-  <label for="male">1 Month</label><br>
-  <input type="radio" id="2month" name="gender" value="female">
-  <label for="female">2 Months</label><br>
-  <input type="radio" id="3month" name="gender" value="other">
-  <label for="other">3 Months</label><br>
-  <input type="radio" id="1year" name="gender" value="other">
-  <label for="other">1 Year</label>
+      }
+
+      if (document.getElementById('3month').checked ) {
+        var price = {{ allocation_users.0.allocation_group_quota }} * 3 / 12 * 50;
+        var n = price.toFixed(2);
+        document.getElementById("totalamount").innerHTML = n;
+
+      }
+      if (document.getElementById('1year').checked ) {
+        var price = {{ allocation_users.0.allocation_group_quota }} * 12 / 12 * 50;
+        var n = price.toFixed(2);
+        document.getElementById("totalamount").innerHTML = n;
+
+      }
+    }
+  
+  </script>
+
+  <input type="radio" id="1month" name="period" value="1month" onclick="onLoad2();">
+  <label for="period">1 Month</label><br>
+  <input type="radio" id="2month" name="period" value="2month" onclick="onLoad2();">
+  <label for="period">2 Months</label><br>
+  <input type="radio" id="3month" name="period" value="3month" onclick="onLoad2();">
+  <label for="period">3 Months</label><br>
+  <input type="radio" id="1year" name="period" value="1year" onclick="onLoad2();">
+  <label for="period">1 Year</label>
   <!-- <br>   -->
 
   <!-- <input type="submit" value="Submit"> -->
-</form>
+<!-- </form> -->
                 </td>
             </tr>
 
-            <!-- <tr>
-                <th scope="row" class="text-nowrap">Service End Date:</th>
-               
-                <td>
-                    {% if request.user.is_superuser %}
-                      {{ form.end_date }}
-                    {% else %}
-                      {{ allocation.end_date }}
-                    {% endif %}
-      
-                    {% if is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
-                      <a href="{% url 'allocation-renew' allocation.pk %}">
-                        <span class="badge badge-warning">
-                          <i class="fas fa-redo-alt" aria-hidden="true"></i>
-                          Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} - click to renew
-                        </span>
-                      </a>
-                    {% endif %}
-                  </td>
-              </tr> -->
-            <!-- <tr>
-              <th scope="row" class="text-nowrap">Last Modified:</th>
-              <td>{{ allocation.modified }}</td>
-            </tr> -->
+   
             <tr>
                 <th scope="row" class="text-nowrap">Total Users in Your Bill:</th>
                 <td>{{ allocation_users.count }}</td>
@@ -151,10 +162,24 @@
                 <th scope="row" class="text-nowrap">Total Usage (TB):</th>
                 <td>{{ allocation_users.0.allocation_group_usage_bytes| div:1099511627776|floatformat:2 }}</td>
             </tr>
-    
             <tr>
-                <th style="background-color:#D3D3D3" bordercolor="red" scope="row" class="text-nowrap">Total Amount Due:	</th>
-                <td style="background-color:#D3D3D3">${{allocation_users.0.allocation_group_usage_bytes| div:1099511627776|mul:50| div:12|floatformat:2}}</td>
+                <th scope="row" class="text-nowrap">Quota (TB):</th>
+                <td id = "group_quota">{{ allocation_users.0.allocation_group_quota }}</td>
+            </tr>
+
+            <tr>
+                <th scope="row" class="text-nowrap">Created:</th>
+                <td>{{ allocation.created }}</td>
+              </tr>
+              <tr>
+                <th scope="row" class="text-nowrap">Last Modified:</th>
+                <td>{{ allocation.modified }}</td>
+              </tr>
+            <tr>
+                <th  style="background-color:#D3D3D3" bordercolor="red" scope="row" class="text-nowrap">Total Amount Due:	</th>
+               
+                <!-- <td style="background-color:#D3D3D3">${{allocation_users.0.allocation_group_usage_bytes| div:1099511627776|mul:50| div:12|floatformat:2}}</td> -->
+                <td  style="background-color:#D3D3D3" id = "totalamount"></td>
               </tr>
           </table>
         </div>
