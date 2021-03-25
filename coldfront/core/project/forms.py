@@ -341,6 +341,8 @@ class SavioProjectDetailsForm(forms.Form):
             name = f'fc_{name}'
         elif self.allocation_type == SavioProjectAllocationRequest.CO:
             name = f'co_{name}'
+        elif self.allocation_type == SavioProjectAllocationRequest.PCA:
+            name = f'pc_{name}'
         if Project.objects.filter(name=name):
             raise forms.ValidationError(
                 f'A project with name {name} already exists.')
