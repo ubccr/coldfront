@@ -39,7 +39,7 @@
 <div class="mb-3" >
     <h2>FAS Research Computing Invoice</h2>
     <!-- <a class="btn btn-info" href="{% url 'pdf_view' allocation.id %}" target="_blank">View Invoice</a> -->
-    <button class = "btn btn-primary" id = "download"> Download PDF </button>
+    <!-- <button class = "btn btn-primary" id = "download"> Download PDF </button> -->
     <hr>
   </div>
 
@@ -102,8 +102,8 @@
               <th scope="row" class="text-nowrap">Service Period:</th>
               <td>
                
-
-  <script>
+ <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script> 
+  <!-- <script>
     function onLoad2() {
       //method for button times
       if (document.getElementById('1month').checked ) {
@@ -114,16 +114,16 @@
       }
       
 
-      if (document.getElementById('2month').checked ) {
-        var price = {{ allocation_users.0.allocation_group_quota }} * 2 / 12 * 50; 
+      if (document.getElementById('3month').checked ) {
+        var price = {{ allocation_users.0.allocation_group_quota }} * 3 / 12 * 50; 
         var n = price.toFixed(2);
         console.log(price);
         document.getElementById("totalamount").innerHTML = n;
   
       }
 
-      if (document.getElementById('3month').checked ) {
-        var price = {{ allocation_users.0.allocation_group_quota }} * 3 / 12 * 50;
+      if (document.getElementById('6month').checked ) {
+        var price = {{ allocation_users.0.allocation_group_quota }} * 6 / 12 * 50;
         var n = price.toFixed(2);
         document.getElementById("totalamount").innerHTML = n;
 
@@ -136,20 +136,30 @@
       }
     }
   
-  </script>
+  </script> --> 
 
-  <input type="radio" id="1month" name="period" value="1month" onclick="onLoad2();">
+ 
+
+  <!-- <input type="radio" id="1month" name="period" value="1month" onclick="onLoad2(); ">
   <label for="period">1 Month</label><br>
-  <input type="radio" id="2month" name="period" value="2month" onclick="onLoad2();">
-  <label for="period">2 Months</label><br>
   <input type="radio" id="3month" name="period" value="3month" onclick="onLoad2();">
   <label for="period">3 Months</label><br>
+  <input type="radio" id="6month" name="period" value="6month" onclick="onLoad2();">
+  <label for="period">6 Months</label><br>
   <input type="radio" id="1year" name="period" value="1year" onclick="onLoad2();">
-  <label for="period">1 Year</label>
+  <label for="period">1 Year</label> -->
   <!-- <br>   -->
 
   <!-- <input type="submit" value="Submit"> -->
 <!-- </form> -->
+
+        <select class = "dropdown" name="dropdown" id="billingPeriod" >
+            <option value="1month" id = "1month" selected>1 Month</option>
+            <option value="3month" id = "3month">3 Months</option>
+            <option value="6month" id = "6month">6 Months</option>
+            <option value="1year" id ="1year">1 Year</option>
+        </select>
+
                 </td>
             </tr>
 
@@ -189,7 +199,43 @@
       </form>
     </div>
   </div>
-  
+
+  <script>
+      const selectElement = document.getElementById('billingPeriod');
+      console.log(selectElement);
+      var price = {{ allocation_users.0.allocation_group_quota }} * 1 / 12 * 50;
+      var n = price.toFixed(2);
+              
+      document.getElementById("totalamount").innerHTML = n;
+      selectElement.addEventListener('change', (event) => {
+            if (event.target.value=="1month") {
+              var price = {{ allocation_users.0.allocation_group_quota }} * 1 / 12 * 50;
+              var n = price.toFixed(2);
+              
+              document.getElementById("totalamount").innerHTML = n;
+            }
+            // console.log(event.target.value);
+            if (event.target.value=="3month") {
+              var price = {{ allocation_users.0.allocation_group_quota }} * 3 / 12 * 50;
+              var n = price.toFixed(2);
+              
+              document.getElementById("totalamount").innerHTML = n;
+            }
+            if (event.target.value=="6month") {
+              var price = {{ allocation_users.0.allocation_group_quota }} * 6 / 12 * 50;
+              var n = price.toFixed(2);
+              
+              document.getElementById("totalamount").innerHTML = n;
+            }
+            if (event.target.value=="1year") {
+              var price = {{ allocation_users.0.allocation_group_quota }} * 12 / 12 * 50;
+              var n = price.toFixed(2);
+              
+              document.getElementById("totalamount").innerHTML = n;
+            }
+      });
+      
+    </script>
   
 {% if attributes or attributes_with_usage or request.user.is_superuser %}
   <div class="card mb-3" >
@@ -202,8 +248,8 @@
       </div>
     </div>
     <div class="card-body">
-      {% if attributes %}
-        <div class="table-responsive">
+      <!-- {% if attributes %} -->
+        <!-- <div class="table-responsive">
           <table class="table table-bordered table-sm">
             <thead>
               <tr>
@@ -227,8 +273,8 @@
               {% endfor %}
             </tbody>
           </table>
-        </div>
-      {% endif %}
+        </div> -->
+      <!-- {% endif %} -->
 
       {% if attributes_with_usage %}
         <hr>
@@ -329,7 +375,7 @@
     buttons: {
         name: 'primary',
         
-        buttons: [  'copy' ]
+        buttons: [ 'csv', 'excel', 'pdf' ]
     
         }
     }

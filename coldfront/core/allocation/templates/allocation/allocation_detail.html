@@ -264,7 +264,7 @@ Allocation Detail
               {% endif %} -->
               <!-- <td>{{ user.modified|date:"M. d, Y" }}</td> -->
             </tr>
-            {{break}}
+           
           {% endfor %}
           <!-- <td> total</td> -->
         </tbody>
@@ -304,8 +304,10 @@ Allocation Detail
       $('#mydatatable').DataTable({
       
       dom: 'B<"clear">lfrtip',
+      "order": [[ 3, "desc" ]],
       buttons: {
           name: 'primary',
+          
           buttons: [  'csv', 'excel', 'pdf' ]
       
           }}
