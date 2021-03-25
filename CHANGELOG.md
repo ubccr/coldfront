@@ -2,7 +2,12 @@
 
 ## [Unreleased]
 
+## [1.0.4] - 2021-03-25
+
 - Fix [#235](https://github.com/ubccr/coldfront/issues/235)
+- Fix [#271](https://github.com/ubccr/coldfront/issues/271)
+- Fix [#279](https://github.com/ubccr/coldfront/issues/279)
+- Add LDAP User Search plugin configs
 
 ## [1.0.3] - 2021-03-02
 
@@ -47,4 +52,5 @@
 [1.0.1]: https://github.com/ubccr/coldfront/releases/tag/v1.0.1
 [1.0.2]: https://github.com/ubccr/coldfront/releases/tag/v1.0.2
 [1.0.3]: https://github.com/ubccr/coldfront/releases/tag/v1.0.3
-[Unreleased]: https://github.com/ubccr/coldfront/compare/v1.0.3...HEAD
+[1.0.4]: https://github.com/ubccr/coldfront/releases/tag/v1.0.4
+[Unreleased]: https://github.com/ubccr/coldfront/compare/v1.0.4...HEAD
