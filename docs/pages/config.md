@@ -148,9 +148,12 @@ disabled:
 | PLUGIN_AUTH_LDAP            | Enable LDAP Authentication Backend. Default False |
 | AUTH_LDAP_SERVER_URI        | URI of LDAP server                      |
 | AUTH_LDAP_START_TLS         | Enable/disable start tls. Default True  |
+| AUTH_LDAP_BIND_DN           | The distinguished name to use when binding to the LDAP server      |
+| AUTH_LDAP_BIND_PASSWORD     | The password to use AUTH_LDAP_BIND_DN   |
 | AUTH_LDAP_USER_SEARCH_BASE  | User search base dn                     |
 | AUTH_LDAP_GROUP_SEARCH_BASE | Group search base dn                    |
 | AUTH_LDAP_MIRROR_GROUPS     | Enable/disable mirroring of groups. Default True  |
+| AUTH_LDAP_BIND_AS_AUTHENTICATING_USER     | Authentication will leave the LDAP connection bound as the authenticating user, rather than forcing it to re-bind. Default False    |
 
 #### OpenID Connect Auth
 
