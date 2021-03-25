@@ -9,5 +9,5 @@ mkdocs-minify-plugin==0.2.1
 mkdocs-awesome-pages-plugin==2.5.0
 Pygments==2.5.2
 pymdown-extensions==8.1.1
-PyYAML==5.3
+PyYAML==5.4
 six==1.14.0
