@@ -54,7 +54,3 @@ class Command(BaseCommand):
         allocation_attribute_type.is_required = False
         allocation_attribute_type.is_unique = True
         allocation_attribute_type.save()
-
-        # Create attributes with type 'Savio Allocation Type'.
-        allocation_attribute, _ = AllocationAttribute.objects.get_or_create(
-            allocation_attribute_type=allocation_attribute_type)
