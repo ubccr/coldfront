@@ -83,7 +83,7 @@ keytab for that user.
 To check the consistency between ColdFront and FreeIPA run the following command:
 
 ```
-    $ python manage.py freeipa_check -x --verbosity 0
+    $ coldfront freeipa_check -x --verbosity 0
 ```
 
 This will process all active allocations that have a "freeipa\_group"
@@ -93,18 +93,18 @@ users are not members of that group in freeipa. You can optionally provide the
 also update user status in ColdFront to match that in freeipa.
 
 ```
-    $ python manage.py freeipa_check --sync
+    $ coldfront freeipa_check --sync
 ```
 
 To get verbose logging run:
 
 ```
-    $ python manage.py freeipa_check --sync --verbosity 2
+    $ coldfront freeipa_check --sync --verbosity 2
 ```
 
 You can also optionally limit to specific users and groups:
 
 ```
-    $ python manage.py freeipa_check --username jane --group academic --verbosity 2
+    $ coldfront freeipa_check --username jane --group academic --verbosity 2
 
 ```
