@@ -898,12 +898,17 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                     else:
                         cluster_access_requests_count += 1
 
-            messages.success(
-                request, 'Added {} users to project.'.format(added_users_count))
-            message = (
-                f'Requested cluster access under project for '
-                f'{cluster_access_requests_count} users.')
-            messages.success(request, message)
+            if added_users_count != 0:
+                messages.success(
+                    request, 'Added {} users to project.'.format(added_users_count))
+
+                message = (
+                    f'Requested cluster access under project for '
+                    f'{cluster_access_requests_count} users.')
+                messages.success(request, message)
+            else:
+                messages.info(request, 'No users selected to add.')
+
         else:
             if not formset.is_valid():
                 for error in formset.errors:
