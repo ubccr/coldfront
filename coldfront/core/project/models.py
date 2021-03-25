@@ -251,10 +251,12 @@ class SavioProjectAllocationRequest(TimeStampedModel):
 
     FCA = 'FCA'
     CO = 'CO'
+    PCA = 'PCA'
     ALLOCATION_TYPE_CHOICES = (
         # TODO: Add the rest.
         (FCA, 'Faculty Compute Allowance (FCA)'),
         (CO, 'Condo Allocation'),
+        (PCA, 'Partner Compute Allowance (PCA)'),
     )
     allocation_type = models.CharField(
         max_length=16, choices=ALLOCATION_TYPE_CHOICES)
