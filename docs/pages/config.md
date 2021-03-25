@@ -223,6 +223,26 @@ disabled:
 | IQUOTA_API_HOST | Hostname of iquota server                |
 | IQUOTA_API_PORT | Port of iquota server                    |
 
+#### LDAP User Search
+
+This plugin allows searching for users via LDAP. This has nothing to do with
+authentication. This allows users who haven't yet logged into ColdFront but
+exist in your backend LDAP to show up in the ColdFront user search.
+
+!!! warning "Required"
+    LDAP User Search requires `ldap3`. 
+    ```
+    $ pip install ldap3 
+    ```
+
+| Name                        | Description                             |
+| :---------------------------|:----------------------------------------|
+| PLUGIN_LDAP_USER_SEARCH     | Enable LDAP User Search. Default False  |
+| LDAP_USER_SEARCH_SERVER_URI | URI of LDAP server                      |
+| LDAP_USER_SEARCH_BIND_DN    | The distinguished name to use when binding to the LDAP server      |
+| LDAP_USER_SEARCH_BIND_PASSWORD  | The password to use LDAP_USER_SEARCH_BIND_DN   |
+| LDAP_USER_SEARCH_BASE       | User search base dn                     |
+
 ## Advanced Configuration
 
 ColdFront uses the [Django
