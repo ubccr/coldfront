@@ -38,6 +38,10 @@ Project User Detail
             <th scope="row">Role:</th>
             <td>{{project_user_obj.role}}</td>
           </tr>
+          <tr>
+            <th scope="row">Enable Notifications:</th>
+            <td>{{project_user_update_form.enable_notifications}}</td>
+          </tr>
         {% else %}
           <tr>
             <th scope="row">Role:</th>
@@ -59,9 +63,7 @@ Project User Detail
     </div>
   </div>
   <div class="card-footer">
-    {% if project_user_obj.user not in project_user_obj.project.pis %}
-      <button type="submit" class="btn btn-primary">Update</button>
-    {% endif %}
+    <button type="submit" class="btn btn-primary">Update</button>
     <a class="btn btn-secondary" href="{% url 'project-detail' project_obj.pk %}" role="button">Back to Project</a><br>
   </div>
 </div>
