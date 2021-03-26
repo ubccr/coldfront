@@ -301,6 +301,7 @@ class SavioProjectPooledProjectSelectionForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         self.allocation_type = kwargs.pop('allocation_type', None)
+        kwargs.pop('breadcrumb_pi', None)
         super().__init__(*args, **kwargs)
         projects = Project.objects.filter(
             status__name__in=['Pending - Add', 'New', 'Active'])
@@ -355,6 +356,7 @@ class SavioProjectDetailsForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         self.allocation_type = kwargs.pop('allocation_type', None)
+        kwargs.pop('breadcrumb_pi', None)
         super().__init__(*args, **kwargs)
 
     def clean_name(self):

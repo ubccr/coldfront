@@ -1985,6 +1985,51 @@ class SavioProjectRequestWizard(SessionWizardView):
             if allocation_type_form_data:
                 dictionary.update(allocation_type_form_data)
 
+        existing_pi_step = self.step_numbers_by_form_name['existing_pi']
+        new_pi_step = self.step_numbers_by_form_name['new_pi']
+        if step > new_pi_step:
+            existing_pi_form_data = self.get_cleaned_data_for_step(
+                str(existing_pi_step))
+            new_pi_form_data = self.get_cleaned_data_for_step(str(new_pi_step))
+            if existing_pi_form_data['PI'] is not None:
+                pi = existing_pi_form_data['PI']
+                dictionary.update({
+                    'breadcrumb_pi': (
+                        f'Existing PI: {pi.first_name} {pi.last_name} '
+                        f'({pi.email})')
+                })
+            else:
+                first_name = new_pi_form_data['first_name']
+                last_name = new_pi_form_data['last_name']
+                email = new_pi_form_data['email']
+                dictionary.update({
+                    'breadcrumb_pi': (
+                        f'New PI: {first_name} {last_name} ({email})')
+                })
+
+        pool_allocations_step = \
+            self.step_numbers_by_form_name['pool_allocations']
+        pooled_project_selection_step = \
+            self.step_numbers_by_form_name['pooled_project_selection']
+        details_step = self.step_numbers_by_form_name['details']
+        if step > details_step:
+            pool_allocations_form_data = \
+                self.get_cleaned_data_for_step(
+                    str(pool_allocations_step))
+            pooled_project_selection_form_data = \
+                self.get_cleaned_data_for_step(
+                    str(pooled_project_selection_step))
+            details_form_data = self.get_cleaned_data_for_step(
+                str(details_step))
+            if pool_allocations_form_data['pool']:
+                project = pooled_project_selection_form_data['project']
+                dictionary.update({
+                    'breadcrumb_project': f'Project: {project.name}'
+                })
+            else:
+                name = details_form_data['name']
+                dictionary.update({'breadcrumb_project': f'Project: {name}'})
+
 
 def show_details_form_condition(wizard):
     step_name = 'pool_allocations'
