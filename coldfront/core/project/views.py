@@ -1737,7 +1737,7 @@ from formtools.wizard.views import SessionWizardView
 
 
 class ProjectRequestView(LoginRequiredMixin, TemplateView):
-    template_name = 'project/project_request.html'
+    template_name = 'project/project_request/project_request.html'
 
     def get(self, request, *args, **kwargs):
         # TODO
@@ -2034,7 +2034,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
     model = SavioProjectAllocationRequest
     template_name = 'project/project_request/savio/project_request_detail.html'
     login_url = '/'
-    context_object_name = 'request'
+    context_object_name = 'savio_request'
 
     logger = logging.getLogger(__name__)
 
@@ -2061,6 +2061,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
                 reverse('savio-project-request-detail', kwargs={'pk': pk}))
 
         try:
+            self.__upgrade_pi_user(request_obj)
             project = self.__update_project(request_obj)
             self.__create_project_users(request_obj)
             allocation = self.__update_allocation(request_obj)
@@ -2167,6 +2168,14 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         # TODO: Store the survey answers.
         return project
 
+    @staticmethod
+    def __upgrade_pi_user(request_obj):
+        """Set the is_pi field of the request's PI UserProfile to
+        True."""
+        pi = request_obj.pi
+        pi.userprofile.is_pi = True
+        pi.userprofile.save()
+
 
 class VectorProjectRequestView(LoginRequiredMixin, FormView):
     form_class = VectorProjectDetailsForm
@@ -2224,3 +2233,51 @@ class VectorProjectRequestView(LoginRequiredMixin, FormView):
         allocation.save()
 
         return project
+
+
+class VectorProjectRequestListView(LoginRequiredMixin, UserPassesTestMixin,
+                                   TemplateView):
+    template_name = 'project/project_request/vector/project_request_list.html'
+    login_url = '/'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        message = 'You do not have permission to view the previous page.'
+        messages.error(self.request, message)
+        return False
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # TODO: Filter out processed ones.
+        vector_project_request_list = \
+            VectorProjectAllocationRequest.objects.all()
+        context['vector_project_request_list'] = vector_project_request_list
+        return context
+
+
+class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
+                                     DetailView):
+    model = VectorProjectAllocationRequest
+    template_name = 'project/project_request/vector/project_request_detail.html'
+    login_url = '/'
+    context_object_name = 'vector_request'
+
+    logger = logging.getLogger(__name__)
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        message = 'You do not have permission to view the previous page.'
+        messages.error(self.request, message)
+        return False
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
+
+    def post(self, request, *args, **kwargs):
+        # TODO
+        pass
