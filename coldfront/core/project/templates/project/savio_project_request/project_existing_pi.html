@@ -25,6 +25,10 @@ Savio Project Request - Existing PI
   <p>Note: Each PI may only have one active FCA at a time, so only those without one can be selected below.</p>
 {% endif %}
 
+{% if allocation_type == 'PCA' %}
+  <p>Note: Each PI may only have one active PCA at a time, so only those without one can be selected below.</p>
+{% endif %}
+
 <form action="" method="post">
   {% csrf_token %}
   <table>

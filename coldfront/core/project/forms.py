@@ -211,11 +211,11 @@ class SavioProjectExistingPIForm(forms.Form):
         super().__init__(*args, **kwargs)
 
         # PIs may only have one FCA, so only allow those without an active FCA
-        # to be selected.
+        # to be selected. The same applies for PCA.
         queryset = User.objects.filter(userprofile__is_pi=True)
+        pi_role = ProjectUserRoleChoice.objects.get(
+            name='Principal Investigator')
         if self.allocation_type == 'FCA':
-            pi_role = ProjectUserRoleChoice.objects.get(
-                name='Principal Investigator')
             pis_with_existing_fcas = set(ProjectUser.objects.filter(
                 role=pi_role,
                 project__name__startswith='fc_',
@@ -230,6 +230,23 @@ class SavioProjectExistingPIForm(forms.Form):
                 ).values_list('pi__username', flat=True))
             exclude_usernames = set.union(
                 pis_with_existing_fcas, pis_with_pending_requests)
+            self.fields['PI'].queryset = queryset.exclude(
+                username__in=exclude_usernames)
+        elif self.allocation_type == 'PCA':
+            pis_with_existing_pcas = set(ProjectUser.objects.filter(
+                role=pi_role,
+                project__name__startswith='pc_',
+                project__status__name__in=['New', 'Active']
+            ).values_list('user__username', flat=True))
+            status = ProjectAllocationRequestStatusChoice.objects.get(
+                name='Pending')
+            pis_with_pending_requests = set(
+                SavioProjectAllocationRequest.objects.filter(
+                    allocation_type=SavioProjectAllocationRequest.PCA,
+                    status=status
+                ).values_list('pi__username', flat=True))
+            exclude_usernames = set.union(
+                pis_with_existing_pcas, pis_with_pending_requests)
             self.fields['PI'].queryset = queryset.exclude(
                 username__in=exclude_usernames)
         else:
