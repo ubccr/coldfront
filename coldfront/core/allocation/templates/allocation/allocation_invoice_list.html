@@ -19,7 +19,11 @@ Allocation Invoice List
           <th scope="col">ID</th>
           <th scope="col">Resource</th>
           <th scope="col">Status</th>
-          <th scope="col">PI</th>
+          <th scope="col">Username</th>
+          <th scope="name">Name</th>
+          <th scope="col">Email</th>
+          <th scope="col">Email Invoice</th>
+
         </tr>
       </thead>
       <tbody>
@@ -29,6 +33,10 @@ Allocation Invoice List
             <td>{{allocation.get_resources_as_string}}</td>
             <td>{{allocation.status}}</td>
             <td>{{allocation.project.pi.username }}</td>
+            <td>{{allocation.project.pi.first_name }} {{allocation.project.pi.last_name }}</td>
+
+            <td>{{allocation.project.pi.email}}</td>
+            <td> <input type="checkbox" id="pi" name="email_reminder" value="reminder"></td>
           </tr>
         {% endfor %}
       </tbody>

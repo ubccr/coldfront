@@ -1,4 +1,5 @@
 
+{% load static %}
 <head>
 <style>
     @page {
@@ -18,12 +19,10 @@
 </style>
 </head>
 
-
-
 <body>
     <!-- Content for Static Frame 'header_frame' -->
     <div id="header_content">
-        <h3>FAS RC Research Computing</h3>
+        <h1>FAS Research Computing</h1>
     </div>
 
     <!-- Content for Static Frame 'footer_frame' -->
@@ -52,37 +51,27 @@
     <table>
         <tr>
     
-            <th>Product</th>
-            <th>Price</th>
-            <th>Quantity</th>
-            <th>Total</th>
+            <th>Description</th>
+            <th>Allocation (TB)</th>
+            <th>Usage (tb)</th>
+            <th>Unit Price (TB/month)</th>
+
         </tr>
         <tr>
     
-            <td>Hosting Plan</td>
-            <td>$7.99</td>
-            <td>2</td>
-            <td>$15.98</td>
+            <td>Tier 0 Storage (Holyfs04)</td>
+            <td>120 TB </td>
+            <td>76.14 TB </td>
+
+            <td>$4.18</td>
+        
         </tr>
-        <tr>
-    
-            <td>consultation </td>
-            <td>$225</td>
-            <td>1</td>
-            <td>$225</td>
-        </tr>
-        <tr>
-    
-            <td>Service Hours</td>
-            <td>$189</td>
-            <td>45.7</td>
-            <td>$8637.30</td>
-        </tr>
+      
     </table>
 
     <hr>
 
-    <p><strong>Total: $8878.28</strong></p>
+    <p><strong>Total: $500.00</strong></p>
     <hr>
     <table id = "mydatatable" class = "table table-striped table-bordered">
         <thead>
@@ -100,6 +89,15 @@
           </tr>
         </thead>
         <tbody>
+                <tr>
+              <td>user1</td>
+              <td>name1</td>
+              <td>bytes1</td>
+              <td>percent1</td>
+              <td>cost1</td>
+           
+          
+            </tr>
           {% for user in allocation_users %}
             <tr>
               <td>{{ user.user.username }}</td>
