@@ -34,7 +34,7 @@ Project Request
             <tr>
               <td>{{ savio_request.project.name }}</td>
               {% with pi=savio_request.pi %}
-                <td>{{ pi.first_name }} {{ pi.last_name }} ({{ pi.username }})</td>
+                <td>{{ pi.first_name }} {{ pi.last_name }} ({{ pi.email }})</td>
               {% endwith %}
               <td>
                 {% if savio_request.pool %}
@@ -81,7 +81,7 @@ Project Request
             <tr>
               <td>{{ vector_request.project.name }}</td>
               {% with pi=vector_request.pi %}
-                <td>{{ pi.first_name }} {{ pi.last_name }} ({{ pi.username }})</td>
+                <td>{{ pi.first_name }} {{ pi.last_name }} ({{ pi.email }})</td>
               {% endwith %}
               {% with status=vector_request.status.name %}
                 <td>
