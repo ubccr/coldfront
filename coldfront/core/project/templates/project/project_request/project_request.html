@@ -19,16 +19,37 @@ Project Request
 <div class="row">
   <div class="col-lg-6 mt-2">
     <h2>Savio</h2>
-    <hr>
     {% if savio_requests %}
-      <ul class="list-group">
-        {% for savio_request in savio_requests %}
-          <li class="list-group-item">
-            {{ savio_request.project.name }} {% if savio_request.pool %}(Pooled){% endif %}
-          </li>
-        {% endfor %}
-        <br>
-      </ul>
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">PI</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for savio_request in savio_requests %}
+            <tr>
+              <td>{{ savio_request.project.name }}</td>
+              {% with pi=savio_request.pi %}
+                <td>{{ pi.first_name }} {{ pi.last_name }} ({{ pi.username }})</td>
+              {% endwith %}
+              {% with status=savio_request.status.name %}
+                <td>
+                  {% if status == "Approved" %}
+                    <span class="badge badge-warning">{{ status }}</span>
+                  {% elif status == "Denied" %}
+                    <span class="badge badge-warning">{{ status }}</span>
+                  {% elif status == "Pending" %}
+                    <span class="badge badge-warning">{{ status }}</span>
+                  {% endif %}
+                </td>
+              {% endwith %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     {% else %}
       <div class="alert alert-info" role="alert">
         <i class="fa fa-info-circle" aria-hidden="true"></i>
@@ -38,16 +59,37 @@ Project Request
   </div>
   <div class="col-lg-6 mt-2">
     <h2>Vector</h2>
-    <hr>
     {% if vector_requests %}
-      <ul class="list-group">
-        {% for vector_request in vector_requests %}
-          <li class="list-group-item">
-            {{ vector_request.project.name }}
-          </li>
-        {% endfor %}
-        <br>
-      </ul>
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">PI</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for vector_request in vector_requests %}
+            <tr>
+              <td>{{ vector_request.project.name }}</td>
+              {% with pi=vector_request.pi %}
+                <td>{{ pi.first_name }} {{ pi.last_name }} ({{ pi.username }})</td>
+              {% endwith %}
+              {% with status=vector_request.status.name %}
+                <td>
+                  {% if status == "Approved" %}
+                    <span class="badge badge-warning">{{ status }}</span>
+                  {% elif status == "Denied" %}
+                    <span class="badge badge-warning">{{ status }}</span>
+                  {% elif status == "Pending" %}
+                    <span class="badge badge-warning">{{ status }}</span>
+                  {% endif %}
+                </td>
+              {% endwith %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     {% else %}
       <div class="alert alert-info" role="alert">
         <i class="fa fa-info-circle" aria-hidden="true"></i>

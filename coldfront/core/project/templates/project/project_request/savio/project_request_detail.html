@@ -24,37 +24,37 @@ Savio Project Request Detail
   <div class="card-body">
     <p class="card-text text-justify">
       <strong>Request #: </strong>
-      {{ request.pk }}
+      {{ savio_request.pk }}
     </p>
     <p class="card-text text-justify">
       <strong>Date Requested/Last Modified: </strong>
-      {{ request.modified|date:"M. d, Y" }}
+      {{ savio_request.modified|date:"M. d, Y" }}
     </p>
     <p class="card-text text-justify">
       <strong>Requester Email: </strong>
-      {{ request.requester.email }}
+      {{ savio_request.requester.email }}
     </p>
     <p class="card-text text-justify">
       <strong>Project: </strong>
-      {{ request.project.name }}
+      {{ savio_request.project.name }}
     </p>
     <p class="card-text text-justify">
       <strong>Allocation Type: </strong>
-      {{ request.allocation_type }}
+      {{ savio_request.allocation_type }}
     </p>
     <p class="card-text text-justify">
       <strong>Pooling?: </strong>
-      {{ request.pool }}
+      {{ savio_request.pool }}
     </p>
     <p class="card-text text-justify">
       <strong>PI: </strong>
-      {{ request.pi.email }}
+      {{ savio_request.pi.email }}
     </p>
     <p class="card-text text-justify">
       <strong>Survey Responses: </strong>
       <a class="btn btn-info" href="" role="button">View</a>
     </p>
-    {{ request.survey_answers }}
+    TEMPORARY: {{ savio_request.survey_answers }}
   </div>
 </div>
 
