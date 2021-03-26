@@ -196,9 +196,15 @@ class SavioProjectAllocationTypeForm(forms.Form):
         widget=forms.Select())
 
 
+class PIChoiceField(forms.ModelChoiceField):
+
+    def label_from_instance(self, obj):
+        return f'{obj.first_name} {obj.last_name} ({obj.email})'
+
+
 class SavioProjectExistingPIForm(forms.Form):
 
-    PI = forms.ModelChoiceField(
+    PI = PIChoiceField(
         label='Principal Investigator',
         queryset=User.objects.none(),
         required=False,
@@ -212,7 +218,7 @@ class SavioProjectExistingPIForm(forms.Form):
 
         # PIs may only have one FCA, so only allow those without an active FCA
         # to be selected. The same applies for PCA.
-        queryset = User.objects.filter(userprofile__is_pi=True)
+        queryset = User.objects.all()
         pi_role = ProjectUserRoleChoice.objects.get(
             name='Principal Investigator')
         if self.allocation_type == 'FCA':
@@ -302,7 +308,8 @@ class SavioProjectPooledProjectSelectionForm(forms.Form):
             projects = projects.filter(name__startswith='fc_')
         elif self.allocation_type == 'CO':
             projects = projects.filter(name__startswith='co_')
-        # TODO: Add handling for other types.
+        elif self.allocation_type == 'PCA':
+            projects = projects.filter(name__startswith='pc_')
         self.fields['project'].queryset = projects
 
     def clean(self):
