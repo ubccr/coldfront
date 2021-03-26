@@ -133,7 +133,7 @@ We do not have information about your research. Please provide a detailed descri
         return User.objects.filter(pk__in=pi_user_pks).order_by('username')
 
     def __str__(self):
-        return self.title
+        return self.name
 
     class Meta:
         ordering = ['title']
