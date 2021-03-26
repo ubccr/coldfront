@@ -27,6 +27,7 @@ Project Request
             {{ savio_request.project.name }} {% if savio_request.pool %}(Pooled){% endif %}
           </li>
         {% endfor %}
+        <br>
       </ul>
     {% else %}
       <div class="alert alert-info" role="alert">
@@ -45,6 +46,7 @@ Project Request
             {{ vector_request.project.name }}
           </li>
         {% endfor %}
+        <br>
       </ul>
     {% else %}
       <div class="alert alert-info" role="alert">

@@ -1764,13 +1764,13 @@ class SavioProjectRequestWizard(SessionWizardView):
     ]
 
     TEMPLATES = {
-        'allocation_type': 'project/savio_project_request/project_allocation_type.html',
-        'existing_pi': 'project/savio_project_request/project_existing_pi.html',
-        'new_pi': 'project/savio_project_request/project_new_pi.html',
-        'pool_allocations': 'project/savio_project_request/project_pool_allocations.html',
-        'pooled_project_selection': 'project/savio_project_request/project_pooled_project_selection.html',
-        'details': 'project/savio_project_request/project_details.html',
-        'survey': 'project/savio_project_request/project_survey.html',
+        'allocation_type': 'project/project_request/savio/project_allocation_type.html',
+        'existing_pi': 'project/project_request/savio/project_existing_pi.html',
+        'new_pi': 'project/project_request/savio/project_new_pi.html',
+        'pool_allocations': 'project/project_request/savio/project_pool_allocations.html',
+        'pooled_project_selection': 'project/project_request/savio/project_pooled_project_selection.html',
+        'details': 'project/project_request/savio/project_details.html',
+        'survey': 'project/project_request/savio/project_survey.html',
     }
 
     form_list = [
@@ -2009,7 +2009,7 @@ def show_pooled_project_selection_form_condition(wizard):
 
 class SavioProjectRequestListView(LoginRequiredMixin, UserPassesTestMixin,
                                   TemplateView):
-    template_name = 'project/savio_project_request/project_request_list.html'
+    template_name = 'project/project_request/savio/project_request_list.html'
     login_url = '/'
 
     def test_func(self):
@@ -2032,7 +2032,7 @@ class SavioProjectRequestListView(LoginRequiredMixin, UserPassesTestMixin,
 class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
                                     DetailView):
     model = SavioProjectAllocationRequest
-    template_name = 'project/savio_project_request/project_request_detail.html'
+    template_name = 'project/project_request/savio/project_request_detail.html'
     login_url = '/'
     context_object_name = 'request'
 
@@ -2170,7 +2170,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
 class VectorProjectRequestView(LoginRequiredMixin, FormView):
     form_class = VectorProjectDetailsForm
-    template_name = 'project/vector_project_request/project_details.html'
+    template_name = 'project/project_request/vector/project_details.html'
     login_url = '/'
 
     logger = logging.getLogger(__name__)
