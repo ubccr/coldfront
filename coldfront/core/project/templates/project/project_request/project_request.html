@@ -25,6 +25,7 @@ Project Request
           <tr>
             <th scope="col">Name</th>
             <th scope="col">PI</th>
+            <th scope="col">Pooling</th>
             <th scope="col">Status</th>
           </tr>
         </thead>
@@ -35,6 +36,13 @@ Project Request
               {% with pi=savio_request.pi %}
                 <td>{{ pi.first_name }} {{ pi.last_name }} ({{ pi.username }})</td>
               {% endwith %}
+              <td>
+                {% if savio_request.pool %}
+                  Yes
+                {% else %}
+                  No
+                {% endif %}
+              </td>
               {% with status=savio_request.status.name %}
                 <td>
                   {% if status == "Approved" %}
