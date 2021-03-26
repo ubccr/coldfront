@@ -1749,22 +1749,21 @@ data = {
 	"zipcode": "02138",
 
 
-	"phone": "617-871-9977",
-	"email": "test@harvard.edu",
-	"website": "www.rc.fas.harvard.edu",
+	# "phone": "617-871-9977",
+	"website": "billing@rc.fas.harvard.edu",
 	}
 
 
-# one_allocation = Allocation.objects.get(id=81)
+# one_allocation = Allocation.objects.get(id=21)
 dict_obj = []
 
-# one_allocation_users = AllocationUser.objects.filter(allocation__pk = 81)
+# one_allocation_users = AllocationUser.objects.filter(allocation__pk = 21)
 # print(one_allocation_users)
 # print(one_allocation)
 # Article.objects.filter(reporter__pk=1)
-# print("hello world line 1756")
+print("hello world line 1756")
 # print("print line 1756",type(all_users))
-#Opens up page as PDF
+# Opens up page as PDF
 # for e in one_allocation_users:
 #     print(e.user.username)
 #     print(e.usage_bytes)
@@ -1772,7 +1771,10 @@ dict_obj = []
 class ViewPDF(View):
 
     def get(self, request, *args, **kwargs):
+        # one_allocation_users = AllocationUser.objects.filter(allocation__pk = kwargs)
+        # print("line 1775 one_allocation_user",one_allocation_users)
         print("line magic 1773",kwargs)
+        # pdf = render_to_pdf('allocation/pdf_template.html', one_allocation_users)
         pdf = render_to_pdf('allocation/pdf_template.html', data)
         return HttpResponse(pdf, content_type='application/pdf')
 
