@@ -107,17 +107,17 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             context['is_allowed_to_archive_project'] = False
 
         # Can the user update the project?
+        context['is_allowed_to_update_project'] = False
+
         if self.request.user.is_superuser:
             context['is_allowed_to_update_project'] = True
+
         elif self.object.projectuser_set.filter(user=self.request.user).exists():
             project_user = self.object.projectuser_set.get(user=self.request.user)
-            if project_user.role.name in ('Principal Investigator', 'Manager'):
-                context['is_allowed_to_update_project'] = True
+
+            if project_user.role.name in ['Principal Investigator', 'Manager']:
                 context['username'] = project_user.user.username
-            else:
-                context['is_allowed_to_update_project'] = False
-        else:
-            context['is_allowed_to_update_project'] = False
+                context['is_allowed_to_update_project'] = True
 
         # Retrieve cluster access statuses.
         cluster_access_statuses = {}
@@ -1083,57 +1083,84 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         project_user_pk = self.kwargs.get('project_user_pk')
 
         if project_obj.status.name not in ['Active', 'New', ]:
-            messages.error(
-                request, 'You cannot update a user in an archived project.')
-            return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_user_pk}))
+            messages.error(request, 'You cannot update a user in an archived project.')
+            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
         if project_obj.projectuser_set.filter(id=project_user_pk).exists():
-            project_user_obj = project_obj.projectuser_set.get(
-                pk=project_user_pk)
-
-            pi_role = ProjectUserRoleChoice.objects.get(
-                name='Principal Investigator')
-            if project_user_obj.role == pi_role:
-                messages.error(
-                    request, 'PI role and email notification option cannot be changed.')
-                return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_user_pk}))
+            project_user_obj = project_obj.projectuser_set.get(pk=project_user_pk)
+            managers = project_obj.projectuser_set.filter(role__name='Manager', status__name='Active')
+            project_pis = project_obj.projectuser_set.filter(role__name='Principal Investigator', status__name='Active')
 
             project_user_update_form = ProjectUserUpdateForm(request.POST,
                                                              initial={'role': project_user_obj.role.name,
                                                                       'enable_notifications': project_user_obj.enable_notifications})
 
+            is_request_by_superuser = project_obj.projectuser_set.filter(user=self.request.user,
+                                                                         role__name__in=['Manager',
+                                                                                         'Principal Investigator'],
+                                                                         status__name='Active').exists() or self.request.user.is_superuser
+
+            if project_user_obj.role.name == 'Principal Investigator':
+                enable_notifications = project_user_update_form.data.get('enable_notifications', 'off') == 'on'
+
+                # cannot disable when no manager(s) exists
+                if not managers.exists() and not enable_notifications:
+                    messages.error(request, 'PIs can disable notifications when at least one manager exists.')
+                else:
+                    project_user_obj.enable_notifications = enable_notifications
+                    project_user_obj.save()
+                    messages.success(request, 'User details updated.')
+
+                return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_obj.pk, 'project_user_pk': project_user_obj.pk}))
+
             if project_user_update_form.is_valid():
                 form_data = project_user_update_form.cleaned_data
-                project_user_obj.enable_notifications = form_data.get('enable_notifications')
+                enable_notifications = form_data.get('enable_notifications')
 
                 old_role = project_user_obj.role
                 new_role = ProjectUserRoleChoice.objects.get(name=form_data.get('role'))
-                only_manager = not project_obj.projectuser_set.filter(~Q(pk=project_user_pk),
-                                                                      role__name='Manager').exists()
+                demotion = False
 
-                if old_role.name == 'Manager' and only_manager:
-                    if new_role.name == 'User':
-                        project_pis = project_obj.projectuser_set.filter(role__name='Principal Investigator')
+                # demote manager to user role
+                if old_role.name == 'Manager' and new_role.name == 'User':
+                    if not managers.filter(~Q(pk=project_user_pk)).exists():
 
+                        # no pis exist, cannot demote
                         if not project_pis.exists():
-                            # no pis exist, cannot demote
                             new_role = old_role
                             messages.error(
                                 request, 'The project must have at least one PI or manager with notifications enabled.')
+
+                        # enable all PI notifications, demote to user role
                         else:
-                            messages.warning(request, 'User {} is no longer a manager. All PIs will now receive notifications.'
-                                             .format(project_user_obj.user.username))
                             for pi in project_pis:
                                 pi.enable_notifications = True
                                 pi.save()
 
-                    elif new_role.name == 'Principal Investigator':
-                        project_user_obj.enable_notifications = True
+                            # users have notifications disabled by default
+                            enable_notifications = False
+                            demotion = True
 
+                            messages.warning(request, 'User {} is no longer a manager. All PIs will now receive notifications.'.format(
+                                project_user_obj.user.username))
+                            messages.success(request, 'User details updated.')
+
+                    else:
+                        demotion = True
+                        messages.success(request, 'User details updated.')
+
+                # promote user to manager role (notifications always active)
+                elif old_role.name == 'User' and new_role.name == 'Manager':
+                    enable_notifications = True
+                    messages.success(request, 'User details updated.')
+
+                project_user_obj.enable_notifications = enable_notifications
                 project_user_obj.role = new_role
                 project_user_obj.save()
 
-                messages.success(request, 'User details updated.')
+                if demotion and not is_request_by_superuser:
+                    return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+
                 return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_obj.pk, 'project_user_pk': project_user_obj.pk}))
 
 
@@ -1584,18 +1611,26 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
     @staticmethod
     def get_users_to_review(project_obj):
         delay = project_obj.joins_auto_approval_delay
-        users_to_review = [
-            {
+
+        users_to_review = []
+        queryset = project_obj.projectuser_set.filter(
+            status__name='Pending - Add').order_by('user__username')
+        for ele in queryset:
+            try:
+                auto_approval_time = \
+                    (ele.projectuserjoinrequest_set.latest('created').created +
+                     delay)
+            except ProjectUserJoinRequest.DoesNotExist:
+                auto_approval_time = 'Unknown'
+            user = {
                 'username': ele.user.username,
                 'first_name': ele.user.first_name,
                 'last_name': ele.user.last_name,
                 'email': ele.user.email,
                 'role': ele.role,
-                'auto_approval_time': ele.created + delay,
+                'auto_approval_time': auto_approval_time,
             }
-            for ele in project_obj.projectuser_set.filter(
-                status__name='Pending - Add').order_by('user__username')
-        ]
+            users_to_review.append(user)
         return users_to_review
 
     def get(self, request, *args, **kwargs):
