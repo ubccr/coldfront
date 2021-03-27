@@ -253,7 +253,6 @@ class SavioProjectAllocationRequest(TimeStampedModel):
     CO = 'CO'
     PCA = 'PCA'
     ALLOCATION_TYPE_CHOICES = (
-        # TODO: Add the rest.
         (FCA, 'Faculty Compute Allowance (FCA)'),
         (CO, 'Condo Allocation'),
         (PCA, 'Partner Compute Allowance (PCA)'),
@@ -272,11 +271,13 @@ class SavioProjectAllocationRequest(TimeStampedModel):
     history = HistoricalRecords()
 
     def __str__(self):
-        # TODO: Include the word "Pooled" if applicable
-        return f''
+        name = (
+            f'{self.project.name} - {self.pi.first_name} {self.pi.last_name}')
+        if self.pool:
+            name = f'{name} (Pooled)'
+        return name
 
     class Meta:
-        # TODO: unique_together?
         verbose_name = 'Savio Project Allocation Request'
         verbose_name_plural = 'Savio Project Allocation Requests'
 
@@ -294,10 +295,9 @@ class VectorProjectAllocationRequest(TimeStampedModel):
     history = HistoricalRecords()
 
     def __str__(self):
-        # TODO
-        return f''
+        return (
+            f'{self.project.name} - {self.pi.first_name} {self.pi.last_name}')
 
     class Meta:
-        # TODO: unique_together?
         verbose_name = 'Vector Project Allocation Request'
         verbose_name_plural = 'Vector Project Allocation Requests'
