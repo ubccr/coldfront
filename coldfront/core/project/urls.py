@@ -30,7 +30,7 @@ urlpatterns = [
 ]
 
 
-
+# TODO: Once finalized, move these imports above.
 from coldfront.core.project.views import ProjectRequestView
 from coldfront.core.project.views import SavioProjectRequestDetailView
 from coldfront.core.project.views import SavioProjectRequestListView

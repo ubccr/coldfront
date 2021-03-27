@@ -1755,7 +1755,7 @@ class ProjectAutoApproveJoinRequestsView(LoginRequiredMixin,
             reverse('allocation-cluster-account-request-list'))
 
 
-
+# TODO: Once finalized, move these imports above.
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.project.forms import SavioProjectAllocationTypeForm
 from coldfront.core.project.forms import SavioProjectDetailsForm

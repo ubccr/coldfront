@@ -180,7 +180,7 @@ class ProjectUpdateForm(forms.ModelForm):
             'joins_auto_approval_delay',)
 
 
-
+# TODO: Once finalized, move these imports above.
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from django.contrib.auth.models import User
