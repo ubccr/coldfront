@@ -1927,7 +1927,7 @@ class SavioProjectRequestWizard(SessionWizardView):
         # If an existing PI was selected, return the existing User object.
         step_number = self.step_numbers_by_form_name['existing_pi']
         data = form_data[step_number]
-        if data:
+        if data['PI']:
             return data['PI']
 
         # Create a new User object intended to be a new PI.
@@ -1953,7 +1953,7 @@ class SavioProjectRequestWizard(SessionWizardView):
                 f'User {email} unexpectedly has no UserProfile.')
             raise e
         pi_profile.middle_name = data['middle_name']
-        pi_profile.upgrade_request = datetime.utcnow().astimezone(
+        pi_profile.upgrade_request = datetime.datetime.utcnow().astimezone(
             pytz.timezone(settings.TIME_ZONE))
         pi_profile.save()
 
@@ -2207,7 +2207,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         allocation = allocations.first()
         allocation.status = AllocationStatusChoice.objects.get(name='Active')
         # TODO: Set start_date and end_date.
-        # allocation.start_date = datetime.utcnow().astimezone(
+        # allocation.start_date = datetime.datetime.utcnow().astimezone(
         #     pytz.timezone(settings.TIME_ZONE))
         # allocation.end_date =
         allocation.save()
