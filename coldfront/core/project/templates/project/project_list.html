@@ -7,9 +7,10 @@
 
 <div class="card mb-3 bg-light">
   <div class="card-body">
-    {% if user.userprofile.is_pi or user.is_superuser %}
-      <a class="btn btn-primary" href="{% url 'project-create' %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add a project</a>
-    {% endif %}
+    <a class="btn btn-primary" href="{% url 'project-request' %}" role="button">
+      <i class="fas fa-plus" aria-hidden="true"></i>
+      Create a project
+    </a>
     <a class="btn btn-primary" href="{% url 'project-join-list' %}" role="button">
       <i class="fas fa-user-plus" aria-hidden="true"></i>
       Join a project
