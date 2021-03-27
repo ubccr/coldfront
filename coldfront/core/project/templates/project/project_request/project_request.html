@@ -13,9 +13,23 @@ Project Request
 <h1>Create a Project</h1>
 <hr>
 
-<p>Request to create a new Savio or Vector project, and view pending requests.</p>
+<div class="row">
+  <div class="col-lg-6 mt-2">
+    <select
+        class="form-control"
+        onchange="this.options[this.selectedIndex].value && (window.location = this.options[this.selectedIndex].value);">
+      <option value="">Select a cluster.</option>
+      <option value="{% url 'savio-project-request' %}">Savio</option>
+      <option value="{% url 'vector-project-request' %}">Vector</option>
+    </select>
+  </div>
+</div>
 
+<br><br>
+
+<h1>Pending Requests</h1>
 <hr>
+
 <div class="row">
   <div class="col-lg-6 mt-2">
     <h2>Savio</h2>
@@ -104,19 +118,6 @@ Project Request
         No pending requests.
       </div>
     {% endif %}
-  </div>
-</div>
-
-<div class="row">
-  <div class="col-lg-6 mt-2">
-    <a href="{% url 'savio-project-request' %}" class="btn btn-primary">
-      Create
-    </a>
-  </div>
-  <div class="col-lg-6 mt-2">
-    <a href="{% url 'vector-project-request' %}" class="btn btn-primary">
-      Create
-    </a>
   </div>
 </div>
 
