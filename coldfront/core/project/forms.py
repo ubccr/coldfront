@@ -362,7 +362,6 @@ class SavioProjectDetailsForm(forms.Form):
     def clean_name(self):
         cleaned_data = super().clean()
         name = cleaned_data['name'].lower()
-        # TODO: Add the rest.
         if self.allocation_type == SavioProjectAllocationRequest.FCA:
             name = f'fc_{name}'
         elif self.allocation_type == SavioProjectAllocationRequest.CO:
@@ -377,7 +376,7 @@ class SavioProjectDetailsForm(forms.Form):
 
 class SavioProjectSurveyForm(forms.Form):
 
-    # TODO: This will not apply to Condo, probably.
+    # TODO: Modify survey questions for Condo.
 
     # Question 3
     scope_and_intent = forms.CharField(

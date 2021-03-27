@@ -1775,7 +1775,6 @@ class ProjectRequestView(LoginRequiredMixin, TemplateView):
     template_name = 'project/project_request/project_request.html'
 
     def get(self, request, *args, **kwargs):
-        # TODO
         context = dict()
         context['savio_requests'] = \
             SavioProjectAllocationRequest.objects.filter(
@@ -1838,7 +1837,6 @@ class SavioProjectRequestWizard(SessionWizardView):
         return context
 
     def get_form_kwargs(self, step):
-        # TODO: Not all past data will be needed in all forms.
         kwargs = {}
         step = int(step)
         # The names of steps that require the past data.
@@ -1857,9 +1855,8 @@ class SavioProjectRequestWizard(SessionWizardView):
         return [self.TEMPLATES[self.FORMS[int(self.steps.current)][0]]]
 
     def done(self, form_list, form_dict, **kwargs):
-        """TODO"""
-
-        # TODO: Set the appropriate redirect_url.
+        """Perform processing and store information in a request
+        object."""
         redirect_url = '/'
 
         # Retrieve form data; include empty dictionaries for skipped steps.
@@ -1875,8 +1872,7 @@ class SavioProjectRequestWizard(SessionWizardView):
             if pooling_requested:
                 project = self.__handle_pool_with_existing_project(form_data)
             else:
-                project = self.__handle_create_new_project(
-                    form_data, allocation_type)
+                project = self.__handle_create_new_project(form_data)
             survey_data = self.__get_survey_data(form_data)
 
             # Store transformed form data in a request.
@@ -1903,7 +1899,7 @@ class SavioProjectRequestWizard(SessionWizardView):
         return HttpResponseRedirect(redirect_url)
 
     def __get_allocation_type(self, form_data):
-        """TODO"""
+        """Return the allocation type matching the provided input."""
         step_number = self.step_numbers_by_form_name['allocation_type']
         data = form_data[step_number]
         allocation_type = data['allocation_type']
@@ -1915,16 +1911,19 @@ class SavioProjectRequestWizard(SessionWizardView):
         raise ValueError(f'Invalid allocation type {allocation_type}.')
 
     def __get_pooling_requested(self, form_data):
+        """Return whether or not pooling was requested."""
         step_number = self.step_numbers_by_form_name['pool_allocations']
         data = form_data[step_number]
         return data['pool']
 
     def __get_survey_data(self, form_data):
+        """Return provided survey data."""
         step_number = self.step_numbers_by_form_name['survey']
         return form_data[step_number]
 
     def __handle_pi_data(self, form_data):
-        """TODO"""
+        """Return the requested PI. If the PI did not exist, create a
+        new User and UserProfile."""
         # If an existing PI was selected, return the existing User object.
         step_number = self.step_numbers_by_form_name['existing_pi']
         data = form_data[step_number]
@@ -1960,8 +1959,9 @@ class SavioProjectRequestWizard(SessionWizardView):
 
         return pi
 
-    def __handle_create_new_project(self, form_data, allocation_type):
-        """TODO"""
+    def __handle_create_new_project(self, form_data):
+        """Create a new project and an allocation to the Savio Compute
+        resource."""
         step_number = self.step_numbers_by_form_name['details']
         data = form_data[step_number]
 
@@ -1988,7 +1988,7 @@ class SavioProjectRequestWizard(SessionWizardView):
         return project
 
     def __handle_pool_with_existing_project(self, form_data):
-        """TODO"""
+        """Return the requested project to pool with."""
         step_number = \
             self.step_numbers_by_form_name['pooled_project_selection']
         data = form_data[step_number]
@@ -2011,7 +2011,7 @@ class SavioProjectRequestWizard(SessionWizardView):
         return project
 
     def __set_data_from_previous_steps(self, step, dictionary):
-        """TODO"""
+        """Update the given dictionary with data from previous steps."""
         allocation_type_form_step = \
             self.step_numbers_by_form_name['allocation_type']
         if step > allocation_type_form_step:
@@ -2160,7 +2160,6 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
                 f'been activated.')
             messages.success(self.request, message)
 
-        # TODO: Set the appropriate redirect_url.
         redirect_url = '/'
         return HttpResponseRedirect(redirect_url)
 
@@ -2292,7 +2291,8 @@ class VectorProjectRequestView(LoginRequiredMixin, FormView):
         return reverse('home')
 
     def __handle_create_new_project(self, data):
-        """TODO"""
+        """Create a new project and an allocation to the Vector Compute
+        resource."""
         status = ProjectStatusChoice.objects.get(name='New')
         try:
             project = Project.objects.create(
@@ -2340,7 +2340,8 @@ class VectorProjectRequestListView(LoginRequiredMixin, UserPassesTestMixin,
 class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
                                      DetailView):
     model = VectorProjectAllocationRequest
-    template_name = 'project/project_request/vector/project_request_detail.html'
+    template_name = (
+        'project/project_request/vector/project_request_detail.html')
     login_url = '/'
     context_object_name = 'vector_request'
 
