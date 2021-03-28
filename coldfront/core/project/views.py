@@ -2128,6 +2128,11 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        pk = self.kwargs.get('pk')
+        request_obj = get_object_or_404(SavioProjectAllocationRequest, pk=pk)
+        survey_form = SavioProjectSurveyForm(
+            initial=request_obj.survey_answers, disable_fields=True)
+        context['survey_form'] = survey_form
         return context
 
     def post(self, request, *args, **kwargs):

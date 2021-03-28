@@ -31,8 +31,8 @@ Savio Project Request Detail
       {{ savio_request.modified|date:"M. d, Y" }}
     </p>
     <p class="card-text text-justify">
-      <strong>Requester Email: </strong>
-      {{ savio_request.requester.email }}
+      <strong>Requester: </strong>
+      {{ savio_request.requester.first_name }} {{ savio_request.requester.last_name }} ({{ savio_request.requester.email }})
     </p>
     <p class="card-text text-justify">
       <strong>Project: </strong>
@@ -43,18 +43,21 @@ Savio Project Request Detail
       {{ savio_request.allocation_type }}
     </p>
     <p class="card-text text-justify">
-      <strong>Pooling?: </strong>
-      {{ savio_request.pool }}
+      <strong>Pooling: </strong>
+      {% if savio_request.pool %}
+        Yes
+      {% else %}
+        No
+      {% endif %}
     </p>
     <p class="card-text text-justify">
       <strong>PI: </strong>
-      {{ savio_request.pi.email }}
+      {{ savio_request.pi.first_name }} {{ savio_request.pi.last_name }} ({{ savio_request.pi.email }})
     </p>
     <p class="card-text text-justify">
       <strong>Survey Responses: </strong>
-      <a class="btn btn-info" href="" role="button">View</a>
+      <button id="view-survey" class="btn btn-info" role="button">View</button>
     </p>
-    TEMPORARY: {{ savio_request.survey_answers }}
   </div>
 </div>
 
@@ -77,23 +80,18 @@ Savio Project Request Detail
         </thead>
         <tbody>
           <tr>
-            <td style="color: #28a745"><b>Requested Pooled Project approved?</b></td>
+            <td>Confirm that the requested PI is eligible for a Savio allowance.</td>
             <td style="color: #28a745"><i class="fas fa-check-circle" aria-hidden="true"></i></td>
             <td><button class="btn btn-primary" role="button">Manage</button></td>
           </tr>
           <tr>
-            <td style="color: #dc3545"><b>PI request approved?</b></td>
+            <td>Confirm that the project satisfies the readiness criteria.</td>
             <td style="color: #dc3545"><i class="fas fa-times-circle" aria-hidden="true"></i></td>
             <td><button class="btn btn-primary" role="button">Manage</button></td>
           </tr>
           <tr>
-            <td style="color: #dc3545"><b>Slurm entries created?</b></td>
+            <td>Perform project setup on the cluster.</td>
             <td style="color: #dc3545"><i class="fas fa-times-circle" aria-hidden="true"></i></td>
-            <td><button class="btn btn-primary" role="button">Manage</button></td>
-          </tr>
-          <tr>
-            <td style="color: #28a745"><b>Project directories created?</b></td>
-            <td style="color: #28a745"><i class="fas fa-check-circle" aria-hidden="true"></i></td>
             <td><button class="btn btn-primary" role="button">Manage</button></td>
           </tr>
         </tbody>
@@ -104,4 +102,33 @@ Savio Project Request Detail
 
 <button type="button" class="btn btn-success" disabled>Submit</button>
 <button type="button" class="btn btn-secondary" href="">Cancel</button>
+
+<div
+    id="survey-modal"
+    class="modal fade bd-example-modal-lg"
+    tabindex="-1"
+    role="dialog"
+    aria-labelledby="survey-modal"
+    aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Survey Responses</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        {{ survey_form|crispy }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  $("#view-survey").on("click", function() {
+    $("#survey-modal").modal("show");
+  });
+</script>
+
 {% endblock %}
