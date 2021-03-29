@@ -1763,6 +1763,8 @@ from coldfront.core.project.forms import SavioProjectExistingPIForm
 from coldfront.core.project.forms import SavioProjectNewPIForm
 from coldfront.core.project.forms import SavioProjectPoolAllocationsForm
 from coldfront.core.project.forms import SavioProjectPooledProjectSelectionForm
+from coldfront.core.project.forms import SavioProjectReviewForm
+from coldfront.core.project.forms import SavioProjectReviewSetupForm
 from coldfront.core.project.forms import SavioProjectSurveyForm
 from coldfront.core.project.forms import VectorProjectDetailsForm
 from coldfront.core.project.models import SavioProjectAllocationRequest
@@ -2259,6 +2261,120 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         pi = request_obj.pi
         pi.userprofile.is_pi = True
         pi.userprofile.save()
+
+
+class SavioProjectReviewEligibilityView(LoginRequiredMixin,
+                                        UserPassesTestMixin, FormView):
+    form_class = SavioProjectReviewForm
+    template_name = (
+        'project/project_request/savio/project_review_eligibility.html')
+    login_url = '/'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        message = 'You do not have permission to view the previous page.'
+        messages.error(self.request, message)
+        return False
+
+    def form_valid(self, form):
+        # TODO.
+        print(form.cleaned_data)
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        pk = self.kwargs.get('pk')
+        request_obj = get_object_or_404(SavioProjectAllocationRequest, pk=pk)
+        context['savio_request'] = request_obj
+        survey_form = SavioProjectSurveyForm(
+            initial=request_obj.survey_answers, disable_fields=True)
+        context['survey_form'] = survey_form
+        return context
+
+    def get_success_url(self):
+        return reverse(
+            'savio-project-request-detail',
+            kwargs={'pk': self.kwargs.get('pk')})
+
+
+class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
+                                      FormView):
+    form_class = SavioProjectReviewForm
+    template_name = (
+        'project/project_request/savio/project_review_readiness.html')
+    login_url = '/'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        message = 'You do not have permission to view the previous page.'
+        messages.error(self.request, message)
+        return False
+
+    def form_valid(self, form):
+        # TODO.
+        print(form.cleaned_data)
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        pk = self.kwargs.get('pk')
+        request_obj = get_object_or_404(SavioProjectAllocationRequest, pk=pk)
+        context['savio_request'] = request_obj
+        survey_form = SavioProjectSurveyForm(
+            initial=request_obj.survey_answers, disable_fields=True)
+        context['survey_form'] = survey_form
+        return context
+
+    def get_success_url(self):
+        return reverse(
+            'savio-project-request-detail',
+            kwargs={'pk': self.kwargs.get('pk')})
+
+
+class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
+                                  FormView):
+    form_class = SavioProjectReviewSetupForm
+    template_name = 'project/project_request/savio/project_review_setup.html'
+    login_url = '/'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        message = 'You do not have permission to view the previous page.'
+        messages.error(self.request, message)
+        return False
+
+    def form_valid(self, form):
+        # TODO.
+        print(form.cleaned_data)
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        pk = self.kwargs.get('pk')
+        request_obj = get_object_or_404(SavioProjectAllocationRequest, pk=pk)
+        context['savio_request'] = request_obj
+        survey_form = SavioProjectSurveyForm(
+            initial=request_obj.survey_answers, disable_fields=True)
+        context['survey_form'] = survey_form
+        return context
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        pk = self.kwargs.get('pk')
+        request_obj = get_object_or_404(SavioProjectAllocationRequest, pk=pk)
+        kwargs['requested_name'] = request_obj.project.name
+        return kwargs
+
+    def get_success_url(self):
+        return reverse(
+            'savio-project-request-detail',
+            kwargs={'pk': self.kwargs.get('pk')})
 
 
 class VectorProjectRequestView(LoginRequiredMixin, FormView):

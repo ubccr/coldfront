@@ -35,6 +35,9 @@ from coldfront.core.project.views import ProjectRequestView
 from coldfront.core.project.views import SavioProjectRequestDetailView
 from coldfront.core.project.views import SavioProjectRequestListView
 from coldfront.core.project.views import SavioProjectRequestWizard
+from coldfront.core.project.views import SavioProjectReviewEligibilityView
+from coldfront.core.project.views import SavioProjectReviewReadinessView
+from coldfront.core.project.views import SavioProjectReviewSetupView
 from coldfront.core.project.views import show_details_form_condition
 from coldfront.core.project.views import show_new_pi_form_condition
 from coldfront.core.project.views import show_pooled_project_selection_form_condition
@@ -60,13 +63,22 @@ urlpatterns += [
     path('savio-project-request/<int:pk>/',
          SavioProjectRequestDetailView.as_view(),
          name='savio-project-request-detail'),
+    path('savio-project-request/<int:pk>/eligibility/',
+         SavioProjectReviewEligibilityView.as_view(),
+         name='savio-project-request-review-eligibility'),
+    path('savio-project-request/<int:pk>/readiness/',
+         SavioProjectReviewReadinessView.as_view(),
+         name='savio-project-request-review-readiness'),
+    path('savio-project-request/<int:pk>/setup/',
+         SavioProjectReviewSetupView.as_view(),
+         name='savio-project-request-review-setup'),
     path('vector-project-request/',
          VectorProjectRequestView.as_view(),
          name='vector-project-request'),
     path('vector-project-request-list/',
          VectorProjectRequestListView.as_view(),
          name='vector-project-request-list'),
-    path('vector-project-request/<int:pk>',
+    path('vector-project-request/<int:pk>/',
          VectorProjectRequestDetailView.as_view(),
          name='vector-project-request-detail'),
 ]

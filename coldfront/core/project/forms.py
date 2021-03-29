@@ -521,6 +521,83 @@ class SavioProjectSurveyForm(forms.Form):
                 self.fields[field].disabled = True
 
 
+class SavioProjectReviewForm(forms.Form):
+
+    status = forms.ChoiceField(
+        choices=(
+            ('', 'Select one.'),
+            ('Pending', 'Pending'),
+            ('Approved', 'Approved'),
+            ('Denied', 'Denied'),
+        ),
+        help_text='If you are unsure, leave the status as "Pending".',
+        label='Status',
+        required=True)
+    justification = forms.CharField(
+        help_text=(
+            'Provide reasoning for your decision. This field is only required '
+            'for denials, since it will be included in the notification '
+            'email.'),
+        label='Justification',
+        validators=[MinLengthValidator(10)],
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 3}))
+
+    def clean(self):
+        cleaned_data = super().clean()
+        status = cleaned_data.get('status', 'Pending')
+        # Require justification for denials.
+        if status == 'Denied':
+            justification = cleaned_data.get('justification', '')
+            if not justification.strip():
+                raise forms.ValidationError(
+                    'Please provide a justification for your decision.')
+        return cleaned_data
+
+
+class SavioProjectReviewSetupForm(forms.Form):
+
+    status = forms.ChoiceField(
+        choices=(
+            ('', 'Select one.'),
+            ('Pending', 'Pending'),
+            ('Complete', 'Complete'),
+        ),
+        help_text='If you are unsure, leave the status as "Pending".',
+        label='Status',
+        required=True)
+    final_name = forms.CharField(
+        help_text=(
+            'Update the name of the project, in case it needed to be '
+            'changed.'),
+        label='Final Name',
+        required=True)
+    justification = forms.CharField(
+        help_text=(
+            'Provide reasoning for your decision. This field is only required '
+            'when the name changes.'),
+        label='Justification',
+        validators=[MinLengthValidator(10)],
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 3}))
+
+    def __init__(self, *args, **kwargs):
+        self.requested_name = kwargs.pop('requested_name')
+        super().__init__(*args, **kwargs)
+        self.fields['final_name'].initial = self.requested_name
+
+    def clean(self):
+        cleaned_data = super().clean()
+        final_name = cleaned_data.get('final_name', 'Pending')
+        # Require justification for name changes.
+        if final_name != self.requested_name:
+            justification = cleaned_data.get('justification', '')
+            if not justification.strip():
+                raise forms.ValidationError(
+                    'Please provide a justification for the name change.')
+        return cleaned_data
+
+
 class VectorProjectDetailsForm(forms.Form):
 
     name = forms.CharField(
