@@ -35,8 +35,10 @@ class Command(BaseCommand):
         for f in files:
             f_name = f.split('.')
             if (f_name[len(f_name)-1] == 'csv'):
-                file = f_name[len(f_name)-2]+('.csv')
-                lab_list.append(file)
+                if f_name[len(f_name)-2] != 'Quota':
+                    print("line39:",f_name[len(f_name)-2])
+                    file = f_name[len(f_name)-2]+('.csv')
+                    lab_list.append(file)
             
         print(lab_list)
         for lab in lab_list:
@@ -57,10 +59,10 @@ class Command(BaseCommand):
                             #(username, "already exist, don't add to database")
                             # if the user exists, I only need to append this existing user's group
                             if not user.groups.filter(name = lab_name).exists():
-                                print("line 45",lab_name)
+                                # print("line 45",lab_name)
                                 my_group = Group.objects.get(name=lab_name)
                                 my_group.user_set.add(user)
-                                print ("user do not exist in", lab_name)
+                                # print ("user do not exist in", lab_name)
                             continue
                         # the type of row is 
                         except ObjectDoesNotExist:
