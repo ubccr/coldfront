@@ -14,6 +14,9 @@ Savio Project Request - Allocation Pooling
 
 
 {% block content %}
+<script type='text/javascript' src="{% static 'selectize/selectize.min.js' %}"></script>
+<link rel='stylesheet' type='text/css' href="{% static 'selectize/selectize.bootstrap3.css' %}"/>
+
 <h1>Savio: Allocation Pooling</h1><hr>
 
 <ol class="breadcrumb">
@@ -62,5 +65,12 @@ Savio Project Request - Allocation Pooling
 <br>
 
 <p>Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
+
+<script>
+  $('select').selectize({
+    create: false,
+    sortField: 'text'
+  })
+</script>
 
 {% endblock %}

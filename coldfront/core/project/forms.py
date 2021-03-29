@@ -295,9 +295,20 @@ class SavioProjectPoolAllocationsForm(forms.Form):
         required=False)
 
 
+class PooledProjectChoiceField(forms.ModelChoiceField):
+
+    def label_from_instance(self, obj):
+        names = []
+        for project_user in obj.projectuser_set.all():
+            user = project_user.user
+            names.append(f'{user.first_name} {user.last_name}')
+        names.sort()
+        return f'{obj.name} ({", ".join(names)})'
+
+
 class SavioProjectPooledProjectSelectionForm(forms.Form):
 
-    project = forms.ModelChoiceField(
+    project = PooledProjectChoiceField(
         label='Project',
         queryset=Project.objects.none(),
         required=True,
@@ -307,8 +318,11 @@ class SavioProjectPooledProjectSelectionForm(forms.Form):
         self.allocation_type = kwargs.pop('allocation_type', None)
         kwargs.pop('breadcrumb_pi', None)
         super().__init__(*args, **kwargs)
-        projects = Project.objects.filter(
-            status__name__in=['Pending - Add', 'New', 'Active'])
+        projects = Project.objects.prefetch_related(
+            'projectuser_set__user'
+        ).filter(
+            status__name__in=['Pending - Add', 'New', 'Active']
+        )
         if self.allocation_type == 'FCA':
             projects = projects.filter(name__startswith='fc_')
         elif self.allocation_type == 'CO':
