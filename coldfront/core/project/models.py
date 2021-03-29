@@ -249,24 +249,24 @@ def savio_project_request_state_schema():
     """Return the schema for the SavioProjectAllocationRequest.state
     field."""
     return {
-        "eligibility": {
-            "status": "Pending",
-            "justification": ""
+        'eligibility': {
+            'status': 'Pending',
+            'justification': ''
         },
-        "readiness": {
-            "status": "Pending",
-            "justification": ""
+        'readiness': {
+            'status': 'Pending',
+            'justification': ''
         },
-        "setup": {
-            "status": "Pending",
-            "name_change": {
-                "requested_name": "",
-                "final_name": "",
-                "justification": ""
+        'setup': {
+            'status': 'Pending',
+            'name_change': {
+                'requested_name': '',
+                'final_name': '',
+                'justification': ''
             }
         },
-        "other": {
-            "justification": ""
+        'other': {
+            'justification': ''
         }
     }
 
@@ -275,20 +275,20 @@ def vector_project_request_state_schema():
     """Return the schema for the VectorProjectAllocationRequest.state
     field."""
     return {
-        "eligibility": {
-            "status": "Pending",
-            "justification": ""
+        'eligibility': {
+            'status': 'Pending',
+            'justification': ''
         },
-        "setup": {
-            "status": "Pending",
-            "name_change": {
-                "requested_name": "",
-                "final_name": "",
-                "justification": ""
+        'setup': {
+            'status': 'Pending',
+            'name_change': {
+                'requested_name': '',
+                'final_name': '',
+                'justification': ''
             }
         },
-        "other": {
-            "justification": ""
+        'other': {
+            'justification': ''
         }
     }
 

@@ -25,6 +25,7 @@ Savio Project Request Detail
     </h4>
   </div>
   <div class="card-body">
+    <p>Complete the checklist below in the following order.</p>
     <div class="table-responsive">
       <table class="table table-sm">
         <thead>
@@ -35,32 +36,84 @@ Savio Project Request Detail
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>Confirm that the requested PI is eligible for a Savio allowance.</td>
-            <td style="color: #28a745"><i class="fas fa-check-circle" aria-hidden="true"></i></td>
-            <td>
-              <a href="{% url 'savio-project-request-review-eligibility' savio_request.pk %}" class="btn btn-primary">
-                Manage
-              </a>
-          </tr>
-          <tr>
-            <td>Confirm that the project satisfies the readiness criteria.</td>
-            <td style="color: #dc3545"><i class="fas fa-times-circle" aria-hidden="true"></i></td>
-            <td>
-              <a href="{% url 'savio-project-request-review-readiness' savio_request.pk %}" class="btn btn-primary">
-                Manage
-              </a>
-            </td>
-          </tr>
-          <tr>
-            <td>Perform project setup on the cluster.</td>
-            <td style="color: #dc3545"><i class="fas fa-times-circle" aria-hidden="true"></i></td>
-            <td>
-              <a href="{% url 'savio-project-request-review-setup' savio_request.pk %}" class="btn btn-primary">
-                Manage
-              </a>
-            </td>
-          </tr>
+          {% with eligibility=savio_request.state.eligibility.status readiness=savio_request.state.readiness.status setup=savio_request.state.setup.status %}
+            <tr>
+              <td>Confirm that the requested PI is eligible for a Savio allowance.</td>
+              <td>
+                {% if eligibility == 'Pending' %}
+                  <span class="badge badge-warning">
+                    {{ eligibility }}
+                  </span>
+                {% elif eligibility == 'Approved' %}
+                  <span class="badge badge-success">
+                    {{ eligibility }}
+                  </span>
+                {% else %}
+                  <span class="badge badge-danger">
+                    {{ eligibility }}
+                  </span>
+                {% endif %}
+              </td>
+              <td>
+                <a href="{% url 'savio-project-request-review-eligibility' savio_request.pk %}" class="btn btn-primary">
+                  Manage
+                </a>
+            </tr>
+            <tr>
+              <td>Confirm that the project satisfies the readiness criteria.</td>
+              <td>
+                {% if readiness == 'Pending' %}
+                  <span class="badge badge-warning">
+                    {{ readiness }}
+                  </span>
+                {% elif readiness == 'Approved' %}
+                  <span class="badge badge-success">
+                    {{ readiness }}
+                  </span>
+                {% else %}
+                  <span class="badge badge-danger">
+                    {{ readiness }}
+                  </span>
+                {% endif %}
+              </td>
+              <td>
+                {% if eligibility == 'Approved' %}
+                  <a href="{% url 'savio-project-request-review-readiness' savio_request.pk %}" class="btn btn-primary">
+                    Manage
+                  </a>
+                {% else %}
+                  <button class="btn btn-primary" disabled="true">
+                    Manage
+                  </button>
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>Perform project setup on the cluster.</td>
+              <td>
+                {% if setup == 'Pending' %}
+                  <span class="badge badge-warning">
+                    {{ setup }}
+                  </span>
+                {% else %}
+                  <span class="badge badge-success">
+                    {{ setup }}
+                  </span>
+                {% endif %}
+              </td>
+              <td>
+                {% if eligibility == 'Approved' and readiness == 'Approved' %}
+                  <a href="{% url 'savio-project-request-review-setup' savio_request.pk %}" class="btn btn-primary">
+                    Manage
+                  </a>
+                {% else %}
+                  <button class="btn btn-primary" disabled="true">
+                    Manage
+                  </button>
+                {% endif %}
+              </td>
+            </tr>
+          {% endwith %}
         </tbody>
       </table>
     </div>
