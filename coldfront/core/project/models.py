@@ -133,7 +133,7 @@ We do not have information about your research. Please provide a detailed descri
         return User.objects.filter(pk__in=pi_user_pks).order_by('username')
 
     def __str__(self):
-        return self.title
+        return self.name
 
     class Meta:
         ordering = ['title']
@@ -233,3 +233,71 @@ class ProjectUserJoinRequest(TimeStampedModel):
     class Meta:
         verbose_name = 'Project User Join Request'
         verbose_name_plural = 'Project User Join Requests'
+
+
+class ProjectAllocationRequestStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]
+
+
+class SavioProjectAllocationRequest(TimeStampedModel):
+    requester = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='savio_requester')
+
+    FCA = 'FCA'
+    CO = 'CO'
+    PCA = 'PCA'
+    ALLOCATION_TYPE_CHOICES = (
+        (FCA, 'Faculty Compute Allowance (FCA)'),
+        (CO, 'Condo Allocation'),
+        (PCA, 'Partner Compute Allowance (PCA)'),
+    )
+    allocation_type = models.CharField(
+        max_length=16, choices=ALLOCATION_TYPE_CHOICES)
+
+    pi = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='savio_pi')
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    pool = models.BooleanField(default=False)
+    survey_answers = models.JSONField()
+    status = models.ForeignKey(
+        ProjectAllocationRequestStatusChoice, on_delete=models.CASCADE,
+        verbose_name='Status')
+    history = HistoricalRecords()
+
+    def __str__(self):
+        name = (
+            f'{self.project.name} - {self.pi.first_name} {self.pi.last_name}')
+        if self.pool:
+            name = f'{name} (Pooled)'
+        return name
+
+    class Meta:
+        verbose_name = 'Savio Project Allocation Request'
+        verbose_name_plural = 'Savio Project Allocation Requests'
+
+
+class VectorProjectAllocationRequest(TimeStampedModel):
+    requester = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='vector_requester')
+
+    pi = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='vector_pi')
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    status = models.ForeignKey(
+        ProjectAllocationRequestStatusChoice, on_delete=models.CASCADE,
+        verbose_name='Status')
+    history = HistoricalRecords()
+
+    def __str__(self):
+        return (
+            f'{self.project.name} - {self.pi.first_name} {self.pi.last_name}')
+
+    class Meta:
+        verbose_name = 'Vector Project Allocation Request'
+        verbose_name_plural = 'Vector Project Allocation Requests'

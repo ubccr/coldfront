@@ -1,0 +1,55 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+
+
+{% block title %}
+Vector Project New and Pending Requests
+{% endblock %}
+
+
+{% block content %}
+<h1>Vector Project Requests</h1>
+{% if vector_project_request_list %}
+<div class="table-responsive">
+  <table class="table table-sm">
+    <thead>
+      <tr>
+        <th scope="col">#</th>
+        <th scope="col">Date Requested/<br>Last Modified</th>
+        <th scope="col">Requester Email</th>
+        <th scope="col">Project</th>
+        <th scope="col">PI</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for vector_project_request in vector_project_request_list %}
+      <tr>
+        <td>
+          <a href="{% url 'vector-project-request-detail' vector_project_request.pk %}">
+            {{ vector_project_request.pk }}
+          </a>
+        </td>
+        <td>{{ vector_project_request.modified|date:"M. d, Y" }}</td>
+        <td>{{ vector_project_request.requester.email }}</td>
+        <td>{{ vector_project_request.project.name }}</td>
+        <td>{{ vector_project_request.pi.email }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+  No new or pending Vector project requests!
+</div>
+{% endif %}
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-admin").addClass("active");
+  $("#navbar-project-vector-project-requests").addClass("active");
+</script>
+
+{% endblock %}
