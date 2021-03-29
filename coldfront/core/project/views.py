@@ -1,5 +1,6 @@
 import datetime
 import pprint
+import pytz
 
 from django import forms
 from django.conf import settings
@@ -8,6 +9,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.db import IntegrityError
 from django.db.models import Case, CharField, F, Q, Value, When
 from django.forms import formset_factory
 from django.http import (HttpResponse, HttpResponseForbidden,
@@ -21,6 +23,7 @@ from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 
 from coldfront.core.allocation.models import (Allocation,
+                                              AllocationAttribute,
                                               AllocationAttributeType,
                                               AllocationStatusChoice,
                                               AllocationUser,
@@ -45,15 +48,20 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectStatusChoice, ProjectUser,
                                            ProjectUserJoinRequest,
                                            ProjectUserRoleChoice,
+                                           ProjectUserStatusChoice,
+                                           ProjectAllocationRequestStatusChoice,
                                            ProjectUserStatusChoice)
 from coldfront.core.project.utils import (auto_approve_project_join_requests,
                                           get_project_compute_allocation)
 # from coldfront.core.publication.models import Publication
 # from coldfront.core.research_output.models import ResearchOutput
+from coldfront.core.resource.models import Resource
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email, send_email_template
+
+import logging
 
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
@@ -99,17 +107,17 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             context['is_allowed_to_archive_project'] = False
 
         # Can the user update the project?
+        context['is_allowed_to_update_project'] = False
+
         if self.request.user.is_superuser:
             context['is_allowed_to_update_project'] = True
+
         elif self.object.projectuser_set.filter(user=self.request.user).exists():
             project_user = self.object.projectuser_set.get(user=self.request.user)
-            if project_user.role.name in ('Principal Investigator', 'Manager'):
-                context['is_allowed_to_update_project'] = True
+
+            if project_user.role.name in ['Principal Investigator', 'Manager']:
                 context['username'] = project_user.user.username
-            else:
-                context['is_allowed_to_update_project'] = False
-        else:
-            context['is_allowed_to_update_project'] = False
+                context['is_allowed_to_update_project'] = True
 
         # Retrieve cluster access statuses.
         cluster_access_statuses = {}
@@ -1094,57 +1102,84 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         project_user_pk = self.kwargs.get('project_user_pk')
 
         if project_obj.status.name not in ['Active', 'New', ]:
-            messages.error(
-                request, 'You cannot update a user in an archived project.')
-            return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_user_pk}))
+            messages.error(request, 'You cannot update a user in an archived project.')
+            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
         if project_obj.projectuser_set.filter(id=project_user_pk).exists():
-            project_user_obj = project_obj.projectuser_set.get(
-                pk=project_user_pk)
-
-            pi_role = ProjectUserRoleChoice.objects.get(
-                name='Principal Investigator')
-            if project_user_obj.role == pi_role:
-                messages.error(
-                    request, 'PI role and email notification option cannot be changed.')
-                return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_user_pk}))
+            project_user_obj = project_obj.projectuser_set.get(pk=project_user_pk)
+            managers = project_obj.projectuser_set.filter(role__name='Manager', status__name='Active')
+            project_pis = project_obj.projectuser_set.filter(role__name='Principal Investigator', status__name='Active')
 
             project_user_update_form = ProjectUserUpdateForm(request.POST,
                                                              initial={'role': project_user_obj.role.name,
                                                                       'enable_notifications': project_user_obj.enable_notifications})
 
+            is_request_by_superuser = project_obj.projectuser_set.filter(user=self.request.user,
+                                                                         role__name__in=['Manager',
+                                                                                         'Principal Investigator'],
+                                                                         status__name='Active').exists() or self.request.user.is_superuser
+
+            if project_user_obj.role.name == 'Principal Investigator':
+                enable_notifications = project_user_update_form.data.get('enable_notifications', 'off') == 'on'
+
+                # cannot disable when no manager(s) exists
+                if not managers.exists() and not enable_notifications:
+                    messages.error(request, 'PIs can disable notifications when at least one manager exists.')
+                else:
+                    project_user_obj.enable_notifications = enable_notifications
+                    project_user_obj.save()
+                    messages.success(request, 'User details updated.')
+
+                return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_obj.pk, 'project_user_pk': project_user_obj.pk}))
+
             if project_user_update_form.is_valid():
                 form_data = project_user_update_form.cleaned_data
-                project_user_obj.enable_notifications = form_data.get('enable_notifications')
+                enable_notifications = form_data.get('enable_notifications')
 
                 old_role = project_user_obj.role
                 new_role = ProjectUserRoleChoice.objects.get(name=form_data.get('role'))
-                only_manager = not project_obj.projectuser_set.filter(~Q(pk=project_user_pk),
-                                                                      role__name='Manager').exists()
+                demotion = False
 
-                if old_role.name == 'Manager' and only_manager:
-                    if new_role.name == 'User':
-                        project_pis = project_obj.projectuser_set.filter(role__name='Principal Investigator')
+                # demote manager to user role
+                if old_role.name == 'Manager' and new_role.name == 'User':
+                    if not managers.filter(~Q(pk=project_user_pk)).exists():
 
+                        # no pis exist, cannot demote
                         if not project_pis.exists():
-                            # no pis exist, cannot demote
                             new_role = old_role
                             messages.error(
                                 request, 'The project must have at least one PI or manager with notifications enabled.')
+
+                        # enable all PI notifications, demote to user role
                         else:
-                            messages.warning(request, 'User {} is no longer a manager. All PIs will now receive notifications.'
-                                             .format(project_user_obj.user.username))
                             for pi in project_pis:
                                 pi.enable_notifications = True
                                 pi.save()
 
-                    elif new_role.name == 'Principal Investigator':
-                        project_user_obj.enable_notifications = True
+                            # users have notifications disabled by default
+                            enable_notifications = False
+                            demotion = True
 
+                            messages.warning(request, 'User {} is no longer a manager. All PIs will now receive notifications.'.format(
+                                project_user_obj.user.username))
+                            messages.success(request, 'User details updated.')
+
+                    else:
+                        demotion = True
+                        messages.success(request, 'User details updated.')
+
+                # promote user to manager role (notifications always active)
+                elif old_role.name == 'User' and new_role.name == 'Manager':
+                    enable_notifications = True
+                    messages.success(request, 'User details updated.')
+
+                project_user_obj.enable_notifications = enable_notifications
                 project_user_obj.role = new_role
                 project_user_obj.save()
 
-                messages.success(request, 'User details updated.')
+                if demotion and not is_request_by_superuser:
+                    return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+
                 return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_obj.pk, 'project_user_pk': project_user_obj.pk}))
 
 
@@ -1424,7 +1459,7 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             # If the user is Active on the project, raise a warning and exit.
             if project_user.status.name == 'Active':
                 message = (
-                    f'You already already an Active member of Project '
+                    f'You are already an Active member of Project '
                     f'{project_obj.name}.')
                 messages.warning(self.request, message)
                 next_view = reverse('project-join-list')
@@ -1752,3 +1787,612 @@ class ProjectAutoApproveJoinRequestsView(LoginRequiredMixin,
             messages.error(request, message)
         return HttpResponseRedirect(
             reverse('allocation-cluster-account-request-list'))
+
+
+# TODO: Once finalized, move these imports above.
+from coldfront.core.allocation.models import AllocationAttributeType
+from coldfront.core.project.forms import SavioProjectAllocationTypeForm
+from coldfront.core.project.forms import SavioProjectDetailsForm
+from coldfront.core.project.forms import SavioProjectExistingPIForm
+from coldfront.core.project.forms import SavioProjectNewPIForm
+from coldfront.core.project.forms import SavioProjectPoolAllocationsForm
+from coldfront.core.project.forms import SavioProjectPooledProjectSelectionForm
+from coldfront.core.project.forms import SavioProjectSurveyForm
+from coldfront.core.project.forms import VectorProjectDetailsForm
+from coldfront.core.project.models import SavioProjectAllocationRequest
+from coldfront.core.project.models import VectorProjectAllocationRequest
+from coldfront.core.user.models import UserProfile
+from formtools.wizard.views import SessionWizardView
+
+
+class ProjectRequestView(LoginRequiredMixin, TemplateView):
+    template_name = 'project/project_request/project_request.html'
+
+    def get(self, request, *args, **kwargs):
+        context = dict()
+        context['savio_requests'] = \
+            SavioProjectAllocationRequest.objects.filter(
+                Q(requester=request.user) | Q(pi=request.user))
+        context['vector_requests'] = \
+            VectorProjectAllocationRequest.objects.filter(
+                Q(requester=request.user) | Q(pi=request.user))
+        return render(request, self.template_name, context)
+
+
+class SavioProjectRequestWizard(SessionWizardView):
+
+    FORMS = [
+        ('allocation_type', SavioProjectAllocationTypeForm),
+        ('existing_pi', SavioProjectExistingPIForm),
+        ('new_pi', SavioProjectNewPIForm),
+        ('pool_allocations', SavioProjectPoolAllocationsForm),
+        ('pooled_project_selection', SavioProjectPooledProjectSelectionForm),
+        ('details', SavioProjectDetailsForm),
+        ('survey', SavioProjectSurveyForm),
+    ]
+
+    TEMPLATES = {
+        'allocation_type': 'project/project_request/savio/project_allocation_type.html',
+        'existing_pi': 'project/project_request/savio/project_existing_pi.html',
+        'new_pi': 'project/project_request/savio/project_new_pi.html',
+        'pool_allocations': 'project/project_request/savio/project_pool_allocations.html',
+        'pooled_project_selection': 'project/project_request/savio/project_pooled_project_selection.html',
+        'details': 'project/project_request/savio/project_details.html',
+        'survey': 'project/project_request/savio/project_survey.html',
+    }
+
+    form_list = [
+        SavioProjectAllocationTypeForm,
+        SavioProjectExistingPIForm,
+        SavioProjectNewPIForm,
+        SavioProjectPoolAllocationsForm,
+        SavioProjectPooledProjectSelectionForm,
+        SavioProjectDetailsForm,
+        SavioProjectSurveyForm,
+    ]
+
+    # Non-required lookup table: form name --> step number
+    step_numbers_by_form_name = {
+        'allocation_type': 0,
+        'existing_pi': 1,
+        'new_pi': 2,
+        'pool_allocations': 3,
+        'pooled_project_selection': 4,
+        'details': 5,
+        'survey': 6,
+    }
+
+    logger = logging.getLogger(__name__)
+
+    def get_context_data(self, form, **kwargs):
+        context = super().get_context_data(form=form, **kwargs)
+        current_step = int(self.steps.current)
+        self.__set_data_from_previous_steps(current_step, context)
+        return context
+
+    def get_form_kwargs(self, step):
+        kwargs = {}
+        step = int(step)
+        # The names of steps that require the past data.
+        step_names = [
+            'existing_pi',
+            'pooled_project_selection',
+            'details',
+        ]
+        step_numbers = [
+            self.step_numbers_by_form_name[name] for name in step_names]
+        if step in step_numbers:
+            self.__set_data_from_previous_steps(step, kwargs)
+        return kwargs
+
+    def get_template_names(self):
+        return [self.TEMPLATES[self.FORMS[int(self.steps.current)][0]]]
+
+    def done(self, form_list, form_dict, **kwargs):
+        """Perform processing and store information in a request
+        object."""
+        redirect_url = '/'
+
+        # Retrieve form data; include empty dictionaries for skipped steps.
+        data = iter([form.cleaned_data for form in form_list])
+        form_data = [{} for _ in range(len(self.form_list))]
+        for step in sorted(form_dict.keys()):
+            form_data[int(step)] = next(data)
+
+        try:
+            allocation_type = self.__get_allocation_type(form_data)
+            pi = self.__handle_pi_data(form_data)
+            pooling_requested = self.__get_pooling_requested(form_data)
+            if pooling_requested:
+                project = self.__handle_pool_with_existing_project(form_data)
+            else:
+                project = self.__handle_create_new_project(form_data)
+            survey_data = self.__get_survey_data(form_data)
+
+            # Store transformed form data in a request.
+            status = ProjectAllocationRequestStatusChoice.objects.get(
+                name='Pending')
+            SavioProjectAllocationRequest.objects.create(
+                requester=self.request.user,
+                allocation_type=allocation_type,
+                pi=pi,
+                project=project,
+                pool=pooling_requested,
+                survey_answers=survey_data,
+                status=status)
+        except Exception as e:
+            self.logger.exception(e)
+            message = 'Unexpected failure. Please contact an administrator.'
+            messages.error(self.request, message)
+        else:
+            message = (
+                'Thank you for your submission. It will be reviewed and '
+                'processed by administrators.')
+            messages.success(self.request, message)
+
+        return HttpResponseRedirect(redirect_url)
+
+    def __get_allocation_type(self, form_data):
+        """Return the allocation type matching the provided input."""
+        step_number = self.step_numbers_by_form_name['allocation_type']
+        data = form_data[step_number]
+        allocation_type = data['allocation_type']
+        for choice, _ in SavioProjectAllocationRequest.ALLOCATION_TYPE_CHOICES:
+            if allocation_type == choice:
+                return allocation_type
+        self.logger.error(
+            f'Form received unexpected allocation type {allocation_type}.')
+        raise ValueError(f'Invalid allocation type {allocation_type}.')
+
+    def __get_pooling_requested(self, form_data):
+        """Return whether or not pooling was requested."""
+        step_number = self.step_numbers_by_form_name['pool_allocations']
+        data = form_data[step_number]
+        return data['pool']
+
+    def __get_survey_data(self, form_data):
+        """Return provided survey data."""
+        step_number = self.step_numbers_by_form_name['survey']
+        return form_data[step_number]
+
+    def __handle_pi_data(self, form_data):
+        """Return the requested PI. If the PI did not exist, create a
+        new User and UserProfile."""
+        # If an existing PI was selected, return the existing User object.
+        step_number = self.step_numbers_by_form_name['existing_pi']
+        data = form_data[step_number]
+        if data['PI']:
+            return data['PI']
+
+        # Create a new User object intended to be a new PI.
+        step_number = self.step_numbers_by_form_name['new_pi']
+        data = form_data[step_number]
+        try:
+            email = data['email']
+            pi = User.objects.create(
+                username=email,
+                first_name=data['first_name'],
+                last_name=data['last_name'],
+                email=email,
+                is_active=False)
+        except IntegrityError as e:
+            self.logger.error(f'User {email} unexpectedly exists.')
+            raise e
+
+        # Set the user's middle name in the UserProfile; generate a PI request.
+        try:
+            pi_profile = pi.userprofile
+        except UserProfile.DoesNotExist as e:
+            self.logger.error(
+                f'User {email} unexpectedly has no UserProfile.')
+            raise e
+        pi_profile.middle_name = data['middle_name']
+        pi_profile.upgrade_request = datetime.datetime.utcnow().astimezone(
+            pytz.timezone(settings.TIME_ZONE))
+        pi_profile.save()
+
+        return pi
+
+    def __handle_create_new_project(self, form_data):
+        """Create a new project and an allocation to the Savio Compute
+        resource."""
+        step_number = self.step_numbers_by_form_name['details']
+        data = form_data[step_number]
+
+        # Create the new Project.
+        status = ProjectStatusChoice.objects.get(name='New')
+        try:
+            project = Project.objects.create(
+                name=data['name'],
+                status=status,
+                title=data['title'],
+                description=data['description'])
+        except IntegrityError as e:
+            self.logger.error(
+                f'Project {data["name"]} unexpectedly already exists.')
+            raise e
+
+        # Create an allocation to the "Savio Compute" resource.
+        status = AllocationStatusChoice.objects.get(name='New')
+        allocation = Allocation.objects.create(project=project, status=status)
+        resource = Resource.objects.get(name='Savio Compute')
+        allocation.resources.add(resource)
+        allocation.save()
+
+        return project
+
+    def __handle_pool_with_existing_project(self, form_data):
+        """Return the requested project to pool with."""
+        step_number = \
+            self.step_numbers_by_form_name['pooled_project_selection']
+        data = form_data[step_number]
+        project = data['project']
+
+        # Validate that the project has exactly one allocation to the "Savio
+        # Compute" resource.
+        resource = Resource.objects.get(name='Savio Compute')
+        allocations = Allocation.objects.filter(
+            project=project, resources__pk__exact=resource.pk)
+        try:
+            assert allocations.count() == 1
+        except AssertionError as e:
+            number = 'no' if allocations.count() == 0 else 'more than one'
+            self.logger.error(
+                f'Project {project.name} unexpectedly has {number} Allocation '
+                f'to Resource {resource.name}')
+            raise e
+
+        return project
+
+    def __set_data_from_previous_steps(self, step, dictionary):
+        """Update the given dictionary with data from previous steps."""
+        allocation_type_form_step = \
+            self.step_numbers_by_form_name['allocation_type']
+        if step > allocation_type_form_step:
+            allocation_type_form_data = self.get_cleaned_data_for_step(
+                str(allocation_type_form_step))
+            if allocation_type_form_data:
+                dictionary.update(allocation_type_form_data)
+
+        existing_pi_step = self.step_numbers_by_form_name['existing_pi']
+        new_pi_step = self.step_numbers_by_form_name['new_pi']
+        if step > new_pi_step:
+            existing_pi_form_data = self.get_cleaned_data_for_step(
+                str(existing_pi_step))
+            new_pi_form_data = self.get_cleaned_data_for_step(str(new_pi_step))
+            if existing_pi_form_data['PI'] is not None:
+                pi = existing_pi_form_data['PI']
+                dictionary.update({
+                    'breadcrumb_pi': (
+                        f'Existing PI: {pi.first_name} {pi.last_name} '
+                        f'({pi.email})')
+                })
+            else:
+                first_name = new_pi_form_data['first_name']
+                last_name = new_pi_form_data['last_name']
+                email = new_pi_form_data['email']
+                dictionary.update({
+                    'breadcrumb_pi': (
+                        f'New PI: {first_name} {last_name} ({email})')
+                })
+
+        pool_allocations_step = \
+            self.step_numbers_by_form_name['pool_allocations']
+        pooled_project_selection_step = \
+            self.step_numbers_by_form_name['pooled_project_selection']
+        details_step = self.step_numbers_by_form_name['details']
+        if step > details_step:
+            pool_allocations_form_data = \
+                self.get_cleaned_data_for_step(
+                    str(pool_allocations_step))
+            pooled_project_selection_form_data = \
+                self.get_cleaned_data_for_step(
+                    str(pooled_project_selection_step))
+            details_form_data = self.get_cleaned_data_for_step(
+                str(details_step))
+            if pool_allocations_form_data['pool']:
+                project = pooled_project_selection_form_data['project']
+                dictionary.update({
+                    'breadcrumb_project': f'Project: {project.name}'
+                })
+            else:
+                name = details_form_data['name']
+                dictionary.update({'breadcrumb_project': f'Project: {name}'})
+
+
+def show_details_form_condition(wizard):
+    step_name = 'pool_allocations'
+    step = str(SavioProjectRequestWizard.step_numbers_by_form_name[step_name])
+    cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
+    return not cleaned_data.get('pool', False)
+
+
+def show_new_pi_form_condition(wizard):
+    step_name = 'existing_pi'
+    step = str(SavioProjectRequestWizard.step_numbers_by_form_name[step_name])
+    cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
+    return cleaned_data.get('PI', None) is None
+
+
+def show_pooled_project_selection_form_condition(wizard):
+    step_name = 'pool_allocations'
+    step = str(SavioProjectRequestWizard.step_numbers_by_form_name[step_name])
+    cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
+    return cleaned_data.get('pool', False)
+
+
+class SavioProjectRequestListView(LoginRequiredMixin, UserPassesTestMixin,
+                                  TemplateView):
+    template_name = 'project/project_request/savio/project_request_list.html'
+    login_url = '/'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        message = 'You do not have permission to view the previous page.'
+        messages.error(self.request, message)
+        return False
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # TODO: Filter out processed ones.
+        savio_project_request_list = \
+            SavioProjectAllocationRequest.objects.all()
+        context['savio_project_request_list'] = savio_project_request_list
+        return context
+
+
+class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
+                                    DetailView):
+    model = SavioProjectAllocationRequest
+    template_name = 'project/project_request/savio/project_request_detail.html'
+    login_url = '/'
+    context_object_name = 'savio_request'
+
+    logger = logging.getLogger(__name__)
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        message = 'You do not have permission to view the previous page.'
+        messages.error(self.request, message)
+        return False
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
+
+    def post(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        request_obj = get_object_or_404(SavioProjectAllocationRequest, pk=pk)
+
+        if not self.request.user.is_superuser:
+            message = 'You do not have permission to activate the request.'
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse('savio-project-request-detail', kwargs={'pk': pk}))
+
+        try:
+            self.__upgrade_pi_user(request_obj)
+            project = self.__update_project(request_obj)
+            self.__create_project_users(request_obj)
+            allocation = self.__update_allocation(request_obj)
+
+            request_obj.status = \
+                ProjectAllocationRequestStatusChoice.objects.get(
+                    name='Active')
+            request_obj.save()
+        except Exception as e:
+            self.logger.exception(e)
+            message = 'Unexpected failure. Please contact an administrator.'
+            messages.error(self.request, message)
+        else:
+            message = (
+                f'Project {project.name} and Allocation {allocation.pk} have '
+                f'been activated.')
+            messages.success(self.request, message)
+
+        redirect_url = '/'
+        return HttpResponseRedirect(redirect_url)
+
+    def __create_project_users(self, request_obj):
+        """Create active ProjectUsers with the appropriate roles for the
+        requester and/or the PI."""
+        project = request_obj.project
+        requester = request_obj.requester
+        pi = request_obj.pi
+        # get_or_create's 'defaults' arguments are only considered if a create
+        # is required.
+        defaults = {
+            'status': ProjectUserStatusChoice.objects.get(name='Active')
+        }
+        if requester.pk != pi.pk:
+            defaults['role'] = ProjectUserRoleChoice.objects.get(
+                name='Manager')
+            requester_project_user, _ = ProjectUser.objects.get_or_create(
+                project=project, user=requester, defaults=defaults)
+        defaults['role'] = ProjectUserRoleChoice.objects.get(
+            name='Principal Investigator')
+        pi_project_user, _ = ProjectUser.objects.get_or_create(
+            project=project, user=pi, defaults=defaults)
+
+    def __update_allocation(self, request_obj):
+        """Set the allocation's start and end dates. Set its attribute
+        type. If not pooling, set its service units values; otherwise,
+        increase it."""
+        project = request_obj.project
+        allocation_type = request_obj.allocation_type
+        pool = request_obj.pool
+
+        resource = Resource.objects.get(name='Savio Compute')
+        allocations = Allocation.objects.filter(
+            project=project, resources__pk__exact=resource.pk)
+        try:
+            assert allocations.count() == 1
+        except AssertionError as e:
+            number = 'no' if allocations.count() == 0 else 'more than one'
+            self.logger.error(
+                f'Project {project.name} unexpectedly has {number} Allocation '
+                f'to Resource {resource.name}')
+            raise e
+
+        allocation = allocations.first()
+        allocation.status = AllocationStatusChoice.objects.get(name='Active')
+        # TODO: Set start_date and end_date.
+        # allocation.start_date = datetime.datetime.utcnow().astimezone(
+        #     pytz.timezone(settings.TIME_ZONE))
+        # allocation.end_date =
+        allocation.save()
+
+        # Set the allocation's allocation type.
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Savio Allocation Type')
+        allocation_attribute, _ = \
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=allocation_attribute_type,
+                allocation=allocation, defaults={'value': allocation_type})
+
+        # Set or increase the allocation's service units.
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Service Units')
+        allocation_attribute, _ = \
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=allocation_attribute_type,
+                allocation=allocation)
+        # TODO: Pass the value here somehow. Put it in the form with default.
+        from decimal import Decimal
+        value = Decimal('0.00')
+        if pool:
+            existing_value = Decimal(allocation_attribute.value)
+            allocation_attribute.value = str(existing_value + value)
+        else:
+            allocation_attribute.value = str(value)
+        allocation_attribute.save()
+
+        return allocation
+
+    def __update_project(self, request_obj):
+        """Set the Project to active, and store the survey answers."""
+        project = request_obj.project
+        project.status = ProjectStatusChoice.objects.get(name='Active')
+        project.save()
+        # TODO: Store the survey answers.
+        return project
+
+    @staticmethod
+    def __upgrade_pi_user(request_obj):
+        """Set the is_pi field of the request's PI UserProfile to
+        True."""
+        pi = request_obj.pi
+        pi.userprofile.is_pi = True
+        pi.userprofile.save()
+
+
+class VectorProjectRequestView(LoginRequiredMixin, FormView):
+    form_class = VectorProjectDetailsForm
+    template_name = 'project/project_request/vector/project_details.html'
+    login_url = '/'
+
+    logger = logging.getLogger(__name__)
+
+    def form_valid(self, form):
+        try:
+            project = self.__handle_create_new_project(form.cleaned_data)
+            # Store form data in a request.
+            pi = User.objects.get(username=settings.VECTOR_PI_USERNAME)
+            status = ProjectAllocationRequestStatusChoice.objects.get(
+                name='Pending')
+            VectorProjectAllocationRequest.objects.create(
+                requester=self.request.user,
+                pi=pi,
+                project=project,
+                status=status)
+        except Exception as e:
+            self.logger.exception(e)
+            message = 'Unexpected failure. Please contact an administrator.'
+            messages.error(self.request, message)
+        else:
+            message = (
+                'Thank you for your submission. It will be reviewed and '
+                'processed by administrators.')
+            messages.success(self.request, message)
+
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('home')
+
+    def __handle_create_new_project(self, data):
+        """Create a new project and an allocation to the Vector Compute
+        resource."""
+        status = ProjectStatusChoice.objects.get(name='New')
+        try:
+            project = Project.objects.create(
+                name=data['name'],
+                status=status,
+                title=data['title'],
+                description=data['description'])
+        except IntegrityError as e:
+            self.logger.error(
+                f'Project {data["name"]} unexpectedly already exists.')
+            raise e
+
+        # Create an allocation to the "Vector Compute" resource.
+        status = AllocationStatusChoice.objects.get(name='New')
+        allocation = Allocation.objects.create(project=project, status=status)
+        resource = Resource.objects.get(name='Vector Compute')
+        allocation.resources.add(resource)
+        allocation.save()
+
+        return project
+
+
+class VectorProjectRequestListView(LoginRequiredMixin, UserPassesTestMixin,
+                                   TemplateView):
+    template_name = 'project/project_request/vector/project_request_list.html'
+    login_url = '/'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        message = 'You do not have permission to view the previous page.'
+        messages.error(self.request, message)
+        return False
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # TODO: Filter out processed ones.
+        vector_project_request_list = \
+            VectorProjectAllocationRequest.objects.all()
+        context['vector_project_request_list'] = vector_project_request_list
+        return context
+
+
+class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
+                                     DetailView):
+    model = VectorProjectAllocationRequest
+    template_name = (
+        'project/project_request/vector/project_request_detail.html')
+    login_url = '/'
+    context_object_name = 'vector_request'
+
+    logger = logging.getLogger(__name__)
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        message = 'You do not have permission to view the previous page.'
+        messages.error(self.request, message)
+        return False
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
+
+    def post(self, request, *args, **kwargs):
+        # TODO
+        pass

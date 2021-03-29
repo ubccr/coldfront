@@ -28,3 +28,45 @@ urlpatterns = [
     path('project-review/<int:pk>/email', project_views.ProjectReivewEmailView.as_view(), name='project-review-email'),
 
 ]
+
+
+# TODO: Once finalized, move these imports above.
+from coldfront.core.project.views import ProjectRequestView
+from coldfront.core.project.views import SavioProjectRequestDetailView
+from coldfront.core.project.views import SavioProjectRequestListView
+from coldfront.core.project.views import SavioProjectRequestWizard
+from coldfront.core.project.views import show_details_form_condition
+from coldfront.core.project.views import show_new_pi_form_condition
+from coldfront.core.project.views import show_pooled_project_selection_form_condition
+from coldfront.core.project.views import VectorProjectRequestDetailView
+from coldfront.core.project.views import VectorProjectRequestListView
+from coldfront.core.project.views import VectorProjectRequestView
+
+
+urlpatterns += [
+    path('project-request/',
+         ProjectRequestView.as_view(),
+         name='project-request'),
+    path('savio-project-request/', SavioProjectRequestWizard.as_view(
+        condition_dict={
+            '2': show_new_pi_form_condition,
+            '4': show_pooled_project_selection_form_condition,
+            '5': show_details_form_condition,
+            }),
+         name='savio-project-request'),
+    path('savio-project-request-list/',
+         SavioProjectRequestListView.as_view(),
+         name='savio-project-request-list'),
+    path('savio-project-request/<int:pk>/',
+         SavioProjectRequestDetailView.as_view(),
+         name='savio-project-request-detail'),
+    path('vector-project-request/',
+         VectorProjectRequestView.as_view(),
+         name='vector-project-request'),
+    path('vector-project-request-list/',
+         VectorProjectRequestListView.as_view(),
+         name='vector-project-request-list'),
+    path('vector-project-request/<int:pk>',
+         VectorProjectRequestDetailView.as_view(),
+         name='vector-project-request-detail'),
+]

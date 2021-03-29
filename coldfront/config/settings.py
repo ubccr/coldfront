@@ -62,6 +62,11 @@ INSTALLED_APPS += [
     'coldfront.api',
 ]
 
+# Savio-specific Additional Apps
+INSTALLED_APPS += [
+    'formtools',
+]
+
 # ------------------------------------------------------------------------------
 # Django Middleware
 # ------------------------------------------------------------------------------
@@ -223,6 +228,13 @@ ALLOCATION_YEAR_START_DAY = 1
 
 # Whether or not to allow all jobs, bypassing all checks.
 ALLOW_ALL_JOBS = False
+
+# ------------------------------------------------------------------------------
+# myBRC settings
+# ------------------------------------------------------------------------------
+
+# The username of the user to set as the PI for all Vector projects.
+VECTOR_PI_USERNAME = "channsoden@berkeley.edu"
 
 # ------------------------------------------------------------------------------
 # Local settings overrides (see local_settings.py.sample)

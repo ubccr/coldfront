@@ -1,0 +1,89 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+
+
+{% block title %}
+Vector Project Request Detail
+{% endblock %}
+
+
+{% block content %}
+<h1>Review Vector Project Request</h1>
+
+<p>This form activates a request for a Vector project. Please review the given information and complete the checklist before final approval.</p>
+
+<div class="card mb-3">
+  <div class="card-header">
+    <h4>
+      <i class="fas fa-info-circle" aria-hidden="true"></i>
+      Request Information
+    </h4>
+  </div>
+  <div class="card-body">
+    <p class="card-text text-justify">
+      <strong>Request #: </strong>
+      {{ vector_request.pk }}
+    </p>
+    <p class="card-text text-justify">
+      <strong>Date Requested/Last Modified: </strong>
+      {{ vector_request.modified|date:"M. d, Y" }}
+    </p>
+    <p class="card-text text-justify">
+      <strong>Requester Email: </strong>
+      {{ vector_request.requester.email }}
+    </p>
+    <p class="card-text text-justify">
+      <strong>Project: </strong>
+      {{ vector_request.project.name }}
+    </p>
+    <p class="card-text text-justify">
+      <strong>PI: </strong>
+      {{ vector_request.pi.email }}
+    </p>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">
+    <h4>
+      <i class="fas fa-check-circle" aria-hidden="true"></i>
+      Checklist
+    </h4>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th scope="col">Task</th>
+            <th scope="col">Status</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="color: #dc3545"><b>PI request approved?</b></td>
+            <td style="color: #dc3545"><i class="fas fa-times-circle" aria-hidden="true"></i></td>
+            <td><button class="btn btn-primary" role="button">Manage</button></td>
+          </tr>
+          <tr>
+            <td style="color: #dc3545"><b>Slurm entries created?</b></td>
+            <td style="color: #dc3545"><i class="fas fa-times-circle" aria-hidden="true"></i></td>
+            <td><button class="btn btn-primary" role="button">Manage</button></td>
+          </tr>
+          <tr>
+            <td style="color: #28a745"><b>Project directories created?</b></td>
+            <td style="color: #28a745"><i class="fas fa-check-circle" aria-hidden="true"></i></td>
+            <td><button class="btn btn-primary" role="button">Manage</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<button type="button" class="btn btn-success" disabled>Submit</button>
+<button type="button" class="btn btn-secondary" href="">Cancel</button>
+{% endblock %}
