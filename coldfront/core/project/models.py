@@ -245,6 +245,54 @@ class ProjectAllocationRequestStatusChoice(TimeStampedModel):
         ordering = ['name', ]
 
 
+def savio_project_request_state_schema():
+    """Return the schema for the SavioProjectAllocationRequest.state
+    field."""
+    return {
+        "eligibility": {
+            "status": "Pending",
+            "justification": ""
+        },
+        "readiness": {
+            "status": "Pending",
+            "justification": ""
+        },
+        "setup": {
+            "status": "Pending",
+            "name_change": {
+                "requested_name": "",
+                "final_name": "",
+                "justification": ""
+            }
+        },
+        "other": {
+            "justification": ""
+        }
+    }
+
+
+def vector_project_request_state_schema():
+    """Return the schema for the VectorProjectAllocationRequest.state
+    field."""
+    return {
+        "eligibility": {
+            "status": "Pending",
+            "justification": ""
+        },
+        "setup": {
+            "status": "Pending",
+            "name_change": {
+                "requested_name": "",
+                "final_name": "",
+                "justification": ""
+            }
+        },
+        "other": {
+            "justification": ""
+        }
+    }
+
+
 class SavioProjectAllocationRequest(TimeStampedModel):
     requester = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='savio_requester')
@@ -268,6 +316,7 @@ class SavioProjectAllocationRequest(TimeStampedModel):
     status = models.ForeignKey(
         ProjectAllocationRequestStatusChoice, on_delete=models.CASCADE,
         verbose_name='Status')
+    state = models.JSONField(default=savio_project_request_state_schema)
     history = HistoricalRecords()
 
     def __str__(self):
@@ -292,6 +341,7 @@ class VectorProjectAllocationRequest(TimeStampedModel):
     status = models.ForeignKey(
         ProjectAllocationRequestStatusChoice, on_delete=models.CASCADE,
         verbose_name='Status')
+    state = models.JSONField(default=vector_project_request_state_schema)
     history = HistoricalRecords()
 
     def __str__(self):
