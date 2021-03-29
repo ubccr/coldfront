@@ -95,7 +95,7 @@ The following settings are ColdFront specific settings related to the core appli
 
 ### Database settings
 
-The following settings configure the database server to use, if not using the default SQLite:
+The following settings configure the database server to use, if not set will default to using SQLite:
 
 | Name                 | Description                          |
 | :--------------------|:-------------------------------------|
@@ -108,7 +108,6 @@ DB_URL=mysql://user:password@127.0.0.1:3306/database
 DB_URL=psql://user:password@127.0.0.1:8458/database
 DB_URL=sqlite:////usr/share/coldfront/coldfront.db
 ```
-NOTE: You do not need to specify the sqlite setting unless you've installed to a non-default location.
 
 
 ### Email settings
