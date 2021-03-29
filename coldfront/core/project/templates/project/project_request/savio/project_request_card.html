@@ -1,0 +1,46 @@
+<div class="card mb-3">
+  <div class="card-header">
+    <h4>
+      <i class="fas fa-info-circle" aria-hidden="true"></i>
+      Request Information
+    </h4>
+  </div>
+  <div class="card-body">
+    <p class="card-text text-justify">
+      <strong>Request #: </strong>
+      {{ savio_request.pk }}
+    </p>
+    <p class="card-text text-justify">
+      <strong>Date Requested/Last Modified: </strong>
+      {{ savio_request.modified|date:"M. d, Y" }}
+    </p>
+    <p class="card-text text-justify">
+      <strong>Requester: </strong>
+      {{ savio_request.requester.first_name }} {{ savio_request.requester.last_name }} ({{ savio_request.requester.email }})
+    </p>
+    <p class="card-text text-justify">
+      <strong>Project: </strong>
+      {{ savio_request.project.name }}
+    </p>
+    <p class="card-text text-justify">
+      <strong>Allocation Type: </strong>
+      {{ savio_request.allocation_type }}
+    </p>
+    <p class="card-text text-justify">
+      <strong>Pooling: </strong>
+      {% if savio_request.pool %}
+        Yes
+      {% else %}
+        No
+      {% endif %}
+    </p>
+    <p class="card-text text-justify">
+      <strong>PI: </strong>
+      {{ savio_request.pi.first_name }} {{ savio_request.pi.last_name }} ({{ savio_request.pi.email }})
+    </p>
+    <p class="card-text text-justify">
+      <strong>Survey Responses: </strong>
+      <button id="view-survey" class="btn btn-info" role="button">View</button>
+    </p>
+  </div>
+</div>
