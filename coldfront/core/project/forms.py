@@ -569,9 +569,18 @@ class SavioProjectReviewSetupForm(forms.Form):
     final_name = forms.CharField(
         help_text=(
             'Update the name of the project, in case it needed to be '
-            'changed.'),
+            'changed. It must begin with the correct prefix.'),
         label='Final Name',
-        required=True)
+        max_length=12,
+        required=True,
+        validators=[
+            MinLengthValidator(7),
+            RegexValidator(
+                r'^[0-9a-z_]+$',
+                message=(
+                    'Name must contain only lowercase letters, numbers, and '
+                    'underscores.'))
+        ])
     justification = forms.CharField(
         help_text=(
             'Provide reasoning for your decision. This field is only required '
@@ -588,7 +597,7 @@ class SavioProjectReviewSetupForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
-        final_name = cleaned_data.get('final_name', 'Pending')
+        final_name = cleaned_data.get('final_name', '').lower()
         # Require justification for name changes.
         if final_name != self.requested_name:
             justification = cleaned_data.get('justification', '')
@@ -596,6 +605,23 @@ class SavioProjectReviewSetupForm(forms.Form):
                 raise forms.ValidationError(
                     'Please provide a justification for the name change.')
         return cleaned_data
+
+    def clean_final_name(self):
+        cleaned_data = super().clean()
+        final_name = cleaned_data.get('final_name', '').lower()
+        expected_prefix = None
+        for prefix in ('co_', 'fc_', 'pc_'):
+            if self.requested_name.startswith(prefix):
+                expected_prefix = prefix
+                break
+        if not expected_prefix:
+            raise forms.ValidationError(
+                f'Requested project name {self.requested_name} has invalid '
+                f'prefix.')
+        if not final_name.startswith(expected_prefix):
+            raise forms.ValidationError(
+                f'Final project name must begin with "{expected_prefix}".')
+        return final_name
 
 
 class VectorProjectDetailsForm(forms.Form):
