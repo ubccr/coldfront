@@ -95,7 +95,7 @@ The following settings are ColdFront specific settings related to the core appli
 
 ### Database settings
 
-The following settings configure the databse server to use: 
+The following settings configure the database server to use, if not set will default to using SQLite:
 
 | Name                 | Description                          |
 | :--------------------|:-------------------------------------|
@@ -108,6 +108,7 @@ DB_URL=mysql://user:password@127.0.0.1:3306/database
 DB_URL=psql://user:password@127.0.0.1:8458/database
 DB_URL=sqlite:////usr/share/coldfront/coldfront.db
 ```
+
 
 ### Email settings
 
@@ -126,7 +127,7 @@ disabled:
 | EMAIL_SUBJECT_PREFIX            | Prefix to add to subject line             |
 | EMAIL_ADMIN_LIST                | List of admin email addresses.            |
 | EMAIL_TICKET_SYSTEM_ADDRESS     | Email address of ticketing system         |
-| EMAIL_DIRECTOR_EMAIL_ADDRESS    | Email address for director                | 
+| EMAIL_DIRECTOR_EMAIL_ADDRESS    | Email address for director                |
 | EMAIL_PROJECT_REVIEW_CONTACT    | Email address of review contact           |
 | EMAIL_DEVELOPMENT_EMAIL_LIST    | List of emails to send when in debug mode |
 | EMAIL_OPT_OUT_INSTRUCTION_URL   | URL of article regarding opt out          |
@@ -134,11 +135,12 @@ disabled:
 | EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS   | List of days to send email notifications for expiring allocations. Default 7,14,30 |
 
 ### Plugin settings
+For more info on [ColdFront plugins](plugin.md) (Django apps)
 
 #### LDAP Auth
 
 !!! warning "Required"
-    LDAP authentication backend requires `ldap3` and `django_auth_ldap`. 
+    LDAP authentication backend requires `ldap3` and `django_auth_ldap`.
     ```
     $ pip install ldap3 django_auth_ldap
     ```
@@ -230,9 +232,9 @@ authentication. This allows users who haven't yet logged into ColdFront but
 exist in your backend LDAP to show up in the ColdFront user search.
 
 !!! warning "Required"
-    LDAP User Search requires `ldap3`. 
+    LDAP User Search requires `ldap3`.
     ```
-    $ pip install ldap3 
+    $ pip install ldap3
     ```
 
 | Name                        | Description                             |
@@ -286,8 +288,7 @@ environment variable:
 SITE_STATIC=/path/to/static/files
 ```
 
-As a simple example, to change the default background color from blue to black.
-Create a common.css with the following styles and set the environment variable:
+As a simple example, to change the default background color from blue to black, create a common.css file with the following styles and set the SITE_STATIC environment variable when starting ColdFront:
 
 ```
 $ mkdir -p site/static/common/css
@@ -297,5 +298,5 @@ $ tee site/static/common/css/common.css <<EOF
 }
 EOF
 
-$ DEBUG=True SITE_STATIC=site coldfront runserver
+$ DEBUG=True SITE_STATIC=site/static coldfront runserver
 ```

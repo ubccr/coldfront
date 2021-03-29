@@ -1,14 +1,14 @@
 # Deploying ColdFront in Production
 
 This document outlines how to run ColdFront in production. ColdFront is written
-in python3 and uses the Django web framework.  Here we show case deploying
+in python3 and uses the Django web framework.  Here we showcase deploying
 ColdFront using Gunicorn and nginx but any method for deploying Django in
 production could be used. For a more comprehensive list of methods [see
 here](https://docs.djangoproject.com/en/3.1/howto/deployment/).
 
 ## Preliminaries
 
-It's recommended to create non-root user for running ColdFront. The Gunicorn
+It's recommended to create a non-root user for running ColdFront. The Gunicorn
 worker processes will run under this user account. Also, create a directory for
 installing ColdFront and related files.
 
@@ -53,7 +53,7 @@ STATIC_ROOT=/srv/coldfront/static
 # Name of your center
 CENTER_NAME='University HPC'
 
-# Cryptographic secret key 
+# Cryptographic secret key
 SECRET_KEY=
 ```
 
@@ -65,9 +65,12 @@ SECRET_KEY=
     $ python3 -c "import secrets; print(secrets.token_urlsafe())"
     ```
 
-Choose a database backend. ColdFront supports MariaDB/MySQL, PostgreSQL, or
-SQLite. Install your preferred database and set the connection details using
-the `DB_URL` variable above.
+**Choosing a database backend:** ColdFront supports MariaDB/MySQL, PostgreSQL, or
+SQLite. If you don't configure a database, it will use SQLite by default and will
+place the database in the ColdFront working directory.  You may not want this for a production installation.
+
+Install your preferred database and set the connection details using
+the `DB_URL` variable as shown above.  
 
 !!! note "Note: Install python database drivers"
     Be sure to install the database drivers associated with your db. For example:
@@ -77,7 +80,7 @@ the `DB_URL` variable above.
     $ pip install psycopg2
     ```
 
-## Intializing the ColdFront database
+## Initializing the ColdFront database
 
 ```
 $ source /srv/coldfront/venv/bin/activate
@@ -159,7 +162,7 @@ WantedBy=multi-user.target
 ## Configure nginx
 
 We now configure nginx to proxy requests to the ColdFront Gunicorn workers via
-unix domain socket. 
+unix domain socket.
 
 Create file `/etc/nginx/conf.d/coldfront.conf`:
 
@@ -182,7 +185,7 @@ server {
     # HSTS (ngx_http_headers_module is required) (15768000 seconds = 6 months)
     add_header Strict-Transport-Security max-age=15768000;
 
-    
+
     location /static/ {
         alias /srv/coldfront/static/;
     }
