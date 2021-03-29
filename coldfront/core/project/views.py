@@ -2281,7 +2281,8 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         self.request_obj = get_object_or_404(
-            SavioProjectAllocationRequest, pk=pk)
+            SavioProjectAllocationRequest.objects.prefetch_related(
+                'pi', 'project', 'requester'), pk=pk)
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -2296,7 +2297,10 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
         self.request_obj.save()
 
         # TODO.
-        if status == 'Denied':
+        if status == 'Approved':
+            pass
+        elif status == 'Denied':
+            # Send an email to the requester and PI.
             pass
 
         return super().form_valid(form)
@@ -2340,7 +2344,8 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         self.request_obj = get_object_or_404(
-            SavioProjectAllocationRequest, pk=pk)
+            SavioProjectAllocationRequest.objects.prefetch_related(
+                'pi', 'project', 'requester'), pk=pk)
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -2355,7 +2360,12 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
         self.request_obj.save()
 
         # TODO.
-        if status == 'Denied':
+        if status == 'Approved':
+            if self.request_obj.pool:
+                # Send an email poolee project.
+                # Leave a ProjectUserMessage for the poolee project.
+                pass
+        elif status == 'Denied':
             pass
 
         return super().form_valid(form)
@@ -2398,23 +2408,28 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         self.request_obj = get_object_or_404(
-            SavioProjectAllocationRequest, pk=pk)
+            SavioProjectAllocationRequest.objects.prefetch_related(
+                'pi', 'project', 'requester'), pk=pk)
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
         # TODO.
         form_data = form.cleaned_data
         status = form_data['status']
+        final_name = form_data['final_name']
+        justification = form_data['justification']
+
         name_change = {
             'requested_name': self.request_obj.project.name,
-            'final_name': form_data['final_name'],
-            'justification': form_data['justification'],
+            'final_name': final_name,
+            'justification': justification,
         }
         self.request_obj.state['setup'] = {
             'status': status,
             'name_change': name_change,
         }
         self.request_obj.save()
+
         return super().form_valid(form)
 
     def get_context_data(self, **kwargs):
