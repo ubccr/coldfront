@@ -321,6 +321,10 @@ class ProjectListView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
 
         context = super().get_context_data(**kwargs)
+
+        # block access to joining projects until user-acess-agreement has been signed
+        context['user_agreement_signed'] = self.request.user.userprofile.access_agreement_signed_date is not None
+
         projects_count = self.get_queryset().count()
         context['projects_count'] = projects_count
 
@@ -370,13 +374,19 @@ class ProjectListView(LoginRequiredMixin, ListView):
         return context
 
 
-class ProjectArchivedListView(LoginRequiredMixin, ListView):
+class ProjectArchivedListView(LoginRequiredMixin, UserPassesTestMixin,
+                              ListView):
 
     model = Project
     template_name = 'project/project_archived_list.html'
     prefetch_related = ['status', 'field_of_science', ]
     context_object_name = 'project_list'
     paginate_by = 10
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
 
     def get_queryset(self):
 
@@ -508,13 +518,13 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
         if self.request.method == 'POST':
             return False
 
-        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-
-        if project_obj.projectuser_set.filter(
-                user=self.request.user,
-                role__name__in=['Manager', 'Principal Investigator'],
-                status__name='Active').exists():
-            return True
+        # project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        #
+        # if project_obj.projectuser_set.filter(
+        #         user=self.request.user,
+        #         role__name__in=['Manager', 'Principal Investigator'],
+        #         status__name='Active').exists():
+        #     return True
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -743,6 +753,16 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         if matches:
             formset = formset_factory(ProjectAddUserForm, max_num=len(matches))
             formset = formset(initial=matches, prefix='userform')
+
+            # cache User objects
+            match_users = User.objects.filter(username__in=[form._username for form in formset])
+            for form in formset:
+
+                # disable user matches with unsigned signed user agreement
+                if not match_users.get(username=form._username)\
+                        .userprofile.access_agreement_signed_date is not None:
+                    form.fields.pop('selected')
+
             context['formset'] = formset
             context['user_search_string'] = user_search_string
             context['search_by'] = search_by
@@ -892,12 +912,17 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                     else:
                         cluster_access_requests_count += 1
 
-            messages.success(
-                request, 'Added {} users to project.'.format(added_users_count))
-            message = (
-                f'Requested cluster access under project for '
-                f'{cluster_access_requests_count} users.')
-            messages.success(request, message)
+            if added_users_count != 0:
+                messages.success(
+                    request, 'Added {} users to project.'.format(added_users_count))
+
+                message = (
+                    f'Requested cluster access under project for '
+                    f'{cluster_access_requests_count} users.')
+                messages.success(request, message)
+            else:
+                messages.info(request, 'No users selected to add.')
+
         else:
             if not formset.is_valid():
                 for error in formset.errors:
@@ -1400,6 +1425,11 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         user_obj = self.request.user
         project_users = project_obj.projectuser_set.filter(user=user_obj)
 
+        if self.request.user.userprofile.access_agreement_signed_date is None:
+            messages.error(
+                self.request, 'You must sign the User Access Agreement before you can join a project.')
+            return False
+
         if not project_users.exists():
             return True
 
@@ -1499,9 +1529,19 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         return redirect(next_view)
 
 
-class ProjectJoinListView(ProjectListView):
+class ProjectJoinListView(ProjectListView, UserPassesTestMixin):
 
     template_name = 'project/project_join_list.html'
+
+    def test_func(self):
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.userprofile.access_agreement_signed_date is not None:
+            return True
+
+        messages.error(
+            self.request, 'You must sign the User Access Agreement before you can join a project.')
 
     def get_queryset(self):
 
