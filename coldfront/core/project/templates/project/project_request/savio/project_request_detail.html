@@ -11,55 +11,11 @@ Savio Project Request Detail
 
 {% block content %}
 <h1>Review Savio Project Request</h1>
+<hr>
 
 <p>This form activates a request for a Savio project. Please review the given information and complete the checklist before final approval.</p>
 
-<div class="card mb-3">
-  <div class="card-header">
-    <h4>
-      <i class="fas fa-info-circle" aria-hidden="true"></i>
-      Request Information
-    </h4>
-  </div>
-  <div class="card-body">
-    <p class="card-text text-justify">
-      <strong>Request #: </strong>
-      {{ savio_request.pk }}
-    </p>
-    <p class="card-text text-justify">
-      <strong>Date Requested/Last Modified: </strong>
-      {{ savio_request.modified|date:"M. d, Y" }}
-    </p>
-    <p class="card-text text-justify">
-      <strong>Requester: </strong>
-      {{ savio_request.requester.first_name }} {{ savio_request.requester.last_name }} ({{ savio_request.requester.email }})
-    </p>
-    <p class="card-text text-justify">
-      <strong>Project: </strong>
-      {{ savio_request.project.name }}
-    </p>
-    <p class="card-text text-justify">
-      <strong>Allocation Type: </strong>
-      {{ savio_request.allocation_type }}
-    </p>
-    <p class="card-text text-justify">
-      <strong>Pooling: </strong>
-      {% if savio_request.pool %}
-        Yes
-      {% else %}
-        No
-      {% endif %}
-    </p>
-    <p class="card-text text-justify">
-      <strong>PI: </strong>
-      {{ savio_request.pi.first_name }} {{ savio_request.pi.last_name }} ({{ savio_request.pi.email }})
-    </p>
-    <p class="card-text text-justify">
-      <strong>Survey Responses: </strong>
-      <button id="view-survey" class="btn btn-info" role="button">View</button>
-    </p>
-  </div>
-</div>
+{% include 'project/project_request/savio/project_request_card.html' with savio_request=savio_request %}
 
 <div class="card mb-3">
   <div class="card-header">
@@ -82,17 +38,28 @@ Savio Project Request Detail
           <tr>
             <td>Confirm that the requested PI is eligible for a Savio allowance.</td>
             <td style="color: #28a745"><i class="fas fa-check-circle" aria-hidden="true"></i></td>
-            <td><button class="btn btn-primary" role="button">Manage</button></td>
+            <td>
+              <a href="{% url 'savio-project-request-review-eligibility' savio_request.pk %}" class="btn btn-primary">
+                Manage
+              </a>
           </tr>
           <tr>
             <td>Confirm that the project satisfies the readiness criteria.</td>
             <td style="color: #dc3545"><i class="fas fa-times-circle" aria-hidden="true"></i></td>
-            <td><button class="btn btn-primary" role="button">Manage</button></td>
+            <td>
+              <a href="{% url 'savio-project-request-review-readiness' savio_request.pk %}" class="btn btn-primary">
+                Manage
+              </a>
+            </td>
           </tr>
           <tr>
             <td>Perform project setup on the cluster.</td>
             <td style="color: #dc3545"><i class="fas fa-times-circle" aria-hidden="true"></i></td>
-            <td><button class="btn btn-primary" role="button">Manage</button></td>
+            <td>
+              <a href="{% url 'savio-project-request-review-setup' savio_request.pk %}" class="btn btn-primary">
+                Manage
+              </a>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -101,34 +68,8 @@ Savio Project Request Detail
 </div>
 
 <button type="button" class="btn btn-success" disabled>Submit</button>
-<button type="button" class="btn btn-secondary" href="">Cancel</button>
+<a href="{% url 'savio-project-request-list' %}" class="btn btn-secondary">Cancel</a>
 
-<div
-    id="survey-modal"
-    class="modal fade bd-example-modal-lg"
-    tabindex="-1"
-    role="dialog"
-    aria-labelledby="survey-modal"
-    aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Survey Responses</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        {{ survey_form|crispy }}
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-  $("#view-survey").on("click", function() {
-    $("#survey-modal").modal("show");
-  });
-</script>
+{% include 'project/project_request/savio/project_request_survey_modal.html' with survey_form=survey_form %}
 
 {% endblock %}

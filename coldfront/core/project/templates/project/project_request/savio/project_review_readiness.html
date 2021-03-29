@@ -1,0 +1,40 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Savio Project Request - Review Readiness
+{% endblock %}
+
+
+{% block content %}
+<h1>Review Readiness</h1>
+<hr>
+
+<p>Please determine whether or not the request's project satisfies the readiness criteria, based on the provided survey responses. If not, the request will be denied immediately, and a notification email will be sent to the requester and PI.</p>
+
+{% include 'project/project_request/savio/project_request_card.html' with savio_request=savio_request %}
+
+<div class="card mb-3">
+  <div class="card-header">
+    <h4>
+      <i class="fas fa-check-circle" aria-hidden="true"></i>
+      Review
+    </h4>
+  </div>
+  <div class="card-body">
+    <form action="" method="post">
+      {% csrf_token %}
+      {{ form|crispy }}
+      <input class="btn btn-primary" type="submit" value="Submit" />
+      <a href="{% url 'savio-project-request-detail' savio_request.pk %}" class="btn btn-secondary">
+        Cancel
+      </a>
+    </form>
+  </div>
+</div>
+
+{% include 'project/project_request/savio/project_request_survey_modal.html' with survey_form=survey_form %}
+
+{% endblock %}
