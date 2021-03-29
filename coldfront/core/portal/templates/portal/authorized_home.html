@@ -4,7 +4,8 @@
   <div class="col-lg-12">
     <h3>Welcome</h3>
     <hr>
-    <p>If you would like to set up or update your access to the cluster, please complete the following steps.</p>
+    <p>If you would like to set up or update your access to a cluster, please complete the following steps.</p>
+    <p>First Review and Sign the cluster user agreement. Only then you can Join a cluster project and gain access to the cluster.</p>
     <table class="table">
       <thead>
         <tr>
@@ -15,7 +16,7 @@
       </thead>
       <tbody>
         <tr>
-          <td>1. Sign the access agreement.</td>
+          <td>1. Sign the cluster user access agreement.</td>
           {% if user.userprofile.access_agreement_signed_date is not None %}
             <td>
               <span class="badge badge-success">
@@ -38,7 +39,7 @@
             <td>
               <a href="{% url 'user-access-agreement' %}" class="btn btn-primary">
                 <i class="fas fa-edit" aria-hidden="true"></i>
-                Sign
+                Review and Sign
               </a>
             </td>
           {% endif %}
@@ -167,7 +168,7 @@
           {% else %}
             <div class="alert alert-info" role="alert">
               <i class="fa fa-info-circle" aria-hidden="true"></i>
-              You are not part of any Savio projects at this time. Please click Join Projects to join any of the existing projects. If you are registered as a PI in this system you can request to setup a new project.
+              You are not part of any Savio projects at this time. Please click Join to join any of the existing projects. You can also click Create to request setup of a new project.
             </div>
           {% endif %}
         </div>
@@ -195,7 +196,7 @@
           {% else %}
             <div class="alert alert-info" role="alert">
               <i class="fa fa-info-circle" aria-hidden="true"></i>
-              You are not part of any Vector projects at this time. Please click Join Projects to join any of the existing projects. If you are registered as a PI in this system you can request to setup a new project.
+              You are not part of any Vector projects at this time. Please click Join to join any of the existing projects. You can also click Create to request setup of a new project.
             </div>
           {% endif %}
         </div>
@@ -203,7 +204,7 @@
     {% else %}
       <div class="alert alert-info" role="alert">
         <i class="fa fa-info-circle" aria-hidden="true"></i>
-        You are not part of any BRC cluster projects at this time. Please click Join Projects to join any of the existing projects. If you are registered as a PI in this system you can request to setup a new project.
+        You are not part of any BRC cluster projects at this time. Please click Join to join any of the existing projects. You can also click Create to request setup of a new project.
       </div>
     {% endif %}
   </div>
