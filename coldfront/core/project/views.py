@@ -374,13 +374,19 @@ class ProjectListView(LoginRequiredMixin, ListView):
         return context
 
 
-class ProjectArchivedListView(LoginRequiredMixin, ListView):
+class ProjectArchivedListView(LoginRequiredMixin, UserPassesTestMixin,
+                              ListView):
 
     model = Project
     template_name = 'project/project_archived_list.html'
     prefetch_related = ['status', 'field_of_science', ]
     context_object_name = 'project_list'
     paginate_by = 10
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
 
     def get_queryset(self):
 
@@ -512,13 +518,13 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
         if self.request.method == 'POST':
             return False
 
-        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-
-        if project_obj.projectuser_set.filter(
-                user=self.request.user,
-                role__name__in=['Manager', 'Principal Investigator'],
-                status__name='Active').exists():
-            return True
+        # project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        #
+        # if project_obj.projectuser_set.filter(
+        #         user=self.request.user,
+        #         role__name__in=['Manager', 'Principal Investigator'],
+        #         status__name='Active').exists():
+        #     return True
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
