@@ -56,6 +56,10 @@ class ProjectAddUserForm(forms.Form):
         empty_label=None)
     selected = forms.BooleanField(initial=False, required=False)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._username = kwargs.get('initial', {}).get('username', None)
+
 
 class ProjectAddUsersToAllocationForm(forms.Form):
     allocation = forms.MultipleChoiceField(
