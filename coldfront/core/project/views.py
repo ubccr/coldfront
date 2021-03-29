@@ -2278,20 +2278,43 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
         messages.error(self.request, message)
         return False
 
+    def dispatch(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        self.request_obj = get_object_or_404(
+            SavioProjectAllocationRequest, pk=pk)
+        return super().dispatch(request, *args, **kwargs)
+
     def form_valid(self, form):
         # TODO.
-        print(form.cleaned_data)
+        form_data = form.cleaned_data
+        status = form_data['status']
+        justification = form_data['justification']
+        self.request_obj.state['eligibility'] = {
+            'status': status,
+            'justification': justification,
+        }
+        self.request_obj.save()
+
+        # TODO.
+        if status == 'Denied':
+            pass
+
         return super().form_valid(form)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        pk = self.kwargs.get('pk')
-        request_obj = get_object_or_404(SavioProjectAllocationRequest, pk=pk)
-        context['savio_request'] = request_obj
+        context['savio_request'] = self.request_obj
         survey_form = SavioProjectSurveyForm(
-            initial=request_obj.survey_answers, disable_fields=True)
+            initial=self.request_obj.survey_answers, disable_fields=True)
         context['survey_form'] = survey_form
         return context
+
+    def get_initial(self):
+        initial = super().get_initial()
+        eligibility = self.request_obj.state['eligibility']
+        initial['status'] = eligibility['status']
+        initial['justification'] = eligibility['justification']
+        return initial
 
     def get_success_url(self):
         return reverse(
@@ -2314,20 +2337,43 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
         messages.error(self.request, message)
         return False
 
+    def dispatch(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        self.request_obj = get_object_or_404(
+            SavioProjectAllocationRequest, pk=pk)
+        return super().dispatch(request, *args, **kwargs)
+
     def form_valid(self, form):
         # TODO.
-        print(form.cleaned_data)
+        form_data = form.cleaned_data
+        status = form_data['status']
+        justification = form_data['justification']
+        self.request_obj.state['readiness'] = {
+            'status': status,
+            'justification': justification,
+        }
+        self.request_obj.save()
+
+        # TODO.
+        if status == 'Denied':
+            pass
+
         return super().form_valid(form)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        pk = self.kwargs.get('pk')
-        request_obj = get_object_or_404(SavioProjectAllocationRequest, pk=pk)
-        context['savio_request'] = request_obj
+        context['savio_request'] = self.request_obj
         survey_form = SavioProjectSurveyForm(
-            initial=request_obj.survey_answers, disable_fields=True)
+            initial=self.request_obj.survey_answers, disable_fields=True)
         context['survey_form'] = survey_form
         return context
+
+    def get_initial(self):
+        initial = super().get_initial()
+        readiness = self.request_obj.state['readiness']
+        initial['status'] = readiness['status']
+        initial['justification'] = readiness['justification']
+        return initial
 
     def get_success_url(self):
         return reverse(
@@ -2349,27 +2395,48 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
         messages.error(self.request, message)
         return False
 
+    def dispatch(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        self.request_obj = get_object_or_404(
+            SavioProjectAllocationRequest, pk=pk)
+        return super().dispatch(request, *args, **kwargs)
+
     def form_valid(self, form):
         # TODO.
-        print(form.cleaned_data)
+        form_data = form.cleaned_data
+        status = form_data['status']
+        name_change = {
+            'requested_name': self.request_obj.project.name,
+            'final_name': form_data['final_name'],
+            'justification': form_data['justification'],
+        }
+        self.request_obj.state['setup'] = {
+            'status': status,
+            'name_change': name_change,
+        }
+        self.request_obj.save()
         return super().form_valid(form)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        pk = self.kwargs.get('pk')
-        request_obj = get_object_or_404(SavioProjectAllocationRequest, pk=pk)
-        context['savio_request'] = request_obj
+        context['savio_request'] = self.request_obj
         survey_form = SavioProjectSurveyForm(
-            initial=request_obj.survey_answers, disable_fields=True)
+            initial=self.request_obj.survey_answers, disable_fields=True)
         context['survey_form'] = survey_form
         return context
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        pk = self.kwargs.get('pk')
-        request_obj = get_object_or_404(SavioProjectAllocationRequest, pk=pk)
-        kwargs['requested_name'] = request_obj.project.name
+        kwargs['requested_name'] = self.request_obj.project.name
         return kwargs
+
+    def get_initial(self):
+        initial = super().get_initial()
+        setup = self.request_obj.state['setup']
+        initial['status'] = setup['status']
+        initial['final_name'] = setup['name_change']['final_name']
+        initial['justification'] = setup['name_change']['justification']
+        return initial
 
     def get_success_url(self):
         return reverse(
