@@ -7,6 +7,10 @@ PROJECT_ROOT = environ.Path(__file__) - 3
 env_paths = [
     PROJECT_ROOT.path('.env'),
     environ.Path('/etc/coldfront/coldfront.env'),
+
+    # added 03262021    
+    # Environment="PATH=/srv/coldront/venv/bin"
+    # EnvironmentFile=/srv/coldfront/coldfront.env
 ]
 
 if ENV.str('COLDFRONT_ENV', default='') != '':

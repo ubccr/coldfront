@@ -26,7 +26,7 @@ Grants Report
               <th scope="col">Project PI</th>
               <th scope="col">Faculty Role</th>
               <th scope="col">Grant PI</th>
-              <th scope="col">Total Amount Awarded</th>
+              <!-- <th scope="col">Total Amount Awarded</th> -->
               <th scope="col">Funding Agency</th>
               <th scope="col">Grant Number</th>
               <th scope="col">Start Date</th>
@@ -42,7 +42,7 @@ Grants Report
                 <td class="text-nowrap"><a href="{% url 'project-detail' grant.project.pk %}">{{ grant.project.pi.first_name }} {{ grant.project.pi.last_name }}</a></td>
                 <td class="text-nowrap">{{ grant.role }}</td>
                 <td class="text-nowrap">{{ grant.grant_pi }}</td>
-                <td class="text-nowrap">{{ grant.total_amount_awarded|intcomma }}</td>
+                <!-- <td class="text-nowrap">{{ grant.total_amount_awarded|intcomma }}</td> -->
                 <td class="text-nowrap">{{ grant.funding_agency }}</td>
                 <td class="text-nowrap">{{ grant.grant_number }}</td>
                 <td class="text-nowrap">{{ grant.grant_start|date:"M. d, Y" }}</td>

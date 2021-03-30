@@ -225,9 +225,9 @@ Allocation Detail
         <table id = "mydatatable" class = "table table-striped table-bordered">
         <thead>
           <tr>
-            <th scope="col">Username</th>
+            <!-- <th scope="col">Username</th> -->
             <th scope="col">Name</th>
-            <th scope="col">Email</th>
+            <!-- <th scope="col">Email</th> -->
             <!-- <th scope="col">Bytes</th> -->
 
             <th scope="col">Logical Usage</th>
@@ -245,9 +245,9 @@ Allocation Detail
         <tbody>
           {% for user in allocation_users %}
             <tr>
-              <td>{{ user.user.username }}</td>
+              <!-- <td>{{ user.user.username }}</td> -->
               <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
-              <td>{{ user.user.email }}</td>
+              <!-- <td>{{ user.user.email }}</td> -->
               <!-- <td>{{ user.usage_bytes }}</td> -->
 
               <td data-sort = "{{user.usage_bytes}}" name = "usage_bytes">{{ user.usage }}{{ user.unit }}</td>

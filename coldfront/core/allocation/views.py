@@ -1280,8 +1280,7 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
 
                     elif user_status == 'remove_from_project':
                         for active_allocation in allocation_obj.project.allocation_set.filter(status__name__in=(
-                            'Active', 'Denied', 'New', 'Paid', 'Payment Pending',
-                                'Payment Requested', 'Payment Declined', 'Renewal Requested', 'Unpaid',)):
+                            'Active', 'New', 'Paid', 'Payment Requested', )):
 
                             allocation_user_obj = active_allocation.allocationuser_set.get(
                                 user=user_obj)
@@ -1346,8 +1345,10 @@ class AllocationInvoiceListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
 
     def get_queryset(self):
 
+        # allocations = Allocation.objects.filter(
+        #     status__name__in=['Paid', 'Payment Pending', 'Payment Requested' ])
         allocations = Allocation.objects.filter(
-            status__name__in=['Paid', 'Payment Pending', 'Payment Requested', 'Payment Declined', ])
+            status__name__in=['Active', 'Payment Pending',  ])
         return allocations
 
 # this is the view class thats rendering allocation_invoice_detail.
