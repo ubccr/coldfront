@@ -1,0 +1,103 @@
+---
+- hosts:
+    - all
+    - "{{ domain }}"
+  become : true
+  become_user: root
+  become_method: sudo
+
+  vars:
+   cwd: "{{ lookup('env','PWD') }}"
+
+  vars_files:
+    - "{{ cwd }}/main.yml"
+
+  tasks:
+    - name: Create a folder for keeping Django app logs
+      file:
+       path: '{{ log_path }}'
+       state: directory
+       mode: 0775
+       owner: '{{ djangooperator }}'
+       group: 'apache'
+
+    - name: Create portal Django app log files
+      file:
+       path: '{{ log_path }}/{{ portal_log_file }}'
+       state: touch
+       mode: 0660
+       owner: '{{ djangooperator }}'
+       group: 'apache'
+
+    - name: Install CF MyBRC User Portal Django application dependencies
+      pip:
+        requirements: '{{ git_prefix }}/{{ reponame }}/requirements.txt'
+        executable: pip3
+
+    - name: Create the CF MyBRC Django app settings module
+      template: src={{ git_prefix }}/{{ reponame }}/bootstrap/ansible/cf_mybrc_settings_template.tmpl
+                dest={{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/config/prod_settings.py
+      become_user:  "{{ djangooperator }}"
+
+    - name: CF MyBRC Django app migrate
+      django_manage:
+        command: migrate
+        app_path: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+        settings: "config.settings"
+        pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+      become_user: "{{ djangooperator }}"
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
+
+    - name: CF MyBRC Django app initial setup
+      django_manage:
+        command: initial_setup
+        app_path: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+        settings: "config.settings"
+        pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+      become_user: "{{ djangooperator }}"
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
+
+    - name: CF MyBRC Django app create existing brc data
+      django_manage:
+        command: create_existing_brc_data
+        app_path: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+        settings: "config.settings"
+        pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+      become_user: "{{ djangooperator }}"
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
+
+    - name: CF MyBRC Django app loaddata
+      django_manage:
+        command: load_brc_allocation_data
+        app_path: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+        settings: "config.settings"
+        pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+      become_user: "{{ djangooperator }}"
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
+
+    - name: Grant read for Apache on djangooperator's $HOME
+      file:
+        path: '{{ git_prefix }}'
+        state: directory
+        mode: 0755
+        group: apache
+
+    - name: Grant read permissions to Apache on git root
+      file:
+        path: '{{ git_prefix }}/{{ reponame }}'
+        state: directory
+        recurse: yes
+        mode: 0755
+        group: apache
+
+    # If SSL is set up, use wsgi_conf_ssl.tmpl.
+    - name: Create a wsgi conf file from a template
+      template: src={{ git_prefix }}/{{ reponame }}/bootstrap/ansible/cf_mybrc_wsgi_conf.tmpl
+                dest=/etc/httpd/conf.d/cf_mybrc_wsgi.conf
+
+    - name: Restart Apache
+      service: name=httpd state=restarted enabled=yes
