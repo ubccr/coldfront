@@ -1,0 +1,46 @@
+import os
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = '{{ debug }}'
+
+ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '{{ hostname }}', '{{ host_ip }}']
+
+# The name, user, and password for the database, referenced by DATABASES in settings.py.
+DATABASE_NAME = '{{ db_name }}'
+DATABASE_USER = '{{ db_admin_user }}'
+DATABASE_PASSWORD = '{{ db_admin_passwd }}'
+
+# The path to the log, referenced by LOGGING in settings.py.
+LOG_PATH = os.path.join('{{ log_path }}/{{ portal_log_file }}')
+
+# Dev setting to use a dummy backend (not useful for testing 'Forgot password')
+# EMAIL_BACKEND = 'django.core.mail.backends.dummy.EmailBackend'
+
+# Dev setting to use console email backend (useful for testing 'Forgot password')
+# Writes emails to /var/log/httpd/error_log on vagrant VM)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_FROM = '{{ from_email }}'
+EMAIL_ADMIN = '{{ admin_email }}'
+EMAIL_SUBJECT_PREFIX = '{{ email_subject_prefix }}'
+
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'localhost'
+# EMAIL_PORT = '1025'
+# EMAIL_USE_TLS = False
+
+# EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = ''
+# EMAIL_HOST_PASSWORD = ''
+
+DEFAULT_FROM_EMAIL = EMAIL_FROM
+
+# The resource being provided, which must be either "Savio" or "Lawrencium".
+#RESOURCE = "{{ resource }}"
+
+# The portal being served, which must be either "BRC" or "SCG".
+#PORTAL = "{{ portal }}"
+
+# The credentials needed to read from Google Sheets.
+GOOGLE_OAUTH2_KEY_FILE = "{{ google_sheets_credentials }}"
