@@ -16,6 +16,7 @@ installing ColdFront and related files.
 # useradd --system -m coldfront
 # mkdir /srv/coldfront
 # chown coldfront.coldfront /srv/coldfront
+# mkdir /etc/coldfront
 ```
 
 !!! note
@@ -39,7 +40,15 @@ installing ColdFront and related files.
 Create a config file for ColdFront. For a complete list of settings [see
 here](config.md).
 
-Create the file `/srv/coldfront/coldfront.env` and set at least the following
+!!! note
+    The config file needs to be readable by nginx user. Ensure you have the
+    appropriate permissions set. For example:
+    ```
+    $ chmod 640 /etc/coldfront/coldfront.env
+    $ chgrp nginx /etc/coldfront/coldfront.env
+    ```
+
+Create the file `/etc/coldfront/coldfront.env` and set at least the following
 variables:
 
 ```bash
@@ -84,7 +93,7 @@ the `DB_URL` variable as shown above.
 
 ```
 $ source /srv/coldfront/venv/bin/activate
-$ COLDFRONT_ENV=/srv/coldfront/coldfront.env coldfront initial_setup
+$ coldfront initial_setup
 Running migrations:
   Applying contenttypes.0001_initial... OK
   Applying auth.0001_initial... OK
@@ -104,7 +113,7 @@ password:
 
 ```
 $ source /srv/coldfront/venv/bin/activate
-$ COLDFRONT_ENV=/srv/coldfront/coldfront.env coldfront createsuperuser
+$ coldfront createsuperuser
 ```
 
 ## Deploy static files
@@ -115,7 +124,7 @@ This command will deploy all static assets to the `STATIC_ROOT` path in the conf
 
 ```
 $ source /srv/coldfront/venv/bin/activate
-$ COLDFRONT_ENV=/srv/coldfront/coldfront.env coldfront collectstatic
+$ coldfront collectstatic
 ```
 
 ## Install Gunicorn
@@ -139,7 +148,6 @@ User=coldfront
 Group=nginx
 WorkingDirectory=/srv/coldfront
 Environment="PATH=/srv/coldront/venv/bin"
-EnvironmentFile=/srv/coldfront/coldfront.env
 ExecStart=/srv/coldfront/venv/bin/gunicorn --workers 3 --bind unix:coldfront.sock -m 007 coldfront.config.wsgi
 
 [Install]

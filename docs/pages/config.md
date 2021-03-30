@@ -274,7 +274,10 @@ DATABASES = {
 The default HTML templates and css can be easily customized to add your own
 site specific branding or even modify the functionality of ColdFront. To
 override the stock templates in ColdFront, create a directory and add your
-custom templates. Then set the following environment variable:
+custom templates. By default, ColdFront will look in
+`/usr/share/coldfront/site/templates` and `/usr/share/coldfront/site/static`.
+If you'd like to use a different directory then be sure to set the following
+environment variable:
 
 ```
 SITE_TEMPLATES=/path/to/your/templates
