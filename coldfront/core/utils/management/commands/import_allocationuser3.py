@@ -28,7 +28,7 @@ from coldfront.core.user.models import UserProfile
 from csv import reader
 
 base_dir = settings.BASE_DIR
-
+print("hello line 31, this is my base dir:", base_dir)
 def splitString(str): 
   
     alpha = "" 

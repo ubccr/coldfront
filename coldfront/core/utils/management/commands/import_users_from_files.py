@@ -14,6 +14,7 @@ from coldfront.core.project.models import (Project, ProjectStatusChoice,
                                             ProjectUserStatusChoice)
 from coldfront.core.allocation.models import (AllocationUser,
                                               AllocationUserStatusChoice)
+from coldfront.config.env import ENV, PROJECT_ROOT
 
 base_dir = settings.BASE_DIR
 
@@ -24,13 +25,14 @@ class Command(BaseCommand):
         print('Adding users now ...')
         lab_list = ['zhuang_lab.csv', 'moorcroft_lab.csv', 'kuang_lab.csv', 'kovac_lab.csv',
         'holman_lab.csv', 'giribet_lab.csv', 'edwards_lab.csv', 'denolle_lab.csv',
-        'wofsy_lab.csv']
+        'wofsy_lab.csv', 'rc_admin.csv']
         for lab in lab_list:
             file_name = lab
             lab_list = list(lab.split('.'))
             lab_name = lab_list[0]
             file_path = os.path.join(base_dir, 'local_data', file_name)
-        
+
+            # if (file_name != "rc_admin"):
             # open file in read mode
             with open (file_path, 'r') as read_obj:
                 csv_reader = reader(read_obj) # opt out the first line

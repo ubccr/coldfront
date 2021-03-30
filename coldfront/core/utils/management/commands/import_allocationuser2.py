@@ -69,7 +69,7 @@ class Command(BaseCommand):
             file_name = lab_name + '.json'
             resource_type_obj = ResourceType.objects.get(name="Storage")
             parent_resource_obj = None
-            name = "holylfs04/tier0"
+            name = "holylfs04/tier0" # making getting the name dynamic from the .json file
             description = "Service Type: Storage"
             is_available = True
             is_public = True

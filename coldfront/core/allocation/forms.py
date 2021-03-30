@@ -78,7 +78,7 @@ class AllocationUpdateForm(forms.Form):
 
 class AllocationInvoiceUpdateForm(forms.Form):
     status = forms.ModelChoiceField(queryset=AllocationStatusChoice.objects.filter(name__in=[
-        'Payment Pending', 'Payment Requested', 'Payment Declined', 'Paid']).order_by('name'), empty_label=None)
+        'Payment Pending', 'Payment Requested', 'Paid']).order_by('name'), empty_label=None)
 
 
 class AllocationAddUserForm(forms.Form):
