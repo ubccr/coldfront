@@ -240,8 +240,7 @@ class SavioProjectExistingPIForm(forms.Form):
                 ).values_list('pi__username', flat=True))
             exclude_usernames = set.union(
                 pis_with_existing_fcas, pis_with_pending_requests)
-            self.fields['PI'].queryset = queryset.exclude(
-                username__in=exclude_usernames)
+            queryset = queryset.exclude(username__in=exclude_usernames)
         elif self.allocation_type == 'PCA':
             pis_with_existing_pcas = set(ProjectUser.objects.filter(
                 role=pi_role,
@@ -257,10 +256,11 @@ class SavioProjectExistingPIForm(forms.Form):
                 ).values_list('pi__username', flat=True))
             exclude_usernames = set.union(
                 pis_with_existing_pcas, pis_with_pending_requests)
-            self.fields['PI'].queryset = queryset.exclude(
-                username__in=exclude_usernames)
-        else:
-            self.fields['PI'].queryset = queryset
+            queryset = queryset.exclude(username__in=exclude_usernames)
+
+        # Exclude any user that does not have an email address.
+        queryset = queryset.exclude(Q(email__isnull=True) | Q(email__exact=''))
+        self.fields['PI'].queryset = queryset
 
     def clean(self):
         cleaned_data = super().clean()
