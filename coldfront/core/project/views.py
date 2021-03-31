@@ -2015,7 +2015,8 @@ class SavioProjectRequestWizard(SessionWizardView):
                 name=data['name'],
                 status=status,
                 title=data['title'],
-                description=data['description'])
+                description=data['description'],
+                field_of_science=data['field_of_science'])
         except IntegrityError as e:
             self.logger.error(
                 f'Project {data["name"]} unexpectedly already exists.')
