@@ -21,6 +21,11 @@
     <p class="card-text text-justify">
       <strong>Project: </strong>
       {{ savio_request.project.name }}
+      {% with setup=savio_request.state.setup %}
+        {% if setup.status == "Complete" and setup.name_change.final_name != savio_request.project.name %}
+          (will have name changed to {{ setup.name_change.final_name }})
+        {% endif %}
+      {% endwith %}
     </p>
     <p class="card-text text-justify">
       <strong>Title: </strong>
