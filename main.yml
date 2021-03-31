@@ -39,6 +39,14 @@ email_subject_prefix: '[MyBRC-User-Portal]'
 google_sheets_credentials: '/tmp/meli_credentials.json'
 
 #####################################
+#DEV SETTINGS
+#####################################
+debug: False
+git_prefix: /var/www/coldfront_app/
+hostname: scgup-dev.lbl.gov
+host_ip: 131.243.130.236
+
+#####################################
 #PROD SETTINGS
 #####################################
 debug: False
