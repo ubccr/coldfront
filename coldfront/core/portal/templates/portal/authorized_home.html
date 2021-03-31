@@ -201,6 +201,36 @@
           {% endif %}
         </div>
       </div>
+      <div class="row">
+        <div class="col-lg-6 mt-2">
+          <h4>ABC</h4>
+          <hr>
+          {% if abc_projects %}
+            <ul class="list-group">
+              {% for project in project_list %}
+                {% if project.name in abc_projects %}
+                  <li class="list-group-item">
+                    <a href="{% url 'project-detail' project.pk %}">
+                      <i class="fa fa-folder fa-lg" aria-hidden="true"></i>
+                      {{ project.title }}
+                    </a>
+                    {% if project.needs_review %}
+                      <a href="{% url 'project-review' project.pk %}">
+                        <span class="badge badge-warning">Needs Review</span>
+                      </a>
+                    {% endif %}
+                  </li>
+                {% endif %}
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="alert alert-info" role="alert">
+              <i class="fa fa-info-circle" aria-hidden="true"></i>
+              You are not part of any ABC projects at this time. Please click Join to join any of the existing projects.
+            </div>
+          {% endif %}
+        </div>
+      </div>
     {% else %}
       <div class="alert alert-info" role="alert">
         <i class="fa fa-info-circle" aria-hidden="true"></i>

@@ -50,25 +50,27 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
             <td>You do not have a cluster account.</td>
           {% endif %}
         </tr>
-        <tr>
-          <th scope="row">PI Status:</th>
-          <td>  {% if viewed_user.userprofile.is_pi %}
-                  <span class="badge badge-success"><i class="fas fa-check"></i></span>
-                {% elif not user == viewed_user %}
-                  <span class="badge badge-danger"><i class="fas fa-times"></i></span>
-                {% else %}
-                  <form class="form-inline" method="post" action="{% url 'user-upgrade' %}">
-                      <div class="form-group mb-2">
-                        <span class="badge badge-danger"><i class="fas fa-times"></i></span>
-                      </div>
-                      <div class="form-group mx-sm-3 mb-2">
-                          {% csrf_token %}
-                          <button class="btn btn-secondary" type="submit"><i class="fas fa-chevron-circle-up" aria-hidden="true"></i> Upgrade Account</button>
-                      </div>
-                  </form>
-                {% endif %}
-          </td>
-        </tr>
+<!--        {% comment %}-->
+<!--        <tr>-->
+<!--          <th scope="row">PI Status:</th>-->
+<!--          <td>  {% if viewed_user.userprofile.is_pi %}-->
+<!--                  <span class="badge badge-success"><i class="fas fa-check"></i></span>-->
+<!--                {% elif not user == viewed_user %}-->
+<!--                  <span class="badge badge-danger"><i class="fas fa-times"></i></span>-->
+<!--                {% else %}-->
+<!--                  <form class="form-inline" method="post" action="{% url 'user-upgrade' %}">-->
+<!--                      <div class="form-group mb-2">-->
+<!--                        <span class="badge badge-danger"><i class="fas fa-times"></i></span>-->
+<!--                      </div>-->
+<!--                      <div class="form-group mx-sm-3 mb-2">-->
+<!--                          {% csrf_token %}-->
+<!--                          <button class="btn btn-secondary" type="submit"><i class="fas fa-chevron-circle-up" aria-hidden="true"></i> Upgrade Account</button>-->
+<!--                      </div>-->
+<!--                  </form>-->
+<!--                {% endif %}-->
+<!--          </td>-->
+<!--        </tr>-->
+<!--        {% endcomment %}-->
         <tr>
           <th>User Access Agreement:</th>
           <td>
