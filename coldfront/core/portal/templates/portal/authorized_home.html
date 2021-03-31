@@ -85,48 +85,6 @@
             </td>
           {% endif %}
         </tr>
-        <tr>
-          <td>3. Request access to specific projects on the cluster.</td>
-          {% if user.userprofile.access_agreement_signed_date is not None and allocation_list %}
-            <td>
-              {% if user.userprofile.cluster_uid is not None %}
-                <span class="badge badge-success">
-                  <i class="fas fa-check"></i>
-                  {{ user.username }}
-                </span>
-              {% else %}
-                <span class="badge badge-danger">
-                  <i class="fas fa-times"></i>
-                  No Cluster Account
-                </span>
-              {% endif %}
-            </td>
-            <td>
-              <a href="{% url 'allocation-request-cluster-accounts' %}" class="btn btn-primary">
-                Request
-              </a>
-            </td>
-          {% else %}
-            <td>
-              {% if user.userprofile.cluster_uid is not None %}
-                <span class="badge badge-success">
-                  <i class="fas fa-check"></i>
-                  {{ user.username }}
-                </span>
-              {% else %}
-                <span class="badge badge-danger">
-                  <i class="fas fa-times"></i>
-                  No Cluster Account
-                </span>
-              {% endif %}
-            </td>
-            <td>
-              <button class="btn btn-primary" disabled="true">
-                Request
-              </button>
-            </td>
-          {% endif %}
-        </tr>
       </tbody>
     </table>
   </div>
@@ -202,6 +160,7 @@
         </div>
       </div>
       <div class="row">
+        <div class="col-lg-6 mt-2"></div>
         <div class="col-lg-6 mt-2">
           <h4>ABC</h4>
           <hr>

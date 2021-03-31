@@ -189,19 +189,17 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         # Can the user request cluster access on own or others' behalf?
         try:
-            allocation = Allocation.objects.get(
-                project=self.object, status__name='Active',
-                resources__name='Savio Compute')
+            allocation = get_project_compute_allocation(self.object)
         except Allocation.DoesNotExist:
-            savio_compute_allocation_pk = None
+            compute_allocation_pk = None
             cluster_accounts_requestable = False
             cluster_accounts_tooltip = 'Unexpected server error.'
         except Allocation.MultipleObjectsReturned:
-            savio_compute_allocation_pk = None
+            compute_allocation_pk = None
             cluster_accounts_requestable = False
             cluster_accounts_tooltip = 'Unexpected server error.'
         else:
-            savio_compute_allocation_pk = allocation.pk
+            compute_allocation_pk = allocation.pk
             cluster_accounts_requestable = True
             if context['is_allowed_to_update_project']:
                 cluster_accounts_tooltip = (
@@ -210,7 +208,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             else:
                 cluster_accounts_tooltip = (
                     'Request access to the cluster under this project.')
-        context['savio_compute_allocation_pk'] = savio_compute_allocation_pk
+        context['compute_allocation_pk'] = compute_allocation_pk
         context['cluster_accounts_requestable'] = cluster_accounts_requestable
         context['cluster_accounts_tooltip'] = cluster_accounts_tooltip
 
