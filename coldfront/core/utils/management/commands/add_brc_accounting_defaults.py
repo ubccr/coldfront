@@ -21,6 +21,7 @@ class Command(BaseCommand):
         resources = [
             ('Savio Compute', 'Savio cluster compute access'),
             ('Vector Compute', 'Vector cluster compute access'),
+            ('ABC Compute', 'ABC cluster compute access'),
         ]
         for name, description in resources:
             # Allocations to a cluster must have the corresponding Resource.
