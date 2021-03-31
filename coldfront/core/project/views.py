@@ -16,7 +16,7 @@ from django.http import (HttpResponse, HttpResponseForbidden,
                          HttpResponseRedirect)
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from django.views.generic.base import TemplateView
@@ -30,6 +30,7 @@ from coldfront.core.allocation.models import (Allocation,
                                               AllocationUserAttribute,
                                               AllocationUserStatusChoice)
 from coldfront.core.allocation.utils import (get_allocation_user_cluster_access_status,
+                                             prorated_allocation_amount,
                                              request_project_cluster_access)
 from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user)
@@ -2160,6 +2161,11 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
     logger = logging.getLogger(__name__)
 
+    error_message = 'Unexpected failure. Please contact an administrator.'
+
+    # TODO: Use the URL's name (reverse_lazy still leads to circular import).
+    redirect = HttpResponseRedirect('savio-project-request-list/')
+
     def test_func(self):
         """UserPassesTestMixin tests."""
         if self.request.user.is_superuser:
@@ -2170,16 +2176,31 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
         pk = self.kwargs.get('pk')
-        request_obj = get_object_or_404(SavioProjectAllocationRequest, pk=pk)
+        request_obj = get_object_or_404(
+            SavioProjectAllocationRequest.objects.prefetch_related(
+                'pi', 'project', 'requester'), pk=pk)
+
         survey_form = SavioProjectSurveyForm(
             initial=request_obj.survey_answers, disable_fields=True)
         context['survey_form'] = survey_form
+
+        try:
+            context['allocation_amount'] = \
+                self.__get_service_units_to_allocate(request_obj)
+        except Exception as e:
+            self.logger.exception(e)
+            messages.error(self.request, self.error_message)
+            context['allocation_amount'] = 'Failed to compute.'
+
         return context
 
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        request_obj = get_object_or_404(SavioProjectAllocationRequest, pk=pk)
+        request_obj = get_object_or_404(
+            SavioProjectAllocationRequest.objects.prefetch_related(
+                'pi', 'project', 'requester'), pk=pk)
 
         if not self.request.user.is_superuser:
             message = 'You do not have permission to activate the request.'
@@ -2199,16 +2220,14 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             request_obj.save()
         except Exception as e:
             self.logger.exception(e)
-            message = 'Unexpected failure. Please contact an administrator.'
-            messages.error(self.request, message)
+            messages.error(self.request, self.error_message)
         else:
             message = (
                 f'Project {project.name} and Allocation {allocation.pk} have '
                 f'been activated.')
             messages.success(self.request, message)
 
-        redirect_url = '/'
-        return HttpResponseRedirect(redirect_url)
+        return self.redirect
 
     def __create_project_users(self, request_obj):
         """Create active ProjectUsers with the appropriate roles for the
@@ -2230,6 +2249,24 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             name='Principal Investigator')
         pi_project_user, _ = ProjectUser.objects.get_or_create(
             project=project, user=pi, defaults=defaults)
+
+    @staticmethod
+    def __get_service_units_to_allocate(request_obj):
+        """Return the number of service units to allocate to the
+        project if it were to be approved now."""
+        allocation_type = request_obj.allocation_type
+        now = datetime.datetime.utcnow().astimezone(
+            pytz.timezone(settings.TIME_ZONE))
+        if allocation_type == 'CO':
+            return settings.CO_DEFAULT_ALLOCATION
+        elif allocation_type == 'FCA':
+            return prorated_allocation_amount(
+                settings.FCA_DEFAULT_ALLOCATION, now)
+        elif allocation_type == 'PCA':
+            return prorated_allocation_amount(
+                settings.PCA_DEFAULT_ALLOCATION, now)
+        else:
+            raise ValueError(f'Invalid allocation_type {allocation_type}.')
 
     def __update_allocation(self, request_obj):
         """Set the allocation's start and end dates. Set its attribute

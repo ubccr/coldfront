@@ -10,6 +10,8 @@ from coldfront.core.allocation.models import (AllocationAttributeType,
 from coldfront.core.allocation.signals import allocation_activate_user
 from coldfront.core.resource.models import Resource
 
+import math
+
 
 def set_allocation_user_status_to_error(allocation_user_pk):
     allocation_user_obj = AllocationUser.objects.get(pk=allocation_user_pk)
@@ -132,6 +134,7 @@ def prorated_allocation_amount(amount, dt):
     amount_per_month = amount / 12
     start_month = settings.ALLOCATION_YEAR_START_MONTH
     if month >= start_month:
-        return amount - amount_per_month * (month - start_month)
+        amount = amount - amount_per_month * (month - start_month)
     else:
-        return amount_per_month * (start_month - month)
+        amount = amount_per_month * (start_month - month)
+    return Decimal(f'{math.floor(amount):.2f}')
