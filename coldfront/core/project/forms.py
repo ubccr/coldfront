@@ -4,6 +4,7 @@ from django import forms
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
 
+from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserRoleChoice,
                                            ProjectAllocationRequestStatusChoice)
@@ -369,8 +370,9 @@ class SavioProjectDetailsForm(forms.Form):
         label='Description',
         validators=[MinLengthValidator(10)],
         widget=forms.Textarea(attrs={'rows': 3}))
-
-    # TODO: Add field_of_science.
+    field_of_science = forms.ModelChoiceField(
+        empty_label=None,
+        queryset=FieldOfScience.objects.all())
 
     def __init__(self, *args, **kwargs):
         self.allocation_type = kwargs.pop('allocation_type', None)
@@ -673,8 +675,9 @@ class VectorProjectDetailsForm(forms.Form):
         label='Description',
         validators=[MinLengthValidator(10)],
         widget=forms.Textarea(attrs={'rows': 3}))
-
-    # TODO: Add field_of_science.
+    field_of_science = forms.ModelChoiceField(
+        empty_label=None,
+        queryset=FieldOfScience.objects.all())
 
     def clean_name(self):
         cleaned_data = super().clean()
