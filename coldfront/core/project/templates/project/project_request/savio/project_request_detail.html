@@ -36,21 +36,21 @@ Savio Project Request Detail
           </tr>
         </thead>
         <tbody>
-          {% with eligibility=savio_request.state.eligibility.status readiness=savio_request.state.readiness.status setup=savio_request.state.setup.status %}
+          {% with eligibility=savio_request.state.eligibility readiness=savio_request.state.readiness setup=savio_request.state.setup %}
             <tr>
               <td>Confirm that the requested PI is eligible for a Savio allowance.</td>
               <td>
-                {% if eligibility == 'Pending' %}
+                {% if eligibility.status == 'Pending' %}
                   <span class="badge badge-warning">
-                    {{ eligibility }}
+                    {{ eligibility.status }}
                   </span>
-                {% elif eligibility == 'Approved' %}
+                {% elif eligibility.status == 'Approved' %}
                   <span class="badge badge-success">
-                    {{ eligibility }}
+                    {{ eligibility.status }} {{ eligibility.timestamp }}
                   </span>
                 {% else %}
                   <span class="badge badge-danger">
-                    {{ eligibility }}
+                    {{ eligibility.status }} {{ eligibility.timestamp }}
                   </span>
                 {% endif %}
               </td>
@@ -60,24 +60,24 @@ Savio Project Request Detail
                 </a>
             </tr>
             <tr>
-              <td>Confirm that the project satisfies the readiness criteria.</td>
+              <td>Confirm that the project satisfies the readiness.status criteria.</td>
               <td>
-                {% if readiness == 'Pending' %}
+                {% if readiness.status == 'Pending' %}
                   <span class="badge badge-warning">
-                    {{ readiness }}
+                    {{ readiness.status }}
                   </span>
-                {% elif readiness == 'Approved' %}
+                {% elif readiness.status == 'Approved' %}
                   <span class="badge badge-success">
-                    {{ readiness }}
+                    {{ readiness.status }} {{ readiness.timestamp }}
                   </span>
                 {% else %}
                   <span class="badge badge-danger">
-                    {{ readiness }}
+                    {{ readiness.status }} {{ readiness.timestamp }}
                   </span>
                 {% endif %}
               </td>
               <td>
-                {% if eligibility == 'Approved' %}
+                {% if eligibility.status == 'Approved' %}
                   <a href="{% url 'savio-project-request-review-readiness' savio_request.pk %}" class="btn btn-primary">
                     Manage
                   </a>
@@ -91,18 +91,18 @@ Savio Project Request Detail
             <tr>
               <td>Perform project setup on the cluster.</td>
               <td>
-                {% if setup == 'Pending' %}
+                {% if setup.status == 'Pending' %}
                   <span class="badge badge-warning">
-                    {{ setup }}
+                    {{ setup.status }}
                   </span>
                 {% else %}
                   <span class="badge badge-success">
-                    {{ setup }}
+                    {{ setup.status }} {{ setup.timestamp }}
                   </span>
                 {% endif %}
               </td>
               <td>
-                {% if eligibility == 'Approved' and readiness == 'Approved' %}
+                {% if eligibility.status == 'Approved' and readiness.status == 'Approved' %}
                   <a href="{% url 'savio-project-request-review-setup' savio_request.pk %}" class="btn btn-primary">
                     Manage
                   </a>

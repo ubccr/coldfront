@@ -2365,9 +2365,11 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
         form_data = form.cleaned_data
         status = form_data['status']
         justification = form_data['justification']
+        timestamp = utc_now_offset_aware().isoformat()
         self.request_obj.state['eligibility'] = {
             'status': status,
             'justification': justification,
+            'timestamp': timestamp,
         }
         self.request_obj.save()
 
@@ -2428,9 +2430,11 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
         form_data = form.cleaned_data
         status = form_data['status']
         justification = form_data['justification']
+        timestamp = utc_now_offset_aware().isoformat()
         self.request_obj.state['readiness'] = {
             'status': status,
             'justification': justification,
+            'timestamp': timestamp,
         }
         self.request_obj.save()
 
@@ -2493,6 +2497,7 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
         status = form_data['status']
         final_name = form_data['final_name']
         justification = form_data['justification']
+        timestamp = utc_now_offset_aware().isoformat()
 
         name_change = {
             'requested_name': self.request_obj.project.name,
@@ -2502,6 +2507,7 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
         self.request_obj.state['setup'] = {
             'status': status,
             'name_change': name_change,
+            'timestamp': timestamp,
         }
         self.request_obj.save()
 
