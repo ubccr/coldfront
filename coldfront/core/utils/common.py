@@ -1,6 +1,9 @@
 import datetime
 # import the logging library
 import logging
+import pytz
+
+from datetime import datetime
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -47,3 +50,8 @@ def su_login_callback(user):
     logger.warn(
         'User {} requested to login as another user but does not have permissions', user)
     return False
+
+
+def utc_now_offset_aware():
+    """Return the offset-aware current UTC time."""
+    return datetime.utcnow().replace(tzinfo=pytz.utc)

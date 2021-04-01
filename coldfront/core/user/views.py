@@ -1,8 +1,5 @@
 import logging
-import pytz
-from datetime import datetime
 
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -10,7 +7,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth.views import PasswordChangeView
 from django.db.models import BooleanField, Prefetch
-from django.db.models.expressions import ExpressionWrapper, F, Q
+from django.db.models.expressions import ExpressionWrapper, Q
 from django.db.models.functions import Lower
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
@@ -28,7 +25,8 @@ from coldfront.core.user.forms import UserRegistrationForm
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.user.utils import send_account_activation_email
-from coldfront.core.utils.common import import_from_settings
+from coldfront.core.utils.common import (import_from_settings,
+                                         utc_now_offset_aware)
 from coldfront.core.utils.mail import send_email_template
 
 logger = logging.getLogger(__name__)
@@ -230,7 +228,7 @@ class UserUpgradeAccount(LoginRequiredMixin, UserPassesTestMixin, View):
                 return HttpResponseRedirect(reverse('user-profile'))
 
             # make new request
-            now = datetime.utcnow().astimezone(pytz.timezone(settings.TIME_ZONE))
+            now = utc_now_offset_aware()
             profile.upgrade_request = now
             profile.save()
 
@@ -366,8 +364,7 @@ def user_access_agreement(request):
     if request.method == 'POST':
         form = UserAccessAgreementForm(request.POST)
         if form.is_valid():
-            now = datetime.utcnow().astimezone(
-                pytz.timezone(settings.TIME_ZONE))
+            now = utc_now_offset_aware()
             profile.access_agreement_signed_date = now
             profile.save()
             message = 'Thank you for signing the user access agreement form.'
