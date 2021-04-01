@@ -251,11 +251,13 @@ def savio_project_request_state_schema():
     return {
         'eligibility': {
             'status': 'Pending',
-            'justification': ''
+            'justification': '',
+            'timestamp': ''
         },
         'readiness': {
             'status': 'Pending',
-            'justification': ''
+            'justification': '',
+            'timestamp': ''
         },
         'setup': {
             'status': 'Pending',
@@ -263,10 +265,12 @@ def savio_project_request_state_schema():
                 'requested_name': '',
                 'final_name': '',
                 'justification': ''
-            }
+            },
+            'timestamp': ''
         },
         'other': {
-            'justification': ''
+            'justification': '',
+            'timestamp': ''
         }
     }
 
@@ -277,7 +281,8 @@ def vector_project_request_state_schema():
     return {
         'eligibility': {
             'status': 'Pending',
-            'justification': ''
+            'justification': '',
+            'timestamp': ''
         },
         'setup': {
             'status': 'Pending',
@@ -285,10 +290,8 @@ def vector_project_request_state_schema():
                 'requested_name': '',
                 'final_name': '',
                 'justification': ''
-            }
-        },
-        'other': {
-            'justification': ''
+            },
+            'timestamp': ''
         }
     }
 
