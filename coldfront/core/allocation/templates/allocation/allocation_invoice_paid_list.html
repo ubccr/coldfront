@@ -4,7 +4,7 @@
 
 
 {% block title %}
-Allocation Invoice List
+Allocation Invoice Paid List
 {% endblock %}
 
 
@@ -21,14 +21,14 @@ Allocation Invoice List
 }
 </style>
 
-<h2>Allocations that require payment</h2>
+<h2>Paid Allocations </h2>
 <div class="button-container">
   <form action="" method="post">
       <div>
-          <label for="start">Allocation Start Date:</label>
+          <label for="start">Paid Allocation Start Date:</label>
           <input type="date" id="start" name="start">
           <!-- <input type="submit"> -->
-          <label for="end">Allocation   End   Date: </label>
+          <label for="end">Paid Allocation   End   Date: </label>
 
           <input type="date" id="end_time" name="end">
           <!-- <input type="submit"> -->
@@ -81,7 +81,7 @@ Allocation Invoice List
     <i class="fas fa-user-plus" aria-hidden="true"></i> Ready to Email	
   </a>
   <a class="btn btn-danger" href="{}" role="button">
-    <i class="fas fa-user-times" aria-hidden="true"></i> Move to Paid
+    <i class="fas fa-user-times" aria-hidden="true"></i> Move to Unpaid
   </a>
 
 

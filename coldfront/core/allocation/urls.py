@@ -27,6 +27,8 @@ urlpatterns = [
          allocation_views.AllocationAttributeDeleteView.as_view(), name='allocation-attribute-delete'),
     path('allocation-invoice-list', allocation_views.AllocationInvoiceListView.as_view(),
          name='allocation-invoice-list'),
+     path('allocation-invoice-paid-list', allocation_views.AllocationInvoicePaidView.as_view(),
+         name='allocation-invoice-paid-list'),
     path('<int:pk>/invoice/', allocation_views.AllocationInvoiceDetailView.as_view(),
          name='allocation-invoice-detail'),
     path('allocation/<int:pk>/add-invoice-note',

@@ -1350,6 +1350,30 @@ class AllocationInvoiceListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
         allocations = Allocation.objects.filter(
             status__name__in=['Active', 'Payment Pending',  ])
         return allocations
+class AllocationInvoicePaidView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    model = Allocation
+    template_name = 'allocation/allocation_invoice_paid_list.html'
+    context_object_name = 'allocation_list'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('allocation.can_manage_invoice'):
+            return True
+
+        messages.error(
+            self.request, 'You do not have permission to manage invoices.')
+        return False
+
+    def get_queryset(self):
+
+        # allocations = Allocation.objects.filter(
+        #     status__name__in=['Paid', 'Payment Pending', 'Payment Requested' ])
+        allocations = Allocation.objects.filter(
+            status__name__in=['Paid',  ])
+        return allocations
 
 # this is the view class thats rendering allocation_invoice_detail.
 # each view class has a view template that renders

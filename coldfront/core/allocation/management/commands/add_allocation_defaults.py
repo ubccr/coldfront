@@ -15,7 +15,7 @@ class Command(BaseCommand):
             AttributeType.objects.get_or_create(name=attribute_type)
 
         for choice in ('Active', 'Inactive', 
-                      'Paid', 'Ready for Review'
+                      'Paid', 'Ready for Review',
                        'Payment Requested',
                       ):
             AllocationStatusChoice.objects.get_or_create(name=choice)
