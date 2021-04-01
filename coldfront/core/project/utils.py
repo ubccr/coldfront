@@ -3,11 +3,9 @@ from coldfront.core.allocation.utils import request_project_cluster_access
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserJoinRequest
 from coldfront.core.project.models import ProjectUserStatusChoice
+from coldfront.core.utils.common import utc_now_offset_aware
 from collections import namedtuple
-from datetime import datetime
-from django.conf import settings
 import logging
-import pytz
 
 
 logger = logging.getLogger(__name__)
@@ -57,7 +55,7 @@ def auto_approve_project_join_requests():
         'project', 'project__allocation_set', 'projectuserjoinrequest_set'
     ).filter(status=pending_status)
 
-    now = datetime.utcnow().astimezone(pytz.timezone(settings.TIME_ZONE))
+    now = utc_now_offset_aware()
     results = []
 
     for project_user_obj in project_user_objs:

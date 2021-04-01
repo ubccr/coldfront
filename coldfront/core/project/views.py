@@ -1,6 +1,5 @@
 import datetime
 import pprint
-import pytz
 
 from django import forms
 from django.conf import settings
@@ -59,7 +58,8 @@ from coldfront.core.project.utils import (auto_approve_project_join_requests,
 from coldfront.core.resource.models import Resource
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
-from coldfront.core.utils.common import get_domain_url, import_from_settings
+from coldfront.core.utils.common import (get_domain_url, import_from_settings,
+                                         utc_now_offset_aware)
 from coldfront.core.utils.mail import send_email, send_email_template
 
 import logging
@@ -1996,8 +1996,7 @@ class SavioProjectRequestWizard(SessionWizardView):
                 f'User {email} unexpectedly has no UserProfile.')
             raise e
         pi_profile.middle_name = data['middle_name']
-        pi_profile.upgrade_request = datetime.datetime.utcnow().astimezone(
-            pytz.timezone(settings.TIME_ZONE))
+        pi_profile.upgrade_request = utc_now_offset_aware()
         pi_profile.save()
 
         return pi
@@ -2256,8 +2255,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         """Return the number of service units to allocate to the
         project if it were to be approved now."""
         allocation_type = request_obj.allocation_type
-        now = datetime.datetime.utcnow().astimezone(
-            pytz.timezone(settings.TIME_ZONE))
+        now = utc_now_offset_aware()
         if allocation_type == 'CO':
             return settings.CO_DEFAULT_ALLOCATION
         elif allocation_type == 'FCA':
@@ -2292,8 +2290,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         allocation = allocations.first()
         allocation.status = AllocationStatusChoice.objects.get(name='Active')
         # TODO: Set start_date and end_date.
-        # allocation.start_date = datetime.datetime.utcnow().astimezone(
-        #     pytz.timezone(settings.TIME_ZONE))
+        # allocation.start_date = utc_now_offset_aware()
         # allocation.end_date =
         allocation.save()
 
