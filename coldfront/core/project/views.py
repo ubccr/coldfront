@@ -2371,14 +2371,14 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
             'justification': justification,
             'timestamp': timestamp,
         }
-        self.request_obj.save()
 
         # TODO.
-        if status == 'Approved':
-            pass
-        elif status == 'Denied':
-            # Send an email to the requester and PI.
-            pass
+        # if status == 'Denied':
+        #     # Send an email to the requester and PI.
+        #     self.request_obj.status = \
+        #         ProjectAllocationRequestStatusChoice.objects.get(name='Denied')
+
+        self.request_obj.save()
 
         return super().form_valid(form)
 
@@ -2436,7 +2436,6 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
             'justification': justification,
             'timestamp': timestamp,
         }
-        self.request_obj.save()
 
         # TODO.
         if status == 'Approved':
@@ -2446,6 +2445,8 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
                 pass
         elif status == 'Denied':
             pass
+
+        self.request_obj.save()
 
         return super().form_valid(form)
 
@@ -2509,6 +2510,7 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
             'name_change': name_change,
             'timestamp': timestamp,
         }
+
         self.request_obj.save()
 
         return super().form_valid(form)
