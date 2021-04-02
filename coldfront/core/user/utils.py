@@ -1,6 +1,7 @@
 import abc
 import logging
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.db.models import Q
@@ -136,6 +137,8 @@ def __account_activation_url(user):
 
 
 def send_account_activation_email(user):
+    """Send an activation email to the given User, who has just created
+    an account, providing a link to activate the account."""
     email_enabled = import_from_settings('EMAIL_ENABLED', False)
     if not email_enabled:
         return
@@ -147,7 +150,10 @@ def send_account_activation_email(user):
         'activation_url': __account_activation_url(user),
         'signature': import_from_settings('EMAIL_SIGNATURE', ''),
     }
-    sender = import_from_settings('EMAIL_SENDER', ''),
+
+    # Using import_from_settings for EMAIL_SENDER returns a tuple, leading to
+    # an error.
+    sender = settings.EMAIL_SENDER
     receiver_list = [user.email, ]
 
     send_email_template(subject, template_name, context, sender, receiver_list)
