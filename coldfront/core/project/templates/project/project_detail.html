@@ -174,6 +174,16 @@ Project Detail
                 <span class="badge badge-danger">
                   No Access
                 </span>
+                {% if user.user in project.pis and cluster_accounts_requestable and is_allowed_to_update_project %}
+                  <br><br>
+                  <form action="{% url 'allocation-request-cluster-account' compute_allocation_pk user.user.pk %}" method="post">
+                    {% csrf_token %}
+                    <button class="btn btn-primary" type="submit">
+                      <i class="fas fa-terminal" aria-hidden="true"></i>
+                      Request
+                    </button>
+                  </form>
+                {% endif %}
               {% endif %}
             </td>
             {% if is_allowed_to_update_project %}
