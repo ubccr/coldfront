@@ -30,9 +30,11 @@ def home(request):
              Q(projectuser__status__name__in=['Active', ]))
         ).distinct().order_by('-created')
 
-        savio_projects, vector_projects = set(), set()
+        abc_projects, savio_projects, vector_projects = set(), set(), set()
         for project in project_list:
-            if project.name.startswith('vector_'):
+            if project.name == 'abc':
+                abc_projects.add(project.name)
+            elif project.name.startswith('vector_'):
                 vector_projects.add(project.name)
             else:
                 savio_projects.add(project.name)
@@ -46,6 +48,7 @@ def home(request):
            Q(allocationuser__status__name__in=['Active', ])
         ).distinct().order_by('-created')
         context['project_list'] = project_list
+        context['abc_projects'] = abc_projects
         context['savio_projects'] = savio_projects
         context['vector_projects'] = vector_projects
         context['allocation_list'] = allocation_list
