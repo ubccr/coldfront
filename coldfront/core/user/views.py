@@ -204,46 +204,46 @@ class UserProjectsManagersView(ListView):
         return context
 
 
-class UserUpgradeAccount(LoginRequiredMixin, UserPassesTestMixin, View):
-
-    def test_func(self):
-        return True
-
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.is_superuser:
-            messages.error(request, 'You are already a super user')
-            return HttpResponseRedirect(reverse('user-profile'))
-
-        if request.user.userprofile.is_pi:
-            messages.error(request, 'Your account has already been upgraded')
-            return HttpResponseRedirect(reverse('user-profile'))
-
-        return super().dispatch(request, *args, **kwargs)
-
-    def post(self, request):
-        if EMAIL_ENABLED:
-            profile = request.user.userprofile
-
-            # request already made
-            if profile.upgrade_request is not None:
-                messages.error(request, 'Upgrade request has already been made')
-                return HttpResponseRedirect(reverse('user-profile'))
-
-            # make new request
-            now = datetime.utcnow().astimezone(pytz.timezone(settings.TIME_ZONE))
-            profile.upgrade_request = now
-            profile.save()
-
-            send_email_template(
-                'Upgrade Account Request',
-                'email/upgrade_account_request.txt',
-                {'user': request.user},
-                request.user.email,
-                [EMAIL_TICKET_SYSTEM_ADDRESS]
-            )
-
-        messages.success(request, 'Your request has been sent')
-        return HttpResponseRedirect(reverse('user-profile'))
+# class UserUpgradeAccount(LoginRequiredMixin, UserPassesTestMixin, View):
+#
+#     def test_func(self):
+#         return True
+#
+#     def dispatch(self, request, *args, **kwargs):
+#         if request.user.is_superuser:
+#             messages.error(request, 'You are already a super user')
+#             return HttpResponseRedirect(reverse('user-profile'))
+#
+#         if request.user.userprofile.is_pi:
+#             messages.error(request, 'Your account has already been upgraded')
+#             return HttpResponseRedirect(reverse('user-profile'))
+#
+#         return super().dispatch(request, *args, **kwargs)
+#
+#     def post(self, request):
+#         if EMAIL_ENABLED:
+#             profile = request.user.userprofile
+#
+#             # request already made
+#             if profile.upgrade_request is not None:
+#                 messages.error(request, 'Upgrade request has already been made')
+#                 return HttpResponseRedirect(reverse('user-profile'))
+#
+#             # make new request
+#             now = datetime.utcnow().astimezone(pytz.timezone(settings.TIME_ZONE))
+#             profile.upgrade_request = now
+#             profile.save()
+#
+#             send_email_template(
+#                 'Upgrade Account Request',
+#                 'email/upgrade_account_request.txt',
+#                 {'user': request.user},
+#                 request.user.email,
+#                 [EMAIL_TICKET_SYSTEM_ADDRESS]
+#             )
+#
+#         messages.success(request, 'Your request has been sent')
+#         return HttpResponseRedirect(reverse('user-profile'))
 
 
 class UserSearchHome(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
