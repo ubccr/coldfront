@@ -52,7 +52,8 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectAllocationRequestStatusChoice,
                                            ProjectUserStatusChoice)
 from coldfront.core.project.utils import (auto_approve_project_join_requests,
-                                          get_project_compute_allocation)
+                                          get_project_compute_allocation,
+                                          send_project_join_notification_email)
 # from coldfront.core.publication.models import Publication
 # from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.resource.models import Resource
@@ -1420,6 +1421,8 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     login_url = '/'
 
+    logger = logging.getLogger(__name__)
+
     def test_func(self):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         user_obj = self.request.user
@@ -1525,6 +1528,13 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 messages.success(self.request, message)
             next_view = reverse(
                 'project-detail', kwargs={'pk': project_obj.pk})
+
+        try:
+            send_project_join_notification_email(project_obj, project_user)
+        except Exception as e:
+            message = 'Failed to send notification email. Details:'
+            self.logger.error(message)
+            self.logger.exception(e)
 
         return redirect(next_view)
 
