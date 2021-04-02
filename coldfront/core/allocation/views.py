@@ -1581,46 +1581,6 @@ class AllocationAccountListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
         return AllocationAccount.objects.filter(user=self.request.user)
 
 
-class AllocationRequestClusterAccountListView(LoginRequiredMixin,
-                                              UserPassesTestMixin,
-                                              TemplateView):
-    template_name = 'allocation/allocation_request_cluster_accounts.html'
-    login_url = '/'
-
-    def test_func(self):
-        """UserPassesTestMixin tests."""
-        user = self.request.user
-        if user.is_superuser:
-            return True
-        if user.userprofile.access_agreement_signed_date:
-            return True
-        message = 'You have not signed the access agreement form.'
-        messages.error(self.request, message)
-
-    def get_context_data(self, **kwargs):
-        user = self.request.user
-        context = super().get_context_data(**kwargs)
-        allocation_list = Allocation.objects.filter(
-            Q(status__name__in=['Active', 'New', 'Renewal Requested', ]) &
-            Q(project__status__name__in=['Active', 'New']) &
-            Q(project__projectuser__user=user) &
-            Q(project__projectuser__status__name__in=['Active', ]) &
-            Q(allocationuser__user=user) &
-            Q(allocationuser__status__name__in=['Active', ]) &
-            Q(resources__name__in=['Savio Compute', 'Vector Compute'])
-        ).distinct()
-        context['allocation_list'] = allocation_list
-        not_requestable = set()
-        for allocation in allocation_list:
-            if allocation.allocationuserattribute_set.filter(
-                    allocation_user__user=user,
-                    allocation_attribute_type__name='Cluster Account Status',
-                    value__in=['Pending - Add', 'Active']).exists():
-                not_requestable.add(allocation.pk)
-        context['not_requestable'] = not_requestable
-        return context
-
-
 class AllocationRequestClusterAccountView(LoginRequiredMixin,
                                           UserPassesTestMixin, View):
 
