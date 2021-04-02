@@ -174,8 +174,16 @@ def send_project_join_notification_email(project, project_user):
         context['url'] = __project_detail_url(project)
 
     sender = settings.EMAIL_SENDER
-    receiver_list = list(project.projectuser_set.filter(
-        Q(role__name='Principal Investigator', enable_notifications=True) |
-        Q(role__name='Manager')).values_list('user__email', flat=True))
+
+    pi_condition = Q(
+        role__name='Principal Investigator', active=True,
+        enable_notifications=True)
+    manager_condition = Q(role__name='Manager', active=True)
+    receiver_list = list(
+        project.projectuser_set.filter(
+            pi_condition | manager_condition
+        ).values_list(
+            'user__email', flat=True
+        ))
 
     send_email_template(subject, template_name, context, sender, receiver_list)
