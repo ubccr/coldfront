@@ -52,7 +52,8 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectAllocationRequestStatusChoice,
                                            ProjectUserStatusChoice)
 from coldfront.core.project.utils import (auto_approve_project_join_requests,
-                                          get_project_compute_allocation)
+                                          get_project_compute_allocation,
+                                          send_project_join_notification_email)
 # from coldfront.core.publication.models import Publication
 # from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.resource.models import Resource
@@ -189,19 +190,17 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         # Can the user request cluster access on own or others' behalf?
         try:
-            allocation = Allocation.objects.get(
-                project=self.object, status__name='Active',
-                resources__name='Savio Compute')
+            allocation = get_project_compute_allocation(self.object)
         except Allocation.DoesNotExist:
-            savio_compute_allocation_pk = None
+            compute_allocation_pk = None
             cluster_accounts_requestable = False
             cluster_accounts_tooltip = 'Unexpected server error.'
         except Allocation.MultipleObjectsReturned:
-            savio_compute_allocation_pk = None
+            compute_allocation_pk = None
             cluster_accounts_requestable = False
             cluster_accounts_tooltip = 'Unexpected server error.'
         else:
-            savio_compute_allocation_pk = allocation.pk
+            compute_allocation_pk = allocation.pk
             cluster_accounts_requestable = True
             if context['is_allowed_to_update_project']:
                 cluster_accounts_tooltip = (
@@ -210,7 +209,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             else:
                 cluster_accounts_tooltip = (
                     'Request access to the cluster under this project.')
-        context['savio_compute_allocation_pk'] = savio_compute_allocation_pk
+        context['compute_allocation_pk'] = compute_allocation_pk
         context['cluster_accounts_requestable'] = cluster_accounts_requestable
         context['cluster_accounts_tooltip'] = cluster_accounts_tooltip
 
@@ -250,6 +249,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
                     status__name__in=['New', 'Active', ]
                 ).annotate(
                     cluster_name=Case(
+                        When(name='abc', then=Value('ABC')),
                         When(name__startswith='vector_', then=Value('Vector')),
                         default=Value('Savio'),
                         output_field=CharField(),
@@ -262,6 +262,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
                     Q(projectuser__status__name='Active')
                 ).annotate(
                     cluster_name=Case(
+                        When(name='abc', then=Value('ABC')),
                         When(name__startswith='vector_', then=Value('Vector')),
                         default=Value('Savio'),
                         output_field=CharField(),
@@ -311,6 +312,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
                 Q(projectuser__status__name='Active')
             ).annotate(
                 cluster_name=Case(
+                    When(name='abc', then=Value('ABC')),
                     When(name__startswith='vector_', then=Value('Vector')),
                     default=Value('Savio'),
                     output_field=CharField(),
@@ -1421,6 +1423,8 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     login_url = '/'
 
+    logger = logging.getLogger(__name__)
+
     def test_func(self):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         user_obj = self.request.user
@@ -1527,6 +1531,13 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             next_view = reverse(
                 'project-detail', kwargs={'pk': project_obj.pk})
 
+        try:
+            send_project_join_notification_email(project_obj, project_user)
+        except Exception as e:
+            message = 'Failed to send notification email. Details:'
+            self.logger.error(message)
+            self.logger.exception(e)
+
         return redirect(next_view)
 
 
@@ -1564,6 +1575,7 @@ class ProjectJoinListView(ProjectListView, UserPassesTestMixin):
                 status__name__in=['New', 'Active', ]
         ).annotate(
             cluster_name=Case(
+                When(name='abc', then=Value('ABC')),
                 When(name__startswith='vector_', then=Value('Vector')),
                 default=Value('Savio'),
                 output_field=CharField(),
