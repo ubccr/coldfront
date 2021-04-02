@@ -62,7 +62,11 @@ Savio Project Request Detail
             <tr>
               <td>Confirm that the project satisfies the readiness.status criteria.</td>
               <td>
-                {% if readiness.status == 'Pending' %}
+                {% if eligibility.status == 'Denied' %}
+                  <span class="badge badge-danger">
+                    N/A
+                  </span>
+                {% elif readiness.status == 'Pending' %}
                   <span class="badge badge-warning">
                     {{ readiness.status }}
                   </span>
@@ -91,7 +95,11 @@ Savio Project Request Detail
             <tr>
               <td>Perform project setup on the cluster.</td>
               <td>
-                {% if setup.status == 'Pending' %}
+                {% if eligibility.status == 'Denied' or readiness.status == 'Denied' %}
+                  <span class="badge badge-danger">
+                    N/A
+                  </span>
+                {% elif setup.status == 'Pending' %}
                   <span class="badge badge-warning">
                     {{ setup.status }}
                   </span>
