@@ -94,6 +94,81 @@ class Command(BaseCommand):
         user_project_data = self.get_user_project_data()
         valid_user_projects = self.get_valid_user_projects(user_project_data)
         self.create_project_users(valid_user_projects)
+        # Create the abc project and associate a PI with it.
+        self.create_abc_project()
+
+    def create_abc_project(self):
+        """Create the abc project and set its PI manually.
+
+        Parameters:
+            - None
+
+        Returns:
+            - None
+
+        Raises:
+            - Exception, if any errors occur
+        """
+        # Create the project.
+        name = 'abc'
+        title = name
+        project_status = ProjectStatusChoice.objects.get(name='Active')
+        project_kwargs = {
+            'title': title,
+            'status': project_status,
+        }
+        try:
+            project = Project.objects.get(name=name)
+        except Project.DoesNotExist:
+            project = Project.objects.create(
+                name='abc', title='abc', status=project_status)
+            self.logger.info(f'Project {project.name} was created.')
+        else:
+            for key, value in project_kwargs.items():
+                setattr(project, key, value)
+            project.save()
+
+        # Set its PI, which should already exist. If it does not, exit.
+        pi_email = 'sup@berkeley.edu'
+        try:
+            pi = User.objects.get(email=pi_email)
+        except User.DoesNotExist:
+            self.logger.error(
+                f'Expected PI ({pi_email}) for Project {project.name} does '
+                f'not exist.')
+            return
+
+        # Set attributes in the PI's UserProfile.
+        user_profile_kwargs = {
+            'user': pi,
+            'is_pi': True,
+        }
+        user_profile, created = UserProfile.objects.get_or_create(user=pi)
+        if created:
+            self.logger.info(
+                f'UserProfile for user {pi.username} was created.')
+        for key, value in user_profile_kwargs.items():
+            setattr(user_profile, key, value)
+        user_profile.save()
+
+        # Set the PI as a PI on the project.
+        principal_investigator_role = \
+            ProjectUserRoleChoice.objects.get(name='Principal Investigator')
+        project_user_status = ProjectUserStatusChoice.objects.get(
+            name='Active')
+        try:
+            project_user = ProjectUser.objects.get(user=pi, project=project)
+        except ProjectUser.DoesNotExist:
+            ProjectUser.objects.create(
+                user=pi, project=project, role=principal_investigator_role,
+                status=project_user_status)
+            self.logger.info(
+                f'Created a ProjectUser between User {pi.username} and '
+                f'Project {project.name}.')
+        else:
+            project_user.role = principal_investigator_role
+            project_user.status = project_user_status
+            project_user.save()
 
     def create_project_users(self, valid_user_projects):
         """Create ProjectUser objects given a list of dictionaries where
