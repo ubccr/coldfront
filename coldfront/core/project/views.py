@@ -250,6 +250,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
                     status__name__in=['New', 'Active', ]
                 ).annotate(
                     cluster_name=Case(
+                        When(name='abc', then=Value('ABC')),
                         When(name__startswith='vector_', then=Value('Vector')),
                         default=Value('Savio'),
                         output_field=CharField(),
@@ -262,6 +263,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
                     Q(projectuser__status__name='Active')
                 ).annotate(
                     cluster_name=Case(
+                        When(name='abc', then=Value('ABC')),
                         When(name__startswith='vector_', then=Value('Vector')),
                         default=Value('Savio'),
                         output_field=CharField(),
@@ -311,6 +313,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
                 Q(projectuser__status__name='Active')
             ).annotate(
                 cluster_name=Case(
+                    When(name='abc', then=Value('ABC')),
                     When(name__startswith='vector_', then=Value('Vector')),
                     default=Value('Savio'),
                     output_field=CharField(),
@@ -1573,6 +1576,7 @@ class ProjectJoinListView(ProjectListView, UserPassesTestMixin):
                 status__name__in=['New', 'Active', ]
         ).annotate(
             cluster_name=Case(
+                When(name='abc', then=Value('ABC')),
                 When(name__startswith='vector_', then=Value('Vector')),
                 default=Value('Savio'),
                 output_field=CharField(),
