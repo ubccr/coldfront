@@ -1,4 +1,4 @@
-Dear {{ center_user }} user,
+Dear {{ center_name }} user,
 
 Your cluster account request under project {{ project }} and allocation {{ allocation }} has been denied.
 
