@@ -30,6 +30,7 @@ class ProjectSearchForm(forms.Form):
 
     CLUSTER_NAME_CHOICES = [
         ('', '-----'),
+        ('ABC', 'ABC'),
         ('Savio', 'Savio'),
         ('Vector', 'Vector'),
     ]
