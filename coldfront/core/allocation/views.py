@@ -1773,7 +1773,7 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
         if self.request.user.has_perm(permission):
             return True
         message = (
-            'You do not have permission to activate a cluster account '
+            'You do not have permission to activate a cluster access '
             'request.')
         messages.error(self.request, message)
 
@@ -1783,7 +1783,7 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
         self.user_obj = self.allocation_user_attribute_obj.allocation_user.user
         status = self.allocation_user_attribute_obj.value
         if status != 'Pending - Add':
-            message = f'Cluster account has unexpected status {status}.'
+            message = f'Cluster access has unexpected status {status}.'
             messages.error(request, message)
             return HttpResponseRedirect(
                 reverse('allocation-cluster-account-request-list'))
@@ -1805,14 +1805,14 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
         allocation_obj = self.allocation_user_attribute_obj.allocation
         project_obj = allocation_obj.project
         message = (
-            f'Cluster account request from User {self.user_obj.email} under '
+            f'Cluster access request from User {self.user_obj.email} under '
             f'Project {project_obj.name} and Allocation {allocation_obj.pk} '
             f'has been ACTIVATED.')
         messages.success(self.request, message)
 
         if EMAIL_ENABLED:
-            subject = 'Cluster Account Activated'
-            template = 'email/cluster_account_activated.txt'
+            subject = 'Cluster Access Activated'
+            template = 'email/cluster_access_activated.txt'
             template_context = {
                 'center_name': EMAIL_CENTER_NAME,
                 'project': project_obj.name,
@@ -1881,20 +1881,29 @@ class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,
         if self.request.user.has_perm(permission):
             return True
         message = (
-            'You do not have permission to deny a cluster account request.')
+            'You do not have permission to deny a cluster access request.')
         messages.error(self.request, message)
 
-    def get(self, request, pk):
-        allocation_user_attribute_obj = get_object_or_404(
-            AllocationUserAttribute, pk=pk)
-        allocation_user_attribute_obj.value = 'Denied'
-        allocation_user_attribute_obj.save()
+    def dispatch(self, request, *args, **kwargs):
+        self.allocation_user_attribute_obj = get_object_or_404(
+            AllocationUserAttribute, pk=self.kwargs.get('pk'))
+        self.user_obj = self.allocation_user_attribute_obj.allocation_user.user
+        status = self.allocation_user_attribute_obj.value
+        if status != 'Pending - Add':
+            message = f'Cluster access has unexpected status {status}.'
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse('allocation-cluster-account-request-list'))
+        return super().dispatch(request, *args, **kwargs)
 
-        user_obj = allocation_user_attribute_obj.allocation_user.user
-        allocation_obj = allocation_user_attribute_obj.allocation
+    def get(self, request, *args, **kwargs):
+        self.allocation_user_attribute_obj.value = 'Denied'
+        self.allocation_user_attribute_obj.save()
+
+        allocation_obj = self.allocation_user_attribute_obj.allocation
         project_obj = allocation_obj.project
         message = (
-            f'Cluster account request from User {user_obj.email} under '
+            f'Cluster access request from User {self.user_obj.email} under '
             f'Project {project_obj.name} and Allocation {allocation_obj.pk} '
             f'has been DENIED.')
         messages.success(request, message)
@@ -1903,15 +1912,13 @@ class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,
             domain_url = get_domain_url(self.request)
             view_name = 'allocation-detail'
             view = reverse(view_name, kwargs={'pk': allocation_obj.pk})
-            allocation_url = f'{domain_url}{view}'
 
-            subject = 'Cluster Account Denied'
-            template = 'email/cluster_account_denied.txt'
+            subject = 'Cluster Access Denied'
+            template = 'email/cluster_access_denied.txt'
             template_context = {
                 'center_name': EMAIL_CENTER_NAME,
                 'project': project_obj.name,
                 'allocation': allocation_obj.pk,
-                'allocation_url': allocation_url,
                 'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL,
                 'signature': EMAIL_SIGNATURE,
             }
