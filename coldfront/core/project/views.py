@@ -1824,6 +1824,7 @@ from coldfront.core.project.forms import SavioProjectReviewDenyForm
 from coldfront.core.project.forms import SavioProjectReviewSetupForm
 from coldfront.core.project.forms import SavioProjectSurveyForm
 from coldfront.core.project.forms import VectorProjectDetailsForm
+from coldfront.core.project.forms import VectorProjectReviewSetupForm
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.models import VectorProjectAllocationRequest
 from coldfront.core.user.models import UserProfile
@@ -2838,6 +2839,80 @@ class VectorProjectReviewEligibilityView(LoginRequiredMixin,
         eligibility = self.request_obj.state['eligibility']
         initial['status'] = eligibility['status']
         initial['justification'] = eligibility['justification']
+        return initial
+
+    def get_success_url(self):
+        return reverse(
+            'vector-project-request-detail',
+            kwargs={'pk': self.kwargs.get('pk')})
+
+
+class VectorProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
+                                   FormView):
+    form_class = VectorProjectReviewSetupForm
+    template_name = 'project/project_request/vector/project_review_setup.html'
+    login_url = '/'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        message = 'You do not have permission to view the previous page.'
+        messages.error(self.request, message)
+        return False
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        self.request_obj = get_object_or_404(
+            VectorProjectAllocationRequest.objects.prefetch_related(
+                'pi', 'project', 'requester'), pk=pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        # TODO.
+        form_data = form.cleaned_data
+        status = form_data['status']
+        final_name = form_data['final_name']
+        justification = form_data['justification']
+        timestamp = utc_now_offset_aware().isoformat()
+
+        name_change = {
+            'requested_name': self.request_obj.project.name,
+            'final_name': final_name,
+            'justification': justification,
+        }
+        self.request_obj.state['setup'] = {
+            'status': status,
+            'name_change': name_change,
+            'timestamp': timestamp,
+        }
+
+        if status == 'Complete':
+            # TODO
+            pass
+            # self.request_obj.status = \
+            #     ProjectAllocationRequestStatusChoice.objects.get(name=)
+
+        self.request_obj.save()
+
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['vector_request'] = self.request_obj
+        return context
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['requested_name'] = self.request_obj.project.name
+        return kwargs
+
+    def get_initial(self):
+        initial = super().get_initial()
+        setup = self.request_obj.state['setup']
+        initial['status'] = setup['status']
+        initial['final_name'] = setup['name_change']['final_name']
+        initial['justification'] = setup['name_change']['justification']
         return initial
 
     def get_success_url(self):
