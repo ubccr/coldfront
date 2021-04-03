@@ -1,0 +1,51 @@
+<div class="card mb-3">
+  <div class="card-header">
+    <h4>
+      <i class="fas fa-info-circle" aria-hidden="true"></i>
+      Request Information
+    </h4>
+  </div>
+  <div class="card-body">
+    <p class="card-text text-justify">
+      <strong>Request #: </strong>
+      {{ vector_request.pk }}
+    </p>
+    <p class="card-text text-justify">
+      <strong>Date Requested/Last Modified: </strong>
+      {{ vector_request.modified|date:"M. d, Y" }}
+    </p>
+    <p class="card-text text-justify">
+      <strong>Requester Email: </strong>
+      {% with requester=vector_request.requester %}
+        {{ requester.first_name }} {{ requester.last_name }} ({{ requester.email }})
+      {% endwith %}
+    </p>
+    <p class="card-text text-justify">
+      <strong>Project: </strong>
+      {{ vector_request.project.name }}
+      {% with setup=vector_request.state.setup %}
+        {% if setup.status == "Complete" and setup.name_change.final_name != vector_request.project.name %}
+          (will have name changed to {{ setup.name_change.final_name }})
+        {% endif %}
+      {% endwith %}
+    </p>
+    <p class="card-text text-justify">
+      <strong>Title: </strong>
+      {{ vector_request.project.title }}
+    </p>
+    <p class="card-text text-justify">
+      <strong>Description: </strong>
+      {{ vector_request.project.description }}
+    </p>
+    <p class="card-text text-justify">
+      <strong>Field of Science: </strong>
+      {{ vector_request.project.field_of_science }}
+    </p>
+    <p class="card-text text-justify">
+      <strong>PI: </strong>
+      {% with pi=vector_request.pi %}
+        {{ pi.first_name }} {{ pi.last_name }} ({{ pi.email }})
+      {% endwith %}
+    </p>
+  </div>
+</div>

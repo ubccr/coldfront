@@ -16,7 +16,9 @@
     </p>
     <p class="card-text text-justify">
       <strong>Requester: </strong>
-      {{ savio_request.requester.first_name }} {{ savio_request.requester.last_name }} ({{ savio_request.requester.email }})
+      {% with requester=savio_request.requester %}
+        {{ requester.first_name }} {{ requester.last_name }} ({{ requester.email }})
+      {% endwith %}
     </p>
     <p class="card-text text-justify">
       <strong>Project: </strong>
@@ -57,7 +59,9 @@
     </p>
     <p class="card-text text-justify">
       <strong>PI: </strong>
-      {{ savio_request.pi.first_name }} {{ savio_request.pi.last_name }} ({{ savio_request.pi.email }})
+      {% with pi=savio_request.pi %}
+        {{ pi.first_name }} {{ pi.last_name }} ({{ pi.email }})
+      {% endwith %}
     </p>
     <p class="card-text text-justify">
       <strong>Survey Responses: </strong>

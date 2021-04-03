@@ -542,7 +542,7 @@ class SavioProjectSurveyForm(forms.Form):
                 self.fields[field].disabled = True
 
 
-class SavioProjectReviewForm(forms.Form):
+class ProjectAllocationReviewForm(forms.Form):
 
     status = forms.ChoiceField(
         choices=(

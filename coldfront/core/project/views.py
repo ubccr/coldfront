@@ -1813,6 +1813,7 @@ class ProjectAutoApproveJoinRequestsView(LoginRequiredMixin,
 
 # TODO: Once finalized, move these imports above.
 from coldfront.core.allocation.models import AllocationAttributeType
+from coldfront.core.project.forms import ProjectAllocationReviewForm
 from coldfront.core.project.forms import SavioProjectAllocationTypeForm
 from coldfront.core.project.forms import SavioProjectDetailsForm
 from coldfront.core.project.forms import SavioProjectExistingPIForm
@@ -1820,7 +1821,6 @@ from coldfront.core.project.forms import SavioProjectNewPIForm
 from coldfront.core.project.forms import SavioProjectPoolAllocationsForm
 from coldfront.core.project.forms import SavioProjectPooledProjectSelectionForm
 from coldfront.core.project.forms import SavioProjectReviewDenyForm
-from coldfront.core.project.forms import SavioProjectReviewForm
 from coldfront.core.project.forms import SavioProjectReviewSetupForm
 from coldfront.core.project.forms import SavioProjectSurveyForm
 from coldfront.core.project.forms import VectorProjectDetailsForm
@@ -2377,7 +2377,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
 class SavioProjectReviewEligibilityView(LoginRequiredMixin,
                                         UserPassesTestMixin, FormView):
-    form_class = SavioProjectReviewForm
+    form_class = ProjectAllocationReviewForm
     template_name = (
         'project/project_request/savio/project_review_eligibility.html')
     login_url = '/'
@@ -2418,6 +2418,8 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
                 self.logger.error(message)
                 self.logger.exception(e)
 
+        # TODO: Set the status based on the state.
+
         self.request_obj.save()
 
         return super().form_valid(form)
@@ -2445,7 +2447,7 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
 
 class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
                                       FormView):
-    form_class = SavioProjectReviewForm
+    form_class = ProjectAllocationReviewForm
     template_name = (
         'project/project_request/savio/project_review_readiness.html')
     login_url = '/'
@@ -2775,3 +2777,70 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
     def post(self, request, *args, **kwargs):
         # TODO
         pass
+
+
+class VectorProjectReviewEligibilityView(LoginRequiredMixin,
+                                         UserPassesTestMixin, FormView):
+    form_class = ProjectAllocationReviewForm
+    template_name = (
+        'project/project_request/vector/project_review_eligibility.html')
+    login_url = '/'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        message = 'You do not have permission to view the previous page.'
+        messages.error(self.request, message)
+        return False
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        self.request_obj = get_object_or_404(
+            VectorProjectAllocationRequest.objects.prefetch_related(
+                'pi', 'project', 'requester'), pk=pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        form_data = form.cleaned_data
+        status = form_data['status']
+        justification = form_data['justification']
+        timestamp = utc_now_offset_aware().isoformat()
+        self.request_obj.state['eligibility'] = {
+            'status': status,
+            'justification': justification,
+            'timestamp': timestamp,
+        }
+
+        if status == 'Denied':
+            self.request_obj.status = \
+                ProjectAllocationRequestStatusChoice.objects.get(name='Denied')
+            try:
+                send_project_request_denial_email(self.request_obj)
+            except Exception as e:
+                message = 'Failed to send notification email. Details:'
+                self.logger.error(message)
+                self.logger.exception(e)
+
+        # TODO: Set the status based on the state.
+
+        self.request_obj.save()
+
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['vector_request'] = self.request_obj
+        return context
+
+    def get_initial(self):
+        initial = super().get_initial()
+        eligibility = self.request_obj.state['eligibility']
+        initial['status'] = eligibility['status']
+        initial['justification'] = eligibility['justification']
+        return initial
+
+    def get_success_url(self):
+        return reverse(
+            'vector-project-request-detail',
+            kwargs={'pk': self.kwargs.get('pk')})

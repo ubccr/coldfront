@@ -45,6 +45,7 @@ from coldfront.core.project.views import show_pooled_project_selection_form_cond
 from coldfront.core.project.views import VectorProjectRequestDetailView
 from coldfront.core.project.views import VectorProjectRequestListView
 from coldfront.core.project.views import VectorProjectRequestView
+from coldfront.core.project.views import VectorProjectReviewEligibilityView
 
 
 urlpatterns += [
@@ -91,4 +92,7 @@ urlpatterns += [
     path('vector-project-request/<int:pk>/',
          VectorProjectRequestDetailView.as_view(),
          name='vector-project-request-detail'),
+    path('vector-project-request/<int:pk>/eligibility',
+         VectorProjectReviewEligibilityView.as_view(),
+         name='vector-project-request-review-eligibility'),
 ]
