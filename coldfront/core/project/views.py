@@ -2172,7 +2172,8 @@ class SavioProjectRequestListView(LoginRequiredMixin, UserPassesTestMixin,
             savio_project_request_list = \
                 SavioProjectAllocationRequest.objects.filter(
                     status__name__in=['Under Review', 'Approved - Processing'])
-        context['status'] = 'completed' if self.completed else 'pending'
+        context['request_filter'] = (
+            'completed' if self.completed else 'pending')
         context['savio_project_request_list'] = savio_project_request_list
         return context
 
@@ -2743,7 +2744,8 @@ class VectorProjectRequestListView(LoginRequiredMixin, UserPassesTestMixin,
             vector_project_request_list = \
                 VectorProjectAllocationRequest.objects.filter(
                     status__name__in=['Under Review', 'Approved - Processing'])
-        context['status'] = 'completed' if self.completed else 'pending'
+        context['request_filter'] = (
+            'completed' if self.completed else 'pending')
         context['vector_project_request_list'] = vector_project_request_list
         return context
 
