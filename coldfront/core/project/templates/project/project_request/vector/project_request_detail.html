@@ -24,51 +24,11 @@ Vector Project Request Detail
     {% endif %}
   {% endwith %}
 </h1>
+<hr>
 
 <p>This form activates a request for a Vector project. Please review the given information and complete the checklist before final approval.</p>
 
-<div class="card mb-3">
-  <div class="card-header">
-    <h4>
-      <i class="fas fa-info-circle" aria-hidden="true"></i>
-      Request Information
-    </h4>
-  </div>
-  <div class="card-body">
-    <p class="card-text text-justify">
-      <strong>Request #: </strong>
-      {{ vector_request.pk }}
-    </p>
-    <p class="card-text text-justify">
-      <strong>Date Requested/Last Modified: </strong>
-      {{ vector_request.modified|date:"M. d, Y" }}
-    </p>
-    <p class="card-text text-justify">
-      <strong>Requester Email: </strong>
-      {{ vector_request.requester.email }}
-    </p>
-    <p class="card-text text-justify">
-      <strong>Project: </strong>
-      {{ vector_request.project.name }}
-    </p>
-    <p class="card-text text-justify">
-      <strong>Title: </strong>
-      {{ vector_request.project.title }}
-    </p>
-    <p class="card-text text-justify">
-      <strong>Description: </strong>
-      {{ vector_request.project.description }}
-    </p>
-    <p class="card-text text-justify">
-      <strong>Field of Science: </strong>
-      {{ vector_request.project.field_of_science }}
-    </p>
-    <p class="card-text text-justify">
-      <strong>PI: </strong>
-      {{ vector_request.pi.email }}
-    </p>
-  </div>
-</div>
+{% include 'project/project_request/vector/project_request_card.html' with vector_request=vector_request %}
 
 <div class="card mb-3">
   <div class="card-header">
@@ -88,21 +48,34 @@ Vector Project Request Detail
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td style="color: #dc3545"><b>PI request approved?</b></td>
-            <td style="color: #dc3545"><i class="fas fa-times-circle" aria-hidden="true"></i></td>
-            <td><button class="btn btn-primary" role="button">Manage</button></td>
-          </tr>
-          <tr>
-            <td style="color: #dc3545"><b>Slurm entries created?</b></td>
-            <td style="color: #dc3545"><i class="fas fa-times-circle" aria-hidden="true"></i></td>
-            <td><button class="btn btn-primary" role="button">Manage</button></td>
-          </tr>
-          <tr>
-            <td style="color: #28a745"><b>Project directories created?</b></td>
-            <td style="color: #28a745"><i class="fas fa-check-circle" aria-hidden="true"></i></td>
-            <td><button class="btn btn-primary" role="button">Manage</button></td>
-          </tr>
+          {% with eligibility=vector_request.state.eligibility setup=vector_request.state.setup %}
+            <tr>
+              <td>Confirm that the requester is eligible for Vector access.</td>
+              <td>
+                {% if eligibility.status == 'Pending' %}
+                  <span class="badge badge-warning">
+                    {{ eligibility.status }}
+                  </span>
+                {% elif eligibility.status == 'Approved' %}
+                  <span class="badge badge-success">
+                    {{ eligibility.status }} {{ eligibility.timestamp }}
+                  </span>
+                {% else %}
+                  <span class="badge badge-danger">
+                    {{ eligibility.status }} {{ eligibility.timestamp }}
+                  </span>
+                {% endif %}
+              </td>
+              <td>
+                <a href="{% url 'vector-project-request-review-eligibility' vector_request.pk %}" class="btn btn-primary">
+                  Manage
+                </a>
+              </td>
+            </tr>
+            <tr>
+
+            </tr>
+          {% endwith %}
         </tbody>
       </table>
     </div>
