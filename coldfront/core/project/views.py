@@ -2151,6 +2151,9 @@ class SavioProjectRequestListView(LoginRequiredMixin, UserPassesTestMixin,
     template_name = 'project/project_request/savio/project_request_list.html'
     login_url = '/'
 
+    # Show completed requests if True; else, show pending requests.
+    completed = False
+
     def test_func(self):
         """UserPassesTestMixin tests."""
         if self.request.user.is_superuser:
@@ -2161,9 +2164,15 @@ class SavioProjectRequestListView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # TODO: Filter out processed ones.
-        savio_project_request_list = \
-            SavioProjectAllocationRequest.objects.all()
+        if self.completed:
+            savio_project_request_list = \
+                SavioProjectAllocationRequest.objects.exclude(
+                    status__name='Pending')
+        else:
+            savio_project_request_list = \
+                SavioProjectAllocationRequest.objects.filter(
+                    status__name='Pending')
+        context['status'] = 'completed' if self.completed else 'pending'
         context['savio_project_request_list'] = savio_project_request_list
         return context
 
@@ -2180,7 +2189,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
     error_message = 'Unexpected failure. Please contact an administrator.'
 
     # TODO: Use the URL's name (reverse_lazy still leads to circular import).
-    redirect = HttpResponseRedirect('savio-project-request-list/')
+    redirect = HttpResponseRedirect('savio-project-pending-request-list/')
 
     def test_func(self):
         """UserPassesTestMixin tests."""
