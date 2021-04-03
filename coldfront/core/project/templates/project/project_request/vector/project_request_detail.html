@@ -73,7 +73,33 @@ Vector Project Request Detail
               </td>
             </tr>
             <tr>
-
+              <td>Perform project setup on the cluster.</td>
+              <td>
+                {% if eligibility.status == 'Denied' %}
+                  <span class="badge badge-danger">
+                    N/A
+                  </span>
+                {% elif setup.status == 'Pending' %}
+                  <span class="badge badge-warning">
+                    {{ setup.status }}
+                  </span>
+                {% else %}
+                  <span class="badge badge-success">
+                    {{ setup.status }} {{ setup.timestamp }}
+                  </span>
+                {% endif %}
+              </td>
+              <td>
+                {% if eligibility.status == 'Approved' %}
+                  <a href="{% url 'vector-project-request-review-setup' vector_request.pk %}" class="btn btn-primary">
+                    Manage
+                  </a>
+                {% else %}
+                  <button class="btn btn-primary" disabled="true">
+                    Manage
+                  </button>
+                {% endif %}
+              </td>
             </tr>
           {% endwith %}
         </tbody>
