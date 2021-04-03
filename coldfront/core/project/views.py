@@ -46,6 +46,7 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectReviewStatusChoice,
                                            ProjectStatusChoice, ProjectUser,
+                                           ProjectUserMessage,
                                            ProjectUserJoinRequest,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice,
@@ -53,7 +54,9 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserStatusChoice)
 from coldfront.core.project.utils import (auto_approve_project_join_requests,
                                           get_project_compute_allocation,
-                                          send_project_join_notification_email)
+                                          send_project_join_notification_email,
+                                          send_project_request_denial_email,
+                                          send_project_request_pooling_email)
 # from coldfront.core.publication.models import Publication
 # from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.resource.models import Resource
@@ -1816,6 +1819,7 @@ from coldfront.core.project.forms import SavioProjectExistingPIForm
 from coldfront.core.project.forms import SavioProjectNewPIForm
 from coldfront.core.project.forms import SavioProjectPoolAllocationsForm
 from coldfront.core.project.forms import SavioProjectPooledProjectSelectionForm
+from coldfront.core.project.forms import SavioProjectReviewDenyForm
 from coldfront.core.project.forms import SavioProjectReviewForm
 from coldfront.core.project.forms import SavioProjectReviewSetupForm
 from coldfront.core.project.forms import SavioProjectSurveyForm
@@ -2220,6 +2224,13 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             return HttpResponseRedirect(
                 reverse('savio-project-request-detail', kwargs={'pk': pk}))
 
+        # TODO: Check that the checklist steps are complete.
+        if not self.__is_checklist_complete(request_obj):
+            message = 'Please complete the checklist before final activation.'
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse('savio-project-request-detail', kwargs={'pk': pk}))
+
         try:
             self.__upgrade_pi_user(request_obj)
             project = self.__update_project(request_obj)
@@ -2278,6 +2289,10 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
                 settings.PCA_DEFAULT_ALLOCATION, now)
         else:
             raise ValueError(f'Invalid allocation_type {allocation_type}.')
+
+    def __is_checklist_complete(self, request_obj):
+        # TODO
+        return False
 
     def __update_allocation(self, request_obj):
         """Set the allocation's start and end dates. Set its attribute
@@ -2373,7 +2388,6 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
-        # TODO.
         form_data = form.cleaned_data
         status = form_data['status']
         justification = form_data['justification']
@@ -2384,11 +2398,15 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
             'timestamp': timestamp,
         }
 
-        # TODO.
-        # if status == 'Denied':
-        #     # Send an email to the requester and PI.
-        #     self.request_obj.status = \
-        #         ProjectAllocationRequestStatusChoice.objects.get(name='Denied')
+        if status == 'Denied':
+            self.request_obj.status = \
+                ProjectAllocationRequestStatusChoice.objects.get(name='Denied')
+            try:
+                send_project_request_denial_email(self.request_obj)
+            except Exception as e:
+                message = 'Failed to send notification email. Details:'
+                self.logger.error(message)
+                self.logger.exception(e)
 
         self.request_obj.save()
 
@@ -2449,14 +2467,21 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
             'timestamp': timestamp,
         }
 
-        # TODO.
         if status == 'Approved':
             if self.request_obj.pool:
-                # Send an email poolee project.
-                # Leave a ProjectUserMessage for the poolee project.
-                pass
+                send_project_request_pooling_email(self.request_obj)
+                # TODO: Leave a ProjectUserMessage for the poolee project.
+                # ProjectUserMessage.objects.create(
+                #     project=self.request_obj.project, author=, message='')
         elif status == 'Denied':
-            pass
+            self.request_obj.status = \
+                ProjectAllocationRequestStatusChoice.objects.get(name='Denied')
+            try:
+                send_project_request_denial_email(self.request_obj)
+            except Exception as e:
+                message = 'Failed to send notification email. Details:'
+                self.logger.error(message)
+                self.logger.exception(e)
 
         self.request_obj.save()
 
@@ -2523,6 +2548,12 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
             'timestamp': timestamp,
         }
 
+        if status == 'Complete':
+            # TODO
+            pass
+            # self.request_obj.status = \
+            #     ProjectAllocationRequestStatusChoice.objects.get(name=)
+
         self.request_obj.save()
 
         return super().form_valid(form)
@@ -2546,6 +2577,70 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
         initial['status'] = setup['status']
         initial['final_name'] = setup['name_change']['final_name']
         initial['justification'] = setup['name_change']['justification']
+        return initial
+
+    def get_success_url(self):
+        return reverse(
+            'savio-project-request-detail',
+            kwargs={'pk': self.kwargs.get('pk')})
+
+
+class SavioProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
+                                 FormView):
+    form_class = SavioProjectReviewDenyForm
+    template_name = (
+        'project/project_request/savio/project_review_deny.html')
+    login_url = '/'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        message = 'You do not have permission to view the previous page.'
+        messages.error(self.request, message)
+        return False
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        self.request_obj = get_object_or_404(
+            SavioProjectAllocationRequest.objects.prefetch_related(
+                'pi', 'project', 'requester'), pk=pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        form_data = form.cleaned_data
+        justification = form_data['justification']
+        timestamp = utc_now_offset_aware().isoformat()
+        self.request_obj.state['other'] = {
+            'justification': justification,
+            'timestamp': timestamp,
+        }
+
+        self.request_obj.status = \
+            ProjectAllocationRequestStatusChoice.objects.get(name='Denied')
+        try:
+            send_project_request_denial_email(self.request_obj)
+        except Exception as e:
+            message = 'Failed to send notification email. Details:'
+            self.logger.error(message)
+            self.logger.exception(e)
+
+        self.request_obj.save()
+
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['savio_request'] = self.request_obj
+        survey_form = SavioProjectSurveyForm(
+            initial=self.request_obj.survey_answers, disable_fields=True)
+        context['survey_form'] = survey_form
+        return context
+
+    def get_initial(self):
+        initial = super().get_initial()
+        other = self.request_obj.state['other']
+        initial['justification'] = other['justification']
         return initial
 
     def get_success_url(self):

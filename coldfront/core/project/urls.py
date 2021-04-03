@@ -35,6 +35,7 @@ from coldfront.core.project.views import ProjectRequestView
 from coldfront.core.project.views import SavioProjectRequestDetailView
 from coldfront.core.project.views import SavioProjectRequestListView
 from coldfront.core.project.views import SavioProjectRequestWizard
+from coldfront.core.project.views import SavioProjectReviewDenyView
 from coldfront.core.project.views import SavioProjectReviewEligibilityView
 from coldfront.core.project.views import SavioProjectReviewReadinessView
 from coldfront.core.project.views import SavioProjectReviewSetupView
@@ -72,6 +73,9 @@ urlpatterns += [
     path('savio-project-request/<int:pk>/setup/',
          SavioProjectReviewSetupView.as_view(),
          name='savio-project-request-review-setup'),
+    path('savio-project-request/<int:pk>/deny/',
+         SavioProjectReviewDenyView.as_view(),
+         name='savio-project-request-review-deny'),
     path('vector-project-request/',
          VectorProjectRequestView.as_view(),
          name='vector-project-request'),

@@ -157,8 +157,8 @@ def __review_project_join_requests_url(project):
 
 def send_project_join_notification_email(project, project_user):
     """Send a notification email to the users of the given Project who
-    have email notifications enabled that the given ProjectUser has
-    requested to join it."""
+    have email notifications enabled stating that the given ProjectUser
+    has requested to join it."""
     email_enabled = import_from_settings('EMAIL_ENABLED', False)
     if not email_enabled:
         return
@@ -187,3 +187,19 @@ def send_project_join_notification_email(project, project_user):
         Q(role__name='Manager')).values_list('user__email', flat=True))
 
     send_email_template(subject, template_name, context, sender, receiver_list)
+
+
+def send_project_request_denial_email(request):
+    """Send a notification email to the requester and PI associated with
+    the given project allocation request stating that the request has
+    been denied."""
+    # TODO.
+    pass
+
+
+def send_project_request_pooling_email(request):
+    """Send a notification email to the managers and PIs of the project
+    being requested to pool with stating that someone is attempting to
+    pool."""
+    # TODO.
+    pass

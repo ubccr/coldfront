@@ -10,7 +10,10 @@ Savio Project Request Detail
 
 
 {% block content %}
-<h1>Review Savio Project Request</h1>
+<h1>
+  Review Savio Project Request
+  <span class="badge badge-warning" style="float: right;">Pending</span>
+</h1>
 <hr>
 
 <p>This form activates a request for a Savio project. Please review the given information and complete the checklist before final approval.</p>
@@ -130,6 +133,9 @@ Savio Project Request Detail
 
 <button type="button" class="btn btn-success" disabled>Submit</button>
 <a href="{% url 'savio-project-request-list' %}" class="btn btn-secondary">Cancel</a>
+<a href="{% url 'savio-project-request-review-deny' savio_request.pk %}" class="btn btn-danger" style="float: right;">
+  Deny For Other Reason
+</a>
 
 {% include 'project/project_request/savio/project_request_survey_modal.html' with survey_form=survey_form %}
 

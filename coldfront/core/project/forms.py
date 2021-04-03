@@ -645,6 +645,18 @@ class SavioProjectReviewSetupForm(forms.Form):
         return final_name
 
 
+class SavioProjectReviewDenyForm(forms.Form):
+
+    justification = forms.CharField(
+        help_text=(
+            'Provide reasoning for your decision. It will be included in the '
+            'notification email.'),
+        label='Justification',
+        validators=[MinLengthValidator(10)],
+        required=True,
+        widget=forms.Textarea(attrs={'rows': 3}))
+
+
 class VectorProjectDetailsForm(forms.Form):
 
     name = forms.CharField(
