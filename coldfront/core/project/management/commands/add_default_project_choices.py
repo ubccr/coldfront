@@ -30,6 +30,12 @@ class Command(BaseCommand):
             ProjectUserStatusChoice.objects.get_or_create(name=choice)
 
         # ProjectAllocationRequestStatusChoice.objects.all().delete()
-        for choice in ['Approved', 'Pending', 'Denied', ]:
+        choices = [
+            'Under Review',
+            'Approved - Processing',
+            'Approved - Complete',
+            'Denied',
+        ]
+        for choice in choices:
             ProjectAllocationRequestStatusChoice.objects.get_or_create(
                 name=choice)

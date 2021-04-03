@@ -1936,7 +1936,7 @@ class SavioProjectRequestWizard(SessionWizardView):
 
             # Store transformed form data in a request.
             status = ProjectAllocationRequestStatusChoice.objects.get(
-                name='Pending')
+                name='Under Review')
             SavioProjectAllocationRequest.objects.create(
                 requester=self.request.user,
                 allocation_type=allocation_type,
@@ -2166,12 +2166,12 @@ class SavioProjectRequestListView(LoginRequiredMixin, UserPassesTestMixin,
         context = super().get_context_data(**kwargs)
         if self.completed:
             savio_project_request_list = \
-                SavioProjectAllocationRequest.objects.exclude(
-                    status__name='Pending')
+                SavioProjectAllocationRequest.objects.filter(
+                    status__name__in=['Approved - Complete', 'Denied'])
         else:
             savio_project_request_list = \
                 SavioProjectAllocationRequest.objects.filter(
-                    status__name='Pending')
+                    status__name__in=['Under Review', 'Approved - Processing'])
         context['status'] = 'completed' if self.completed else 'pending'
         context['savio_project_request_list'] = savio_project_request_list
         return context
@@ -2248,7 +2248,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
             request_obj.status = \
                 ProjectAllocationRequestStatusChoice.objects.get(
-                    name='Active')
+                    name='Approved - Complete')
             request_obj.save()
         except Exception as e:
             self.logger.exception(e)
@@ -2671,7 +2671,7 @@ class VectorProjectRequestView(LoginRequiredMixin, FormView):
             # Store form data in a request.
             pi = User.objects.get(username=settings.VECTOR_PI_USERNAME)
             status = ProjectAllocationRequestStatusChoice.objects.get(
-                name='Pending')
+                name='Under Review')
             VectorProjectAllocationRequest.objects.create(
                 requester=self.request.user,
                 pi=pi,
@@ -2737,12 +2737,12 @@ class VectorProjectRequestListView(LoginRequiredMixin, UserPassesTestMixin,
         context = super().get_context_data(**kwargs)
         if self.completed:
             vector_project_request_list = \
-                VectorProjectAllocationRequest.objects.exclude(
-                    status__name='Pending')
+                VectorProjectAllocationRequest.objects.filter(
+                    status__name__in=['Approved - Complete', 'Denied'])
         else:
             vector_project_request_list = \
                 VectorProjectAllocationRequest.objects.filter(
-                    status__name='Pending')
+                    status__name__in=['Under Review', 'Approved - Processing'])
         context['status'] = 'completed' if self.completed else 'pending'
         context['vector_project_request_list'] = vector_project_request_list
         return context

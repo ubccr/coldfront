@@ -1,5 +1,6 @@
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.utils import request_project_cluster_access
+from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserJoinRequest
 from coldfront.core.project.models import ProjectUserStatusChoice
@@ -203,3 +204,34 @@ def send_project_request_pooling_email(request):
     pool."""
     # TODO.
     pass
+
+
+def savio_request_state_status(savio_request):
+    """Return a ProjectAllocationRequestStatusChoice, based on the
+    'state' field of the given SavioProjectAllocationRequest."""
+    state = savio_request.state
+    eligibility = state['eligibility']
+    readiness = state['readiness']
+    setup = state['setup']
+    other = state['other']
+
+    # The PI was ineligible, the project did not satisfy the readiness
+    # criteria, or the request was denied for some non-listed reason.
+    if (eligibility['status'] == 'Denied' or
+            readiness['status'] == 'Denied' or
+            other['timestamp']):
+        return ProjectAllocationRequestStatusChoice.objects.get(name='Denied')
+
+    # PI eligibility or readiness are not yet determined.
+    if eligibility['status'] == 'Pending' or readiness['status'] == 'Pending':
+        return ProjectAllocationRequestStatusChoice.objects.get(
+            name='Under Review')
+
+    # The request has been approved, and is being processed.
+    if setup['status'] == 'Pending':
+        return ProjectAllocationRequestStatusChoice.objects.get(
+            name='Approved - Processing')
+
+    # The request has been approved, and is complete.
+    return ProjectAllocationRequestStatusChoice.objects.get(
+        name='Approved - Complete')

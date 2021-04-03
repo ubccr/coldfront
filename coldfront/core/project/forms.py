@@ -234,7 +234,7 @@ class SavioProjectExistingPIForm(forms.Form):
                 project__status__name__in=['New', 'Active']
             ).values_list('user__username', flat=True))
             status = ProjectAllocationRequestStatusChoice.objects.get(
-                name='Pending')
+                name='Under Review')
             pis_with_pending_requests = set(
                 SavioProjectAllocationRequest.objects.filter(
                     allocation_type=SavioProjectAllocationRequest.FCA,
@@ -250,7 +250,7 @@ class SavioProjectExistingPIForm(forms.Form):
                 project__status__name__in=['New', 'Active']
             ).values_list('user__username', flat=True))
             status = ProjectAllocationRequestStatusChoice.objects.get(
-                name='Pending')
+                name='Under Review')
             pis_with_pending_requests = set(
                 SavioProjectAllocationRequest.objects.filter(
                     allocation_type=SavioProjectAllocationRequest.PCA,
