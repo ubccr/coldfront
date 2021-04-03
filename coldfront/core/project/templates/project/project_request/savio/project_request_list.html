@@ -5,15 +5,15 @@
 
 
 {% block title %}
-Savio Project {{ status|title }} Requests %}
+Savio Project {{ request_filter|title }} Requests %}
 {% endblock %}
 
 
 {% block content %}
-<h1>{{ status|title }} Savio Project Requests</h1>
+<h1>{{ request_filter|title }} Savio Project Requests</h1>
 
 <p>
-  {% if status == 'completed' %}
+  {% if request_filter == 'completed' %}
     View completed requests for new Savio projects. You may also view pending requests <a href="{% url 'savio-project-pending-request-list' %}">here</a>.
   {% else %}
     View pending requests for new Savio projects. You may also view completed requests <a href="{% url 'savio-project-completed-request-list' %}">here</a>.
@@ -49,7 +49,19 @@ Savio Project {{ status|title }} Requests %}
         <td>{{ savio_project_request.allocation_type }}</td>
         <td>{{ savio_project_request.pool }}</td>
         <td>{{ savio_project_request.pi.email }}</td>
-        <td>{{ savio_project_request.status }}</td>
+        <td>
+          {% with status=savio_project_request.status.name %}
+            {% if status == 'Under Review' %}
+              <span class="badge badge-warning">{{ status }}</span>
+            {% elif status == 'Approved - Processing' %}
+              <span class="badge badge-warning">{{ status }}</span>
+            {% elif status == 'Approved - Complete' %}
+              <span class="badge badge-success">{{ status }}</span>
+            {% else %}
+              <span class="badge badge-danger">{{ status }}</span>
+            {% endif %}
+          {% endwith %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>
@@ -57,7 +69,7 @@ Savio Project {{ status|title }} Requests %}
 </div>
 {% else %}
 <div class="alert alert-info">
-  No {{ status }} Savio project requests!
+  No {{ request_filter }} Savio project requests!
 </div>
 {% endif %}
 

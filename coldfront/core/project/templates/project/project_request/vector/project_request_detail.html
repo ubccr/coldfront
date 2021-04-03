@@ -10,7 +10,20 @@ Vector Project Request Detail
 
 
 {% block content %}
-<h1>Review Vector Project Request</h1>
+<h1>
+  Review Vector Project Request
+  {% with status=vector_request.status.name %}
+    {% if status == 'Under Review' %}
+      <span class="badge badge-warning" style="float: right;">{{ status }}</span>
+    {% elif status == 'Approved - Processing' %}
+      <span class="badge badge-warning" style="float: right;">{{ status }}</span>
+    {% elif status == 'Approved - Complete' %}
+      <span class="badge badge-success" style="float: right;">{{ status }}</span>
+    {% else %}
+      <span class="badge badge-danger" style="float: right;">{{ status }}</span>
+    {% endif %}
+  {% endwith %}
+</h1>
 
 <p>This form activates a request for a Vector project. Please review the given information and complete the checklist before final approval.</p>
 

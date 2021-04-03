@@ -12,7 +12,17 @@ Savio Project Request Detail
 {% block content %}
 <h1>
   Review Savio Project Request
-  <span class="badge badge-warning" style="float: right;">Pending</span>
+  {% with status=savio_request.status.name %}
+    {% if status == 'Under Review' %}
+      <span class="badge badge-warning" style="float: right;">{{ status }}</span>
+    {% elif status == 'Approved - Processing' %}
+      <span class="badge badge-warning" style="float: right;">{{ status }}</span>
+    {% elif status == 'Approved - Complete' %}
+      <span class="badge badge-success" style="float: right;">{{ status }}</span>
+    {% else %}
+      <span class="badge badge-danger" style="float: right;">{{ status }}</span>
+    {% endif %}
+  {% endwith %}
 </h1>
 <hr>
 
