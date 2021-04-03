@@ -2722,6 +2722,9 @@ class VectorProjectRequestListView(LoginRequiredMixin, UserPassesTestMixin,
     template_name = 'project/project_request/vector/project_request_list.html'
     login_url = '/'
 
+    # Show completed requests if True; else, show pending requests.
+    completed = False
+
     def test_func(self):
         """UserPassesTestMixin tests."""
         if self.request.user.is_superuser:
@@ -2732,9 +2735,15 @@ class VectorProjectRequestListView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # TODO: Filter out processed ones.
-        vector_project_request_list = \
-            VectorProjectAllocationRequest.objects.all()
+        if self.completed:
+            vector_project_request_list = \
+                VectorProjectAllocationRequest.objects.exclude(
+                    status__name='Pending')
+        else:
+            vector_project_request_list = \
+                VectorProjectAllocationRequest.objects.filter(
+                    status__name='Pending')
+        context['status'] = 'completed' if self.completed else 'pending'
         context['vector_project_request_list'] = vector_project_request_list
         return context
 
