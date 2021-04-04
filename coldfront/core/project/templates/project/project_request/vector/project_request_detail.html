@@ -108,6 +108,15 @@ Vector Project Request Detail
   </div>
 </div>
 
-<button type="button" class="btn btn-success" disabled>Submit</button>
-<button type="button" class="btn btn-secondary" href="">Cancel</button>
+{% if is_checklist_complete %}
+  <form action="{% url 'vector-project-request-detail' vector_request.pk %}" method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-success">Submit</button>
+    <a href="{% url 'vector-project-pending-request-list' %}" class="btn btn-secondary">Cancel</a>
+  </form>
+{% else %}
+  <button type="button" class="btn btn-success" disabled>Submit</button>
+  <a href="{% url 'vector-project-pending-request-list' %}" class="btn btn-secondary">Cancel</a>
+{% endif %}
+
 {% endblock %}

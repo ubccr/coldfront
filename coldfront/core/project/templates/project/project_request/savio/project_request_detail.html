@@ -142,11 +142,22 @@ Savio Project Request Detail
   </div>
 </div>
 
-<button type="button" class="btn btn-success" disabled>Submit</button>
-<a href="{% url 'savio-project-pending-request-list' %}" class="btn btn-secondary">Cancel</a>
-<a href="{% url 'savio-project-request-review-deny' savio_request.pk %}" class="btn btn-danger" style="float: right;">
-  Deny For Other Reason
-</a>
+{% if is_checklist_complete %}
+  <form action="{% url 'savio-project-request-detail' savio_request.pk %}" method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-success">Submit</button>
+    <a href="{% url 'savio-project-pending-request-list' %}" class="btn btn-secondary">Cancel</a>
+    <a href="{% url 'savio-project-request-review-deny' savio_request.pk %}" class="btn btn-danger" style="float: right;">
+      Deny For Other Reason
+    </a>
+  </form>
+{% else %}
+  <button type="button" class="btn btn-success" disabled>Submit</button>
+  <a href="{% url 'savio-project-pending-request-list' %}" class="btn btn-secondary">Cancel</a>
+  <a href="{% url 'savio-project-request-review-deny' savio_request.pk %}" class="btn btn-danger" style="float: right;">
+    Deny For Other Reason
+  </a>
+{% endif %}
 
 {% include 'project/project_request/savio/project_request_survey_modal.html' with survey_form=survey_form %}
 
