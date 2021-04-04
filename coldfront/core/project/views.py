@@ -2256,7 +2256,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
                 f'Project {project.name} and Allocation {allocation.pk} have '
                 f'been activated.')
             messages.success(self.request, message)
-        return self.redirect
+        return HttpResponseRedirect(self.redirect)
 
     def __get_service_units_to_allocate(self):
         """Return the number of service units to allocate to the
