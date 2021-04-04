@@ -10,6 +10,7 @@ from coldfront.core.project.models import ProjectUserJoinRequest
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
+from coldfront.core.project.models import VectorProjectAllocationRequest
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.mail import send_email_template
@@ -279,7 +280,7 @@ class ProjectApprovalRunner(object):
 
     def run(self):
         self.upgrade_pi_user()
-        project = self.update_project()
+        project = self.activate_project()
         self.create_project_users()
         allocation = self.update_allocation()
         self.approve_request()
@@ -325,7 +326,7 @@ class ProjectApprovalRunner(object):
         pi.userprofile.is_pi = True
         pi.userprofile.save()
 
-    def update_project(self):
+    def activate_project(self):
         """Set the Project's status to 'Active'."""
         project = self.request_obj.project
         project.status = ProjectStatusChoice.objects.get(name='Active')
@@ -440,7 +441,10 @@ class ProjectDenialRunner(object):
         self.request_obj = request_obj
 
     def run(self):
-        self.update_project()
+        # Only update the Project if pooling is not involved.
+        if (isinstance(self.request_obj, VectorProjectAllocationRequest) or
+                not self.request_obj.pool):
+            self.deny_project()
         self.deny_request()
         self.send_email()
 
@@ -457,7 +461,7 @@ class ProjectDenialRunner(object):
             self.logger.error(f'Failed to send notification email. Details:\n')
             self.logger.exception(e)
 
-    def update_project(self):
+    def deny_project(self):
         """Set the Project's status to 'Denied'."""
         project = self.request_obj.project
         project.status = ProjectStatusChoice.objects.get(name='Denied')
