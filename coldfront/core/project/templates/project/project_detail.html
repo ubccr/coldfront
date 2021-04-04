@@ -174,7 +174,7 @@ Project Detail
                 <span class="badge badge-danger">
                   No Access
                 </span>
-                {% if user.user in project.pis and cluster_accounts_requestable and is_allowed_to_update_project %}
+                {% if cluster_accounts_requestable and is_allowed_to_update_project and user.user in project.pis or user.user in project.managers  %}
                   <br><br>
                   <form action="{% url 'allocation-request-cluster-account' compute_allocation_pk user.user.pk %}" method="post">
                     {% csrf_token %}
