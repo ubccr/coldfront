@@ -1,14 +1,21 @@
 from coldfront.core.allocation.models import Allocation
+from coldfront.core.allocation.models import AllocationAttribute
+from coldfront.core.allocation.models import AllocationAttributeType
+from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.utils import request_project_cluster_access
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
+from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserJoinRequest
+from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
+from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.mail import send_email_template
 from collections import namedtuple
 from datetime import timedelta
+from decimal import Decimal
 from django.conf import settings
 from django.db.models import Q
 from django.urls import reverse
@@ -212,7 +219,6 @@ def savio_request_state_status(savio_request):
     state = savio_request.state
     eligibility = state['eligibility']
     readiness = state['readiness']
-    setup = state['setup']
     other = state['other']
 
     # The PI was ineligible, the project did not satisfy the readiness
@@ -227,11 +233,193 @@ def savio_request_state_status(savio_request):
         return ProjectAllocationRequestStatusChoice.objects.get(
             name='Under Review')
 
-    # The request has been approved, and is being processed.
-    if setup['status'] == 'Pending':
-        return ProjectAllocationRequestStatusChoice.objects.get(
-            name='Approved - Processing')
-
-    # The request has been approved, and is complete.
+    # The request has been approved, and is processing or complete. The final
+    # state, 'Approved - Complete', should only be set once the request is
+    # finally activated.
     return ProjectAllocationRequestStatusChoice.objects.get(
-        name='Approved - Complete')
+        name='Approved - Processing')
+
+
+def vector_request_state_status(vector_request):
+    """Return a ProjectAllocationRequestStatusChoice, based on the
+    'state' field of the given VectorProjectAllocationRequest."""
+    state = vector_request.state
+    eligibility = state['eligibility']
+
+    # The requester was ineligible.
+    if eligibility['status'] == 'Denied':
+        return ProjectAllocationRequestStatusChoice.objects.get(name='Denied')
+
+    # Requester eligibility is not yet determined.
+    if eligibility['status'] == 'Pending':
+        return ProjectAllocationRequestStatusChoice.objects.get(
+            name='Under Review')
+
+    # The request has been approved, and is processing or complete. The final
+    # state, 'Approved - Complete', should only be set once the request is
+    # finally activated.
+    return ProjectAllocationRequestStatusChoice.objects.get(
+        name='Approved - Processing')
+
+
+class ProjectApprovalRunner(object):
+    """An object that performs necessary database changes when a new
+    project request is approved and processed."""
+
+    def __init__(self, request_obj):
+        self.request_obj = request_obj
+
+    def run(self):
+        self.upgrade_pi_user()
+        project = self.update_project()
+        self.create_project_users()
+        allocation = self.update_allocation()
+        self.approve_request()
+        return project, allocation
+
+    def approve_request(self):
+        """Set the status of the request to 'Approved - Complete'."""
+        self.request_obj.status = \
+            ProjectAllocationRequestStatusChoice.objects.get(
+                name='Approved - Complete')
+        self.request_obj.save()
+
+    def create_project_users(self):
+        """Create active ProjectUsers with the appropriate roles for the
+        requester and/or the PI."""
+        project = self.request_obj.project
+        requester = self.request_obj.requester
+        pi = self.request_obj.pi
+        # get_or_create's 'defaults' arguments are only considered if a create
+        # is required.
+        defaults = {
+            'status': ProjectUserStatusChoice.objects.get(name='Active')
+        }
+        if requester.pk != pi.pk:
+            defaults['role'] = ProjectUserRoleChoice.objects.get(
+                name='Manager')
+            requester_project_user, _ = ProjectUser.objects.get_or_create(
+                project=project, user=requester, defaults=defaults)
+        defaults['role'] = ProjectUserRoleChoice.objects.get(
+            name='Principal Investigator')
+        pi_project_user, _ = ProjectUser.objects.get_or_create(
+            project=project, user=pi, defaults=defaults)
+
+    def update_allocation(self):
+        """Perform allocation-related handling. This should be
+        implemented by subclasses."""
+        raise NotImplementedError('This method is not implemented.')
+
+    def upgrade_pi_user(self):
+        """Set the is_pi field of the request's PI UserProfile to
+        True."""
+        pi = self.request_obj.pi
+        pi.userprofile.is_pi = True
+        pi.userprofile.save()
+
+    def update_project(self):
+        """Set the Project to active, and store the survey answers."""
+        project = self.request_obj.project
+        project.status = ProjectStatusChoice.objects.get(name='Active')
+        project.save()
+        # TODO: Store the survey answers.
+        return project
+
+
+class SavioProjectApprovalRunner(ProjectApprovalRunner):
+    """An object that performs necessary database changes when a new
+    Savio project request is approved and processed."""
+
+    def __init__(self, request_obj, num_service_units):
+        self.__validate_num_service_units(num_service_units)
+        self.num_service_units = num_service_units
+        super().__init__(request_obj)
+
+    def update_allocation(self):
+        """Perform allocation-related handling. In particular,
+
+        TODO
+        """
+        project = self.request_obj.project
+        allocation_type = self.request_obj.allocation_type
+        pool = self.request_obj.pool
+
+        allocation = get_project_compute_allocation(project)
+        allocation.status = AllocationStatusChoice.objects.get(name='Active')
+        # TODO: Set start_date and end_date.
+        # allocation.start_date = utc_now_offset_aware()
+        # allocation.end_date =
+        allocation.save()
+
+        # Set the allocation's allocation type.
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Savio Allocation Type')
+        allocation_attribute, _ = \
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=allocation_attribute_type,
+                allocation=allocation, defaults={'value': allocation_type})
+
+        # Set or increase the allocation's service units.
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Service Units')
+        allocation_attribute, _ = \
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=allocation_attribute_type,
+                allocation=allocation)
+        if allocation_type == SavioProjectAllocationRequest.CO:
+            # For Condo, set the value manually.
+            new_value = settings.ALLOCATION_MAX
+        else:
+            if pool:
+                existing_value = Decimal(allocation_attribute.value)
+                new_value = existing_value + self.num_service_units
+                self.__validate_num_service_units(new_value)
+            else:
+                new_value = self.num_service_units
+        allocation_attribute.value = str(new_value)
+
+        allocation_attribute.save()
+
+        return allocation
+
+    @staticmethod
+    def __validate_num_service_units(num_service_units):
+        """Raise exceptions if the given number of service units does
+        not conform to the expected constraints."""
+        if not isinstance(num_service_units, Decimal):
+            raise TypeError(
+                f'Number of service units {num_service_units} is not a '
+                f'Decimal.')
+        if not (settings.ALLOCATION_MIN <= num_service_units <=
+                settings.ALLOCATION_MAX):
+            raise ValueError(
+                f'Number of service units is not in the acceptable range '
+                f'[{settings.ALLOCATION_MIN}, {settings.ALLOCATION_MAX}].')
+        num_service_units_tuple = num_service_units.as_tuple()
+        if len(num_service_units_tuple.digits) > settings.DECIMAL_MAX_DIGITS:
+            raise ValueError(
+                f'Number of service units has greater than '
+                f'{settings.DECIMAL_MAX_DIGITS} digits.')
+        if abs(num_service_units_tuple.exponent) > settings.DECIMAL_MAX_PLACES:
+            raise ValueError(
+                f'Number of service units has greater than '
+                f'{settings.DECIMAL_MAX_PLACES} decimal places.')
+
+
+class VectorProjectApprovalRunner(ProjectApprovalRunner):
+    """An object that performs necessary database changes when a new
+    Vector project request is approved and processed."""
+
+    def update_allocation(self):
+        """Perform allocation-related handling. In particular,
+
+        TODO
+        """
+        project = self.request_obj.project
+        allocation = get_project_compute_allocation(project)
+        allocation.status = AllocationStatusChoice.objects.get(name='Active')
+        # TODO: Set start_date and end_date.
+        # allocation.start_date = utc_now_offset_aware()
+        # allocation.end_date =
+        allocation.save()
+        return allocation

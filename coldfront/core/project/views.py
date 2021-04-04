@@ -54,9 +54,11 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserStatusChoice)
 from coldfront.core.project.utils import (auto_approve_project_join_requests,
                                           get_project_compute_allocation,
+                                          SavioProjectApprovalRunner,
                                           send_project_join_notification_email,
                                           send_project_request_denial_email,
-                                          send_project_request_pooling_email)
+                                          send_project_request_pooling_email,
+                                          VectorProjectApprovalRunner)
 # from coldfront.core.publication.models import Publication
 # from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.resource.models import Resource
@@ -1827,6 +1829,8 @@ from coldfront.core.project.forms import VectorProjectDetailsForm
 from coldfront.core.project.forms import VectorProjectReviewSetupForm
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.models import VectorProjectAllocationRequest
+from coldfront.core.project.utils import savio_request_state_status
+from coldfront.core.project.utils import vector_request_state_status
 from coldfront.core.user.models import UserProfile
 from formtools.wizard.views import SessionWizardView
 
@@ -2201,57 +2205,44 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         messages.error(self.request, message)
         return False
 
+    def dispatch(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        self.request_obj = get_object_or_404(
+            SavioProjectAllocationRequest.objects.prefetch_related(
+                'pi', 'project', 'requester'), pk=pk)
+        return super().dispatch(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        pk = self.kwargs.get('pk')
-        request_obj = get_object_or_404(
-            SavioProjectAllocationRequest.objects.prefetch_related(
-                'pi', 'project', 'requester'), pk=pk)
-
         survey_form = SavioProjectSurveyForm(
-            initial=request_obj.survey_answers, disable_fields=True)
+            initial=self.request_obj.survey_answers, disable_fields=True)
         context['survey_form'] = survey_form
 
         try:
             context['allocation_amount'] = \
-                self.__get_service_units_to_allocate(request_obj)
+                self.__get_service_units_to_allocate()
         except Exception as e:
             self.logger.exception(e)
             messages.error(self.request, self.error_message)
             context['allocation_amount'] = 'Failed to compute.'
 
+        context['is_checklist_complete'] = self.__is_checklist_complete()
+
         return context
 
     def post(self, request, *args, **kwargs):
-        pk = self.kwargs.get('pk')
-        request_obj = get_object_or_404(
-            SavioProjectAllocationRequest.objects.prefetch_related(
-                'pi', 'project', 'requester'), pk=pk)
-
-        if not self.request.user.is_superuser:
-            message = 'You do not have permission to activate the request.'
-            messages.error(request, message)
-            return HttpResponseRedirect(
-                reverse('savio-project-request-detail', kwargs={'pk': pk}))
-
-        # TODO: Check that the checklist steps are complete.
-        if not self.__is_checklist_complete(request_obj):
+        if not self.__is_checklist_complete():
             message = 'Please complete the checklist before final activation.'
             messages.error(request, message)
+            pk = self.request_obj.pk
             return HttpResponseRedirect(
                 reverse('savio-project-request-detail', kwargs={'pk': pk}))
-
         try:
-            self.__upgrade_pi_user(request_obj)
-            project = self.__update_project(request_obj)
-            self.__create_project_users(request_obj)
-            allocation = self.__update_allocation(request_obj)
-
-            request_obj.status = \
-                ProjectAllocationRequestStatusChoice.objects.get(
-                    name='Approved - Complete')
-            request_obj.save()
+            num_service_units = self.__get_service_units_to_allocate()
+            runner = SavioProjectApprovalRunner(
+                self.request_obj, num_service_units)
+            project, allocation = runner.run()
         except Exception as e:
             self.logger.exception(e)
             messages.error(self.request, self.error_message)
@@ -2260,35 +2251,12 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
                 f'Project {project.name} and Allocation {allocation.pk} have '
                 f'been activated.')
             messages.success(self.request, message)
-
         return self.redirect
 
-    def __create_project_users(self, request_obj):
-        """Create active ProjectUsers with the appropriate roles for the
-        requester and/or the PI."""
-        project = request_obj.project
-        requester = request_obj.requester
-        pi = request_obj.pi
-        # get_or_create's 'defaults' arguments are only considered if a create
-        # is required.
-        defaults = {
-            'status': ProjectUserStatusChoice.objects.get(name='Active')
-        }
-        if requester.pk != pi.pk:
-            defaults['role'] = ProjectUserRoleChoice.objects.get(
-                name='Manager')
-            requester_project_user, _ = ProjectUser.objects.get_or_create(
-                project=project, user=requester, defaults=defaults)
-        defaults['role'] = ProjectUserRoleChoice.objects.get(
-            name='Principal Investigator')
-        pi_project_user, _ = ProjectUser.objects.get_or_create(
-            project=project, user=pi, defaults=defaults)
-
-    @staticmethod
-    def __get_service_units_to_allocate(request_obj):
+    def __get_service_units_to_allocate(self):
         """Return the number of service units to allocate to the
         project if it were to be approved now."""
-        allocation_type = request_obj.allocation_type
+        allocation_type = self.request_obj.allocation_type
         now = utc_now_offset_aware()
         if allocation_type == 'CO':
             return settings.CO_DEFAULT_ALLOCATION
@@ -2301,79 +2269,10 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         else:
             raise ValueError(f'Invalid allocation_type {allocation_type}.')
 
-    def __is_checklist_complete(self, request_obj):
-        # TODO
-        return False
-
-    def __update_allocation(self, request_obj):
-        """Set the allocation's start and end dates. Set its attribute
-        type. If not pooling, set its service units values; otherwise,
-        increase it."""
-        project = request_obj.project
-        allocation_type = request_obj.allocation_type
-        pool = request_obj.pool
-
-        resource = Resource.objects.get(name='Savio Compute')
-        allocations = Allocation.objects.filter(
-            project=project, resources__pk__exact=resource.pk)
-        try:
-            assert allocations.count() == 1
-        except AssertionError as e:
-            number = 'no' if allocations.count() == 0 else 'more than one'
-            self.logger.error(
-                f'Project {project.name} unexpectedly has {number} Allocation '
-                f'to Resource {resource.name}')
-            raise e
-
-        allocation = allocations.first()
-        allocation.status = AllocationStatusChoice.objects.get(name='Active')
-        # TODO: Set start_date and end_date.
-        # allocation.start_date = utc_now_offset_aware()
-        # allocation.end_date =
-        allocation.save()
-
-        # Set the allocation's allocation type.
-        allocation_attribute_type = AllocationAttributeType.objects.get(
-            name='Savio Allocation Type')
-        allocation_attribute, _ = \
-            AllocationAttribute.objects.get_or_create(
-                allocation_attribute_type=allocation_attribute_type,
-                allocation=allocation, defaults={'value': allocation_type})
-
-        # Set or increase the allocation's service units.
-        allocation_attribute_type = AllocationAttributeType.objects.get(
-            name='Service Units')
-        allocation_attribute, _ = \
-            AllocationAttribute.objects.get_or_create(
-                allocation_attribute_type=allocation_attribute_type,
-                allocation=allocation)
-        # TODO: Pass the value here somehow. Put it in the form with default.
-        from decimal import Decimal
-        value = Decimal('0.00')
-        if pool:
-            existing_value = Decimal(allocation_attribute.value)
-            allocation_attribute.value = str(existing_value + value)
-        else:
-            allocation_attribute.value = str(value)
-        allocation_attribute.save()
-
-        return allocation
-
-    def __update_project(self, request_obj):
-        """Set the Project to active, and store the survey answers."""
-        project = request_obj.project
-        project.status = ProjectStatusChoice.objects.get(name='Active')
-        project.save()
-        # TODO: Store the survey answers.
-        return project
-
-    @staticmethod
-    def __upgrade_pi_user(request_obj):
-        """Set the is_pi field of the request's PI UserProfile to
-        True."""
-        pi = request_obj.pi
-        pi.userprofile.is_pi = True
-        pi.userprofile.save()
+    def __is_checklist_complete(self):
+        status_choice = savio_request_state_status(self.request_obj)
+        return (status_choice.name == 'Approved - Processing' and
+                self.request_obj.state['setup']['status'] == 'Complete')
 
 
 class SavioProjectReviewEligibilityView(LoginRequiredMixin,
@@ -2763,6 +2662,9 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
     logger = logging.getLogger(__name__)
 
+    # TODO: Use the URL's name (reverse_lazt still leads to circular import).
+    redirect = HttpResponseRedirect('vector-project-pending-request-list/')
+
     def test_func(self):
         """UserPassesTestMixin tests."""
         if self.request.user.is_superuser:
@@ -2771,13 +2673,44 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         messages.error(self.request, message)
         return False
 
+    def dispatch(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        self.request_obj = get_object_or_404(
+            VectorProjectAllocationRequest.objects.prefetch_related(
+                'pi', 'project', 'requester'), pk=pk)
+        return super().dispatch(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
+        context['is_checklist_complete'] = self.__is_checklist_complete()
+
         return context
 
     def post(self, request, *args, **kwargs):
-        # TODO
-        pass
+        if not self.__is_checklist_complete():
+            message = 'Please complete the checklist before final activation.'
+            messages.error(request, message)
+            pk = self.request_obj.pk
+            return HttpResponseRedirect(
+                reverse('vector-project-request-detail', kwargs={'pk': pk}))
+        try:
+            runner = VectorProjectApprovalRunner(self.request_obj)
+            project, allocation = runner.run()
+        except Exception as e:
+            self.logger.exception(e)
+            messages.error(self.request, self.error_message)
+        else:
+            message = (
+                f'Project {project.name} and Allocation {allocation.pk} have '
+                f'been activated.')
+            messages.success(self.request, message)
+        return self.redirect
+
+    def __is_checklist_complete(self):
+        status_choice = vector_request_state_status(self.request_obj)
+        return (status_choice.name == 'Approved - Processing' and
+                self.request_obj.state['setup']['status'] == 'Complete')
 
 
 class VectorProjectReviewEligibilityView(LoginRequiredMixin,
@@ -2814,8 +2747,6 @@ class VectorProjectReviewEligibilityView(LoginRequiredMixin,
         }
 
         if status == 'Denied':
-            self.request_obj.status = \
-                ProjectAllocationRequestStatusChoice.objects.get(name='Denied')
             try:
                 send_project_request_denial_email(self.request_obj)
             except Exception as e:
@@ -2823,7 +2754,7 @@ class VectorProjectReviewEligibilityView(LoginRequiredMixin,
                 self.logger.error(message)
                 self.logger.exception(e)
 
-        # TODO: Set the status based on the state.
+        self.request_obj.status = vector_request_state_status(self.request_obj)
 
         self.request_obj.save()
 

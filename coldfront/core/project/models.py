@@ -132,6 +132,14 @@ We do not have information about your research. Please provide a detailed descri
             role__name='Principal Investigator').values_list('user', flat=True)
         return User.objects.filter(pk__in=pi_user_pks).order_by('username')
 
+    def managers(self):
+        """Return a queryset of User objects that are Managers on this
+        project, ordered by username."""
+        manager_user_pks = self.projectuser_set.filter(
+            role__name='Manager').values_list('user', flat=True)
+        return User.objects.filter(
+            pk__in=manager_user_pks).order_by('username')
+
     def __str__(self):
         return self.name
 
