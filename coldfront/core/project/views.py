@@ -54,9 +54,9 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserStatusChoice)
 from coldfront.core.project.utils import (auto_approve_project_join_requests,
                                           get_project_compute_allocation,
+                                          ProjectDenialRunner,
                                           SavioProjectApprovalRunner,
                                           send_project_join_notification_email,
-                                          send_project_request_denial_email,
                                           send_project_request_pooling_email,
                                           VectorProjectApprovalRunner)
 # from coldfront.core.publication.models import Publication
@@ -2312,16 +2312,11 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
             'justification': justification,
             'timestamp': timestamp,
         }
+        self.request_obj.status = savio_request_state_status(self.request_obj)
 
         if status == 'Denied':
-            try:
-                send_project_request_denial_email(self.request_obj)
-            except Exception as e:
-                message = 'Failed to send notification email. Details:'
-                self.logger.error(message)
-                self.logger.exception(e)
-
-        self.request_obj.status = savio_request_state_status(self.request_obj)
+            runner = ProjectDenialRunner(self.request_obj)
+            runner.run()
 
         self.request_obj.save()
 
@@ -2381,19 +2376,14 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
             'justification': justification,
             'timestamp': timestamp,
         }
+        self.request_obj.status = savio_request_state_status(self.request_obj)
 
         if status == 'Approved':
             if self.request_obj.pool:
                 send_project_request_pooling_email(self.request_obj)
         elif status == 'Denied':
-            try:
-                send_project_request_denial_email(self.request_obj)
-            except Exception as e:
-                message = 'Failed to send notification email. Details:'
-                self.logger.error(message)
-                self.logger.exception(e)
-
-        self.request_obj.status = savio_request_state_status(self.request_obj)
+            runner = ProjectDenialRunner(self.request_obj)
+            runner.run()
 
         self.request_obj.save()
 
@@ -2532,15 +2522,10 @@ class SavioProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
             'justification': justification,
             'timestamp': timestamp,
         }
-
-        try:
-            send_project_request_denial_email(self.request_obj)
-        except Exception as e:
-            message = 'Failed to send notification email. Details:'
-            self.logger.error(message)
-            self.logger.exception(e)
-
         self.request_obj.status = savio_request_state_status(self.request_obj)
+
+        runner = ProjectDenialRunner(self.request_obj)
+        runner.run()
 
         self.request_obj.save()
 
@@ -2749,16 +2734,11 @@ class VectorProjectReviewEligibilityView(LoginRequiredMixin,
             'justification': justification,
             'timestamp': timestamp,
         }
+        self.request_obj.status = vector_request_state_status(self.request_obj)
 
         if status == 'Denied':
-            try:
-                send_project_request_denial_email(self.request_obj)
-            except Exception as e:
-                message = 'Failed to send notification email. Details:'
-                self.logger.error(message)
-                self.logger.exception(e)
-
-        self.request_obj.status = vector_request_state_status(self.request_obj)
+            runner = ProjectDenialRunner(self.request_obj)
+            runner.run()
 
         self.request_obj.save()
 
