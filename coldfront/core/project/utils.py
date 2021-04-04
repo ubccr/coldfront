@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 def add_project_status_choices(apps, schema_editor):
     ProjectStatusChoice = apps.get_model('project', 'ProjectStatusChoice')
 
-    for choice in ['New', 'Active', 'Archived', ]:
+    for choice in ['New', 'Active', 'Archived', 'Denied', ]:
         ProjectStatusChoice.objects.get_or_create(name=choice)
 
 
@@ -197,6 +197,14 @@ def send_project_join_notification_email(project, project_user):
     send_email_template(subject, template_name, context, sender, receiver_list)
 
 
+def send_project_request_approved_email(request):
+    """Send a notification email to the requester and PI associated with
+    the given project alloation request stating that the request has
+    been approved and processed."""
+    # TODO.
+    pass
+
+
 def send_project_request_denial_email(request):
     """Send a notification email to the requester and PI associated with
     the given project allocation request stating that the request has
@@ -318,11 +326,10 @@ class ProjectApprovalRunner(object):
         pi.userprofile.save()
 
     def update_project(self):
-        """Set the Project to active, and store the survey answers."""
+        """Set the Project's status to 'Active'."""
         project = self.request_obj.project
         project.status = ProjectStatusChoice.objects.get(name='Active')
         project.save()
-        # TODO: Store the survey answers.
         return project
 
 
@@ -423,3 +430,36 @@ class VectorProjectApprovalRunner(ProjectApprovalRunner):
         # allocation.end_date =
         allocation.save()
         return allocation
+
+
+class ProjectDenialRunner(object):
+    """An object that performs necessary database changes when a new
+    project request is denied."""
+
+    def __init__(self, request_obj):
+        self.request_obj = request_obj
+
+    def run(self):
+        self.update_project()
+        self.deny_request()
+        self.send_email()
+
+    def deny_request(self):
+        """Set the status of the request to 'Denied'."""
+        self.request_obj.status = \
+            ProjectAllocationRequestStatusChoice.objects.get(name='Denied')
+        self.request_obj.save()
+
+    def send_email(self):
+        try:
+            send_project_request_approved_email(self.request_obj)
+        except Exception as e:
+            self.logger.error(f'Failed to send notification email. Details:\n')
+            self.logger.exception(e)
+
+    def update_project(self):
+        """Set the Project's status to 'Denied'."""
+        project = self.request_obj.project
+        project.status = ProjectStatusChoice.objects.get(name='Denied')
+        project.save()
+        return project
