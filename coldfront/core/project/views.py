@@ -1842,10 +1842,16 @@ class ProjectRequestView(LoginRequiredMixin, TemplateView):
         context = dict()
         context['savio_requests'] = \
             SavioProjectAllocationRequest.objects.filter(
-                Q(requester=request.user) | Q(pi=request.user))
+                Q(requester=request.user) | Q(pi=request.user)
+            ).exclude(
+                status__name__in=['Approved - Complete', 'Denied']
+            )
         context['vector_requests'] = \
             VectorProjectAllocationRequest.objects.filter(
-                Q(requester=request.user) | Q(pi=request.user))
+                Q(requester=request.user) | Q(pi=request.user)
+            ).exclude(
+                status__name__in=['Approved - Complete', 'Denied']
+            )
         return render(request, self.template_name, context)
 
 
@@ -2194,8 +2200,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
     error_message = 'Unexpected failure. Please contact an administrator.'
 
-    # TODO: Use the URL's name (reverse_lazy still leads to circular import).
-    redirect = HttpResponseRedirect('savio-project-pending-request-list/')
+    redirect = reverse_lazy('savio-project-pending-request-list')
 
     def test_func(self):
         """UserPassesTestMixin tests."""
@@ -2309,8 +2314,6 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
         }
 
         if status == 'Denied':
-            self.request_obj.status = \
-                ProjectAllocationRequestStatusChoice.objects.get(name='Denied')
             try:
                 send_project_request_denial_email(self.request_obj)
             except Exception as e:
@@ -2318,7 +2321,7 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
                 self.logger.error(message)
                 self.logger.exception(e)
 
-        # TODO: Set the status based on the state.
+        self.request_obj.status = savio_request_state_status(self.request_obj)
 
         self.request_obj.save()
 
@@ -2382,18 +2385,15 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
         if status == 'Approved':
             if self.request_obj.pool:
                 send_project_request_pooling_email(self.request_obj)
-                # TODO: Leave a ProjectUserMessage for the poolee project.
-                # ProjectUserMessage.objects.create(
-                #     project=self.request_obj.project, author=, message='')
         elif status == 'Denied':
-            self.request_obj.status = \
-                ProjectAllocationRequestStatusChoice.objects.get(name='Denied')
             try:
                 send_project_request_denial_email(self.request_obj)
             except Exception as e:
                 message = 'Failed to send notification email. Details:'
                 self.logger.error(message)
                 self.logger.exception(e)
+
+        self.request_obj.status = savio_request_state_status(self.request_obj)
 
         self.request_obj.save()
 
@@ -2445,12 +2445,14 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
         # TODO.
         form_data = form.cleaned_data
         status = form_data['status']
+        requested_name = (
+            self.request_obj.state['setup']['name_change']['requested_name'])
         final_name = form_data['final_name']
         justification = form_data['justification']
         timestamp = utc_now_offset_aware().isoformat()
 
         name_change = {
-            'requested_name': self.request_obj.project.name,
+            'requested_name': requested_name,
             'final_name': final_name,
             'justification': justification,
         }
@@ -2460,11 +2462,12 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
             'timestamp': timestamp,
         }
 
-        if status == 'Complete':
-            # TODO
-            pass
-            # self.request_obj.status = \
-            #     ProjectAllocationRequestStatusChoice.objects.get(name=)
+        # Set the Project's name. This is the only modification performed prior
+        # to the final submission because the name must be unique.
+        self.request_obj.project.name = final_name
+        self.request_obj.project.save()
+
+        self.request_obj.status = savio_request_state_status(self.request_obj)
 
         self.request_obj.save()
 
@@ -2480,7 +2483,9 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['requested_name'] = self.request_obj.project.name
+        kwargs['project_pk'] = self.request_obj.project.pk
+        kwargs['requested_name'] = (
+            self.request_obj.state['setup']['name_change']['requested_name'])
         return kwargs
 
     def get_initial(self):
@@ -2528,14 +2533,14 @@ class SavioProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
             'timestamp': timestamp,
         }
 
-        self.request_obj.status = \
-            ProjectAllocationRequestStatusChoice.objects.get(name='Denied')
         try:
             send_project_request_denial_email(self.request_obj)
         except Exception as e:
             message = 'Failed to send notification email. Details:'
             self.logger.error(message)
             self.logger.exception(e)
+
+        self.request_obj.status = savio_request_state_status(self.request_obj)
 
         self.request_obj.save()
 
@@ -2662,8 +2667,7 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
     logger = logging.getLogger(__name__)
 
-    # TODO: Use the URL's name (reverse_lazt still leads to circular import).
-    redirect = HttpResponseRedirect('vector-project-pending-request-list/')
+    redirect = reverse_lazy('vector-project-pending-request-list')
 
     def test_func(self):
         """UserPassesTestMixin tests."""
@@ -2705,7 +2709,7 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
                 f'Project {project.name} and Allocation {allocation.pk} have '
                 f'been activated.')
             messages.success(self.request, message)
-        return self.redirect
+        return HttpResponseRedirect(self.redirect)
 
     def __is_checklist_complete(self):
         status_choice = vector_request_state_status(self.request_obj)
@@ -2803,12 +2807,14 @@ class VectorProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
         # TODO.
         form_data = form.cleaned_data
         status = form_data['status']
+        requested_name = (
+            self.request_obj.state['setup']['name_change']['requested_name'])
         final_name = form_data['final_name']
         justification = form_data['justification']
         timestamp = utc_now_offset_aware().isoformat()
 
         name_change = {
-            'requested_name': self.request_obj.project.name,
+            'requested_name': requested_name,
             'final_name': final_name,
             'justification': justification,
         }
@@ -2818,11 +2824,12 @@ class VectorProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
             'timestamp': timestamp,
         }
 
-        if status == 'Complete':
-            # TODO
-            pass
-            # self.request_obj.status = \
-            #     ProjectAllocationRequestStatusChoice.objects.get(name=)
+        # Set the Project's name. This is the only modification performed prior
+        # to the final submission because the name must be unique.
+        self.request_obj.project.name = final_name
+        self.request_obj.project.save()
+
+        self.request_obj.status = vector_request_state_status(self.request_obj)
 
         self.request_obj.save()
 
@@ -2835,7 +2842,9 @@ class VectorProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['requested_name'] = self.request_obj.project.name
+        kwargs['project_pk'] = self.request_obj.project.pk
+        kwargs['requested_name'] = (
+            self.request_obj.state['setup']['name_change']['requested_name'])
         return kwargs
 
     def get_initial(self):

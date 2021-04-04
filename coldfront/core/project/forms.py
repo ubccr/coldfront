@@ -612,6 +612,7 @@ class SavioProjectReviewSetupForm(forms.Form):
         widget=forms.Textarea(attrs={'rows': 3}))
 
     def __init__(self, *args, **kwargs):
+        self.project_pk = kwargs.pop('project_pk')
         self.requested_name = kwargs.pop('requested_name')
         super().__init__(*args, **kwargs)
         self.fields['final_name'].initial = self.requested_name
@@ -642,6 +643,11 @@ class SavioProjectReviewSetupForm(forms.Form):
         if not final_name.startswith(expected_prefix):
             raise forms.ValidationError(
                 f'Final project name must begin with "{expected_prefix}".')
+        matching_projects = Project.objects.exclude(
+            pk=self.project_pk).filter(name=final_name)
+        if matching_projects.exists():
+            raise forms.ValidationError(
+                f'A project with name {final_name} already exists.')
         return final_name
 
 
@@ -738,6 +744,7 @@ class VectorProjectReviewSetupForm(forms.Form):
         widget=forms.Textarea(attrs={'rows': 3}))
 
     def __init__(self, *args, **kwargs):
+        self.project_pk = kwargs.pop('project_pk')
         self.requested_name = kwargs.pop('requested_name')
         super().__init__(*args, **kwargs)
         self.fields['final_name'].initial = self.requested_name
@@ -760,4 +767,9 @@ class VectorProjectReviewSetupForm(forms.Form):
         if not final_name.startswith(expected_prefix):
             raise forms.ValidationError(
                 f'Final project name must begin with "{expected_prefix}".')
+        matching_projects = Project.objects.exclude(
+            pk=self.project_pk).filter(name=final_name)
+        if matching_projects.exists():
+            raise forms.ValidationError(
+                f'A project with name {final_name} already exists.')
         return final_name

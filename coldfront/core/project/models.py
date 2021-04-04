@@ -330,6 +330,13 @@ class SavioProjectAllocationRequest(TimeStampedModel):
     state = models.JSONField(default=savio_project_request_state_schema)
     history = HistoricalRecords()
 
+    def save(self, *args, **kwargs):
+        # On creation, set the requested_name.
+        if not self.pk:
+            self.state['setup']['name_change']['requested_name'] = \
+                self.project.name
+        super().save(*args, **kwargs)
+
     def __str__(self):
         name = (
             f'{self.project.name} - {self.pi.first_name} {self.pi.last_name}')
@@ -354,6 +361,13 @@ class VectorProjectAllocationRequest(TimeStampedModel):
         verbose_name='Status')
     state = models.JSONField(default=vector_project_request_state_schema)
     history = HistoricalRecords()
+
+    def save(self, *args, **kwargs):
+        # On creation, set the requested_name.
+        if not self.pk:
+            self.state['setup']['name_change']['requested_name'] = \
+                self.project.name
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return (
