@@ -6,9 +6,9 @@ from rest_framework import permissions
 
 schema_view = get_schema_view(
     openapi.Info(
-        title='myBRC REST API',
+        title='MyBRC REST API',
         default_version='v1',
-        description='REST API for myBRC'),
+        description='REST API for MyBRC'),
     public=True,
     permission_classes=(permissions.AllowAny,))
 
