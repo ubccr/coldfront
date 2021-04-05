@@ -84,6 +84,15 @@ class UserLoginForm(AuthenticationForm):
                 'account.', code='inactive')
 
 
+class UserProfileUpdateForm(forms.Form):
+    first_name = forms.CharField(label='First Name')
+    middle_name = forms.CharField(label='Middle Name', required=False)
+    last_name = forms.CharField(label='Last Name')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
 class UserAccessAgreementForm(forms.Form):
 
     POP_QUIZ_CHOICES = [

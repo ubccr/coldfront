@@ -24,6 +24,7 @@ from django.views.generic import CreateView, ListView, TemplateView
 
 from coldfront.core.project.models import Project, ProjectUser
 from coldfront.core.user.forms import UserAccessAgreementForm
+from coldfront.core.user.forms import UserProfileUpdateForm
 from coldfront.core.user.forms import UserRegistrationForm
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
@@ -72,6 +73,41 @@ class UserProfile(TemplateView):
             [group.name for group in viewed_user.groups.all()])
         context['group_list'] = group_list
         context['viewed_user'] = viewed_user
+        return context
+
+
+@method_decorator(login_required, name='dispatch')
+class UserProfileUpdate(TemplateView):
+    template_name = 'user/user_profile_update.html'
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+
+        first_name = request.POST['first_name'].strip()
+        middle_name = request.POST['middle_name'].strip()
+        last_name = request.POST['last_name'].strip()
+
+        user.first_name = first_name
+        user.last_name = last_name
+        user.userprofile.middle_name = middle_name
+
+        user.userprofile.save()
+        user.save()
+
+        messages.success(request, 'Name updated.')
+        return redirect(reverse('user-profile'))
+
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        user = self.request.user
+        initial_data = {'first_name': user.first_name,
+                        'middle_name': user.userprofile.middle_name,
+                        'last_name': user.last_name}
+        user_update_form = UserProfileUpdateForm(initial_data)
+        context['user_update_form'] = user_update_form if user_update_form.is_valid() else UserProfileUpdateForm()
+
         return context
 
 
