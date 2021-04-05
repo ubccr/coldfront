@@ -78,7 +78,7 @@ Savio Project Request Detail
   </div>
 </div>
 
-{% if savio_request.status.name not in 'Denied,Approved - Complete' %}
+{% if is_allowed_to_manage_request and savio_request.status.name not in 'Denied,Approved - Complete' %}
   <div class="card mb-3">
     <div class="card-header">
       <h4>
