@@ -2209,6 +2209,9 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         """UserPassesTestMixin tests."""
         if self.request.user.is_superuser:
             return True
+        if (self.request.user == self.request_obj.requester or
+                self.request.user == self.request_obj.pi):
+            return True
         message = 'You do not have permission to view the previous page.'
         messages.error(self.request, message)
         return False
@@ -2268,6 +2271,9 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             context['support_email'] = settings.EMAIL_TICKET_SYSTEM_ADDRESS
 
         context['is_checklist_complete'] = self.__is_checklist_complete()
+
+        context['is_allowed_to_manage_request'] = (
+            self.request.user.is_superuser)
 
         return context
 
@@ -2695,6 +2701,9 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         """UserPassesTestMixin tests."""
         if self.request.user.is_superuser:
             return True
+        if (self.request.user == self.request_obj.requester or
+                self.request.user == self.request_obj.pi):
+            return True
         message = 'You do not have permission to view the previous page.'
         messages.error(self.request, message)
         return False
@@ -2742,6 +2751,9 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             context['support_email'] = settings.EMAIL_TICKET_SYSTEM_ADDRESS
 
         context['is_checklist_complete'] = self.__is_checklist_complete()
+
+        context['is_allowed_to_manage_request'] = (
+            self.request.user.is_superuser)
 
         return context
 
