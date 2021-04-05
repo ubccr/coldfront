@@ -2367,6 +2367,11 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
 
         self.request_obj.save()
 
+        message = (
+            f'Eligibility status for request {self.request_obj.pk} has been '
+            f'set to {status}.')
+        messages.success(self.request, message)
+
         return super().form_valid(form)
 
     def get_context_data(self, **kwargs):
@@ -2419,7 +2424,6 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
-        # TODO.
         form_data = form.cleaned_data
         status = form_data['status']
         justification = form_data['justification']
@@ -2439,6 +2443,11 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
             runner.run()
 
         self.request_obj.save()
+
+        message = (
+            f'Readiness status for request {self.request_obj.pk} has been set '
+            f'to {status}.')
+        messages.success(self.request, message)
 
         return super().form_valid(form)
 
@@ -2491,7 +2500,6 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
-        # TODO.
         form_data = form.cleaned_data
         status = form_data['status']
         requested_name = (
@@ -2519,6 +2527,11 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
         self.request_obj.status = savio_request_state_status(self.request_obj)
 
         self.request_obj.save()
+
+        message = (
+            f'Setup status for request {self.request_obj.pk} has been set to '
+            f'{status}.')
+        messages.success(self.request, message)
 
         return super().form_valid(form)
 
@@ -2593,6 +2606,11 @@ class SavioProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
         runner.run()
 
         self.request_obj.save()
+
+        message = (
+            f'Status for {self.request_obj.pk} has been set to '
+            f'{self.request_obj.status}.')
+        messages.success(self.request, message)
 
         return super().form_valid(form)
 
@@ -2853,6 +2871,11 @@ class VectorProjectReviewEligibilityView(LoginRequiredMixin,
 
         self.request_obj.save()
 
+        message = (
+            f'Eligibility status for request {self.request_obj.pk} has been '
+            f'set to {status}.')
+        messages.success(self.request, message)
+
         return super().form_valid(form)
 
     def get_context_data(self, **kwargs):
@@ -2929,6 +2952,11 @@ class VectorProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
         self.request_obj.status = vector_request_state_status(self.request_obj)
 
         self.request_obj.save()
+
+        message = (
+            f'Setup status for request {self.request_obj.pk} has been set to '
+            f'{status}.')
+        messages.success(self.request, message)
 
         return super().form_valid(form)
 
