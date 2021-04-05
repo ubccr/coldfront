@@ -2341,6 +2341,12 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
         self.request_obj = get_object_or_404(
             SavioProjectAllocationRequest.objects.prefetch_related(
                 'pi', 'project', 'requester'), pk=pk)
+        status_name = self.request_obj.status.name
+        if status_name in ['Approved - Complete', 'Denied']:
+            message = f'You cannot review a request with status {status_name}.'
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse('savio-project-request-detail', kwargs={'pk': pk}))
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -2404,6 +2410,12 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
         self.request_obj = get_object_or_404(
             SavioProjectAllocationRequest.objects.prefetch_related(
                 'pi', 'project', 'requester'), pk=pk)
+        status_name = self.request_obj.status.name
+        if status_name in ['Approved - Complete', 'Denied']:
+            message = f'You cannot review a request with status {status_name}.'
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse('savio-project-request-detail', kwargs={'pk': pk}))
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -2470,6 +2482,12 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
         self.request_obj = get_object_or_404(
             SavioProjectAllocationRequest.objects.prefetch_related(
                 'pi', 'project', 'requester'), pk=pk)
+        status_name = self.request_obj.status.name
+        if status_name in ['Approved - Complete', 'Denied']:
+            message = f'You cannot review a request with status {status_name}.'
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse('savio-project-request-detail', kwargs={'pk': pk}))
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -2553,6 +2571,12 @@ class SavioProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
         self.request_obj = get_object_or_404(
             SavioProjectAllocationRequest.objects.prefetch_related(
                 'pi', 'project', 'requester'), pk=pk)
+        status_name = self.request_obj.status.name
+        if status_name in ['Approved - Complete', 'Denied']:
+            message = f'You cannot review a request with status {status_name}.'
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse('savio-project-request-detail', kwargs={'pk': pk}))
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -2803,6 +2827,12 @@ class VectorProjectReviewEligibilityView(LoginRequiredMixin,
         self.request_obj = get_object_or_404(
             VectorProjectAllocationRequest.objects.prefetch_related(
                 'pi', 'project', 'requester'), pk=pk)
+        status_name = self.request_obj.status.name
+        if status_name in ['Approved - Complete', 'Denied']:
+            message = f'You cannot review a request with status {status_name}.'
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse('vector-project-request-detail', kwargs={'pk': pk}))
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -2862,6 +2892,12 @@ class VectorProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
         self.request_obj = get_object_or_404(
             VectorProjectAllocationRequest.objects.prefetch_related(
                 'pi', 'project', 'requester'), pk=pk)
+        status_name = self.request_obj.status.name
+        if status_name in ['Approved - Complete', 'Denied']:
+            message = f'You cannot review a request with status {status_name}.'
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse('vector-project-request-detail', kwargs={'pk': pk}))
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
