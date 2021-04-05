@@ -11,7 +11,7 @@ Vector Project Request Detail
 
 {% block content %}
 <h1>
-  Review Vector Project Request
+  Vector: {{ vector_request.project.name }} - {{ vector_request.requester.first_name }} {{ vector_request.requester.last_name }}
   {% with status=vector_request.status.name %}
     {% if status == 'Under Review' %}
       <span class="badge badge-warning" style="float: right;">{{ status }}</span>
@@ -26,19 +26,68 @@ Vector Project Request Detail
 </h1>
 <hr>
 
-<p>This form activates a request for a Vector project. Please review the given information and complete the checklist before final approval.</p>
-
 {% include 'project/project_request/vector/project_request_card.html' with vector_request=vector_request %}
 
 <div class="card mb-3">
   <div class="card-header">
     <h4>
-      <i class="fas fa-check-circle" aria-hidden="true"></i>
-      Checklist
+      <i class="fas fa-question-circle" aria-hidden="true"></i>
+      Request Status
     </h4>
   </div>
   <div class="card-body">
-    <p>Complete the checklist below in the following order.</p>
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <tbody>
+          <tr>
+            <th>Status:</th>
+            <td>
+              {% with status=vector_request.status.name %}
+                {% if status == 'Under Review' %}
+                  <p>This request is currently under review. Administrators must determine if the requester is eligible for access.</p>
+                {% elif status == 'Approved - Processing' %}
+                  <p>This request has been approved, and is currently being set up on the cluster.</p>
+                {% elif status == 'Approved - Complete' %}
+                  <p>This request has been approved, and is fully set up on the cluster.</p>
+                {% else %}
+                  <p>This request has been denied. Below are specific details:</p>
+                  <p>
+                    <strong>Category:</strong>
+                    {{ denial_reason.category }}
+                  </p>
+                  <p>
+                    <strong>Justification:</strong>
+                    {{ denial_reason.justification }}
+                  </p>
+                  <p>
+                    <strong>Timestamp:</strong>
+                    {{ denial_reason.timestamp }}
+                  </p>
+                  <p>If you have any questions or concerns, please contact us at {{ support_email }}.</p>
+                {% endif %}
+              {% endwith %}
+            </td>
+          </tr>
+          <tr>
+            <th>Latest Update Timestamp:</th>
+            <td>{{ latest_update_timestamp }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% if vector_request.status.name not in 'Denied,Approved - Complete' %}
+<div class="card mb-3">
+  <div class="card-header">
+    <h4>
+      <i class="fas fa-check-circle" aria-hidden="true"></i>
+      System Administrator Checklist
+    </h4>
+  </div>
+  <div class="card-body">
+    <p>This section, which is only visible for system administrators, activates this request. Please review the given information and complete the checklist in the following order before final approval.</p>
     <div class="table-responsive">
       <table class="table table-sm">
         <thead>
@@ -106,18 +155,19 @@ Vector Project Request Detail
         </tbody>
       </table>
     </div>
+    <hr>
+    {% if is_checklist_complete %}
+      <form action="{% url 'vector-project-request-detail' vector_request.pk %}" method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success">Submit</button>
+        <a href="{% url 'vector-project-pending-request-list' %}" class="btn btn-secondary">Cancel</a>
+      </form>
+    {% else %}
+      <button type="button" class="btn btn-success" disabled>Submit</button>
+      <a href="{% url 'vector-project-pending-request-list' %}" class="btn btn-secondary">Cancel</a>
+    {% endif %}
   </div>
 </div>
-
-{% if is_checklist_complete %}
-  <form action="{% url 'vector-project-request-detail' vector_request.pk %}" method="post">
-    {% csrf_token %}
-    <button type="submit" class="btn btn-success">Submit</button>
-    <a href="{% url 'vector-project-pending-request-list' %}" class="btn btn-secondary">Cancel</a>
-  </form>
-{% else %}
-  <button type="button" class="btn btn-success" disabled>Submit</button>
-  <a href="{% url 'vector-project-pending-request-list' %}" class="btn btn-secondary">Cancel</a>
 {% endif %}
 
 {% endblock %}

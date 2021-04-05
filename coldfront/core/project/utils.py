@@ -222,9 +222,113 @@ def send_project_request_pooling_email(request):
     pass
 
 
+def savio_request_latest_update_timestamp(savio_request):
+    """Return the latest timestamp stored in the given
+    SavioProjectAllocationRequest's 'state' field, or the empty string.
+
+    The expected values are ISO 8601 strings, or the empty string, so
+    taking the maximum should provide the correct output."""
+    if not isinstance(savio_request, SavioProjectAllocationRequest):
+        raise TypeError(
+            f'Provided request has unexpected type {type(savio_request)}.')
+    state = savio_request.state
+    eligibility = state['eligibility']
+    readiness = state['readiness']
+    setup = state['setup']
+    other = state['other']
+    return max(
+        eligibility['timestamp'], readiness['timestamp'], setup['timestamp'],
+        other['timestamp'])
+
+
+def vector_request_latest_update_timestamp(vector_request):
+    """Return the latest timestamp stored in the given
+    VectorProjectAllocationRequest's 'state' field, or the empty string.
+
+    The expected values are ISO 8601 strings, or the empty string, so
+    taking the maximum should provide the correct output."""
+    if not isinstance(vector_request, VectorProjectAllocationRequest):
+        raise TypeError(
+            f'Provided request has unexpected type {type(vector_request)}.')
+    state = vector_request.state
+    eligibility = state['eligibility']
+    setup = state['setup']
+    return max(eligibility['timestamp'], setup['timestamp'])
+
+
+def savio_request_denial_reason(savio_request):
+    """Return the reason why the given SavioProjectAllocationRequest was
+    denied, based on its 'state' field."""
+    if not isinstance(savio_request, SavioProjectAllocationRequest):
+        raise TypeError(
+            f'Provided request has unexpected type {type(savio_request)}.')
+    if savio_request.status.name != 'Denied':
+        raise ValueError(
+            f'Provided request has unexpected status '
+            f'{savio_request.status.name}.')
+
+    state = savio_request.state
+    eligibility = state['eligibility']
+    readiness = state['readiness']
+    other = state['other']
+
+    DenialReason = namedtuple(
+        'DenialReason', 'category justification timestamp')
+
+    if other['timestamp']:
+        category = 'Other'
+        justification = other['justification']
+        timestamp = other['timestamp']
+    elif eligibility['status'] == 'Denied':
+        category = 'PI Ineligible'
+        justification = eligibility['justification']
+        timestamp = eligibility['timestamp']
+    elif readiness['status'] == 'Denied':
+        category = 'Readiness Criteria Unsatisfied'
+        justification = readiness['justification']
+        timestamp = readiness['timestamp']
+    else:
+        raise ValueError('Provided request has an unexpected state.')
+
+    return DenialReason(
+        category=category, justification=justification, timestamp=timestamp)
+
+
+def vector_request_denial_reason(vector_request):
+    """Return the reason why the given VectorProjectAllocationRequest
+    was denied, based on its 'state' field."""
+    if not isinstance(vector_request, VectorProjectAllocationRequest):
+        raise TypeError(
+            f'Provided request has unexpected type {type(vector_request)}.')
+    if vector_request.status.name != 'Denied':
+        raise ValueError(
+            f'Provided request has unexpected status '
+            f'{vector_request.status.name}.')
+
+    state = vector_request.state
+    eligibility = state['eligibility']
+
+    DenialReason = namedtuple(
+        'DenialReason', 'category justification timestamp')
+
+    if eligibility['status'] == 'Denied':
+        category = 'Requester Ineligible'
+        justification = eligibility['justification']
+        timestamp = eligibility['timestamp']
+    else:
+        raise ValueError('Provided request has an unexpected state.')
+
+    return DenialReason(
+        category=category, justification=justification, timestamp=timestamp)
+
+
 def savio_request_state_status(savio_request):
     """Return a ProjectAllocationRequestStatusChoice, based on the
     'state' field of the given SavioProjectAllocationRequest."""
+    if not isinstance(savio_request, SavioProjectAllocationRequest):
+        raise TypeError(
+            f'Provided request has unexpected type {type(savio_request)}.')
+
     state = savio_request.state
     eligibility = state['eligibility']
     readiness = state['readiness']
@@ -252,6 +356,10 @@ def savio_request_state_status(savio_request):
 def vector_request_state_status(vector_request):
     """Return a ProjectAllocationRequestStatusChoice, based on the
     'state' field of the given VectorProjectAllocationRequest."""
+    if not isinstance(vector_request, VectorProjectAllocationRequest):
+        raise TypeError(
+            f'Provided request has unexpected type {type(vector_request)}.')
+
     state = vector_request.state
     eligibility = state['eligibility']
 
