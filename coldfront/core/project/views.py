@@ -56,9 +56,13 @@ from coldfront.core.project.utils import (auto_approve_project_join_requests,
                                           get_project_compute_allocation,
                                           ProjectDenialRunner,
                                           SavioProjectApprovalRunner,
+                                          savio_request_denial_reason,
+                                          savio_request_latest_update_timestamp,
                                           send_project_join_notification_email,
                                           send_project_request_pooling_email,
-                                          VectorProjectApprovalRunner)
+                                          VectorProjectApprovalRunner,
+                                          vector_request_denial_reason,
+                                          vector_request_latest_update_timestamp)
 # from coldfront.core.publication.models import Publication
 # from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.resource.models import Resource
@@ -1814,7 +1818,6 @@ class ProjectAutoApproveJoinRequestsView(LoginRequiredMixin,
 
 
 # TODO: Once finalized, move these imports above.
-from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.project.forms import ProjectAllocationReviewForm
 from coldfront.core.project.forms import SavioProjectAllocationTypeForm
 from coldfront.core.project.forms import SavioProjectDetailsForm
@@ -2231,6 +2234,38 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             self.logger.exception(e)
             messages.error(self.request, self.error_message)
             context['allocation_amount'] = 'Failed to compute.'
+
+        try:
+            latest_update_timestamp = \
+                savio_request_latest_update_timestamp(self.request_obj)
+            if not latest_update_timestamp:
+                latest_update_timestamp = 'No updates yet.'
+        except Exception as e:
+            self.logger.exception(e)
+            messages.error(self.request, self.error_message)
+            latest_update_timestamp = 'Failed to determine timestamp.'
+        context['latest_update_timestamp'] = latest_update_timestamp
+
+        if self.request_obj.status.name == 'Denied':
+            try:
+                denial_reason = savio_request_denial_reason(self.request_obj)
+                category = denial_reason.category
+                justification = denial_reason.justification
+                timestamp = denial_reason.timestamp
+            except Exception as e:
+                self.logger.exception(e)
+                messages.error(self.request, self.error_message)
+                category = 'Unknown Category'
+                justification = (
+                    'Failed to determine denial reason. Please contact an '
+                    'administrator.')
+                timestamp = 'Unknown Timestamp'
+            context['denial_reason'] = {
+                'category': category,
+                'justification': justification,
+                'timestamp': timestamp,
+            }
+            context['support_email'] = settings.EMAIL_TICKET_SYSTEM_ADDRESS
 
         context['is_checklist_complete'] = self.__is_checklist_complete()
 
@@ -2652,6 +2687,8 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
     logger = logging.getLogger(__name__)
 
+    error_message = 'Unexpected failure. Please contact an administrator.'
+
     redirect = reverse_lazy('vector-project-pending-request-list')
 
     def test_func(self):
@@ -2671,6 +2708,38 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
+        try:
+            latest_update_timestamp = \
+                vector_request_latest_update_timestamp(self.request_obj)
+            if not latest_update_timestamp:
+                latest_update_timestamp = 'No updates yet.'
+        except Exception as e:
+            self.logger.exception(e)
+            messages.error(self.request, self.error_message)
+            latest_update_timestamp = 'Failed to determine timestamp.'
+        context['latest_update_timestamp'] = latest_update_timestamp
+
+        if self.request_obj.status.name == 'Denied':
+            try:
+                denial_reason = vector_request_denial_reason(self.request_obj)
+                category = denial_reason.category
+                justification = denial_reason.justification
+                timestamp = denial_reason.timestamp
+            except Exception as e:
+                self.logger.exception(e)
+                messages.error(self.request, self.error_message)
+                category = 'Unknown Category'
+                justification = (
+                    'Failed to determine denial reason. Please contact an '
+                    'administrator.')
+                timestamp = 'Unknown Timestamp'
+            context['denial_reason'] = {
+                'category': category,
+                'justification': justification,
+                'timestamp': timestamp,
+            }
+            context['support_email'] = settings.EMAIL_TICKET_SYSTEM_ADDRESS
 
         context['is_checklist_complete'] = self.__is_checklist_complete()
 
