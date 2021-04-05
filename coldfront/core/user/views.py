@@ -94,7 +94,7 @@ class UserProfileUpdate(TemplateView):
         user.userprofile.save()
         user.save()
 
-        messages.success(request, 'Name Updated.')
+        messages.success(request, 'Name updated.')
         return redirect(reverse('user-profile'))
 
 
