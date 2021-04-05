@@ -1,0 +1,39 @@
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block content %}
+
+<script>
+    $("#navbar-main > ul > li.active").removeClass("active");
+    $("#navbar-user").addClass("active");
+    $("#navbar-user-user-profile").addClass("active");
+</script>
+
+<div class="card ">
+    <div class="card-header"><i class="fas fa-edit" aria-hidden="true"></i>
+        Update name:
+    </div>
+
+  <div class="card-body">
+    <form id="update-form" method="POST" action="{% url 'user-profile-update' %}" autocomplete="off">
+      {% csrf_token %}
+      {{ user_update_form|crispy }}
+      <button id="form_reset_button" type="button" class="btn btn-secondary">Reset</button>
+      <input type="submit" class="btn btn-primary" value="Update">
+    </form>
+  </div>
+</div>
+
+<script>
+    $(document).on('click', '#form_reset_button', function() {
+      resetForm($('#update_form'));
+    });
+
+    function resetForm($form) {
+        location.reload();
+    };
+</script>
+{% endblock %}
+
