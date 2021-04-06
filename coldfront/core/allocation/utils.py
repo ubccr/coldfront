@@ -1,3 +1,7 @@
+from datetime import datetime
+from decimal import Decimal
+
+from django.conf import settings
 from django.db.models import Q
 
 from coldfront.core.allocation.models import (AllocationAttributeType,
@@ -5,6 +9,8 @@ from coldfront.core.allocation.models import (AllocationAttributeType,
                                               AllocationUserStatusChoice)
 from coldfront.core.allocation.signals import allocation_activate_user
 from coldfront.core.resource.models import Resource
+
+import math
 
 
 def set_allocation_user_status_to_error(allocation_user_pk):
@@ -96,3 +102,39 @@ def request_project_cluster_access(allocation_obj, user_obj):
         raise ValueError('Cluster access status is already Active.')
     cluster_access_status.value = 'Pending - Add'
     cluster_access_status.save()
+
+
+def prorated_allocation_amount(amount, dt):
+    """Given a number of service units and a datetime, return the
+    prorated number of service units that would be allocated in the
+    current allocation year, based on the datetime's month.
+
+    Parameters:
+        - amount (Decimal): a number of service units (e.g.,
+                            settings.FCA_DEFAULT_ALLOCATION).
+        - dt (datetime): a datetime object whose month is used in the
+                         calculation, based on its position relative to
+                         the start month of the allocation year.
+
+    Returns:
+        - Decimal
+
+    Raises:
+        - TypeError, if either argument has an invalid type
+        - ValueError, if the provided amount is outside of the allowed
+        range for allocations
+    """
+    if not isinstance(amount, Decimal):
+        raise TypeError(f'Invalid Decimal {amount}.')
+    if not isinstance(dt, datetime):
+        raise TypeError(f'Invalid datetime {dt}.')
+    if not (settings.ALLOCATION_MIN < amount < settings.ALLOCATION_MAX):
+        raise ValueError(f'Invalid amount {amount}.')
+    month = dt.month
+    amount_per_month = amount / 12
+    start_month = settings.ALLOCATION_YEAR_START_MONTH
+    if month >= start_month:
+        amount = amount - amount_per_month * (month - start_month)
+    else:
+        amount = amount_per_month * (start_month - month)
+    return Decimal(f'{math.floor(amount):.2f}')

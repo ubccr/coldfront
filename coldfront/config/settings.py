@@ -213,18 +213,30 @@ REST_FRAMEWORK = {
     ],
 }
 
-DECIMAL_MAX_DIGITS = 11
-DECIMAL_MAX_PLACES = 2
-ALLOCATION_MIN = Decimal('0.00')
-ALLOCATION_MAX = Decimal('100000000.00')
-
 # The number of hours for which a newly created authentication token will be
 # valid.
 TOKEN_EXPIRATION_HOURS = 24
 
+# ------------------------------------------------------------------------------
+# Accounting settings
+# ------------------------------------------------------------------------------
+
+# Allocation-related fields can have at most 11 digits and 2 decimal places.
+DECIMAL_MAX_DIGITS = 11
+DECIMAL_MAX_PLACES = 2
+
+# The minimum and maximum valid numbers of service units for allocations.
+ALLOCATION_MIN = Decimal('0.00')
+ALLOCATION_MAX = Decimal('100000000.00')
+
 # For accounting purposes, the year begins on June 1st and ends on May 31st.
 ALLOCATION_YEAR_START_MONTH = 6
 ALLOCATION_YEAR_START_DAY = 1
+
+# The default amount of service units to allocate to Savio projects.
+CO_DEFAULT_ALLOCATION = ALLOCATION_MAX
+FCA_DEFAULT_ALLOCATION = Decimal('300000.00')
+PCA_DEFAULT_ALLOCATION = Decimal('200000.00')
 
 # Whether or not to allow all jobs, bypassing all checks.
 ALLOW_ALL_JOBS = False
