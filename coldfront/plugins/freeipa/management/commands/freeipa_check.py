@@ -3,7 +3,7 @@ import os
 import sys
 import dbus
 
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 from ipalib import api
 from ipalib.errors import NotFound
@@ -249,7 +249,7 @@ class Command(BaseCommand):
         infopipe_obj = bus.get_object("org.freedesktop.sssd.infopipe", "/org/freedesktop/sssd/infopipe")
         self.ifp = dbus.Interface(infopipe_obj, dbus_interface='org.freedesktop.sssd.infopipe')
 
-        users = User.objects.filter(is_active=True)
+        users = get_user_model().objects.filter(is_active=True)
         logger.info("Processing %s active users", len(users))
 
         self.filter_user = ''

@@ -1,7 +1,7 @@
 import abc
 import logging
 
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.utils.module_loading import import_string
 
@@ -43,7 +43,7 @@ class LocalUserSearch(UserSearch):
     def search_a_user(self, user_search_string=None, search_by='all_fields'):
         size_limit = 50
         if user_search_string and search_by == 'all_fields':
-            entries = User.objects.filter(
+            entries = get_user_model().objects.filter(
                 Q(username__icontains=user_search_string) |
                 Q(first_name__icontains=user_search_string) |
                 Q(last_name__icontains=user_search_string) |
@@ -51,9 +51,9 @@ class LocalUserSearch(UserSearch):
             ).filter(Q(is_active=True)).distinct()[:size_limit]
 
         elif user_search_string and search_by == 'username_only':
-            entries = User.objects.filter(username=user_search_string, is_active=True)
+            entries = get_user_model().objects.filter(username=user_search_string, is_active=True)
         else:
-            User.objects.all()[:size_limit]
+            get_user_model().objects.all()[:size_limit]
 
         users = []
         for idx, user in enumerate(entries, 1):

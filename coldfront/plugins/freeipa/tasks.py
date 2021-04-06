@@ -1,8 +1,7 @@
 import logging
 import os
 
-from django.contrib.auth.models import User
-from ipalib import api
+ffrom ipalib import api
 
 from coldfront.core.allocation.models import Allocation, AllocationUser
 from coldfront.core.allocation.utils import set_allocation_user_status_to_error

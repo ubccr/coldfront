@@ -27,3 +27,4 @@ if ENV.bool('ENABLE_SU', default=True):
     AUTHENTICATION_BACKENDS += ['django_su.backends.SuBackend',]
     INSTALLED_APPS.insert(0, 'django_su')
     TEMPLATES[0]['OPTIONS']['context_processors'].extend(['django_su.context_processors.is_su', ])
+
