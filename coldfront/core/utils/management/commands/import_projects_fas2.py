@@ -75,7 +75,7 @@ class Command(BaseCommand):
             
             with open (file_path, 'r') as read_obj:
                 csv_reader = reader(read_obj) # opt out the first line
-                first_line = read_obj.readline()  
+                first_line = read_obj.readline()  # opt out the first line
             
                 created = "2021-04-01 10:00:00" # feeding dummy data for now
                 modified = "2021-04-30 10:00:00" # feeding dummy data for now
@@ -93,18 +93,17 @@ class Command(BaseCommand):
                 modified = datetime.datetime.strptime(modified.split('.')[0], '%Y-%m-%d %H:%M:%S')
                 # find pi object in the file
                 pi_user_obj = User.objects.get(username=pi_username)
-                filtered_query = Project.objects.filter(title = lab_name)
-                print("line97:",filtered_query)
-                print("line98:",type(filtered_query))
-                if (filtered_query.exists()):
-                    print("line 100: querySet exists, don't create a new querySet. Should only updating it")
-                else:
-                    print("create new querySet")
+                if (row[3] == 'FACULTY'):
                     pi_user_obj.is_pi = True
-                    pi_user_obj.save()
-                    # find the project 
-                    field_of_science_obj = FieldOfScience.objects.get(description=field_of_science)
-                    project_obj = Project.objects.create(
+                else:
+                    pi_user_obj.is_pi = False
+                pi_user_obj.save()
+                # find the project 
+
+                field_of_science_obj = FieldOfScience.objects.get(description=field_of_science)
+                # project_obj_exist = Project.objects.get(title=lab_name)
+                if not Project.objects.all().filter(title=lab_name).exists(): #
+                    project_obj = Project.objects.get_or_create(
                         created=created,
                         modified=modified,
                         title=title.strip(),
@@ -149,7 +148,8 @@ class Command(BaseCommand):
                         project_user_obj = ProjectUser.objects.get(project=project_obj, user=pi_user_obj)
                         project_user_obj.status=project_user_status_choices['ACT']
                         project_user_obj.save()
-
+                else:
+                    
                 
 
             print('Finished adding projects')

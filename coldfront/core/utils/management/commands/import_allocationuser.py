@@ -2,13 +2,11 @@ import datetime
 import os
 import json
 
+from dateutil.relativedelta import relativedelta
 from django.conf import settings
-from django.contrib.auth.models import Group, User
-from django.core.management.base import BaseCommand, CommandError
-from django.core.exceptions import ObjectDoesNotExist
-
-from csv import reader
-
+from django.contrib.auth.models import User
+from django.core.management import call_command
+from django.core.management.base import BaseCommand
 
 from coldfront.core.allocation.models import (Allocation, AllocationAttribute,
                                               AllocationAttributeType,
@@ -27,251 +25,502 @@ from coldfront.core.resource.models import (Resource, ResourceAttribute,
                                             ResourceType)
 from coldfront.core.user.models import UserProfile
 
+from csv import reader
 
 base_dir = settings.BASE_DIR
 
-Users = ['Julia	Huang1',  # PI#1
-         'Julia	Huang2',  # PI#2
-         'Julia	Huang3',  
-         'Matthew Holman2',
-         'Paul Moorcroft',] # Director
-          
-resources = [
-    # Storage
-    ('Cluster', None, 'FAS Research Computing',
-    'FAS Research Computing Storage Center', True, True, True),
-    ('Cluster', None, 'Astronomy', 'Astronomy Cluster', True, False, False),
-    ('Cluster', None, 'SEAS', 'SEAS Cluster', True, False, False),
-    ('Cluster', None, 'Center for Astrophysics', 'Center for Astrophysics Cluster', True, False, False),
-
-    # DRAFT -- Cluster Partitions scavengers -- DRAFT
-    ('Cluster Partition', 'Chemistry', 'Chemistry-scavenger',
-     'Scavenger partition on Chemistry cluster', True, False, False),
-    ('Cluster Partition', 'Physics', 'Physics-scavenger',
-     'Scavenger partition on Physics cluster', True, False, False),
-    ('Cluster Partition', 'Industry', 'Industry-scavenger',
-     'Scavenger partition on Industry cluster', True, False, False),
-
-
-    # Cluster Partitions Users
-    ('Cluster Partition', 'Chemistry', 'Astronomy-mholman',
-     "Carl Gray's nodes", True, False, True),
-    ('Cluster Partition', 'Physics', 'Biology-pmoorcroft',
-     "Stephanie Foster's nodes", True, False, True),
-
-    # Storage
-    ('Storage', None, 'ProjectStorage',
-    'level 0 storage', True, True, True),
-    ('Storage', None, 'ProjectStorage',
-    'level 1 storage', True, True, True),
-    ('Storage', None, 'ProjectStorage',
-    'level 2 storage', True, True, True),
-    ('Storage', None, 'ProjectStorage',
-    'level 3 storage', True, True, True),
-    
-    # Servers
-    ('Server', None, 'server-mholman',
-     "Server for Matthew Holman's research lab", True, False, True),
-    ('Server', None, 'server-pmoorcroft',
-    "Server for Paul Moorcroft's research lab", True, False, True),
-]
+def splitString(str): 
+  
+    alpha = "" 
+    num = "" 
+    special = "" 
+    for i in range(len(str)): 
+        if (str[i].isdigit()): 
+            num = num+ str[i] 
+        elif((str[i] >= 'A' and str[i] <= 'Z') or
+             (str[i] >= 'a' and str[i] <= 'z')): 
+            alpha += str[i] 
+        else: 
+            num += str[i] 
+  
+    return(num, alpha)
 
 class Command(BaseCommand):
 
     def handle(self, *args, **options):
-        for user in Users:
-            first_name, last_name = user.split()
-            username = first_name[0].lower()+last_name.lower().strip()
-            email = username + '@g.harvard.edu'
-            User.objects.get_or_create(
-                first_name=first_name.strip(),
-                last_name=last_name.strip(),
-                username=username.strip(),
-                email=email.strip()
-            )
-        admin_user, _ = User.objects.get_or_create(username='superuser')
-        admin_user.is_superuser = True
-        admin_user.is_staff = True
-        admin_user.save()
-
-        for resource in resources:
-            resource_type, parent_resource, name, description, is_available, is_public, is_allocatable = resource
-            resource_type_obj = ResourceType.objects.get(name=resource_type)
-            if parent_resource != None:
-                parent_resource_obj = Resource.objects.get(
-                    name=parent_resource)
-            else:
-                parent_resource_obj = None
-
-            Resource.objects.get_or_create(
-                resource_type=resource_type_obj,
-                parent_resource=parent_resource_obj,
-                name=name,
-                description=description,
-                is_available=is_available,
-                is_public=is_public,
-                is_allocatable=is_allocatable
-            )
+        lab_username_dict = {
+            "zhuang_lab": "xzhuang",
+            "moorcroft_lab": "prm",
+            "kuang_lab": "kuang",
+            "kovac_lab": "akovacs",
+            "holman_lab": "mholman",
+            "giribet_lab": "ggiribet",
+            "edwards_lab": "sedwards",
+            "denolle_lab": "mdenolle",
+            "wofsy_lab": "steven_wofsy",
+            "arguelles_delgado_lab": "carguelles",
+            "balazs_lab": "abalazs",
+            "barak_lab": "bbarak",
+            "beam_lab":"abeam",
+            "berger_lab":"berger",
+            "bhi": "aloeb",
+            "brownfield_lab": "dbrownfield"
+        }
         
-        resource_obj = Resource.objects.get(name='server-mholman')
-        resource_obj.allowed_users.add(User.objects.get(username='mholman'))
-        resource_obj = Resource.objects.get(name='server-pmoorcroft')
-        resource_obj.allowed_users.add(User.objects.get(username='pmoorcroft'))
 
-
-        pi1 = User.objects.get(username='mholman2')
-        pi1.userprofile.is_pi = True
-        pi1.save()
-        # create PI's project
-        project_obj, _ = Project.objects.get_or_create(
-            pi=pi1,
-            title='Matthew Holman lab testing via backend',
-            description='This is a testing description. As I am loading testing data via backend',
-            field_of_science=FieldOfScience.objects.get(
-                description='Other'),
-            status=ProjectStatusChoice.objects.get(name='Active'),
-            force_review=True
-        )
-
-        # This part is draft
-        univ_hpc = Resource.objects.get(name='FAS Research Computing')
-        for scavanger in ('Chemistry-scavenger', 'Physics-scavenger', 'Industry-scavenger', ):
-            resource_obj = Resource.objects.get(name=scavanger)
-            univ_hpc.linked_resources.add(resource_obj)
-            univ_hpc.save()
-
-
-        project_user_obj, _ = ProjectUser.objects.get_or_create(
-            user=pi1,
-            project=project_obj,
-            role=ProjectUserRoleChoice.objects.get(name='Manager'),
-            status=ProjectUserStatusChoice.objects.get(name='Active')
-        )
-
-        start_date = datetime.datetime.now()
-        end_date = datetime.datetime.now() + relativedelta(days=365)
-
-        # Add PI cluster
-        allocation_obj, _ = Allocation.objects.get_or_create(
-            project=project_obj,
-            status=AllocationStatusChoice.objects.get(name='Active'),
-            start_date=start_date,
-            end_date=end_date,
-            justification='I need x TB storage data.'
-        )
-
-        allocation_obj.resources.add(
-            Resource.objects.get(name='Astronomy-mholman'))
-        allocation_obj.save()
-
-        allocation_attribute_type_obj = AllocationAttributeType.objects.get(
-            name='Tier 0')
-        AllocationAttribute.objects.get_or_create(
-            allocation_attribute_type=allocation_attribute_type_obj,
-            allocation=allocation_obj,
-            value='mholman2')
-
-        allocation_user_obj = AllocationUser.objects.create(
-            allocation=allocation_obj,
-            user=pi1,
-            status=AllocationUserStatusChoice.objects.get(name='Active')
-        )
-
-        # Add university cluster
-        allocation_obj, _ = Allocation.objects.get_or_create(
-            project=project_obj,
-            status=AllocationStatusChoice.objects.get(name='Active'),
-            start_date=start_date,
-            end_date=datetime.datetime.now() + relativedelta(days=10),
-            justification='I need access to university cluster (mholman).'
-        )
-
-        allocation_obj.resources.add(
-            Resource.objects.get(name='FAS Research Computing'))
-        allocation_obj.save()
-
-        allocation_attribute_type_obj = AllocationAttributeType.objects.get(
-            name='slurm_account_name')
-        AllocationAttribute.objects.get_or_create(
-            allocation_attribute_type=allocation_attribute_type_obj,
-            allocation=allocation_obj,
-            value='mholman2')
-
-        allocation_user_obj = AllocationUser.objects.create(
-            allocation=allocation_obj,
-            user=pi1,
-            status=AllocationUserStatusChoice.objects.get(name='Active'),
-            usage = 666
-        )
-
-
-
-
-    #     print("Importing AllocationUser now...")
-    #     allocationuser_obj = AllocationUser.objects.create(
-    #                 username=username,
-    #                 first_name=first_name,
-    #                 last_name=last_name,
-    #                 email=email,
-    #                 is_active=is_active,
-    #                 is_staff=is_staff,
-    #                 is_superuser=is_superuser,
-    #             )
-
-
-    #     # open file in read mode
-    #     for row in csv_reader:
-    #         try:
-    #             username = row[0]
-    #             user = User.objects.get(username=username)
-    #             #(username, "already exist, don't add to database")
-    #             # if the user exists, I only need to append this existing user's group
-    #             if not user.groups.filter(name = lab_name).exists():
-    #                 my_group = Group.objects.get(name=lab_name)
-    #                 my_group.user_set.add(user)
-    #                 print ("user do not exist in", lab_name)
-    #             continue
-    #         # the type of row is 
-    #         except ObjectDoesNotExist:
+        # lab_name = input("Lab name is: ")
+        file_path = os.path.join(base_dir, 'local_data')
+        print("line73, file path is", file_path)
+        arr = os.listdir(file_path)
+        print("line 75: arr is", arr)
+        print("line 76: type of arr", type(arr))
+        lab_list = []
+        if "holystore01" in arr:
+            print("I have holystore01 folder")
+            file_path = os.path.join(base_dir, 'local_data/holystore01_copy')
+            arr = os.listdir(file_path)
+            print("line96 arr is", arr)
+            print("line96 filepath is", file_path)
+            lab_list = []
+            for f in arr:
+                f_name = f.split('.')
+                if (f_name[len(f_name)-1] == 'json'):
+                    my_file = f_name[len(f_name)-2]+('.json')
+                    lab_list.append(my_file)
             
-    #             username = row[0]
-    #             full_name = row[1] 
-    #             full_name_list = full_name.split()
-    #             first_name = full_name_list[0]
+            print("line 91: lab_list", lab_list)
+        
+            for lab_name in lab_list:
+                print("line94 lab_name", lab_name)
+                lab_name = lab_name.split(".")
+                pi1 = User.objects.get(username=lab_username_dict[lab_name[0]])
+                file_name = lab_name[0] + '.json'
+                resource_type_obj = ResourceType.objects.get(name="Storage")
+                parent_resource_obj = None
+                name = "holystore01/tier0" # making getting the name dynamic from the .json file
+                description = "Service Type: Storage"
+                is_available = True
+                is_public = True
+                is_allocatable = True
+
+                # file_name_quota = "Quota.csv" 
+
+                Resource.objects.get_or_create(
+                    resource_type=resource_type_obj,
+                    parent_resource=parent_resource_obj,
+                    name=name,
+                    description=description,
+                    is_available=is_available,
+                    is_public=is_public,
+                    is_allocatable=is_allocatable
+                )
+                # don't create a new project (if project exist, don't create new project); otherwise, create one;
+                # check get_or_create function; just do Project.objects.get();
+                # lab_name = "holman_lab" # lab name: giribet_lab, kovac_lab etc
             
+                # file_name = "holman_lab.json"
+                file_path = os.path.join(base_dir, 'local_data/holystore01', file_name)
+                # file_path_quota = os.path.join(base_dir, 'local_data', file_name_quota)
+                print("this is my file path", file_path)
+                # print("quota file path is:", file_path_quota)
+                # putting quota information in a dictionary
+                # open file in read mode
                 
-    #             if (len(full_name_list) > 1):
-    #                 last_name = full_name_list[1]
-                
-    #             else:
-    #                 last_name = "N/A"
-                    
-                    
-    #             email = row[2] 
-    #             is_active = True
-    #             is_staff = False
-    #             is_superuser = False
-    #             groups = lab_name 
+                lab_allocation_usage_dict = dict() # dictionary, key is string, value is list
+                data = {} # initialize an empty dictionary
+                with open(file_path) as f:
+                    # pass the file object to reader() to get the reader object
+                    # csv_reader = reader(read_obj)
+                    # first_line = read_obj.readline()  #opt out first line
+                    # Iterate over each row in the csv using reader object
+                    data = json.load(f)
+                    print("line 137: data is", data)
+                    # for row in csv_reader:
+                    #     lst = [] 
+                    #     # row variable is a list that represents a row in csv
+                    #     lst.append(int(row[1]))
+                    #     lst.append(float(row[2]))
+                    #     lst.append(float(row[3]))
+                    #     lab_allocation_usage_dict[row[0]] = lst
+                lab_name = lab_name[0]
+                print("line 146 lab_name is:",lab_name)
+                filtered_query = Project.objects.filter(title = lab_name)
+                found_project = False # set default value to false
+                print(filtered_query)
+                if not filtered_query:
+                    print("I cannot find this lab")
+                else:
+                    print("I found this lab")
+                    found_project = True
+                if (not found_project):
+                    project_obj, _ = Project.objects.get_or_create(
+                        pi = pi1,
+                        title = lab_name,
+                        description= lab_name + ' storage allocation',
+                        field_of_science=FieldOfScience.objects.get(
+                            description='Other'),
+                        status=ProjectStatusChoice.objects.get(name='Active'),
+                        force_review=True
+                    )
+                    start_date = datetime.datetime.now()
+                    end_date = datetime.datetime.now() + relativedelta(days=365)
+                else:
+                    project_obj = Project.objects.get(title = lab_name)
+                    start_date = datetime.datetime.now()
+                    end_date = datetime.datetime.now() + relativedelta(days=365)
 
-    #             # creates my user object to load data from csv to GUI
-    #             # create user object
-    #             group_objs = []
-    #             for group in groups.split(','):
-    #                 group_obj, _ = Group.objects.get_or_create(name=group.strip()) # gets u the group object based on the group name
-    #                 group_objs.append(group_obj)
+                allocation_obj, _ = Allocation.objects.get_or_create(
+                    project=project_obj,
+                    status=AllocationStatusChoice.objects.get(name='Active'),
+                    start_date=start_date,
+                    end_date=end_date,
+                    justification='Allocation Information for ' + lab_name
+                )
+                allocation_obj.resources.add(
+                    Resource.objects.get(name='holystore01/tier0'))
+                allocation_obj.save()
+
+        #begin: input allocation usage data
+                # lab_allocation = lab_allocation_usage_dict[lab_name][0]
+                # lab_usage = lab_allocation_usage_dict[lab_name][1]
+                # lab_usage_in_bytes = lab_allocation_usage_dict[lab_name][2]
+            
+                lab_allocation, alpha = splitString(data[0]["quota"])
+                lab_allocation = float(lab_allocation)
+                lab_usage, alpha_usage = splitString(data[0]["used"])
+                lab_usage = float(lab_usage)
+                if (alpha_usage == 'T'):
+                    lab_usage_in_bytes = lab_usage * 1099511627776
+                if (alpha_usage == 'G'):
+                    lab_usage_in_bytes = lab_usage * 1073741824
+                if (alpha_usage == 'M'):
+                    lab_usage_in_bytes = lab_usage * 1048576
+
+
+                allocation_attribute_type_obj = AllocationAttributeType.objects.get(
+                    name='Tier 0')
+
+                allocation_attribute_type_obj = AllocationAttributeType.objects.get(
+                    name='Storage Quota (TB)')
+                allocation_attribute_obj, _ = AllocationAttribute.objects.get_or_create(
+                    allocation_attribute_type=allocation_attribute_type_obj,
+                    allocation=allocation_obj,
+                    value=lab_allocation)
+                allocation_usage, allocation_usage_unit = splitString(data[0]["used"])
+               
+                if (alpha_usage == 'T'):
+                    lab_usage_in_TB = lab_usage
+                if (alpha_usage == 'G'):
+                    lab_usage_in_TB = lab_usage // 1073741824
+                if (alpha_usage == 'M'):
+                    lab_usage_in_TB = lab_usage // 1048576
+                allocation_attribute_obj.allocationattributeusage.value = lab_usage_in_TB
+                allocation_attribute_obj.allocationattributeusage.save()
+
+                allocation_attribute_type_obj = AllocationAttributeType.objects.get(
+                    name= 'Tier 0 - $50/TB/yr')
+                allocation_attribute_obj, _ = AllocationAttribute.objects.get_or_create(
+                    allocation_attribute_type=allocation_attribute_type_obj,
+                    allocation=allocation_obj,
+                    value='$50/TB/yr')
+            
+                # reading in data from JSON file, adding users
+                print("line219 file_path", file_path)
+                with open (file_path) as json_file:
+                    data = json.load(json_file)
+                    print("line 222 data is", data)
+                    print(type(data))
+                    data = data[1:] # skip the usage information
+                    allocation_group_usage_bytes = 0
+                    var1 = 0
+                    for user_lst in data: #user_lst is lst
+                        print("***** line 228 *****", user_lst) # this is a lst
+                        user_query = User.objects.filter(username = user_lst['user'])
+                            
+                        if not user_query:
+                            print("this user does not exist")
+                            # thus I am creating a user object
+                            fullname = user_lst['name']
+                            fullname_lst = fullname.split()
+                            usage_string = user_lst['usage']
+                            num, alpha = splitString(usage_string) 
+                            if (len(fullname_lst) > 1):
+                                first_name = fullname_lst[0]
+                                last_name = fullname_lst[1]
+                            else:
+                                first_name = fullname_lst[0]
+                                last_name = "" # no last_name
+                            user_obj = User.objects.create(
+                                username = user_lst['user'],
+                                first_name = first_name,
+                                last_name = last_name,
+                                email = "Not_Active@fas.edu",
+                                is_active = False,
+                                is_staff = False,
+                                is_superuser = False,
+                            )
+
+                            allocation_user_obj = AllocationUser.objects.create(
+                                allocation=allocation_obj,
+                                user=User.objects.get(username=user_lst['user']),
+                                status=AllocationUserStatusChoice.objects.get(name='Inactive'),
+                                usage_bytes = user_lst['logical_usage'],
+                                usage = num,
+                                unit = alpha,
+                                allocation_group_quota = lab_allocation,
+                                allocation_group_usage_bytes = lab_usage_in_bytes,
+                            
+                            )
+                            User.objects.get(username=user_lst['user']).save()
+                            allocation_user_obj.save()
+                        else:
+                            print(user_lst['user'], "exists")
+                            usage_string = user_lst['usage']
+                            num, alpha = splitString(usage_string) 
+                            # load allocation user
+                        
+                            allocation_user_obj = AllocationUser.objects.create(
+                                allocation=allocation_obj,
+                                user=User.objects.get(username=user_lst['user']),
+                                status=AllocationUserStatusChoice.objects.get(name='Active'),
+                                usage_bytes = user_lst['logical_usage'],
+                                usage = num,
+                                unit = alpha,
+                                allocation_group_quota = lab_allocation,
+                                allocation_group_usage_bytes = lab_usage_in_bytes,
+                                
+                            )
+                        
+                            print("line285", var1)
+                            User.objects.get(username=user_lst['user']).save()
+                            allocation_user_obj.save()
+                        print("line288", allocation_user_obj.allocation_group_usage_bytes)
+                    print("line289", allocation_user_obj.allocation_group_usage_bytes)
 
                 
-    #             user_obj = User.objects.create(
-    #                 username=username,
-    #                 first_name=first_name,
-    #                 last_name=last_name,
-    #                 email=email,
-    #                 is_active=is_active,
-    #                 is_staff=is_staff,
-    #                 is_superuser=is_superuser,
-    #             )
-    #             # add user to group
-    #             if group_objs:
-    #                 user_obj.groups.add(*group_objs) # add the group object to the user
-    #             user_obj.save()
-    # print('Finished adding users.')
+
+
+
+        file_path = os.path.join(base_dir, 'local_data')  # reset file path 
+        arr = os.listdir(file_path) # reset directory
+        if "holylfs04" in arr:
+            print("I have holylfs04 folder")
+            file_path = os.path.join(base_dir, 'local_data/holylfs04')
+            arr = os.listdir(file_path)
+            print("line301 arr is", arr)
+            print("line302 filepath is", file_path)
+            lab_list = []
+            for f in arr:
+                f_name = f.split('.')
+                if (f_name[len(f_name)-1] == 'json'):
+                    my_file = f_name[len(f_name)-2]+('.json')
+                    lab_list.append(my_file)
+            
+            print("line 310: lab_list", lab_list)
+        
+            for lab_name in lab_list:
+                print("line313 lab_name", lab_name)
+                lab_name = lab_name.split(".")
+                pi1 = User.objects.get(username=lab_username_dict[lab_name[0]])
+                file_name = lab_name[0] + '.json'
+                resource_type_obj = ResourceType.objects.get(name="Storage")
+                parent_resource_obj = None
+                name = "holylfs04/tier0" # making getting the name dynamic from the .json file
+                description = "Service Type: Storage"
+                is_available = True
+                is_public = True
+                is_allocatable = True
+
+                # file_name_quota = "Quota.csv" 
+
+                Resource.objects.get_or_create(
+                    resource_type=resource_type_obj,
+                    parent_resource=parent_resource_obj,
+                    name=name,
+                    description=description,
+                    is_available=is_available,
+                    is_public=is_public,
+                    is_allocatable=is_allocatable
+                )
+                # don't create a new project (if project exist, don't create new project); otherwise, create one;
+                # check get_or_create function; just do Project.objects.get();
+                # lab_name = "holman_lab" # lab name: giribet_lab, kovac_lab etc
+            
+                # file_name = "holman_lab.json"
+                file_path = os.path.join(base_dir, 'local_data/holylfs04', file_name)
+                # file_path_quota = os.path.join(base_dir, 'local_data', file_name_quota)
+                print("this is my file path", file_path)
+                # print("quota file path is:", file_path_quota)
+                # putting quota information in a dictionary
+                # open file in read mode
+                
+                lab_allocation_usage_dict = dict() # dictionary, key is string, value is list
+                data = {} # initialize an empty dictionary
+                with open(file_path) as f:
+                    # pass the file object to reader() to get the reader object
+                    # csv_reader = reader(read_obj)
+                    # first_line = read_obj.readline()  #opt out first line
+                    # Iterate over each row in the csv using reader object
+                    data = json.load(f)
+                    print("line 356: data is", data)
+                    # for row in csv_reader:
+                    #     lst = [] 
+                    #     # row variable is a list that represents a row in csv
+                    #     lst.append(int(row[1]))
+                    #     lst.append(float(row[2]))
+                    #     lst.append(float(row[3]))
+                    #     lab_allocation_usage_dict[row[0]] = lst
+                lab_name = lab_name[0]
+                print("line 365 lab_name is:",lab_name)
+                filtered_query = Project.objects.filter(title = lab_name)
+                found_project = False # set default value to false
+                print(filtered_query)
+                if not filtered_query:
+                    print("I cannot find this lab")
+                else:
+                    print("I found this lab")
+                    found_project = True
+                if (not found_project):
+                    project_obj, _ = Project.objects.get_or_create(
+                        pi = pi1,
+                        title = lab_name,
+                        description= lab_name + ' storage allocation',
+                        field_of_science=FieldOfScience.objects.get(
+                            description='Other'),
+                        status=ProjectStatusChoice.objects.get(name='Active'),
+                        force_review=True
+                    )
+                    start_date = datetime.datetime.now()
+                    end_date = datetime.datetime.now() + relativedelta(days=365)
+                else:
+                    project_obj = Project.objects.get(title = lab_name)
+                    start_date = datetime.datetime.now()
+                    end_date = datetime.datetime.now() + relativedelta(days=365)
+
+                allocation_obj, _ = Allocation.objects.get_or_create(
+                    project=project_obj,
+                    status=AllocationStatusChoice.objects.get(name='Active'),
+                    start_date=start_date,
+                    end_date=end_date,
+                    justification='Allocation Information for ' + lab_name
+                )
+                allocation_obj.resources.add(
+                    Resource.objects.get(name='holylfs04/tier0'))
+                allocation_obj.save()
+
+        #begin: input allocation usage data
+                # lab_allocation = lab_allocation_usage_dict[lab_name][0]
+                # lab_usage = lab_allocation_usage_dict[lab_name][1]
+                # lab_usage_in_bytes = lab_allocation_usage_dict[lab_name][2]
+            
+                lab_allocation, alpha = splitString(data[0]["quota"])
+                lab_allocation = float(lab_allocation)
+                lab_usage, alpha_usage = splitString(data[0]["used"])
+                lab_usage = float(lab_usage)
+                if (alpha_usage == 'T'):
+                    lab_usage_in_bytes = lab_usage * 1099511627776
+                if (alpha_usage == 'G'):
+                    lab_usage_in_bytes = lab_usage * 1073741824
+
+
+                allocation_attribute_type_obj = AllocationAttributeType.objects.get(
+                    name='Tier 0')
+
+                allocation_attribute_type_obj = AllocationAttributeType.objects.get(
+                    name='Storage Quota (TB)')
+                allocation_attribute_obj, _ = AllocationAttribute.objects.get_or_create(
+                    allocation_attribute_type=allocation_attribute_type_obj,
+                    allocation=allocation_obj,
+                    value=lab_allocation)
+
+                allocation_usage, allocation_usage_unit = splitString(data[0]["used"])
+                if (allocation_usage_unit == 'G'):
+                    lab_usage_in_TB = lab_usage // 1073741824
+                if (allocation_usage_unit == 'M'):
+                    lab_usage_in_TB = lab_usage // 1048576
+
+                allocation_attribute_obj.allocationattributeusage.value = allocation_usage
+                allocation_attribute_obj.allocationattributeusage.save()
+
+                allocation_attribute_type_obj = AllocationAttributeType.objects.get(
+                    name= 'Tier 0 - $50/TB/yr')
+                allocation_attribute_obj, _ = AllocationAttribute.objects.get_or_create(
+                    allocation_attribute_type=allocation_attribute_type_obj,
+                    allocation=allocation_obj,
+                    value='$50/TB/yr')
+            
+                # reading in data from JSON file, adding users
+                print("line438 file_path", file_path)
+                with open (file_path) as json_file:
+                    data = json.load(json_file)
+                    print("line 441 data is", data)
+                    print(type(data))
+                    data = data[1:] # skip the usage information
+                    allocation_group_usage_bytes = 0
+                    var1 = 0
+                    for user_lst in data: #user_lst is lst
+                        print("***** line 447 *****", user_lst) # this is a lst
+                        user_query = User.objects.filter(username = user_lst['user'])
+                            
+                        if not user_query:
+                            print("this user does not exist")
+                            # thus I am creating a user object
+                            fullname = user_lst['name']
+                            fullname_lst = fullname.split()
+                            usage_string = user_lst['usage']
+                            num, alpha = splitString(usage_string) 
+                            if (len(fullname_lst) > 1):
+                                first_name = fullname_lst[0]
+                                last_name = fullname_lst[1]
+                            else:
+                                first_name = fullname_lst[0]
+                                last_name = "" # no last_name
+                            user_obj = User.objects.create(
+                                username = user_lst['user'],
+                                first_name = first_name,
+                                last_name = last_name,
+                                email = "Not_Active@fas.edu",
+                                is_active = False,
+                                is_staff = False,
+                                is_superuser = False,
+                            )
+
+                            allocation_user_obj = AllocationUser.objects.create(
+                                allocation=allocation_obj,
+                                user=User.objects.get(username=user_lst['user']),
+                                status=AllocationUserStatusChoice.objects.get(name='Inactive'),
+                                usage_bytes = user_lst['logical_usage'],
+                                usage = num,
+                                unit = alpha,
+                                allocation_group_quota = lab_allocation,
+                                allocation_group_usage_bytes = lab_usage_in_bytes,
+                            
+                            )
+                            User.objects.get(username=user_lst['user']).save()
+                            allocation_user_obj.save()
+                        else:
+                            print(user_lst['user'], "exists")
+                            usage_string = user_lst['usage']
+                            num, alpha = splitString(usage_string) 
+                            # load allocation user
+                        
+                            allocation_user_obj = AllocationUser.objects.create(
+                                allocation=allocation_obj,
+                                user=User.objects.get(username=user_lst['user']),
+                                status=AllocationUserStatusChoice.objects.get(name='Active'),
+                                usage_bytes = user_lst['logical_usage'],
+                                usage = num,
+                                unit = alpha,
+                                allocation_group_quota = lab_allocation,
+                                allocation_group_usage_bytes = lab_usage_in_bytes,
+                                
+                            )
+                        
+                            print("line504", var1)
+                            User.objects.get(username=user_lst['user']).save()
+                            allocation_user_obj.save()
+                        print("line507", allocation_user_obj.allocation_group_usage_bytes)
+                    print("line508", allocation_user_obj.allocation_group_usage_bytes)
+
+                
+

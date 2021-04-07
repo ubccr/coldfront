@@ -93,62 +93,57 @@ class Command(BaseCommand):
                 modified = datetime.datetime.strptime(modified.split('.')[0], '%Y-%m-%d %H:%M:%S')
                 # find pi object in the file
                 pi_user_obj = User.objects.get(username=pi_username)
-                filtered_query = Project.objects.filter(title = lab_name)
-                print("line97:",filtered_query)
-                print("line98:",type(filtered_query))
-                if (filtered_query.exists()):
-                    print("line 100: querySet exists, don't create a new querySet. Should only updating it")
-                else:
-                    print("create new querySet")
-                    pi_user_obj.is_pi = True
-                    pi_user_obj.save()
-                    # find the project 
-                    field_of_science_obj = FieldOfScience.objects.get(description=field_of_science)
-                    project_obj = Project.objects.create(
-                        created=created,
-                        modified=modified,
-                        title=title.strip(),
-                        pi=pi_user_obj,
-                        description=description.strip(),
-                        field_of_science=field_of_science_obj,
-                        status=project_status_choices[project_status]
-                    )
+                
+                pi_user_obj.is_pi = True
+                pi_user_obj.save()
+                # find the project 
+                field_of_science_obj = FieldOfScience.objects.get(description=field_of_science)
+                
+                project_obj = Project.objects.get_or_create(
+                    created=created,
+                    modified=modified,
+                    title=title.strip(),
+                    pi=pi_user_obj,
+                    description=description.strip(),
+                    field_of_science=field_of_science_obj,
+                    status=project_status_choices[project_status]
+                )
+                    
+                for project_user in user_info.split(';'):
+                    if (project_user != ""): # if excel file read in line is not empty
+                        username, role, enable_email, project_user_status = project_user.split(',')
+                        if enable_email == 'True':
+                            enable_email = True
+                        else:
+                            enable_email = False
+                        print(username, role, enable_email, project_user_status)
+                        try:
+                            user_obj = User.objects.get(username=username)
                         
-                    for project_user in user_info.split(';'):
-                        if (project_user != ""): # if excel file read in line is not empty
-                            username, role, enable_email, project_user_status = project_user.split(',')
-                            if enable_email == 'True':
-                                enable_email = True
-                            else:
-                                enable_email = False
-                            print(username, role, enable_email, project_user_status)
-                            try:
-                                user_obj = User.objects.get(username=username)
-                            
-                            except ObjectDoesNotExist:
-                                print("couldn't add user", username)
-                                continue
-                            
-                            project_user_obj = ProjectUser.objects.create(
-                                user=user_obj,
-                                project=project_obj,
-                                role=project_user_role_choices[role],
-                                status=project_user_status_choices[project_user_status],
-                                enable_notifications=enable_email
-                            )
-                    # when import a project, we can import the user to project as well 
-                    if not project_obj.projectuser_set.filter(user=pi_user_obj).exists():
+                        except ObjectDoesNotExist:
+                            print("couldn't add user", username)
+                            continue
+                        
                         project_user_obj = ProjectUser.objects.create(
-                            user=pi_user_obj,
+                            user=user_obj,
                             project=project_obj,
-                            role=project_user_role_choices['PI'],
-                            status=project_user_status_choices['ACT'],
-                            enable_notifications=True
+                            role=project_user_role_choices[role],
+                            status=project_user_status_choices[project_user_status],
+                            enable_notifications=enable_email
                         )
-                    elif project_obj.projectuser_set.filter(user=pi_user_obj).exists():
-                        project_user_obj = ProjectUser.objects.get(project=project_obj, user=pi_user_obj)
-                        project_user_obj.status=project_user_status_choices['ACT']
-                        project_user_obj.save()
+                # when import a project, we can import the user to project as well 
+                if not project_obj.projectuser_set.filter(user=pi_user_obj).exists():
+                    project_user_obj = ProjectUser.objects.create(
+                        user=pi_user_obj,
+                        project=project_obj,
+                        role=project_user_role_choices['PI'],
+                        status=project_user_status_choices['ACT'],
+                        enable_notifications=True
+                    )
+                elif project_obj.projectuser_set.filter(user=pi_user_obj).exists():
+                    project_user_obj = ProjectUser.objects.get(project=project_obj, user=pi_user_obj)
+                    project_user_obj.status=project_user_status_choices['ACT']
+                    project_user_obj.save()
 
                 
 
