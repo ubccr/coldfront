@@ -1640,6 +1640,24 @@ class ProjectJoinListView(ProjectListView, UserPassesTestMixin):
             projectuser__user=self.request.user,
             projectuser__status__name__in=['Pending - Add', 'Active', ]
         ).values_list('name', flat=True)
+
+        join_requests = Project.objects.filter(Q(projectuser__user=self.request.user)
+                                               & Q(status__name__in=['New', 'Active', ])
+                                               & Q(projectuser__status__name__in=['Pending - Add']))\
+            .annotate(cluster_name=Case(When(name='abc', then=Value('ABC')),
+                                        When(name__startswith='vector_', then=Value('Vector')),
+                                        default=Value('Savio'),
+                                        output_field=CharField()))
+
+
+        for request in join_requests:
+            delay = request.joins_auto_approval_delay
+            project_user = request.projectuser_set.get(user=self.request.user)
+            join_request_date = project_user.projectuserjoinrequest_set.latest('created').created
+            auto_approval_time = join_request_date + delay
+            request.auto_approval_time = auto_approval_time
+
+        context['join_requests'] = join_requests
         context['not_joinable'] = not_joinable
         return context
 
