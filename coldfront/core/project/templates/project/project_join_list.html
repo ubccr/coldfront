@@ -9,6 +9,50 @@ Project List
 
 {% block content %}
 <h1>Join a Project</h1><hr>
+<h5>Pending Join Requests</h5>
+  {% if user.userprofile.access_agreement_signed_date is None %}
+    <p>First Review and Sign the cluster user agreement. Only then you can Join a cluster project and gain access to the cluster.</p>
+  {% elif not join_requests %}
+    <div class="alert alert-info" role="alert">
+      <i class="fa fa-info-circle" aria-hidden="true"></i>
+        No pending requests.
+    </div>
+  {% else %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col" class="text-nowrap">ID</th>
+          <th scope="col" class="text-nowrap">Name</th>
+          <th scope="col" class="text-nowrap">PIs</th>
+          <th scope="col">Title</th>
+          <th scope="col">Cluster</th>
+          <th scope="col" class="text-nowrap">Auto-Approval Time (UTC)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for project in join_requests %}
+          <tr>
+            <td><a href="{% url 'project-detail' project.id %}">{{ project.id }}</a></td>
+            <td>{{ project.name }}</td>
+            <td>{% for pi in project.pis %}{{ pi.username }}<br>{% endfor %}</td>
+            <td style="text-align: justify; text-justify: inter-word;">{{ project.title }}</td>
+            <td>{{ project.cluster_name }}</td>
+
+            <td>
+                <span class="badge badge-success">
+                  {{project.auto_approval_time}}
+                </span>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+{% endif %}
+
+<br>
+<h5>Make a New Request</h5>
+<hr>
+
 {% if expand_accordion == "show" or project_list or user.is_superuser%}
 <div class="mb-3" id="accordion">
   <div class="card">
@@ -29,7 +73,6 @@ Project List
     </div>
   </div>
 </div>
-<hr>
 {% endif %}
 {% if project_list %}
 <strong>Projects: {{projects_count}}  </strong>
