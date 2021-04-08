@@ -1,0 +1,38 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Vector Project Request - Setup
+{% endblock %}
+
+
+{% block content %}
+<h1>Setup</h1>
+<hr>
+
+<p>Please perform project setup on the cluster. Update the name if it had to change.</p>
+
+{% include 'project/project_request/vector/project_request_card.html' with vector_request=vector_request %}
+
+<div class="card mb-3">
+  <div class="card-header">
+    <h4>
+      <i class="fas fa-check-circle" aria-hidden="true"></i>
+      Setup
+    </h4>
+  </div>
+  <div class="card-body">
+    <form action="" method="post">
+      {% csrf_token %}
+      {{ form|crispy }}
+      <input class="btn btn-primary" type="submit" value="Submit" />
+      <a href="{% url 'vector-project-request-detail' vector_request.pk %}" class="btn btn-secondary">
+        Cancel
+      </a>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

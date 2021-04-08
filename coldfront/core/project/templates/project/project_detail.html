@@ -125,7 +125,7 @@ Project Detail
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
         <a class="btn btn-primary" href="{{mailto}}" role="button"><i class="far fa-envelope"></i> Email Project Users</a>
         <a class="btn btn-success" href="{% url 'project-add-users-search' project.id %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
-        <a class="btn btn-danger" href="{% url 'project-remove-users' project.id %}" role="button"><i class="fas fa-user-times" aria-hidden="true"></i> Remove Users</a>
+        {% comment %}<a class="btn btn-danger" href="{% url 'project-remove-users' project.id %}" role="button"><i class="fas fa-user-times" aria-hidden="true"></i> Remove Users</a>{% endcomment %}
       {% endif %}
     </div>
 
@@ -174,7 +174,7 @@ Project Detail
                 <span class="badge badge-danger">
                   No Access
                 </span>
-                {% if user.user in project.pis and cluster_accounts_requestable and is_allowed_to_update_project %}
+                {% if cluster_accounts_requestable and is_allowed_to_update_project and user.user in project.pis or user.user in project.managers  %}
                   <br><br>
                   <form action="{% url 'allocation-request-cluster-account' compute_allocation_pk user.user.pk %}" method="post">
                     {% csrf_token %}
