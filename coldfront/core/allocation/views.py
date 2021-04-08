@@ -1774,12 +1774,16 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
             subject = 'Cluster Account Activated'
             template = 'email/cluster_account_activated.txt'
 
+            CENTER_USER_GUIDE = import_from_settings('CENTER_USER_GUIDE')
+            CENTER_LOGIN_GUIDE = import_from_settings('CENTER_LOGIN_GUIDE')
+            CENTER_HELP_EMAIL = import_from_settings('CENTER_HELP_EMAIL')
+
             template_context = {
                 'user': self.user_obj,
                 'project_name': project_obj.name,
-                'center_user_guide': '',
-                'center_login_guide': '',
-                'center_help_email': '',
+                'center_user_guide': CENTER_USER_GUIDE,
+                'center_login_guide': CENTER_LOGIN_GUIDE,
+                'center_help_email': CENTER_HELP_EMAIL,
                 'signature': EMAIL_SIGNATURE,
             }
             sender = EMAIL_SENDER
