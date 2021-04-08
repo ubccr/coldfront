@@ -1833,6 +1833,7 @@ from coldfront.core.project.forms import VectorProjectReviewSetupForm
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.models import VectorProjectAllocationRequest
 from coldfront.core.project.utils import savio_request_state_status
+from coldfront.core.project.utils import send_new_project_request_notification_email
 from coldfront.core.project.utils import vector_request_state_status
 from coldfront.core.user.models import UserProfile
 from formtools.wizard.views import SessionWizardView
@@ -1951,7 +1952,7 @@ class SavioProjectRequestWizard(SessionWizardView):
             # Store transformed form data in a request.
             status = ProjectAllocationRequestStatusChoice.objects.get(
                 name='Under Review')
-            SavioProjectAllocationRequest.objects.create(
+            request = SavioProjectAllocationRequest.objects.create(
                 requester=self.request.user,
                 allocation_type=allocation_type,
                 pi=pi,
@@ -1959,6 +1960,14 @@ class SavioProjectRequestWizard(SessionWizardView):
                 pool=pooling_requested,
                 survey_answers=survey_data,
                 status=status)
+
+            # Send a notification email to admins.
+            try:
+                send_new_project_request_notification_email(request)
+            except Exception as e:
+                self.logger.error(
+                    'Failed to send notification email. Details:\n')
+                self.logger.exception(e)
         except Exception as e:
             self.logger.exception(e)
             message = 'Unexpected failure. Please contact an administrator.'
@@ -2437,7 +2446,12 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
 
         if status == 'Approved':
             if self.request_obj.pool:
-                send_project_request_pooling_email(self.request_obj)
+                try:
+                    send_project_request_pooling_email(self.request_obj)
+                except Exception as e:
+                    self.logger.error(
+                        'Failed to send notification email. Details:\n')
+                    self.logger.exception(e)
         elif status == 'Denied':
             runner = ProjectDenialRunner(self.request_obj)
             runner.run()
