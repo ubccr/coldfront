@@ -182,16 +182,16 @@ class ProjectListView(LoginRequiredMixin, ListView):
         #         ).distinct().order_by(order_by)
 
 
-
+# 'field_of_science',
 
         if project_search_form.is_valid():
             data = project_search_form.cleaned_data
             if data.get('show_all_projects') and (self.request.user.is_superuser or self.request.user.has_perm('project.can_view_all_projects')):
-                projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
-                    status__name__in=['New', 'Active', ]).order_by(order_by)
+                projects = Project.objects.prefetch_related( 'pi',  'status',).filter(
+                    status__name__in=['New', 'field_of_science','Active', ]).order_by(order_by)
             else:
-                projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
-                    Q(status__name__in=['New', 'Active', ]) &
+                projects = Project.objects.prefetch_related('pi',  'status',).filter(
+                    Q(status__name__in=['New', 'field_of_science','Active', ]) &
                     Q(projectuser__user=self.request.user) &
                     Q(projectuser__status__name='Active')
                 ).order_by(order_by)
@@ -213,9 +213,9 @@ class ProjectListView(LoginRequiredMixin, ListView):
             if data.get('field_of_science'):
                 projects = projects.filter(
                     field_of_science__description__icontains=data.get('field_of_science'))
-
+#  'field_of_science',
         else:
-            projects = Project.objects.prefetch_related('pi', 'project__pi', 'field_of_science', 'status',).filter(
+            projects = Project.objects.prefetch_related('pi', 'project__pi', 'status',).filter(
                 Q(status__name__in=['New', 'Active', ]) &
                 Q(allocationuser__user=self.request.user) &
                 Q(projectuser__user=self.request.user) &
