@@ -58,8 +58,8 @@ class Command(BaseCommand):
             'num_successes': num_successes,
             'review_url': self.__review_url(),
         }
-        sender = import_from_settings('EMAIL_SENDER', '')
-        receiver_list = [import_from_settings('EMAIL_ADMIN_LIST', '')]
+        sender = settings.EMAIL_SENDER
+        receiver_list = settings.EMAIL_ADMIN_LIST
         try:
             send_email_template(
                 subject, template_name, context, sender, receiver_list)
