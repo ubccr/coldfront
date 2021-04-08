@@ -1773,11 +1773,13 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
         if EMAIL_ENABLED:
             subject = 'Cluster Account Activated'
             template = 'email/cluster_account_activated.txt'
+
             template_context = {
-                'center_name': EMAIL_CENTER_NAME,
-                'project': project_obj.name,
-                'allocation': allocation_obj.pk,
-                'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL,
+                'user': self.user_obj,
+                'project_name': project_obj.name,
+                'center_user_guide': '',
+                'center_login_guide': '',
+                'center_help_email': '',
                 'signature': EMAIL_SIGNATURE,
             }
             sender = EMAIL_SENDER
