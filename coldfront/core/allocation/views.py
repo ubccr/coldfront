@@ -48,7 +48,8 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
 from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user)
 from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
-                                             get_user_resources)
+                                             get_user_resources,
+                                             set_allocation_user_attribute_value)
 from coldfront.core.project.models import (Project, ProjectUser,
                                            ProjectUserStatusChoice)
 from coldfront.core.resource.models import Resource
@@ -1759,11 +1760,18 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
         self.user_obj.userprofile.save()
         self.user_obj.save()
 
+        allocation_obj = self.allocation_user_attribute_obj.allocation
+        project_obj = allocation_obj.project
+
+        # For Savio projects, set the user's service units to that of
+        # the allocation. Attempt this before setting the status to
+        # 'Active' so that failures block completion.
+        if not project_obj.name.startswith('vector_'):
+            self.__set_user_service_units()
+
         self.allocation_user_attribute_obj.value = 'Active'
         self.allocation_user_attribute_obj.save()
 
-        allocation_obj = self.allocation_user_attribute_obj.allocation
-        project_obj = allocation_obj.project
         message = (
             f'Cluster account request from User {self.user_obj.email} under '
             f'Project {project_obj.name} and Allocation {allocation_obj.pk} '
@@ -1833,6 +1841,20 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
 
     def get_success_url(self):
         return reverse('allocation-cluster-account-request-list')
+
+    def __set_user_service_units(self):
+        """Set the AllocationUser's 'Service Units' attribute value to
+        that of the Allocation."""
+        allocation_obj = self.allocation_user_attribute_obj.allocation
+        allocation_user_obj = \
+            self.allocation_user_attribute_obj.allocation_user
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Service Units')
+        allocation_service_units = allocation_obj.allocationattribute_set.get(
+            allocation_attribute_type=allocation_attribute_type)
+        set_allocation_user_attribute_value(
+            allocation_user_obj, 'Service Units',
+            allocation_service_units.value)
 
 
 class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,

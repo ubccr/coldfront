@@ -6,6 +6,7 @@ from django.db.models import Q
 
 from coldfront.core.allocation.models import (AllocationAttributeType,
                                               AllocationUser,
+                                              AllocationUserAttribute,
                                               AllocationUserStatusChoice)
 from coldfront.core.allocation.signals import allocation_activate_user
 from coldfront.core.resource.models import Resource
@@ -68,6 +69,36 @@ def test_allocation_function(allocation_pk):
     # print('test_allocation_function', allocation_pk)
 
 
+def get_or_create_active_allocation_user(allocation_obj, user_obj):
+    allocation_user_status_choice = \
+        AllocationUserStatusChoice.objects.get(name='Active')
+    if allocation_obj.allocationuser_set.filter(user=user_obj).exists():
+        allocation_user_obj = allocation_obj.allocationuser_set.get(
+            user=user_obj)
+        allocation_user_obj.status = allocation_user_status_choice
+        allocation_user_obj.save()
+    else:
+        allocation_user_obj = AllocationUser.objects.create(
+            allocation=allocation_obj, user=user_obj,
+            status=allocation_user_status_choice)
+    allocation_activate_user.send(
+        sender=None, allocation_user_pk=allocation_user_obj.pk)
+    return allocation_user_obj
+
+
+def set_allocation_user_attribute_value(allocation_user_obj, type_name, value):
+    allocation_attribute_type = AllocationAttributeType.objects.get(
+        name=type_name)
+    allocation_user_attribute, _ = \
+        AllocationUserAttribute.objects.get_or_create(
+            allocation_attribute_type=allocation_attribute_type,
+            allocation=allocation_user_obj.allocation,
+            allocation_user=allocation_user_obj)
+    allocation_user_attribute.value = value
+    allocation_user_attribute.save()
+    return allocation_user_attribute
+
+
 def get_allocation_user_cluster_access_status(allocation_obj, user_obj):
     return allocation_obj.allocationuserattribute_set.get(
         allocation_user__user=user_obj,
@@ -76,32 +107,12 @@ def get_allocation_user_cluster_access_status(allocation_obj, user_obj):
 
 
 def request_project_cluster_access(allocation_obj, user_obj):
-    allocation_user_active_status_choice = \
-        AllocationUserStatusChoice.objects.get(name='Active')
-    cluster_access_allocation_attribute_type = \
-        AllocationAttributeType.objects.get(name='Cluster Account Status')
-
-    if allocation_obj.allocationuser_set.filter(user=user_obj).exists():
-        allocation_user_obj = allocation_obj.allocationuser_set.get(
-            user=user_obj)
-        allocation_user_obj.status = allocation_user_active_status_choice
-        allocation_user_obj.save()
-    else:
-        allocation_user_obj = AllocationUser.objects.create(
-            allocation=allocation_obj, user=user_obj,
-            status=allocation_user_active_status_choice)
-    allocation_activate_user.send(
-        sender=None, allocation_user_pk=allocation_user_obj.pk)
-
-    queryset = allocation_user_obj.allocationuserattribute_set
-    cluster_access_status, _ = queryset.get_or_create(
-        allocation_attribute_type=(
-            cluster_access_allocation_attribute_type),
-        allocation=allocation_obj)
-    if cluster_access_status.value == 'Active':
-        raise ValueError('Cluster access status is already Active.')
-    cluster_access_status.value = 'Pending - Add'
-    cluster_access_status.save()
+    # Get or create the AllocationUser, and set its status to 'Active'.
+    allocation_user_obj = get_or_create_active_allocation_user(
+        allocation_obj, user_obj)
+    # Set the user's 'Cluster Account Status' attribute, with pending value.
+    set_allocation_user_attribute_value(
+        allocation_user_obj, 'Cluster Account Status', 'Pending - Add')
 
 
 def prorated_allocation_amount(amount, dt):
