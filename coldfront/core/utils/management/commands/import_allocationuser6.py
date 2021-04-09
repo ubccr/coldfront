@@ -277,13 +277,18 @@ class Command(BaseCommand):
                             print(user_lst['user'], "exists")
                             usage_string = user_lst['usage']
                             num, alpha = splitString(usage_string) 
+                            print("line280",user_lst['user'])
                             # load allocation user
-                         
+                            # AllocationUser.objects.filter(user)
                             # print("line283",AllocationUser.objects.all())
                           
                             print("line282", user_lst['user'])
-                            # AllocationUser.objects.get(user=user_lst['user'])
-                         
+                            # Project.objects.get 1 project; 1 project will have many allocations
+                            print("line287",Project.objects.filter(title=lab_name))
+                            # Project.objects.filter(title=lab_name).filter(Resource.objects.filter(name=lab+'/tier0'))
+                            # Project.objects.filter(title = lab_name).filter(Allocation.objects.filter(Resource.objects.filter(name=lab+'/tier0')))
+                            # AllocationUser.objects.get(user=user_lst['user']).update(usage_bytes = user_lst['logical_usage'])
+
                             # updating allocation user instead of creating one
                             # allocation_user_obj.usage_bytes = user_lst['logical_usage']
                             # allocation_user_obj.usage = num
