@@ -153,7 +153,9 @@ def send_account_activation_email(user):
 
     # Using import_from_settings for EMAIL_SENDER returns a tuple, leading to
     # an error.
-    sender = settings.EMAIL_SENDER
+    #sender = settings.EMAIL_SENDER
+    #Krishna tested this again on 04/07/2021 and import_from_settings is working
+    sender = import_from_settings('EMAIL_SENDER')
     receiver_list = [user.email, ]
 
     send_email_template(subject, template_name, context, sender, receiver_list)

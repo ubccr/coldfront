@@ -2,7 +2,10 @@ from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationStatusChoice
+from coldfront.core.allocation.models import AllocationUserStatusChoice
+from coldfront.core.allocation.utils import get_or_create_active_allocation_user
 from coldfront.core.allocation.utils import request_project_cluster_access
+from coldfront.core.allocation.utils import set_allocation_user_attribute_value
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
@@ -529,6 +532,7 @@ class ProjectApprovalRunner(object):
         project = self.activate_project()
         self.create_project_users()
         allocation = self.update_allocation()
+        self.create_allocation_users(allocation)
         self.approve_request()
         self.send_email()
         return project, allocation
@@ -546,6 +550,15 @@ class ProjectApprovalRunner(object):
             ProjectAllocationRequestStatusChoice.objects.get(
                 name='Approved - Complete')
         self.request_obj.save()
+
+    def create_allocation_users(self, allocation):
+        """Create active AllocationUsers for the requester and/or the
+        PI."""
+        requester = self.request_obj.requester
+        pi = self.request_obj.pi
+        if requester.pk != pi.pk:
+            get_or_create_active_allocation_user(allocation, requester)
+        get_or_create_active_allocation_user(allocation, pi)
 
     def create_project_users(self):
         """Create active ProjectUsers with the appropriate roles for the
@@ -599,10 +612,7 @@ class SavioProjectApprovalRunner(ProjectApprovalRunner):
         super().__init__(request_obj)
 
     def update_allocation(self):
-        """Perform allocation-related handling. In particular,
-
-        TODO
-        """
+        """Perform allocation-related handling."""
         project = self.request_obj.project
         allocation_type = self.request_obj.allocation_type
         pool = self.request_obj.pool
@@ -674,10 +684,7 @@ class VectorProjectApprovalRunner(ProjectApprovalRunner):
     Vector project request is approved and processed."""
 
     def update_allocation(self):
-        """Perform allocation-related handling. In particular,
-
-        TODO
-        """
+        """Perform allocation-related handling."""
         project = self.request_obj.project
         allocation = get_project_compute_allocation(project)
         allocation.status = AllocationStatusChoice.objects.get(name='Active')
