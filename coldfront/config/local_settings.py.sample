@@ -29,7 +29,7 @@ SESSION_COOKIE_SECURE = False
 #------------------------------------------------------------------------------
 # General Center Information
 #------------------------------------------------------------------------------
-CENTER_NAME = 'HPC Resources'
+# CENTER_NAME = 'BRC HPC Resources'
 # CENTER_HELP_URL = 'http://localhost/help'
 # CENTER_PROJECT_RENEWAL_HELP_URL = 'http://localhost/help'
 # CENTER_BASE_URL = 'https://coldfront.io'
