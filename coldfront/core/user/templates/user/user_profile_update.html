@@ -20,20 +20,11 @@
     <form id="update-form" method="POST" action="{% url 'user-profile-update' %}" autocomplete="off">
       {% csrf_token %}
       {{ user_update_form|crispy }}
-      <button id="form_reset_button" type="button" class="btn btn-secondary">Reset</button>
       <input type="submit" class="btn btn-primary" value="Update">
+      <a class="btn btn-secondary" href="{% url 'user-profile' %}" role="button">Cancel</a><br>
     </form>
   </div>
 </div>
 
-<script>
-    $(document).on('click', '#form_reset_button', function() {
-      resetForm($('#update_form'));
-    });
-
-    function resetForm($form) {
-        location.reload();
-    };
-</script>
 {% endblock %}
 
