@@ -2286,6 +2286,9 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
                 savio_request_latest_update_timestamp(self.request_obj)
             if not latest_update_timestamp:
                 latest_update_timestamp = 'No updates yet.'
+            else:
+                latest_update_timestamp = datetime.datetime.fromisoformat(
+                    latest_update_timestamp)
         except Exception as e:
             self.logger.exception(e)
             messages.error(self.request, self.error_message)
@@ -2822,6 +2825,9 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
                 vector_request_latest_update_timestamp(self.request_obj)
             if not latest_update_timestamp:
                 latest_update_timestamp = 'No updates yet.'
+            else:
+                latest_update_timestamp = datetime.datetime.fromisoformat(
+                    latest_update_timestamp)
         except Exception as e:
             self.logger.exception(e)
             messages.error(self.request, self.error_message)
