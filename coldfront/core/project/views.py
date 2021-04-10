@@ -1856,8 +1856,21 @@ from coldfront.core.user.models import UserProfile
 from formtools.wizard.views import SessionWizardView
 
 
-class ProjectRequestView(LoginRequiredMixin, TemplateView):
+class ProjectRequestView(LoginRequiredMixin, UserPassesTestMixin,
+                         TemplateView):
     template_name = 'project/project_request/project_request.html'
+
+    def test_func(self):
+        if self.request.user.is_superuser:
+            return True
+        signed_date = (
+            self.request.user.userprofile.access_agreement_signed_date)
+        if signed_date is not None:
+            return True
+        message = (
+            'You must sign the User Access Agreement before you can create a '
+            'new project.')
+        messages.error(self.request, message)
 
     def get(self, request, *args, **kwargs):
         context = dict()
@@ -1876,7 +1889,7 @@ class ProjectRequestView(LoginRequiredMixin, TemplateView):
         return render(request, self.template_name, context)
 
 
-class SavioProjectRequestWizard(SessionWizardView):
+class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
 
     FORMS = [
         ('allocation_type', SavioProjectAllocationTypeForm),
@@ -1920,6 +1933,18 @@ class SavioProjectRequestWizard(SessionWizardView):
     }
 
     logger = logging.getLogger(__name__)
+
+    def test_func(self):
+        if self.request.user.is_superuser:
+            return True
+        signed_date = (
+            self.request.user.userprofile.access_agreement_signed_date)
+        if signed_date is not None:
+            return True
+        message = (
+            'You must sign the User Access Agreement before you can create a '
+            'new project.')
+        messages.error(self.request, message)
 
     def get_context_data(self, form, **kwargs):
         context = super().get_context_data(form=form, **kwargs)
@@ -2313,7 +2338,8 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         else:
             message = (
                 f'Project {project.name} and Allocation {allocation.pk} have '
-                f'been activated.')
+                f'been activated. A cluster access request has automatically '
+                f'been made for the requester.')
             messages.success(self.request, message)
         return HttpResponseRedirect(self.redirect)
 
@@ -2652,12 +2678,25 @@ class SavioProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
             kwargs={'pk': self.kwargs.get('pk')})
 
 
-class VectorProjectRequestView(LoginRequiredMixin, FormView):
+class VectorProjectRequestView(LoginRequiredMixin, UserPassesTestMixin,
+                               FormView):
     form_class = VectorProjectDetailsForm
     template_name = 'project/project_request/vector/project_details.html'
     login_url = '/'
 
     logger = logging.getLogger(__name__)
+
+    def test_func(self):
+        if self.request.user.is_superuser:
+            return True
+        signed_date = (
+            self.request.user.userprofile.access_agreement_signed_date)
+        if signed_date is not None:
+            return True
+        message = (
+            'You must sign the User Access Agreement before you can create a '
+            'new project.')
+        messages.error(self.request, message)
 
     def form_valid(self, form):
         try:
@@ -2833,7 +2872,8 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         else:
             message = (
                 f'Project {project.name} and Allocation {allocation.pk} have '
-                f'been activated.')
+                f'been activated. A cluster access request has automatically '
+                f'been made for the requester.')
             messages.success(self.request, message)
         return HttpResponseRedirect(self.redirect)
 

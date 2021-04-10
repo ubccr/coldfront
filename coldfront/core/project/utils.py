@@ -2,7 +2,7 @@ from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationStatusChoice
-from coldfront.core.allocation.models import AllocationUserStatusChoice
+from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.utils import get_or_create_active_allocation_user
 from coldfront.core.allocation.utils import request_project_cluster_access
 from coldfront.core.allocation.utils import set_allocation_user_attribute_value
@@ -394,7 +394,18 @@ class ProjectApprovalRunner(object):
         project = self.activate_project()
         self.create_project_users()
         allocation = self.update_allocation()
-        self.create_allocation_users(allocation)
+        requester_allocation_user, pi_allocation_user = \
+            self.create_allocation_users(allocation)
+
+        # If the AllocationUser for the requester was not created, then
+        # the PI was the requester.
+        if requester_allocation_user is None:
+            self.create_cluster_access_request_for_requester(
+                pi_allocation_user)
+        else:
+            self.create_cluster_access_request_for_requester(
+                requester_allocation_user)
+
         self.approve_request()
         return project, allocation
 
@@ -407,12 +418,43 @@ class ProjectApprovalRunner(object):
 
     def create_allocation_users(self, allocation):
         """Create active AllocationUsers for the requester and/or the
-        PI."""
+        PI. Return the created objects (requester and then PI)."""
         requester = self.request_obj.requester
         pi = self.request_obj.pi
+        requester_allocation_user = None
         if requester.pk != pi.pk:
-            get_or_create_active_allocation_user(allocation, requester)
-        get_or_create_active_allocation_user(allocation, pi)
+            requester_allocation_user = get_or_create_active_allocation_user(
+                allocation, requester)
+        pi_allocation_user = get_or_create_active_allocation_user(
+            allocation, pi)
+        return requester_allocation_user, pi_allocation_user
+
+    def create_cluster_access_request_for_requester(self, allocation_user):
+        """Create a 'Cluster Account Status' for the given
+        AllocationUser corresponding to the request's requester."""
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Cluster Account Status')
+        pending_add = 'Pending - Add'
+        # get_or_create's 'defaults' arguments are only considered if a create
+        # is required.
+        defaults = {
+            'value': pending_add,
+        }
+        allocation_user_attribute, created = \
+            allocation_user.allocationuserattribute_set.get_or_create(
+                allocation_attribute_type=allocation_attribute_type,
+                allocation=allocation_user.allocation,
+                defaults=defaults)
+        if not created:
+            if allocation_user_attribute.value == 'Active':
+                message = (
+                    f'AllocationUser {allocation_user.pk} for requester '
+                    f'{allocation_user.user.pk} unexpectedly already has '
+                    f'active cluster access status.')
+                self.logger.warning(message)
+            else:
+                allocation_user_attribute.value = pending_add
+                allocation_user_attribute.save()
 
     def create_project_users(self):
         """Create active ProjectUsers with the appropriate roles for the
