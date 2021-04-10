@@ -2338,7 +2338,8 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         else:
             message = (
                 f'Project {project.name} and Allocation {allocation.pk} have '
-                f'been activated.')
+                f'been activated. A cluster access request has automatically '
+                f'been made for the requester.')
             messages.success(self.request, message)
         return HttpResponseRedirect(self.redirect)
 
@@ -2871,7 +2872,8 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         else:
             message = (
                 f'Project {project.name} and Allocation {allocation.pk} have '
-                f'been activated.')
+                f'been activated. A cluster access request has automatically '
+                f'been made for the requester.')
             messages.success(self.request, message)
         return HttpResponseRedirect(self.redirect)
 
