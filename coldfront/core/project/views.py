@@ -2680,11 +2680,19 @@ class VectorProjectRequestView(LoginRequiredMixin, FormView):
             pi = User.objects.get(username=settings.VECTOR_PI_USERNAME)
             status = ProjectAllocationRequestStatusChoice.objects.get(
                 name='Under Review')
-            VectorProjectAllocationRequest.objects.create(
+            request = VectorProjectAllocationRequest.objects.create(
                 requester=self.request.user,
                 pi=pi,
                 project=project,
                 status=status)
+
+            # Send a notification email to admins.
+            try:
+                send_new_project_request_notification_email(request)
+            except Exception as e:
+                self.logger.error(
+                    'Failed to send notification email. Details:\n')
+                self.logger.exception(e)
         except Exception as e:
             self.logger.exception(e)
             message = 'Unexpected failure. Please contact an administrator.'
