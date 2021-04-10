@@ -301,7 +301,9 @@ class PooledProjectChoiceField(forms.ModelChoiceField):
 
     def label_from_instance(self, obj):
         names = []
-        for project_user in obj.projectuser_set.all():
+        project_users = obj.projectuser_set.filter(
+            role__name='Principal Investigator')
+        for project_user in project_users:
             user = project_user.user
             names.append(f'{user.first_name} {user.last_name}')
         names.sort()
