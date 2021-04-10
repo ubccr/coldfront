@@ -2,6 +2,7 @@
 {% load crispy_forms_tags %}
 {% load common_tags %}
 {% load static %}
+{% load iso8601_to_datetime %}
 
 
 {% block title %}
@@ -61,7 +62,7 @@ Savio Project Request Detail
                   </p>
                   <p>
                     <strong>Timestamp:</strong>
-                    {{ denial_reason.timestamp }}
+                    {{ denial_reason.timestamp|iso8601_to_datetime }}
                   </p>
                   <p>If you have any questions or concerns, please contact us at {{ support_email }}.</p>
                 {% endif %}
@@ -108,11 +109,11 @@ Savio Project Request Detail
                     </span>
                   {% elif eligibility.status == 'Approved' %}
                     <span class="badge badge-success">
-                      {{ eligibility.status }} {{ eligibility.timestamp }}
+                      {{ eligibility.status }} {{ eligibility.timestamp|iso8601_to_datetime }}
                     </span>
                   {% else %}
                     <span class="badge badge-danger">
-                      {{ eligibility.status }} {{ eligibility.timestamp }}
+                      {{ eligibility.status }} {{ eligibility.timestamp|iso8601_to_datetime }}
                     </span>
                   {% endif %}
                 </td>
@@ -135,11 +136,11 @@ Savio Project Request Detail
                     </span>
                   {% elif readiness.status == 'Approved' %}
                     <span class="badge badge-success">
-                      {{ readiness.status }} {{ readiness.timestamp }}
+                      {{ readiness.status }} {{ readiness.timestamp|iso8601_to_datetime }}
                     </span>
                   {% else %}
                     <span class="badge badge-danger">
-                      {{ readiness.status }} {{ readiness.timestamp }}
+                      {{ readiness.status }} {{ readiness.timestamp|iso8601_to_datetime }}
                     </span>
                   {% endif %}
                 </td>
@@ -168,7 +169,7 @@ Savio Project Request Detail
                     </span>
                   {% else %}
                     <span class="badge badge-success">
-                      {{ setup.status }} {{ setup.timestamp }}
+                      {{ setup.status }} {{ setup.timestamp|iso8601_to_datetime }}
                     </span>
                   {% endif %}
                 </td>
