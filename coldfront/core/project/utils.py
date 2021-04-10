@@ -216,11 +216,13 @@ def send_new_project_request_notification_email(request):
     if not email_enabled:
         return
 
-    if request.pool:
+    if isinstance(request, SavioProjectAllocationRequest) and request.pool:
         subject = 'New Pooled Project Request'
+        pooling = True
     else:
         subject = 'New Project Request'
-    template_name = 'email/admins_new_project_request.html'
+        pooling = False
+    template_name = 'email/project_request/admins_new_project_request.txt'
 
     requester = request.requester
     requester_str = (
@@ -240,7 +242,7 @@ def send_new_project_request_notification_email(request):
         reverse(detail_view_name, kwargs={'pk': request.pk}))
 
     context = {
-        'pooling': request.pool,
+        'pooling': pooling,
         'project_name': request.project.name,
         'requester_str': requester_str,
         'pi_str': pi_str,
@@ -261,10 +263,10 @@ def send_project_request_approval_email(request):
     if not email_enabled:
         return
 
-    if request.pool:
+    if isinstance(request, SavioProjectAllocationRequest) and request.pool:
         subject = f'Pooled Project Request ({request.project.name}) Approved'
         template_name = (
-            'email/project_request/pooled_project_request_approved.html')
+            'email/project_request/pooled_project_request_approved.txt')
     else:
         subject = f'New Project Request ({request.project.name}) Approved'
         template_name = (
@@ -272,7 +274,7 @@ def send_project_request_approval_email(request):
 
     project_url = __project_detail_url(request.project)
     context = {
-        'center_name': settings.EMAIL_CENTER_NAME,
+        'center_name': settings.CENTER_NAME,
         'project_name': request.project.name,
         'project_url': project_url,
         'support_email': settings.EMAIL_TICKET_SYSTEM_ADDRESS,
@@ -293,19 +295,20 @@ def send_project_request_denial_email(request):
     if not email_enabled:
         return
 
-    if request.pool:
+    if isinstance(request, SavioProjectAllocationRequest) and request.pool:
         subject = f'Pooled Project Request ({request.project.name}) Denied'
         template_name = (
-            'email/project_request/pooled_project_request_denied.html')
+            'email/project_request/pooled_project_request_denied.txt')
     else:
         subject = f'New Project Request ({request.project.name}) Denied'
-        template_name = 'email/project_request/new_project_request_denied.html'
+        template_name = 'email/project_request/new_project_request_denied.txt'
 
-    project_url = __project_detail_url(request.project)
+    reason = ''
+
     context = {
-        'center_name': settings.EMAIL_CENTER_NAME,
+        'center_name': settings.CENTER_NAME,
         'project_name': request.project.name,
-        'project_url': project_url,
+        'reason': reason,
         'support_email': settings.EMAIL_TICKET_SYSTEM_ADDRESS,
         'signature': settings.EMAIL_SIGNATURE,
     }
@@ -339,7 +342,7 @@ def send_project_request_pooling_email(request):
     pi_str = f'{pi.first_name} {pi.last_name} ({pi.email})'
 
     context = {
-        'center_name': settings.EMAIL_CENTER_NAME,
+        'center_name': settings.CENTER_NAME,
         'project_name': request.project.name,
         'requester_str': requester_str,
         'pi_str': pi_str,
@@ -586,8 +589,8 @@ class ProjectApprovalRunner(object):
         try:
             send_project_request_approval_email(self.request_obj)
         except Exception as e:
-            self.logger.error('Failed to send notification email. Details:\n')
-            self.logger.exception(e)
+            logger.error('Failed to send notification email. Details:\n')
+            logger.exception(e)
 
     def update_allocation(self):
         """Perform allocation-related handling. This should be
@@ -721,8 +724,8 @@ class ProjectDenialRunner(object):
         try:
             send_project_request_denial_email(self.request_obj)
         except Exception as e:
-            self.logger.error('Failed to send notification email. Details:\n')
-            self.logger.exception(e)
+            logger.error('Failed to send notification email. Details:\n')
+            logger.exception(e)
 
     def deny_project(self):
         """Set the Project's status to 'Denied'."""

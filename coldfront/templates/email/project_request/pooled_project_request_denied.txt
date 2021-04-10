@@ -1,6 +1,6 @@
 Dear {{ center_name }} user,
 
-Your request to create project {{ project }} has been denied for the following reason:
+Your request to pool your allocation with project {{ project_name }} has been denied for the following reason:
 
 {{ reason }}
 
