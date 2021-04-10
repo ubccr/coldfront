@@ -2203,35 +2203,35 @@ def show_pooled_project_selection_form_condition(wizard):
     return cleaned_data.get('pool', False)
 
 
-class SavioProjectRequestListView(LoginRequiredMixin, UserPassesTestMixin,
-                                  TemplateView):
+class SavioProjectRequestListView(LoginRequiredMixin, TemplateView):
     template_name = 'project/project_request/savio/project_request_list.html'
     login_url = '/'
 
     # Show completed requests if True; else, show pending requests.
     completed = False
 
-    def test_func(self):
-        """UserPassesTestMixin tests."""
-        if self.request.user.is_superuser:
-            return True
-        message = 'You do not have permission to view the previous page.'
-        messages.error(self.request, message)
-        return False
-
     def get_context_data(self, **kwargs):
+        """Include either pending or completed requests. If the user is
+        a superuser, show all such requests. Otherwise, show only those
+        for which the user is a requester or PI."""
         context = super().get_context_data(**kwargs)
+
+        args, kwargs = [], {}
+
+        user = self.request.user
+        if not user.is_superuser:
+            args.append(Q(requester=user) | Q(pi=user))
+
         if self.completed:
-            savio_project_request_list = \
-                SavioProjectAllocationRequest.objects.filter(
-                    status__name__in=['Approved - Complete', 'Denied'])
+            status__name__in = ['Approved - Complete', 'Denied']
         else:
-            savio_project_request_list = \
-                SavioProjectAllocationRequest.objects.filter(
-                    status__name__in=['Under Review', 'Approved - Processing'])
+            status__name__in = ['Under Review', 'Approved - Processing']
+        kwargs['status__name__in'] = status__name__in
+
         context['request_filter'] = (
             'completed' if self.completed else 'pending')
-        context['savio_project_request_list'] = savio_project_request_list
+        context['savio_project_request_list'] = \
+            SavioProjectAllocationRequest.objects.filter(*args, **kwargs)
         return context
 
 
@@ -2750,35 +2750,35 @@ class VectorProjectRequestView(LoginRequiredMixin, UserPassesTestMixin,
         return project
 
 
-class VectorProjectRequestListView(LoginRequiredMixin, UserPassesTestMixin,
-                                   TemplateView):
+class VectorProjectRequestListView(LoginRequiredMixin, TemplateView):
     template_name = 'project/project_request/vector/project_request_list.html'
     login_url = '/'
 
     # Show completed requests if True; else, show pending requests.
     completed = False
 
-    def test_func(self):
-        """UserPassesTestMixin tests."""
-        if self.request.user.is_superuser:
-            return True
-        message = 'You do not have permission to view the previous page.'
-        messages.error(self.request, message)
-        return False
-
     def get_context_data(self, **kwargs):
+        """Include either pending or completed requests. If the user is
+        a superuser, show all such requests. Otherwise, show only those
+        for which the user is a requester or PI."""
         context = super().get_context_data(**kwargs)
+
+        args, kwargs = [], {}
+
+        user = self.request.user
+        if not user.is_superuser:
+            args.append(Q(requester=user) | Q(pi=user))
+
         if self.completed:
-            vector_project_request_list = \
-                VectorProjectAllocationRequest.objects.filter(
-                    status__name__in=['Approved - Complete', 'Denied'])
+            status__name__in = ['Approved - Complete', 'Denied']
         else:
-            vector_project_request_list = \
-                VectorProjectAllocationRequest.objects.filter(
-                    status__name__in=['Under Review', 'Approved - Processing'])
+            status__name__in = ['Under Review', 'Approved - Processing']
+        kwargs['status__name__in'] = status__name__in
+
         context['request_filter'] = (
             'completed' if self.completed else 'pending')
-        context['vector_project_request_list'] = vector_project_request_list
+        context['vector_project_request_list'] = \
+            VectorProjectAllocationRequest.objects.filter(*args, **kwargs)
         return context
 
 
