@@ -2,7 +2,7 @@ from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationStatusChoice
-from coldfront.core.allocation.models import AllocationUserStatusChoice
+from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.utils import get_or_create_active_allocation_user
 from coldfront.core.allocation.utils import request_project_cluster_access
 from coldfront.core.allocation.utils import set_allocation_user_attribute_value
@@ -22,6 +22,7 @@ from datetime import timedelta
 from decimal import Decimal
 from django.conf import settings
 from django.db.models import Q
+
 from django.urls import reverse
 from urllib.parse import urljoin
 import logging
@@ -72,16 +73,23 @@ def get_project_compute_allocation(project_obj):
 def auto_approve_project_join_requests():
     """Approve each request to join a Project that has completed its
     delay period. Return the results of each approval attempt, where
-    each result has a 'success' boolean and a string message."""
+    each result has a 'success' boolean and a string message.
+
+    Because users are allowed to join 'New' Projects, only requests that
+    are for 'Active' projects should be considered. Handling elsewhere
+    should replace all join requests for a Project when it goes from
+    'New' to 'Active'."""
     JoinAutoApprovalResult = namedtuple(
         'JoinAutoApprovalResult', 'success message')
 
     pending_status = ProjectUserStatusChoice.objects.get(
         name='Pending - Add')
     active_status = ProjectUserStatusChoice.objects.get(name='Active')
+    project_active_status = ProjectStatusChoice.objects.get(name='Active')
+
     project_user_objs = ProjectUser.objects.prefetch_related(
         'project', 'project__allocation_set', 'projectuserjoinrequest_set'
-    ).filter(status=pending_status)
+    ).filter(status=pending_status, project__status=project_active_status)
 
     now = utc_now_offset_aware()
     results = []
@@ -535,7 +543,18 @@ class ProjectApprovalRunner(object):
         project = self.activate_project()
         self.create_project_users()
         allocation = self.update_allocation()
-        self.create_allocation_users(allocation)
+        requester_allocation_user, pi_allocation_user = \
+            self.create_allocation_users(allocation)
+
+        # If the AllocationUser for the requester was not created, then
+        # the PI was the requester.
+        if requester_allocation_user is None:
+            self.create_cluster_access_request_for_requester(
+                pi_allocation_user)
+        else:
+            self.create_cluster_access_request_for_requester(
+                requester_allocation_user)
+
         self.approve_request()
         self.send_email()
         return project, allocation
@@ -556,12 +575,43 @@ class ProjectApprovalRunner(object):
 
     def create_allocation_users(self, allocation):
         """Create active AllocationUsers for the requester and/or the
-        PI."""
+        PI. Return the created objects (requester and then PI)."""
         requester = self.request_obj.requester
         pi = self.request_obj.pi
+        requester_allocation_user = None
         if requester.pk != pi.pk:
-            get_or_create_active_allocation_user(allocation, requester)
-        get_or_create_active_allocation_user(allocation, pi)
+            requester_allocation_user = get_or_create_active_allocation_user(
+                allocation, requester)
+        pi_allocation_user = get_or_create_active_allocation_user(
+            allocation, pi)
+        return requester_allocation_user, pi_allocation_user
+
+    def create_cluster_access_request_for_requester(self, allocation_user):
+        """Create a 'Cluster Account Status' for the given
+        AllocationUser corresponding to the request's requester."""
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Cluster Account Status')
+        pending_add = 'Pending - Add'
+        # get_or_create's 'defaults' arguments are only considered if a create
+        # is required.
+        defaults = {
+            'value': pending_add,
+        }
+        allocation_user_attribute, created = \
+            allocation_user.allocationuserattribute_set.get_or_create(
+                allocation_attribute_type=allocation_attribute_type,
+                allocation=allocation_user.allocation,
+                defaults=defaults)
+        if not created:
+            if allocation_user_attribute.value == 'Active':
+                message = (
+                    f'AllocationUser {allocation_user.pk} for requester '
+                    f'{allocation_user.user.pk} unexpectedly already has '
+                    f'active cluster access status.')
+                self.logger.warning(message)
+            else:
+                allocation_user_attribute.value = pending_add
+                allocation_user_attribute.save()
 
     def create_project_users(self):
         """Create active ProjectUsers with the appropriate roles for the

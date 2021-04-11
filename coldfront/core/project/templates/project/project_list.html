@@ -2,16 +2,20 @@
 
 <div class="card mb-3 bg-light">
   <div class="card-body">
-    <a class="btn btn-primary" href="{% url 'project-request' %}" role="button">
-      <i class="fas fa-plus" aria-hidden="true"></i>
-      Create a project
-    </a>
     {% if user_agreement_signed %}
+      <a class="btn btn-primary" href="{% url 'project-request' %}" role="button">
+        <i class="fas fa-plus" aria-hidden="true"></i>
+        Create a project
+      </a>
       <a class="btn btn-primary" href="{% url 'project-join-list' %}" role="button">
         <i class="fas fa-user-plus" aria-hidden="true"></i>
         Join a project
       </a>
     {% else %}
+      <button class="btn btn-primary" disabled="true">
+        <i class="fas fa-plus" aria-hidden="true"></i>
+        Create a project
+      </button>
       <button class="btn btn-primary" disabled="true">
         <i class="fas fa-user-plus" aria-hidden="true"></i>
         Join a project

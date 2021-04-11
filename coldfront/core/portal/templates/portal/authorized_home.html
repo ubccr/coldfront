@@ -77,9 +77,9 @@
               </span>
             </td>
             <td>
-              <a href="{% url 'project-request' %}" class="btn btn-primary">
+              <button class="btn btn-primary" disabled="true">
                 Create
-              </a>
+              </button>
               <button class="btn btn-primary" disabled="true">
                 Join
               </button>
@@ -94,16 +94,11 @@
 
 <div class="row">
   <div class="col-lg-12">
+    Your BRC Supercluster account username:
     {% if cluster_username is not None %}
-      <div class="alert alert-success" role="alert">
-        <i class="fa fa-info-circle" aria-hidden="true"></i>
-        Your BRC Supercluster account username: <b>{{ cluster_username }}</b>
-      </div>
+      <span class="alert alert-success"><b>{{ cluster_username }}</b></span>
     {% else %}
-      <div class="alert alert-danger" role="alert">
-        <i class="fa fa-info-circle" aria-hidden="true"></i>
-        Your BRC Supercluster account username: No Cluster Account.
-      </div>
+      <span class="alert alert-danger"><b>No Cluster Account</b></span>
     {% endif %}
   </div>
 </div>
