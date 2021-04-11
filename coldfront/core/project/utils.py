@@ -160,6 +160,15 @@ def auto_approve_project_join_requests():
                 logger.exception(e)
                 results.append(
                     JoinAutoApprovalResult(success=False, message=message))
+            else:
+                # Send an email to the user.
+                try:
+                    send_project_join_request_approval_email(
+                        project_obj, project_user_obj)
+                except Exception as e:
+                    message = 'Failed to send notification email. Details:'
+                    logger.error(message)
+                    logger.exception(e)
 
     return results
 
@@ -214,6 +223,56 @@ def send_project_join_notification_email(project, project_user):
         ).values_list(
             'user__email', flat=True
         ))
+
+    send_email_template(subject, template_name, context, sender, receiver_list)
+
+
+def send_project_join_request_approval_email(project, project_user):
+    """Send a notification email to a user stating that their request to
+    join the given project has been approved."""
+    email_enabled = import_from_settings('EMAIL_ENABLED', False)
+    if not email_enabled:
+        return
+
+    subject = f'Request to Join {project.name} Approved'
+    template_name = 'email/project_join_request_approved.txt'
+
+    user = project_user.user
+
+    context = {
+        'user': user,
+        'project_name': project.name,
+        'support_email': settings.EMAIL_TICKET_SYSTEM_ADDRESS,
+        'signature': settings.EMAIL_SIGNATURE,
+    }
+
+    sender = settings.EMAIL_SENDER
+    receiver_list = [user.email]
+
+    send_email_template(subject, template_name, context, sender, receiver_list)
+
+
+def send_project_join_request_denial_email(project, project_user):
+    """Send a notification email to a user stating that their request to
+    join the given project has been denied."""
+    email_enabled = import_from_settings('EMAIL_ENABLED', False)
+    if not email_enabled:
+        return
+
+    subject = f'Request to Join {project.name} Denied'
+    template_name = 'email/project_join_request_denied.txt'
+
+    user = project_user.user
+
+    context = {
+        'user': user,
+        'project_name': project.name,
+        'support_email': settings.EMAIL_TICKET_SYSTEM_ADDRESS,
+        'signature': settings.EMAIL_SIGNATURE,
+    }
+
+    sender = settings.EMAIL_SENDER
+    receiver_list = [user.email]
 
     send_email_template(subject, template_name, context, sender, receiver_list)
 
