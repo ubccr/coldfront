@@ -1,0 +1,8 @@
+Dear {{ user.first_name }} {{ user.last_name }},
+
+Your request to join Project {{ project_name }} has been denied by its managers.
+
+If you have any questions, please contact us at {{ support_email }}.
+
+Thank you,
+{{ signature }}

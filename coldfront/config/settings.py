@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
+    'django.contrib.sites',
 ]
 
 
@@ -244,6 +245,9 @@ ALLOW_ALL_JOBS = False
 # ------------------------------------------------------------------------------
 # myBRC settings
 # ------------------------------------------------------------------------------
+
+# The ID of the Site object to use (probably 1).
+SITE_ID = 1
 
 # The username of the user to set as the PI for all Vector projects.
 VECTOR_PI_USERNAME = "channsoden@berkeley.edu"

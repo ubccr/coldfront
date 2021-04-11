@@ -5,6 +5,7 @@ from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.utils import get_or_create_active_allocation_user
 from coldfront.core.allocation.utils import request_project_cluster_access
+from coldfront.core.allocation.utils import review_cluster_access_requests_url
 from coldfront.core.allocation.utils import set_allocation_user_attribute_value
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.models import ProjectStatusChoice
@@ -159,6 +160,15 @@ def auto_approve_project_join_requests():
                 logger.exception(e)
                 results.append(
                     JoinAutoApprovalResult(success=False, message=message))
+            else:
+                # Send an email to the user.
+                try:
+                    send_project_join_request_approval_email(
+                        project_obj, project_user_obj)
+                except Exception as e:
+                    message = 'Failed to send notification email. Details:'
+                    logger.error(message)
+                    logger.exception(e)
 
     return results
 
@@ -202,35 +212,255 @@ def send_project_join_notification_email(project, project_user):
         context['url'] = __project_detail_url(project)
 
     sender = settings.EMAIL_SENDER
-    receiver_list = list(project.projectuser_set.filter(
-        Q(role__name='Principal Investigator', enable_notifications=True) |
-        Q(role__name='Manager')).values_list('user__email', flat=True))
+
+    pi_condition = Q(
+        role__name='Principal Investigator', status__name='Active',
+        enable_notifications=True)
+    manager_condition = Q(role__name='Manager', status__name='Active')
+    receiver_list = list(
+        project.projectuser_set.filter(
+            pi_condition | manager_condition
+        ).values_list(
+            'user__email', flat=True
+        ))
 
     send_email_template(subject, template_name, context, sender, receiver_list)
 
 
-def send_project_request_approved_email(request):
+def send_project_join_request_approval_email(project, project_user):
+    """Send a notification email to a user stating that their request to
+    join the given project has been approved."""
+    email_enabled = import_from_settings('EMAIL_ENABLED', False)
+    if not email_enabled:
+        return
+
+    subject = f'Request to Join {project.name} Approved'
+    template_name = 'email/project_join_request_approved.txt'
+
+    user = project_user.user
+
+    context = {
+        'user': user,
+        'project_name': project.name,
+        'support_email': settings.EMAIL_TICKET_SYSTEM_ADDRESS,
+        'signature': settings.EMAIL_SIGNATURE,
+    }
+
+    sender = settings.EMAIL_SENDER
+    receiver_list = [user.email]
+
+    send_email_template(subject, template_name, context, sender, receiver_list)
+
+
+def send_project_join_request_denial_email(project, project_user):
+    """Send a notification email to a user stating that their request to
+    join the given project has been denied."""
+    email_enabled = import_from_settings('EMAIL_ENABLED', False)
+    if not email_enabled:
+        return
+
+    subject = f'Request to Join {project.name} Denied'
+    template_name = 'email/project_join_request_denied.txt'
+
+    user = project_user.user
+
+    context = {
+        'user': user,
+        'project_name': project.name,
+        'support_email': settings.EMAIL_TICKET_SYSTEM_ADDRESS,
+        'signature': settings.EMAIL_SIGNATURE,
+    }
+
+    sender = settings.EMAIL_SENDER
+    receiver_list = [user.email]
+
+    send_email_template(subject, template_name, context, sender, receiver_list)
+
+
+def send_new_cluster_access_request_notification_email(project, project_user):
+    """Send an email to admins notifying them of a new cluster access
+    request from the given ProjectUser under the given Project."""
+    email_enabled = import_from_settings('EMAIL_ENABLED', False)
+    if not email_enabled:
+        return
+
+    subject = 'New Cluster Access Request'
+    template_name = 'email/new_cluster_access_request.txt'
+
+    user = project_user.user
+    user_string = f'{user.first_name} {user.last_name} ({user.email})'
+
+    context = {
+        'project_name': project.name,
+        'user_string': user_string,
+        'review_url': review_cluster_access_requests_url(),
+    }
+
+    sender = settings.EMAIL_SENDER
+    receiver_list = settings.EMAIL_ADMIN_LIST
+
+    send_email_template(subject, template_name, context, sender, receiver_list)
+
+
+def send_new_project_request_notification_email(request):
+    """Send an email to admins notifying them of a new Savio or Vector
+    ProjectAllocationRequest."""
+    email_enabled = import_from_settings('EMAIL_ENABLED', False)
+    if not email_enabled:
+        return
+
+    if isinstance(request, SavioProjectAllocationRequest) and request.pool:
+        subject = 'New Pooled Project Request'
+        pooling = True
+    else:
+        subject = 'New Project Request'
+        pooling = False
+    template_name = 'email/project_request/admins_new_project_request.txt'
+
+    requester = request.requester
+    requester_str = (
+        f'{requester.first_name} {requester.last_name} ({requester.email})')
+
+    pi = request.pi
+    pi_str = f'{pi.first_name} {pi.last_name} ({pi.email})'
+
+    if isinstance(request, SavioProjectAllocationRequest):
+        detail_view_name = 'savio-project-request-detail'
+    elif isinstance(request, VectorProjectAllocationRequest):
+        detail_view_name = 'vector-project-request-detail'
+    else:
+        raise TypeError(f'Request has invalid type {type(request)}.')
+    review_url = urljoin(
+        settings.CENTER_BASE_URL,
+        reverse(detail_view_name, kwargs={'pk': request.pk}))
+
+    context = {
+        'pooling': pooling,
+        'project_name': request.project.name,
+        'requester_str': requester_str,
+        'pi_str': pi_str,
+        'review_url': review_url,
+    }
+
+    sender = settings.EMAIL_SENDER
+    receiver_list = settings.EMAIL_ADMIN_LIST
+
+    send_email_template(subject, template_name, context, sender, receiver_list)
+
+
+def send_project_request_approval_email(request):
     """Send a notification email to the requester and PI associated with
-    the given project alloation request stating that the request has
+    the given project allocation request stating that the request has
     been approved and processed."""
-    # TODO.
-    pass
+    email_enabled = import_from_settings('EMAIL_ENABLED', False)
+    if not email_enabled:
+        return
+
+    if isinstance(request, SavioProjectAllocationRequest) and request.pool:
+        subject = f'Pooled Project Request ({request.project.name}) Approved'
+        template_name = (
+            'email/project_request/pooled_project_request_approved.txt')
+    else:
+        subject = f'New Project Request ({request.project.name}) Approved'
+        template_name = (
+            'email/project_request/new_project_request_approved.txt')
+
+    project_url = __project_detail_url(request.project)
+    context = {
+        'center_name': settings.CENTER_NAME,
+        'project_name': request.project.name,
+        'project_url': project_url,
+        'support_email': settings.EMAIL_TICKET_SYSTEM_ADDRESS,
+        'signature': settings.EMAIL_SIGNATURE,
+    }
+
+    sender = settings.EMAIL_SENDER
+    receiver_list = [request.requester.email, request.pi.email]
+
+    send_email_template(subject, template_name, context, sender, receiver_list)
 
 
 def send_project_request_denial_email(request):
     """Send a notification email to the requester and PI associated with
     the given project allocation request stating that the request has
     been denied."""
-    # TODO.
-    pass
+    email_enabled = import_from_settings('EMAIL_ENABLED', False)
+    if not email_enabled:
+        return
+
+    if isinstance(request, SavioProjectAllocationRequest) and request.pool:
+        subject = f'Pooled Project Request ({request.project.name}) Denied'
+        template_name = (
+            'email/project_request/pooled_project_request_denied.txt')
+    else:
+        subject = f'New Project Request ({request.project.name}) Denied'
+        template_name = 'email/project_request/new_project_request_denied.txt'
+
+    if isinstance(request, SavioProjectAllocationRequest):
+        reason = savio_request_denial_reason(request)
+    else:
+        reason = vector_request_denial_reason(request)
+
+    context = {
+        'center_name': settings.CENTER_NAME,
+        'project_name': request.project.name,
+        'reason_category': reason.category,
+        'reason_justification': reason.justification,
+        'support_email': settings.EMAIL_TICKET_SYSTEM_ADDRESS,
+        'signature': settings.EMAIL_SIGNATURE,
+    }
+
+    sender = settings.EMAIL_SENDER
+    receiver_list = [request.requester.email, request.pi.email]
+
+    send_email_template(subject, template_name, context, sender, receiver_list)
 
 
 def send_project_request_pooling_email(request):
     """Send a notification email to the managers and PIs of the project
     being requested to pool with stating that someone is attempting to
     pool."""
-    # TODO.
-    pass
+    email_enabled = import_from_settings('EMAIL_ENABLED', False)
+    if not email_enabled:
+        return
+
+    if not request.pool:
+        raise AssertionError('Provided request is not pooled.')
+
+    subject = f'New request to pool with your project {request.project.name}'
+    template_name = (
+        'email/project_request/managers_new_pooled_project_request.txt')
+
+    requester = request.requester
+    requester_str = (
+        f'{requester.first_name} {requester.last_name} ({requester.email})')
+
+    pi = request.pi
+    pi_str = f'{pi.first_name} {pi.last_name} ({pi.email})'
+
+    context = {
+        'center_name': settings.CENTER_NAME,
+        'project_name': request.project.name,
+        'requester_str': requester_str,
+        'pi_str': pi_str,
+        'support_email': settings.EMAIL_TICKET_SYSTEM_ADDRESS,
+        'signature': settings.EMAIL_SIGNATURE,
+    }
+
+    sender = settings.EMAIL_SENDER
+
+    pi_condition = Q(
+        role__name='Principal Investigator', status__name='Active',
+        enable_notifications=True)
+    manager_condition = Q(role__name='Manager', status__name='Active')
+    receiver_list = list(
+        request.project.projectuser_set.filter(
+            pi_condition | manager_condition
+        ).values_list(
+            'user__email', flat=True
+        ))
+
+    send_email_template(subject, template_name, context, sender, receiver_list)
 
 
 def savio_request_latest_update_timestamp(savio_request):
@@ -415,7 +645,15 @@ class ProjectApprovalRunner(object):
                 requester_allocation_user)
 
         self.approve_request()
+        self.send_email()
         return project, allocation
+
+    def activate_project(self):
+        """Set the Project's status to 'Active'."""
+        project = self.request_obj.project
+        project.status = ProjectStatusChoice.objects.get(name='Active')
+        project.save()
+        return project
 
     def approve_request(self):
         """Set the status of the request to 'Approved - Complete'."""
@@ -485,6 +723,14 @@ class ProjectApprovalRunner(object):
         pi_project_user, _ = ProjectUser.objects.get_or_create(
             project=project, user=pi, defaults=defaults)
 
+    def send_email(self):
+        """Send a notification email to the requester and PI."""
+        try:
+            send_project_request_approval_email(self.request_obj)
+        except Exception as e:
+            logger.error('Failed to send notification email. Details:\n')
+            logger.exception(e)
+
     def update_allocation(self):
         """Perform allocation-related handling. This should be
         implemented by subclasses."""
@@ -496,13 +742,6 @@ class ProjectApprovalRunner(object):
         pi = self.request_obj.pi
         pi.userprofile.is_pi = True
         pi.userprofile.save()
-
-    def activate_project(self):
-        """Set the Project's status to 'Active'."""
-        project = self.request_obj.project
-        project.status = ProjectStatusChoice.objects.get(name='Active')
-        project.save()
-        return project
 
 
 class SavioProjectApprovalRunner(ProjectApprovalRunner):
@@ -620,11 +859,12 @@ class ProjectDenialRunner(object):
         self.request_obj.save()
 
     def send_email(self):
+        """Send a notification email to the requester and PI."""
         try:
-            send_project_request_approved_email(self.request_obj)
+            send_project_request_denial_email(self.request_obj)
         except Exception as e:
-            self.logger.error(f'Failed to send notification email. Details:\n')
-            self.logger.exception(e)
+            logger.error('Failed to send notification email. Details:\n')
+            logger.exception(e)
 
     def deny_project(self):
         """Set the Project's status to 'Denied'."""
