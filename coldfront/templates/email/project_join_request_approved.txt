@@ -1,0 +1,8 @@
+Dear {{ user.first_name }} {{ user.last_name }},
+
+Your request to join Project {{ project_name }} has been approved by its managers. A request to get access to the project on the cluster has been generated, and will be processed by admins.
+
+If you have any questions, please contact us at {{ support_email }}.
+
+Thank you,
+{{ signature }}

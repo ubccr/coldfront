@@ -1,0 +1,8 @@
+Dear managers of {{ project_name }},
+
+There is a new request from PI {{ pi_str }} to pool their allocation with your project. The request was made by {{ requester_str }}.
+
+If you would like to prevent this, or have any questions, please contact us at {{ support_email }}.
+
+Thank you,
+{{ signature }}

@@ -58,7 +58,10 @@ from coldfront.core.project.utils import (auto_approve_project_join_requests,
                                           SavioProjectApprovalRunner,
                                           savio_request_denial_reason,
                                           savio_request_latest_update_timestamp,
+                                          send_new_cluster_access_request_notification_email,
                                           send_project_join_notification_email,
+                                          send_project_join_request_approval_email,
+                                          send_project_join_request_denial_email,
                                           send_project_request_pooling_email,
                                           VectorProjectApprovalRunner,
                                           vector_request_denial_reason,
@@ -603,6 +606,8 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
     form_class = ProjectUpdateForm
     success_message = 'Project updated.'
 
+    logger = logging.getLogger(__name__)
+
     def test_func(self):
         """ UserPassesTestMixin Tests"""
         if self.request.user.is_superuser:
@@ -675,6 +680,23 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
                 except Exception:
                     messages.error(self.request, error_message)
                     return False
+                else:
+                    # Send an email to admins.
+                    try:
+                        send_new_cluster_access_request_notification_email(
+                            project_obj, project_user_obj)
+                    except Exception as e:
+                        message = 'Failed to send notification email. Details:'
+                        self.logger.error(message)
+                        self.logger.exception(e)
+                    # Send an email to the user.
+                    try:
+                        send_project_join_request_approval_email(
+                            project_obj, project_user_obj)
+                    except Exception as e:
+                        message = 'Failed to send notification email. Details:'
+                        self.logger.error(message)
+                        self.logger.exception(e)
 
             message = message + (
                 ' BRC staff have been notified to set up cluster access for '
@@ -802,6 +824,8 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
 
 class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
+    logger = logging.getLogger(__name__)
+
     def test_func(self):
         """ UserPassesTestMixin Tests"""
         if self.request.user.is_superuser:
@@ -924,6 +948,26 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                     else:
                         cluster_access_requests_count += 1
 
+                        # Notify the user that he/she has been added.
+                        try:
+                            self.__send_email_to_user(
+                                project_obj, project_user_obj)
+                        except Exception as e:
+                            message = (
+                                'Failed to send notification email. Details:')
+                            self.logger.error(message)
+                            self.logger.exception(e)
+
+                        # Notify admins of a new cluster access request.
+                        try:
+                            send_new_cluster_access_request_notification_email(
+                                project_obj, project_user_obj)
+                        except Exception as e:
+                            message = (
+                                'Failed to send notification email. Details:')
+                            self.logger.error(message)
+                            self.logger.exception(e)
+
             if added_users_count != 0:
                 messages.success(
                     request, 'Added {} users to project.'.format(added_users_count))
@@ -945,6 +989,30 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                     messages.error(request, error)
 
         return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': pk}))
+
+    def __send_email_to_user(self, project, project_user):
+        """Send a notification email to the given added user."""
+        email_enabled = import_from_settings('EMAIL_ENABLED', False)
+        if not email_enabled:
+            return
+
+        subject = f'Added to Project {project.name}'
+        template_name = 'email/added_to_project.txt'
+
+        user = project_user.user
+
+        context = {
+            'user': user,
+            'project_name': project.name,
+            'support_email': settings.EMAIL_TICKET_SYSTEM_ADDRESS,
+            'signature': settings.EMAIL_SIGNATURE,
+        }
+
+        sender = settings.EMAIL_SENDER
+        receiver_list = [user.email]
+
+        send_email_template(
+            subject, template_name, context, sender, receiver_list)
 
 
 class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -1551,6 +1619,15 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     f'Your request has automatically been approved. BRC staff '
                     f'have been notified to set up cluster access.')
                 messages.success(self.request, message)
+
+                try:
+                    send_new_cluster_access_request_notification_email(
+                        project_obj, project_user)
+                except Exception as e:
+                    message = 'Failed to send notification email. Details:'
+                    self.logger.error(message)
+                    self.logger.exception(e)
+
             next_view = reverse(
                 'project-detail', kwargs={'pk': project_obj.pk})
 
@@ -1708,6 +1785,8 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
                                     TemplateView):
     template_name = 'project/project_review_join_requests.html'
 
+    logger = logging.getLogger(__name__)
+
     def test_func(self):
         if self.request.user.is_superuser:
             return True
@@ -1796,7 +1875,7 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
                 status_name = 'Denied'
                 message_verb = 'Denied'
 
-            project_user_active_status_choice = \
+            project_user_status_choice = \
                 ProjectUserStatusChoice.objects.get(name=status_name)
 
             error_message = (
@@ -1818,20 +1897,52 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
                         username=user_form_data.get('username'))
                     project_user_obj = project_obj.projectuser_set.get(
                         user=user_obj)
-                    project_user_obj.status = project_user_active_status_choice
+                    project_user_obj.status = project_user_status_choice
                     project_user_obj.save()
-                    try:
-                        request_project_cluster_access(
-                            allocation_obj, user_obj)
-                    except ValueError:
-                        message = (
-                            f'User {user_obj.username} already has cluster '
-                            f'access under Project {project_obj.name}.')
-                        messages.warning(self.request, message)
-                    except Exception:
-                        messages.error(self.request, error_message)
-                        return HttpResponseRedirect(
-                            reverse('project-detail', kwargs={'pk': pk}))
+
+                    if status_name == 'Active':
+                        # Request cluster access.
+                        try:
+                            request_project_cluster_access(
+                                allocation_obj, user_obj)
+                        except ValueError:
+                            message = (
+                                f'User {user_obj.username} already has '
+                                f'cluster access under Project '
+                                f'{project_obj.name}.')
+                            messages.warning(self.request, message)
+                        except Exception:
+                            messages.error(self.request, error_message)
+                            return HttpResponseRedirect(
+                                reverse('project-detail', kwargs={'pk': pk}))
+                        # Send an email to the user.
+                        try:
+                            send_project_join_request_approval_email(
+                                project_obj, project_user_obj)
+                        except Exception as e:
+                            message = (
+                                'Failed to send notification email. Details:')
+                            self.logger.error(message)
+                            self.logger.exception(e)
+                        # Send an email to admins.
+                        try:
+                            send_new_cluster_access_request_notification_email(
+                                project_obj, project_user_obj)
+                        except Exception as e:
+                            message = (
+                                'Failed to send notification email. Details:')
+                            self.logger.error(message)
+                            self.logger.exception(e)
+                    else:
+                        # Send an email to the user.
+                        try:
+                            send_project_join_request_denial_email(
+                                project_obj, project_user_obj)
+                        except Exception as e:
+                            message = (
+                                'Failed to send notification email. Details:')
+                            self.logger.error(message)
+                            self.logger.exception(e)
 
             message = (
                 f'{message_verb} {reviewed_users_count} user requests to join '
@@ -1893,6 +2004,7 @@ from coldfront.core.project.forms import VectorProjectReviewSetupForm
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.models import VectorProjectAllocationRequest
 from coldfront.core.project.utils import savio_request_state_status
+from coldfront.core.project.utils import send_new_project_request_notification_email
 from coldfront.core.project.utils import vector_request_state_status
 from coldfront.core.user.models import UserProfile
 from formtools.wizard.views import SessionWizardView
@@ -2036,7 +2148,7 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
             # Store transformed form data in a request.
             status = ProjectAllocationRequestStatusChoice.objects.get(
                 name='Under Review')
-            SavioProjectAllocationRequest.objects.create(
+            request = SavioProjectAllocationRequest.objects.create(
                 requester=self.request.user,
                 allocation_type=allocation_type,
                 pi=pi,
@@ -2044,6 +2156,14 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
                 pool=pooling_requested,
                 survey_answers=survey_data,
                 status=status)
+
+            # Send a notification email to admins.
+            try:
+                send_new_project_request_notification_email(request)
+            except Exception as e:
+                self.logger.error(
+                    'Failed to send notification email. Details:\n')
+                self.logger.exception(e)
         except Exception as e:
             self.logger.exception(e)
             message = 'Unexpected failure. Please contact an administrator.'
@@ -2491,6 +2611,8 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
         'project/project_request/savio/project_review_readiness.html')
     login_url = '/'
 
+    logger = logging.getLogger(__name__)
+
     def test_func(self):
         """UserPassesTestMixin tests."""
         if self.request.user.is_superuser:
@@ -2526,7 +2648,12 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
 
         if status == 'Approved':
             if self.request_obj.pool:
-                send_project_request_pooling_email(self.request_obj)
+                try:
+                    send_project_request_pooling_email(self.request_obj)
+                except Exception as e:
+                    self.logger.error(
+                        'Failed to send notification email. Details:\n')
+                    self.logger.exception(e)
         elif status == 'Denied':
             runner = ProjectDenialRunner(self.request_obj)
             runner.run()
@@ -2750,11 +2877,19 @@ class VectorProjectRequestView(LoginRequiredMixin, UserPassesTestMixin,
             pi = User.objects.get(username=settings.VECTOR_PI_USERNAME)
             status = ProjectAllocationRequestStatusChoice.objects.get(
                 name='Under Review')
-            VectorProjectAllocationRequest.objects.create(
+            request = VectorProjectAllocationRequest.objects.create(
                 requester=self.request.user,
                 pi=pi,
                 project=project,
                 status=status)
+
+            # Send a notification email to admins.
+            try:
+                send_new_project_request_notification_email(request)
+            except Exception as e:
+                self.logger.error(
+                    'Failed to send notification email. Details:\n')
+                self.logger.exception(e)
         except Exception as e:
             self.logger.exception(e)
             message = 'Unexpected failure. Please contact an administrator.'
