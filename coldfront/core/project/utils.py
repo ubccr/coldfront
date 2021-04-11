@@ -204,9 +204,9 @@ def send_project_join_notification_email(project, project_user):
     sender = settings.EMAIL_SENDER
 
     pi_condition = Q(
-        role__name='Principal Investigator', active=True,
+        role__name='Principal Investigator', status__name='Active',
         enable_notifications=True)
-    manager_condition = Q(role__name='Manager', active=True)
+    manager_condition = Q(role__name='Manager', status__name='Active')
     receiver_list = list(
         project.projectuser_set.filter(
             pi_condition | manager_condition
@@ -278,7 +278,7 @@ def send_project_request_approval_email(request):
     else:
         subject = f'New Project Request ({request.project.name}) Approved'
         template_name = (
-            'email/project_request/new_project_request_approved.html')
+            'email/project_request/new_project_request_approved.txt')
 
     project_url = __project_detail_url(request.project)
     context = {
@@ -311,12 +311,16 @@ def send_project_request_denial_email(request):
         subject = f'New Project Request ({request.project.name}) Denied'
         template_name = 'email/project_request/new_project_request_denied.txt'
 
-    reason = ''
+    if isinstance(request, SavioProjectAllocationRequest):
+        reason = savio_request_denial_reason(request)
+    else:
+        reason = vector_request_denial_reason(request)
 
     context = {
         'center_name': settings.CENTER_NAME,
         'project_name': request.project.name,
-        'reason': reason,
+        'reason_category': reason.category,
+        'reason_justification': reason.justification,
         'support_email': settings.EMAIL_TICKET_SYSTEM_ADDRESS,
         'signature': settings.EMAIL_SIGNATURE,
     }
@@ -361,9 +365,9 @@ def send_project_request_pooling_email(request):
     sender = settings.EMAIL_SENDER
 
     pi_condition = Q(
-        role__name='Principal Investigator', active=True,
+        role__name='Principal Investigator', status__name='Active',
         enable_notifications=True)
-    manager_condition = Q(role__name='Manager', active=True)
+    manager_condition = Q(role__name='Manager', status__name='Active')
     receiver_list = list(
         request.project.projectuser_set.filter(
             pi_condition | manager_condition

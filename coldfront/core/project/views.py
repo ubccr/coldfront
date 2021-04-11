@@ -2500,6 +2500,8 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
         'project/project_request/savio/project_review_readiness.html')
     login_url = '/'
 
+    logger = logging.getLogger(__name__)
+
     def test_func(self):
         """UserPassesTestMixin tests."""
         if self.request.user.is_superuser:
