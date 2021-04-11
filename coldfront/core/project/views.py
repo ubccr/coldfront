@@ -750,7 +750,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         project_obj = get_object_or_404(Project, pk=pk)
 
         users_to_exclude = [ele.user.username for ele in project_obj.projectuser_set.filter(
-            status__name='Active')]
+            status__name__in=['Pending - Add', 'Active'])]
 
         cobmined_user_search_obj = CombinedUserSearch(
             user_search_string, search_by, users_to_exclude)
@@ -1444,20 +1444,34 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 self.request, 'You must sign the User Access Agreement before you can join a project.')
             return False
 
-        if not project_users.exists():
-            return True
+        if project_users.exists():
+            project_user = project_users.first()
+            if project_user.status.name == 'Active':
+                message = (
+                    f'You are already a member of Project {project_obj.name}.')
+                messages.error(self.request, message)
+                return False
+            if project_user.status.name == 'Pending - Add':
+                message = (
+                    f'You have already requested to join Project '
+                    f'{project_obj.name}.')
+                messages.warning(self.request, message)
+                return False
 
-        project_user = project_users.first()
-        if project_user.status.name == 'Active':
+        # If the user is the requester or PI on a pending request for the
+        # Project, do not allow the join request.
+        if project_obj.name.startswith('vector_'):
+            request_model = VectorProjectAllocationRequest
+        else:
+            request_model = SavioProjectAllocationRequest
+        is_requester_or_pi = Q(requester=user_obj) | Q(pi=user_obj)
+        if request_model.objects.filter(
+                is_requester_or_pi, project=project_obj,
+                status__name__in=['Under Review', 'Approved - Processing']):
             message = (
-                f'You are already a member of Project {project_obj.name}.')
-            messages.error(self.request, message)
-            return False
-
-        if project_user.status.name == 'Pending - Add':
-            message = (
-                f'You have already requested to join Project '
-                f'{project_obj.name}.')
+                f'You are the requester or PI of a pending request for '
+                f'Project {project_obj.name}, so you may not join it. You '
+                f'will automatically be added when it is approved.')
             messages.warning(self.request, message)
             return False
 
@@ -1636,10 +1650,39 @@ class ProjectJoinListView(ProjectListView, UserPassesTestMixin):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         projects = self.get_queryset()
-        not_joinable = projects.filter(
-            projectuser__user=self.request.user,
+        user_obj = self.request.user
+
+        # A User may not join a Project he/she is already a pending or active
+        # member of.
+        already_pending_or_active = set(projects.filter(
+            projectuser__user=user_obj,
             projectuser__status__name__in=['Pending - Add', 'Active', ]
-        ).values_list('name', flat=True)
+        ).values_list('name', flat=True))
+        # A User may not join a Project with a pending
+        # SavioProjectAllocationRequest where he/she is the requester or PI.
+        is_requester_or_pi = Q(requester=user_obj) | Q(pi=user_obj)
+        pending_project_request_statuses = [
+            'Under Review', 'Approved - Processing']
+        is_part_of_pending_savio_project_request = set(
+            SavioProjectAllocationRequest.objects.prefetch_related(
+                'project'
+            ).filter(
+                is_requester_or_pi,
+                status__name__in=pending_project_request_statuses
+            ).values_list('project__name', flat=True))
+        # A User may not join a Project with a pending
+        # VectorProjectAllocationRequest where he/she is the requester or PI.
+        is_part_of_pending_vector_project_request = set(
+            VectorProjectAllocationRequest.objects.prefetch_related(
+                'project'
+            ).filter(
+                is_requester_or_pi,
+                status__name__in=pending_project_request_statuses
+            ).values_list('project__name', flat=True))
+        not_joinable = set.union(
+            already_pending_or_active,
+            is_part_of_pending_savio_project_request,
+            is_part_of_pending_vector_project_request)
 
         join_requests = Project.objects.filter(Q(projectuser__user=self.request.user)
                                                & Q(status__name__in=['New', 'Active', ])
@@ -1648,7 +1691,6 @@ class ProjectJoinListView(ProjectListView, UserPassesTestMixin):
                                         When(name__startswith='vector_', then=Value('Vector')),
                                         default=Value('Savio'),
                                         output_field=CharField()))
-
 
         for request in join_requests:
             delay = request.joins_auto_approval_delay
@@ -1794,7 +1836,7 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
             message = (
                 f'{message_verb} {reviewed_users_count} user requests to join '
                 f'the project. BRC staff have been notified to set up cluster '
-                f'access for each request.')
+                f'access for each approved request.')
             messages.success(request, message)
         else:
             for error in formset.errors:
