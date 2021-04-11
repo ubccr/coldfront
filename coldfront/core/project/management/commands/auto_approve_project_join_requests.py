@@ -1,3 +1,4 @@
+from coldfront.core.allocation.utils import review_cluster_access_requests_url
 from coldfront.core.project.utils import auto_approve_project_join_requests
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
@@ -39,24 +40,16 @@ class Command(BaseCommand):
             if num_processed:
                 self.send_email(num_processed, num_successes, num_failures)
 
-    @staticmethod
-    def __review_url():
-        """Return the URL to the admin view for reviewing cluster access
-        requests."""
-        domain = import_from_settings('CENTER_BASE_URL')
-        view = reverse('allocation-cluster-account-request-list')
-        return urljoin(domain, view)
-
     def send_email(self, num_processed, num_successes, num_failures):
         """Send an email to admins including the number of requests
         processed, and, of those, how many succeeded and failed."""
         subject = 'New Cluster Access Requests'
-        template_name = 'email/new_cluster_access_requests.html'
+        template_name = 'email/new_cluster_access_requests.txt'
         context = {
             'num_failures': num_failures,
             'num_processed': num_processed,
             'num_successes': num_successes,
-            'review_url': self.__review_url(),
+            'review_url': review_cluster_access_requests_url(),
         }
         sender = settings.EMAIL_SENDER
         receiver_list = settings.EMAIL_ADMIN_LIST

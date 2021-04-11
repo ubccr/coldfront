@@ -58,6 +58,7 @@ from coldfront.core.project.utils import (auto_approve_project_join_requests,
                                           SavioProjectApprovalRunner,
                                           savio_request_denial_reason,
                                           savio_request_latest_update_timestamp,
+                                          send_new_cluster_access_request_notification_email,
                                           send_project_join_notification_email,
                                           send_project_request_pooling_email,
                                           VectorProjectApprovalRunner,
@@ -603,6 +604,8 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
     form_class = ProjectUpdateForm
     success_message = 'Project updated.'
 
+    logger = logging.getLogger(__name__)
+
     def test_func(self):
         """ UserPassesTestMixin Tests"""
         if self.request.user.is_superuser:
@@ -675,6 +678,14 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
                 except Exception:
                     messages.error(self.request, error_message)
                     return False
+                else:
+                    try:
+                        send_new_cluster_access_request_notification_email(
+                            project_obj, project_user_obj)
+                    except Exception as e:
+                        message = 'Failed to send notification email. Details:'
+                        self.logger.error(message)
+                        self.logger.exception(e)
 
             message = message + (
                 ' BRC staff have been notified to set up cluster access for '
@@ -802,6 +813,8 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
 
 class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
+    logger = logging.getLogger(__name__)
+
     def test_func(self):
         """ UserPassesTestMixin Tests"""
         if self.request.user.is_superuser:
@@ -923,6 +936,14 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                         messages.error(self.request, error_message)
                     else:
                         cluster_access_requests_count += 1
+                        try:
+                            send_new_cluster_access_request_notification_email(
+                                project_obj, project_user_obj)
+                        except Exception as e:
+                            message = (
+                                'Failed to send notification email. Details:')
+                            self.logger.error(message)
+                            self.logger.exception(e)
 
             if added_users_count != 0:
                 messages.success(
@@ -1551,6 +1572,15 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     f'Your request has automatically been approved. BRC staff '
                     f'have been notified to set up cluster access.')
                 messages.success(self.request, message)
+
+                try:
+                    send_new_cluster_access_request_notification_email(
+                        project_obj, project_user)
+                except Exception as e:
+                    message = 'Failed to send notification email. Details:'
+                    self.logger.error(message)
+                    self.logger.exception(e)
+
             next_view = reverse(
                 'project-detail', kwargs={'pk': project_obj.pk})
 

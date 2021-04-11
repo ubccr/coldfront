@@ -3,6 +3,8 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db.models import Q
+from django.urls import reverse
+from urllib.parse import urljoin
 
 from coldfront.core.allocation.models import (AllocationAttributeType,
                                               AllocationUser,
@@ -149,3 +151,9 @@ def prorated_allocation_amount(amount, dt):
     else:
         amount = amount_per_month * (start_month - month)
     return Decimal(f'{math.floor(amount):.2f}')
+
+
+def review_cluster_access_requests_url():
+    domain = settings.CENTER_BASE_URL
+    view = reverse('allocation-cluster-account-request-list')
+    return urljoin(domain, view)
