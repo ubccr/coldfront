@@ -1,0 +1,3 @@
+There is a new cluster access request from User {{ user_string }} under Project {{ project_name }}.
+
+Please activate or deny pending requests: {{ review_url }}.
