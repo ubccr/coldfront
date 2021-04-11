@@ -65,6 +65,34 @@ We do not have information about your research. Please provide a detailed descri
         if self.joins_auto_approval_delay < datetime.timedelta():
             raise ValidationError('Delay must be non-negative.')
 
+    def save(self, *args, **kwargs):
+        """If the Project previously existed and its status has changed,
+        update any pending ProjectUserJoinRequests."""
+        if self.pk:
+            old_obj = Project.objects.get(pk=self.pk)
+            if old_obj.status.name != self.status.name:
+                pending_status = ProjectUserStatusChoice.objects.get(
+                    name='Pending - Add')
+                if self.status.name == 'Active':
+                    # If the status changed to 'Active', create another join
+                    # request, since only the latest created request is
+                    # considered. This ensures that the auto-approval delay
+                    # begins after the project becomes active.
+                    project_users = self.projectuser_set.filter(
+                        status=pending_status)
+                    for project_user in project_users:
+                        ProjectUserJoinRequest.objects.create(
+                            project_user=project_user)
+                elif self.status.name == 'Denied':
+                    # If the status changed to 'Denied', deny all pending
+                    # join requests.
+                    denied_status = ProjectUserStatusChoice.objects.get(
+                        name='Denied')
+                    self.projectuser_set.filter(
+                        status=pending_status).update(status=denied_status)
+
+        super().save(*args, **kwargs)
+
     @property
     def last_project_review(self):
         if self.projectreview_set.exists():
