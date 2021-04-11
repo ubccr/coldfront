@@ -936,6 +936,18 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                         messages.error(self.request, error_message)
                     else:
                         cluster_access_requests_count += 1
+
+                        # Notify the user that he/she has been added.
+                        try:
+                            self.__send_email_to_user(
+                                project_obj, project_user_obj)
+                        except Exception as e:
+                            message = (
+                                'Failed to send notification email. Details:')
+                            self.logger.error(message)
+                            self.logger.exception(e)
+
+                        # Notify admins of a new cluster access request.
                         try:
                             send_new_cluster_access_request_notification_email(
                                 project_obj, project_user_obj)
@@ -966,6 +978,31 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                     messages.error(request, error)
 
         return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': pk}))
+
+    def __send_email_to_user(self, project, project_user):
+        """Send a notification email to the given added user."""
+        email_enabled = import_from_settings('EMAIL_ENABLED', False)
+        if not email_enabled:
+            return
+
+        subject = f'Added to Project {project.name}'
+        template_name = 'email/added_to_project.txt'
+
+        user = project_user.user
+
+        context = {
+            'user': user,
+            'project_name': project.name,
+            'support_email': settings.EMAIL_TICKET_SYSTEM_ADDRESS,
+            'signature': settings.EMAIL_SIGNATURE,
+        }
+
+        sender = settings.EMAIL_SENDER
+        receiver_list = [user.email]
+
+        send_email_template(
+            subject, template_name, context, sender, receiver_list)
+
 
 
 class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
