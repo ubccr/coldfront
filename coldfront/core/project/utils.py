@@ -73,16 +73,23 @@ def get_project_compute_allocation(project_obj):
 def auto_approve_project_join_requests():
     """Approve each request to join a Project that has completed its
     delay period. Return the results of each approval attempt, where
-    each result has a 'success' boolean and a string message."""
+    each result has a 'success' boolean and a string message.
+
+    Because users are allowed to join 'New' Projects, only requests that
+    are for 'Active' projects should be considered. Handling elsewhere
+    should replace all join requests for a Project when it goes from
+    'New' to 'Active'."""
     JoinAutoApprovalResult = namedtuple(
         'JoinAutoApprovalResult', 'success message')
 
     pending_status = ProjectUserStatusChoice.objects.get(
         name='Pending - Add')
     active_status = ProjectUserStatusChoice.objects.get(name='Active')
+    project_active_status = ProjectStatusChoice.objects.get(name='Active')
+
     project_user_objs = ProjectUser.objects.prefetch_related(
         'project', 'project__allocation_set', 'projectuserjoinrequest_set'
-    ).filter(status=pending_status)
+    ).filter(status=pending_status, project__status=project_active_status)
 
     now = utc_now_offset_aware()
     results = []
