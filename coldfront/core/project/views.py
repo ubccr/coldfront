@@ -750,7 +750,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         project_obj = get_object_or_404(Project, pk=pk)
 
         users_to_exclude = [ele.user.username for ele in project_obj.projectuser_set.filter(
-            status__name='Active')]
+            status__name__in=['Pending - Add', 'Active'])]
 
         cobmined_user_search_obj = CombinedUserSearch(
             user_search_string, search_by, users_to_exclude)
@@ -1444,20 +1444,34 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 self.request, 'You must sign the User Access Agreement before you can join a project.')
             return False
 
-        if not project_users.exists():
-            return True
+        if project_users.exists():
+            project_user = project_users.first()
+            if project_user.status.name == 'Active':
+                message = (
+                    f'You are already a member of Project {project_obj.name}.')
+                messages.error(self.request, message)
+                return False
+            if project_user.status.name == 'Pending - Add':
+                message = (
+                    f'You have already requested to join Project '
+                    f'{project_obj.name}.')
+                messages.warning(self.request, message)
+                return False
 
-        project_user = project_users.first()
-        if project_user.status.name == 'Active':
+        # If the user is the requester or PI on a pending request for the
+        # Project, do not allow the join request.
+        if project_obj.name.startswith('vector_'):
+            request_model = VectorProjectAllocationRequest
+        else:
+            request_model = SavioProjectAllocationRequest
+        is_requester_or_pi = Q(requester=user_obj) | Q(pi=user_obj)
+        if request_model.objects.filter(
+                is_requester_or_pi, project=project_obj,
+                status__name__in=['Under Review', 'Approved - Processing']):
             message = (
-                f'You are already a member of Project {project_obj.name}.')
-            messages.error(self.request, message)
-            return False
-
-        if project_user.status.name == 'Pending - Add':
-            message = (
-                f'You have already requested to join Project '
-                f'{project_obj.name}.')
+                f'You are the requester or PI of a pending request for '
+                f'Project {project_obj.name}, so you may not join it. You '
+                f'will automatically be added when it is approved.')
             messages.warning(self.request, message)
             return False
 
@@ -1636,10 +1650,39 @@ class ProjectJoinListView(ProjectListView, UserPassesTestMixin):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         projects = self.get_queryset()
-        not_joinable = projects.filter(
-            projectuser__user=self.request.user,
+        user_obj = self.request.user
+
+        # A User may not join a Project he/she is already a pending or active
+        # member of.
+        already_pending_or_active = set(projects.filter(
+            projectuser__user=user_obj,
             projectuser__status__name__in=['Pending - Add', 'Active', ]
-        ).values_list('name', flat=True)
+        ).values_list('name', flat=True))
+        # A User may not join a Project with a pending
+        # SavioProjectAllocationRequest where he/she is the requester or PI.
+        is_requester_or_pi = Q(requester=user_obj) | Q(pi=user_obj)
+        pending_project_request_statuses = [
+            'Under Review', 'Approved - Processing']
+        is_part_of_pending_savio_project_request = set(
+            SavioProjectAllocationRequest.objects.prefetch_related(
+                'project'
+            ).filter(
+                is_requester_or_pi,
+                status__name__in=pending_project_request_statuses
+            ).values_list('project__name', flat=True))
+        # A User may not join a Project with a pending
+        # VectorProjectAllocationRequest where he/she is the requester or PI.
+        is_part_of_pending_vector_project_request = set(
+            VectorProjectAllocationRequest.objects.prefetch_related(
+                'project'
+            ).filter(
+                is_requester_or_pi,
+                status__name__in=pending_project_request_statuses
+            ).values_list('project__name', flat=True))
+        not_joinable = set.union(
+            already_pending_or_active,
+            is_part_of_pending_savio_project_request,
+            is_part_of_pending_vector_project_request)
 
         join_requests = Project.objects.filter(Q(projectuser__user=self.request.user)
                                                & Q(status__name__in=['New', 'Active', ])
@@ -1648,7 +1691,6 @@ class ProjectJoinListView(ProjectListView, UserPassesTestMixin):
                                         When(name__startswith='vector_', then=Value('Vector')),
                                         default=Value('Savio'),
                                         output_field=CharField()))
-
 
         for request in join_requests:
             delay = request.joins_auto_approval_delay
@@ -1794,7 +1836,7 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
             message = (
                 f'{message_verb} {reviewed_users_count} user requests to join '
                 f'the project. BRC staff have been notified to set up cluster '
-                f'access for each request.')
+                f'access for each approved request.')
             messages.success(request, message)
         else:
             for error in formset.errors:
@@ -1857,8 +1899,21 @@ from coldfront.core.user.models import UserProfile
 from formtools.wizard.views import SessionWizardView
 
 
-class ProjectRequestView(LoginRequiredMixin, TemplateView):
+class ProjectRequestView(LoginRequiredMixin, UserPassesTestMixin,
+                         TemplateView):
     template_name = 'project/project_request/project_request.html'
+
+    def test_func(self):
+        if self.request.user.is_superuser:
+            return True
+        signed_date = (
+            self.request.user.userprofile.access_agreement_signed_date)
+        if signed_date is not None:
+            return True
+        message = (
+            'You must sign the User Access Agreement before you can create a '
+            'new project.')
+        messages.error(self.request, message)
 
     def get(self, request, *args, **kwargs):
         context = dict()
@@ -1877,7 +1932,7 @@ class ProjectRequestView(LoginRequiredMixin, TemplateView):
         return render(request, self.template_name, context)
 
 
-class SavioProjectRequestWizard(SessionWizardView):
+class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
 
     FORMS = [
         ('allocation_type', SavioProjectAllocationTypeForm),
@@ -1921,6 +1976,18 @@ class SavioProjectRequestWizard(SessionWizardView):
     }
 
     logger = logging.getLogger(__name__)
+
+    def test_func(self):
+        if self.request.user.is_superuser:
+            return True
+        signed_date = (
+            self.request.user.userprofile.access_agreement_signed_date)
+        if signed_date is not None:
+            return True
+        message = (
+            'You must sign the User Access Agreement before you can create a '
+            'new project.')
+        messages.error(self.request, message)
 
     def get_context_data(self, form, **kwargs):
         context = super().get_context_data(form=form, **kwargs)
@@ -2187,35 +2254,35 @@ def show_pooled_project_selection_form_condition(wizard):
     return cleaned_data.get('pool', False)
 
 
-class SavioProjectRequestListView(LoginRequiredMixin, UserPassesTestMixin,
-                                  TemplateView):
+class SavioProjectRequestListView(LoginRequiredMixin, TemplateView):
     template_name = 'project/project_request/savio/project_request_list.html'
     login_url = '/'
 
     # Show completed requests if True; else, show pending requests.
     completed = False
 
-    def test_func(self):
-        """UserPassesTestMixin tests."""
-        if self.request.user.is_superuser:
-            return True
-        message = 'You do not have permission to view the previous page.'
-        messages.error(self.request, message)
-        return False
-
     def get_context_data(self, **kwargs):
+        """Include either pending or completed requests. If the user is
+        a superuser, show all such requests. Otherwise, show only those
+        for which the user is a requester or PI."""
         context = super().get_context_data(**kwargs)
+
+        args, kwargs = [], {}
+
+        user = self.request.user
+        if not user.is_superuser:
+            args.append(Q(requester=user) | Q(pi=user))
+
         if self.completed:
-            savio_project_request_list = \
-                SavioProjectAllocationRequest.objects.filter(
-                    status__name__in=['Approved - Complete', 'Denied'])
+            status__name__in = ['Approved - Complete', 'Denied']
         else:
-            savio_project_request_list = \
-                SavioProjectAllocationRequest.objects.filter(
-                    status__name__in=['Under Review', 'Approved - Processing'])
+            status__name__in = ['Under Review', 'Approved - Processing']
+        kwargs['status__name__in'] = status__name__in
+
         context['request_filter'] = (
             'completed' if self.completed else 'pending')
-        context['savio_project_request_list'] = savio_project_request_list
+        context['savio_project_request_list'] = \
+            SavioProjectAllocationRequest.objects.filter(*args, **kwargs)
         return context
 
 
@@ -2270,6 +2337,9 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
                 savio_request_latest_update_timestamp(self.request_obj)
             if not latest_update_timestamp:
                 latest_update_timestamp = 'No updates yet.'
+            else:
+                latest_update_timestamp = datetime.datetime.fromisoformat(
+                    latest_update_timestamp)
         except Exception as e:
             self.logger.exception(e)
             messages.error(self.request, self.error_message)
@@ -2322,7 +2392,8 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         else:
             message = (
                 f'Project {project.name} and Allocation {allocation.pk} have '
-                f'been activated.')
+                f'been activated. A cluster access request has automatically '
+                f'been made for the requester.')
             messages.success(self.request, message)
         return HttpResponseRedirect(self.redirect)
 
@@ -2666,12 +2737,25 @@ class SavioProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
             kwargs={'pk': self.kwargs.get('pk')})
 
 
-class VectorProjectRequestView(LoginRequiredMixin, FormView):
+class VectorProjectRequestView(LoginRequiredMixin, UserPassesTestMixin,
+                               FormView):
     form_class = VectorProjectDetailsForm
     template_name = 'project/project_request/vector/project_details.html'
     login_url = '/'
 
     logger = logging.getLogger(__name__)
+
+    def test_func(self):
+        if self.request.user.is_superuser:
+            return True
+        signed_date = (
+            self.request.user.userprofile.access_agreement_signed_date)
+        if signed_date is not None:
+            return True
+        message = (
+            'You must sign the User Access Agreement before you can create a '
+            'new project.')
+        messages.error(self.request, message)
 
     def form_valid(self, form):
         try:
@@ -2733,35 +2817,35 @@ class VectorProjectRequestView(LoginRequiredMixin, FormView):
         return project
 
 
-class VectorProjectRequestListView(LoginRequiredMixin, UserPassesTestMixin,
-                                   TemplateView):
+class VectorProjectRequestListView(LoginRequiredMixin, TemplateView):
     template_name = 'project/project_request/vector/project_request_list.html'
     login_url = '/'
 
     # Show completed requests if True; else, show pending requests.
     completed = False
 
-    def test_func(self):
-        """UserPassesTestMixin tests."""
-        if self.request.user.is_superuser:
-            return True
-        message = 'You do not have permission to view the previous page.'
-        messages.error(self.request, message)
-        return False
-
     def get_context_data(self, **kwargs):
+        """Include either pending or completed requests. If the user is
+        a superuser, show all such requests. Otherwise, show only those
+        for which the user is a requester or PI."""
         context = super().get_context_data(**kwargs)
+
+        args, kwargs = [], {}
+
+        user = self.request.user
+        if not user.is_superuser:
+            args.append(Q(requester=user) | Q(pi=user))
+
         if self.completed:
-            vector_project_request_list = \
-                VectorProjectAllocationRequest.objects.filter(
-                    status__name__in=['Approved - Complete', 'Denied'])
+            status__name__in = ['Approved - Complete', 'Denied']
         else:
-            vector_project_request_list = \
-                VectorProjectAllocationRequest.objects.filter(
-                    status__name__in=['Under Review', 'Approved - Processing'])
+            status__name__in = ['Under Review', 'Approved - Processing']
+        kwargs['status__name__in'] = status__name__in
+
         context['request_filter'] = (
             'completed' if self.completed else 'pending')
-        context['vector_project_request_list'] = vector_project_request_list
+        context['vector_project_request_list'] = \
+            VectorProjectAllocationRequest.objects.filter(*args, **kwargs)
         return context
 
 
@@ -2805,6 +2889,9 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
                 vector_request_latest_update_timestamp(self.request_obj)
             if not latest_update_timestamp:
                 latest_update_timestamp = 'No updates yet.'
+            else:
+                latest_update_timestamp = datetime.datetime.fromisoformat(
+                    latest_update_timestamp)
         except Exception as e:
             self.logger.exception(e)
             messages.error(self.request, self.error_message)
@@ -2855,7 +2942,8 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         else:
             message = (
                 f'Project {project.name} and Allocation {allocation.pk} have '
-                f'been activated.')
+                f'been activated. A cluster access request has automatically '
+                f'been made for the requester.')
             messages.success(self.request, message)
         return HttpResponseRedirect(self.redirect)
 
