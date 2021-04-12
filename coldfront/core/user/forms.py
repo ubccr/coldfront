@@ -24,8 +24,20 @@ class UserSearchForm(forms.Form):
 
 class UserRegistrationForm(UserCreationForm):
 
-    email = forms.EmailField(label='Email Address', widget=forms.EmailInput())
-    first_name = forms.CharField(label='First Name')
+    email = forms.EmailField(
+        label='Email Address', widget=forms.EmailInput(),
+        help_text=(
+            'If the individual has an @berkeley.edu email address, please '
+            'provide that to avoid delays in processing. All communication is '
+            'sent to this email. Please provide a valid address. If this '
+            'communication address changes, it is the user\'s responsibility '
+            'to give us his/her new email address.'))
+    first_name = forms.CharField(
+        label='First Name',
+        help_text=(
+            'Please specify actual, official names and avoid giving the short '
+            'forms or casual names. For example, do NOT give \'Chris\' for '
+            '\'Christopher\'.'))
     middle_name = forms.CharField(label='Middle Name', required=False)
     last_name = forms.CharField(label='Last Name')
     password1 = forms.CharField(
