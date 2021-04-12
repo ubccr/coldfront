@@ -29,9 +29,11 @@ class UserRegistrationForm(UserCreationForm):
         help_text=(
             'If the individual has an @berkeley.edu email address, please '
             'provide that to avoid delays in processing. All communication is '
-            'sent to this email. Please provide a valid address. If this '
-            'communication address changes, it is the user\'s responsibility '
-            'to give us his/her new email address.'))
+            'sent to this email. Please provide a valid address.'))
+    # TODO: Append the following text after adding multiple email support.
+    # 'If this communication address changes, it is the user\'s
+    # responsibility to give us his/her new email address.'
+
     first_name = forms.CharField(
         label='First Name',
         help_text=(
