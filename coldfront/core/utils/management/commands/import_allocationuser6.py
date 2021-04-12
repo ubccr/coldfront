@@ -168,6 +168,8 @@ class Command(BaseCommand):
                     project_obj = Project.objects.get(title = lab_name)
                     start_date = datetime.datetime.now()
                     end_date = datetime.datetime.now() + relativedelta(days=365)
+                print("line171", lab_name)
+                print("line172", type(lab_name))
 
                 allocation_obj, _ = Allocation.objects.get_or_create(
                     project=project_obj,
