@@ -225,61 +225,6 @@ Project Detail
 </div>
 <!-- End Project Allocations -->
 
-
-
-<!-- Start Project Graphs -->
-<div class="card mb-3">
-  <div class="card-header">
-    <h3 class="d-inline" id="grants"><i class="fas fa-trophy" aria-hidden="true"></i> Graphs</h3> <span class="badge badge-secondary">{{grants.count}}</span>
-    <div class="float-right">
-      {% if project.latest_grant.modified %}
-        <span class="badge badge-info">Last Updated: {{project.latest_grant.modified|date:"M. d, Y"}}</span>
-      {% endif %}
-      {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
-        <a class="btn btn-success" href="{% url 'grant-create' project.id %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add Grant</a>
-        {% if grants %}
-          <a class="btn btn-danger" href="{% url 'grant-delete-grants' project.pk %}" role="button"><i class="fas fa-minus" aria-hidden="true"></i> Delete Grants</a>
-        {% endif %}
-      {% endif %}
-    </div>
-  </div>
-  <div class="card-body">
-    {% if grants %}
-      <div class="table-responsive">
-        <table id="grant_table" class="table table-hover">
-          <thead>
-            <tr>
-              <th scope="col">Title</th>
-              <th scope="col" class="text-nowrap">Grant PI</th>
-              <th scope="col" class="text-nowrap">Project PI Role</th>
-              <th scope="col" class="text-nowrap">Award Amount</th>
-              <th scope="col" class="text-nowrap">Grant Start Date</th>
-              <th scope="col" class="text-nowrap">Grant End Date</th>
-              <th scope="col" class="nosort">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for grant in grants %}
-            <tr>
-              <td>{{ grant.title }}</td>
-              <td class="text-nowrap">{{ grant.grant_pi }}</td>
-              <td>{{ grant.role}}</td>
-              <td>{{ grant.total_amount_awarded|intcomma}}</td>
-              <td>{{ grant.grant_start|date:"Y-m-d" }}</td>
-              <td>{{ grant.grant_end|date:"Y-m-d" }}</td>
-              <td><a href="{% url 'grant-update' grant.id %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    {% else %}
-      <div class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> There are no grants to display.</div>
-    {% endif %}
-  </div>
-</div>
-
-
 <!-- Start Project Grants -->
 <div class="card mb-3">
   <div class="card-header">
