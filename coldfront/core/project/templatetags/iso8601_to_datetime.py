@@ -9,4 +9,6 @@ register = template.Library()
 @register.filter
 @stringfilter
 def iso8601_to_datetime(s):
-    return datetime.fromisoformat(s)
+    # TODO: Upgrade to Python 3.7+ to use this.
+    # return datetime.fromisoformat(s)
+    return datetime
