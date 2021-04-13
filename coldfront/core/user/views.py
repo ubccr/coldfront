@@ -19,6 +19,7 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import CreateView, ListView, TemplateView
 
+from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.project.models import Project, ProjectUser
 from coldfront.core.user.forms import UserAccessAgreementForm
 from coldfront.core.user.forms import UserProfileUpdateForm
@@ -71,6 +72,12 @@ class UserProfile(TemplateView):
             [group.name for group in viewed_user.groups.all()])
         context['group_list'] = group_list
         context['viewed_user'] = viewed_user
+
+        context['has_cluster_access'] = AllocationUserAttribute.objects.filter(
+            allocation_user__user=viewed_user,
+            allocation_attribute_type__name='Cluster Account Status',
+            value='Active').exists()
+
         return context
 
 
