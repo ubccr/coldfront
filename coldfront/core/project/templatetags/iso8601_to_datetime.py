@@ -11,4 +11,4 @@ register = template.Library()
 def iso8601_to_datetime(s):
     # TODO: Upgrade to Python 3.7+ to use this.
     # return datetime.fromisoformat(s)
-    return datetime
+    return s
