@@ -190,13 +190,6 @@ SU_LOGOUT_REDIRECT_URL = "/admin/auth/user/"
 SETTINGS_EXPORT = []
 
 # ------------------------------------------------------------------------------
-# Data import settings
-# ------------------------------------------------------------------------------
-
-# The credentials needed to read from Google Sheets.
-GOOGLE_OAUTH2_KEY_FILE = ""
-
-# ------------------------------------------------------------------------------
 # REST API settings
 # ------------------------------------------------------------------------------
 
@@ -241,16 +234,6 @@ PCA_DEFAULT_ALLOCATION = Decimal('200000.00')
 
 # Whether or not to allow all jobs, bypassing all checks.
 ALLOW_ALL_JOBS = False
-
-# ------------------------------------------------------------------------------
-# myBRC settings
-# ------------------------------------------------------------------------------
-
-# The ID of the Site object to use (probably 1).
-SITE_ID = 1
-
-# The username of the user to set as the PI for all Vector projects.
-VECTOR_PI_USERNAME = "channsoden@berkeley.edu"
 
 # ------------------------------------------------------------------------------
 # Local settings overrides (see local_settings.py.sample)
