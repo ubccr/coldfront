@@ -26,6 +26,16 @@ if DEBUG is False and SECRET_KEY is 'vtri&lztlbinerr4+yg1yzm23ez@+ub6=4*63z1%d!)
 # This should be set to True in production when using HTTPS
 SESSION_COOKIE_SECURE = False
 
+# ------------------------------------------------------------------------------
+# myBRC settings
+# ------------------------------------------------------------------------------
+
+# The ID of the Site object to use (probably 1).
+SITE_ID = 1
+
+# The username of the user to set as the PI for all Vector projects.
+VECTOR_PI_USERNAME = "channsoden@berkeley.edu"
+
 #------------------------------------------------------------------------------
 # General Center Information
 #------------------------------------------------------------------------------
@@ -48,6 +58,7 @@ TIME_ZONE = 'UTC'
 #------------------------------------------------------------------------------
 # Logging
 #------------------------------------------------------------------------------
+import os
 LOG_PATH = os.path.join('/var/log/user_portals/cf_mybrc', 'cf_mybrc_portal.log')
 LOGGING = {
     'version': 1,
@@ -311,6 +322,13 @@ RESOURCE = "Savio"
 
 # The portal being served, which must be either "BRC" or "SCG".
 PORTAL = "BRC"
+
+# ------------------------------------------------------------------------------
+# Data import settings
+# ------------------------------------------------------------------------------
+
+# The credentials needed to read from Google Sheets.
+GOOGLE_OAUTH2_KEY_FILE = "/tmp/credentials.json"
 
 ## If we are running on Production, we hope to see prod_settings.py we will first try to apply it
 ## and exit. If prod_settings is not present then we assume we are running on Dev, we hope to find
