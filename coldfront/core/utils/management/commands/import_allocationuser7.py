@@ -122,19 +122,20 @@ class Command(BaseCommand):
                 with open(file_path) as f:
                     data = json.load(f)
                     print("line 137: data is", data)
-                
+                    print("type data", type(data))
                 lab_name = lab_name[0]
                 print("line 146 lab_name is:",lab_name)
-                filtered_query = Project.objects.filter(title = lab_name)
-                found_project = False # set default value to false
-                print("line 130, filtered query is", filtered_query)
-                print(filtered_query)
-                if not filtered_query:
-                    print("I cannot find this lab")
-                else:
-                    print("I found this lab")
-                    found_project = True
-                if (not found_project): # if not found project, then create project
+                filtered_query = Project.objects.get(title = lab_name)
+                # redundent flag 
+                # found_project = False # set default value to false
+                # print("line 130, filtered query is", filtered_query)
+                # print(filtered_query)
+                # if not filtered_query:
+                #     print("I cannot find this lab")
+                # else:
+                #     print("I found this lab")
+                #     found_project = True
+                if (not filtered_query): # if not found project, then create project
                     project_obj, _ = Project.objects.get_or_create(
                         pi = pi1,
                         title = lab_name,
@@ -149,17 +150,89 @@ class Command(BaseCommand):
                     print("line 149", project_obj, _)
                 else: # if I found this project, I need to find this projects allocation
                     # then I need to update allocationUser step by step
-                    print("line 152 else statement")
-                    project_obj = Project.objects.get(title = lab_name)
+                    print("line 152 else statement, finding Project")
+                    # I can just use filtered_query
+                    
+                    print("line154 project_obj:", filtered_query)
                     start_date = datetime.datetime.now()
                     end_date = datetime.datetime.now() + relativedelta(days=365)
 
-                    allocations = Allocation.objects.filter(project = project_obj)
+                    allocations = Allocation.objects.filter(project = filtered_query)
+                    print("line 162", allocations)
+
+                    print("line 165 data is", data)
+                    print(type(data))
+                    data = data[1:] # skip the usage information
+                    allocation_group_usage_bytes = 0
+                    var1 = 0
+                    for user_lst in data: #user_lst is lst
+                        print("***** line 228 *****", user_lst) # this is a lst
+                        print(type(user_lst))
+                        print("line185", user_lst['user']) # this is username
+                        print("line174", user_lst['logical_usage'])
+                        print("line174", user_lst['usage'])
+
+
+                    for allocation in allocations:
+                        allocation_users = allocation.allocationuser_set.order_by('user__username')
+
+                        # allocation_users = allocation.allocationuser_set.exclude(status__name__in=['Removed']).order_by('user__username')
+                        print("line165", allocation_users)
+                        for allocation_user in allocation_users: # loop through allocation_user set
+                            print("line 168 user is", allocation_user)
+                            print("line169 type", type(allocation_user))
+                            print("line170",allocation_user.user.username)
+                            allocation_user.usage += 1
+                            print("line171", allocation_user.usage)
+                            allocation_user.save()
+                    # print("line159 allocations:", allocations)
+                    # user_obj, _ = User.objects.get_or_create(
+                    #     username='chengxin'
+                  
+                    
+                    # for allocation in Allocation.objects.filter(status__name='Active'):
+                    #     print("line165", allocation)
+                    #     if allocation.allocationuser_set.filter(user=user_obj).exists():
+                    #         print("line 167 hello")
+                    #         print("allocation is", allocation)
+                    #         print("user is", user_obj)
+
+                #         allocations = Allocation.objects.prefetch_related('project', 'project__pi', 'status',).filter(
+                #     Q(project__status__name='Active') &
+                #     Q(project__projectuser__user=self.request.user) &
+                #     Q(project__projectuser__status__name='Active') &
+                #     Q(allocationuser__user=self.request.user) &
+                #     Q(allocationuser__status__name='Active')
+                # ).distinct().order_by(order_by)
+                        # if allocation.allocationuser_set.filter(user=user_obj).exists():
+                        #     allocation_user_obj = allocation.allocationuser_set.get(user=user_obj)
+                        #     allocation_user_obj.save()
+                        #     print("line166 if statement")
+                        # else:
+                        #     allocation_user_obj = AllocationUser.objects.create(user=user_obj)         
+                        #     print("line170 else statement")
+                              
+
+
+                    # allocation_obj = Allocation.objects.get(title=)
+                    # one_allocation_users = AllocationUser.objects.filter(Allocation = allocations)
                     # allocations = Allocation.objects.prefetch_related(
                     # 'resources').filter(project=self.object)
-                    print("line158", allocations)
+                    # print("line158", allocations)
+                    # print("line162",type(allocations))
+                    # print(allocations[0])
+                    # print("line164", type(allocations[0]))
+                    # print("line166", one_allocation_users)
+                    # one_allocation = AllocationUser.objects.get(username='vknutson')
+                    # print("line165", user_lst['user'])
+                    
+                    # finding allocation's allocationUser
+                    
+                    # one_user = allocations.filter(username = user_lst['user'] )
+                    # print("line165",one_user)
                     # allocation_obj, _ = Allocation.objects.get_or_create()
                     # if (project_obj.filter.exist():) # then update
                     # AllocationO
+                 
                 print("line171", lab_name)
                 print("line172", type(lab_name))
