@@ -50,7 +50,7 @@ We do not have information about your research. Please provide a detailed descri
         else:
             self.fields['allocation_account'].widget = forms.HiddenInput()
 
-        self.fields['description'].help_text = '<br/>Justification for requesting this allocation.'
+        self.fields['justification'].help_text = '<br/>Justification for requesting this allocation.'
 
 
 class AllocationUpdateForm(forms.Form):
