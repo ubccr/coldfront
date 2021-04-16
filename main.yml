@@ -29,22 +29,22 @@ db_admin_passwd: !vault |
     6462383466613365320a353966386161336664633832653135653663613533623961386533323966
     39613661383434303266396639353139613036323165356432396637343838616239
 
-log_path: '/var/log/user_portals/brc/'
 portal_log_file: 'cf_mybrc_portal.log'
 
 from_email: brc-hpc-help@berkeley.edu
 admin_email: brc-hpcs@berkeley.edu
 email_subject_prefix: '[MyBRC-User-Portal]'
 
-google_sheets_credentials: '/tmp/meli_credentials.json'
+google_sheets_credentials: '/tmp/credentials.json'
 
 #####################################
-#DEV SETTINGS
+#STAGING SETTINGS
 #####################################
 debug: False
 git_prefix: /var/www/coldfront_app/
 hostname: scgup-dev.lbl.gov
 host_ip: 131.243.130.236
+app_port: 8000
 
 #####################################
 #PROD SETTINGS
@@ -53,4 +53,5 @@ debug: False
 git_prefix: /home/meli/
 hostname: mybrc.brc.berkeley.edu
 host_ip: 10.0.0.40
+app_port: 8000
 
