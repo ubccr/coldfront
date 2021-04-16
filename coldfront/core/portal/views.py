@@ -7,7 +7,9 @@ from django.db.models import Count, Q, Sum
 from django.shortcuts import render
 from django.views.decorators.cache import cache_page
 
-from coldfront.core.allocation.models import Allocation, AllocationUser
+from coldfront.core.allocation.models import (Allocation,
+                                              AllocationUser,
+                                              AllocationUserAttribute)
 # from coldfront.core.grant.models import Grant
 from coldfront.core.portal.utils import (generate_allocations_chart_data,
                                          generate_publication_by_year_chart_data,
@@ -30,8 +32,23 @@ def home(request):
              Q(projectuser__status__name__in=['Active', ]))
         ).distinct().order_by('-created')
 
+
+        cluster_access_attributes = AllocationUserAttribute.objects.filter(allocation_attribute_type__name='Cluster Account Status',
+                                                                       allocation_user__user=request.user)
+
+        access_states = {}
+        for attribute in cluster_access_attributes:
+            project = attribute.allocation.project
+            status = attribute.value
+            access_states[project] = status
+
         abc_projects, savio_projects, vector_projects = set(), set(), set()
         for project in project_list:
+            project.display_status = access_states.get(project, None)
+
+            if project.display_status is not None and 'Active' in project.display_status:
+                context['cluster_username'] = request.user.username
+
             if project.name == 'abc':
                 abc_projects.add(project.name)
             elif project.name.startswith('vector_'):

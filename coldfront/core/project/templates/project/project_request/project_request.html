@@ -46,7 +46,11 @@ Project Request
         <tbody>
           {% for savio_request in savio_requests %}
             <tr>
-              <td>{{ savio_request.project.name }}</td>
+              <td>
+                <a href="{% url 'savio-project-request-detail' savio_request.pk %}">
+                  {{ savio_request.project.name }}
+                </a>
+              </td>
               {% with pi=savio_request.pi %}
                 <td>{{ pi.first_name }} {{ pi.last_name }} ({{ pi.email }})</td>
               {% endwith %}
@@ -59,12 +63,14 @@ Project Request
               </td>
               {% with status=savio_request.status.name %}
                 <td>
-                  {% if status == "Approved" %}
+                  {% if status == 'Under Review' %}
                     <span class="badge badge-warning">{{ status }}</span>
-                  {% elif status == "Denied" %}
+                  {% elif status == 'Approved - Processing' %}
                     <span class="badge badge-warning">{{ status }}</span>
-                  {% elif status == "Pending" %}
-                    <span class="badge badge-warning">{{ status }}</span>
+                  {% elif status == 'Approved - Complete' %}
+                    <span class="badge badge-success">{{ status }}</span>
+                  {% else %}
+                    <span class="badge badge-danger">{{ status }}</span>
                   {% endif %}
                 </td>
               {% endwith %}
@@ -93,18 +99,24 @@ Project Request
         <tbody>
           {% for vector_request in vector_requests %}
             <tr>
-              <td>{{ vector_request.project.name }}</td>
+              <td>
+                <a href="{% url 'vector-project-request-detail' vector_request.pk %}">
+                  {{ vector_request.project.name }}
+                </a>
+              </td>
               {% with pi=vector_request.pi %}
                 <td>{{ pi.first_name }} {{ pi.last_name }} ({{ pi.email }})</td>
               {% endwith %}
               {% with status=vector_request.status.name %}
                 <td>
-                  {% if status == "Approved" %}
+                  {% if status == 'Under Review' %}
                     <span class="badge badge-warning">{{ status }}</span>
-                  {% elif status == "Denied" %}
+                  {% elif status == 'Approved - Processing' %}
                     <span class="badge badge-warning">{{ status }}</span>
-                  {% elif status == "Pending" %}
-                    <span class="badge badge-warning">{{ status }}</span>
+                  {% elif status == 'Approved - Complete' %}
+                    <span class="badge badge-success">{{ status }}</span>
+                  {% else %}
+                    <span class="badge badge-danger">{{ status }}</span>
                   {% endif %}
                 </td>
               {% endwith %}
@@ -118,6 +130,16 @@ Project Request
         No pending requests.
       </div>
     {% endif %}
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-12 mt-2">
+    <p>
+      You may also view completed requests for
+      <a href="{% url 'savio-project-completed-request-list' %}">Savio</a> and
+      <a href="{% url 'vector-project-completed-request-list' %}">Vector</a>.
+    </p>
   </div>
 </div>
 

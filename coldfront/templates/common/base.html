@@ -1,5 +1,8 @@
 {% load static %}
 
+{% load tz %}
+{% timezone "America/Los_Angeles" %}
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -40,7 +43,7 @@
    <!-- Custom -->
   <link rel="stylesheet" href="{% static 'common/css/common.css' %}">
 
-  <title>{% block title %}Welcome to myBRC Cluster Access Management System {% endblock %}</title>
+  <title>{% block title %}Welcome to MyBRC Cluster Access Management System {% endblock %}</title>
 </head>
 
 <body>
@@ -66,3 +69,5 @@
 </body>
 
 </html>
+
+{% endtimezone %}

@@ -65,6 +65,34 @@ We do not have information about your research. Please provide a detailed descri
         if self.joins_auto_approval_delay < datetime.timedelta():
             raise ValidationError('Delay must be non-negative.')
 
+    def save(self, *args, **kwargs):
+        """If the Project previously existed and its status has changed,
+        update any pending ProjectUserJoinRequests."""
+        if self.pk:
+            old_obj = Project.objects.get(pk=self.pk)
+            if old_obj.status.name != self.status.name:
+                pending_status = ProjectUserStatusChoice.objects.get(
+                    name='Pending - Add')
+                if self.status.name == 'Active':
+                    # If the status changed to 'Active', create another join
+                    # request, since only the latest created request is
+                    # considered. This ensures that the auto-approval delay
+                    # begins after the project becomes active.
+                    project_users = self.projectuser_set.filter(
+                        status=pending_status)
+                    for project_user in project_users:
+                        ProjectUserJoinRequest.objects.create(
+                            project_user=project_user)
+                elif self.status.name == 'Denied':
+                    # If the status changed to 'Denied', deny all pending
+                    # join requests.
+                    denied_status = ProjectUserStatusChoice.objects.get(
+                        name='Denied')
+                    self.projectuser_set.filter(
+                        status=pending_status).update(status=denied_status)
+
+        super().save(*args, **kwargs)
+
     @property
     def last_project_review(self):
         if self.projectreview_set.exists():
@@ -131,6 +159,14 @@ We do not have information about your research. Please provide a detailed descri
         pi_user_pks = self.projectuser_set.filter(
             role__name='Principal Investigator').values_list('user', flat=True)
         return User.objects.filter(pk__in=pi_user_pks).order_by('username')
+
+    def managers(self):
+        """Return a queryset of User objects that are Managers on this
+        project, ordered by username."""
+        manager_user_pks = self.projectuser_set.filter(
+            role__name='Manager').values_list('user', flat=True)
+        return User.objects.filter(
+            pk__in=manager_user_pks).order_by('username')
 
     def __str__(self):
         return self.name
@@ -245,6 +281,57 @@ class ProjectAllocationRequestStatusChoice(TimeStampedModel):
         ordering = ['name', ]
 
 
+def savio_project_request_state_schema():
+    """Return the schema for the SavioProjectAllocationRequest.state
+    field."""
+    return {
+        'eligibility': {
+            'status': 'Pending',
+            'justification': '',
+            'timestamp': ''
+        },
+        'readiness': {
+            'status': 'Pending',
+            'justification': '',
+            'timestamp': ''
+        },
+        'setup': {
+            'status': 'Pending',
+            'name_change': {
+                'requested_name': '',
+                'final_name': '',
+                'justification': ''
+            },
+            'timestamp': ''
+        },
+        'other': {
+            'justification': '',
+            'timestamp': ''
+        }
+    }
+
+
+def vector_project_request_state_schema():
+    """Return the schema for the VectorProjectAllocationRequest.state
+    field."""
+    return {
+        'eligibility': {
+            'status': 'Pending',
+            'justification': '',
+            'timestamp': ''
+        },
+        'setup': {
+            'status': 'Pending',
+            'name_change': {
+                'requested_name': '',
+                'final_name': '',
+                'justification': ''
+            },
+            'timestamp': ''
+        }
+    }
+
+
 class SavioProjectAllocationRequest(TimeStampedModel):
     requester = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='savio_requester')
@@ -268,7 +355,15 @@ class SavioProjectAllocationRequest(TimeStampedModel):
     status = models.ForeignKey(
         ProjectAllocationRequestStatusChoice, on_delete=models.CASCADE,
         verbose_name='Status')
+    state = models.JSONField(default=savio_project_request_state_schema)
     history = HistoricalRecords()
+
+    def save(self, *args, **kwargs):
+        # On creation, set the requested_name.
+        if not self.pk:
+            self.state['setup']['name_change']['requested_name'] = \
+                self.project.name
+        super().save(*args, **kwargs)
 
     def __str__(self):
         name = (
@@ -292,7 +387,15 @@ class VectorProjectAllocationRequest(TimeStampedModel):
     status = models.ForeignKey(
         ProjectAllocationRequestStatusChoice, on_delete=models.CASCADE,
         verbose_name='Status')
+    state = models.JSONField(default=vector_project_request_state_schema)
     history = HistoricalRecords()
+
+    def save(self, *args, **kwargs):
+        # On creation, set the requested_name.
+        if not self.pk:
+            self.state['setup']['name_change']['requested_name'] = \
+                self.project.name
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return (

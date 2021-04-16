@@ -5,12 +5,22 @@
 
 
 {% block title %}
-Vector Project New and Pending Requests
+Vector Project {{ request_filter|title }} Requests
 {% endblock %}
 
 
 {% block content %}
-<h1>Vector Project Requests</h1>
+<h1>{{ request_filter|title }} Vector Project Requests</h1>
+<hr>
+
+<p>
+  {% if request_filter == 'completed' %}
+    View completed requests for new Vector projects. You may also view pending requests <a href="{% url 'vector-project-pending-request-list' %}">here</a>.
+  {% else %}
+    View pending requests for new Vector projects. You may also view completed requests <a href="{% url 'vector-project-completed-request-list' %}">here</a>.
+  {% endif %}
+</p>
+
 {% if vector_project_request_list %}
 <div class="table-responsive">
   <table class="table table-sm">
@@ -21,6 +31,7 @@ Vector Project New and Pending Requests
         <th scope="col">Requester Email</th>
         <th scope="col">Project</th>
         <th scope="col">PI</th>
+        <th scope="col">Status</th>
       </tr>
     </thead>
     <tbody>
@@ -35,6 +46,19 @@ Vector Project New and Pending Requests
         <td>{{ vector_project_request.requester.email }}</td>
         <td>{{ vector_project_request.project.name }}</td>
         <td>{{ vector_project_request.pi.email }}</td>
+        <td>
+          {% with status=vector_project_request.status.name %}
+            {% if status == 'Under Review' %}
+              <span class="badge badge-warning">{{ status }}</span>
+            {% elif status == 'Approved - Processing' %}
+              <span class="badge badge-warning">{{ status }}</span>
+            {% elif status == 'Approved - Complete' %}
+              <span class="badge badge-success">{{ status }}</span>
+            {% else %}
+              <span class="badge badge-danger">{{ status }}</span>
+            {% endif %}
+          {% endwith %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>
@@ -42,7 +66,7 @@ Vector Project New and Pending Requests
 </div>
 {% else %}
 <div class="alert alert-info">
-  No new or pending Vector project requests!
+  No {{ request_filter }} Vector project requests!
 </div>
 {% endif %}
 

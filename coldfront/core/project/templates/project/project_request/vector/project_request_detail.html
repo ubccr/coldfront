@@ -2,6 +2,7 @@
 {% load crispy_forms_tags %}
 {% load common_tags %}
 {% load static %}
+{% load iso8601_to_datetime %}
 
 
 {% block title %}
@@ -10,49 +11,84 @@ Vector Project Request Detail
 
 
 {% block content %}
-<h1>Review Vector Project Request</h1>
+<h1>
+  Vector: {{ vector_request.project.name }} - {{ vector_request.requester.first_name }} {{ vector_request.requester.last_name }}
+  {% with status=vector_request.status.name %}
+    {% if status == 'Under Review' %}
+      <span class="badge badge-warning" style="float: right;">{{ status }}</span>
+    {% elif status == 'Approved - Processing' %}
+      <span class="badge badge-warning" style="float: right;">{{ status }}</span>
+    {% elif status == 'Approved - Complete' %}
+      <span class="badge badge-success" style="float: right;">{{ status }}</span>
+    {% else %}
+      <span class="badge badge-danger" style="float: right;">{{ status }}</span>
+    {% endif %}
+  {% endwith %}
+</h1>
+<hr>
 
-<p>This form activates a request for a Vector project. Please review the given information and complete the checklist before final approval.</p>
+{% include 'project/project_request/vector/project_request_card.html' with vector_request=vector_request %}
 
 <div class="card mb-3">
   <div class="card-header">
     <h4>
-      <i class="fas fa-info-circle" aria-hidden="true"></i>
-      Request Information
+      <i class="fas fa-question-circle" aria-hidden="true"></i>
+      Request Status
     </h4>
   </div>
   <div class="card-body">
-    <p class="card-text text-justify">
-      <strong>Request #: </strong>
-      {{ vector_request.pk }}
-    </p>
-    <p class="card-text text-justify">
-      <strong>Date Requested/Last Modified: </strong>
-      {{ vector_request.modified|date:"M. d, Y" }}
-    </p>
-    <p class="card-text text-justify">
-      <strong>Requester Email: </strong>
-      {{ vector_request.requester.email }}
-    </p>
-    <p class="card-text text-justify">
-      <strong>Project: </strong>
-      {{ vector_request.project.name }}
-    </p>
-    <p class="card-text text-justify">
-      <strong>PI: </strong>
-      {{ vector_request.pi.email }}
-    </p>
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <tbody>
+          <tr>
+            <th>Status:</th>
+            <td>
+              {% with status=vector_request.status.name %}
+                {% if status == 'Under Review' %}
+                  <p>This request is currently under review. Administrators must determine if the requester is eligible for access.</p>
+                {% elif status == 'Approved - Processing' %}
+                  <p>This request has been approved, and is currently being set up on the cluster.</p>
+                {% elif status == 'Approved - Complete' %}
+                  <p>This request has been approved, and is fully set up on the cluster.</p>
+                {% else %}
+                  <p>This request has been denied. Below are specific details:</p>
+                  <p>
+                    <strong>Category:</strong>
+                    {{ denial_reason.category }}
+                  </p>
+                  <p>
+                    <strong>Justification:</strong>
+                    {{ denial_reason.justification }}
+                  </p>
+                  <p>
+                    <strong>Timestamp:</strong>
+                    {{ denial_reason.timestamp|iso8601_to_datetime }}
+                  </p>
+                  <p>If you have any questions or concerns, please contact us at {{ support_email }}.</p>
+                {% endif %}
+              {% endwith %}
+            </td>
+          </tr>
+          <tr>
+            <th>Latest Update Timestamp:</th>
+            <td>{{ latest_update_timestamp }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
+{% if is_allowed_to_manage_request and vector_request.status.name not in 'Denied,Approved - Complete' %}
 <div class="card mb-3">
   <div class="card-header">
     <h4>
       <i class="fas fa-check-circle" aria-hidden="true"></i>
-      Checklist
+      System Administrator Checklist
     </h4>
   </div>
   <div class="card-body">
+    <p>This section, which is only visible for system administrators, activates this request. Please review the given information and complete the checklist in the following order before final approval.</p>
     <div class="table-responsive">
       <table class="table table-sm">
         <thead>
@@ -63,27 +99,76 @@ Vector Project Request Detail
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td style="color: #dc3545"><b>PI request approved?</b></td>
-            <td style="color: #dc3545"><i class="fas fa-times-circle" aria-hidden="true"></i></td>
-            <td><button class="btn btn-primary" role="button">Manage</button></td>
-          </tr>
-          <tr>
-            <td style="color: #dc3545"><b>Slurm entries created?</b></td>
-            <td style="color: #dc3545"><i class="fas fa-times-circle" aria-hidden="true"></i></td>
-            <td><button class="btn btn-primary" role="button">Manage</button></td>
-          </tr>
-          <tr>
-            <td style="color: #28a745"><b>Project directories created?</b></td>
-            <td style="color: #28a745"><i class="fas fa-check-circle" aria-hidden="true"></i></td>
-            <td><button class="btn btn-primary" role="button">Manage</button></td>
-          </tr>
+          {% with eligibility=vector_request.state.eligibility setup=vector_request.state.setup %}
+            <tr>
+              <td>Confirm that the requester is eligible for Vector access.</td>
+              <td>
+                {% if eligibility.status == 'Pending' %}
+                  <span class="badge badge-warning">
+                    {{ eligibility.status }}
+                  </span>
+                {% elif eligibility.status == 'Approved' %}
+                  <span class="badge badge-success">
+                    {{ eligibility.status }} {{ eligibility.timestamp|iso8601_to_datetime }}
+                  </span>
+                {% else %}
+                  <span class="badge badge-danger">
+                    {{ eligibility.status }} {{ eligibility.timestamp|iso8601_to_datetime }}
+                  </span>
+                {% endif %}
+              </td>
+              <td>
+                <a href="{% url 'vector-project-request-review-eligibility' vector_request.pk %}" class="btn btn-primary">
+                  Manage
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td>Perform project setup on the cluster.</td>
+              <td>
+                {% if eligibility.status == 'Denied' %}
+                  <span class="badge badge-danger">
+                    N/A
+                  </span>
+                {% elif setup.status == 'Pending' %}
+                  <span class="badge badge-warning">
+                    {{ setup.status }}
+                  </span>
+                {% else %}
+                  <span class="badge badge-success">
+                    {{ setup.status }} {{ setup.timestamp|iso8601_to_datetime }}
+                  </span>
+                {% endif %}
+              </td>
+              <td>
+                {% if eligibility.status == 'Approved' %}
+                  <a href="{% url 'vector-project-request-review-setup' vector_request.pk %}" class="btn btn-primary">
+                    Manage
+                  </a>
+                {% else %}
+                  <button class="btn btn-primary" disabled="true">
+                    Manage
+                  </button>
+                {% endif %}
+              </td>
+            </tr>
+          {% endwith %}
         </tbody>
       </table>
     </div>
+    <hr>
+    {% if is_checklist_complete %}
+      <form action="{% url 'vector-project-request-detail' vector_request.pk %}" method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success">Submit</button>
+        <a href="{% url 'vector-project-pending-request-list' %}" class="btn btn-secondary">Cancel</a>
+      </form>
+    {% else %}
+      <button type="button" class="btn btn-success" disabled>Submit</button>
+      <a href="{% url 'vector-project-pending-request-list' %}" class="btn btn-secondary">Cancel</a>
+    {% endif %}
   </div>
 </div>
+{% endif %}
 
-<button type="button" class="btn btn-success" disabled>Submit</button>
-<button type="button" class="btn btn-secondary" href="">Cancel</button>
 {% endblock %}

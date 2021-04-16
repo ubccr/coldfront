@@ -48,7 +48,8 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
 from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user)
 from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
-                                             get_user_resources)
+                                             get_user_resources,
+                                             set_allocation_user_attribute_value)
 from coldfront.core.project.models import (Project, ProjectUser,
                                            ProjectUserStatusChoice)
 from coldfront.core.resource.models import Resource
@@ -1733,7 +1734,7 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
         if self.request.user.has_perm(permission):
             return True
         message = (
-            'You do not have permission to activate a cluster account '
+            'You do not have permission to activate a cluster access '
             'request.')
         messages.error(self.request, message)
 
@@ -1743,7 +1744,7 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
         self.user_obj = self.allocation_user_attribute_obj.allocation_user.user
         status = self.allocation_user_attribute_obj.value
         if status != 'Pending - Add':
-            message = f'Cluster account has unexpected status {status}.'
+            message = f'Cluster access has unexpected status {status}.'
             messages.error(request, message)
             return HttpResponseRedirect(
                 reverse('allocation-cluster-account-request-list'))
@@ -1759,25 +1760,38 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
         self.user_obj.userprofile.save()
         self.user_obj.save()
 
+        allocation_obj = self.allocation_user_attribute_obj.allocation
+        project_obj = allocation_obj.project
+
+        # For Savio projects, set the user's service units to that of
+        # the allocation. Attempt this before setting the status to
+        # 'Active' so that failures block completion.
+        if not project_obj.name.startswith('vector_'):
+            self.__set_user_service_units()
+
         self.allocation_user_attribute_obj.value = 'Active'
         self.allocation_user_attribute_obj.save()
 
-        allocation_obj = self.allocation_user_attribute_obj.allocation
-        project_obj = allocation_obj.project
         message = (
-            f'Cluster account request from User {self.user_obj.email} under '
+            f'Cluster access request from User {self.user_obj.email} under '
             f'Project {project_obj.name} and Allocation {allocation_obj.pk} '
             f'has been ACTIVATED.')
         messages.success(self.request, message)
 
         if EMAIL_ENABLED:
-            subject = 'Cluster Account Activated'
-            template = 'email/cluster_account_activated.txt'
+            subject = 'Cluster Access Activated'
+            template = 'email/cluster_access_activated.txt'
+
+            CENTER_USER_GUIDE = import_from_settings('CENTER_USER_GUIDE')
+            CENTER_LOGIN_GUIDE = import_from_settings('CENTER_LOGIN_GUIDE')
+            CENTER_HELP_EMAIL = import_from_settings('CENTER_HELP_EMAIL')
+
             template_context = {
-                'center_name': EMAIL_CENTER_NAME,
-                'project': project_obj.name,
-                'allocation': allocation_obj.pk,
-                'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL,
+                'user': self.user_obj,
+                'project_name': project_obj.name,
+                'center_user_guide': CENTER_USER_GUIDE,
+                'center_login_guide': CENTER_LOGIN_GUIDE,
+                'center_help_email': CENTER_HELP_EMAIL,
                 'signature': EMAIL_SIGNATURE,
             }
             sender = EMAIL_SENDER
@@ -1828,6 +1842,20 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
     def get_success_url(self):
         return reverse('allocation-cluster-account-request-list')
 
+    def __set_user_service_units(self):
+        """Set the AllocationUser's 'Service Units' attribute value to
+        that of the Allocation."""
+        allocation_obj = self.allocation_user_attribute_obj.allocation
+        allocation_user_obj = \
+            self.allocation_user_attribute_obj.allocation_user
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Service Units')
+        allocation_service_units = allocation_obj.allocationattribute_set.get(
+            allocation_attribute_type=allocation_attribute_type)
+        set_allocation_user_attribute_value(
+            allocation_user_obj, 'Service Units',
+            allocation_service_units.value)
+
 
 class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,
                                               UserPassesTestMixin, View):
@@ -1841,20 +1869,29 @@ class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,
         if self.request.user.has_perm(permission):
             return True
         message = (
-            'You do not have permission to deny a cluster account request.')
+            'You do not have permission to deny a cluster access request.')
         messages.error(self.request, message)
 
-    def get(self, request, pk):
-        allocation_user_attribute_obj = get_object_or_404(
-            AllocationUserAttribute, pk=pk)
-        allocation_user_attribute_obj.value = 'Denied'
-        allocation_user_attribute_obj.save()
+    def dispatch(self, request, *args, **kwargs):
+        self.allocation_user_attribute_obj = get_object_or_404(
+            AllocationUserAttribute, pk=self.kwargs.get('pk'))
+        self.user_obj = self.allocation_user_attribute_obj.allocation_user.user
+        status = self.allocation_user_attribute_obj.value
+        if status != 'Pending - Add':
+            message = f'Cluster access has unexpected status {status}.'
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse('allocation-cluster-account-request-list'))
+        return super().dispatch(request, *args, **kwargs)
 
-        user_obj = allocation_user_attribute_obj.allocation_user.user
-        allocation_obj = allocation_user_attribute_obj.allocation
+    def get(self, request, *args, **kwargs):
+        self.allocation_user_attribute_obj.value = 'Denied'
+        self.allocation_user_attribute_obj.save()
+
+        allocation_obj = self.allocation_user_attribute_obj.allocation
         project_obj = allocation_obj.project
         message = (
-            f'Cluster account request from User {user_obj.email} under '
+            f'Cluster access request from User {self.user_obj.email} under '
             f'Project {project_obj.name} and Allocation {allocation_obj.pk} '
             f'has been DENIED.')
         messages.success(request, message)
@@ -1863,15 +1900,13 @@ class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,
             domain_url = get_domain_url(self.request)
             view_name = 'allocation-detail'
             view = reverse(view_name, kwargs={'pk': allocation_obj.pk})
-            allocation_url = f'{domain_url}{view}'
 
-            subject = 'Cluster Account Denied'
-            template = 'email/cluster_account_denied.txt'
+            subject = 'Cluster Access Denied'
+            template = 'email/cluster_access_denied.txt'
             template_context = {
                 'center_name': EMAIL_CENTER_NAME,
                 'project': project_obj.name,
                 'allocation': allocation_obj.pk,
-                'allocation_url': allocation_url,
                 'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL,
                 'signature': EMAIL_SIGNATURE,
             }

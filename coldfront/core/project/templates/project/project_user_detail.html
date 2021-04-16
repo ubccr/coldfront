@@ -109,7 +109,7 @@ Project User Detail
                 <span class="badge badge-danger">
                   No Access
                 </span>
-                {% if project_user_obj.user in project_user_obj.project.pis %}
+                {% if project_user_obj.user in project_user_obj.project.pis or project_user_obj.user in project_user_obj.project.managers %}
                   <br><br>
                   <form action="{% url 'allocation-request-cluster-account' allocation_obj.pk project_user_obj.user.pk %}" method="post">
                     {% csrf_token %}
