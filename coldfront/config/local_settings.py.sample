@@ -342,9 +342,15 @@ try:
     from .prod_settings import *
     print("DJANGO loading prod_settings\n")
 except ImportError:
-    print("DJANGO prod_settings NOT found, looking for dev_settings\n")
+    print("DJANGO prod_settings NOT found, looking for staging_settings\n")
     try:
-        from .dev_settings import *
-        print("DJANGO loading dev_settings\n")
+        from .staging_settings import *
+        print("DJANGO loading staging_settings\n")
     except ImportError:
-        print("DJANGO dev_settings NOT found, Using default settings\n")
+        print("DJANGO staging_settings NOT found, looking for dev_settings\n")
+        try:
+            from .dev_settings import *
+            print("DJANGO loading dev_settings\n")
+        except ImportError:
+            print("DJANGO dev_settings NOT found, Using default settings\n")
+
