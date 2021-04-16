@@ -5,11 +5,6 @@ DEBUG = '{{ debug }}'
 
 ALLOWED_HOSTS = ['0.0.0.0', '{{ hostname }}:{{ app_port }}', '{{ hostname }}', '{{ host_ip }}']
 
-# The name, user, and password for the database, referenced by DATABASES in settings.py.
-DATABASE_NAME = '{{ db_name }}'
-DATABASE_USER = '{{ db_admin_user }}'
-DATABASE_PASSWORD = '{{ db_admin_passwd }}'
-
 CENTER_HELP_URL = 'http://{{ hostname }}:{{ app_port }}/help'
 CENTER_PROJECT_RENEWAl_HELP_URL = 'http://{{ hostname }}:{{ app_port }}/help'
 CENTER_BASE_URL = 'http://{{ hostname }}:{{ app_port }}'
