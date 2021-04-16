@@ -37,6 +37,11 @@ Notice there is now a folder icon next to the project name.  When clicked, this 
 
 The staff member can also choose to search "All Projects" or "All Allocations" just as admins do.  However, the allocation and project detail pages are displayed in a read-only view for staff members.  
 
+### Give Staff Access to Review Allocation Requests
+
+In addition to the above permissions, add 'allocation|allocation|Can view all allocation requests' to allow the staff member to see the pending allocation requests menu.  This will display under the 'Staff' menu.  
+
+
 ### Director and Center Administration Staff
 You may wish to provide the director of your center, or other administrative-level staff, additional permissions to view and access parts of ColdFront that you would not want to provide to other staff members.  More info on configuring these types of permissions can be [found here](director.md)  
 
