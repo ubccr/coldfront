@@ -27,6 +27,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
           {{viewed_user.userprofile.middle_name }}
         {% endif %}
         {{viewed_user.last_name}}
+        <a class="btn btn-sm" href="{% url 'user-profile-update' %}" role="button"><i class="far fa-edit" style="color: #4aa0b5;" aria-hidden="true"></i></a>
       </h4>
       <div class="table-responsive">
     <table class="table">
@@ -41,7 +42,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
         </tr>
         <tr>
           <th scope="row">Cluster Username:</th>
-          {% if user.userprofile.access_agreement_signed_date is not None %}
+          {% if has_cluster_access %}
             <td>
               <p>{{viewed_user.username}}</p>
               <p>Use this username to authenticate to this portal and to the cluster.</p>

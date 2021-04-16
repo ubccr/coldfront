@@ -1,0 +1,11 @@
+Dear {{ center_name }} user,
+
+Your request to create project {{ project_name }} has been denied for the following reason:
+
+Category: {{ reason_category }}
+Justification: {{ reason_justification }}
+
+If you have any questions, contact us at {{ support_email }}.
+
+Thank you,
+{{ signature }}

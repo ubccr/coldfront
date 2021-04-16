@@ -4,6 +4,7 @@ from django import forms
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
 
+from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserRoleChoice,
                                            ProjectAllocationRequestStatusChoice)
@@ -233,7 +234,7 @@ class SavioProjectExistingPIForm(forms.Form):
                 project__status__name__in=['New', 'Active']
             ).values_list('user__username', flat=True))
             status = ProjectAllocationRequestStatusChoice.objects.get(
-                name='Pending')
+                name='Under Review')
             pis_with_pending_requests = set(
                 SavioProjectAllocationRequest.objects.filter(
                     allocation_type=SavioProjectAllocationRequest.FCA,
@@ -249,7 +250,7 @@ class SavioProjectExistingPIForm(forms.Form):
                 project__status__name__in=['New', 'Active']
             ).values_list('user__username', flat=True))
             status = ProjectAllocationRequestStatusChoice.objects.get(
-                name='Pending')
+                name='Under Review')
             pis_with_pending_requests = set(
                 SavioProjectAllocationRequest.objects.filter(
                     allocation_type=SavioProjectAllocationRequest.PCA,
@@ -300,7 +301,9 @@ class PooledProjectChoiceField(forms.ModelChoiceField):
 
     def label_from_instance(self, obj):
         names = []
-        for project_user in obj.projectuser_set.all():
+        project_users = obj.projectuser_set.filter(
+            role__name='Principal Investigator')
+        for project_user in project_users:
             user = project_user.user
             names.append(f'{user.first_name} {user.last_name}')
         names.sort()
@@ -370,8 +373,9 @@ class SavioProjectDetailsForm(forms.Form):
         label='Description',
         validators=[MinLengthValidator(10)],
         widget=forms.Textarea(attrs={'rows': 3}))
-
-    # TODO: Add field_of_science.
+    field_of_science = forms.ModelChoiceField(
+        empty_label=None,
+        queryset=FieldOfScience.objects.all())
 
     def __init__(self, *args, **kwargs):
         self.allocation_type = kwargs.pop('allocation_type', None)
@@ -532,6 +536,134 @@ class SavioProjectSurveyForm(forms.Form):
             'database? If yes, please explain.'),
         required=False)
 
+    def __init__(self, *args, **kwargs):
+        disable_fields = kwargs.pop('disable_fields', False)
+        super().__init__(*args, **kwargs)
+        if disable_fields:
+            for field in self.fields:
+                self.fields[field].disabled = True
+
+
+class ProjectAllocationReviewForm(forms.Form):
+
+    status = forms.ChoiceField(
+        choices=(
+            ('', 'Select one.'),
+            ('Pending', 'Pending'),
+            ('Approved', 'Approved'),
+            ('Denied', 'Denied'),
+        ),
+        help_text='If you are unsure, leave the status as "Pending".',
+        label='Status',
+        required=True)
+    justification = forms.CharField(
+        help_text=(
+            'Provide reasoning for your decision. This field is only required '
+            'for denials, since it will be included in the notification '
+            'email.'),
+        label='Justification',
+        validators=[MinLengthValidator(10)],
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 3}))
+
+    def clean(self):
+        cleaned_data = super().clean()
+        status = cleaned_data.get('status', 'Pending')
+        # Require justification for denials.
+        if status == 'Denied':
+            justification = cleaned_data.get('justification', '')
+            if not justification.strip():
+                raise forms.ValidationError(
+                    'Please provide a justification for your decision.')
+        return cleaned_data
+
+
+class SavioProjectReviewSetupForm(forms.Form):
+
+    status = forms.ChoiceField(
+        choices=(
+            ('', 'Select one.'),
+            ('Pending', 'Pending'),
+            ('Complete', 'Complete'),
+        ),
+        help_text='If you are unsure, leave the status as "Pending".',
+        label='Status',
+        required=True)
+    final_name = forms.CharField(
+        help_text=(
+            'Update the name of the project, in case it needed to be '
+            'changed. It must begin with the correct prefix.'),
+        label='Final Name',
+        max_length=len('fc_') + 12,
+        required=True,
+        validators=[
+            MinLengthValidator(len('fc_') + 4),
+            RegexValidator(
+                r'^[0-9a-z_]+$',
+                message=(
+                    'Name must contain only lowercase letters, numbers, and '
+                    'underscores.'))
+        ])
+    justification = forms.CharField(
+        help_text=(
+            'Provide reasoning for your decision. This field is only required '
+            'when the name changes.'),
+        label='Justification',
+        validators=[MinLengthValidator(10)],
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 3}))
+
+    def __init__(self, *args, **kwargs):
+        self.project_pk = kwargs.pop('project_pk')
+        self.requested_name = kwargs.pop('requested_name')
+        super().__init__(*args, **kwargs)
+        self.fields['final_name'].initial = self.requested_name
+
+    def clean(self):
+        cleaned_data = super().clean()
+        final_name = cleaned_data.get('final_name', '').lower()
+        # Require justification for name changes.
+        if final_name != self.requested_name:
+            justification = cleaned_data.get('justification', '')
+            if not justification.strip():
+                raise forms.ValidationError(
+                    'Please provide a justification for the name change.')
+        return cleaned_data
+
+    def clean_final_name(self):
+        cleaned_data = super().clean()
+        final_name = cleaned_data.get('final_name', '').lower()
+        expected_prefix = None
+        for prefix in ('co_', 'fc_', 'pc_'):
+            if self.requested_name.startswith(prefix):
+                expected_prefix = prefix
+                break
+        if not expected_prefix:
+            raise forms.ValidationError(
+                f'Requested project name {self.requested_name} has invalid '
+                f'prefix.')
+        if not final_name.startswith(expected_prefix):
+            raise forms.ValidationError(
+                f'Final project name must begin with "{expected_prefix}".')
+        matching_projects = Project.objects.exclude(
+            pk=self.project_pk).filter(name=final_name)
+        if matching_projects.exists():
+            raise forms.ValidationError(
+                f'A project with name {final_name} already exists.')
+        return final_name
+
+
+class SavioProjectReviewDenyForm(forms.Form):
+
+    justification = forms.CharField(
+        help_text=(
+            'Provide reasoning for your decision. It will be included in the '
+            'notification email.'),
+        label='Justification',
+        validators=[MinLengthValidator(10)],
+        required=True,
+        widget=forms.Textarea(attrs={'rows': 3}))
+
 
 class VectorProjectDetailsForm(forms.Form):
 
@@ -564,8 +696,9 @@ class VectorProjectDetailsForm(forms.Form):
         label='Description',
         validators=[MinLengthValidator(10)],
         widget=forms.Textarea(attrs={'rows': 3}))
-
-    # TODO: Add field_of_science.
+    field_of_science = forms.ModelChoiceField(
+        empty_label=None,
+        queryset=FieldOfScience.objects.all())
 
     def clean_name(self):
         cleaned_data = super().clean()
@@ -575,3 +708,70 @@ class VectorProjectDetailsForm(forms.Form):
             raise forms.ValidationError(
                 f'A project with name {name} already exists.')
         return name
+
+
+class VectorProjectReviewSetupForm(forms.Form):
+
+    status = forms.ChoiceField(
+        choices=(
+            ('', 'Select one.'),
+            ('Pending', 'Pending'),
+            ('Complete', 'Complete'),
+        ),
+        help_text='If you are unsure, leave the status as "Pending".',
+        label='Status',
+        required=True)
+    final_name = forms.CharField(
+        help_text=(
+            'Update the name of the project, in case it needed to be '
+            'changed. It must begin with the correct prefix.'),
+        label='Final Name',
+        max_length=len('vector_') + 12,
+        required=True,
+        validators=[
+            MinLengthValidator(len('vector_') + 4),
+            RegexValidator(
+                r'^[0-9a-z_]+$',
+                message=(
+                    'Name must contain only lowercase letters, numbers, and '
+                    'underscores.'))
+        ])
+    justification = forms.CharField(
+        help_text=(
+            'Provide reasoning for your decision. This field is only required '
+            'when the name changes.'),
+        label='Justification',
+        validators=[MinLengthValidator(10)],
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 3}))
+
+    def __init__(self, *args, **kwargs):
+        self.project_pk = kwargs.pop('project_pk')
+        self.requested_name = kwargs.pop('requested_name')
+        super().__init__(*args, **kwargs)
+        self.fields['final_name'].initial = self.requested_name
+
+    def clean(self):
+        cleaned_data = super().clean()
+        final_name = cleaned_data.get('final_name', '').lower()
+        # Require justification for name changes.
+        if final_name != self.requested_name:
+            justification = cleaned_data.get('justification', '')
+            if not justification.strip():
+                raise forms.ValidationError(
+                    'Please provide a justification for the name change.')
+        return cleaned_data
+
+    def clean_final_name(self):
+        cleaned_data = super().clean()
+        final_name = cleaned_data.get('final_name', '').lower()
+        expected_prefix = 'vector_'
+        if not final_name.startswith(expected_prefix):
+            raise forms.ValidationError(
+                f'Final project name must begin with "{expected_prefix}".')
+        matching_projects = Project.objects.exclude(
+            pk=self.project_pk).filter(name=final_name)
+        if matching_projects.exists():
+            raise forms.ValidationError(
+                f'A project with name {final_name} already exists.')
+        return final_name

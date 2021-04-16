@@ -1,0 +1,30 @@
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block content %}
+
+<script>
+    $("#navbar-main > ul > li.active").removeClass("active");
+    $("#navbar-user").addClass("active");
+    $("#navbar-user-user-profile").addClass("active");
+</script>
+
+<div class="card ">
+    <div class="card-header"><i class="fas fa-edit" aria-hidden="true"></i>
+        Update Name
+    </div>
+
+  <div class="card-body">
+    <form id="update-form" method="POST" action="{% url 'user-profile-update' %}" autocomplete="off">
+      {% csrf_token %}
+      {{ user_update_form|crispy }}
+      <input type="submit" class="btn btn-primary" value="Update">
+      <a class="btn btn-secondary" href="{% url 'user-profile' %}" role="button">Cancel</a><br>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+

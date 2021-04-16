@@ -26,13 +26,27 @@ if DEBUG is False and SECRET_KEY is 'vtri&lztlbinerr4+yg1yzm23ez@+ub6=4*63z1%d!)
 # This should be set to True in production when using HTTPS
 SESSION_COOKIE_SECURE = False
 
+# ------------------------------------------------------------------------------
+# myBRC settings
+# ------------------------------------------------------------------------------
+
+# The ID of the Site object to use (probably 1).
+SITE_ID = 1
+
+# The username of the user to set as the PI for all Vector projects.
+VECTOR_PI_USERNAME = "channsoden@berkeley.edu"
+
 #------------------------------------------------------------------------------
 # General Center Information
 #------------------------------------------------------------------------------
-CENTER_NAME = 'HPC Resources'
-# CENTER_HELP_URL = 'http://localhost/help'
-# CENTER_PROJECT_RENEWAL_HELP_URL = 'http://localhost/help'
-# CENTER_BASE_URL = 'https://coldfront.io'
+CENTER_NAME = 'BRC HPC Resources'
+CENTER_USER_GUIDE = 'https://docs-research-it.berkeley.edu/services/high-performance-computing/user-guide/'
+CENTER_LOGIN_GUIDE = 'https://docs-research-it.berkeley.edu/services/high-performance-computing/user-guide/logging-brc-clusters/#Logging-in'
+CENTER_HELP_EMAIL = 'brc-hpc-help@berkeley.edu'
+
+CENTER_HELP_URL = 'http://localhost/help'
+CENTER_PROJECT_RENEWAL_HELP_URL = 'http://localhost/help'
+CENTER_BASE_URL = 'https://localhost'
 
 #------------------------------------------------------------------------------
 # Locale settings
@@ -44,7 +58,8 @@ TIME_ZONE = 'UTC'
 #------------------------------------------------------------------------------
 # Logging
 #------------------------------------------------------------------------------
-LOG_PATH = '/tmp/debug.log'
+import os
+LOG_PATH = os.path.join('/var/log/user_portals/cf_mybrc', 'cf_mybrc_portal.log')
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -138,27 +153,31 @@ LOCAL_SETTINGS_EXPORT = []
 #------------------------------------------------------------------------------
 # Email/Notification settings
 #------------------------------------------------------------------------------
-# EMAIL_ENABLED = True
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_HOST = 'localhost'
-# EMAIL_PORT = 25
-# EMAIL_HOST_USER = ''
-# EMAIL_HOST_PASSWORD = ''
-# EMAIL_USE_TLS = False
-# EMAIL_TIMEOUT = 3
-# EMAIL_SUBJECT_PREFIX = '[ColdFront]'
-# EMAIL_ADMIN_LIST = ['admin@localhost']
-# EMAIL_SENDER = 'coldfront@localhost'
-# EMAIL_TICKET_SYSTEM_ADDRESS = 'help@localhost'
-# EMAIL_DIRECTOR_EMAIL_ADDRESS = 'director@localhost'
-# EMAIL_PROJECT_REVIEW_CONTACT = 'review@localhost'
-# EMAIL_DEVELOPMENT_EMAIL_LIST = ['dev1@localhost', 'dev2@localhost']
-# EMAIL_OPT_OUT_INSTRUCTION_URL = 'http://localhost/optout'
-# EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS = [7, 14, 30]
-# EMAIL_SIGNATURE = """
-# HPC Resources
-# http://localhost
-# """
+EMAIL_ENABLED = True
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'localhost'
+EMAIL_PORT = 25
+EMAIL_HOST_USER = ''
+EMAIL_HOST_PASSWORD = ''
+EMAIL_USE_TLS = False
+EMAIL_TIMEOUT = 3
+EMAIL_SUBJECT_PREFIX = '[MyBRC-User-Portal]'
+EMAIL_ADMIN_LIST = ['admin@localhost']
+EMAIL_SENDER = 'coldfront@localhost'
+EMAIL_TICKET_SYSTEM_ADDRESS = 'help@localhost'
+EMAIL_DIRECTOR_EMAIL_ADDRESS = 'director@localhost'
+EMAIL_PROJECT_REVIEW_CONTACT = 'review@localhost'
+EMAIL_DEVELOPMENT_EMAIL_LIST = ['dev1@localhost', 'dev2@localhost']
+EMAIL_OPT_OUT_INSTRUCTION_URL = 'http://localhost/optout'
+EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS = [7, 14, 30]
+EMAIL_SIGNATURE = """
+HPC Resources
+http://localhost
+"""
+EMAIL_FROM = 'coldfront@localhost'
+EMAIL_ADMIN = 'coldfront@localhost'
+
+DEFAULT_FROM_EMAIL = EMAIL_FROM
 
 
 #------------------------------------------------------------------------------
@@ -298,17 +317,34 @@ LOCAL_SETTINGS_EXPORT += [
 
 # XDMOD_API_URL = 'http://localhost'
 
-##Use this if needed to place prod_settings in a different folder -Krishna.
-##sys.path.insert(0,'/var/www/django-settings')
+# The resource being provided, which must be either "Savio" or "Lawrencium".
+RESOURCE = "Savio"
+
+# The portal being served, which must be either "BRC" or "SCG".
+PORTAL = "BRC"
+
+# ------------------------------------------------------------------------------
+# Data import settings
+# ------------------------------------------------------------------------------
+
+# The credentials needed to read from Google Sheets.
+GOOGLE_OAUTH2_KEY_FILE = "/tmp/credentials.json"
+
+## If we are running on Production, we hope to see prod_settings.py we will first try to apply it
+## and exit. If prod_settings is not present then we assume we are running on Dev, we hope to find
+## dev_settings.py and we will try to apply it.
+
+## Use this if needed to place prod_settings in a different folder 
+## sys.path.insert(0,'/var/www/django-settings')
+## Also remove the '.' in front of the prod_settings and dev_settings below.
 
 try:
-  from .prod_settings import *
-  print("DJANGO loading prod_settings\n")
+    from .prod_settings import *
+    print("DJANGO loading prod_settings\n")
 except ImportError:
-  print("DJANGO prod_settings NOT found, looking for dev_settings\n")
-  try:
-    from .dev_settings import *
-    print("DJANGO loading dev_settings\n")
-  except ImportError:
-    print("DJANGO dev_settings NOT found, Using default settings\n")
-
+    print("DJANGO prod_settings NOT found, looking for dev_settings\n")
+    try:
+        from .dev_settings import *
+        print("DJANGO loading dev_settings\n")
+    except ImportError:
+        print("DJANGO dev_settings NOT found, Using default settings\n")

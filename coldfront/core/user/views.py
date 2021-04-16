@@ -1,8 +1,5 @@
 import logging
-import pytz
-from datetime import datetime
 
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -10,7 +7,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth.views import PasswordChangeView
 from django.db.models import BooleanField, Prefetch
-from django.db.models.expressions import ExpressionWrapper, F, Q
+from django.db.models.expressions import ExpressionWrapper, Q
 from django.db.models.functions import Lower
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
@@ -22,13 +19,16 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import CreateView, ListView, TemplateView
 
+from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.project.models import Project, ProjectUser
 from coldfront.core.user.forms import UserAccessAgreementForm
+from coldfront.core.user.forms import UserProfileUpdateForm
 from coldfront.core.user.forms import UserRegistrationForm
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.user.utils import send_account_activation_email
-from coldfront.core.utils.common import import_from_settings
+from coldfront.core.utils.common import (import_from_settings,
+                                         utc_now_offset_aware)
 from coldfront.core.utils.mail import send_email_template
 
 logger = logging.getLogger(__name__)
@@ -72,6 +72,47 @@ class UserProfile(TemplateView):
             [group.name for group in viewed_user.groups.all()])
         context['group_list'] = group_list
         context['viewed_user'] = viewed_user
+
+        context['has_cluster_access'] = AllocationUserAttribute.objects.filter(
+            allocation_user__user=viewed_user,
+            allocation_attribute_type__name='Cluster Account Status',
+            value='Active').exists()
+
+        return context
+
+
+@method_decorator(login_required, name='dispatch')
+class UserProfileUpdate(TemplateView):
+    template_name = 'user/user_profile_update.html'
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+
+        first_name = request.POST['first_name'].strip()
+        middle_name = request.POST['middle_name'].strip()
+        last_name = request.POST['last_name'].strip()
+
+        user.first_name = first_name
+        user.last_name = last_name
+        user.userprofile.middle_name = middle_name
+
+        user.userprofile.save()
+        user.save()
+
+        messages.success(request, 'Name updated.')
+        return redirect(reverse('user-profile'))
+
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        user = self.request.user
+        initial_data = {'first_name': user.first_name,
+                        'middle_name': user.userprofile.middle_name,
+                        'last_name': user.last_name}
+        user_update_form = UserProfileUpdateForm(initial_data)
+        context['user_update_form'] = user_update_form if user_update_form.is_valid() else UserProfileUpdateForm()
+
         return context
 
 
@@ -366,8 +407,7 @@ def user_access_agreement(request):
     if request.method == 'POST':
         form = UserAccessAgreementForm(request.POST)
         if form.is_valid():
-            now = datetime.utcnow().astimezone(
-                pytz.timezone(settings.TIME_ZONE))
+            now = utc_now_offset_aware()
             profile.access_agreement_signed_date = now
             profile.save()
             message = 'Thank you for signing the user access agreement form.'

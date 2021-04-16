@@ -4,6 +4,7 @@
   <div class="col-lg-12">
     <h3>Welcome</h3>
     <hr>
+
     <p>If you would like to set up or update your access to a cluster, please complete the following steps.</p>
     <p>First Review and Sign the cluster user agreement. Only then you can Join a cluster project and gain access to the cluster.</p>
     <table class="table">
@@ -76,9 +77,9 @@
               </span>
             </td>
             <td>
-              <a href="{% url 'project-request' %}" class="btn btn-primary">
+              <button class="btn btn-primary" disabled="true">
                 Create
-              </a>
+              </button>
               <button class="btn btn-primary" disabled="true">
                 Join
               </button>
@@ -88,70 +89,123 @@
       </tbody>
     </table>
   </div>
-
-
 </div>
 <br><br>
 
 <div class="row">
+  <div class="col-lg-12">
+    Your BRC Supercluster account username:
+    {% if cluster_username is not None %}
+      <span class="alert alert-success"><b>{{ cluster_username }}</b></span>
+    {% else %}
+      <span class="alert alert-danger"><b>No Cluster Account</b></span>
+    {% endif %}
+  </div>
+</div>
+<br></br>
 
+<div class="row">
   <div class="col-lg-12 mt-2">
     <a href="{% url 'project-list' %}">
       <h3>My BRC Cluster Projects &raquo;</h3>
     </a>
     <hr>
+
     {% if project_list %}
       <div class="row">
         <div class="col-lg-6 mt-2">
           <h4>Savio</h4>
-          <hr>
           {% if savio_projects %}
-            <ul class="list-group">
-              {% for project in project_list %}
-                {% if project.name in savio_projects %}
-                  <li class="list-group-item">
-                    <a href="{% url 'project-detail' project.pk %}">
-                      <i class="fa fa-folder fa-lg" aria-hidden="true"></i>
-                      {{ project.title }}
-                    </a>
-                    {% if project.needs_review %}
-                      <a href="{% url 'project-review' project.pk %}">
-                        <span class="badge badge-warning">Needs Review</span>
-                      </a>
-                    {% endif %}
-                  </li>
-                {% endif %}
-              {% endfor %}
-            </ul>
+              <table class="table table-sm">
+                  <thead>
+                    <tr>
+                      <th scope="col" class="text-nowrap">Project Name</th>
+                      <th scope="col" class="text-nowrap">Project Access on Cluster</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                      {% for project in project_list %}
+                          {% if project.name in savio_projects %}
+                          <tr>
+                              <td>
+                                  <a href="{% url 'project-detail' project.pk %}">
+                                    <i class="fa fa-folder fa-lg" aria-hidden="true"></i>
+                                    {{ project.name }}
+                                  </a>
+                                  {% if project.needs_review %}
+                                    <a href="{% url 'project-review' project.pk %}">
+                                      <span class="badge badge-warning">Needs Review</span>
+                                    </a>
+                                  {% endif %}
+                              </td>
+
+                              <td>
+                                    {% if 'Active' in project.display_status %}
+                                      <span class="badge badge-success">Active</span>
+                                    {% elif 'Pending' in project.display_status %}
+                                      <span class="badge badge-warning">Pending</span>
+                                    {% else %}
+                                      <span class="badge badge-danger">No Access</span>
+                                    {% endif %}
+                              </td>
+                          </tr>
+                          {% endif %}
+                      {% endfor %}
+                  </tbody>
+              </table>
           {% else %}
-            <div class="alert alert-info" role="alert">
-              <i class="fa fa-info-circle" aria-hidden="true"></i>
-              You are not part of any Savio projects at this time. Please click Join to join any of the existing projects. You can also click Create to request setup of a new project.
-            </div>
+              <hr>
+              <div class="alert alert-info" role="alert">
+                <i class="fa fa-info-circle" aria-hidden="true"></i>
+                You are not part of any Savio projects at this time. Please click Join to join any of the existing projects. You can also click Create to request setup of a new project.
+              </div>
           {% endif %}
         </div>
+
         <div class="col-lg-6 mt-2">
           <h4>Vector</h4>
-          <hr>
+
           {% if vector_projects %}
-            <ul class="list-group">
-              {% for project in project_list %}
-                {% if project.name in vector_projects %}
-                  <li class="list-group-item">
-                    <a href="{% url 'project-detail' project.pk %}">
-                      <i class="fa fa-folder fa-lg" aria-hidden="true"></i>
-                      {{ project.title }}
-                    </a>
-                    {% if project.needs_review %}
-                      <a href="{% url 'project-review' project.pk %}">
-                        <span class="badge badge-warning">Needs Review</span>
-                      </a>
-                    {% endif %}
-                  </li>
-                {% endif %}
-              {% endfor %}
-            </ul>
+              <table class="table table-sm">
+                  <thead>
+                    <tr>
+                      <th scope="col" class="text-nowrap">Project Name</th>
+                      <th scope="col" class="text-nowrap">Project Access on Cluster</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                      {% for project in project_list %}
+                      {% if project.name in vector_projects %}
+                          <tr>
+                              <td>
+                                  <a href="{% url 'project-detail' project.pk %}">
+                                  <i class="fa fa-folder fa-lg" aria-hidden="true"></i>
+                                  {{ project.name }}
+                                  </a>
+
+                                  {% if project.needs_review %}
+                                  <a href="{% url 'project-review' project.pk %}">
+                                  <span class="badge badge-warning">Needs Review</span>
+                                  </a>
+                                  {% endif %}
+                              </td>
+
+                              <td>
+                                  {% if 'Active' in project.display_status %}
+                                  <span class="badge badge-success">Active</span>
+                                  {% elif 'Pending' in project.display_status %}
+                                  <span class="badge badge-warning">Pending</span>
+                                  {% else %}
+                                  <span class="badge badge-danger">No Access</span>
+                                  {% endif %}
+                              </td>
+                          </tr>
+                      {% endif %}
+                      {% endfor %}
+                  </tbody>
+              </table>
           {% else %}
+            <hr>
             <div class="alert alert-info" role="alert">
               <i class="fa fa-info-circle" aria-hidden="true"></i>
               You are not part of any Vector projects at this time. Please click Join to join any of the existing projects. You can also click Create to request setup of a new project.
@@ -159,30 +213,53 @@
           {% endif %}
         </div>
       </div>
+
       <div class="row">
         <div class="col-lg-6 mt-2"></div>
         <div class="col-lg-6 mt-2">
           <h4>ABC</h4>
-          <hr>
+
           {% if abc_projects %}
-            <ul class="list-group">
-              {% for project in project_list %}
-                {% if project.name in abc_projects %}
-                  <li class="list-group-item">
-                    <a href="{% url 'project-detail' project.pk %}">
-                      <i class="fa fa-folder fa-lg" aria-hidden="true"></i>
-                      {{ project.title }}
-                    </a>
-                    {% if project.needs_review %}
-                      <a href="{% url 'project-review' project.pk %}">
-                        <span class="badge badge-warning">Needs Review</span>
-                      </a>
-                    {% endif %}
-                  </li>
-                {% endif %}
-              {% endfor %}
-            </ul>
+              <table class="table table-sm">
+                  <thead>
+                    <tr>
+                      <th scope="col" class="text-nowrap">Project Name</th>
+                      <th scope="col" class="text-nowrap">Project Access on Cluster</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                      {% for project in project_list %}
+                        {% if project.name in abc_projects %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'project-detail' project.pk %}">
+                                  <i class="fa fa-folder fa-lg" aria-hidden="true"></i>
+                                  {{ project.name }}
+                                </a>
+
+                                {% if project.needs_review %}
+                                  <a href="{% url 'project-review' project.pk %}">
+                                    <span class="badge badge-warning">Needs Review</span>
+                                  </a>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if 'Active' in project.display_status %}
+                                  <span class="badge badge-success">Active</span>
+                                {% elif 'Pending' in project.display_status %}
+                                  <span class="badge badge-warning">Pending</span>
+                                {% else %}
+                                  <span class="badge badge-danger">No Access</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endif %}
+                      {% endfor %}
+                  </tbody>
+              </table>
           {% else %}
+            <hr>
             <div class="alert alert-info" role="alert">
               <i class="fa fa-info-circle" aria-hidden="true"></i>
               You are not part of any ABC projects at this time. Please click Join to join any of the existing projects.

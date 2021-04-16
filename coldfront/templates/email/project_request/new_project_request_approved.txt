@@ -1,0 +1,10 @@
+Dear {{ center_name }} user,
+
+Your request to create project {{ project_name }} has been approved, and the project has been set up on the cluster.
+
+You may manage your project at {{ project_url }}.
+
+If you have any questions, contact us at {{ support_email }}.
+
+Thank you,
+{{ signature }}
