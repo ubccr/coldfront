@@ -111,7 +111,7 @@ class Command(BaseCommand):
                
                 file_path = os.path.join(base_dir, lab_path, file_name)
                 file_path = '/Users/Shiwei/Desktop/coldfront_apps/coldfront/local_data/holylfs04/'+lab_json_file
-                print("file_path is", file_path)
+                print("line 114 file_path is", file_path)
                 
                 lab_allocation_usage_dict = dict()
                 data = {} # initialize an empty dictionary
@@ -139,7 +139,10 @@ class Command(BaseCommand):
                     print("else statement")
                     allocations = Allocation.objects.filter(project = filtered_query)
                     print("allocations is**", allocations)
+                    lab_data = data[0]
                     data = data[1:] # skip the usage information
+                    
+                    print("lab_data is", lab_data)
                     print("data is", data)
                     for user_lst in data: #user_lst is lst
                         print("user_lst is", user_lst)
@@ -147,22 +150,63 @@ class Command(BaseCommand):
                             print("allocation is@", allocation)
                             allocation_users = allocation.allocationuser_set.order_by('user__username')
                             print("allocation_users is", allocation_users)
-                            # allocation_users = allocation.allocationuser_set.exclude(status__name__in=['Removed']).order_by('user__username')
-                            for allocation_user in allocation_users: # loop through allocation_user set
-                                print("********** line 150 **********")
-                                if (allocation_user.user.username == user_lst['user']): # updating allocation user
-                                    print("line151 if statement")
+                            if not allocation_users.exists():
+                                print("allocationuser query set is empty")
+                                print(type(data))
+                                print("data is", data)
+                                print(data[0])
+                                print(data[1])
+                                print(data[2])
+                                print("line157",type(data[0]))
+                                for user_lst in data:
+                                    print(user_lst)
+                                    fullname = user_lst['name']
+                                    fullname_lst = fullname.split()
                                     usage_string = user_lst['usage']
-                                    num, alpha = splitString(usage_string)
-                                    allocation_user.usage = num
-                                    allocation_user.usage_bytes = user_lst['logical_usage']
-                                    allocation_user.unit = alpha
-                                    allocation_user.save()
+                                    num, alpha = splitString(usage_string) 
+                                    print("line 164 num, alpha is", num, alpha)
+                                    lab_allocation, alpha = splitString(lab_data["quota"])
+                                    lab_allocation = float(lab_allocation)
+                                    lab_usage_in_bytes = lab_data['kbytes'] 
+                                    lab_usage_in_bytes = float(lab_usage_in_bytes )* 1024
+
+                                    # lab_usage, alpha_usage = splitString(lab_data["kbytes"])
+                                    # lab_usage = float(lab_usage)
+                                    # if (alpha_usage == 'T'):
+                                    #     lab_usage_in_bytes = lab_usage * 1099511627776
+                                    # if (alpha_usage == 'G'):
+                                    #     lab_usage_in_bytes = lab_usage * 1073741824
+                                    # if (alpha_usage == 'M'):
+                                    #     lab_usage_in_bytes = lab_usage * 1048576
+                                    allocation_user_obj = AllocationUser.objects.create(
+                                        allocation=allocation,
+                                        user=User.objects.get(username=user_lst['user']),
+                                        status=AllocationUserStatusChoice.objects.get(name='Active'),
+                                        usage_bytes = user_lst['logical_usage'],
+                                        usage = num,
+                                        unit = alpha,
+                                        allocation_group_quota = lab_allocation,
+                                        allocation_group_usage_bytes = lab_usage_in_bytes,
+                                    )
+                                    User.objects.get(username=user_lst['user']).save()
+                                    allocation_user_obj.save()
+
+                            else: #loop through the query set and updating user's usage
+                                print("else, loop through the query set and updating user's usage")
+                                
+                                # allocation_users = allocation.allocationuser_set.exclude(status__name__in=['Removed']).order_by('user__username')
+                                for allocation_user in allocation_users: # loop through allocation_user set
+                                    print("********** line 150 **********")
+                                    if (allocation_user.user.username == user_lst['user']): # updating allocation user
+                                        print("line151 if statement")
+                                        usage_string = user_lst['usage']
+                                        num, alpha = splitString(usage_string)
+                                        allocation_user.usage = num
+                                        allocation_user.usage_bytes = user_lst['logical_usage']
+                                        allocation_user.unit = alpha
+                                        allocation_user.save()
                            
-                        if allocation_users.exists(): #allocation_user is empty
-                            print("line164")
-                        else:
-                            print("line166")
+                     
                         # if (allocation_user): # create allocation user
                         #     print("line159 else statement")
                         #     usage_string = user_lst['usage']
