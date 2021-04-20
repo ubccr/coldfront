@@ -25,6 +25,7 @@ from coldfront.core.user.forms import UserAccessAgreementForm
 from coldfront.core.user.forms import UserProfileUpdateForm
 from coldfront.core.user.forms import UserRegistrationForm
 from coldfront.core.user.forms import UserSearchForm
+from coldfront.core.user.models import EmailAddress
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.user.utils import send_account_activation_email
 from coldfront.core.utils.common import (import_from_settings,
@@ -375,6 +376,7 @@ class UserRegistrationView(CreateView):
 
 
 def activate_user_account(request, uidb64=None, token=None):
+    logger = logging.getLogger(__name__)
     try:
         user_id = int(force_text(urlsafe_base64_decode(uidb64)))
         user = User.objects.get(id=user_id)
@@ -382,10 +384,37 @@ def activate_user_account(request, uidb64=None, token=None):
         user = None
     if user and token:
         if PasswordResetTokenGenerator().check_token(user, token):
-            user.is_active = True
-            user.save()
-            message = 'Your account has been activated. You may now log in.'
-            messages.success(request, message)
+            # Create or update an EmailAddress for the user's provided email.
+            try:
+                email_address, created = EmailAddress.objects.get_or_create(
+                    user=user, email=user.email)
+            except Exception as e:
+                logger.error(
+                    f'Failed to create EmailAddress for User {user.pk} and '
+                    f'email {user.email}. Details:')
+                logger.exception(e)
+                message = (
+                    'Unexpected server error. Please contact an '
+                    'administrator.')
+                messages.error(request, message)
+            else:
+                if created:
+                    logger.info(
+                        f'Created EmailAddress {email_address.pk} for User '
+                        f'{user.pk} and email {user.email}.')
+                email_address.is_verified = True
+                email_address.is_primary = True
+                email_address.save()
+
+                # Only activate the User if the EmailAddress update succeeded.
+                user.is_active = True
+                user.save()
+
+                message = (
+                    f'Your account has been activated. You may now log in. '
+                    f'{user.email} has been verified and set as your primary '
+                    f'email address. You may modify this in the User Profile.')
+                messages.success(request, message)
         else:
             message = (
                 'Invalid activation token. Please try again, or contact an '
