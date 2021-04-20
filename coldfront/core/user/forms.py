@@ -4,7 +4,9 @@ from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
+from django.urls import reverse
 from django.utils.html import mark_safe
+from django.utils.translation import gettext_lazy as _
 
 from coldfront.core.user.utils import send_account_activation_email
 from coldfront.core.user.models import UserProfile
@@ -56,8 +58,13 @@ class UserRegistrationForm(UserCreationForm):
         email = cleaned_data['email'].lower()
         if (User.objects.filter(username=email).exists() or
                 User.objects.filter(email=email).exists()):
-            raise forms.ValidationError(
-                'A user with that email address already exists.')
+            login_url = reverse('login')
+            password_reset_url = reverse('password-reset')
+            message = (
+                f'A user with that email address already exists. If this is '
+                f'you, please <a href="{login_url}">login</a> or <a href="'
+                f'{password_reset_url}">set your password</a> to gain access.')
+            raise forms.ValidationError(mark_safe(message))
         return email
 
     def clean_middle_name(self):
@@ -84,6 +91,12 @@ class UserRegistrationForm(UserCreationForm):
 
 
 class UserLoginForm(AuthenticationForm):
+
+    error_messages = {
+        'invalid_login': _(
+            'Please enter a correct username or verified email address, and '
+            'password. Note that both fields may be case-sensitive.'),
+    }
 
     def clean_username(self):
         cleaned_data = super().clean()
