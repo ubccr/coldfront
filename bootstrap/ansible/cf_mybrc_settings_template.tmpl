@@ -26,3 +26,14 @@ Email : {{ from_email }}
 EMAIL_FROM = '{{ from_email }}'
 EMAIL_ADMIN = '{{ admin_email }}'
 DEFAULT_FROM_EMAIL = EMAIL_FROM
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': {{ db_name }},
+        'USER': {{ db_admin_user }},
+        'PASSWORD': {{ db_admin_passwd }},
+        'HOST': 'localhost',
+        'PORT': '5432',
+    },
+}
