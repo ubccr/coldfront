@@ -16,17 +16,10 @@ djangoprojname: coldfront
 #####################################
 
 # The name of the PostgreSQL database.
-#db_name: brc_db
+#db_name: cf_brc_db
 
 # The credentials for the database admin user.
 #db_admin_user: admin
-#db_admin_passwd: !vault |
-#    $ANSIBLE_VAULT;1.1;AES256
-#    39656361613139653764306636626362653865353339363165306132656565663862633932303061
-#    6264373433643930376665393334396237376632663335630a393734633430306336346437343761
-#    30313035393339316137326236396463323331363438303661626535316531613836373334336561
-#    6462383466613365320a353966386161336664633832653135653663613533623961386533323966
-#    39613661383434303266396639353139613036323165356432396637343838616239
 
 log_path: '/var/log/user_portals/cf_mybrc'
 portal_log_file: 'cf_mybrc_portal.log'
@@ -40,13 +33,13 @@ google_sheets_credentials: '/tmp/credentials.json'
 #####################################
 #STAGING SETTINGS
 #####################################
-djangooperator: root
+#djangooperator: root
 
-debug: True
-git_prefix: /var/www/coldfront_app/
-hostname: scgup-dev.lbl.gov
-host_ip: 131.243.130.236
-app_port: 8000
+#debug: True
+#git_prefix: /var/www/coldfront_app/
+#hostname: scgup-dev.lbl.gov
+#host_ip: 131.243.130.236
+#app_port: 8000
 
 #####################################
 #PROD SETTINGS
