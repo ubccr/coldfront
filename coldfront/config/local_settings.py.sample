@@ -317,26 +317,40 @@ LOCAL_SETTINGS_EXPORT += [
 
 # XDMOD_API_URL = 'http://localhost'
 
+#------------------------------------------------------------------------------
+# Enable Email Address logins
+#------------------------------------------------------------------------------
+
+EXTRA_AUTHENTICATION_BACKENDS += [
+    'coldfront.core.user.auth.EmailAddressBackend',
+]
+
+#------------------------------------------------------------------------------
+# Portal settings
+#------------------------------------------------------------------------------
+
 # The resource being provided, which must be either "Savio" or "Lawrencium".
 RESOURCE = "Savio"
 
 # The portal being served, which must be either "BRC" or "SCG".
 PORTAL = "BRC"
 
-# ------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 # Data import settings
-# ------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 
 # The credentials needed to read from Google Sheets.
 GOOGLE_OAUTH2_KEY_FILE = "/tmp/credentials.json"
 
-## If we are running on Production, we hope to see prod_settings.py we will first try to apply it
-## and exit. If prod_settings is not present then we assume we are running on Dev, we hope to find
-## dev_settings.py and we will try to apply it.
+# If we are running on Production, we hope to see prod_settings.py we will
+# first try to apply it and exit. If prod_settings is not present, then we
+# assume we are running on Staging. If staging_settings is not present, then we
+# assume we are running on Dev., we hope to find
+# dev_settings.py and we will try to apply it.
 
-## Use this if needed to place prod_settings in a different folder 
-## sys.path.insert(0,'/var/www/django-settings')
-## Also remove the '.' in front of the prod_settings and dev_settings below.
+# Use this if needed to place prod_settings in a different folder
+# sys.path.insert(0,'/var/www/django-settings')
+# Also remove the '.' in front of the prod_settings and dev_settings below.
 
 try:
     from .prod_settings import *
@@ -353,4 +367,3 @@ except ImportError:
             print("DJANGO loading dev_settings\n")
         except ImportError:
             print("DJANGO dev_settings NOT found, Using default settings\n")
-
