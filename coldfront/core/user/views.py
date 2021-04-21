@@ -74,6 +74,9 @@ class UserProfile(TemplateView):
         context['group_list'] = group_list
         context['viewed_user'] = viewed_user
 
+        context['other_emails'] = EmailAddress.objects.filter(
+            user=viewed_user, is_primary=False).order_by('email')
+
         context['has_cluster_access'] = AllocationUserAttribute.objects.filter(
             allocation_user__user=viewed_user,
             allocation_attribute_type__name='Cluster Account Status',
