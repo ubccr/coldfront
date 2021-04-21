@@ -16,10 +16,11 @@ djangoprojname: coldfront
 #####################################
 
 # The name of the PostgreSQL database.
-#db_name: cf_brc_db
+db_name: cf_brc_db
 
 # The credentials for the database admin user.
-#db_admin_user: admin
+db_admin_user: admin
+db_admin_passwd: ''
 
 log_path: '/var/log/user_portals/cf_mybrc'
 portal_log_file: 'cf_mybrc_portal.log'
@@ -33,6 +34,7 @@ google_sheets_credentials: '/tmp/credentials.json'
 #####################################
 #STAGING SETTINGS
 #####################################
+#deployment: staging
 #djangooperator: root
 
 #debug: True
@@ -44,6 +46,7 @@ google_sheets_credentials: '/tmp/credentials.json'
 #####################################
 #PROD SETTINGS
 #####################################
+#deployment: prod
 #djangooperator: meli
 
 #debug: False
