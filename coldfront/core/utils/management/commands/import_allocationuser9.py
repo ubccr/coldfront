@@ -170,6 +170,16 @@ class Command(BaseCommand):
                                     lab_usage_in_bytes = lab_data['kbytes'] 
                                     lab_usage_in_bytes = float(lab_usage_in_bytes )* 1024
 
+                                    allocation_attribute_type_obj = AllocationAttributeType.objects.get_or_create(
+                                        name='Tier 0')
+                                    allocation_attribute_type_obj = AllocationAttributeType.objects.get_or_create(
+                                        name='Storage Quota (TB)')
+                                    allocation_attribute_obj, _ = AllocationAttribute.objects.get_or_create(
+                                        allocation_attribute_type=allocation_attribute_type_obj,
+                                        allocation=allocation,
+                                        value=lab_allocation)
+                                    allocation_usage, allocation_usage_unit = splitString(lab_data["kbytes"])
+                                
                                     # lab_usage, alpha_usage = splitString(lab_data["kbytes"])
                                     # lab_usage = float(lab_usage)
                                     # if (alpha_usage == 'T'):
