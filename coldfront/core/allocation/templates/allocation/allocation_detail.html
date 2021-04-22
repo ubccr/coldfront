@@ -255,6 +255,7 @@ Allocation Detail
               <td>{{user.usage_bytes|mul:100 | div:user.allocation_group_usage_bytes|floatformat:2}}</td>
               <!-- <td>{{user.usage_bytes| div:1099511627776|mul:50| div:12|floatformat:2}}</td> -->
               <td>{{user.usage_bytes|mul:100 | div:user.allocation_group_usage_bytes|floatformat:2|div:100|mul:allocation_users.0.allocation_group_quota|mul:50|div:12|floatformat:2}}</td>
+              <!-- <td>{{user.usage_bytes|mul:100 | div:user.allocation_group_usage_bytes|floatformat:2|div:100|mul:allocation_users.0.allocation_group_quota|mul:50|div:12|floatformat:2}}</td> -->
               
               <!-- {% if user.status.name == 'Active' %}
                 <td class="text-success">{{ user.status.name }}</td>

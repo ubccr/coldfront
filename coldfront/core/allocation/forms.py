@@ -14,6 +14,9 @@ ALLOCATION_ACCOUNT_ENABLED = import_from_settings(
 
 
 class AllocationForm(forms.Form):
+    DEFAULT_DESCRIPTION = '''
+We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!
+        '''
     resource = forms.ModelChoiceField(queryset=None, empty_label=None)
     justification = forms.CharField(widget=forms.Textarea)
     quantity = forms.IntegerField(required=True)

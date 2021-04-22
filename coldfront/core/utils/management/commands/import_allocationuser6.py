@@ -289,7 +289,7 @@ class Command(BaseCommand):
                             print("line287",Project.objects.filter(title=lab_name))
                             # Project.objects.filter(title=lab_name).filter(Resource.objects.filter(name=lab+'/tier0'))
                             # Project.objects.filter(title = lab_name).filter(Allocation.objects.filter(Resource.objects.filter(name=lab+'/tier0')))
-                            # AllocationUser.objects.get(user=user_lst['user']).update(usage_bytes = user_lst['logical_usage'])
+                            AllocationUser.objects.get(user=user_lst['user']).update(usage_bytes = user_lst['logical_usage'])
 
                             # updating allocation user instead of creating one
                             # allocation_user_obj.usage_bytes = user_lst['logical_usage']

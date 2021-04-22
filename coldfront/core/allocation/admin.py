@@ -220,10 +220,10 @@ class AllocationUserStatusChoiceAdmin(admin.ModelAdmin):
 @admin.register(AllocationUser)
 class AllocationUserAdmin(SimpleHistoryAdmin):
     readonly_fields_change = ('allocation', 'user',
-                              'resource', 'created', 'modified',)
-    fields_change = ('allocation', 'user', 'status', 'created', 'modified',)
+                              'resource', 'created', 'modified', 'usage')
+    fields_change = ('allocation', 'user', 'status', 'created', 'modified','usage')
     list_display = ('pk', 'project', 'project_pi', 'resource', 'allocation_status',
-                    'user_info', 'status', 'created', 'modified',)
+                    'user_info', 'status', 'created', 'modified', 'usage')
     list_filter = ('status', 'allocation__status', 'allocation__resources',)
     search_fields = (
         'user__first_name',
@@ -234,6 +234,10 @@ class AllocationUserAdmin(SimpleHistoryAdmin):
 
     def allocation_status(self, obj):
         return obj.allocation.status
+
+    def allocationuser_usage(self, obj):
+        return obj.allocationuser.usage
+
 
     def user_info(self, obj):
         return '{} {} ({})'.format(obj.user.first_name, obj.user.last_name, obj.user.username)

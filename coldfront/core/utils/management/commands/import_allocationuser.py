@@ -196,6 +196,8 @@ class Command(BaseCommand):
                 if (alpha_usage == 'M'):
                     lab_usage_in_bytes = lab_usage * 1048576
 
+                print("line199", lab_allocation, type(lab_allocation))
+                print("line200", lab_usage, type(lab_usage))
 
                 allocation_attribute_type_obj = AllocationAttributeType.objects.get(
                     name='Tier 0')
