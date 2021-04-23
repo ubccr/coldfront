@@ -6,6 +6,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth.views import PasswordChangeView
+from django.db import IntegrityError
 from django.db.models import BooleanField, Prefetch
 from django.db.models.expressions import ExpressionWrapper, Q
 from django.db.models.functions import Lower
@@ -18,16 +19,20 @@ from django.utils.http import urlsafe_base64_decode
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import CreateView, ListView, TemplateView
+from django.views.generic.edit import FormView
 
 from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.project.models import Project, ProjectUser
+from coldfront.core.user.forms import EmailAddressAddForm
 from coldfront.core.user.forms import UserAccessAgreementForm
 from coldfront.core.user.forms import UserProfileUpdateForm
 from coldfront.core.user.forms import UserRegistrationForm
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.models import EmailAddress
 from coldfront.core.user.utils import CombinedUserSearch
+from coldfront.core.user.utils import ExpiringTokenGenerator
 from coldfront.core.user.utils import send_account_activation_email
+from coldfront.core.user.utils import send_email_verification_email
 from coldfront.core.utils.common import (import_from_settings,
                                          utc_now_offset_aware)
 from coldfront.core.utils.mail import send_email_template
@@ -381,8 +386,8 @@ class UserRegistrationView(CreateView):
 def activate_user_account(request, uidb64=None, token=None):
     logger = logging.getLogger(__name__)
     try:
-        user_id = int(force_text(urlsafe_base64_decode(uidb64)))
-        user = User.objects.get(id=user_id)
+        user_pk = int(force_text(urlsafe_base64_decode(uidb64)))
+        user = User.objects.get(pk=user_pk)
     except:
         user = None
     if user and token:
@@ -451,3 +456,83 @@ def user_access_agreement(request):
     else:
         form = UserAccessAgreementForm()
     return render(request, 'user/user_access_agreement.html', {'form': form})
+
+
+class EmailAddressAddView(LoginRequiredMixin, FormView):
+    form_class = EmailAddressAddForm
+    template_name = 'user/user_add_email_address.html'
+
+    logger = logging.getLogger(__name__)
+
+    def form_valid(self, form):
+        form_data = form.cleaned_data
+        email = form_data['email']
+        try:
+            email_address = EmailAddress.objects.create(
+                user=self.request.user, email=email, is_verified=False,
+                is_primary=False)
+        except IntegrityError:
+            self.logger.error(
+                f'EmailAddress {email} unexpectedly already exists.')
+            message = (
+                'Unexpected server error. Please contact an administrator.')
+            messages.error(self.request, message)
+        else:
+            self.logger.info(
+                f'Created EmailAddress {email_address.pk} for User '
+                f'{self.request.user.pk}.')
+            try:
+                send_email_verification_email(email_address)
+            except Exception as e:
+                message = 'Failed to send verification email. Details:'
+                logger.error(message)
+                logger.exception(e)
+                message = (
+                    f'Added {email_address.email} to your account, but failed '
+                    f'to send verification email. You may try to resend it '
+                    f'from the User Profile.')
+                messages.warning(self.request, message)
+            else:
+                message = (
+                    f'Added {email_address.email} to your account. Please '
+                    f'verify it by clicking the link sent to your email.')
+                messages.success(self.request, message)
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('user-profile')
+
+
+class VerifyEmailAddressView(LoginRequiredMixin, View):
+    # Make sure this EmailAddress.is_verified is False before sending.
+    pass
+
+
+def verify_email_address(request, uidb64=None, eaidb64=None, token=None):
+    logger = logging.getLogger(__name__)
+    try:
+        user_pk = int(force_text(urlsafe_base64_decode(uidb64)))
+        email_pk = int(force_text(urlsafe_base64_decode(eaidb64)))
+        email_address = EmailAddress.objects.get(pk=email_pk)
+        user = User.objects.get(pk=user_pk)
+        if email_address.user != user:
+            user = None
+    except:
+        user = None
+    if user and token:
+        if ExpiringTokenGenerator().check_token(user, token, 1):
+            email_address.is_verified = True
+            email_address.save()
+            logger.info(f'EmailAddress {email_address.pk} has been verified.')
+            message = f'{user.email} has been verified.'
+            messages.success(request, message)
+        else:
+            message = (
+                'Invalid verification token. Please try again, or contact an '
+                'administrator if the problem persists.')
+            messages.error(request, message)
+    else:
+        message = (
+            f'Failed to activate account. Please contact an administrator.')
+        messages.error(request, message)
+    return redirect(reverse('login'))

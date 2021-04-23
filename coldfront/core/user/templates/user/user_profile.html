@@ -40,11 +40,13 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
           <th scope="row">Primary Email:</th>
           <td>
             <p>
-              {{viewed_user.email}}
-              <a href="" class="btn btn-secondary float-right">
-                <i class="far fa-edit" aria-hidden="true"></i>
-                Update
-              </a>
+              {{ viewed_user.email }}
+              {% if user == viewed_user %}
+                <a href="" class="btn btn-secondary float-right">
+                  <i class="far fa-edit" aria-hidden="true"></i>
+                  Update
+                </a>
+              {% endif %}
             </p>
             <p>Email notifications are sent to this address.</p>
           </td>
@@ -136,12 +138,14 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
     <div class="card-header">
       <i class="far fa-envelope"></i>
       Other Email Addresses{% if not user == viewed_user %}: {{ viewed_user.username}}{% endif %}
-      <div class="float-right">
-        <a class="btn btn-success float-right" href="" role="button">
-          <i class="fas fa-plus" aria-hidden="true"></i>
-          Add Email Address
-        </a>
-      </div>
+      {% if user == viewed_user %}
+        <div class="float-right">
+          <a class="btn btn-success float-right" href="{% url 'add-email-address' %}" role="button">
+            <i class="fas fa-plus" aria-hidden="true"></i>
+            Add Email Address
+          </a>
+        </div>
+      {% endif %}
     </div>
     <div class="card-body">
       <p>Below are other email addresses associated with your account. You may authenticate to this portal using any verified addresses.</p>
@@ -164,10 +168,14 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
                   {% endif %}
                 </td>
                 <td>
-                  {% if not email.is_verified %}
-                    <button class="btn btn-primary" type="submit">Verify</button>
+                  {% if user == viewed_user %}
+                    {% if not email.is_verified %}
+                      <button class="btn btn-primary" type="submit">Verify</button>
+                    {% endif %}
+                    <a class="btn btn-danger" href="" role="button">Remove</a>
+                  {% else %}
+                    N/A
                   {% endif %}
-                  <a class="btn btn-danger" href="" role="button">Remove</a>
                 </td>
               </tr>
             {% endfor %}

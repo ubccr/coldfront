@@ -9,6 +9,7 @@ from django.utils.html import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 from coldfront.core.user.utils import send_account_activation_email
+from coldfront.core.user.models import EmailAddress
 from coldfront.core.user.models import UserProfile
 
 
@@ -156,3 +157,17 @@ class UserAccessAgreementForm(forms.Form):
         if pop_quiz_answer != 24:
             raise forms.ValidationError('Incorrect answer.')
         return pop_quiz_answer
+
+
+class EmailAddressAddForm(forms.Form):
+
+    email = forms.EmailField(max_length=100, required=True)
+
+    def clean_email(self):
+        cleaned_data = super().clean()
+        email = cleaned_data['email'].lower()
+        if (User.objects.filter(email=email).exists() or
+                EmailAddress.objects.filter(email=email).exists()):
+            raise forms.ValidationError(
+                f'Email address {email} is already in use.')
+        return email
