@@ -42,7 +42,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
             <p>
               {{ viewed_user.email }}
               {% if user == viewed_user %}
-                <a href="" class="btn btn-secondary float-right">
+                <a href="{% url 'update-primary-email-address' %}" class="btn btn-secondary float-right">
                   <i class="far fa-edit" aria-hidden="true"></i>
                   Update
                 </a>
@@ -196,4 +196,3 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
   </div>
 
 {% endblock %}
-
