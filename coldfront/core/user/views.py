@@ -503,9 +503,35 @@ class EmailAddressAddView(LoginRequiredMixin, FormView):
         return reverse('user-profile')
 
 
-class VerifyEmailAddressView(LoginRequiredMixin, View):
-    # Make sure this EmailAddress.is_verified is False before sending.
-    pass
+class SendEmailAddressVerificationEmailView(LoginRequiredMixin, View):
+
+    def post(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        email_address = get_object_or_404(EmailAddress, pk=pk)
+        if email_address.is_verified:
+            logger.error(
+                f'EmailAddress {email_address.pk} is unexpectedly already '
+                f'verified.')
+            message = f'{email_address.email} is already verified.'
+            messages.warning(self.request, message)
+        else:
+            try:
+                send_email_verification_email(email_address)
+            except Exception as e:
+                message = 'Failed to send verification email. Details:'
+                logger.error(message)
+                logger.exception(e)
+                message = (
+                    f'Failed to send verification email to '
+                    f'{email_address.email}. Please contact an administrator '
+                    f'if the problem persists.')
+                messages.error(request, message)
+            else:
+                message = (
+                    f'Please click on the link sent to {email_address.email} '
+                    f'to verify it.')
+                messages.success(request, message)
+        return HttpResponseRedirect(reverse('user-profile'))
 
 
 def verify_email_address(request, uidb64=None, eaidb64=None, token=None):
@@ -520,7 +546,7 @@ def verify_email_address(request, uidb64=None, eaidb64=None, token=None):
     except:
         user = None
     if user and token:
-        if ExpiringTokenGenerator().check_token(user, token, 1):
+        if ExpiringTokenGenerator().check_token(user, token):
             email_address.is_verified = True
             email_address.save()
             logger.info(f'EmailAddress {email_address.pk} has been verified.')

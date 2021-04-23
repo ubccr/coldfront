@@ -85,5 +85,9 @@ urlpatterns = [
          user_views.verify_email_address,
          name='verify-email-address'
          ),
+    path('send-email-verification-email/<int:pk>',
+         user_views.SendEmailAddressVerificationEmailView.as_view(),
+         name='send-email-verification-email'
+         ),
 
 ]
