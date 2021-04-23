@@ -170,16 +170,19 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
                 <td>
                   {% if user == viewed_user %}
                     {% if not email.is_verified %}
-                      <form action="{% url 'send-email-verification-email' email.pk %}" method="post" style="display: inline-block;">
+                      <form action="{% url 'send-email-verification-email' email.pk %}" method="post" style="display: inline;">
                         {% csrf_token %}
                         <button class="btn btn-primary" type="submit">
                           Verify
                         </button>
                       </form>
                     {% endif %}
-                    <a class="btn btn-danger" href="{% url 'send-email-verification-email' email.pk %}" role="button" style="display: inline-block;">
-                      Remove
-                    </a>
+                    <form action="{% url 'remove-email-address' email.pk %}" method="post" style="display: inline;">
+                      {% csrf_token %}
+                      <button class="btn btn-danger" type="submit">
+                        Remove
+                      </button>
+                    </form>
                   {% else %}
                     N/A
                   {% endif %}
