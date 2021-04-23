@@ -318,12 +318,15 @@ LOCAL_SETTINGS_EXPORT += [
 # XDMOD_API_URL = 'http://localhost'
 
 #------------------------------------------------------------------------------
-# Enable Email Address logins
+# Multiple Email Address settings
 #------------------------------------------------------------------------------
 
 EXTRA_AUTHENTICATION_BACKENDS += [
     'coldfront.core.user.auth.EmailAddressBackend',
 ]
+
+# The number of seconds before an email verification token should expire.
+EMAIL_VERIFICATION_TIMEOUT = 24 * 60 * 60
 
 #------------------------------------------------------------------------------
 # Portal settings

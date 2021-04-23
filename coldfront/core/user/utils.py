@@ -1,6 +1,9 @@
 import abc
 import logging
 
+from datetime import datetime
+from datetime import time
+
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -130,37 +133,46 @@ class ExpiringTokenGenerator(PasswordResetTokenGenerator):
     """An object used to generate and check expiring tokens for various
     types of user requests."""
 
-    def check_token(self, user, token, expiry):
+    def check_token(self, user, token):
         """Check that a token is correct for a given user and not
-        expired.
-
-        Keyword Arguments:
-        user -- the SCGUser object to which the token corresponds
-        token -- the token to check
-        expiry -- the amount of time before the token expires, in days
-        """
+        expired. This is adapted from django.contrib.auth.tokens.
+        PasswordResetTokenGenerator.check_token."""
         if not (user and token):
             return False
-        # Parse the token.
+        # Parse the token
         try:
             ts_b36, _ = token.split("-")
+            # RemovedInDjango40Warning.
+            legacy_token = len(ts_b36) < 4
         except ValueError:
             return False
+
         try:
             ts = base36_to_int(ts_b36)
         except ValueError:
             return False
-        # Check that the timestamp/uid has not been tampered with.
-        if not constant_time_compare(
-                self._make_token_with_timestamp(user, ts), token):
+
+        # Check that the timestamp/uid has not been tampered with
+        if not constant_time_compare(self._make_token_with_timestamp(user, ts), token):
+            # RemovedInDjango40Warning: when the deprecation ends, replace
+            # with:
+            #   return False
+            if not constant_time_compare(
+                self._make_token_with_timestamp(user, ts, legacy=True),
+                token,
+            ):
+                return False
+
+        # RemovedInDjango40Warning: convert days to seconds and round to
+        # midnight (server time) for pre-Django 3.1 tokens.
+        now = self._now()
+        if legacy_token:
+            ts *= 24 * 60 * 60
+            ts += int((now - datetime.combine(now.date(), time.min)).total_seconds())
+        # Check the timestamp is within limit.
+        if (self._num_seconds(now) - ts) > settings.EMAIL_VERIFICATION_TIMEOUT:
             return False
-        # Check the timestamp is within limit. Timestamps are rounded to
-        # midnight (server time) providing a resolution of only 1 day. If a
-        # link is generated 5 minutes before midnight and used 6 minutes later,
-        # that counts as 1 day. Therefore, expiry = 1 means "at least 1 day,
-        # could be up to 2."
-        if (self._num_days(self._today()) - ts) >= expiry:
-            return False
+
         return True
 
 
