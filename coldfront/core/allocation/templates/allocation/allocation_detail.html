@@ -55,12 +55,7 @@ Allocation Detail
             <th scope="row" class="text-nowrap">Resource{{ allocation.resources.all|pluralize }} in allocation:</th>
             <td>{{ allocation.get_resources_as_string }}</td>
           </tr>
-          <!-- {% if request.user.is_superuser %}
-            <tr>
-              <th scope="row" class="text-nowrap">Quantity:</th>
-              <td>{{ allocation.quantity }}</td>
-            </tr>
-          {% endif %} -->
+      
           <tr>
             <th scope="row" class="text-nowrap">Justification:</th>
             <td>{{ allocation.justification }}</td>
@@ -114,14 +109,7 @@ Allocation Detail
               {% endif %}
             </td>
           </tr>
-          <!-- <tr>
-            <th scope="row" class="text-nowrap">Created:</th>
-            <td>{{ allocation.created|date:"M. d, Y" }}</td>
-          </tr>
-          <tr>
-            <th scope="row" class="text-nowrap">Last Modified:</th>
-            <td>{{ allocation.modified|date:"M. d, Y" }}</td>
-          </tr> -->
+
           <tr>
             {% if allocation.is_locked %}
               <th scope="row" class="text-nowrap">Locked</th>
@@ -245,30 +233,16 @@ Allocation Detail
         <tbody>
           {% for user in allocation_users %}
             <tr>
-              <!-- <td>{{ user.user.username }}</td> -->
+           
               <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
-              <!-- <td>{{ user.user.email }}</td> -->
-              <!-- <td>{{ user.usage_bytes }}</td> -->
-
               <td data-sort = "{{user.usage_bytes}}" name = "usage_bytes">{{ user.usage }}{{ user.unit }}</td>
+              <td>{{user.usage_bytes|div:1024|div:user.allocation_group_usage_bytes|floatformat:2|mul:100}}</td>
+              <td>{{4.167|mul:user.allocation_group_quota|div:1073741824|mul:user.usage_bytes|div:1024|div:user.allocation_group_usage_bytes|floatformat:2}}</td>
               
-              <td>{{user.usage_bytes|mul:100 | div:user.allocation_group_usage_bytes|floatformat:2}}</td>
-              <!-- <td>{{user.usage_bytes| div:1099511627776|mul:50| div:12|floatformat:2}}</td> -->
-              <td>{{user.usage_bytes|mul:100 | div:user.allocation_group_usage_bytes|floatformat:2|div:100|mul:allocation_users.0.allocation_group_quota|mul:50|div:12|floatformat:2}}</td>
-              <!-- <td>{{user.usage_bytes|mul:100 | div:user.allocation_group_usage_bytes|floatformat:2|div:100|mul:allocation_users.0.allocation_group_quota|mul:50|div:12|floatformat:2}}</td> -->
-              
-              <!-- {% if user.status.name == 'Active' %}
-                <td class="text-success">{{ user.status.name }}</td>
-              {% elif user.status.name == 'Denied' or user.status.name == 'Error' %}
-                <td class="text-danger">{{ user.status.name }}</td>
-              {% else %}
-                <td class="text-info">{{ user.status.name }}</td>
-              {% endif %} -->
-              <!-- <td>{{ user.modified|date:"M. d, Y" }}</td> -->
             </tr>
            
           {% endfor %}
-          <!-- <td> total</td> -->
+         
         </tbody>
 
         
@@ -381,26 +355,6 @@ Allocation Detail
 
 
 {% block js %}
-<!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.css"/>
- 
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/pdfmake.min.js"></script>
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js"></script>
-<script type="text/javascript" src="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.js"></script> -->
 
-<!-- 
-<script>
-$(document).ready( function () {
-$('#mydatatable').DataTable({
-
-dom: 'B<"clear">lfrtip',
-buttons: {
-    name: 'primary',
-    buttons: [ 'copy', 'csv', 'excel', 'pdf' ]
-
-    }}
-);
-} );
-</script> -->
 </div>
 {% endblock %}

@@ -187,7 +187,7 @@ class Command(BaseCommand):
             
                 lab_allocation, alpha = splitString(data[0]["quota"])
                 lab_allocation = float(lab_allocation)
-                lab_usage, alpha_usage = splitString(data[0]["used"])
+                lab_usage, alpha_usage = splitString(data[0]["kbytes"])
                 lab_usage = float(lab_usage)
                 if (alpha_usage == 'T'):
                     lab_usage_in_bytes = lab_usage * 1099511627776
@@ -208,7 +208,7 @@ class Command(BaseCommand):
                     allocation_attribute_type=allocation_attribute_type_obj,
                     allocation=allocation_obj,
                     value=lab_allocation)
-                allocation_usage, allocation_usage_unit = splitString(data[0]["used"])
+                allocation_usage, allocation_usage_unit = splitString(data[0]["kbytes"])
                
                 if (alpha_usage == 'T'):
                     lab_usage_in_TB = lab_usage
@@ -417,7 +417,7 @@ class Command(BaseCommand):
             
                 lab_allocation, alpha = splitString(data[0]["quota"])
                 lab_allocation = float(lab_allocation)
-                lab_usage, alpha_usage = splitString(data[0]["used"])
+                lab_usage, alpha_usage = splitString(data[0]["kbytes"])
                 lab_usage = float(lab_usage)
                 if (alpha_usage == 'T'):
                     lab_usage_in_bytes = lab_usage * 1099511627776
@@ -435,7 +435,7 @@ class Command(BaseCommand):
                     allocation=allocation_obj,
                     value=lab_allocation)
 
-                allocation_usage, allocation_usage_unit = splitString(data[0]["used"])
+                allocation_usage, allocation_usage_unit = splitString(data[0]["kbytes"])
                 if (allocation_usage_unit == 'G'):
                     lab_usage_in_TB = lab_usage // 1073741824
                 if (allocation_usage_unit == 'M'):
