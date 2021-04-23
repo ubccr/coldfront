@@ -42,7 +42,7 @@
     - name: Install CF MyBRC User Portal Django application dependencies
       pip:
         requirements: '{{ git_prefix }}/{{ reponame }}/requirements.txt'
-        executable: pip3
+        executable: '{{ git_prefix }}/venv/bin/pip3'
 
     - name: Check if PostgreSQL database is initialized
       stat:
@@ -90,8 +90,8 @@
       postgresql_db:
         name: '{{ db_name }}'
       become_user: postgres
-##      vars:
-##        ansible_python_interpreter: /usr/bin/python3
+      vars:
+        ansible_python_interpreter: '{{ git_prefix}}/venv/bin/python3'
 
     - name: Create admin user and grant permissions
       postgresql_user:
@@ -101,53 +101,58 @@
         password: '{{ db_admin_passwd }}'
         role_attr_flags: CREATEDB
       become_user: postgres
-##      vars:
-##        ansible_python_interpreter: /usr/bin/python3
+      vars:
+        ansible_python_interpreter: '{{ git_prefix}}/venv/bin/python3'
 
     - name: Create the CF MyBRC Django app settings module
       template: src={{ git_prefix }}/{{ reponame }}/bootstrap/ansible/cf_mybrc_settings_template.tmpl
                 dest={{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/config/{{ deployment }}_settings.py
       become_user:  "{{ djangooperator }}"
 
+    - name: CF MyBRC Django app initial_setup
+      django_manage:
+        command: initial_setup
+        app_path: "{{ git_prefix }}/{{ reponame }}"
+        settings: "config.settings"
+        pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+        virtualenv: "{{ git_prefix }}/venv"
+      become_user: "{{ djangooperator }}"
+
+    - name: CF MyBRC Django app add_brc_accounting_defaults
+      django_manage:
+        command: add_brc_accounting_defaults
+        app_path: "{{ git_prefix }}/{{ reponame }}"
+        settings: "config.settings"
+        pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+        virtualenv: "{{ git_prefix }}/venv"
+      become_user: "{{ djangooperator }}"
+
     - name: CF MyBRC Django app migrate
       django_manage:
         command: migrate
-        app_path: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+        app_path: "{{ git_prefix }}/{{ reponame }}"
         settings: "config.settings"
         pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+        virtualenv: "{{ git_prefix }}/venv"
       become_user: "{{ djangooperator }}"
-      vars:
-        ansible_python_interpreter: /usr/bin/python3
 
-    - name: CF MyBRC Django app initial setup
-      django_manage:
-        command: initial_setup
-        app_path: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
-        settings: "config.settings"
-        pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
-      become_user: "{{ djangooperator }}"
-      vars:
-        ansible_python_interpreter: /usr/bin/python3
-
-    - name: CF MyBRC Django app create existing brc data
+    - name: CF MyBRC Django app create_existing_brc_data
       django_manage:
         command: create_existing_brc_data
-        app_path: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+        app_path: "{{ git_prefix }}/{{ reponame }}"
         settings: "config.settings"
         pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+        virtualenv: "{{ git_prefix }}/venv"
       become_user: "{{ djangooperator }}"
-      vars:
-        ansible_python_interpreter: /usr/bin/python3
 
-    - name: CF MyBRC Django app loaddata
+    - name: CF MyBRC Django app loaddata_brc_allocation_data
       django_manage:
         command: load_brc_allocation_data
-        app_path: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+        app_path: "{{ git_prefix }}/{{ reponame }}"
         settings: "config.settings"
         pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+        virtualenv: "{{ git_prefix }}/venv"
       become_user: "{{ djangooperator }}"
-      vars:
-        ansible_python_interpreter: /usr/bin/python3
 
     - name: Grant read for Apache on djangooperator's $HOME
       file:
@@ -169,5 +174,5 @@
       template: src={{ git_prefix }}/{{ reponame }}/bootstrap/ansible/cf_mybrc_wsgi_conf.tmpl
                 dest=/etc/httpd/conf.d/cf_mybrc_wsgi.conf
 
-##    - name: Restart Apache
-##      service: name=httpd state=restarted enabled=yes
+    - name: Restart Apache
+      service: name=httpd state=restarted enabled=yes
