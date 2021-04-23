@@ -92,5 +92,8 @@ urlpatterns = [
     path('remove-email-address/<int:pk>',
          user_views.RemoveEmailAddressView.as_view(),
          name='remove-email-address'),
+    path('update-primary-email-address',
+         user_views.UpdatePrimaryEmailAddressView.as_view(),
+         name='update-primary-email-address'),
 
 ]

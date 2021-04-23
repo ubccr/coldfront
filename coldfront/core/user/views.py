@@ -24,6 +24,7 @@ from django.views.generic.edit import FormView
 from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.project.models import Project, ProjectUser
 from coldfront.core.user.forms import EmailAddressAddForm
+from coldfront.core.user.forms import PrimaryEmailAddressSelectionForm
 from coldfront.core.user.forms import UserAccessAgreementForm
 from coldfront.core.user.forms import UserProfileUpdateForm
 from coldfront.core.user.forms import UserRegistrationForm
@@ -558,7 +559,7 @@ def verify_email_address(request, uidb64=None, eaidb64=None, token=None):
             email_address.is_verified = True
             email_address.save()
             logger.info(f'EmailAddress {email_address.pk} has been verified.')
-            message = f'{user.email} has been verified.'
+            message = f'{email_address.email} has been verified.'
             messages.success(request, message)
         else:
             message = (
@@ -591,3 +592,60 @@ class RemoveEmailAddressView(LoginRequiredMixin, View):
             f'{self.email_address.email} has been removed from your account.')
         messages.success(request, message)
         return HttpResponseRedirect(reverse('user-profile'))
+
+
+class UpdatePrimaryEmailAddressView(LoginRequiredMixin, FormView):
+
+    form_class = PrimaryEmailAddressSelectionForm
+    template_name = 'user/user_update_primary_email_address.html'
+    login_url = '/'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['has_verified_non_primary_emails'] = \
+            EmailAddress.objects.filter(
+                user=self.request.user, is_verified=True, is_primary=False)
+        return context
+
+    def form_valid(self, form):
+        # Set the old primary address as no longer primary.
+        user = self.request.user
+        old = user.email
+        old_primary, created = EmailAddress.objects.get_or_create(
+            user=user, email=old)
+        if created:
+            message = (
+                f'Created EmailAddress {old_primary.pk} for User '
+                f'{user.pk}\'s old primary address {old}, which unexpectedly '
+                f'did not exist.')
+            logger.warning(message)
+        old_primary.is_primary = False
+        old_primary.save()
+        # Set the new primary address as primary.
+        form_data = form.cleaned_data
+        new_primary = form_data['email_address']
+        if not new_primary.is_verified:
+            message = (
+                f'New primary EmailAddress {new_primary.pk} for User '
+                f'{user.pk} is unexpectedly not verified.')
+            logger.error(message)
+            message = (
+                'Unexpected server error. Please contact an administrator.')
+            messages.error(self.request, message)
+        else:
+            new_primary.is_primary = True
+            new_primary.save()
+            message = f'{new_primary.email} is your new primary email address.'
+            messages.success(self.request, message)
+            # Set the User's email field.
+            user.email = new_primary.email
+            user.save()
+        return super().form_valid(form)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def get_success_url(self):
+        return reverse('user-profile')

@@ -171,3 +171,18 @@ class EmailAddressAddForm(forms.Form):
             raise forms.ValidationError(
                 f'Email address {email} is already in use.')
         return email
+
+
+class PrimaryEmailAddressSelectionForm(forms.Form):
+
+    email_address = forms.ModelChoiceField(
+        label='New Primary Email Address',
+        queryset=EmailAddress.objects.none(),
+        required=True,
+        widget=forms.RadioSelect())
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user')
+        super().__init__(*args, **kwargs)
+        self.fields['email_address'].queryset = EmailAddress.objects.filter(
+            user=user, is_verified=True, is_primary=False)
