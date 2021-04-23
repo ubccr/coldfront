@@ -505,37 +505,45 @@ class EmailAddressAddView(LoginRequiredMixin, FormView):
 
 class SendEmailAddressVerificationEmailView(LoginRequiredMixin, View):
 
-    def post(self, request, *args, **kwargs):
+    def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        email_address = get_object_or_404(EmailAddress, pk=pk)
-        if email_address.is_verified:
+        self.email_address = get_object_or_404(EmailAddress, pk=pk)
+        if self.email_address.user != request.user:
+            message = (
+                'You may not send a verification email to an email address '
+                'not associated with your account.')
+            messages.error(request, message)
+            return HttpResponseRedirect(reverse('user-profile'))
+        if self.email_address.is_verified:
             logger.error(
-                f'EmailAddress {email_address.pk} is unexpectedly already '
-                f'verified.')
-            message = f'{email_address.email} is already verified.'
-            messages.warning(self.request, message)
+                f'EmailAddress {self.email_address.pk} is unexpectedly '
+                f'already verified.')
+            message = f'{self.email_address.email} is already verified.'
+            messages.warning(request, message)
+            return HttpResponseRedirect(reverse('user-profile'))
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        try:
+            send_email_verification_email(self.email_address)
+        except Exception as e:
+            message = 'Failed to send verification email. Details:'
+            logger.error(message)
+            logger.exception(e)
+            message = (
+                f'Failed to send verification email to '
+                f'{self.email_address.email}. Please contact an administrator '
+                f'if the problem persists.')
+            messages.error(request, message)
         else:
-            try:
-                send_email_verification_email(email_address)
-            except Exception as e:
-                message = 'Failed to send verification email. Details:'
-                logger.error(message)
-                logger.exception(e)
-                message = (
-                    f'Failed to send verification email to '
-                    f'{email_address.email}. Please contact an administrator '
-                    f'if the problem persists.')
-                messages.error(request, message)
-            else:
-                message = (
-                    f'Please click on the link sent to {email_address.email} '
-                    f'to verify it.')
-                messages.success(request, message)
+            message = (
+                f'Please click on the link sent to {self.email_address.email} '
+                f'to verify it.')
+            messages.success(request, message)
         return HttpResponseRedirect(reverse('user-profile'))
 
 
 def verify_email_address(request, uidb64=None, eaidb64=None, token=None):
-    logger = logging.getLogger(__name__)
     try:
         user_pk = int(force_text(urlsafe_base64_decode(uidb64)))
         email_pk = int(force_text(urlsafe_base64_decode(eaidb64)))
@@ -561,4 +569,25 @@ def verify_email_address(request, uidb64=None, eaidb64=None, token=None):
         message = (
             f'Failed to activate account. Please contact an administrator.')
         messages.error(request, message)
-    return redirect(reverse('login'))
+    return redirect(reverse('user-profile'))
+
+
+class RemoveEmailAddressView(LoginRequiredMixin, View):
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        self.email_address = get_object_or_404(EmailAddress, pk=pk)
+        if self.email_address.user != request.user:
+            message = (
+                'You may not remove an email address not associated with your '
+                'account.')
+            messages.error(request, message)
+            return HttpResponseRedirect(reverse('user-profile'))
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        self.email_address.delete()
+        message = (
+            f'{self.email_address.email} has been removed from your account.')
+        messages.success(request, message)
+        return HttpResponseRedirect(reverse('user-profile'))

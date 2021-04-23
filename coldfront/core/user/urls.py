@@ -89,5 +89,8 @@ urlpatterns = [
          user_views.SendEmailAddressVerificationEmailView.as_view(),
          name='send-email-verification-email'
          ),
+    path('remove-email-address/<int:pk>',
+         user_views.RemoveEmailAddressView.as_view(),
+         name='remove-email-address'),
 
 ]
