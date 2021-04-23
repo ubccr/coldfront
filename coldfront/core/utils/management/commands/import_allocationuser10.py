@@ -100,7 +100,7 @@ class Command(BaseCommand):
         print("line 114 file_path is", file_path)
 
         lab_name = 'giribet_lab'
-        filtered_query = Project.objects.get(title = lab_name)
+        filtered_query = Project.objects.get(title = lab_name) # find project
         print("filtered_query is", filtered_query)
         data = {} # initialize an empty dictionary
 
@@ -123,39 +123,58 @@ class Command(BaseCommand):
 
         else: # found project
             print("else statement")
+            print("filtered_query is", filtered_query)
             allocations = Allocation.objects.filter(project = filtered_query)
             print("allocations is**", allocations)
-            lab_data = data[0]
-            data = data[1:] # skip the usage information
-            
-            print("lab_data is", lab_data)
-            print("type of lab_data is", type(lab_data))
+            if (not allocations.exists()):
+                print("my allocations queryset is empty")
+                project_obj = Project.objects.get(title = lab_name)
+                start_date = datetime.datetime.now()
+                end_date = datetime.datetime.now() + relativedelta(days=365)
+                # import allocations
+                allocation_obj, _ = Allocation.objects.get_or_create(
+                    project=project_obj,
+                    status=AllocationStatusChoice.objects.get(name='Active'),
+                    start_date=start_date,
+                    end_date=end_date,
+                    justification='Allocation Information for ' + lab_name
+                )
+                allocation_obj.resources.add(
+                    Resource.objects.get(name='holystore01/tier0'))
+                allocation_obj.save()
+                # import allocation user and user info
+            else:
+                lab_data = data[0]
+                data = data[1:] # skip the usage information
+                
+                print("lab_data is", lab_data)
+                print("type of lab_data is", type(lab_data))
 
-            lab_allocation, alpha = splitString(lab_data["quota"])
-            lab_allocation = float(lab_allocation)
-            print("lab_allocation is", lab_allocation)
+                lab_allocation, alpha = splitString(lab_data["quota"])
+                lab_allocation = float(lab_allocation)
+                print("lab_allocation is", lab_allocation)
 
-            lab_allocation_in_tb = kb_to_tb(lab_allocation)
-            lab_allocation_in_tb = float(lab_allocation_in_tb)
-            print("lab_allocation in tb is", lab_allocation_in_tb)
+                lab_allocation_in_tb = kb_to_tb(lab_allocation)
+                lab_allocation_in_tb = float(lab_allocation_in_tb)
+                print("lab_allocation in tb is", lab_allocation_in_tb)
 
-            lab_usage_in_kb = lab_data['kbytes'] 
-            lab_usage_in_kb = float(lab_usage_in_kb)
-            lab_usage_in_tb = kb_to_tb(lab_usage_in_kb)
-            print("lab_usage_in_kb is", lab_usage_in_kb)
-            print("lab_usage_in_tb is", lab_usage_in_tb)
+                lab_usage_in_kb = lab_data['kbytes'] 
+                lab_usage_in_kb = float(lab_usage_in_kb)
+                lab_usage_in_tb = kb_to_tb(lab_usage_in_kb)
+                print("lab_usage_in_kb is", lab_usage_in_kb)
+                print("lab_usage_in_tb is", lab_usage_in_tb)
 
-            allocation = allocations[0]
-            print("line 149", allocation, type(allocation))
-            allocation_attribute_type_obj = AllocationAttributeType.objects.get_or_create(
-                name='Tier 0')
-            allocation_attribute_type_obj = AllocationAttributeType.objects.get_or_create(
-                name='Storage Quota (TB)')
-            allocation_attribute_obj, _ = AllocationAttribute.objects.get_or_create(
-                allocation_attribute_type=allocation_attribute_type_obj,
-                allocation=allocation,
-                value="2000")
+                allocation = allocations[0]
+                print("line 149", allocation, type(allocation))
+                allocation_attribute_type_obj = AllocationAttributeType.objects.get_or_create(
+                    name='Tier 0')
+                allocation_attribute_type_obj = AllocationAttributeType.objects.get_or_create(
+                    name='Storage Quota (TB)')
+                allocation_attribute_obj, _ = AllocationAttribute.objects.get_or_create(
+                    allocation_attribute_type=allocation_attribute_type_obj,
+                    allocation=allocation,
+                    value="2000")
 
-            allocation_usage = kb_to_tb(float(lab_data["kbytes"]))
-            allocation_attribute_obj.allocationattributeusage.value = kb_to_tb(float(lab_data["kbytes"]))
-            allocation_attribute_obj.allocationattributeusage.save()
+                # allocation_usage = kb_to_tb(float(lab_data["kbytes"]))
+                # allocation_attribute_obj.allocationattributeusage.value = kb_to_tb(float(lab_data["kbytes"]))
+                # allocation_attribute_obj.allocationattributeusage.save()
