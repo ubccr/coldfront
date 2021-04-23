@@ -1,6 +1,8 @@
 from coldfront.core.user.models import EmailAddress
+from coldfront.core.user.utils import send_email_verification_email
 from django.contrib.auth.backends import BaseBackend
 from django.contrib.auth.models import User
+import logging
 
 
 class EmailAddressBackend(BaseBackend):
@@ -8,6 +10,7 @@ class EmailAddressBackend(BaseBackend):
     using any of their verified EmailAddress objects."""
 
     def authenticate(self, request, username=None, password=None, **kwargs):
+        logger = logging.getLogger(__name__)
         try:
             email_address = EmailAddress.objects.select_related(
                 'user').get(email=username)
@@ -19,7 +22,12 @@ class EmailAddressBackend(BaseBackend):
         # email to it. Only do this if the user is already active; otherwise,
         # a separate account activation email will handle email verification.
         if user.is_active and not email_address.is_verified:
-            # TODO.
+            try:
+                send_email_verification_email(email_address)
+            except Exception as e:
+                message = 'Failed to send verification email. Details:'
+                logger.error(message)
+                logger.exception(e)
             return None
 
         if user.check_password(password):
