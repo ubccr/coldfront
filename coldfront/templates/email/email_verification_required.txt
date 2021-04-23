@@ -1,0 +1,8 @@
+Dear MyBRC Portal user,
+
+Thank you for adding this email address to your account. Please click on the link below to verify it.
+
+{{ verification_email }}
+
+Thank you,
+{{ signature }}
