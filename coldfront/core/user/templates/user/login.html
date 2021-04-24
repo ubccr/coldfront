@@ -27,6 +27,13 @@ Log In
       <h5><i class="fas fa-lock" aria-hidden="true"></i> Log In </h5>
     </div>
     <div class="card-body">
+      <p>
+        You may authenticate using your cluster username or any of the <i>verified</i> email addresses associated with your account.
+      </p>
+      <p>
+        If this is your first time visting the portal, please <a href="{% url 'password-reset' %}">set your password</a> to activate your account.
+      </p>
+      <hr>
       {% include "user/login_form.html" %} 
       {% if 'mozilla_django_oidc' in EXTRA_APPS %}
         <hr/>

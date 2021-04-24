@@ -3169,7 +3169,6 @@ class VectorProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
-        # TODO.
         form_data = form.cleaned_data
         status = form_data['status']
         requested_name = (

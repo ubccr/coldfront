@@ -4,9 +4,12 @@ from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
+from django.urls import reverse
 from django.utils.html import mark_safe
+from django.utils.translation import gettext_lazy as _
 
 from coldfront.core.user.utils import send_account_activation_email
+from coldfront.core.user.models import EmailAddress
 from coldfront.core.user.models import UserProfile
 
 
@@ -29,10 +32,9 @@ class UserRegistrationForm(UserCreationForm):
         help_text=(
             'If the individual has an @berkeley.edu email address, please '
             'provide that to avoid delays in processing. All communication is '
-            'sent to this email. Please provide a valid address.'))
-    # TODO: Append the following text after adding multiple email support.
-    # 'If this communication address changes, it is the user\'s
-    # responsibility to give us his/her new email address.'
+            'sent to this email. Please provide a valid address. If this '
+            'communication address changes, it is the user\'s responsibility '
+            'to give us his/her new email address.'))
 
     first_name = forms.CharField(
         label='First Name',
@@ -55,9 +57,15 @@ class UserRegistrationForm(UserCreationForm):
         cleaned_data = super().clean()
         email = cleaned_data['email'].lower()
         if (User.objects.filter(username=email).exists() or
-                User.objects.filter(email=email).exists()):
-            raise forms.ValidationError(
-                'A user with that email address already exists.')
+                User.objects.filter(email=email).exists() or
+                EmailAddress.objects.filter(email=email).exists()):
+            login_url = reverse('login')
+            password_reset_url = reverse('password-reset')
+            message = (
+                f'A user with that email address already exists. If this is '
+                f'you, please <a href="{login_url}">login</a> or <a href="'
+                f'{password_reset_url}">set your password</a> to gain access.')
+            raise forms.ValidationError(mark_safe(message))
         return email
 
     def clean_middle_name(self):
@@ -84,6 +92,12 @@ class UserRegistrationForm(UserCreationForm):
 
 
 class UserLoginForm(AuthenticationForm):
+
+    error_messages = {
+        'invalid_login': _(
+            'Please enter a correct username or verified email address, and '
+            'password. Note that both fields may be case-sensitive.'),
+    }
 
     def clean_username(self):
         cleaned_data = super().clean()
@@ -143,3 +157,32 @@ class UserAccessAgreementForm(forms.Form):
         if pop_quiz_answer != 24:
             raise forms.ValidationError('Incorrect answer.')
         return pop_quiz_answer
+
+
+class EmailAddressAddForm(forms.Form):
+
+    email = forms.EmailField(max_length=100, required=True)
+
+    def clean_email(self):
+        cleaned_data = super().clean()
+        email = cleaned_data['email'].lower()
+        if (User.objects.filter(email=email).exists() or
+                EmailAddress.objects.filter(email=email).exists()):
+            raise forms.ValidationError(
+                f'Email address {email} is already in use.')
+        return email
+
+
+class PrimaryEmailAddressSelectionForm(forms.Form):
+
+    email_address = forms.ModelChoiceField(
+        label='New Primary Email Address',
+        queryset=EmailAddress.objects.none(),
+        required=True,
+        widget=forms.RadioSelect())
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user')
+        super().__init__(*args, **kwargs)
+        self.fields['email_address'].queryset = EmailAddress.objects.filter(
+            user=user, is_verified=True, is_primary=False)

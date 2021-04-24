@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.core.validators import EmailValidator
 from django.core.validators import MinLengthValidator
 from django.core.validators import RegexValidator
 from django.db import models
@@ -24,6 +25,29 @@ class UserProfile(models.Model):
 
     access_agreement_signed_date = models.DateTimeField(blank=True, null=True)
     upgrade_request = models.DateTimeField(blank=True, null=True)
+
+
+class EmailAddress(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    email = models.EmailField(
+        'email address',
+        unique=True,
+        validators=[
+            EmailValidator()
+        ],
+        error_messages={
+            'unique': 'A user with that email address already exists.',
+        }
+    )
+    is_verified = models.BooleanField(default=False)
+    is_primary = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = 'Email Address'
+        verbose_name_plural = 'Email Addresses'
+
+    def __str__(self):
+        return self.email
 
 
 class ExpiringToken(Token):
