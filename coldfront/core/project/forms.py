@@ -194,6 +194,25 @@ from django.core.validators import MinLengthValidator
 from django.core.validators import RegexValidator
 
 
+class DisabledChoicesSelectWidget(forms.Select):
+
+    def __init__(self, *args, **kwargs):
+        self.disabled_choices = kwargs.pop('disabled_choices', set())
+        super().__init__(*args, **kwargs)
+
+    def create_option(self, name, value, label, selected, index, subindex=None,
+                      attrs=None):
+        option = super().create_option(
+            name, value, label, selected, index, subindex=subindex,
+            attrs=attrs)
+        try:
+            if int(str(value)) in self.disabled_choices:
+                option['attrs']['disabled'] = True
+        except Exception:
+            pass
+        return option
+
+
 class SavioProjectAllocationTypeForm(forms.Form):
 
     allocation_type = forms.ChoiceField(
@@ -214,7 +233,7 @@ class SavioProjectExistingPIForm(forms.Form):
         label='Principal Investigator',
         queryset=User.objects.none(),
         required=False,
-        widget=forms.Select())
+        widget=DisabledChoicesSelectWidget())
 
     def __init__(self, *args, **kwargs):
 
@@ -225,6 +244,7 @@ class SavioProjectExistingPIForm(forms.Form):
         # PIs may only have one FCA, so only allow those without an active FCA
         # to be selected. The same applies for PCA.
         queryset = User.objects.all()
+        exclude_user_pks = set()
         pi_role = ProjectUserRoleChoice.objects.get(
             name='Principal Investigator')
         if self.allocation_type == 'FCA':
@@ -232,37 +252,36 @@ class SavioProjectExistingPIForm(forms.Form):
                 role=pi_role,
                 project__name__startswith='fc_',
                 project__status__name__in=['New', 'Active']
-            ).values_list('user__username', flat=True))
+            ).values_list('user__pk', flat=True))
             status = ProjectAllocationRequestStatusChoice.objects.get(
                 name='Under Review')
             pis_with_pending_requests = set(
                 SavioProjectAllocationRequest.objects.filter(
                     allocation_type=SavioProjectAllocationRequest.FCA,
                     status=status
-                ).values_list('pi__username', flat=True))
-            exclude_usernames = set.union(
-                pis_with_existing_fcas, pis_with_pending_requests)
-            queryset = queryset.exclude(username__in=exclude_usernames)
+                ).values_list('pi__pk', flat=True))
+            exclude_user_pks.update(
+                set.union(pis_with_existing_fcas, pis_with_pending_requests))
         elif self.allocation_type == 'PCA':
             pis_with_existing_pcas = set(ProjectUser.objects.filter(
                 role=pi_role,
                 project__name__startswith='pc_',
                 project__status__name__in=['New', 'Active']
-            ).values_list('user__username', flat=True))
+            ).values_list('user__pk', flat=True))
             status = ProjectAllocationRequestStatusChoice.objects.get(
                 name='Under Review')
             pis_with_pending_requests = set(
                 SavioProjectAllocationRequest.objects.filter(
                     allocation_type=SavioProjectAllocationRequest.PCA,
                     status=status
-                ).values_list('pi__username', flat=True))
-            exclude_usernames = set.union(
-                pis_with_existing_pcas, pis_with_pending_requests)
-            queryset = queryset.exclude(username__in=exclude_usernames)
+                ).values_list('pi__pk', flat=True))
+            exclude_user_pks.update(
+                set.union(pis_with_existing_pcas, pis_with_pending_requests))
 
         # Exclude any user that does not have an email address.
         queryset = queryset.exclude(Q(email__isnull=True) | Q(email__exact=''))
         self.fields['PI'].queryset = queryset
+        self.fields['PI'].widget.disabled_choices = exclude_user_pks
 
     def clean(self):
         cleaned_data = super().clean()
