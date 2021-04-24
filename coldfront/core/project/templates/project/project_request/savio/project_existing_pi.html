@@ -26,11 +26,11 @@ Savio Project Request - Existing PI
 <p>Select an existing user to be a Principal Investigator of the project. You may search for the user in the selection field. If the desired user is not listed, you may skip this step and specify information for a new PI in the next step.</p>
 
 {% if allocation_type == 'FCA' %}
-  <p>Note: Each PI may only have one active FCA at a time, so only those without one can be selected below.</p>
+  <p>Note: Each PI may only have one FCA at a time, so any that have pending requests or active allocations are not selectable.</p>
 {% endif %}
 
 {% if allocation_type == 'PCA' %}
-  <p>Note: Each PI may only have one active PCA at a time, so only those without one can be selected below.</p>
+  <p>Note: Each PI may only have one PCA at a time, so any that have pending requests or active allocations are not selectable.</p>
 {% endif %}
 
 <form action="" method="post">
