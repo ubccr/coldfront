@@ -57,7 +57,8 @@ class UserRegistrationForm(UserCreationForm):
         cleaned_data = super().clean()
         email = cleaned_data['email'].lower()
         if (User.objects.filter(username=email).exists() or
-                User.objects.filter(email=email).exists()):
+                User.objects.filter(email=email).exists() or
+                EmailAddress.objects.filter(email=email).exists()):
             login_url = reverse('login')
             password_reset_url = reverse('password-reset')
             message = (
