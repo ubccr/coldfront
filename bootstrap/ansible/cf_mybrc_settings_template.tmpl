@@ -1,0 +1,39 @@
+import os
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = '{{ debug }}'
+
+ALLOWED_HOSTS = ['0.0.0.0', '{{ hostname }}:{{ app_port }}', '{{ hostname }}', '{{ host_ip }}']
+
+CENTER_HELP_URL = 'http://{{ hostname }}:{{ app_port }}/help'
+CENTER_PROJECT_RENEWAl_HELP_URL = 'http://{{ hostname }}:{{ app_port }}/help'
+CENTER_BASE_URL = 'http://{{ hostname }}:{{ app_port }}'
+
+EMAIL_SUBJECT_PREFIX = '{{ email_subject_prefix }}'
+EMAIL_ADMIN_LIST = ['admin@{{ hostname }}']
+EMAIL_SENDER = '{{ from_email }}'
+EMAIL_TICKET_SYSTEM_ADDRESS = 'help@{{ hostname }}'
+EMAIL_DIRECTOR_EMAIL_ADDRESS = 'director@{{ hostname }}'
+EMAIL_PROJECT_REVIEW_CONTACT = 'review@{{ hostname }}'
+EMAIL_DEVELOPMENT_EMAIL_LIST = ['dev1@{{ hostname }}', 'dev2@{{ hostname }}']
+EMAIL_OPT_OUT_INSTRUCTION_URL = 'http://{{ hostname }}:{{ app_port }}/optout'
+EMAIL_SIGNATURE = """
+MyBRC User Portal team
+http://{{ hostname }}:{{ app_port }}
+Email : {{ from_email }}
+"""
+
+EMAIL_FROM = '{{ from_email }}'
+EMAIL_ADMIN = '{{ admin_email }}'
+DEFAULT_FROM_EMAIL = EMAIL_FROM
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': '{{ db_name }}',
+        'USER': '{{ db_admin_user }}',
+        'PASSWORD': '{{ db_admin_passwd }}',
+        'HOST': 'localhost',
+        'PORT': '5432',
+    },
+}

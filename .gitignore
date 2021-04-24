@@ -14,10 +14,12 @@ local_data/
 site/
 dev_settings.py
 prod_settings.py
+staging_settings.py
 local_settings.py
 local_strings.py
-coldfront.db
+coldfront.db*
 *.code-workspace
 .vscode
 db.json
 coldfront.db.self.broken
+main.yml
