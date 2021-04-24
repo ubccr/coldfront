@@ -6,6 +6,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth.views import PasswordChangeView
+from django.db import IntegrityError
 from django.db.models import BooleanField, Prefetch
 from django.db.models.expressions import ExpressionWrapper, Q
 from django.db.models.functions import Lower
@@ -18,15 +19,21 @@ from django.utils.http import urlsafe_base64_decode
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import CreateView, ListView, TemplateView
+from django.views.generic.edit import FormView
 
 from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.project.models import Project, ProjectUser
+from coldfront.core.user.forms import EmailAddressAddForm
+from coldfront.core.user.forms import PrimaryEmailAddressSelectionForm
 from coldfront.core.user.forms import UserAccessAgreementForm
 from coldfront.core.user.forms import UserProfileUpdateForm
 from coldfront.core.user.forms import UserRegistrationForm
 from coldfront.core.user.forms import UserSearchForm
+from coldfront.core.user.models import EmailAddress
 from coldfront.core.user.utils import CombinedUserSearch
+from coldfront.core.user.utils import ExpiringTokenGenerator
 from coldfront.core.user.utils import send_account_activation_email
+from coldfront.core.user.utils import send_email_verification_email
 from coldfront.core.utils.common import (import_from_settings,
                                          utc_now_offset_aware)
 from coldfront.core.utils.mail import send_email_template
@@ -72,6 +79,9 @@ class UserProfile(TemplateView):
             [group.name for group in viewed_user.groups.all()])
         context['group_list'] = group_list
         context['viewed_user'] = viewed_user
+
+        context['other_emails'] = EmailAddress.objects.filter(
+            user=viewed_user, is_primary=False).order_by('email')
 
         context['has_cluster_access'] = AllocationUserAttribute.objects.filter(
             allocation_user__user=viewed_user,
@@ -375,17 +385,45 @@ class UserRegistrationView(CreateView):
 
 
 def activate_user_account(request, uidb64=None, token=None):
+    logger = logging.getLogger(__name__)
     try:
-        user_id = int(force_text(urlsafe_base64_decode(uidb64)))
-        user = User.objects.get(id=user_id)
+        user_pk = int(force_text(urlsafe_base64_decode(uidb64)))
+        user = User.objects.get(pk=user_pk)
     except:
         user = None
     if user and token:
         if PasswordResetTokenGenerator().check_token(user, token):
-            user.is_active = True
-            user.save()
-            message = 'Your account has been activated. You may now log in.'
-            messages.success(request, message)
+            # Create or update an EmailAddress for the user's provided email.
+            try:
+                email_address, created = EmailAddress.objects.get_or_create(
+                    user=user, email=user.email)
+            except Exception as e:
+                logger.error(
+                    f'Failed to create EmailAddress for User {user.pk} and '
+                    f'email {user.email}. Details:')
+                logger.exception(e)
+                message = (
+                    'Unexpected server error. Please contact an '
+                    'administrator.')
+                messages.error(request, message)
+            else:
+                if created:
+                    logger.info(
+                        f'Created EmailAddress {email_address.pk} for User '
+                        f'{user.pk} and email {user.email}.')
+                email_address.is_verified = True
+                email_address.is_primary = True
+                email_address.save()
+
+                # Only activate the User if the EmailAddress update succeeded.
+                user.is_active = True
+                user.save()
+
+                message = (
+                    f'Your account has been activated. You may now log in. '
+                    f'{user.email} has been verified and set as your primary '
+                    f'email address. You may modify this in the User Profile.')
+                messages.success(request, message)
         else:
             message = (
                 'Invalid activation token. Please try again, or contact an '
@@ -419,3 +457,195 @@ def user_access_agreement(request):
     else:
         form = UserAccessAgreementForm()
     return render(request, 'user/user_access_agreement.html', {'form': form})
+
+
+class EmailAddressAddView(LoginRequiredMixin, FormView):
+    form_class = EmailAddressAddForm
+    template_name = 'user/user_add_email_address.html'
+
+    logger = logging.getLogger(__name__)
+
+    def form_valid(self, form):
+        form_data = form.cleaned_data
+        email = form_data['email']
+        try:
+            email_address = EmailAddress.objects.create(
+                user=self.request.user, email=email, is_verified=False,
+                is_primary=False)
+        except IntegrityError:
+            self.logger.error(
+                f'EmailAddress {email} unexpectedly already exists.')
+            message = (
+                'Unexpected server error. Please contact an administrator.')
+            messages.error(self.request, message)
+        else:
+            self.logger.info(
+                f'Created EmailAddress {email_address.pk} for User '
+                f'{self.request.user.pk}.')
+            try:
+                send_email_verification_email(email_address)
+            except Exception as e:
+                message = 'Failed to send verification email. Details:'
+                logger.error(message)
+                logger.exception(e)
+                message = (
+                    f'Added {email_address.email} to your account, but failed '
+                    f'to send verification email. You may try to resend it '
+                    f'from the User Profile.')
+                messages.warning(self.request, message)
+            else:
+                message = (
+                    f'Added {email_address.email} to your account. Please '
+                    f'verify it by clicking the link sent to your email.')
+                messages.success(self.request, message)
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('user-profile')
+
+
+class SendEmailAddressVerificationEmailView(LoginRequiredMixin, View):
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        self.email_address = get_object_or_404(EmailAddress, pk=pk)
+        if self.email_address.user != request.user:
+            message = (
+                'You may not send a verification email to an email address '
+                'not associated with your account.')
+            messages.error(request, message)
+            return HttpResponseRedirect(reverse('user-profile'))
+        if self.email_address.is_verified:
+            logger.error(
+                f'EmailAddress {self.email_address.pk} is unexpectedly '
+                f'already verified.')
+            message = f'{self.email_address.email} is already verified.'
+            messages.warning(request, message)
+            return HttpResponseRedirect(reverse('user-profile'))
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        try:
+            send_email_verification_email(self.email_address)
+        except Exception as e:
+            message = 'Failed to send verification email. Details:'
+            logger.error(message)
+            logger.exception(e)
+            message = (
+                f'Failed to send verification email to '
+                f'{self.email_address.email}. Please contact an administrator '
+                f'if the problem persists.')
+            messages.error(request, message)
+        else:
+            message = (
+                f'Please click on the link sent to {self.email_address.email} '
+                f'to verify it.')
+            messages.success(request, message)
+        return HttpResponseRedirect(reverse('user-profile'))
+
+
+def verify_email_address(request, uidb64=None, eaidb64=None, token=None):
+    try:
+        user_pk = int(force_text(urlsafe_base64_decode(uidb64)))
+        email_pk = int(force_text(urlsafe_base64_decode(eaidb64)))
+        email_address = EmailAddress.objects.get(pk=email_pk)
+        user = User.objects.get(pk=user_pk)
+        if email_address.user != user:
+            user = None
+    except:
+        user = None
+    if user and token:
+        if ExpiringTokenGenerator().check_token(user, token):
+            email_address.is_verified = True
+            email_address.save()
+            logger.info(f'EmailAddress {email_address.pk} has been verified.')
+            message = f'{email_address.email} has been verified.'
+            messages.success(request, message)
+        else:
+            message = (
+                'Invalid verification token. Please try again, or contact an '
+                'administrator if the problem persists.')
+            messages.error(request, message)
+    else:
+        message = (
+            f'Failed to activate account. Please contact an administrator.')
+        messages.error(request, message)
+    return redirect(reverse('user-profile'))
+
+
+class RemoveEmailAddressView(LoginRequiredMixin, View):
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        self.email_address = get_object_or_404(EmailAddress, pk=pk)
+        if self.email_address.user != request.user:
+            message = (
+                'You may not remove an email address not associated with your '
+                'account.')
+            messages.error(request, message)
+            return HttpResponseRedirect(reverse('user-profile'))
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        self.email_address.delete()
+        message = (
+            f'{self.email_address.email} has been removed from your account.')
+        messages.success(request, message)
+        return HttpResponseRedirect(reverse('user-profile'))
+
+
+class UpdatePrimaryEmailAddressView(LoginRequiredMixin, FormView):
+
+    form_class = PrimaryEmailAddressSelectionForm
+    template_name = 'user/user_update_primary_email_address.html'
+    login_url = '/'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['has_verified_non_primary_emails'] = \
+            EmailAddress.objects.filter(
+                user=self.request.user, is_verified=True, is_primary=False)
+        return context
+
+    def form_valid(self, form):
+        # Set the old primary address as no longer primary.
+        user = self.request.user
+        old = user.email
+        old_primary, created = EmailAddress.objects.get_or_create(
+            user=user, email=old)
+        if created:
+            message = (
+                f'Created EmailAddress {old_primary.pk} for User '
+                f'{user.pk}\'s old primary address {old}, which unexpectedly '
+                f'did not exist.')
+            logger.warning(message)
+        old_primary.is_primary = False
+        old_primary.save()
+        # Set the new primary address as primary.
+        form_data = form.cleaned_data
+        new_primary = form_data['email_address']
+        if not new_primary.is_verified:
+            message = (
+                f'New primary EmailAddress {new_primary.pk} for User '
+                f'{user.pk} is unexpectedly not verified.')
+            logger.error(message)
+            message = (
+                'Unexpected server error. Please contact an administrator.')
+            messages.error(self.request, message)
+        else:
+            new_primary.is_primary = True
+            new_primary.save()
+            message = f'{new_primary.email} is your new primary email address.'
+            messages.success(self.request, message)
+            # Set the User's email field.
+            user.email = new_primary.email
+            user.save()
+        return super().form_valid(form)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def get_success_url(self):
+        return reverse('user-profile')

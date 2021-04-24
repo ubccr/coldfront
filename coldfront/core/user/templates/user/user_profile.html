@@ -37,8 +37,19 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
           <td>{{group_list}}</td>
         </tr>
         <tr>
-          <th scope="row">Email:</th>
-          <td>{{viewed_user.email}}</td>
+          <th scope="row">Primary Email:</th>
+          <td>
+            <p>
+              {{ viewed_user.email }}
+              {% if user == viewed_user %}
+                <a href="{% url 'update-primary-email-address' %}" class="btn btn-secondary float-right">
+                  <i class="far fa-edit" aria-hidden="true"></i>
+                  Update
+                </a>
+              {% endif %}
+            </p>
+            <p>Email notifications are sent to this address.</p>
+          </td>
         </tr>
         <tr>
           <th scope="row">Cluster Username:</th>
@@ -81,7 +92,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
                 Signed {{ user.userprofile.access_agreement_signed_date }}
               </span>
               {% if user == viewed_user %}
-                <a href="{% url 'user-access-agreement' %}" class="btn btn-secondary">
+                <a href="{% url 'user-access-agreement' %}" class="btn btn-secondary float-right">
                   <i class="far fa-edit" aria-hidden="true"></i>
                   Review
                 </a>
@@ -121,5 +132,67 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
     </div>
   </div>
 
-{% endblock %}
+  <br>
 
+  <div class="card">
+    <div class="card-header">
+      <i class="far fa-envelope"></i>
+      Other Email Addresses{% if not user == viewed_user %}: {{ viewed_user.username}}{% endif %}
+      {% if user == viewed_user %}
+        <div class="float-right">
+          <a class="btn btn-success float-right" href="{% url 'add-email-address' %}" role="button">
+            <i class="fas fa-plus" aria-hidden="true"></i>
+            Add Email Address
+          </a>
+        </div>
+      {% endif %}
+    </div>
+    <div class="card-body">
+      <p>Below are other email addresses associated with your account. You may authenticate to this portal using any verified addresses.</p>
+      <div class="table-responsive">
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th scope="col">Email Address</th>
+              <th scope="col">Status</th>
+              <th scope="col">Actions</th>
+            </tr>
+            {% for email in other_emails %}
+              <tr>
+                <td>{{ email.email }}</td>
+                <td>
+                  {% if email.is_verified %}
+                    <span class="badge badge-success">Verified</span>
+                  {% else %}
+                    <span class="badge badge-danger">Unverified</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if user == viewed_user %}
+                    {% if not email.is_verified %}
+                      <form action="{% url 'send-email-verification-email' email.pk %}" method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <button class="btn btn-primary" type="submit">
+                          Verify
+                        </button>
+                      </form>
+                    {% endif %}
+                    <form action="{% url 'remove-email-address' email.pk %}" method="post" style="display: inline;">
+                      {% csrf_token %}
+                      <button class="btn btn-danger" type="submit">
+                        Remove
+                      </button>
+                    </form>
+                  {% else %}
+                    N/A
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </thead>
+        </table>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}

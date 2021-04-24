@@ -76,4 +76,24 @@ urlpatterns = [
          name='activate',
          ),
 
+    # Email views
+    path('add-email-address',
+         user_views.EmailAddressAddView.as_view(),
+         name='add-email-address'
+         ),
+    path('verify-email-address/<uidb64>/<eaidb64>/<token>/',
+         user_views.verify_email_address,
+         name='verify-email-address'
+         ),
+    path('send-email-verification-email/<int:pk>',
+         user_views.SendEmailAddressVerificationEmailView.as_view(),
+         name='send-email-verification-email'
+         ),
+    path('remove-email-address/<int:pk>',
+         user_views.RemoveEmailAddressView.as_view(),
+         name='remove-email-address'),
+    path('update-primary-email-address',
+         user_views.UpdatePrimaryEmailAddressView.as_view(),
+         name='update-primary-email-address'),
+
 ]

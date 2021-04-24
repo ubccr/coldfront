@@ -21,4 +21,8 @@ Please see <a href="#">instructions on our website</a>. Staff, students, and ext
 request an account through a university faculty member.
 '''
 """
-ACCOUNT_CREATION_TEXT = 'Register <a href="/user/register/">here</a>.'
+ACCOUNT_CREATION_TEXT = (
+    'Register <a href="/user/register/">here</a>. If you already have a BRC '
+    'supercluster account and this is your first time logging in, please set '
+    'your portal password <a href="/user/password-reset/">here</a>.')
+
