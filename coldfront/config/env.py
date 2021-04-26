@@ -2,6 +2,7 @@ import environ
 
 ENV = environ.Env()
 PROJECT_ROOT = environ.Path(__file__) - 3
+# LOCALDATA_ROOT=/Users/Shiwei/Desktop/coldfront_apps/coldfront
 
 # Default paths to environment files
 env_paths = [

@@ -134,6 +134,9 @@ class Allocation(TimeStampedModel):
 
     @property
     def get_parent_resource(self):
+        if self.resources.count() == 0:
+            print("no parent resource")
+            return None
         if self.resources.count() == 1:
             return self.resources.first()
         else:
@@ -170,6 +173,9 @@ class Allocation(TimeStampedModel):
         return [a.value for a in attr]
 
     def __str__(self):
+        tmp = self.get_parent_resource
+        if (tmp == None):
+            return "no parent resource"
         return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
 
 
