@@ -4,7 +4,7 @@ $(document).ready(function() {
   // Source: https://stackoverflow.com/a/4220182
   const divId = 'div_id_email';
   var emailTypingTimer;
-  var doneTypingMs = 1000;
+  var doneTypingMs = 200;
 
   $(`#${divId}`).on('keyup', function() {
     clearTimeout(emailTypingTimer);
@@ -40,7 +40,8 @@ function checkEmailAddressExists() {
         alertDiv.innerHTML = '' +
           'A user with that email address already exists. If this is you, ' +
           'please ' + loginTag + ' or ' + passwordResetTag + ' to gain ' +
-          'access.';
+          'access. You may then associate additional email addresses with ' +
+          'your account.';
       } else {
         alertDiv.innerHTML = '';
       }
