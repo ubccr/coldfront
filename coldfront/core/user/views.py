@@ -97,21 +97,22 @@ class UserProfileUpdate(TemplateView):
 
     def post(self, request, *args, **kwargs):
         user = request.user
+        user_profile_update_form = UserProfileUpdateForm(request.POST)
 
-        first_name = request.POST['first_name'].strip()
-        middle_name = request.POST['middle_name'].strip()
-        last_name = request.POST['last_name'].strip()
+        if user_profile_update_form.is_valid():
+            cleaned_data = user_profile_update_form.clean()
+            user.first_name = cleaned_data['first_name']
+            user.last_name = cleaned_data['last_name']
+            user.userprofile.middle_name = cleaned_data['middle_name']
+            user.userprofile.phone_number = cleaned_data['phone_number']
 
-        user.first_name = first_name
-        user.last_name = last_name
-        user.userprofile.middle_name = middle_name
-
-        user.userprofile.save()
-        user.save()
-
-        messages.success(request, 'Name updated.')
-        return redirect(reverse('user-profile'))
-
+            user.userprofile.save()
+            user.save()
+            messages.success(request, 'Details updated.')
+            return redirect(reverse('user-profile'))
+        else:
+            messages.error(request, user_profile_update_form.errors)
+            return redirect(reverse('user-profile-update'))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -119,7 +120,8 @@ class UserProfileUpdate(TemplateView):
         user = self.request.user
         initial_data = {'first_name': user.first_name,
                         'middle_name': user.userprofile.middle_name,
-                        'last_name': user.last_name}
+                        'last_name': user.last_name,
+                        'phone_number': user.userprofile.phone_number}
         user_update_form = UserProfileUpdateForm(initial_data)
         context['user_update_form'] = user_update_form if user_update_form.is_valid() else UserProfileUpdateForm()
 

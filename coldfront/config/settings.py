@@ -38,6 +38,7 @@ INSTALLED_APPS += [
     'django_q',
     'simple_history',
     'durationwidget',
+    'phonenumber_field'
 ]
 
 # ColdFront Apps
