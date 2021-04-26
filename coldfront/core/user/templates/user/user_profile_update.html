@@ -17,9 +17,9 @@
     </div>
 
   <div class="card-body">
-    <form id="update-form" method="POST" action="{% url 'user-profile-update' %}" autocomplete="off">
+    <form action="" method="post">
       {% csrf_token %}
-      {{ user_update_form|crispy }}
+      {{ form|crispy }}
       <input type="submit" class="btn btn-primary" value="Update">
       <a class="btn btn-secondary" href="{% url 'user-profile' %}" role="button">Cancel</a><br>
     </form>

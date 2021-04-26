@@ -92,40 +92,35 @@ class UserProfile(TemplateView):
 
 
 @method_decorator(login_required, name='dispatch')
-class UserProfileUpdate(TemplateView):
+class UserProfileUpdate(LoginRequiredMixin, FormView):
+    form_class = UserProfileUpdateForm
     template_name = 'user/user_profile_update.html'
+    success_url = reverse_lazy('user-profile')
 
-    def post(self, request, *args, **kwargs):
-        user = request.user
-        user_profile_update_form = UserProfileUpdateForm(request.POST)
-
-        if user_profile_update_form.is_valid():
-            cleaned_data = user_profile_update_form.clean()
-            user.first_name = cleaned_data['first_name']
-            user.last_name = cleaned_data['last_name']
-            user.userprofile.middle_name = cleaned_data['middle_name']
-            user.userprofile.phone_number = cleaned_data['phone_number']
-
-            user.userprofile.save()
-            user.save()
-            messages.success(request, 'Details updated.')
-            return redirect(reverse('user-profile'))
-        else:
-            messages.error(request, user_profile_update_form.errors)
-            return redirect(reverse('user-profile-update'))
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-
+    def form_valid(self, user_profile_update_form):
         user = self.request.user
-        initial_data = {'first_name': user.first_name,
-                        'middle_name': user.userprofile.middle_name,
-                        'last_name': user.last_name,
-                        'phone_number': user.userprofile.phone_number}
-        user_update_form = UserProfileUpdateForm(initial_data)
-        context['user_update_form'] = user_update_form if user_update_form.is_valid() else UserProfileUpdateForm()
+        cleaned_data = user_profile_update_form.cleaned_data
 
-        return context
+        user.first_name = cleaned_data['first_name']
+        user.last_name = cleaned_data['last_name']
+        user.userprofile.middle_name = cleaned_data['middle_name']
+        user.userprofile.phone_number = cleaned_data['phone_number']
+
+        user.userprofile.save()
+        user.save()
+
+        messages.success(self.request, 'Details updated.')
+        return super().form_valid(user_profile_update_form)
+
+    def get_initial(self):
+        user = self.request.user
+        initial = super().get_initial()
+
+        initial['first_name'] = user.first_name
+        initial['middle_name'] = user.userprofile.middle_name
+        initial['last_name'] = user.last_name
+        initial['phone_number'] = user.userprofile.phone_number
+        return initial
 
 
 @method_decorator(login_required, name='dispatch')
