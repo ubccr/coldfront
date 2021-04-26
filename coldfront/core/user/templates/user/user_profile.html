@@ -103,7 +103,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
                 Unsigned
               </span>
               {% if user == viewed_user %}
-                <a href="{% url 'user-access-agreement' %}" class="btn btn-secondary">
+                <a href="{% url 'user-access-agreement' %}" class="btn btn-secondary float-right">
                   <i class="far fa-edit" aria-hidden="true"></i>
                   Review and Sign
                 </a>
