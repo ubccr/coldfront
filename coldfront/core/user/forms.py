@@ -9,9 +9,9 @@ from django.utils.html import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 from coldfront.core.user.utils import send_account_activation_email
-from coldfront.core.user.models import EmailAddress
-from coldfront.core.user.models import UserProfile
+from coldfront.core.user.models import UserProfile, EmailAddress
 
+from phonenumber_field.formfields import PhoneNumberField
 
 class UserSearchForm(forms.Form):
     CHOICES = [('username_only', 'Exact Username Only'),
@@ -26,7 +26,8 @@ class UserSearchForm(forms.Form):
 
 
 class UserRegistrationForm(UserCreationForm):
-
+    phone_number = PhoneNumberField(label='Phone Number',
+            required=False)
     email = forms.EmailField(
         label='Email Address', widget=forms.EmailInput(),
         help_text=(
@@ -73,6 +74,11 @@ class UserRegistrationForm(UserCreationForm):
         self.middle_name = cleaned_data.pop('middle_name', '')
         return cleaned_data
 
+    def clean_phone_number(self):
+        cleaned_data = super().clean()
+        self.phone_number = cleaned_data.pop('phone_number', '')
+        return cleaned_data
+
     def save(self, commit=True):
         model = super().save(commit=False)
         model.username = model.email
@@ -81,14 +87,15 @@ class UserRegistrationForm(UserCreationForm):
             model.save()
         model.refresh_from_db()
         model.userprofile.middle_name = self.middle_name
+        model.userprofile.phone_number = self.phone_number
         model.userprofile.save()
         return model
 
     class Meta:
         model = User
         fields = (
-            'email', 'first_name', 'middle_name', 'last_name', 'password1',
-            'password2',)
+            'email', 'first_name', 'middle_name', 'last_name', 'phone_number',
+            'password1', 'password2')
 
 
 class UserLoginForm(AuthenticationForm):
@@ -116,6 +123,7 @@ class UserProfileUpdateForm(forms.Form):
     first_name = forms.CharField(label='First Name')
     middle_name = forms.CharField(label='Middle Name', required=False)
     last_name = forms.CharField(label='Last Name')
+    phone_number = PhoneNumberField(label='Phone Number', required=False)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
