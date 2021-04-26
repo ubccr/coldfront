@@ -125,9 +125,6 @@ class UserProfileUpdateForm(forms.Form):
     last_name = forms.CharField(label='Last Name')
     phone_number = PhoneNumberField(label='Phone Number', required=False)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
 
 class UserAccessAgreementForm(forms.Form):
 
