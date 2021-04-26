@@ -64,7 +64,9 @@ class UserRegistrationForm(UserCreationForm):
             message = (
                 f'A user with that email address already exists. If this is '
                 f'you, please <a href="{login_url}">login</a> or <a href="'
-                f'{password_reset_url}">set your password</a> to gain access.')
+                f'{password_reset_url}">set your password</a> to gain access. '
+                f'You may then associate additional email addresses with your '
+                f'account.')
             raise forms.ValidationError(mark_safe(message))
         return email
 
