@@ -236,7 +236,7 @@ Allocation Detail
            
               <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
               <td data-sort = "{{user.usage_bytes}}" name = "usage_bytes">{{ user.usage }}{{ user.unit }}</td>
-              <td>{{user.usage_bytes|div:1024|div:user.allocation_group_usage_bytes|floatformat:2|mul:100}}</td>
+              <td>{{user.usage_bytes|div:1024|div:user.allocation_group_usage_bytes|mul:100|floatformat:2}}</td>
               <td>{{4.167|mul:user.allocation_group_quota|div:1073741824|mul:user.usage_bytes|div:1024|div:user.allocation_group_usage_bytes|floatformat:2}}</td>
               
             </tr>

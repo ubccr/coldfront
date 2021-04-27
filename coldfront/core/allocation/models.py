@@ -304,6 +304,8 @@ class AllocationUser(TimeStampedModel): #allocation user and user are both datab
     history = HistoricalRecords()
 
     def __str__(self):
+        if (self.allocation.resources.first() == None):
+            return '%s (%s)' % (self.user, "None")
         return '%s (%s)' % (self.user, self.allocation.resources.first().name)
 
     class Meta:
