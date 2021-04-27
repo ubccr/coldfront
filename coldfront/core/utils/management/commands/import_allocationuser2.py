@@ -167,9 +167,9 @@ class Command(BaseCommand):
                         end_date=end_date,
                         justification='Allocation Information for ' + lab_name
                     )
-                    # allocation_obj.resources.add(
-                    #     Resource.objects.get(name='holystore01/tier0'))
-                    # allocation_obj.save()
+                    allocation_obj.resources.add(
+                        Resource.objects.get(name='holylfs04/tier0'))
+                    allocation_obj.save()
                     # import allocation user and user info
                 if (allocation_count >= 1):
                 # else: # under project I found this specific allocation
