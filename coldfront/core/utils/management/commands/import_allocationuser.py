@@ -170,16 +170,20 @@ class Command(BaseCommand):
                 
                 lab_allocation, alpha = splitString(lab_data["quota"])
                 lab_allocation = float(lab_allocation)
-              
+                print("line 173 lab_allocation, alpha", lab_allocation, "|", alpha)
 
                 lab_allocation_in_tb = kb_to_tb(lab_allocation)
                 lab_allocation_in_tb = float(lab_allocation_in_tb)
-              
+                print("line 177 lab_allocation_in_tb, alpha", lab_allocation_in_tb)
+                lab_allocation_in_tb_str = str(lab_allocation_in_tb)
+                print("line179", lab_allocation_in_tb_str, type(lab_allocation_in_tb_str))
 
                 lab_usage_in_kb =lab_data['kbytes']
                 lab_usage_in_kb = float(lab_usage_in_kb)
                 lab_usage_in_tb = kb_to_tb(lab_usage_in_kb)
-            
+                lab_usage_in_tb = round(lab_usage_in_tb, 2)
+                lab_usage_in_tb_str = str(lab_usage_in_tb)
+                print("line185", lab_usage_in_tb_str)
 
                 allocation = allocations[0]
                
@@ -192,36 +196,53 @@ class Command(BaseCommand):
                     #     lab_usage_in_bytes = lab_usage * 1099511627776
                     # if (alpha_usage == 'G'):
                     #     lab_usage_in_bytes = lab_usage * 1073741824
-
-
-                    allocation_attribute_type_obj = AllocationAttributeType.objects.get(
-                        name='Tier 0')
-
+                    # allocation_attribute_type_obj = AllocationAttributeType.objects.get(
+                    #     name='Tier 0')
                     allocation_attribute_type_obj = AllocationAttributeType.objects.get(
                         name='Storage Quota (TB)')
-                    allocation_attribute_obj, _ = AllocationAttribute.objects.get_or_create(
-                        allocation_attribute_type=allocation_attribute_type_obj,
-                        allocation=allocation,
-                        value='202')
+
+                    try:
+                        allocation_attribute_obj = AllocationAttribute.objects.get(
+                            allocation_attribute_type=allocation_attribute_type_obj,
+                            allocation=allocation,
+                        )
+                        allocation_attribute_exist = True
+                    except AllocationAttribute.DoesNotExist:
+                        allocation_attribute_exist = False
+                        
+                    if (not allocation_attribute_exist):
+                        print("if statement")
+                        allocation_attribute_type_obj =AllocationAttribute.objects.get_or_create(
+                            allocation_attribute_type=allocation_attribute_type_obj,
+                            allocation=allocation,
+                            value = lab_allocation_in_tb_str) 
+                        allocation_attribute_type_obj.save()
+                    else:
+                        print("else statement")
+                        # allocation_attribute_obj.value = '181' # this has a bug, not updating value
+                        allocation_attribute_obj.value = lab_allocation_in_tb_str # this has a bug, not updating value
+                        allocation_attribute_type_obj.save()
 
                     # allocation_usage, allocation_usage_unit = splitString(data[0]["kbytes"])
                     # if (allocation_usage_unit == 'G'):
                     #     lab_usage_in_TB = lab_usage // 1073741824
                     # if (allocation_usage_unit == 'M'):
                     #     lab_usage_in_TB = lab_usage // 1048576
+                    # allocation_attribute_obj.allocationattributeusage.value = '81'
                     
-                    allocation_attribute_obj.allocationattributeusage.value = '151'
+                    allocation_attribute_obj.allocationattributeusage.value = lab_usage_in_tb_str
                     # allocation_attribute_obj.allocationattributeusage.value = allocation_usage
                     allocation_attribute_obj.allocationattributeusage.save()
+                    print("line dru 236", allocation_attribute_obj.value)
 
-                    allocation_attribute_type_obj = AllocationAttributeType.objects.get(
-                        name= 'Tier 0 - $50/TB/yr')
-                    allocation_attribute_obj, _ = AllocationAttribute.objects.get_or_create(
-                        allocation_attribute_type=allocation_attribute_type_obj,
-                        allocation=allocation,
-                        value='$50/TB/yr')
-                
+                    # allocation_attribute_type_obj = AllocationAttributeType.objects.get(
+                    #     name= 'Tier 0 - $50/TB/yr')
+                    # allocation_attribute_obj, _ = AllocationAttribute.objects.get_or_create(
+                    #     allocation_attribute_type=allocation_attribute_type_obj,
+                    #     allocation=allocation,
+                    #     value='$50/TB/yr')
 
+                    
                     allocation_users = allocation.allocationuser_set.order_by('user__username')
                   
                     user_json_dict = dict() #key: username, value paid: user_lst dictionary
@@ -340,3 +361,5 @@ class Command(BaseCommand):
                             allocationuser_obj.save()
                             User.objects.get(username=json_user).save()
 
+                    print("line dru 364", allocation_attribute_obj.value)
+                        
