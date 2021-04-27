@@ -190,15 +190,17 @@ class Command(BaseCommand):
                             allocation_attribute_exist = False
                             
                         if (not allocation_attribute_exist):
-                            allocation_attribute_type_obj =AllocationAttribute.objects.get_or_create(
+                            allocation_attribute_obj =AllocationAttribute.objects.get_or_create(
                                 allocation_attribute_type=allocation_attribute_type_obj,
                                 allocation=allocation,
                                 value = lab_allocation_in_tb_str) 
                          
                         else:
-                            allocation_attribute_obj.value = lab_allocation_in_tb_str # this has a bug, not updating value
-                        allocation_attribute_type_obj.save()
+                            allocation_attribute_obj.value = lab_allocation_in_tb_str
                         
+                        allocation_attribute_type_obj.save()
+                        allocation_attribute_obj.save()
+
                         allocation_attribute_obj.allocationattributeusage.value = lab_usage_in_tb_str
                         allocation_attribute_obj.allocationattributeusage.save()
 
