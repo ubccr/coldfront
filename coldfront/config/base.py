@@ -45,7 +45,7 @@ INSTALLED_APPS = [
     'table',
     'rest_framework_datatables',
     'easy_pdf',
-    
+   
 ]
 
 # Additional Apps
