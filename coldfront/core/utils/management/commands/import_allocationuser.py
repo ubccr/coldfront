@@ -186,6 +186,8 @@ class Command(BaseCommand):
                                 allocation=allocation,
                             )
                             allocation_attribute_exist = True
+                            allocation_attribute_obj.save()
+
                         except AllocationAttribute.DoesNotExist:
                             allocation_attribute_exist = False
                             
@@ -199,11 +201,6 @@ class Command(BaseCommand):
                             allocation_attribute_obj.value = lab_allocation_in_tb_str
                         
                         allocation_attribute_type_obj.save()
-                        allocation_attribute_obj.save()
-
-                        allocation_attribute_obj.allocationattributeusage.value = lab_usage_in_tb_str
-                        allocation_attribute_obj.allocationattributeusage.save()
-
                         allocation_users = allocation.allocationuser_set.order_by('user__username')
                     
                         user_json_dict = dict() #key: username, value paid: user_lst dictionary
