@@ -112,7 +112,6 @@ class UserProfileUpdate(TemplateView):
         messages.success(request, 'Name updated.')
         return redirect(reverse('user-profile'))
 
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
