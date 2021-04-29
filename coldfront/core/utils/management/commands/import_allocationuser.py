@@ -76,8 +76,8 @@ class Command(BaseCommand):
             "brownfield_lab": "dbrownfield"
         }
 
-        LOCALDATA_ROOT = ENV.str('LOCALDATA_ROOT', default= base_dir)
-        file_path = os.path.join(base_dir, 'local_data/holylfs04')
+        LOCALDATA_ROOT = ENV.str('LOCALDATA_ROOT', default=base_dir)
+        file_path = os.path.join(LOCALDATA_ROOT, 'local_data/holylfs04')
         labs = ["holylfs04"]
         lab_names = ['']
         lab_name = 'giribet_lab.json'
