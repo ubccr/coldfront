@@ -11,6 +11,7 @@ from django.db.models import BooleanField, Prefetch
 from django.db.models.expressions import ExpressionWrapper, Q
 from django.db.models.functions import Lower
 from django.http import HttpResponseRedirect
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.urls import reverse_lazy
@@ -648,3 +649,11 @@ class UpdatePrimaryEmailAddressView(LoginRequiredMixin, FormView):
 
     def get_success_url(self):
         return reverse('user-profile')
+
+
+class EmailAddressExistsView(View):
+
+    def get(self, request, *args, **kwargs):
+        email_address_exists = EmailAddress.objects.filter(
+            email=self.kwargs.get('email')).exists()
+        return JsonResponse({'email_address_exists': email_address_exists})

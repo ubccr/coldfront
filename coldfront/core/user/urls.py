@@ -95,5 +95,8 @@ urlpatterns = [
     path('update-primary-email-address',
          user_views.UpdatePrimaryEmailAddressView.as_view(),
          name='update-primary-email-address'),
+    path('email-address-exists/<str:email>',
+         user_views.EmailAddressExistsView.as_view(),
+         name='email-address-exists')
 
 ]
