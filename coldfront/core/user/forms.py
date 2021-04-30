@@ -1,11 +1,14 @@
-from datetime import datetime
-
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
+from django.contrib.auth.tokens import default_token_generator
+from django.contrib.sites.shortcuts import get_current_site
 from django.urls import reverse
+from django.utils.encoding import force_bytes
 from django.utils.html import mark_safe
+from django.utils.http import urlsafe_base64_encode
 from django.utils.translation import gettext_lazy as _
 
 from coldfront.core.user.utils import send_account_activation_email
@@ -188,3 +191,53 @@ class PrimaryEmailAddressSelectionForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.fields['email_address'].queryset = EmailAddress.objects.filter(
             user=user, is_verified=True, is_primary=False)
+
+
+class VerifiedEmailAddressPasswordResetForm(PasswordResetForm):
+    """A subclass of django.contrib.auth.forms.PasswordResetForm that
+    uses EmailAddress."""
+
+    @staticmethod
+    def get_email_address(email):
+        """Given an email, return a corresponding, verified EmailAddress
+        if one exists, else None."""
+        try:
+            return EmailAddress.objects.select_related('user').get(
+                email__iexact=email, is_verified=True, user__is_active=True)
+        except EmailAddress.DoesNotExist:
+            return None
+
+    def save(self, domain_override=None,
+             subject_template_name='registration/password_reset_subject.txt',
+             email_template_name='registration/password_reset_email.html',
+             use_https=False, token_generator=default_token_generator,
+             from_email=None, request=None, html_email_template_name=None,
+             extra_email_context=None):
+        """Generate a one-use only link for resetting password and send
+        it to the user with which the provided EmailAddress is
+        associated."""
+        email = self.cleaned_data['email']
+        if not domain_override:
+            current_site = get_current_site(request)
+            site_name = current_site.name
+            domain = current_site.domain
+        else:
+            site_name = domain = domain_override
+        email_address = self.get_email_address(email)
+        if email_address is not None:
+            user_email = email_address.email
+            user = email_address.user
+            context = {
+                'email': user_email,
+                'domain': domain,
+                'site_name': site_name,
+                'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                'user': user,
+                'token': token_generator.make_token(user),
+                'protocol': 'https' if use_https else 'http',
+                **(extra_email_context or {}),
+            }
+            self.send_mail(
+                subject_template_name, email_template_name, context,
+                from_email, user_email,
+                html_email_template_name=html_email_template_name)
