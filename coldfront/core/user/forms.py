@@ -203,7 +203,7 @@ class VerifiedEmailAddressPasswordResetForm(PasswordResetForm):
         if one exists, else None."""
         try:
             return EmailAddress.objects.select_related('user').get(
-                email__iexact=email, is_verified=True, user__is_active=True)
+                email=email, is_verified=True, user__is_active=True)
         except EmailAddress.DoesNotExist:
             return None
 
@@ -214,9 +214,8 @@ class VerifiedEmailAddressPasswordResetForm(PasswordResetForm):
              from_email=None, request=None, html_email_template_name=None,
              extra_email_context=None):
         """Generate a one-use only link for resetting password and send
-        it to the user with which the provided EmailAddress is
-        associated."""
-        email = self.cleaned_data['email']
+        it to the user with which the provided email is associated."""
+        email = self.cleaned_data['email'].lower()
         if not domain_override:
             current_site = get_current_site(request)
             site_name = current_site.name
