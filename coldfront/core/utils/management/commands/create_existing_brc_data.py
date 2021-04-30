@@ -240,6 +240,7 @@ class Command(BaseCommand):
             for i, pi_email in enumerate(pi_emails):
                 # If the user already exists, retrieve its username. Otherwise,
                 # use the email address as username.
+                pi_email = pi_email.lower()
                 try:
                     user = User.objects.get(email=pi_email)
                     username = user.username
@@ -314,7 +315,7 @@ class Command(BaseCommand):
             # Set main contacts as Managers.
             for i, poc_name in enumerate(poc_names):
                 poc_split_name = self.get_first_middle_last_names(poc_name)
-                email = poc_emails[i]
+                email = poc_emails[i].lower()
                 user_kwargs = {
                     'email': email,
                     'first_name': poc_split_name['first'],
@@ -380,7 +381,7 @@ class Command(BaseCommand):
         for valid_user in valid_users:
             username = valid_user['username']
             user_kwargs = {
-                'email': valid_user['email'],
+                'email': valid_user['email'].lower(),
                 'first_name': valid_user['first_name'],
                 'last_name': valid_user['last_name'],
             }
