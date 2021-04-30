@@ -30,6 +30,15 @@ class Command(BaseCommand):
                     f'{user.email}.')
                 self.stdout.write(self.style.SUCCESS(message))
                 self.logger.info(message)
+            username = user.username
+            if any(c.isupper() for c in username):
+                user.username = username.lower()
+                user.save()
+                message = (
+                    f'Changed User {user.pk}\'s username from {username} to '
+                    f'{user.username}.')
+                self.stdout.write(self.style.SUCCESS(message))
+                self.logger.info(message)
         for email_address in EmailAddress.objects.all():
             email = email_address.email
             if any(c.isupper() for c in email):
