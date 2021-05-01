@@ -26,8 +26,7 @@ class UserSearchForm(forms.Form):
 
 
 class UserRegistrationForm(UserCreationForm):
-    phone_number = PhoneNumberField(label='Phone Number',
-            required=False)
+
     email = forms.EmailField(
         label='Email Address', widget=forms.EmailInput(),
         help_text=(
@@ -45,6 +44,9 @@ class UserRegistrationForm(UserCreationForm):
             '\'Christopher\'.'))
     middle_name = forms.CharField(label='Middle Name', required=False)
     last_name = forms.CharField(label='Last Name')
+    phone_number = PhoneNumberField(
+        help_text='The number must be in E.164 format (e.g. +12125552368).',
+        label='Phone Number', required=False)
     password1 = forms.CharField(
         label='Enter Password', widget=forms.PasswordInput())
     password2 = forms.CharField(
@@ -123,7 +125,9 @@ class UserProfileUpdateForm(forms.Form):
     first_name = forms.CharField(label='First Name')
     middle_name = forms.CharField(label='Middle Name', required=False)
     last_name = forms.CharField(label='Last Name')
-    phone_number = PhoneNumberField(label='Phone Number', required=False)
+    phone_number = PhoneNumberField(
+        help_text='The number must be in E.164 format (e.g. +12125552368).',
+        label='Phone Number', required=False)
 
 
 class UserAccessAgreementForm(forms.Form):
