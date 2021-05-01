@@ -88,6 +88,21 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
 <!--        </tr>-->
 <!--        {% endcomment %}-->
         <tr>
+          <th scope="row" nowrap>Phone Number: </th>
+          <td>
+            {% if user.userprofile.phone_number %}
+              {{ user.userprofile.phone_number }}
+            {% else %}
+                -
+            {% endif %}
+
+            <a href="{% url 'user-profile-update' %}" class="btn btn-secondary float-right">
+              <i class="far fa-edit" aria-hidden="true"></i>
+              Update
+            </a>
+          </td>
+        </tr>
+        <tr>
           <th>User Access Agreement:</th>
           <td>
             {% if user.userprofile.access_agreement_signed_date is not None %}
