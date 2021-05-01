@@ -26,12 +26,13 @@ class Command(BaseCommand):
         for user in users:
             # Leave the EmailAddress as unverified. In most cases, it will
             # be verified during initial account activation.
+            email = user.email.lower()
             email_address = EmailAddress.objects.create(
                 user=user,
-                email=user.email,
+                email=email,
                 is_verified=False,
                 is_primary=True)
             message = (
                 f'Created unverified, primary EmailAddress {email_address.pk} '
-                f'for User {user.pk} and email {user.email}.')
+                f'for User {user.pk} and email {email}.')
             self.logger.info(message)

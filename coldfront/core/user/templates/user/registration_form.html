@@ -1,9 +1,19 @@
 {% load common_tags %}
 {% load crispy_forms_tags %}
+{% load static %}
 
+<link rel="stylesheet" type="text/css" href="{% static 'core/user/css/registration.css' %}"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js" integrity="sha512-bZS47S7sPOxkjU/4Bt0zrhEtWx0y0CRkhEp8IckzK+ltifIIE9EMIMTuT/mEzoIMewUINruDBIR/jJnbguonqQ==" crossorigin="anonymous"></script>
+<script type="text/javascript" src="{% static 'core/user/js/registration.js' %}"></script>
 
 <form method="post" action="{% url 'register' %}?next={{request.GET.next}}">
   {% csrf_token %}
-  {{ form|crispy }}
+  {{ form.email|as_crispy_field }}
+  <p id="emailExists" class="ajax-feedback"></p>
+  {{ form.first_name|as_crispy_field }}
+  {{ form.middle_name|as_crispy_field }}
+  {{ form.last_name|as_crispy_field }}
+  {{ form.password1|as_crispy_field }}
+  {{ form.password2|as_crispy_field }}
   <button type="submit" class="btn btn-primary btn-block">Register</button>
 </form>

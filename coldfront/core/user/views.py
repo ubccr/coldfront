@@ -11,6 +11,7 @@ from django.db.models import BooleanField, Prefetch
 from django.db.models.expressions import ExpressionWrapper, Q
 from django.db.models.functions import Lower
 from django.http import HttpResponseRedirect
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.urls import reverse_lazy
@@ -391,13 +392,14 @@ def activate_user_account(request, uidb64=None, token=None):
     if user and token:
         if PasswordResetTokenGenerator().check_token(user, token):
             # Create or update an EmailAddress for the user's provided email.
+            email = user.email.lower()
             try:
                 email_address, created = EmailAddress.objects.get_or_create(
-                    user=user, email=user.email)
+                    user=user, email=email)
             except Exception as e:
                 logger.error(
                     f'Failed to create EmailAddress for User {user.pk} and '
-                    f'email {user.email}. Details:')
+                    f'email {email}. Details:')
                 logger.exception(e)
                 message = (
                     'Unexpected server error. Please contact an '
@@ -407,7 +409,7 @@ def activate_user_account(request, uidb64=None, token=None):
                 if created:
                     logger.info(
                         f'Created EmailAddress {email_address.pk} for User '
-                        f'{user.pk} and email {user.email}.')
+                        f'{user.pk} and email {email}.')
                 email_address.is_verified = True
                 email_address.is_primary = True
                 email_address.save()
@@ -418,8 +420,8 @@ def activate_user_account(request, uidb64=None, token=None):
 
                 message = (
                     f'Your account has been activated. You may now log in. '
-                    f'{user.email} has been verified and set as your primary '
-                    f'email address. You may modify this in the User Profile.')
+                    f'{email} has been verified and set as your primary email '
+                    f'address. You may modify this in the User Profile.')
                 messages.success(request, message)
         else:
             message = (
@@ -607,7 +609,7 @@ class UpdatePrimaryEmailAddressView(LoginRequiredMixin, FormView):
     def form_valid(self, form):
         # Set the old primary address as no longer primary.
         user = self.request.user
-        old = user.email
+        old = user.email.lower()
         old_primary, created = EmailAddress.objects.get_or_create(
             user=user, email=old)
         if created:
@@ -646,3 +648,11 @@ class UpdatePrimaryEmailAddressView(LoginRequiredMixin, FormView):
 
     def get_success_url(self):
         return reverse('user-profile')
+
+
+class EmailAddressExistsView(View):
+
+    def get(self, request, *args, **kwargs):
+        email_address_exists = EmailAddress.objects.filter(
+            email=self.kwargs.get('email').lower()).exists()
+        return JsonResponse({'email_address_exists': email_address_exists})

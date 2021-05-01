@@ -10,7 +10,10 @@ WSGIPassAuthorization On
     ServerName {{ hostname }}
     ServerAlias {{ hostname }}
 
-    Alias /static/ {{ git_prefix }}/{{ reponame }}/static_root
+    Alias /static/ {{ git_prefix }}/{{ reponame }}/static_root/
+    <Directory {{ git_prefix }}/{{ reponame }}/static_root/>
+        Require all granted
+    </Directory>
 
     WSGIDaemonProcess coldfront python-path={{ git_prefix }}/{{ reponame }} python-home={{ git_prefix }}/venv/ processes=2 threads=15 display-name=coldfront
     WSGIProcessGroup coldfront

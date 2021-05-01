@@ -7,6 +7,7 @@ from django.contrib.auth.views import PasswordResetView
 from django.urls import path, reverse_lazy
 
 import coldfront.core.user.views as user_views
+from coldfront.core.user.forms import VerifiedEmailAddressPasswordResetForm
 from coldfront.core.user.forms import UserLoginForm
 
 EXTRA_APPS = settings.EXTRA_APPS
@@ -42,6 +43,7 @@ urlpatterns = [
     path('password-change/', user_views.CustomPasswordChangeView.as_view(), name='password-change'),
     path('password-reset/',
          PasswordResetView.as_view(
+             form_class=VerifiedEmailAddressPasswordResetForm,
              template_name='user/passwords/password_reset_form.html',
              email_template_name='user/passwords/password_reset_email.html',
              subject_template_name='user/passwords/password_reset_subject.txt',
@@ -95,5 +97,8 @@ urlpatterns = [
     path('update-primary-email-address',
          user_views.UpdatePrimaryEmailAddressView.as_view(),
          name='update-primary-email-address'),
+    path('email-address-exists/<str:email>',
+         user_views.EmailAddressExistsView.as_view(),
+         name='email-address-exists')
 
 ]
