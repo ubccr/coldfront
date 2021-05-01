@@ -656,3 +656,21 @@ class EmailAddressExistsView(View):
         email_address_exists = EmailAddress.objects.filter(
             email=self.kwargs.get('email').lower()).exists()
         return JsonResponse({'email_address_exists': email_address_exists})
+
+
+class UserNameExistsView(View):
+
+    def get(self, request, *args, **kwargs):
+        first_name = request.GET.get('first_name', None)
+        middle_name = request.GET.get('middle_name', None)
+        last_name = request.GET.get('last_name', None)
+        if not (first_name or middle_name or last_name):
+            return JsonResponse({'error': 'No names provided.'})
+        users = User.objects.all()
+        if first_name is not None:
+            users = users.filter(first_name__iexact=first_name)
+        if last_name is not None:
+            users = users.filter(last_name__iexact=last_name)
+        if middle_name is not None:
+            users = users.filter(userprofile__middle_name__iexact=middle_name)
+        return JsonResponse({'name_exists': users.exists()})
