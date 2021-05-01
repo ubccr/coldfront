@@ -93,37 +93,35 @@ class UserProfile(TemplateView):
 
 
 @method_decorator(login_required, name='dispatch')
-class UserProfileUpdate(TemplateView):
+class UserProfileUpdate(LoginRequiredMixin, FormView):
+    form_class = UserProfileUpdateForm
     template_name = 'user/user_profile_update.html'
+    success_url = reverse_lazy('user-profile')
 
-    def post(self, request, *args, **kwargs):
-        user = request.user
+    def form_valid(self, user_profile_update_form):
+        user = self.request.user
+        cleaned_data = user_profile_update_form.cleaned_data
 
-        first_name = request.POST['first_name'].strip()
-        middle_name = request.POST['middle_name'].strip()
-        last_name = request.POST['last_name'].strip()
-
-        user.first_name = first_name
-        user.last_name = last_name
-        user.userprofile.middle_name = middle_name
+        user.first_name = cleaned_data['first_name']
+        user.last_name = cleaned_data['last_name']
+        user.userprofile.middle_name = cleaned_data['middle_name']
+        user.userprofile.phone_number = cleaned_data['phone_number']
 
         user.userprofile.save()
         user.save()
 
-        messages.success(request, 'Name updated.')
-        return redirect(reverse('user-profile'))
+        messages.success(self.request, 'Details updated.')
+        return super().form_valid(user_profile_update_form)
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-
+    def get_initial(self):
         user = self.request.user
-        initial_data = {'first_name': user.first_name,
-                        'middle_name': user.userprofile.middle_name,
-                        'last_name': user.last_name}
-        user_update_form = UserProfileUpdateForm(initial_data)
-        context['user_update_form'] = user_update_form if user_update_form.is_valid() else UserProfileUpdateForm()
+        initial = super().get_initial()
 
-        return context
+        initial['first_name'] = user.first_name
+        initial['middle_name'] = user.userprofile.middle_name
+        initial['last_name'] = user.last_name
+        initial['phone_number'] = user.userprofile.phone_number
+        return initial
 
 
 @method_decorator(login_required, name='dispatch')

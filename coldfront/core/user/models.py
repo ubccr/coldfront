@@ -5,6 +5,8 @@ from django.core.validators import RegexValidator
 from django.db import models
 from rest_framework.authtoken.models import Token
 
+from phonenumber_field.modelfields import PhoneNumberField
+
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -23,6 +25,7 @@ class UserProfile(models.Model):
         null=True
     )
 
+    phone_number = PhoneNumberField(blank=True, null=True)
     access_agreement_signed_date = models.DateTimeField(blank=True, null=True)
     upgrade_request = models.DateTimeField(blank=True, null=True)
 
