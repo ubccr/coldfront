@@ -11,6 +11,9 @@ class EmailAddressBackend(BaseBackend):
 
     def authenticate(self, request, username=None, password=None, **kwargs):
         logger = logging.getLogger(__name__)
+        if username is None:
+            return None
+        username = username.lower()
         try:
             email_address = EmailAddress.objects.select_related(
                 'user').get(email=username)

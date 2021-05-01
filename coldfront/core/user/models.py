@@ -49,6 +49,10 @@ class EmailAddress(models.Model):
         verbose_name = 'Email Address'
         verbose_name_plural = 'Email Addresses'
 
+    def save(self, *args, **kwargs):
+        self.email = self.email.lower()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.email
 
