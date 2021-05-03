@@ -80,9 +80,18 @@ We do not have information about your research. Please provide a detailed descri
                     # begins after the project becomes active.
                     project_users = self.projectuser_set.filter(
                         status=pending_status)
+
                     for project_user in project_users:
-                        ProjectUserJoinRequest.objects.create(
-                            project_user=project_user)
+                        try:
+                            reason = project_user.projectuserjoinrequest_set.latest('created').reason
+                            ProjectUserJoinRequest.objects.create(
+                                project_user=project_user,
+                                reason=reason)
+                        except ProjectUserJoinRequest.DoesNotExist:
+                            # use default reason if no prior request exists
+                            ProjectUserJoinRequest.objects.create(
+                                    project_user=project_user)
+
                 elif self.status.name == 'Denied':
                     # If the status changed to 'Denied', deny all pending
                     # join requests.
@@ -257,14 +266,20 @@ class ProjectUser(TimeStampedModel):
 
 class ProjectUserJoinRequest(TimeStampedModel):
     """A model to track when a user requested to join a project."""
+    DEFAULT_REASON = 'This is the default join reason.'
 
     project_user = models.ForeignKey(ProjectUser, on_delete=models.CASCADE)
+    reason = models.TextField(
+            default=DEFAULT_REASON,
+            validators=[
+                MinLengthValidator(20, 'The project join reason must be > 20 characters.',)
+            ])
 
     def __str__(self):
         user = self.project_user.user
         return (
             f'{user.first_name} {user.last_name} ({user.username}) '
-            f'({self.created})')
+            f'({self.created}) ({self.reason})')
 
     class Meta:
         verbose_name = 'Project User Join Request'

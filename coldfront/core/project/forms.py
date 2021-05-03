@@ -164,6 +164,7 @@ class ProjectReviewUserJoinForm(forms.Form):
     role = forms.CharField(max_length=30, disabled=True)
     auto_approval_time = forms.DateTimeField(disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
+    reason = forms.CharField(max_length=1000, required=False, disabled=True)
 
 
 class ProjectUpdateForm(forms.ModelForm):
