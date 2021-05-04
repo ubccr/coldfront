@@ -362,7 +362,7 @@ class CustomPasswordChangeView(PasswordChangeView):
     def form_valid(self, form):
         message = (
             'Your portal password has been changed. Note that you still need '
-            'to use your OTP and PIN to access the cluster.')
+            'to use your PIN and OTP to access the cluster.')
         messages.success(self.request, message)
         return super().form_valid(form)
 
