@@ -53,7 +53,7 @@ class UserRegistrationForm(UserCreationForm):
     password1 = forms.CharField(
         help_text=(
             'This password is unique to this portal, and is separate from the '
-            'OTP and PIN used to access the cluster.'),
+            'PIN and OTP used to access the cluster.'),
         label='Enter Password', widget=forms.PasswordInput())
     password2 = forms.CharField(
         label='Confirm Password', widget=forms.PasswordInput())
@@ -124,7 +124,7 @@ class UserLoginForm(AuthenticationForm):
             'CalNet username.')
         self.fields['password'].help_text = (
             'This password is unique to this portal, and is neither your '
-            'CalNet password nor the OTP and PIN used to access the BRC '
+            'CalNet password nor the PIN and OTP used to access the BRC '
             'cluster.')
 
     def clean_username(self):
