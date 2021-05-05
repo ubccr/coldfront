@@ -19,8 +19,8 @@ Project Request
         class="form-control"
         onchange="this.options[this.selectedIndex].value && (window.location = this.options[this.selectedIndex].value);">
       <option value="">Select a cluster.</option>
-      <option value="{% url 'savio-project-request' %}">Savio</option>
-      <option value="{% url 'vector-project-request' %}">Vector</option>
+      <option value="{% url 'project-request-savio-landing' %}">Savio</option>
+      <option value="{% url 'project-request-vector-landing' %}">Vector</option>
     </select>
   </div>
 </div>
