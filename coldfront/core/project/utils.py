@@ -302,7 +302,7 @@ def send_new_cluster_access_request_notification_email(project, project_user):
     send_email_template(subject, template_name, context, sender, receiver_list)
 
 
-def send_new_project_request_notification_email(request):
+def send_new_project_request_admin_notification_email(request):
     """Send an email to admins notifying them of a new Savio or Vector
     ProjectAllocationRequest."""
     email_enabled = import_from_settings('EMAIL_ENABLED', False)
@@ -344,6 +344,57 @@ def send_new_project_request_notification_email(request):
 
     sender = settings.EMAIL_SENDER
     receiver_list = settings.EMAIL_ADMIN_LIST
+
+    send_email_template(subject, template_name, context, sender, receiver_list)
+
+
+def send_new_project_request_pi_notification_email(request):
+    """Send an email to the PI of the given request notifying them that
+    someone has made a new ProjectAllocationRequest under their name.
+
+    It is the caller's responsibility to ensure that the requester and
+    PI are different (so the PI does not get a notification for their
+    own request)."""
+    email_enabled = import_from_settings('EMAIL_ENABLED', False)
+    if not email_enabled:
+        return
+
+    if isinstance(request, SavioProjectAllocationRequest) and request.pool:
+        subject = 'New Pooled Project Request under Your Name'
+        pooling = True
+    else:
+        subject = 'New Project Request under Your Name'
+        pooling = False
+    template_name = 'email/project_request/pi_new_project_request.txt'
+
+    requester = request.requester
+    requester_str = (
+        f'{requester.first_name} {requester.last_name} ({requester.email})')
+
+    pi = request.pi
+    pi_str = f'{pi.first_name} {pi.last_name}'
+
+    if isinstance(request, SavioProjectAllocationRequest):
+        detail_view_name = 'savio-project-request-detail'
+    elif isinstance(request, VectorProjectAllocationRequest):
+        detail_view_name = 'vector-project-request-detail'
+    else:
+        raise TypeError(f'Request has invalid type {type(request)}.')
+    review_url = urljoin(
+        settings.CENTER_BASE_URL,
+        reverse(detail_view_name, kwargs={'pk': request.pk}))
+
+    context = {
+        'pooling': pooling,
+        'project_name': request.project.name,
+        'requester_str': requester_str,
+        'pi_str': pi_str,
+        'review_url': review_url,
+        'support_email': settings.EMAIL_TICKET_SYSTEM_ADDRESS,
+    }
+
+    sender = settings.EMAIL_SENDER
+    receiver_list = [pi.email]
 
     send_email_template(subject, template_name, context, sender, receiver_list)
 
