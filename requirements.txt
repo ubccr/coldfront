@@ -28,4 +28,5 @@ urllib3==1.24.2
 wcwidth==0.1.7
 gunicorn==20.0.4
 psycopg2
-mozilla_django_oidc
+cryptography==3.0
+mozilla-django-oidc==1.2.3
