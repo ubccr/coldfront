@@ -108,15 +108,6 @@ def get_allocation_user_cluster_access_status(allocation_obj, user_obj):
         value__in=['Pending - Add', 'Active'])
 
 
-def request_project_cluster_access(allocation_obj, user_obj):
-    # Get or create the AllocationUser, and set its status to 'Active'.
-    allocation_user_obj = get_or_create_active_allocation_user(
-        allocation_obj, user_obj)
-    # Set the user's 'Cluster Account Status' attribute, with pending value.
-    set_allocation_user_attribute_value(
-        allocation_user_obj, 'Cluster Account Status', 'Pending - Add')
-
-
 def prorated_allocation_amount(amount, dt):
     """Given a number of service units and a datetime, return the
     prorated number of service units that would be allocated in the
