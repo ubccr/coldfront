@@ -29,8 +29,7 @@ from coldfront.core.allocation.models import (Allocation,
                                               AllocationUserAttribute,
                                               AllocationUserStatusChoice)
 from coldfront.core.allocation.utils import (get_allocation_user_cluster_access_status,
-                                             prorated_allocation_amount,
-                                             request_project_cluster_access)
+                                             prorated_allocation_amount)
 from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user)
 # from coldfront.core.grant.models import Grant
@@ -54,6 +53,7 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserStatusChoice)
 from coldfront.core.project.utils import (auto_approve_project_join_requests,
                                           get_project_compute_allocation,
+                                          ProjectClusterAccessRequestRunner,
                                           ProjectDenialRunner,
                                           SavioProjectApprovalRunner,
                                           savio_request_denial_reason,
@@ -657,47 +657,29 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
             f'approved.')
 
         if project_user_objs.exists():
-
             error_message = (
                 'Unexpected server error. Please contact an administrator.')
-
-            try:
-                allocation_obj = get_project_compute_allocation(project_obj)
-            except (Allocation.DoesNotExist,
-                    Allocation.MultipleObjectsReturned):
-                messages.error(self.request, error_message)
-                return False
-
             for project_user_obj in project_user_objs:
-                user_obj = project_user_obj.user
+                # Request cluster access.
                 try:
-                    request_project_cluster_access(allocation_obj, user_obj)
-                except ValueError:
-                    message = (
-                        f'User {user_obj.username} already has cluster access '
-                        f'under Project {project_obj.name}.')
-                    messages.warning(self.request, message)
+                    request_runner = ProjectClusterAccessRequestRunner(
+                        project_user_obj)
+                    runner_result = request_runner.run()
                 except Exception:
                     messages.error(self.request, error_message)
                     return False
                 else:
-                    # Send an email to admins.
-                    try:
-                        send_new_cluster_access_request_notification_email(
-                            project_obj, project_user_obj)
-                    except Exception as e:
-                        message = 'Failed to send notification email. Details:'
-                        self.logger.error(message)
-                        self.logger.exception(e)
-                    # Send an email to the user.
-                    try:
-                        send_project_join_request_approval_email(
-                            project_obj, project_user_obj)
-                    except Exception as e:
-                        message = 'Failed to send notification email. Details:'
-                        self.logger.error(message)
-                        self.logger.exception(e)
-
+                    if not runner_result.success:
+                        messages.error(
+                            self.request, runner_result.error_message)
+                # Send an email to the user.
+                try:
+                    send_project_join_request_approval_email(
+                        project_obj, project_user_obj)
+                except Exception as e:
+                    message = 'Failed to send notification email. Details:'
+                    self.logger.error(message)
+                    self.logger.exception(e)
             message = message + (
                 ' BRC staff have been notified to set up cluster access for '
                 'each request.')
@@ -928,39 +910,18 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                         'Unexpected server error. Please contact an '
                         'administrator.')
                     try:
-                        allocation_obj = get_project_compute_allocation(
-                            project_obj)
-                    except (Allocation.DoesNotExist,
-                            Allocation.MultipleObjectsReturned):
-                        messages.error(self.request, error_message)
-                        continue
-
-                    try:
-                        request_project_cluster_access(
-                            allocation_obj, user_obj)
-                    except ValueError:
-                        message = (
-                            f'User {user_obj.username} already has cluster '
-                            f'access under Project {project_obj.name}.')
-                        messages.warning(self.request, message)
+                        request_runner = ProjectClusterAccessRequestRunner(
+                            project_user_obj)
+                        request_runner.run()
                     except Exception:
                         messages.error(self.request, error_message)
+                        continue
                     else:
                         cluster_access_requests_count += 1
 
                         # Notify the user that he/she has been added.
                         try:
                             self.__send_email_to_user(
-                                project_obj, project_user_obj)
-                        except Exception as e:
-                            message = (
-                                'Failed to send notification email. Details:')
-                            self.logger.error(message)
-                            self.logger.exception(e)
-
-                        # Notify admins of a new cluster access request.
-                        try:
-                            send_new_cluster_access_request_notification_email(
                                 project_obj, project_user_obj)
                         except Exception as e:
                             message = (
@@ -1588,49 +1549,35 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             messages.success(self.request, message)
             next_view = reverse('project-join-list')
         else:
-            next_view = reverse(
-                'project-detail', kwargs={'pk': project_obj.pk})
-            error_message = (
-                'Unexpected server error. Please contact an administrator.')
-
-            try:
-                allocation_obj = get_project_compute_allocation(project_obj)
-            except (Allocation.DoesNotExist,
-                    Allocation.MultipleObjectsReturned):
-                messages.error(self.request, error_message)
-                return redirect(next_view)
-
+            # Activate the user.
             status = ProjectUserStatusChoice.objects.get(name='Active')
             project_user.status = status
             project_user.save()
 
+            error_message = (
+                'Unexpected server error. Please contact an administrator.')
+
+            # Request cluster access.
             try:
-                request_project_cluster_access(allocation_obj, user_obj)
-            except ValueError:
-                message = (
-                    f'User {user_obj.username} already has cluster access '
-                    f'under Project {project_obj.name}.')
-                messages.warning(self.request, message)
+                request_runner = ProjectClusterAccessRequestRunner(
+                    project_user)
+                runner_result = request_runner.run()
             except Exception:
                 messages.error(self.request, error_message)
             else:
-                message = (
-                    f'You have requested to join Project {project_obj.name}. '
-                    f'Your request has automatically been approved. BRC staff '
-                    f'have been notified to set up cluster access.')
-                messages.success(self.request, message)
+                if runner_result.success:
+                    message = (
+                        f'You have requested to join Project '
+                        f'{project_obj.name}. Your request has automatically '
+                        f'been approved. BRC staff have been notified to set '
+                        f'up cluster access.')
+                    messages.success(self.request, message)
+                    next_view = reverse(
+                        'project-detail', kwargs={'pk': project_obj.pk})
+                else:
+                    messages.error(self.request, runner_result.error_message)
 
-                try:
-                    send_new_cluster_access_request_notification_email(
-                        project_obj, project_user)
-                except Exception as e:
-                    message = 'Failed to send notification email. Details:'
-                    self.logger.error(message)
-                    self.logger.exception(e)
-
-            next_view = reverse(
-                'project-detail', kwargs={'pk': project_obj.pk})
-
+        # Send a notification to the project managers.
         try:
             send_project_join_notification_email(project_obj, project_user)
         except Exception as e:
@@ -1871,23 +1818,17 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
             if decision == 'approve':
                 status_name = 'Active'
                 message_verb = 'Approved'
+                email_function = send_project_join_request_approval_email
             else:
                 status_name = 'Denied'
                 message_verb = 'Denied'
+                email_function = send_project_join_request_denial_email
 
             project_user_status_choice = \
                 ProjectUserStatusChoice.objects.get(name=status_name)
 
             error_message = (
                 'Unexpected server error. Please contact an administrator.')
-
-            try:
-                allocation_obj = get_project_compute_allocation(project_obj)
-            except (Allocation.DoesNotExist,
-                    Allocation.MultipleObjectsReturned):
-                messages.error(self.request, error_message)
-                return HttpResponseRedirect(
-                    reverse('project-detail', kwargs={'pk': pk}))
 
             for form in formset:
                 user_form_data = form.cleaned_data
@@ -1903,46 +1844,26 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
                     if status_name == 'Active':
                         # Request cluster access.
                         try:
-                            request_project_cluster_access(
-                                allocation_obj, user_obj)
-                        except ValueError:
-                            message = (
-                                f'User {user_obj.username} already has '
-                                f'cluster access under Project '
-                                f'{project_obj.name}.')
-                            messages.warning(self.request, message)
+                            request_runner = ProjectClusterAccessRequestRunner(
+                                project_user_obj)
+                            runner_result = request_runner.run()
                         except Exception:
                             messages.error(self.request, error_message)
                             return HttpResponseRedirect(
                                 reverse('project-detail', kwargs={'pk': pk}))
-                        # Send an email to the user.
-                        try:
-                            send_project_join_request_approval_email(
-                                project_obj, project_user_obj)
-                        except Exception as e:
-                            message = (
-                                'Failed to send notification email. Details:')
-                            self.logger.error(message)
-                            self.logger.exception(e)
-                        # Send an email to admins.
-                        try:
-                            send_new_cluster_access_request_notification_email(
-                                project_obj, project_user_obj)
-                        except Exception as e:
-                            message = (
-                                'Failed to send notification email. Details:')
-                            self.logger.error(message)
-                            self.logger.exception(e)
-                    else:
-                        # Send an email to the user.
-                        try:
-                            send_project_join_request_denial_email(
-                                project_obj, project_user_obj)
-                        except Exception as e:
-                            message = (
-                                'Failed to send notification email. Details:')
-                            self.logger.error(message)
-                            self.logger.exception(e)
+                        else:
+                            if not runner_result.success:
+                                messages.error(
+                                    self.request, runner_result.error_message)
+
+                    # Send an email to the user.
+                    try:
+                        email_function(project_obj, project_user_obj)
+                    except Exception as e:
+                        message = (
+                            'Failed to send notification email. Details:')
+                        self.logger.error(message)
+                        self.logger.exception(e)
 
             message = (
                 f'{message_verb} {reviewed_users_count} user requests to join '
