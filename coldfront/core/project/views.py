@@ -58,6 +58,7 @@ from coldfront.core.project.utils import (auto_approve_project_join_requests,
                                           SavioProjectApprovalRunner,
                                           savio_request_denial_reason,
                                           savio_request_latest_update_timestamp,
+                                          send_added_to_project_notification_email,
                                           send_new_cluster_access_request_notification_email,
                                           send_project_join_notification_email,
                                           send_project_join_request_approval_email,
@@ -921,7 +922,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
                         # Notify the user that he/she has been added.
                         try:
-                            self.__send_email_to_user(
+                            send_added_to_project_notification_email(
                                 project_obj, project_user_obj)
                         except Exception as e:
                             message = (
@@ -950,30 +951,6 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                     messages.error(request, error)
 
         return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': pk}))
-
-    def __send_email_to_user(self, project, project_user):
-        """Send a notification email to the given added user."""
-        email_enabled = import_from_settings('EMAIL_ENABLED', False)
-        if not email_enabled:
-            return
-
-        subject = f'Added to Project {project.name}'
-        template_name = 'email/added_to_project.txt'
-
-        user = project_user.user
-
-        context = {
-            'user': user,
-            'project_name': project.name,
-            'support_email': settings.EMAIL_TICKET_SYSTEM_ADDRESS,
-            'signature': settings.EMAIL_SIGNATURE,
-        }
-
-        sender = settings.EMAIL_SENDER
-        receiver_list = [user.email]
-
-        send_email_template(
-            subject, template_name, context, sender, receiver_list)
 
 
 class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -2429,6 +2406,14 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
                 f'been activated. A cluster access request has automatically '
                 f'been made for the requester.')
             messages.success(self.request, message)
+
+        # Send any messages from the runner back to the user.
+        try:
+            for message in runner.get_user_messages():
+                messages.info(self.request, message)
+        except NameError:
+            pass
+
         return HttpResponseRedirect(self.redirect)
 
     def __get_service_units_to_allocate(self):
@@ -2983,6 +2968,14 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
                 f'been activated. A cluster access request has automatically '
                 f'been made for the requester.')
             messages.success(self.request, message)
+
+        # Send any messages from the runner back to the user.
+        try:
+            for message in runner.get_user_messages():
+                messages.info(self.request, message)
+        except NameError:
+            pass
+
         return HttpResponseRedirect(self.redirect)
 
     def __is_checklist_complete(self):

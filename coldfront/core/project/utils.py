@@ -6,6 +6,7 @@ from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.utils import get_or_create_active_allocation_user
 from coldfront.core.allocation.utils import review_cluster_access_requests_url
 from coldfront.core.allocation.utils import set_allocation_user_attribute_value
+from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
@@ -176,6 +177,32 @@ def __review_project_join_requests_url(project):
     domain = import_from_settings('CENTER_BASE_URL')
     view = reverse('project-review-join-requests', kwargs={'pk': project.pk})
     return urljoin(domain, view)
+
+
+def send_added_to_project_notification_email(project, project_user):
+    """Send a notification email to a user stating that they have been
+    added to a project by its managers."""
+    email_enabled = import_from_settings('EMAIL_ENABLED', False)
+    if not email_enabled:
+        return
+
+    subject = f'Added to Project {project.name}'
+    template_name = 'email/added_to_project.txt'
+
+    user = project_user.user
+
+    context = {
+        'user': user,
+        'project_name': project.name,
+        'support_email': settings.EMAIL_TICKET_SYSTEM_ADDRESS,
+        'signature': settings.EMAIL_SIGNATURE,
+    }
+
+    sender = settings.EMAIL_SENDER
+    receiver_list = [user.email]
+
+    send_email_template(
+        subject, template_name, context, sender, receiver_list)
 
 
 def send_project_join_notification_email(project, project_user):
@@ -619,6 +646,8 @@ class ProjectApprovalRunner(object):
 
     def __init__(self, request_obj):
         self.request_obj = request_obj
+        # A list of messages to display to the user.
+        self.user_messages = []
 
     def run(self):
         self.upgrade_pi_user()
@@ -639,6 +668,9 @@ class ProjectApprovalRunner(object):
 
         self.approve_request()
         self.send_email()
+
+        self.run_extra_processing()
+
         return project, allocation
 
     def activate_project(self):
@@ -715,6 +747,14 @@ class ProjectApprovalRunner(object):
             name='Principal Investigator')
         pi_project_user, _ = ProjectUser.objects.get_or_create(
             project=project, user=pi, defaults=defaults)
+
+    def get_user_messages(self):
+        """A getter for this instance's user_messages."""
+        return self.user_messages
+
+    def run_extra_processing(self):
+        """Run additional subclass-specific processing."""
+        pass
 
     def send_email(self):
         """Send a notification email to the requester and PI."""
@@ -818,6 +858,12 @@ class VectorProjectApprovalRunner(ProjectApprovalRunner):
     """An object that performs necessary database changes when a new
     Vector project request is approved and processed."""
 
+    def run_extra_processing(self):
+        """Run additional subclass-specific processing."""
+        # Automatically provide the requester with access to the designated
+        # Savio project for Vector users.
+        self.__add_user_to_savio_project()
+
     def update_allocation(self):
         """Perform allocation-related handling."""
         project = self.request_obj.project
@@ -828,6 +874,30 @@ class VectorProjectApprovalRunner(ProjectApprovalRunner):
         # allocation.end_date =
         allocation.save()
         return allocation
+
+    def __add_user_to_savio_project(self):
+        user_obj = self.request_obj.requester
+        savio_project_name = settings.SAVIO_PROJECT_FOR_VECTOR_USERS
+        try:
+            add_vector_user_to_designated_savio_project(user_obj)
+        except Exception as e:
+            message = (
+                f'Encountered unexpected exception when automatically '
+                f'providing User {user_obj.pk} with access to Savio. Details:')
+            logger.error(message)
+            logger.exception(e)
+            user_message = (
+                f'A failure occurred when automatically adding User '
+                f'{user_obj.username} to Savio project {savio_project_name} '
+                f'and requesting cluster access. Please see the logs for more '
+                f'information.')
+        else:
+            user_message = (
+                f'User {user_obj.username} has automatically been added to '
+                f'Savio project {savio_project_name}. A cluster access '
+                f'request has automatically been made, assuming the user did '
+                f'not already pending or active status.')
+        self.user_messages.append(user_message)
 
 
 class ProjectDenialRunner(object):
@@ -1084,3 +1154,65 @@ class ProjectClusterAccessRequestRunner(object):
             message = f'Failed to send notification email. Details:'
             self.logger.error(message)
             self.logger.exception(e)
+
+
+def add_vector_user_to_designated_savio_project(user_obj):
+    """Add the given User to the Savio project that all Vector users
+    also have access to. Return whether or not all steps succeeded.
+
+    This is intended for use after the user's request has been approved
+    and the user has been successfully added to a Vector project."""
+    project_name = settings.SAVIO_PROJECT_FOR_VECTOR_USERS
+    project_obj = Project.objects.get(name=project_name)
+
+    # Create a ProjectUser if needed; set its status to 'Active'.
+    user_role = ProjectUserRoleChoice.objects.get(name='User')
+    active_status = ProjectUserStatusChoice.objects.get(name='Active')
+    defaults = {
+        'role': user_role,
+        'status': active_status,
+        'enable_notifications': False,
+    }
+    project_user_obj, created = ProjectUser.objects.get_or_create(
+        project=project_obj, user=user_obj, defaults=defaults)
+    if created:
+        message = (
+            f'Created ProjectUser {project_user_obj.pk} between Project '
+            f'{project_obj.pk} and User {user_obj.pk}.')
+        logger.info(message)
+    else:
+        project_user_obj.status = active_status
+        project_user_obj.save()
+
+    # Send a notification email to the user if the user was not already a
+    # member of the project.
+    if created:
+        try:
+            send_added_to_project_notification_email(
+                project_obj, project_user_obj)
+        except Exception as e:
+            message = 'Failed to send notification email. Details:'
+            logger.error(message)
+            logger.exception(e)
+
+    # Request cluster access for the user.
+    try:
+        request_runner = ProjectClusterAccessRequestRunner(project_user_obj)
+        runner_result = request_runner.run()
+    except Exception as e:
+        message = (
+            f'Failed to request cluster access for User {user_obj.pk} under '
+            f'Project {project_obj.pk}. Details:')
+        logger.error(message)
+        logger.exception(e)
+        return False
+    else:
+        if runner_result.success:
+            message = (
+                f'Created a cluster access request for User {user_obj.pk} '
+                f'under Project {project_obj.pk}.')
+            logger.info(message)
+        else:
+            message = runner_result.error_message
+            logger.error(message)
+        return runner_result.success
