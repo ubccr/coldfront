@@ -36,6 +36,9 @@ SITE_ID = 1
 # The username of the user to set as the PI for all Vector projects.
 VECTOR_PI_USERNAME = "channsoden@berkeley.edu"
 
+# The name of the Savio project to which all Vector users are given access to.
+SAVIO_PROJECT_FOR_VECTOR_USERS = "co_rosalind"
+
 #------------------------------------------------------------------------------
 # General Center Information
 #------------------------------------------------------------------------------
