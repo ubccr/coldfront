@@ -51,7 +51,8 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserStatusChoice,
                                            ProjectAllocationRequestStatusChoice,
                                            ProjectUserStatusChoice)
-from coldfront.core.project.utils import (auto_approve_project_join_requests,
+from coldfront.core.project.utils import (add_vector_user_to_designated_savio_project,
+                                          auto_approve_project_join_requests,
                                           get_project_compute_allocation,
                                           ProjectClusterAccessRequestRunner,
                                           ProjectDenialRunner,
@@ -681,6 +682,19 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
                     message = 'Failed to send notification email. Details:'
                     self.logger.error(message)
                     self.logger.exception(e)
+                # If the Project is a Vector project, automatically add the
+                # User to the designated Savio project for Vector users.
+                if project_obj.name.startswith('vector_'):
+                    user_obj = project_user_obj.user
+                    try:
+                        add_vector_user_to_designated_savio_project(user_obj)
+                    except Exception as e:
+                        message = (
+                            f'Encountered unexpected exception when '
+                            f'automatically providing User {user_obj.pk} with '
+                            f'access to Savio. Details:')
+                        self.logger.error(message)
+                        self.logger.exception(e)
             message = message + (
                 ' BRC staff have been notified to set up cluster access for '
                 'each request.')
@@ -929,6 +943,22 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                                 'Failed to send notification email. Details:')
                             self.logger.error(message)
                             self.logger.exception(e)
+
+                        # If the Project is a Vector project, automatically add
+                        # the User to the designated Savio project for Vector
+                        # users.
+                        if project_obj.name.startswith('vector_'):
+                            try:
+                                add_vector_user_to_designated_savio_project(
+                                    user_obj)
+                            except Exception as e:
+                                message = (
+                                    f'Encountered unexpected exception when '
+                                    f'automatically providing User '
+                                    f'{user_obj.pk} with access to Savio. '
+                                    f'Details:')
+                                self.logger.error(message)
+                                self.logger.exception(e)
 
             if added_users_count != 0:
                 messages.success(
@@ -1832,6 +1862,21 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
                             if not runner_result.success:
                                 messages.error(
                                     self.request, runner_result.error_message)
+                        # If the Project is a Vector project, automatically add
+                        # the User to the designated Savio project for Vector
+                        # users.
+                        if project_obj.name.startswith('vector_'):
+                            try:
+                                add_vector_user_to_designated_savio_project(
+                                    user_obj)
+                            except Exception as e:
+                                message = (
+                                    f'Encountered unexpected exception when '
+                                    f'automatically providing User '
+                                    f'{user_obj.pk} with access to Savio. '
+                                    f'Details:')
+                                self.logger.error(message)
+                                self.logger.exception(e)
 
                     # Send an email to the user.
                     try:
