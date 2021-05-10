@@ -1789,7 +1789,7 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
             try:
                 reason = ele.projectuserjoinrequest_set.latest('created').reason
             except ProjectUserJoinRequest.DoesNotExist:
-                reason = 'N/A'
+                reason = ProjectUserJoinRequest.DEFAULT_REASON
 
             user = {
                 'username': ele.user.username,
