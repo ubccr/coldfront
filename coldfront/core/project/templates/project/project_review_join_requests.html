@@ -1,6 +1,6 @@
-{% extends "common/base.html" %} 
-{% load crispy_forms_tags %} 
-{% load static %} 
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
 
 {% block title %} Review Project Join Requests {% endblock %}
 
@@ -27,6 +27,7 @@
               <th scope="col">Email</th>
               <th scope="col">Role</th>
               <th scope="col">Auto-Approval Time</th>
+              <th scope="col">Reason</th>
             </tr>
           </thead>
           <tbody>
@@ -40,6 +41,7 @@
               <td>{{ form.email.value }}</td>
               <td>{{ form.role.value }}</td>
               <td>{{ form.auto_approval_time.value }}</td>
+              <td>{{ form.reason.value }}</td>
             </tr>
             {% endfor %}
           </tbody>
@@ -64,8 +66,8 @@
     </form>
   </div>
 </div>
-{% else %} 
-  <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a> 
+{% else %}
+  <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a>
   <div class="alert alert-info">
     No requests to review!
   </div>
