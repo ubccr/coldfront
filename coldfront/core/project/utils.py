@@ -137,7 +137,6 @@ def auto_approve_project_join_requests():
                 message = error_message
                 logger.error(message)
                 logger.exception(e)
-
             else:
                 success = runner_result.success
                 if success:
@@ -163,6 +162,19 @@ def auto_approve_project_join_requests():
                     message = 'Failed to send notification email. Details:'
                     logger.error(message)
                     logger.exception(e)
+
+                # If the Project is a Vector project, automatically add the
+                # User to the designated Savio project for Vector users.
+                if project_obj.name.startswith('vector_'):
+                    try:
+                        add_vector_user_to_designated_savio_project(user_obj)
+                    except Exception as e:
+                        message = (
+                            f'Encountered unexpected exception when '
+                            f'automatically providing User {user_obj.pk} with '
+                            f'access to Savio. Details:')
+                        logger.error(message)
+                        logger.exception(e)
 
     return results
 
