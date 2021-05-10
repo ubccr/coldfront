@@ -1474,6 +1474,7 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         user_obj = self.request.user
         project_users = project_obj.projectuser_set.filter(user=user_obj)
+        reason = self.request.POST.get('reason')
 
         if self.request.user.userprofile.access_agreement_signed_date is None:
             messages.error(
@@ -1511,6 +1512,11 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             messages.warning(self.request, message)
             return False
 
+        if len(reason) < 20:
+            message = 'Please provide a valid reason to join the project (min 20 characters)'
+            messages.error(self.request, message)
+            return False
+
         return True
 
     def get(self, *args, **kwargs):
@@ -1522,6 +1528,7 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         project_users = project_obj.projectuser_set.filter(user=user_obj)
         role = ProjectUserRoleChoice.objects.get(name='User')
         status = ProjectUserStatusChoice.objects.get(name='Pending - Add')
+        reason = self.request.POST['reason']
 
         if project_users.exists():
             project_user = project_users.first()
@@ -1545,7 +1552,8 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         # Create a join request, whose 'created' timestamp is used to determine
         # when to auto-approve the request.
-        ProjectUserJoinRequest.objects.create(project_user=project_user)
+        ProjectUserJoinRequest.objects.create(project_user=project_user,
+                                              reason=reason)
 
         if project_obj.joins_auto_approval_delay != datetime.timedelta():
             message = (
@@ -1777,6 +1785,12 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
                      delay)
             except ProjectUserJoinRequest.DoesNotExist:
                 auto_approval_time = 'Unknown'
+
+            try:
+                reason = ele.projectuserjoinrequest_set.latest('created').reason
+            except ProjectUserJoinRequest.DoesNotExist:
+                reason = ProjectUserJoinRequest.DEFAULT_REASON
+
             user = {
                 'username': ele.user.username,
                 'first_name': ele.user.first_name,
@@ -1784,6 +1798,7 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
                 'email': ele.user.email,
                 'role': ele.role,
                 'auto_approval_time': auto_approval_time,
+                'reason': reason
             }
             users_to_review.append(user)
         return users_to_review
