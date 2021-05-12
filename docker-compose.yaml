@@ -22,7 +22,7 @@ services:
     volumes:
       # So that Traefik can listen to the Docker events
       - /var/run/docker.sock:/var/run/docker.sock
-      - ${TRAEFIK_CFG}:/config/
+      - /srv/traefik_config:/config/
     labels:
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https" 
       - "traefik.http.routers.redirs.rule=hostregexp(`{host:.+}`)"  
@@ -50,7 +50,7 @@ services:
     command: /root/.local/bin/gunicorn -b 0.0.0.0:80 coldfront.config.wsgi
     volumes:
       - static:/usr/src/app/static_root
-      - ${COLDFRONT_CFG}:/usr/src/app/coldfront/config
+      - /srv/coldfront-cfg:/usr/src/app/coldfront/config
       - /srv/coldfront/coldfront/plugins/mokey_oidc:/usr/src/app/coldfront/plugins/mokey_oidc
       - /root/coldfront_import/local_data:/usr/src/app/local_data
       - /root/coldfront_import/commands:/usr/src/app/coldfront/core/utils/management/commands
@@ -62,6 +62,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PW}
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes: 
-      - ${POSTGRES_DBPATH}:/var/lib/postgresql/data
+      - /srv/db:/var/lib/postgresql/data
 volumes:
   static:
+
