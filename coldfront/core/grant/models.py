@@ -81,62 +81,36 @@ class Grant(TimeStampedModel):
 class GrantStaged(TimeStampedModel):
 
     """ GrantStaged model """
-
     title = models.CharField(
-
         validators=[MinLengthValidator(3), MaxLengthValidator(255)],
-
         max_length=255,
-
     )
 
     grant_number = models.CharField(
-
         'Grant Number from funding agency',
-
         validators=[MinLengthValidator(3), MaxLengthValidator(255)],
-
         max_length=255,
-
     )
 
     grant_pi_full_name = models.CharField('Grant PI Full Name', max_length=255, blank=True)
-
     other_funding_agency = models.CharField(max_length=255, blank=True)
-
     other_award_number = models.CharField(max_length=255, blank=True)
-
     grant_start = models.DateField('Grant Start Date')
-
     grant_end = models.DateField('Grant End Date')
-
     percent_credit = models.FloatField(validators=[MaxValueValidator(100)])
-
     direct_funding = models.FloatField()
-
     total_amount_awarded = models.FloatField()
-
-
- 
 
     def __str__(self):
 
         return self.title
 
 
- 
-
     class Meta:
-
         verbose_name_plural = "GrantsStaged"
-
-
- 
-
+        
         permissions = (
 
             ("can_view_all_grantsstaged", "Can view all grantsstaged"),
-
-                        ("can_view_all_grants", "Can view all grants"),
-
+            ("can_view_all_grants", "Can view all grants"),
         )
