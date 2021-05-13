@@ -45,6 +45,9 @@ Delete Allocation Invoice Note
             class="fas fa-long-arrow-left" aria-hidden="true"></i> Cancel</a>
         <br>
       </div>
+      {% if request.user.is_superuser %}
+      <button type="submit" class="btn btn-success float-right"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
+    {% endif %}
     </form>
   </div>
 </div>

@@ -17,11 +17,12 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         print('Adding projects ...')
-        delimiter = chr(255)
+        delimiter = '\t'
         file_path = os.path.join(base_dir, 'local_data', 'project_and_associated_users.tsv')
+      
         Project.objects.all().delete()
         ProjectUser.objects.all().delete()
-
+     
         project_status_choices = {}
         project_status_choices['Active'] = ProjectStatusChoice.objects.get(name='Active')
         project_status_choices['Archived'] = ProjectStatusChoice.objects.get(name='Archived')
@@ -45,20 +46,29 @@ class Command(BaseCommand):
             ProjectUserStatusChoice.objects.get_or_create(name=choice)
 
         with open(file_path, 'r') as fp:
-            lines = fp.read().split('$$$$$$$$$$-new-line-$$$$$$$$$$')
-            for idx, line in enumerate(lines):
+     
+            for line in fp:
                 line = line.strip()
                 if not line:
                     continue
                 if line.startswith('#'):
                     continue
-
+                # read description separated by space
                 created, modified, title, pi_username, description, field_of_science, project_status, user_info = line.split(delimiter)
-                # print(title, pi_username, description, field_of_science, project_status, user_info)
-
+               
                 created = datetime.datetime.strptime(created.split('.')[0], '%Y-%m-%d %H:%M:%S')
+              
                 modified = datetime.datetime.strptime(modified.split('.')[0], '%Y-%m-%d %H:%M:%S')
                 pi_user_obj = User.objects.get(username=pi_username)
+                
+                try:
+                    pi_user_obj = User.objects.get(username=pi_username)
+                    
+                except ObjectDoesNotExist:
+                    print("couldn't make the project because user does not exist yet. You need to add user first then add project.")
+                    
+                    continue
+                
                 pi_user_obj.is_pi = True
                 pi_user_obj.save()
 
@@ -72,15 +82,22 @@ class Command(BaseCommand):
                     field_of_science=field_of_science_obj,
                     status=project_status_choices[project_status]
                 )
-
+                
                 for project_user in user_info.split(';'):
                     username, role, enable_email, project_user_status = project_user.split(',')
                     if enable_email == 'True':
                         enable_email = True
                     else:
                         enable_email = False
-                    # print(username, role, enable_email, project_user_status)
-                    user_obj = User.objects.get(username=username)
+                    print(username, role, enable_email, project_user_status)
+                    try:
+                        user_obj = User.objects.get(username=username)
+                    
+                    except ObjectDoesNotExist:
+                        print("couldn't add user", username)
+                    
+                        continue
+                    
                     project_user_obj = ProjectUser.objects.create(
                         user=user_obj,
                         project=project_obj,
@@ -88,7 +105,7 @@ class Command(BaseCommand):
                         status=project_user_status_choices[project_user_status],
                         enable_notifications=enable_email
                     )
-
+                #when import a project, we can import the user to project as well 
                 if not project_obj.projectuser_set.filter(user=pi_user_obj).exists():
                     project_user_obj = ProjectUser.objects.create(
                         user=pi_user_obj,
@@ -102,6 +119,6 @@ class Command(BaseCommand):
                     project_user_obj.status=project_user_status_choices['ACT']
                     project_user_obj.save()
 
-                    # print(project_obj)
+               
 
         print('Finished adding projects')

@@ -3,7 +3,7 @@
   background: #E2E2E2;
 }
 
-/*.navbar-custom {
+.navbar-custom {
   background-color: #FFFFFF;
   font-weight: bold;
   height: 50px;
@@ -13,7 +13,7 @@
   background: #E2E2E2;
 }
 
-*/
+
 
 
 
@@ -53,7 +53,7 @@ main {
   width: 100%;
   /* Set the fixed height of the footer here */
   height: 150px;
-  background-color: #4582EC;
+  background-color: #A51C30;
   color: #ffffff;
   padding-top: 15px;
 }
@@ -138,4 +138,65 @@ body > main > div > div.card.border-primary > div.card-body > form > div.alert.a
 .django-hijack-button-default:active {
 	position:relative;
 	top:1px;
+}
+.bg-primary {
+  
+  background-color: #A51C30 !important;
+}
+.page-item.active {
+  
+  background-color: #A51C30 !important;
+}
+.btn-primary {
+  
+  background-color: #A51C30 !important;
+  border-color: white;
+}
+
+.text-nowrap {
+  color: black !important;
+}
+.btn-success {
+  background-color:#A51C30 !important;
+}  
+#expand_button {
+  color:#A51C30 !important;
+}
+.dropdown-item.active {
+  background-color: #A51C30 !important;
+}
+h2 a {
+  color: #A51C30 !important;
+}
+
+tr td a {
+  color: #A51C30 !important;
+}
+
+.border-primary {
+  border-color: black;
+}
+
+.card mb-3 border-primary .border-primary {
+  border-color: black;
+}
+
+.page-item.active .page-link {
+  /* color: #A51C30 !important; */
+  background-color:#A51C30 !important;
+  border-color: white;
+}
+
+.header img {
+  float: left;
+  width: 100px;
+  height: 100px;
+  background: #555;
+  padding-right: 20px;
+}
+
+.header h1 {
+  position: relative;
+  top: 18px;
+  left: 10px;
 }

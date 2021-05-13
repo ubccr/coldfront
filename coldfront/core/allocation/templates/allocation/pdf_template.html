@@ -1,0 +1,114 @@
+
+{% load static %}
+<head>
+<style>
+    @page {
+        size: a4 portrait;
+        @frame header_frame {           /* Static Frame */
+            -pdf-frame-content: header_content;
+            left: 50pt; width: 512pt; top: 50pt; height: 40pt;
+        }
+        @frame content_frame {          /* Content Frame */
+            left: 50pt; width: 512pt; top: 90pt; height: 632pt;
+        }
+        @frame footer_frame {           /* Another static Frame */
+            -pdf-frame-content: footer_content;
+            left: 50pt; width: 512pt; top: 772pt; height: 20pt;
+        }
+    }
+</style>
+</head>
+
+<body>
+    <!-- Content for Static Frame 'header_frame' -->
+    <div id="header_content">
+        <h1>FAS Research Computing</h1>
+    </div>
+
+    <!-- Content for Static Frame 'footer_frame' -->
+    <div id="footer_content">(c) - page <pdf:pagenumber>
+        of <pdf:pagecount>
+    </div>
+
+    <!-- HTML Content -->
+    <table>
+            <tr>
+                <td>{{address}}</td>
+                <td>{{phone}}</td>
+            </tr>
+            <tr>
+                <td>{{city}} {{state}},</td>
+                <td>{{email}}</td>
+            </tr>
+            <tr>
+                <td>{{zipcode}}</td>
+                <td>{{website}}</td>
+            </tr>
+    </table>
+
+    <hr>
+
+    <table>
+        <tr>
+    
+            <th>Description</th>
+            <th>Allocation (TB)</th>
+            <th>Usage (tb)</th>
+            <th>Unit Price (TB/month)</th>
+
+        </tr>
+        <tr>
+    
+            <td>Tier 0 Storage (Holyfs04)</td>
+            <td>120 TB </td>
+            <td>76.14 TB </td>
+
+            <td>$4.18</td>
+        
+        </tr>
+      
+    </table>
+
+    <hr>
+
+    <p><strong>Total: $500.00</strong></p>
+    <hr>
+    <table id = "mydatatable" class = "table table-striped table-bordered">
+        <thead>
+          <tr>
+            <th scope="col">Username</th>
+            <th scope="col">Name</th>
+            <th scope="col">Bytes</th>
+
+            <th scope="col">Usage</th>
+            <th scope="col">Percent</th>
+            <th scope="col">Monthly Cost in Dollars</th>
+
+            <!-- <th scope="col">Status</th> -->
+            <!-- <th scope="col">Last Modified</th> -->
+          </tr>
+        </thead>
+        <tbody>
+                <tr>
+              <td>user1</td>
+              <td>name1</td>
+              <td>bytes1</td>
+              <td>percent1</td>
+              <td>cost1</td>
+           
+          
+            </tr>
+          {% for user in allocation_users %}
+            <tr>
+              <td>{{ user.user.username }}</td>
+              <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
+              <td>{{ user.user.email }}</td>
+         
+          
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+</body>
+</html>

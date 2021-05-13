@@ -6,7 +6,7 @@
 <div class="row">
 
   <div class="col-lg-6 mt-2">
-    <h2><a href="{% url 'project-list' %}">Projects &raquo;</a></h2>
+    <h2><a href="{% url 'project-list' %}" >Projects &raquo;</a></h2>
     <hr>
 
     {% if project_list %}
@@ -23,7 +23,7 @@
     {% else %}
       <div class="alert alert-info" role="alert"><i class="fa fa-info-circle" aria-hidden="true"></i> There are no projects to display.</div>
       {% if user.userprofile.is_pi or user.is_superuser %}
-        <a class="btn btn-primary btn-block" href="{% url 'project-create' %}" role="button">Add a project</a>
+        <a class="btn btn-primary btn-block " style = "background-color:#A51C30; border-color: white" href="{% url 'project-create' %}" role="button">Add a project</a>
         <hr>
       {% endif %}
     {% endif %}
