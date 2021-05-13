@@ -326,6 +326,30 @@ def savio_project_request_state_schema():
     }
 
 
+def savio_project_request_mou_state_schema():
+    """Return the schema for the SavioProjectAllocationRequest.state
+    field for Memorandum of Use (MOU) projects."""
+    schema = savio_project_request_state_schema()
+    schema['memorandum_signed'] = {
+        'status': 'Pending',
+        'timestamp': '',
+    }
+    return schema
+
+
+def savio_project_request_mou_extra_fields_schema():
+    """Return the schema for the
+    SavioProjectAllocationRequest.extra_fields field for Memorandum of
+    Use (MOU) projects."""
+    return {
+        'num_service_units': '',
+        'campus_chartstring': '',
+        'chartstring_account_type': '',
+        'chartstring_contact_name': '',
+        'chartstring_contact_email': '',
+    }
+
+
 def vector_project_request_state_schema():
     """Return the schema for the VectorProjectAllocationRequest.state
     field."""
@@ -354,10 +378,12 @@ class SavioProjectAllocationRequest(TimeStampedModel):
     FCA = 'FCA'
     CO = 'CO'
     PCA = 'PCA'
+    MOU = 'MOU'
     ALLOCATION_TYPE_CHOICES = (
         (FCA, 'Faculty Compute Allowance (FCA)'),
         (CO, 'Condo Allocation'),
         (PCA, 'Partner Compute Allowance (PCA)'),
+        (MOU, 'Memorandum of Use (MOU)'),
     )
     allocation_type = models.CharField(
         max_length=16, choices=ALLOCATION_TYPE_CHOICES)
@@ -371,6 +397,7 @@ class SavioProjectAllocationRequest(TimeStampedModel):
         ProjectAllocationRequestStatusChoice, on_delete=models.CASCADE,
         verbose_name='Status')
     state = models.JSONField(default=savio_project_request_state_schema)
+    extra_fields = models.JSONField(default=dict)
     history = HistoricalRecords()
 
     def save(self, *args, **kwargs):
