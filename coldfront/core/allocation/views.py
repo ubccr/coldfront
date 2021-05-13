@@ -50,6 +50,16 @@ from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email_template
 
+
+from django.shortcuts import render
+from io import BytesIO
+from django.http import HttpResponse
+from django.template.loader import get_template
+from django.views import View
+from xhtml2pdf import pisa
+
+
+
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
     'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
 ALLOCATION_DEFAULT_ALLOCATION_LENGTH = import_from_settings(
@@ -1270,8 +1280,7 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
 
                     elif user_status == 'remove_from_project':
                         for active_allocation in allocation_obj.project.allocation_set.filter(status__name__in=(
-                            'Active', 'Denied', 'New', 'Paid', 'Payment Pending',
-                                'Payment Requested', 'Payment Declined', 'Renewal Requested', 'Unpaid',)):
+                            'Active', 'New', 'Paid', 'Payment Requested', )):
 
                             allocation_user_obj = active_allocation.allocationuser_set.get(
                                 user=user_obj)
@@ -1336,11 +1345,38 @@ class AllocationInvoiceListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
 
     def get_queryset(self):
 
+        # allocations = Allocation.objects.filter(
+        #     status__name__in=['Paid', 'Payment Pending', 'Payment Requested' ])
         allocations = Allocation.objects.filter(
-            status__name__in=['Paid', 'Payment Pending', 'Payment Requested', 'Payment Declined', ])
+            status__name__in=['Active', 'Payment Pending',  ])
+        return allocations
+class AllocationInvoicePaidView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    model = Allocation
+    template_name = 'allocation/allocation_invoice_paid_list.html'
+    context_object_name = 'allocation_list'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('allocation.can_manage_invoice'):
+            return True
+
+        messages.error(
+            self.request, 'You do not have permission to manage invoices.')
+        return False
+
+    def get_queryset(self):
+
+        # allocations = Allocation.objects.filter(
+        #     status__name__in=['Paid', 'Payment Pending', 'Payment Requested' ])
+        allocations = Allocation.objects.filter(
+            status__name__in=['Paid',  ])
         return allocations
 
-
+# this is the view class thats rendering allocation_invoice_detail.
+# each view class has a view template that renders
 class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     model = Allocation
     template_name = 'allocation/allocation_invoice_detail.html'
@@ -1353,7 +1389,81 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
 
         if self.request.user.has_perm('allocation.can_manage_invoice'):
             return True
+    # get context data is where you create all the variables for allocation_invoice_detail.html page
+    def get_context_data(self, **kwargs):
+            context = super().get_context_data(**kwargs)
+            pk = self.kwargs.get('pk')
+            allocation_obj = get_object_or_404(Allocation, pk=pk)
+            allocation_users = allocation_obj.allocationuser_set.exclude(
+                status__name__in=['Removed']).order_by('user__username')
 
+            if self.request.user.is_superuser:
+                attributes_with_usage = [attribute for attribute in allocation_obj.allocationattribute_set.all(
+                ).order_by('allocation_attribute_type__name') if hasattr(attribute, 'allocationattributeusage')]
+
+                attributes = [attribute for attribute in allocation_obj.allocationattribute_set.all(
+                ).order_by('allocation_attribute_type__name')]
+
+            else:
+                attributes_with_usage = [attribute for attribute in allocation_obj.allocationattribute_set.filter(
+                    allocation_attribute_type__is_private=False) if hasattr(attribute, 'allocationattributeusage')]
+
+                attributes = [attribute for attribute in allocation_obj.allocationattribute_set.filter(
+                    allocation_attribute_type__is_private=False)]
+
+            guage_data = []
+            invalid_attributes = []
+            for attribute in attributes_with_usage:
+                try:
+                    guage_data.append(generate_guauge_data_from_usage(attribute.allocation_attribute_type.name,
+                                                                    float(attribute.value), float(attribute.allocationattributeusage.value)))
+                except ValueError:
+                    logger.error("Allocation attribute '%s' is not an int but has a usage",
+                                attribute.allocation_attribute_type.name)
+                    invalid_attributes.append(attribute)
+
+            for a in invalid_attributes:
+                attributes_with_usage.remove(a)
+
+            if self.request.user.is_superuser:
+                context['is_allowed_to_update_project'] = True
+            elif allocation_obj.project.projectuser_set.filter(user=self.request.user).exists():
+                project_user = allocation_obj.project.projectuser_set.get(
+                    user=self.request.user)
+                if project_user.role.name == 'Manager':
+                    context['is_allowed_to_update_project'] = True
+                else:
+                    context['is_allowed_to_update_project'] = False
+            else:
+                context['is_allowed_to_update_project'] = False
+
+            context['guage_data'] = guage_data
+            context['attributes_with_usage'] = attributes_with_usage
+            context['attributes'] = attributes
+
+            # Can the user update the project?
+            if self.request.user.is_superuser:
+                context['is_allowed_to_update_project'] = True
+            elif allocation_obj.project.projectuser_set.filter(user=self.request.user).exists():
+                project_user = allocation_obj.project.projectuser_set.get(
+                    user=self.request.user)
+                if project_user.role.name == 'Manager':
+                    context['is_allowed_to_update_project'] = True
+                else:
+                    context['is_allowed_to_update_project'] = False
+            else:
+                context['is_allowed_to_update_project'] = False
+            context['allocation_users'] = allocation_users
+
+            if self.request.user.is_superuser:
+                notes = allocation_obj.allocationusernote_set.all()
+            else:
+                notes = allocation_obj.allocationusernote_set.filter(
+                    is_private=False)
+
+            context['notes'] = notes
+            context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
+            return context
     def get(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
@@ -1403,6 +1513,83 @@ class AllocationAddInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, Crea
 
         if self.request.user.has_perm('allocation.can_manage_invoice'):
             return True
+
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        pk = self.kwargs.get('pk')
+        allocation_obj = get_object_or_404(Allocation, pk=pk)
+        allocation_users = allocation_obj.allocationuser_set.exclude(
+            status__name__in=['Removed']).order_by('user__username')
+
+        if self.request.user.is_superuser:
+            attributes_with_usage = [attribute for attribute in allocation_obj.allocationattribute_set.all(
+            ).order_by('allocation_attribute_type__name') if hasattr(attribute, 'allocationattributeusage')]
+
+            attributes = [attribute for attribute in allocation_obj.allocationattribute_set.all(
+            ).order_by('allocation_attribute_type__name')]
+
+        else:
+            attributes_with_usage = [attribute for attribute in allocation_obj.allocationattribute_set.filter(
+                allocation_attribute_type__is_private=False) if hasattr(attribute, 'allocationattributeusage')]
+
+            attributes = [attribute for attribute in allocation_obj.allocationattribute_set.filter(
+                allocation_attribute_type__is_private=False)]
+
+        guage_data = []
+        invalid_attributes = []
+        for attribute in attributes_with_usage:
+            try:
+                guage_data.append(generate_guauge_data_from_usage(attribute.allocation_attribute_type.name,
+                                                                  float(attribute.value), float(attribute.allocationattributeusage.value)))
+            except ValueError:
+                logger.error("Allocation attribute '%s' is not an int but has a usage",
+                             attribute.allocation_attribute_type.name)
+                invalid_attributes.append(attribute)
+
+        for a in invalid_attributes:
+            attributes_with_usage.remove(a)
+
+        if self.request.user.is_superuser:
+            context['is_allowed_to_update_project'] = True
+        elif allocation_obj.project.projectuser_set.filter(user=self.request.user).exists():
+            project_user = allocation_obj.project.projectuser_set.get(
+                user=self.request.user)
+            if project_user.role.name == 'Manager':
+                context['is_allowed_to_update_project'] = True
+            else:
+                context['is_allowed_to_update_project'] = False
+        else:
+            context['is_allowed_to_update_project'] = False
+
+        context['guage_data'] = guage_data
+        context['attributes_with_usage'] = attributes_with_usage
+        context['attributes'] = attributes
+
+        # Can the user update the project?
+        if self.request.user.is_superuser:
+            context['is_allowed_to_update_project'] = True
+        elif allocation_obj.project.projectuser_set.filter(user=self.request.user).exists():
+            project_user = allocation_obj.project.projectuser_set.get(
+                user=self.request.user)
+            if project_user.role.name == 'Manager':
+                context['is_allowed_to_update_project'] = True
+            else:
+                context['is_allowed_to_update_project'] = False
+        else:
+            context['is_allowed_to_update_project'] = False
+        context['allocation_users'] = allocation_users
+
+        if self.request.user.is_superuser:
+            notes = allocation_obj.allocationusernote_set.all()
+        else:
+            notes = allocation_obj.allocationusernote_set.filter(
+                is_private=False)
+
+        context['notes'] = notes
+        context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
+        return context
+
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -1568,3 +1755,71 @@ class AllocationAccountListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
 
     def get_queryset(self):
         return AllocationAccount.objects.filter(user=self.request.user)
+
+def render_to_pdf(template_src, context_dict={}):
+	template = get_template(template_src)
+	html  = template.render(context_dict)
+	result = BytesIO()
+	pdf = pisa.pisaDocument(BytesIO(html.encode("ISO-8859-1")), result)
+	if not pdf.err:
+		return HttpResponse(result.getvalue(), content_type='application/pdf')
+	return None
+
+
+data = {
+	"company": "FAS Research Computing",
+	"address": "38 Oxford St",
+	"city": "Cambridge",
+	"state": "MA",
+	"zipcode": "02138",
+
+
+	# "phone": "617-871-9977",
+	"website": "billing@rc.fas.harvard.edu",
+	}
+
+
+# one_allocation = Allocation.objects.get(id=21)
+dict_obj = []
+
+# one_allocation_users = AllocationUser.objects.filter(allocation__pk = 21)
+# print(one_allocation_users)
+# print(one_allocation)
+# Article.objects.filter(reporter__pk=1)
+print("hello world line 1756")
+# print("print line 1756",type(all_users))
+# Opens up page as PDF
+# for e in one_allocation_users:
+#     print(e.user.username)
+#     print(e.usage_bytes)
+# I can access the allocation id in ViewPDF function now
+class ViewPDF(View):
+
+    def get(self, request, *args, **kwargs):
+        # one_allocation_users = AllocationUser.objects.filter(allocation__pk = kwargs)
+        # print("line 1775 one_allocation_user",one_allocation_users)
+        print("line magic 1773",kwargs)
+        # pdf = render_to_pdf('allocation/pdf_template.html', one_allocation_users)
+        pdf = render_to_pdf('allocation/pdf_template.html', data)
+        return HttpResponse(pdf, content_type='application/pdf')
+
+
+#Automaticly downloads to PDF file
+class DownloadPDF(View):
+	def get(self, request, *args, **kwargs):
+		
+		pdf = render_to_pdf('allocation/pdf_template.html', data)
+
+		response = HttpResponse(pdf, content_type='allocation/pdf')
+		filename = "Invoice_%s.pdf" %("12341231")
+		content = "attachment; filename='%s'" %(filename)
+		response['Content-Disposition'] = content
+		return response
+
+# class PDFUserDetailView(PDFTemplateResponseMixin, DetailView):
+#     template_name = 'allocation/pdf_detail.html'
+#     context_object_name = data
+
+def index(request):
+	context = {}
+	return render(request, 'app/index.html', context)

@@ -77,7 +77,9 @@ Project List
         {% for project in project_list %}
           <tr>
             <td><a href="/project/{{project.id}}/">{{ project.id }}</a></td>
-            <td>{{ project.pi.username }}</td>
+            <td>{{ project.pi.username }}: {{ project.pi.first_name }} {{ project.pi.last_name }}</td>
+           
+
             <td style="text-align: justify; text-justify: inter-word;"><strong>Title: </strong> {{ project.title }}
               <br> <strong>Description: </strong>{{ project.description }}</td>
             <td>{{ project.field_of_science.description }}</td>

@@ -41,6 +41,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
+    'django_tables2',
+    'table',
+    'rest_framework_datatables',
+    'easy_pdf',
+   
 ]
 
 # Additional Apps
@@ -49,6 +54,7 @@ INSTALLED_APPS += [
     'sslserver',
     'django_q',
     'simple_history',
+    'mathfilters',
 ]
 
 # ColdFront Apps
@@ -103,10 +109,24 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'django_settings_export.settings_export',
+                'django.template.context_processors.request',
             ],
         },
     },
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+        'rest_framework_datatables.renderers.DatatablesRenderer',
+    ),
+    'DEFAULT_FILTER_BACKENDS': (
+        'rest_framework_datatables.filters.DatatablesFilterBackend',
+    ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework_datatables.pagination.DatatablesPageNumberPagination',
+    'PAGE_SIZE': 50,
+}
 
 # Add local site templates files if set
 SITE_TEMPLATES = ENV.str('SITE_TEMPLATES', default='')
@@ -124,6 +144,7 @@ STATIC_ROOT = ENV.str('STATIC_ROOT', default=PROJECT_ROOT('static_root'))
 STATICFILES_DIRS = [
     PROJECT_ROOT('coldfront/static'),
 ]
+# COLDFRONT_DATA_LOAD = ENV.str(‘COLDFRONT_DATA_LOAD’, default=PROJECT_ROOT(‘local_data’))
 
 # Add local site static files if set
 SITE_STATIC = ENV.str('SITE_STATIC', default='')

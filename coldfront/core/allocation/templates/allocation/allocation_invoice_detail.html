@@ -1,11 +1,28 @@
+<head>
+    <meta charset="utf-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href = "https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel = "stylesheet">
+<link href = "jquery.datetimepicker.min.css" rel = "stylesheet"/>
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/css/bootstrap.css">
+    <link rel="stylesheet" href="//cdn.datatables.net/1.10.16/css/dataTables.bootstrap4.min.css">
+    <script src="pdf.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.js"></script>
+    <!-- <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.0.0-rc.7/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-html2canvas@latest/dist/jspdf-html2canvas.min.js"></script> -->
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.8.0/html2pdf.bundle.min.js"></script> -->
+    <!-- calendar picker -->
+
+
+
+  </head>
+  
 {% extends "common/base.html" %}
 {% load crispy_forms_tags %}
 {% load static %}
-
-
-{% block title %}
-Allocation Invoice Detail
-{% endblock %}
+{% load mathfilters %}
+{% load django_tables2 %}
+{% render_table table %}
 
 
 {% block content %}
@@ -15,120 +32,462 @@ Allocation Invoice Detail
   </div>
 {% endif %}
 
-<div class="mb-3">
-  <h2>Allocation Invoice</h2>
-  <hr>
-</div>
 
 {% if form.non_field_errors %}
   <div class="alert alert-danger" role="alert">
     {{ form.non_field_errors }}
   </div>
 {% endif %}
+<div id = "invoice">
+<div class="mb-3" >
+    <h2>FAS Research Computing Invoice</h2>
+    <!-- <a class="btn btn-info" href="{% url 'pdf_view' allocation.id %}" target="_blank">View Invoice</a> -->
+    <button class = "btn btn-primary" id = "download"> Download PDF </button>
+<!--     
+    <div id="page" style="width: 595.28px;color: black;background: white;">
+      <h3>PDF for Test</h3>
+      <p>Here is some content for testing!!</p>
+    </div>
+    <button id="btn">Generate</button> -->
 
-<div class="card mb-3">
-  <div class="card-header">
-    <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
+    <hr>
   </div>
-  <div class="card-body">
-    <form method="post">
-      {% csrf_token %}
-      <div class="table-responsive">
-        <table class="table table-bordered table-sm">
-          <tr>
-            <th scope="row" class="text-nowrap">Project:</th>
-            <td>
-              {% if request.user.is_superuser %}
-                <a href="{% url 'project-detail' allocation.project.pk %}">{{ allocation.project }}</a>
-              {% else %}
-                {{ allocation.project }}
-              {% endif %}
-            </td>
-          </tr>
-          <tr>
-            <th scope="row" class="text-nowrap">Principal Investigator:</th>
-            <td>
-              {{ allocation.project.pi.first_name }} {{ allocation.project.pi.last_name }}
-              ({{ allocation.project.pi.email }})
-            </td>
-          </tr>
-          <tr>
-            <th scope="row" class="text-nowrap">Resource{{ allocation.resources.all|pluralize }} in allocation:</th>
-            <td>{{ allocation.get_resources_as_string }}</td>
-          </tr>
-          <tr>
-            <th scope="row" class="text-nowrap">Quantity:</th>
-            <td>
-              {{ allocation.quantity }}
-            </td>
-          </tr>
-          <tr>
-            <th scope="row" class="text-nowrap">Status:</th>
-            <td>
-              {{ form.status }}
-            </td>
-          </tr>
-          <tr>
-            <th scope="row" class="text-nowrap">Created:</th>
-            <td>{{ allocation.created }}</td>
-          </tr>
-          <tr>
-            <th scope="row" class="text-nowrap">Last Modified:</th>
-            <td>{{ allocation.modified }}</td>
-          </tr>
-        </table>
+
+  {% if form.non_field_errors %}
+    <div class="alert alert-danger" role="alert">
+      {{ form.non_field_errors }}
+    </div>
+  {% endif %}
+  
+ 
+  <div class="card mb-3">
+    <div class="card-header">
+      <h3><i class="fas fa-list" aria-hidden="true"></i> Invoice Summary For: {{ allocation.project.pi.first_name }} {{ allocation.project.pi.last_name }}</h3>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="table-responsive">
+          <table class="table table-bordered table-sm">
+            <tr>
+              <th scope="row" class="text-nowrap">Lab Group:</th>
+              <td>
+                {% if request.user.is_superuser %}
+                  <a href="{% url 'project-detail' allocation.project.pk %}">{{ allocation.project }}</a>
+                {% else %}
+                  {{ allocation.project }}
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">Principal Investigator:</th>
+              <td>
+                {{ allocation.project.pi.first_name }} {{ allocation.project.pi.last_name }}
+                ({{ allocation.project.pi.email }})
+              </td>
+            </tr>
+            <tr>
+                <th scope="row" class="text-nowrap">Service Type:</th>
+                <td>
+                 Storage
+                </td>
+              </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">Resource{{ allocation.resources.all|pluralize }} in allocation:</th>
+              <td>{{ allocation.get_resources_as_string }}</td>
+            </tr>
+            <!-- <tr>
+              <th scope="row" class="text-nowrap">Quantity:</th>
+              <td>
+                {{ allocation.quantity }}
+              </td>
+            </tr> -->
+            <!-- <tr>
+              <th scope="row" class="text-nowrap">Status:</th>
+              <td>
+                {{ form.status }}
+              </td>
+            </tr> -->
+            <tr>
+              <th scope="row" class="text-nowrap">Service Period:</th>
+              <td>
+               
+ <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script> 
+  <!-- <script>
+    function onLoad2() {
+      //method for button times
+      if (document.getElementById('1month').checked ) {
+        var price = {{ allocation_users.0.allocation_group_quota }} * 1 / 12 * 50;
+        var n = price.toFixed(2);
+        console.log(price);
+        document.getElementById("totalamount").innerHTML = n;
+      }
+      
+
+      if (document.getElementById('3month').checked ) {
+        var price = {{ allocation_users.0.allocation_group_quota }} * 3 / 12 * 50; 
+        var n = price.toFixed(2);
+        console.log(price);
+        document.getElementById("totalamount").innerHTML = n;
+  
+      }
+
+      if (document.getElementById('6month').checked ) {
+        var price = {{ allocation_users.0.allocation_group_quota }} * 6 / 12 * 50;
+        var n = price.toFixed(2);
+        document.getElementById("totalamount").innerHTML = n;
+
+      }
+      if (document.getElementById('1year').checked ) {
+        var price = {{ allocation_users.0.allocation_group_quota }} * 12 / 12 * 50;
+        var n = price.toFixed(2);
+        document.getElementById("totalamount").innerHTML = n;
+
+      }
+    }
+  
+  </script> --> 
+
+ 
+
+  <!-- <input type="radio" id="1month" name="period" value="1month" onclick="onLoad2(); ">
+  <label for="period">1 Month</label><br>
+  <input type="radio" id="3month" name="period" value="3month" onclick="onLoad2();">
+  <label for="period">3 Months</label><br>
+  <input type="radio" id="6month" name="period" value="6month" onclick="onLoad2();">
+  <label for="period">6 Months</label><br>
+  <input type="radio" id="1year" name="period" value="1year" onclick="onLoad2();">
+  <label for="period">1 Year</label> -->
+  <!-- <br>   -->
+
+  <!-- <input type="submit" value="Submit"> -->
+<!-- </form> -->
+
+        <select class = "dropdown" name="dropdown" id="billingPeriod" >
+            <option value="1month" id = "1month" selected>1 Month</option>
+            <option value="3month" id = "3month">3 Months</option>
+            <option value="6month" id = "6month">6 Months</option>
+            <option value="1year" id ="1year">1 Year</option>
+        </select>
+
+                </td>
+            </tr>
+
+   
+            <tr>
+                <th scope="row" class="text-nowrap">Total Users in Your Bill:</th>
+                <td>{{ allocation_users.count }}</td>
+            </tr>
+            <tr>
+                <th scope="row" class="text-nowrap">Total Usage (TB):</th>
+                <td>{{ allocation_users.0.allocation_group_usage_bytes| div:1099511627776|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <th scope="row" class="text-nowrap">Quota (TB):</th>
+                <td id = "group_quota">{{ allocation_users.0.allocation_group_quota }}</td>
+            </tr>
+
+            <tr>
+                <th scope="row" class="text-nowrap">Created:</th>
+                <td>{{ allocation.created }}</td>
+              </tr>
+              <tr>
+                <th scope="row" class="text-nowrap">Last Modified:</th>
+                <td>{{ allocation.modified }}</td>
+              </tr>
+            <tr>
+                <th  style="background-color:#D3D3D3" bordercolor="red" scope="row" class="text-nowrap">Total Amount Due:	</th>
+               
+                <!-- <td style="background-color:#D3D3D3">${{allocation_users.0.allocation_group_usage_bytes| div:1099511627776|mul:50| div:12|floatformat:2}}</td> -->
+                <td  style="background-color:#D3D3D3" id = "totalamount"></td>
+              </tr>
+          </table>
+        </div>
+        <!-- {% if request.user.is_superuser or perms.allocation.can_manage_invoice%}
+          <button type="submit" class="btn btn-success float-right"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
+        {% endif %} -->
+      </form>
+    </div>
+  </div>
+
+  <script>
+      const selectElement = document.getElementById('billingPeriod');
+      console.log(selectElement);
+      var price = {{ allocation_users.0.allocation_group_quota }} * 1 / 12 * 50;
+      var n = price.toFixed(2);
+              
+      document.getElementById("totalamount").innerHTML = n;
+      selectElement.addEventListener('change', (event) => {
+            if (event.target.value=="1month") {
+              var price = {{ allocation_users.0.allocation_group_quota }} * 1 / 12 * 50;
+              var n = price.toFixed(2);
+              
+              document.getElementById("totalamount").innerHTML = n;
+            }
+            // console.log(event.target.value);
+            if (event.target.value=="3month") {
+              var price = {{ allocation_users.0.allocation_group_quota }} * 3 / 12 * 50;
+              var n = price.toFixed(2);
+              
+              document.getElementById("totalamount").innerHTML = n;
+            }
+            if (event.target.value=="6month") {
+              var price = {{ allocation_users.0.allocation_group_quota }} * 6 / 12 * 50;
+              var n = price.toFixed(2);
+              
+              document.getElementById("totalamount").innerHTML = n;
+            }
+            if (event.target.value=="1year") {
+              var price = {{ allocation_users.0.allocation_group_quota }} * 12 / 12 * 50;
+              var n = price.toFixed(2);
+              
+              document.getElementById("totalamount").innerHTML = n;
+            }
+      });
+      
+    </script>
+<!-- <div class="html2pdf__page-break"></div>
+{% if attributes or attributes_with_usage or request.user.is_superuser %}
+  <div class="card mb-3" >
+    <div class="card-header">
+      <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Detailed Invoice Information</h3>
+      <div class="float-right">
+        {% if request.user.is_superuser %}
+       
+        {% endif %}
       </div>
-      {% if request.user.is_superuser or perms.allocation.can_manage_invoice%}
-        <button type="submit" class="btn btn-success float-right"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
-      {% endif %}
-    </form>
-  </div>
-</div>
+    </div>
+    <div class="card-body">
 
-<!-- Start Admin Messages -->
+
+      {% if attributes_with_usage %}
+        <hr>
+        {% for attribute in attributes_with_usage %}
+          <div class="card mb-3 mr-1">
+            <div class="card-body">
+              <h4 class="card-title">{{attribute}}</h4>
+              <div id="gauge-{{forloop.counter0}}"></div>
+            </div>
+          </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+{% endif %} -->
+
+<!-- Start Allocation Users -->
+
+<div class="html2pdf__page-break"></div>
 <div class="card mb-3">
   <div class="card-header">
-    <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Notes from Staff</h3>
-    <span class="badge badge-secondary">{{allocation.allocationusernote_set.count}}</span>
+    <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Users in Allocation</h3>
+    <span class="badge badge-secondary">{{allocation_users.count}}</span>
     <div class="float-right">
-      <a class="btn btn-success" href="{% url 'allocation-add-invoice-note' allocation.pk %}" role="button">
-        <i class="fas fa-plus" aria-hidden="true"></i> Add Note
-      </a>
-      <a class="btn btn-danger" href="{% url 'allocation-delete-invoice-note' allocation.pk %}" role="button">
-        <i class="fas fa-minus" aria-hidden="true"></i> Delete Notes
-      </a>
+      {% if allocation.project.status.name != 'Archived' and is_allowed_to_update_project and allocation.status.name in 'Active,New,Renewal Requested' %}
+        <a class="btn btn-success" href="{% url 'allocation-add-users' allocation.pk %}" role="button">
+          <i class="fas fa-user-plus" aria-hidden="true"></i> Add Users
+        </a>
+        <a class="btn btn-danger" href="{% url 'allocation-remove-users' allocation.pk %}" role="button">
+          <i class="fas fa-user-times" aria-hidden="true"></i> Remove Users
+        </a>
+      {% endif %}
+
     </div>
   </div>
   <div class="card-body">
-    {% if allocation.allocationusernote_set.all %}
-      <div class="table-responsive">
-        <table class="table table-hover">
-          <thead>
+    <div class="table-responsive">
+    <div class = "container mb-3 mt-3">
+      <!-- <table  class="table table-hover mydatatable" > -->
+        <table id = "mydatatable" class = "table table-striped table-bordered">
+        <thead>
+          <tr>
+            <!-- <th scope="col">Username</th> -->
+            <th scope="col">Name</th>
+            <!-- <th scope="col">Email</th> -->
+            <!-- <th scope="col">Email</th> -->
+
+            <th scope="col">Usage</th>
+            <th scope="col">Percent</th>
+            <th scope="col">Monthly Cost in Dollars</th>
+
+            <!-- <th scope="col">Status</th> -->
+            <!-- <th scope="col">Last Modified</th> -->
+          </tr>
+        </thead>
+        <tbody>
+         
+          {% for user in allocation_users %}
+          
             <tr>
-              <th scope="col">Comment</th>
-              <th scope="col">Author</th>
-              <th scope="col">Last Modified</th>
-              <th scope="col">Actions</th>
+              <!-- <td>{{ user.user.username }}</td> -->
+              <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
+              <!-- <td>{{ user.user.email }}</td> -->
+              <!-- <td>{{ user.usage_bytes}}</td> -->
+
+              <td data-sort = "{{user.usage_bytes}}">{{ user.usage }}{{ user.unit }}</td>
+        
+              <td>{{user.usage_bytes|mul:100 | div:user.allocation_group_usage_bytes|floatformat:2}}</td>
+              <td>{{user.usage_bytes|mul:100 | div:user.allocation_group_usage_bytes|floatformat:2|div:100|mul:allocation_users.0.allocation_group_quota|mul:50|div:12|floatformat:2}}</td>
+
+              <!-- <td>{{user.usage_bytes|mul:100 | div:user.allocation_group_usage_bytes|floatformat:2|mul:50|mul:50| div:12|floatformat:2}}</td> -->
+            
             </tr>
-          </thead>
-          <tbody>
-            {% for note in allocation.allocationusernote_set.all %}
-              <tr>
-                <td>{{ note.note }}</td>
-                <td>{{ note.author.first_name }} {{ note.author.last_name }} ({{ note.author.username }})</td>
-                <td>{{ note.modified }}</td>
-                <td><a href="{% url 'allocation-update-invoice-note' note.pk %}"><i class="fas fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    {% else %}
-      <div class="alert alert-info" role="alert">
-        <i class="fa fa-info-circle" aria-hidden="true"></i> There are no messages from system administrators.
-      </div>
-    {% endif %}
+           
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    </div>
   </div>
 </div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.css"/>
+ 
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/pdfmake.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.js"></script>
+
+<!-- 
+<script>
+let btn = document.getElementById('btn');
+let page = document.getElementById('page');
+
+btn.addEventListener('click', function(){
+  html2PDF(page, {
+    jsPDF: {
+      format: 'a4',
+    },
+    html2canvas: {
+      scrollX: 0,
+      scrollY: -window.scrollY,
+    },
+    imageType: 'image/jpeg',
+    output: './pdf/generate.pdf'
+  });
+});
+
+</script> -->
+
+
+<script>
+    $(document).ready( function () {
+    $('#mydatatable').DataTable({
+    "order": [[ 3, "desc" ]],
+    iDisplayLength: -1,
+    dom: 'B<"clear">lfrtip',
+    
+    buttons: {
+        name: 'primary',
+        
+        buttons: [ 'csv', 'excel', 'pdf' ]
+    
+        }
+    }
+    );
+    } );
+</script>
+
+<div class="html2pdf__page-break"></div>
+<div class="card mb-3">
+    <div class="card-header">
+      <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Notes from Staff</h3>
+      <span class="badge badge-secondary">{{allocation.allocationusernote_set.count}}</span>
+      <div class="float-right">
+        <a class="btn btn-success" href="{% url 'allocation-add-invoice-note' allocation.pk %}" role="button">
+          <i class="fas fa-plus" aria-hidden="true"></i> Add Note
+        </a>
+        <a class="btn btn-danger" href="{% url 'allocation-delete-invoice-note' allocation.pk %}" role="button">
+          <i class="fas fa-minus" aria-hidden="true"></i> Delete Notes
+        </a>
+      </div>
+    </div>
+    <div class="card-body">
+      {% if allocation.allocationusernote_set.all %}
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th scope="col">Comment</th>
+                <th scope="col">Author</th>
+                <th scope="col">Last Modified</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for note in allocation.allocationusernote_set.all %}
+                <tr>
+                  <td>{{ note.note }}</td>
+                  <td>{{ note.author.first_name }} {{ note.author.last_name }} ({{ note.author.username }})</td>
+                  <td>{{ note.modified }}</td>
+                  <td><a href="{% url 'allocation-update-invoice-note' note.pk %}"><i class="fas fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="alert alert-info" role="alert">
+          <i class="fa fa-info-circle" aria-hidden="true"></i> There are no messages from system administrators.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+
+
+
+<!-- <script>
+  $(document).ready(function () {
+    var guage_data = {{ guage_data | safe }};
+    drawGauges(guage_data);
+  });
+
+  function drawGauges(guage_data) {
+    var arrayLength = guage_data.length;
+    for (var i = 0; i < arrayLength; i++) {
+      c3.generate({
+        bindto: '#gauge-' + i,
+        data: guage_data[i],
+        legend: {
+          item: {
+            onclick: function (id) { }
+          }
+        }
+      });
+    }
+  }
+  $(".datepicker").datepicker({ dateFormat: 'yy-mm-dd' });
+</script> -->
+
+
+<script type="text/javascript">
+window.onload = function () {
+    document.getElementById("download")
+        .addEventListener("click", () => {
+            const invoice = this.document.getElementById("invoice");
+            console.log(invoice);
+            console.log(window);
+            var opt = {
+                margin: 1,
+                filename: 'invoice.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'legal', orientation: 'landscape' }
+            };
+            html2pdf().from(invoice).set(opt).save();
+        })
+}
+</script>
+
+
+
 {% endblock %}
 
+
+{% block js %}
+
+</div>
+{% endblock %}

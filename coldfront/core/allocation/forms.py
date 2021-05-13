@@ -14,6 +14,9 @@ ALLOCATION_ACCOUNT_ENABLED = import_from_settings(
 
 
 class AllocationForm(forms.Form):
+    DEFAULT_DESCRIPTION = '''
+We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!
+        '''
     resource = forms.ModelChoiceField(queryset=None, empty_label=None)
     justification = forms.CharField(widget=forms.Textarea)
     quantity = forms.IntegerField(required=True)
@@ -78,7 +81,7 @@ class AllocationUpdateForm(forms.Form):
 
 class AllocationInvoiceUpdateForm(forms.Form):
     status = forms.ModelChoiceField(queryset=AllocationStatusChoice.objects.filter(name__in=[
-        'Payment Pending', 'Payment Requested', 'Payment Declined', 'Paid']).order_by('name'), empty_label=None)
+        'Payment Pending', 'Payment Requested', 'Paid']).order_by('name'), empty_label=None)
 
 
 class AllocationAddUserForm(forms.Form):

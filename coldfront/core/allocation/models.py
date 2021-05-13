@@ -6,6 +6,7 @@ from ast import literal_eval
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.utils.html import mark_safe
 from django.utils.module_loading import import_string
@@ -15,6 +16,8 @@ from simple_history.models import HistoricalRecords
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import import_from_settings
+from table import Table
+from table.columns import Column
 
 logger = logging.getLogger(__name__)
 
@@ -131,6 +134,9 @@ class Allocation(TimeStampedModel):
 
     @property
     def get_parent_resource(self):
+        if self.resources.count() == 0:
+            print("no parent resource")
+            return None
         if self.resources.count() == 1:
             return self.resources.first()
         else:
@@ -167,6 +173,9 @@ class Allocation(TimeStampedModel):
         return [a.value for a in attr]
 
     def __str__(self):
+        tmp = self.get_parent_resource
+        if (tmp == None):
+            return "no parent resource"
         return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
 
 
@@ -279,15 +288,24 @@ class AllocationUserStatusChoice(TimeStampedModel):
         ordering = ['name', ]
 
 
-class AllocationUser(TimeStampedModel):
+class AllocationUser(TimeStampedModel): #allocation user and user are both database models; one provided by django one is a custom one;
     """ AllocationUser. """
-    allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
+    allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE) 
+    # one user will have many AllocationUser
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     status = models.ForeignKey(AllocationUserStatusChoice, on_delete=models.CASCADE,
                                verbose_name='Allocation User Status')
+    usage_bytes = models.BigIntegerField(blank=True, null=True)
+    # usage = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    usage = models.FloatField(default = 0)
+    allocation_group_usage_bytes = models.BigIntegerField(blank=True, null=True)
+    allocation_group_quota = models.BigIntegerField(blank=True, null=True)
+    unit = models.TextField(max_length=20, default="N/A Unit")
     history = HistoricalRecords()
 
     def __str__(self):
+        if (self.allocation.resources.first() == None):
+            return '%s (%s)' % (self.user, "None")
         return '%s (%s)' % (self.user, self.allocation.resources.first().name)
 
     class Meta:

@@ -9,34 +9,99 @@ Allocation Invoice List
 
 
 {% block content %}
+<style>
+.button-container form,
+.button-container form div {
+    display: inline;
+}
+
+.button-container button {
+    display: inline;
+    vertical-align: middle;
+}
+</style>
+
 <h2>Allocations that require payment</h2>
+<div class="button-container">
+  <form action="" method="post">
+      <div>
+          <label for="start">Allocation Start Date:</label>
+          <input type="date" id="start" name="start">
+          <!-- <input type="submit"> -->
+          <label for="end">Allocation   End   Date: </label>
+
+          <input type="date" id="end_time" name="end">
+          <!-- <input type="submit"> -->
+      </div>
+  </form>
+
+</div>
+<br/>
+
 
 {% if allocation_list %}
   <div class="table-responsive">
     <table class="table table-sm">
       <thead>
         <tr>
+          <th scope="col">Check</th>
           <th scope="col">ID</th>
           <th scope="col">Resource</th>
           <th scope="col">Status</th>
-          <th scope="col">PI</th>
+          <th scope="col">Username</th>
+          <th scope="name">Name</th>
+          <th scope="col">Email</th>
+          <!-- <th scope="col">Ready to Email</th> -->
+          <!-- <th scope="col">Paid</th> -->
+
+          <!-- <th scope="col">Email Project Managers</th> -->
         </tr>
       </thead>
       <tbody>
         {% for allocation in allocation_list %}
           <tr>
+            <td> <input type="checkbox" id="pi" name="email_reminder" value="reminder"></td>
             <td><a target="_blank" href="{% url 'allocation-invoice-detail' allocation.pk %}">{{allocation.pk}}</td>
             <td>{{allocation.get_resources_as_string}}</td>
             <td>{{allocation.status}}</td>
             <td>{{allocation.project.pi.username }}</td>
+            <td>{{allocation.project.pi.first_name }} {{allocation.project.pi.last_name }}</td>
+
+            <td>{{allocation.project.pi.email}}</td>
+            <!-- <td> <input type="checkbox" id="pi" name="email_reminder" value="reminder"></td> -->
+            <!-- <td><input type="checkbox" id="paid" name="paid" value="paid"></td> -->
+            <!-- <td> <a class="btn btn-primary" href="{{mailto}}" role="button"><i class="far fa-envelope" aria-hidden="true"></i>Send</a></td> -->
           </tr>
         {% endfor %}
       </tbody>
     </table>
+
+
+  <!-- <a class="btn btn-success" href="{}" role="button">
+    <i class="fas fa-user-plus" aria-hidden="true"></i> Ready to Email	
+  </a> -->
+  <a class="btn btn-primary" href="mailto:{{ project.pi.email }}" role="button"><i class="far fa-envelope" aria-hidden="true"></i> Ready to Email</a>
+
+  <a class="btn btn-danger" href="{}" role="button">
+    <i class="fas fa-user-times" aria-hidden="true"></i> Move to Paid
+  </a>
+
+
+
   </div>
+
+
 {% else %}
   <div class="alert alert-info">
     No allocations requiring payment!
   </div>
 {% endif %}
+
+
+
+
+
 {% endblock %}
+
+
+

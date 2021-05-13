@@ -297,6 +297,7 @@ As a simple example, to change the default background color from blue to black, 
 $ mkdir -p site/static/common/css
 $ tee site/static/common/css/common.css <<EOF
 .bg-primary {
+  
   background-color: #000 !important;
 }
 EOF

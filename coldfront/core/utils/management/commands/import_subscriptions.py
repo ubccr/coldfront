@@ -55,19 +55,19 @@ class Command(BaseCommand):
         subscription_status_choices = {}
         subscription_status_choices['ACT'] = SubscriptionStatusChoice.objects.get(name='Active')
         subscription_status_choices['PEN'] = SubscriptionStatusChoice.objects.get(name='Pending')
-        subscription_status_choices['EXP'] = SubscriptionStatusChoice.objects.get(name='Expired')
-        subscription_status_choices['DEN'] = SubscriptionStatusChoice.objects.get(name='Denied')
-        subscription_status_choices['REV'] = SubscriptionStatusChoice.objects.get(name='Revoked')
+        # subscription_status_choices['EXP'] = SubscriptionStatusChoice.objects.get(name='Expired')
+        # subscription_status_choices['DEN'] = SubscriptionStatusChoice.objects.get(name='Denied')
+        # subscription_status_choices['REV'] = SubscriptionStatusChoice.objects.get(name='Revoked')
         subscription_status_choices['UNP'] = SubscriptionStatusChoice.objects.get(name='Unpaid')
         subscription_status_choices['NEW'] = SubscriptionStatusChoice.objects.get(name='New')
-        subscription_status_choices['INA'] = SubscriptionStatusChoice.objects.get(name='Inactive (Renewed)')
+        # subscription_status_choices['INA'] = SubscriptionStatusChoice.objects.get(name='Inactive (Renewed)')
         subscription_status_choices['APR'] = SubscriptionStatusChoice.objects.get(name='Approved')
 
         subscription_user_status_choices = {}
         subscription_user_status_choices['ACT'] = SubscriptionUserStatusChoice.objects.get(name='Active')
-        subscription_user_status_choices['PEA'] = SubscriptionUserStatusChoice.objects.get(name='Denied')
-        subscription_user_status_choices['PER'] = SubscriptionUserStatusChoice.objects.get(name='Pending - Add')
-        subscription_user_status_choices['DEN'] = SubscriptionUserStatusChoice.objects.get(name='Pending - Remove')
+        # subscription_user_status_choices['PEA'] = SubscriptionUserStatusChoice.objects.get(name='Denied')
+        # subscription_user_status_choices['PER'] = SubscriptionUserStatusChoice.objects.get(name='Pending - Add')
+        # subscription_user_status_choices['DEN'] = SubscriptionUserStatusChoice.objects.get(name='Pending - Remove')
         subscription_user_status_choices['REM'] = SubscriptionUserStatusChoice.objects.get(name='Removed')
 
         filepath = os.path.join(base_dir, 'local_data', 'subscriptions.tsv')

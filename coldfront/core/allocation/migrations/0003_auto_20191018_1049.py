@@ -20,4 +20,5 @@ class Migration(migrations.Migration):
             name='is_locked',
             field=models.BooleanField(default=False),
         ),
+
     ]

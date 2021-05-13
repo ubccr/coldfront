@@ -58,7 +58,7 @@ DB_URL=mysql://user:password@127.0.0.1:3306/database
 
 # Path to store static assets
 STATIC_ROOT=/srv/coldfront/static
-
+COLDFRONT_DATA_LOAD=/n/coldfront # added on 03292021
 # Name of your center
 CENTER_NAME='University HPC'
 
