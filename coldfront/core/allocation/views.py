@@ -1786,8 +1786,6 @@ dict_obj = []
 # print(one_allocation_users)
 # print(one_allocation)
 # Article.objects.filter(reporter__pk=1)
-print("hello world line 1756")
-# print("print line 1756",type(all_users))
 # Opens up page as PDF
 # for e in one_allocation_users:
 #     print(e.user.username)
