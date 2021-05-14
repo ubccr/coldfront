@@ -45,7 +45,6 @@ INSTALLED_APPS = [
     'table',
     'rest_framework_datatables',
     'easy_pdf',
-   
 ]
 
 # Additional Apps
@@ -55,6 +54,9 @@ INSTALLED_APPS += [
     'django_q',
     'simple_history',
     'mathfilters',
+    'ifxuser',
+    'author',
+    'ifxbilling',
 ]
 
 # ColdFront Apps
@@ -69,6 +71,7 @@ INSTALLED_APPS += [
     'coldfront.core.grant',
     'coldfront.core.publication',
     'coldfront.core.research_output',
+    'coldfront.plugins.ifx',
 ]
 
 #------------------------------------------------------------------------------
@@ -83,6 +86,9 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'simple_history.middleware.HistoryRequestMiddleware',
+]
+MIDDLEWARE += [
+    'author.middlewares.AuthorDefaultBackendMiddleware',
 ]
 
 #------------------------------------------------------------------------------
