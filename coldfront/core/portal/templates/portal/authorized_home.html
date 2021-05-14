@@ -6,7 +6,7 @@
     <hr>
 
     <p>If you would like to set up or update your access to a cluster, please complete the following steps.</p>
-    <p>First Review and Sign the cluster user agreement. Only then you can Join a cluster project and gain access to the cluster.</p>
+    <p>First review and sign the cluster user agreement. Only then you can join a cluster project and gain access to the cluster.</p>
     <table class="table">
       <thead>
         <tr>
@@ -46,7 +46,17 @@
           {% endif %}
         </tr>
         <tr>
-          <td>2. Create or join a project.</td>
+          <td>
+            2. Create or join a project.
+            <i
+              class="fas fa-question-circle"
+              aria-hidden="true"
+              data-toggle="tooltip"
+              data-placement="top"
+              title="A project corresponds to an allowance (e.g., FCA, Condo, etc.) and provides access to a Slurm account on the cluster.">
+            </i>
+          </td>
+
           {% if user.userprofile.access_agreement_signed_date is not None %}
             <td>
               {% if project_list %}
@@ -341,4 +351,11 @@
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-home").addClass("active");
 </script>
+
+<script>
+  $(function () {
+    $('[data-toggle="tooltip"]').tooltip()
+  })
+</script>
+
 {% endblock %}
