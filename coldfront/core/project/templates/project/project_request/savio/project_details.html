@@ -21,7 +21,13 @@ Savio Project Request - Project Details
   <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>
   <li>{{ breadcrumb_pi }}</li>
   <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>
-  <li>Not Pooling</li>
+  <li>
+    {% if breadcrumb_pooling %}
+      Pooling
+    {% else %}
+      Not Pooling
+    {% endif %}
+  </li>
 </ol>
 
 <p>You are creating a new project. Please provide the following details:</p>

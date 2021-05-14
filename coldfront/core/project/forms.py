@@ -190,9 +190,14 @@ class ProjectUpdateForm(forms.ModelForm):
 # TODO: Once finalized, move these imports above.
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import SavioProjectAllocationRequest
+from django.conf import settings
 from django.contrib.auth.models import User
+from django.core.validators import MaxValueValidator
 from django.core.validators import MinLengthValidator
+from django.core.validators import MinValueValidator
 from django.core.validators import RegexValidator
+from django.forms.widgets import TextInput
+from django.utils.safestring import mark_safe
 
 
 class DisabledChoicesSelectWidget(forms.Select):
@@ -309,6 +314,73 @@ class SavioProjectNewPIForm(forms.Form):
         return email
 
 
+class SavioProjectMOUExtraFieldsForm(forms.Form):
+
+    num_service_units = forms.IntegerField(
+        help_text=(
+            'Specify the number of service units you would like to purchase, '
+            'which must be a positive multiple of 100. $1 = 100 SUs.'),
+        label='Number of Service Units',
+        required=True,
+        validators=[
+            MaxValueValidator(settings.ALLOCATION_MAX),
+            MinValueValidator(100),
+        ],
+        widget=TextInput(
+            attrs={
+                'type': 'number',
+                'min': '100',
+                'max': str(settings.ALLOCATION_MAX),
+                'step': '100'}))
+    # The minimum and maximum lengths are loose bounds.
+    campus_chartstring = forms.CharField(
+        help_text=mark_safe(
+            'Provide the campus <a href="https://calanswers.berkeley.edu/'
+            'subject-areas/pi-portfolio/training/chartstring" target="_blank">'
+            'chartstring</a> to bill.'),
+        label='Campus Chartstring',
+        max_length=100,
+        required=True,
+        validators=[MinLengthValidator(15)])
+    chartstring_account_type = forms.CharField(
+        help_text=(
+            'Provide the type of account represented by the chartstring.'),
+        label='Chartstring Account Type',
+        max_length=150,
+        required=True)
+    # Allow at most 150 characters for the first and last names, and 1 space.
+    chartstring_contact_name = forms.CharField(
+        help_text=(
+            'Provide the name of the departmental business contact for '
+            'correspondence about the chartstring.'),
+        label='Chartstring Contact Name',
+        max_length=301,
+        required=True)
+    chartstring_contact_email = forms.EmailField(
+        help_text=(
+            'Provide the email address of the departmental business contact '
+            'for correspondence about the chartstring.'),
+        label='Chartstring Contact Email',
+        max_length=100,
+        required=True)
+
+    def __init__(self, *args, **kwargs):
+        disable_fields = kwargs.pop('disable_fields', False)
+        super().__init__(*args, **kwargs)
+        if disable_fields:
+            for field in self.fields:
+                self.fields[field].disabled = True
+
+    def clean_num_service_units(self):
+        cleaned_data = super().clean()
+        num_service_units = cleaned_data['num_service_units']
+        if num_service_units % 100:
+            raise forms.ValidationError(
+                f'The number of service units {num_service_units} is not '
+                f'divisible by 100.')
+        return num_service_units
+
+
 class SavioProjectPoolAllocationsForm(forms.Form):
 
     pool = forms.BooleanField(
@@ -341,6 +413,7 @@ class SavioProjectPooledProjectSelectionForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self.allocation_type = kwargs.pop('allocation_type', None)
         kwargs.pop('breadcrumb_pi', None)
+        kwargs.pop('breadcrumb_pooling', None)
         super().__init__(*args, **kwargs)
         projects = Project.objects.prefetch_related(
             'projectuser_set__user'
@@ -400,6 +473,7 @@ class SavioProjectDetailsForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self.allocation_type = kwargs.pop('allocation_type', None)
         kwargs.pop('breadcrumb_pi', None)
+        kwargs.pop('breadcrumb_pooling', None)
         super().__init__(*args, **kwargs)
 
     def clean_name(self):
@@ -411,6 +485,8 @@ class SavioProjectDetailsForm(forms.Form):
             name = f'co_{name}'
         elif self.allocation_type == SavioProjectAllocationRequest.PCA:
             name = f'pc_{name}'
+        elif self.allocation_type == SavioProjectAllocationRequest.MOU:
+            name = f'ac_{name}'
         if Project.objects.filter(name=name):
             raise forms.ValidationError(
                 f'A project with name {name} already exists.')
@@ -598,6 +674,19 @@ class ProjectAllocationReviewForm(forms.Form):
         return cleaned_data
 
 
+class SavioProjectReviewMemorandumSignedForm(forms.Form):
+
+    status = forms.ChoiceField(
+        choices=(
+            ('', 'Select one.'),
+            ('Pending', 'Pending'),
+            ('Complete', 'Complete'),
+        ),
+        help_text='If you are unsure, leave the status as "Pending".',
+        label='Status',
+        required=True)
+
+
 class SavioProjectReviewSetupForm(forms.Form):
 
     status = forms.ChoiceField(
@@ -654,7 +743,7 @@ class SavioProjectReviewSetupForm(forms.Form):
         cleaned_data = super().clean()
         final_name = cleaned_data.get('final_name', '').lower()
         expected_prefix = None
-        for prefix in ('co_', 'fc_', 'pc_'):
+        for prefix in ('ac_', 'co_', 'fc_', 'pc_'):
             if self.requested_name.startswith(prefix):
                 expected_prefix = prefix
                 break

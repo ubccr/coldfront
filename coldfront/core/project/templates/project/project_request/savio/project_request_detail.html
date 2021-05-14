@@ -45,7 +45,15 @@ Savio Project Request Detail
             <td>
               {% with status=savio_request.status.name %}
                 {% if status == 'Under Review' %}
-                  <p>This request is currently under review. Administrators must determine if the requested PI is eligible for an allowance, and if the project is appropriate for Savio.</p>
+                  <p>
+                    This request is currently under review. Administrators must
+                    determine if the requested PI is eligible for an allowance,
+                    and if the project is appropriate for Savio.
+                    {% if savio_request.allocation_type == "MOU" %}
+                      They must also confirm that the Memorandum of Use has
+                      been signed.
+                    {% endif %}
+                  </p>
                 {% elif status == 'Approved - Processing' %}
                   <p>This request has been approved, and is currently being set up on the cluster.</p>
                 {% elif status == 'Approved - Complete' %}
@@ -156,32 +164,97 @@ Savio Project Request Detail
                   {% endif %}
                 </td>
               </tr>
+              {% if savio_request.allocation_type == "MOU" %}
+                {% with memorandum_signed=savio_request.state.memorandum_signed %}
+                  <tr>
+                    <td>Confirm that the Memorandum of Use has been signed.</td>
+                    <td>
+                      {% if eligibility.status == 'Denied' or readiness.status == 'Denied' %}
+                        <span class="badge badge-danger">
+                          N/A
+                        </span>
+                      {% elif memorandum_signed.status == 'Pending' %}
+                        <span class="badge badge-warning">
+                          {{ memorandum_signed.status }}
+                        </span>
+                      {% else %}
+                        <span class="badge badge-success">
+                          {{ memorandum_signed.status }} {{ memorandum_signed.timestamp|iso8601_to_datetime }}
+                        </span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if eligibility.status == 'Approved' and readiness.status == 'Approved' %}
+                        <a href="{% url 'savio-project-request-review-memorandum-signed' savio_request.pk %}" class="btn btn-primary">
+                          Manage
+                        </a>
+                      {% else %}
+                        <button class="btn btn-primary" disabled="true">
+                          Manage
+                        </button>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endwith %}
+              {% endif %}
               <tr>
                 <td>Perform project setup on the cluster.</td>
                 <td>
-                  {% if eligibility.status == 'Denied' or readiness.status == 'Denied' %}
-                    <span class="badge badge-danger">
-                      N/A
-                    </span>
-                  {% elif setup.status == 'Pending' %}
-                    <span class="badge badge-warning">
-                      {{ setup.status }}
-                    </span>
+                  {% if savio_request.allocation_type == "MOU" %}
+                    {% with memorandum_signed=savio_request.state.memorandum_signed %}
+                      {% if eligibility.status == 'Denied' or readiness.status == 'Denied' %}
+                        <span class="badge badge-danger">
+                          N/A
+                        </span>
+                      {% elif memorandum_signed.status == 'Pending' or setup.status == 'Pending' %}
+                        <span class="badge badge-warning">
+                          Pending
+                        </span>
+                      {% else %}
+                        <span class="badge badge-success">
+                          {{ setup.status }} {{ setup.timestamp|iso8601_to_datetime }}
+                        </span>
+                      {% endif %}
+                    {% endwith %}
                   {% else %}
-                    <span class="badge badge-success">
-                      {{ setup.status }} {{ setup.timestamp|iso8601_to_datetime }}
-                    </span>
+                    {% if eligibility.status == 'Denied' or readiness.status == 'Denied' %}
+                      <span class="badge badge-danger">
+                        N/A
+                      </span>
+                    {% elif setup.status == 'Pending' %}
+                      <span class="badge badge-warning">
+                        {{ setup.status }}
+                      </span>
+                    {% else %}
+                      <span class="badge badge-success">
+                        {{ setup.status }} {{ setup.timestamp|iso8601_to_datetime }}
+                      </span>
+                    {% endif %}
                   {% endif %}
                 </td>
                 <td>
-                  {% if eligibility.status == 'Approved' and readiness.status == 'Approved' %}
-                    <a href="{% url 'savio-project-request-review-setup' savio_request.pk %}" class="btn btn-primary">
-                      Manage
-                    </a>
+                  {% if savio_request.allocation_type == "MOU" %}
+                    {% with memorandum_signed=savio_request.state.memorandum_signed %}
+                      {% if eligibility.status == 'Approved' and readiness.status == 'Approved' and memorandum_signed.status == 'Complete' %}
+                        <a href="{% url 'savio-project-request-review-setup' savio_request.pk %}" class="btn btn-primary">
+                          Manage
+                        </a>
+                      {% else %}
+                        <button class="btn btn-primary" disabled="true">
+                          Manage
+                        </button>
+                      {% endif %}
+                    {% endwith %}
                   {% else %}
-                    <button class="btn btn-primary" disabled="true">
-                      Manage
-                    </button>
+                    {% if eligibility.status == 'Approved' and readiness.status == 'Approved' %}
+                      <a href="{% url 'savio-project-request-review-setup' savio_request.pk %}" class="btn btn-primary">
+                        Manage
+                      </a>
+                    {% else %}
+                      <button class="btn btn-primary" disabled="true">
+                        Manage
+                      </button>
+                    {% endif %}
                   {% endif %}
                 </td>
               </tr>
@@ -210,6 +283,7 @@ Savio Project Request Detail
   </div>
 {% endif %}
 
+{% include 'project/project_request/savio/project_request_extra_fields_modal.html' with extra_fields_form=extra_fields_form %}
 {% include 'project/project_request/savio/project_request_survey_modal.html' with survey_form=survey_form %}
 
 {% endblock %}

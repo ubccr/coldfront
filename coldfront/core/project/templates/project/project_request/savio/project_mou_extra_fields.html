@@ -4,7 +4,7 @@
 
 
 {% block title %}
-Savio Project Request - Allocation Pooling
+Savio Project Request - Memorandum of Use Details
 {% endblock %}
 
 
@@ -14,26 +14,15 @@ Savio Project Request - Allocation Pooling
 
 
 {% block content %}
-<script type='text/javascript' src="{% static 'selectize/selectize.min.js' %}"></script>
-<link rel='stylesheet' type='text/css' href="{% static 'selectize/selectize.bootstrap3.css' %}"/>
-
-<h1>Savio: Allocation Pooling</h1><hr>
+<h1>Savio: Memorandum of Use Details</h1><hr>
 
 <ol class="breadcrumb">
   <li>Allocation Type: {{ allocation_type }}</li>
   <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>
   <li>{{ breadcrumb_pi }}</li>
-  <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>
-  <li>
-    {% if breadcrumb_pooling %}
-      Pooling
-    {% else %}
-      Not Pooling
-    {% endif %}
-  </li>
 </ol>
 
-<p>You are pooling your allocation with an existing project's allocation. Please select the project from the dropdown below.</p>
+<p>Please provide the following details to buy time on Savio. You will also need to return a signed copy of a Memorandum of Use that will be sent to you.</p>
 
 <form action="" method="post">
   {% csrf_token %}
@@ -71,12 +60,5 @@ Savio Project Request - Allocation Pooling
 <br>
 
 <p>Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
-
-<script>
-  $('select').selectize({
-    create: false,
-    sortField: 'text'
-  })
-</script>
 
 {% endblock %}
