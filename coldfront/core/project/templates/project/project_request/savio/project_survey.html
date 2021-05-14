@@ -24,7 +24,13 @@ Savio Project Request - Survey
   <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>
   <li>{{ breadcrumb_pi }}</li>
   <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>
-  <li>Pooling</li>
+  <li>
+    {% if breadcrumb_pooling %}
+      Pooling
+    {% else %}
+      Not Pooling
+    {% endif %}
+  </li>
   <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>
   <li>{{ breadcrumb_project }}</li>
 </ol>
