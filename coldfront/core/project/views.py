@@ -54,11 +54,11 @@ from coldfront.core.project.models import (Project, ProjectReview,
 from coldfront.core.project.utils import (add_vector_user_to_designated_savio_project,
                                           auto_approve_project_join_requests,
                                           get_project_compute_allocation,
+                                          project_allocation_request_latest_update_timestamp,
                                           ProjectClusterAccessRequestRunner,
                                           ProjectDenialRunner,
                                           SavioProjectApprovalRunner,
                                           savio_request_denial_reason,
-                                          savio_request_latest_update_timestamp,
                                           send_added_to_project_notification_email,
                                           send_new_cluster_access_request_notification_email,
                                           send_project_join_notification_email,
@@ -66,8 +66,7 @@ from coldfront.core.project.utils import (add_vector_user_to_designated_savio_pr
                                           send_project_join_request_denial_email,
                                           send_project_request_pooling_email,
                                           VectorProjectApprovalRunner,
-                                          vector_request_denial_reason,
-                                          vector_request_latest_update_timestamp)
+                                          vector_request_denial_reason)
 # from coldfront.core.publication.models import Publication
 # from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.resource.models import Resource
@@ -1951,21 +1950,26 @@ from coldfront.core.project.forms import ProjectAllocationReviewForm
 from coldfront.core.project.forms import SavioProjectAllocationTypeForm
 from coldfront.core.project.forms import SavioProjectDetailsForm
 from coldfront.core.project.forms import SavioProjectExistingPIForm
+from coldfront.core.project.forms import SavioProjectMOUExtraFieldsForm
 from coldfront.core.project.forms import SavioProjectNewPIForm
 from coldfront.core.project.forms import SavioProjectPoolAllocationsForm
 from coldfront.core.project.forms import SavioProjectPooledProjectSelectionForm
 from coldfront.core.project.forms import SavioProjectReviewDenyForm
+from coldfront.core.project.forms import SavioProjectReviewMemorandumSignedForm
 from coldfront.core.project.forms import SavioProjectReviewSetupForm
 from coldfront.core.project.forms import SavioProjectSurveyForm
 from coldfront.core.project.forms import VectorProjectDetailsForm
 from coldfront.core.project.forms import VectorProjectReviewSetupForm
 from coldfront.core.project.models import SavioProjectAllocationRequest
+from coldfront.core.project.models import savio_project_request_mou_extra_fields_schema
+from coldfront.core.project.models import savio_project_request_mou_state_schema
 from coldfront.core.project.models import VectorProjectAllocationRequest
 from coldfront.core.project.utils import savio_request_state_status
 from coldfront.core.project.utils import send_new_project_request_admin_notification_email
 from coldfront.core.project.utils import send_new_project_request_pi_notification_email
 from coldfront.core.project.utils import vector_request_state_status
 from coldfront.core.user.models import UserProfile
+from decimal import Decimal
 from formtools.wizard.views import SessionWizardView
 
 
@@ -2008,6 +2012,7 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
         ('allocation_type', SavioProjectAllocationTypeForm),
         ('existing_pi', SavioProjectExistingPIForm),
         ('new_pi', SavioProjectNewPIForm),
+        ('mou_extra_fields', SavioProjectMOUExtraFieldsForm),
         ('pool_allocations', SavioProjectPoolAllocationsForm),
         ('pooled_project_selection', SavioProjectPooledProjectSelectionForm),
         ('details', SavioProjectDetailsForm),
@@ -2018,6 +2023,7 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
         'allocation_type': 'project/project_request/savio/project_allocation_type.html',
         'existing_pi': 'project/project_request/savio/project_existing_pi.html',
         'new_pi': 'project/project_request/savio/project_new_pi.html',
+        'mou_extra_fields': 'project/project_request/savio/project_mou_extra_fields.html',
         'pool_allocations': 'project/project_request/savio/project_pool_allocations.html',
         'pooled_project_selection': 'project/project_request/savio/project_pooled_project_selection.html',
         'details': 'project/project_request/savio/project_details.html',
@@ -2028,6 +2034,7 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
         SavioProjectAllocationTypeForm,
         SavioProjectExistingPIForm,
         SavioProjectNewPIForm,
+        SavioProjectMOUExtraFieldsForm,
         SavioProjectPoolAllocationsForm,
         SavioProjectPooledProjectSelectionForm,
         SavioProjectDetailsForm,
@@ -2039,10 +2046,11 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
         'allocation_type': 0,
         'existing_pi': 1,
         'new_pi': 2,
-        'pool_allocations': 3,
-        'pooled_project_selection': 4,
-        'details': 5,
-        'survey': 6,
+        'mou_extra_fields': 3,
+        'pool_allocations': 4,
+        'pooled_project_selection': 5,
+        'details': 6,
+        'survey': 7,
     }
 
     logger = logging.getLogger(__name__)
@@ -2095,8 +2103,14 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
             form_data[int(step)] = next(data)
 
         try:
+            request_kwargs = {
+                'requester': self.request.user,
+            }
             allocation_type = self.__get_allocation_type(form_data)
             pi = self.__handle_pi_data(form_data)
+            if allocation_type == SavioProjectAllocationRequest.MOU:
+                # Set request_kwargs fields directly.
+                self.__handle_mou_allocation_type(form_data, request_kwargs)
             pooling_requested = self.__get_pooling_requested(form_data)
             if pooling_requested:
                 project = self.__handle_pool_with_existing_project(form_data)
@@ -2105,16 +2119,16 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
             survey_data = self.__get_survey_data(form_data)
 
             # Store transformed form data in a request.
-            status = ProjectAllocationRequestStatusChoice.objects.get(
-                name='Under Review')
+            request_kwargs['allocation_type'] = allocation_type
+            request_kwargs['pi'] = pi
+            request_kwargs['project'] = project
+            request_kwargs['pool'] = pooling_requested
+            request_kwargs['survey_answers'] = survey_data
+            request_kwargs['status'] = \
+                ProjectAllocationRequestStatusChoice.objects.get(
+                    name='Under Review')
             request = SavioProjectAllocationRequest.objects.create(
-                requester=self.request.user,
-                allocation_type=allocation_type,
-                pi=pi,
-                project=project,
-                pool=pooling_requested,
-                survey_answers=survey_data,
-                status=status)
+                **request_kwargs)
 
             # Send a notification email to admins.
             try:
@@ -2155,11 +2169,16 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
             f'Form received unexpected allocation type {allocation_type}.')
         raise ValueError(f'Invalid allocation type {allocation_type}.')
 
+    def __get_mou_extra_data(self, form_data):
+        """Return provided, extra MOU-related data."""
+        step_number = self.step_numbers_by_form_name['mou_extra_fields']
+        return form_data[step_number]
+
     def __get_pooling_requested(self, form_data):
         """Return whether or not pooling was requested."""
         step_number = self.step_numbers_by_form_name['pool_allocations']
         data = form_data[step_number]
-        return data['pool']
+        return data.get('pool', False)
 
     def __get_survey_data(self, form_data):
         """Return provided survey data."""
@@ -2202,6 +2221,21 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
         pi_profile.save()
 
         return pi
+
+    def __handle_mou_allocation_type(self, form_data, request_kwargs):
+        """Perform MOU-specific handling.
+
+        In particular, set fields in the given dictionary to be used
+        during request creation. Set the extra_fields field from the
+        given form data and and set the state field to include an
+        additional step."""
+        step_number = self.step_numbers_by_form_name['mou_extra_fields']
+        data = form_data[step_number]
+        extra_fields = savio_project_request_mou_extra_fields_schema()
+        for field in extra_fields:
+            extra_fields[field] = data[field]
+        request_kwargs['extra_fields'] = extra_fields
+        request_kwargs['state'] = savio_project_request_mou_state_schema()
 
     def __handle_create_new_project(self, form_data):
         """Create a new project and an allocation to the Savio Compute
@@ -2289,24 +2323,31 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
 
         pool_allocations_step = \
             self.step_numbers_by_form_name['pool_allocations']
+        if step > pool_allocations_step:
+            allocation_type = dictionary['allocation_type']
+            if allocation_type != SavioProjectAllocationRequest.MOU:
+                pool_allocations_form_data = self.get_cleaned_data_for_step(
+                    str(pool_allocations_step))
+                pooling_requested = pool_allocations_form_data['pool']
+            else:
+                pooling_requested = False
+            dictionary.update({'breadcrumb_pooling': pooling_requested})
+
         pooled_project_selection_step = \
             self.step_numbers_by_form_name['pooled_project_selection']
         details_step = self.step_numbers_by_form_name['details']
         if step > details_step:
-            pool_allocations_form_data = \
-                self.get_cleaned_data_for_step(
-                    str(pool_allocations_step))
-            pooled_project_selection_form_data = \
-                self.get_cleaned_data_for_step(
-                    str(pooled_project_selection_step))
-            details_form_data = self.get_cleaned_data_for_step(
-                str(details_step))
-            if pool_allocations_form_data['pool']:
+            if pooling_requested:
+                pooled_project_selection_form_data = \
+                    self.get_cleaned_data_for_step(
+                        str(pooled_project_selection_step))
                 project = pooled_project_selection_form_data['project']
                 dictionary.update({
                     'breadcrumb_project': f'Project: {project.name}'
                 })
             else:
+                details_form_data = self.get_cleaned_data_for_step(
+                    str(details_step))
                 name = details_form_data['name']
                 dictionary.update({'breadcrumb_project': f'Project: {name}'})
 
@@ -2323,6 +2364,22 @@ def show_new_pi_form_condition(wizard):
     step = str(SavioProjectRequestWizard.step_numbers_by_form_name[step_name])
     cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
     return cleaned_data.get('PI', None) is None
+
+
+def show_mou_extra_fields_form_condition(wizard):
+    step_name = 'allocation_type'
+    step = str(SavioProjectRequestWizard.step_numbers_by_form_name[step_name])
+    cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
+    mou_allocation_type = SavioProjectAllocationRequest.MOU
+    return cleaned_data.get('allocation_type', None) == mou_allocation_type
+
+
+def show_pool_allocations_form_condition(wizard):
+    step_name = 'allocation_type'
+    step = str(SavioProjectRequestWizard.step_numbers_by_form_name[step_name])
+    cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
+    mou_allocation_type = SavioProjectAllocationRequest.MOU
+    return cleaned_data.get('allocation_type', None) != mou_allocation_type
 
 
 def show_pooled_project_selection_form_condition(wizard):
@@ -2398,6 +2455,9 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
+        extra_fields_form = SavioProjectMOUExtraFieldsForm(
+            initial=self.request_obj.extra_fields, disable_fields=True)
+        context['extra_fields_form'] = extra_fields_form
         survey_form = SavioProjectSurveyForm(
             initial=self.request_obj.survey_answers, disable_fields=True)
         context['survey_form'] = survey_form
@@ -2412,7 +2472,8 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
         try:
             latest_update_timestamp = \
-                savio_request_latest_update_timestamp(self.request_obj)
+                project_allocation_request_latest_update_timestamp(
+                    self.request_obj)
             if not latest_update_timestamp:
                 latest_update_timestamp = 'No updates yet.'
             else:
@@ -2490,14 +2551,18 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         project if it were to be approved now."""
         allocation_type = self.request_obj.allocation_type
         now = utc_now_offset_aware()
-        if allocation_type == 'CO':
+        if allocation_type == SavioProjectAllocationRequest.CO:
             return settings.CO_DEFAULT_ALLOCATION
-        elif allocation_type == 'FCA':
+        elif allocation_type == SavioProjectAllocationRequest.FCA:
             return prorated_allocation_amount(
                 settings.FCA_DEFAULT_ALLOCATION, now)
-        elif allocation_type == 'PCA':
+        elif allocation_type == SavioProjectAllocationRequest.PCA:
             return prorated_allocation_amount(
                 settings.PCA_DEFAULT_ALLOCATION, now)
+        elif allocation_type == SavioProjectAllocationRequest.MOU:
+            num_service_units = \
+                self.request_obj.extra_fields['num_service_units']
+            return Decimal(f'{num_service_units:.2f}')
         else:
             raise ValueError(f'Invalid allocation_type {allocation_type}.')
 
@@ -2563,6 +2628,9 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['savio_request'] = self.request_obj
+        extra_fields_form = SavioProjectMOUExtraFieldsForm(
+            initial=self.request_obj.extra_fields, disable_fields=True)
+        context['extra_fields_form'] = extra_fields_form
         survey_form = SavioProjectSurveyForm(
             initial=self.request_obj.survey_answers, disable_fields=True)
         context['survey_form'] = survey_form
@@ -2646,6 +2714,9 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        extra_fields_form = SavioProjectMOUExtraFieldsForm(
+            initial=self.request_obj.extra_fields, disable_fields=True)
+        context['extra_fields_form'] = extra_fields_form
         context['savio_request'] = self.request_obj
         survey_form = SavioProjectSurveyForm(
             initial=self.request_obj.survey_answers, disable_fields=True)
@@ -2657,6 +2728,88 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
         readiness = self.request_obj.state['readiness']
         initial['status'] = readiness['status']
         initial['justification'] = readiness['justification']
+        return initial
+
+    def get_success_url(self):
+        return reverse(
+            'savio-project-request-detail',
+            kwargs={'pk': self.kwargs.get('pk')})
+
+
+class SavioProjectReviewMemorandumSignedView(LoginRequiredMixin,
+                                             UserPassesTestMixin, FormView):
+    form_class = SavioProjectReviewMemorandumSignedForm
+    template_name = (
+        'project/project_request/savio/project_review_memorandum_signed.html')
+    login_url = '/'
+
+    logger = logging.getLogger(__name__)
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        message = 'You do not have permission to view the previous page.'
+        messages.error(self.request, message)
+        return False
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        self.request_obj = get_object_or_404(
+            SavioProjectAllocationRequest.objects.prefetch_related(
+                'pi', 'project', 'requester'), pk=pk)
+        allocation_type = self.request_obj.allocation_type
+        if allocation_type != SavioProjectAllocationRequest.MOU:
+            message = (
+                f'This view is not applicable for projects with allocation '
+                f'type {allocation_type}.')
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse('savio-project-request-detail', kwargs={'pk': pk}))
+        status_name = self.request_obj.status.name
+        if status_name in ['Approved - Complete', 'Denied']:
+            message = f'You cannot review a request with status {status_name}.'
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse('savio-project-request-detail', kwargs={'pk': pk}))
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        form_data = form.cleaned_data
+        status = form_data['status']
+        timestamp = utc_now_offset_aware().isoformat()
+
+        self.request_obj.state['memorandum_signed'] = {
+            'status': status,
+            'timestamp': timestamp,
+        }
+
+        self.request_obj.status = savio_request_state_status(self.request_obj)
+
+        self.request_obj.save()
+
+        message = (
+            f'Memorandum Signed status for request {self.request_obj.pk} has been '
+            f'set to {status}.')
+        messages.success(self.request, message)
+
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['savio_request'] = self.request_obj
+        extra_fields_form = SavioProjectMOUExtraFieldsForm(
+            initial=self.request_obj.extra_fields, disable_fields=True)
+        context['extra_fields_form'] = extra_fields_form
+        survey_form = SavioProjectSurveyForm(
+            initial=self.request_obj.survey_answers, disable_fields=True)
+        context['survey_form'] = survey_form
+        return context
+
+    def get_initial(self):
+        initial = super().get_initial()
+        memorandum_signed = self.request_obj.state['memorandum_signed']
+        initial['status'] = memorandum_signed['status']
         return initial
 
     def get_success_url(self):
@@ -2730,6 +2883,9 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        extra_fields_form = SavioProjectMOUExtraFieldsForm(
+            initial=self.request_obj.extra_fields, disable_fields=True)
+        context['extra_fields_form'] = extra_fields_form
         context['savio_request'] = self.request_obj
         survey_form = SavioProjectSurveyForm(
             initial=self.request_obj.survey_answers, disable_fields=True)
@@ -2809,6 +2965,9 @@ class SavioProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        extra_fields_form = SavioProjectMOUExtraFieldsForm(
+            initial=self.request_obj.extra_fields, disable_fields=True)
+        context['extra_fields_form'] = extra_fields_form
         context['savio_request'] = self.request_obj
         survey_form = SavioProjectSurveyForm(
             initial=self.request_obj.survey_answers, disable_fields=True)
@@ -2976,7 +3135,8 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
         try:
             latest_update_timestamp = \
-                vector_request_latest_update_timestamp(self.request_obj)
+                project_allocation_request_latest_update_timestamp(
+                    self.request_obj)
             if not latest_update_timestamp:
                 latest_update_timestamp = 'No updates yet.'
             else:

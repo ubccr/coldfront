@@ -4,23 +4,15 @@
 
 
 {% block title %}
-Savio Project Request - Review Eligibility
+Savio Project Request - Confirm MOU Signed
 {% endblock %}
 
 
 {% block content %}
-<h1>Review Eligibility</h1>
+<h1>Confirm Memorandum of Use Signed</h1>
 <hr>
 
-<p>
-  Please determine whether or not the request's PI is eligible for a Savio allowance.
-
-  {% if savio_request.allocation_type == "FCA" or savio_request.allocation_type == "PCA" %}
-    <b>As part of this, confirm that the PI does not already have an existing {{ savio_request.allocation_type }}, possibly under a different email address.</b>
-  {% endif %}
-
-  If the PI is ineligible, the request will be denied immediately, and a notification email will be sent to the requester and PI.
-</p>
+<p>Please confirm that the Memorandum of Use has been signed.</p>
 
 {% include 'project/project_request/savio/project_request_card.html' with savio_request=savio_request %}
 
@@ -28,7 +20,7 @@ Savio Project Request - Review Eligibility
   <div class="card-header">
     <h4>
       <i class="fas fa-check-circle" aria-hidden="true"></i>
-      Review
+      Confirm Memorandum of Use Signed
     </h4>
   </div>
   <div class="card-body">

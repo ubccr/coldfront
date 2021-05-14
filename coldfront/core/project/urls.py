@@ -37,10 +37,13 @@ from coldfront.core.project.views import SavioProjectRequestListView
 from coldfront.core.project.views import SavioProjectRequestWizard
 from coldfront.core.project.views import SavioProjectReviewDenyView
 from coldfront.core.project.views import SavioProjectReviewEligibilityView
+from coldfront.core.project.views import SavioProjectReviewMemorandumSignedView
 from coldfront.core.project.views import SavioProjectReviewReadinessView
 from coldfront.core.project.views import SavioProjectReviewSetupView
 from coldfront.core.project.views import show_details_form_condition
+from coldfront.core.project.views import show_mou_extra_fields_form_condition
 from coldfront.core.project.views import show_new_pi_form_condition
+from coldfront.core.project.views import show_pool_allocations_form_condition
 from coldfront.core.project.views import show_pooled_project_selection_form_condition
 from coldfront.core.project.views import VectorProjectRequestDetailView
 from coldfront.core.project.views import VectorProjectRequestListView
@@ -63,8 +66,10 @@ urlpatterns += [
     path('savio-project-request/', SavioProjectRequestWizard.as_view(
          condition_dict={
              '2': show_new_pi_form_condition,
-             '4': show_pooled_project_selection_form_condition,
-             '5': show_details_form_condition,
+             '3': show_mou_extra_fields_form_condition,
+             '4': show_pool_allocations_form_condition,
+             '5': show_pooled_project_selection_form_condition,
+             '6': show_details_form_condition,
          }),
          name='savio-project-request'),
     path('savio-project-pending-request-list/',
@@ -82,6 +87,9 @@ urlpatterns += [
     path('savio-project-request/<int:pk>/readiness/',
          SavioProjectReviewReadinessView.as_view(),
          name='savio-project-request-review-readiness'),
+    path('savio-project-request/<int:pk>/memorandum-signed/',
+         SavioProjectReviewMemorandumSignedView.as_view(),
+         name='savio-project-request-review-memorandum-signed'),
     path('savio-project-request/<int:pk>/setup/',
          SavioProjectReviewSetupView.as_view(),
          name='savio-project-request-review-setup'),
