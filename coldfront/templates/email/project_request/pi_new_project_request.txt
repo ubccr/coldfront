@@ -1,0 +1,12 @@
+Dear {{ pi_str }},
+
+A user ({{ requester_str }}) has made a {% if pooling %}pooled {% endif %}project request with you as the Principal Investigator (PI) via the MyBRC User Portal.
+
+You may view the details of the request here: {{ review_url }}.
+
+If approved, you will become a PI on the project. The requesting user will become a manager and gain cluster access under the project's allowance.
+
+If you would like to prevent this, or have any questions, please contact us at {{ support_email }}.
+
+Thank you,
+{{ signature }}

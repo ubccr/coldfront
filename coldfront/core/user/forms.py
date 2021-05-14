@@ -33,11 +33,11 @@ class UserRegistrationForm(UserCreationForm):
     email = forms.EmailField(
         label='Email Address', widget=forms.EmailInput(),
         help_text=(
-            'If the individual has an @berkeley.edu email address, please '
-            'provide that to avoid delays in processing. All communication is '
-            'sent to this email. Please provide a valid address. If this '
-            'communication address changes, it is the user\'s responsibility '
-            'to give us his/her new email address.'))
+            'If you have an @berkeley.edu email address, please provide it to '
+            'avoid delays in processing. All communication is sent to this '
+            'email. Please provide a valid address. If this communication '
+            'address changes, it is your responsibility to update it in this '
+            'portal.'))
 
     first_name = forms.CharField(
         label='First Name',
@@ -51,6 +51,9 @@ class UserRegistrationForm(UserCreationForm):
         help_text='The number must be in E.164 format (e.g. +12125552368).',
         label='Phone Number', required=False)
     password1 = forms.CharField(
+        help_text=(
+            'This password is unique to this portal, and is separate from the '
+            'PIN and OTP used to access the cluster.'),
         label='Enter Password', widget=forms.PasswordInput())
     password2 = forms.CharField(
         label='Confirm Password', widget=forms.PasswordInput())
@@ -112,6 +115,17 @@ class UserLoginForm(AuthenticationForm):
             'Please enter a correct username or verified email address, and '
             'password. Note that both fields may be case-sensitive.'),
     }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['username'].help_text = (
+            'This is your BRC cluster account username if you have one, or '
+            'any of the verified email addresses associated with it, not your '
+            'CalNet username.')
+        self.fields['password'].help_text = (
+            'This password is unique to this portal, and is neither your '
+            'CalNet password nor the PIN and OTP used to access the BRC '
+            'cluster.')
 
     def clean_username(self):
         cleaned_data = super().clean()
