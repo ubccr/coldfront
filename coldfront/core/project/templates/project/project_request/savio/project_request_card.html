@@ -52,6 +52,11 @@
     <p class="card-text text-justify">
       <strong>Allocation Type: </strong>
       {{ savio_request.allocation_type }}
+      {% if savio_request.allocation_type == "MOU" %}
+        <button id="view-extra-fields" class="btn btn-info" role="button">
+          Details
+        </button>
+      {% endif %}
     </p>
     <p class="card-text text-justify">
       <strong>Number of Service Units to Add (if approved now): </strong>

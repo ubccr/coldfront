@@ -1968,6 +1968,7 @@ from coldfront.core.project.utils import savio_request_state_status
 from coldfront.core.project.utils import send_new_project_request_notification_email
 from coldfront.core.project.utils import vector_request_state_status
 from coldfront.core.user.models import UserProfile
+from decimal import Decimal
 from formtools.wizard.views import SessionWizardView
 
 
@@ -2445,6 +2446,9 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
+        extra_fields_form = SavioProjectMOUExtraFieldsForm(
+            initial=self.request_obj.extra_fields, disable_fields=True)
+        context['extra_fields_form'] = extra_fields_form
         survey_form = SavioProjectSurveyForm(
             initial=self.request_obj.survey_answers, disable_fields=True)
         context['survey_form'] = survey_form
@@ -2537,14 +2541,18 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         project if it were to be approved now."""
         allocation_type = self.request_obj.allocation_type
         now = utc_now_offset_aware()
-        if allocation_type == 'CO':
+        if allocation_type == SavioProjectAllocationRequest.CO:
             return settings.CO_DEFAULT_ALLOCATION
-        elif allocation_type == 'FCA':
+        elif allocation_type == SavioProjectAllocationRequest.FCA:
             return prorated_allocation_amount(
                 settings.FCA_DEFAULT_ALLOCATION, now)
-        elif allocation_type == 'PCA':
+        elif allocation_type == SavioProjectAllocationRequest.PCA:
             return prorated_allocation_amount(
                 settings.PCA_DEFAULT_ALLOCATION, now)
+        elif allocation_type == SavioProjectAllocationRequest.MOU:
+            num_service_units = \
+                self.request_obj.extra_fields['num_service_units']
+            return Decimal(f'{num_service_units:.2f}')
         else:
             raise ValueError(f'Invalid allocation_type {allocation_type}.')
 
@@ -2610,6 +2618,9 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['savio_request'] = self.request_obj
+        extra_fields_form = SavioProjectMOUExtraFieldsForm(
+            initial=self.request_obj.extra_fields, disable_fields=True)
+        context['extra_fields_form'] = extra_fields_form
         survey_form = SavioProjectSurveyForm(
             initial=self.request_obj.survey_answers, disable_fields=True)
         context['survey_form'] = survey_form
@@ -2693,6 +2704,9 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        extra_fields_form = SavioProjectMOUExtraFieldsForm(
+            initial=self.request_obj.extra_fields, disable_fields=True)
+        context['extra_fields_form'] = extra_fields_form
         context['savio_request'] = self.request_obj
         survey_form = SavioProjectSurveyForm(
             initial=self.request_obj.survey_answers, disable_fields=True)
@@ -2777,6 +2791,9 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        extra_fields_form = SavioProjectMOUExtraFieldsForm(
+            initial=self.request_obj.extra_fields, disable_fields=True)
+        context['extra_fields_form'] = extra_fields_form
         context['savio_request'] = self.request_obj
         survey_form = SavioProjectSurveyForm(
             initial=self.request_obj.survey_answers, disable_fields=True)
@@ -2856,6 +2873,9 @@ class SavioProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        extra_fields_form = SavioProjectMOUExtraFieldsForm(
+            initial=self.request_obj.extra_fields, disable_fields=True)
+        context['extra_fields_form'] = extra_fields_form
         context['savio_request'] = self.request_obj
         survey_form = SavioProjectSurveyForm(
             initial=self.request_obj.survey_answers, disable_fields=True)
