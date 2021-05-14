@@ -31,7 +31,7 @@ Project Detail
 
 
 <div class="mb-3">
-<h1 class="text-justify">{{ project.title }}</h1> <hr>
+<h1 class="text-justify">{{ project.name }}</h1> <hr>
 </div>
 
 {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
@@ -81,6 +81,7 @@ Project Detail
       {% endfor %}
     </ul>
     <br>
+    <p class="card-text text-justify"><strong>Title: </strong>{{ project.title }}</p>
     <p class="card-text text-justify"><strong>Description: </strong>{{ project.description }}</p>
     <p class="card-text text-justify">
       <strong>Cluster: </strong>
