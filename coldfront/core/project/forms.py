@@ -357,6 +357,13 @@ class SavioProjectMOUExtraFieldsForm(forms.Form):
         max_length=100,
         required=True)
 
+    def __init__(self, *args, **kwargs):
+        disable_fields = kwargs.pop('disable_fields', False)
+        super().__init__(*args, **kwargs)
+        if disable_fields:
+            for field in self.fields:
+                self.fields[field].disabled = True
+
     def clean_num_service_units(self):
         cleaned_data = super().clean()
         num_service_units = cleaned_data['num_service_units']
