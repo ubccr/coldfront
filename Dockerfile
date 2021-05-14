@@ -22,7 +22,7 @@ WORKDIR "${COLDFRONT_DIR}"
 EXPOSE 80
 
 
-RUN apk update && apk add postgresql-dev gcc python3-dev musl-dev libffi-dev git emacs-nox openssh
+RUN apk update && apk add postgresql-dev gcc python3-dev musl-dev libffi-dev git emacs-nox openssh bash
 
 ## basic requirements
 COPY requirements.txt \
@@ -41,7 +41,7 @@ COPY . \
 
 #RUN ./manage.py initial_setup
 #RUN ./manage.py load_test_data
-RUN ./manage.py collectstatic
+RUN python manage.py collectstatic
 
 # TODO: ENTRYPOINT w/ helper script (see best practices)
 #       would be roughly: ENTRYPOINT ./docker-entrypoint.sh
