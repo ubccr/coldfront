@@ -1965,7 +1965,8 @@ from coldfront.core.project.models import savio_project_request_mou_extra_fields
 from coldfront.core.project.models import savio_project_request_mou_state_schema
 from coldfront.core.project.models import VectorProjectAllocationRequest
 from coldfront.core.project.utils import savio_request_state_status
-from coldfront.core.project.utils import send_new_project_request_notification_email
+from coldfront.core.project.utils import send_new_project_request_admin_notification_email
+from coldfront.core.project.utils import send_new_project_request_pi_notification_email
 from coldfront.core.project.utils import vector_request_state_status
 from coldfront.core.user.models import UserProfile
 from decimal import Decimal
@@ -2131,11 +2132,19 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
 
             # Send a notification email to admins.
             try:
-                send_new_project_request_notification_email(request)
+                send_new_project_request_admin_notification_email(request)
             except Exception as e:
                 self.logger.error(
                     'Failed to send notification email. Details:\n')
                 self.logger.exception(e)
+            # Send a notification email to the PI if the requester differs.
+            if request.requester != request.pi:
+                try:
+                    send_new_project_request_pi_notification_email(request)
+                except Exception as e:
+                    self.logger.error(
+                        'Failed to send notification email. Details:\n')
+                    self.logger.exception(e)
         except Exception as e:
             self.logger.exception(e)
             message = 'Unexpected failure. Please contact an administrator.'
@@ -2929,7 +2938,7 @@ class VectorProjectRequestView(LoginRequiredMixin, UserPassesTestMixin,
 
             # Send a notification email to admins.
             try:
-                send_new_project_request_notification_email(request)
+                send_new_project_request_admin_notification_email(request)
             except Exception as e:
                 self.logger.error(
                     'Failed to send notification email. Details:\n')

@@ -49,20 +49,27 @@ from coldfront.core.project.views import VectorProjectRequestListView
 from coldfront.core.project.views import VectorProjectRequestView
 from coldfront.core.project.views import VectorProjectReviewEligibilityView
 from coldfront.core.project.views import VectorProjectReviewSetupView
+from django.views.generic import TemplateView
 
 
 urlpatterns += [
     path('project-request/',
          ProjectRequestView.as_view(),
          name='project-request'),
+    path('project-request-savio-landing/',
+         TemplateView.as_view(
+             template_name=(
+                 'project/project_request/savio/project_request_landing.html')
+         ),
+         name='project-request-savio-landing'),
     path('savio-project-request/', SavioProjectRequestWizard.as_view(
-        condition_dict={
-            '2': show_new_pi_form_condition,
-            '3': show_mou_extra_fields_form_condition,
-            '4': show_pool_allocations_form_condition,
-            '5': show_pooled_project_selection_form_condition,
-            '6': show_details_form_condition,
-            }),
+         condition_dict={
+             '2': show_new_pi_form_condition,
+             '3': show_mou_extra_fields_form_condition,
+             '4': show_pool_allocations_form_condition,
+             '5': show_pooled_project_selection_form_condition,
+             '6': show_details_form_condition,
+         }),
          name='savio-project-request'),
     path('savio-project-pending-request-list/',
          SavioProjectRequestListView.as_view(completed=False),
@@ -85,6 +92,12 @@ urlpatterns += [
     path('savio-project-request/<int:pk>/deny/',
          SavioProjectReviewDenyView.as_view(),
          name='savio-project-request-review-deny'),
+    path('project-request-vector-landing/',
+         TemplateView.as_view(
+             template_name=(
+                 'project/project_request/vector/project_request_landing.html')
+         ),
+         name='project-request-vector-landing'),
     path('vector-project-request/',
          VectorProjectRequestView.as_view(),
          name='vector-project-request'),

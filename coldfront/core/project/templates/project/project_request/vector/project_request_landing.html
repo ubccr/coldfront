@@ -1,0 +1,42 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+New Vector Project
+{% endblock %}
+
+
+{% block head %}
+{{ wizard.form.media }}
+{% endblock %}
+
+
+{% block content %}
+<h1>New Vector Project</h1><hr>
+
+<p>
+  Eligible users may request to create a new project on the Vector cluster.
+</p>
+<p>
+  This form is intended to be filled out by the project lead, although the
+  Principal Investigator will be set to a pre-defined user. The user who fills
+  it out will become a manager on the project: the user will receive access to
+  the project on the cluster, will have permissions to manage the project and
+  its users, and cannot opt out of email notifications (unless at least one
+  other user becomes a manager). If this does not sound like your role on the
+  project, please ask the appropriate user to fill it out.
+</p>
+<p>
+  After approval, you will also automatically gain access to the Savio cluster
+  under the co_rosalind project.
+</p>
+<a class="btn btn-primary" href="{% url 'vector-project-request' %}">
+  Continue
+</a>
+<a class="btn btn-secondary" href="{% url 'project-request' %}">
+  Back
+</a>
+
+{% endblock %}
