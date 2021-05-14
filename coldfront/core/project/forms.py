@@ -196,6 +196,7 @@ from django.core.validators import MaxValueValidator
 from django.core.validators import MinLengthValidator
 from django.core.validators import MinValueValidator
 from django.core.validators import RegexValidator
+from django.forms.widgets import TextInput
 from django.utils.safestring import mark_safe
 
 
@@ -324,7 +325,13 @@ class SavioProjectMOUExtraFieldsForm(forms.Form):
         validators=[
             MaxValueValidator(settings.ALLOCATION_MAX),
             MinValueValidator(100),
-        ])
+        ],
+        widget=TextInput(
+            attrs={
+                'type': 'number',
+                'min': '100',
+                'max': str(settings.ALLOCATION_MAX),
+                'step': '100'}))
     # The minimum and maximum lengths are loose bounds.
     campus_chartstring = forms.CharField(
         help_text=mark_safe(
