@@ -37,6 +37,7 @@ from coldfront.core.project.views import SavioProjectRequestListView
 from coldfront.core.project.views import SavioProjectRequestWizard
 from coldfront.core.project.views import SavioProjectReviewDenyView
 from coldfront.core.project.views import SavioProjectReviewEligibilityView
+from coldfront.core.project.views import SavioProjectReviewMemorandumSignedView
 from coldfront.core.project.views import SavioProjectReviewReadinessView
 from coldfront.core.project.views import SavioProjectReviewSetupView
 from coldfront.core.project.views import show_details_form_condition
@@ -86,6 +87,9 @@ urlpatterns += [
     path('savio-project-request/<int:pk>/readiness/',
          SavioProjectReviewReadinessView.as_view(),
          name='savio-project-request-review-readiness'),
+    path('savio-project-request/<int:pk>/memorandum-signed/',
+         SavioProjectReviewMemorandumSignedView.as_view(),
+         name='savio-project-request-review-memorandum-signed'),
     path('savio-project-request/<int:pk>/setup/',
          SavioProjectReviewSetupView.as_view(),
          name='savio-project-request-review-setup'),

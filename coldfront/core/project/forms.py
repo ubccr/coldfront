@@ -478,6 +478,8 @@ class SavioProjectDetailsForm(forms.Form):
             name = f'co_{name}'
         elif self.allocation_type == SavioProjectAllocationRequest.PCA:
             name = f'pc_{name}'
+        elif self.allocation_type == SavioProjectAllocationRequest.MOU:
+            name = f'ac_{name}'
         if Project.objects.filter(name=name):
             raise forms.ValidationError(
                 f'A project with name {name} already exists.')
@@ -665,6 +667,19 @@ class ProjectAllocationReviewForm(forms.Form):
         return cleaned_data
 
 
+class SavioProjectReviewMemorandumSignedForm(forms.Form):
+
+    status = forms.ChoiceField(
+        choices=(
+            ('', 'Select one.'),
+            ('Pending', 'Pending'),
+            ('Complete', 'Complete'),
+        ),
+        help_text='If you are unsure, leave the status as "Pending".',
+        label='Status',
+        required=True)
+
+
 class SavioProjectReviewSetupForm(forms.Form):
 
     status = forms.ChoiceField(
@@ -721,7 +736,7 @@ class SavioProjectReviewSetupForm(forms.Form):
         cleaned_data = super().clean()
         final_name = cleaned_data.get('final_name', '').lower()
         expected_prefix = None
-        for prefix in ('co_', 'fc_', 'pc_'):
+        for prefix in ('ac_', 'co_', 'fc_', 'pc_'):
             if self.requested_name.startswith(prefix):
                 expected_prefix = prefix
                 break

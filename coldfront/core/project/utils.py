@@ -546,38 +546,21 @@ def send_project_request_pooling_email(request):
     send_email_template(subject, template_name, context, sender, receiver_list)
 
 
-def savio_request_latest_update_timestamp(savio_request):
-    """Return the latest timestamp stored in the given
-    SavioProjectAllocationRequest's 'state' field, or the empty string.
+def project_allocation_request_latest_update_timestamp(request):
+    """Return the latest timestamp stored in the given Savio or Vector
+    ProjectAllocationRequest's 'state' field, or the empty string.
 
     The expected values are ISO 8601 strings, or the empty string, so
     taking the maximum should provide the correct output."""
-    if not isinstance(savio_request, SavioProjectAllocationRequest):
+    types = (SavioProjectAllocationRequest, VectorProjectAllocationRequest)
+    if not isinstance(request, types):
         raise TypeError(
-            f'Provided request has unexpected type {type(savio_request)}.')
-    state = savio_request.state
-    eligibility = state['eligibility']
-    readiness = state['readiness']
-    setup = state['setup']
-    other = state['other']
-    return max(
-        eligibility['timestamp'], readiness['timestamp'], setup['timestamp'],
-        other['timestamp'])
-
-
-def vector_request_latest_update_timestamp(vector_request):
-    """Return the latest timestamp stored in the given
-    VectorProjectAllocationRequest's 'state' field, or the empty string.
-
-    The expected values are ISO 8601 strings, or the empty string, so
-    taking the maximum should provide the correct output."""
-    if not isinstance(vector_request, VectorProjectAllocationRequest):
-        raise TypeError(
-            f'Provided request has unexpected type {type(vector_request)}.')
-    state = vector_request.state
-    eligibility = state['eligibility']
-    setup = state['setup']
-    return max(eligibility['timestamp'], setup['timestamp'])
+            f'Provided request has unexpected type {type(request)}.')
+    state = request.state
+    max_timestamp = ''
+    for field in state:
+        max_timestamp = max(max_timestamp, state[field].get('timestamp', ''))
+    return max_timestamp
 
 
 def savio_request_denial_reason(savio_request):
@@ -665,8 +648,18 @@ def savio_request_state_status(savio_request):
             other['timestamp']):
         return ProjectAllocationRequestStatusChoice.objects.get(name='Denied')
 
-    # PI eligibility or readiness are not yet determined.
-    if eligibility['status'] == 'Pending' or readiness['status'] == 'Pending':
+    # For MOU projects, retrieve the signed status of the Memorandum of Use.
+    if savio_request.allocation_type == SavioProjectAllocationRequest.MOU:
+        memorandum_not_signed = (
+            state['memorandum_signed']['status'] == 'Pending')
+    else:
+        memorandum_not_signed = False
+
+    # PI eligibility or readiness are not yet determined, or, in the case of
+    # MOU projects, the Memorandum of Use has not been signed yet.
+    if (eligibility['status'] == 'Pending' or
+            readiness['status'] == 'Pending' or
+            memorandum_not_signed):
         return ProjectAllocationRequestStatusChoice.objects.get(
             name='Under Review')
 

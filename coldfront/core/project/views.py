@@ -54,11 +54,11 @@ from coldfront.core.project.models import (Project, ProjectReview,
 from coldfront.core.project.utils import (add_vector_user_to_designated_savio_project,
                                           auto_approve_project_join_requests,
                                           get_project_compute_allocation,
+                                          project_allocation_request_latest_update_timestamp,
                                           ProjectClusterAccessRequestRunner,
                                           ProjectDenialRunner,
                                           SavioProjectApprovalRunner,
                                           savio_request_denial_reason,
-                                          savio_request_latest_update_timestamp,
                                           send_added_to_project_notification_email,
                                           send_new_cluster_access_request_notification_email,
                                           send_project_join_notification_email,
@@ -66,8 +66,7 @@ from coldfront.core.project.utils import (add_vector_user_to_designated_savio_pr
                                           send_project_join_request_denial_email,
                                           send_project_request_pooling_email,
                                           VectorProjectApprovalRunner,
-                                          vector_request_denial_reason,
-                                          vector_request_latest_update_timestamp)
+                                          vector_request_denial_reason)
 # from coldfront.core.publication.models import Publication
 # from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.resource.models import Resource
@@ -1956,6 +1955,7 @@ from coldfront.core.project.forms import SavioProjectNewPIForm
 from coldfront.core.project.forms import SavioProjectPoolAllocationsForm
 from coldfront.core.project.forms import SavioProjectPooledProjectSelectionForm
 from coldfront.core.project.forms import SavioProjectReviewDenyForm
+from coldfront.core.project.forms import SavioProjectReviewMemorandumSignedForm
 from coldfront.core.project.forms import SavioProjectReviewSetupForm
 from coldfront.core.project.forms import SavioProjectSurveyForm
 from coldfront.core.project.forms import VectorProjectDetailsForm
@@ -2472,7 +2472,8 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
         try:
             latest_update_timestamp = \
-                savio_request_latest_update_timestamp(self.request_obj)
+                project_allocation_request_latest_update_timestamp(
+                    self.request_obj)
             if not latest_update_timestamp:
                 latest_update_timestamp = 'No updates yet.'
             else:
@@ -2727,6 +2728,88 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
         readiness = self.request_obj.state['readiness']
         initial['status'] = readiness['status']
         initial['justification'] = readiness['justification']
+        return initial
+
+    def get_success_url(self):
+        return reverse(
+            'savio-project-request-detail',
+            kwargs={'pk': self.kwargs.get('pk')})
+
+
+class SavioProjectReviewMemorandumSignedView(LoginRequiredMixin,
+                                             UserPassesTestMixin, FormView):
+    form_class = SavioProjectReviewMemorandumSignedForm
+    template_name = (
+        'project/project_request/savio/project_review_memorandum_signed.html')
+    login_url = '/'
+
+    logger = logging.getLogger(__name__)
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        message = 'You do not have permission to view the previous page.'
+        messages.error(self.request, message)
+        return False
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        self.request_obj = get_object_or_404(
+            SavioProjectAllocationRequest.objects.prefetch_related(
+                'pi', 'project', 'requester'), pk=pk)
+        allocation_type = self.request_obj.allocation_type
+        if allocation_type != SavioProjectAllocationRequest.MOU:
+            message = (
+                f'This view is not applicable for projects with allocation '
+                f'type {allocation_type}.')
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse('savio-project-request-detail', kwargs={'pk': pk}))
+        status_name = self.request_obj.status.name
+        if status_name in ['Approved - Complete', 'Denied']:
+            message = f'You cannot review a request with status {status_name}.'
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse('savio-project-request-detail', kwargs={'pk': pk}))
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        form_data = form.cleaned_data
+        status = form_data['status']
+        timestamp = utc_now_offset_aware().isoformat()
+
+        self.request_obj.state['memorandum_signed'] = {
+            'status': status,
+            'timestamp': timestamp,
+        }
+
+        self.request_obj.status = savio_request_state_status(self.request_obj)
+
+        self.request_obj.save()
+
+        message = (
+            f'Memorandum Signed status for request {self.request_obj.pk} has been '
+            f'set to {status}.')
+        messages.success(self.request, message)
+
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['savio_request'] = self.request_obj
+        extra_fields_form = SavioProjectMOUExtraFieldsForm(
+            initial=self.request_obj.extra_fields, disable_fields=True)
+        context['extra_fields_form'] = extra_fields_form
+        survey_form = SavioProjectSurveyForm(
+            initial=self.request_obj.survey_answers, disable_fields=True)
+        context['survey_form'] = survey_form
+        return context
+
+    def get_initial(self):
+        initial = super().get_initial()
+        memorandum_signed = self.request_obj.state['memorandum_signed']
+        initial['status'] = memorandum_signed['status']
         return initial
 
     def get_success_url(self):
@@ -3052,7 +3135,8 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
         try:
             latest_update_timestamp = \
-                vector_request_latest_update_timestamp(self.request_obj)
+                project_allocation_request_latest_update_timestamp(
+                    self.request_obj)
             if not latest_update_timestamp:
                 latest_update_timestamp = 'No updates yet.'
             else:
