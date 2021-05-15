@@ -56,14 +56,6 @@ INSTALLED_APPS += [
     'coldfront.core.statistics',
 ]
 
-# REST API
-INSTALLED_APPS += [
-    'rest_framework',
-    'django_filters',
-    'drf_yasg',
-    'coldfront.api',
-]
-
 # Savio-specific Additional Apps
 INSTALLED_APPS += [
     'formtools',
@@ -189,28 +181,6 @@ SU_LOGOUT_REDIRECT_URL = "/admin/auth/user/"
 
 
 SETTINGS_EXPORT = []
-
-# ------------------------------------------------------------------------------
-# REST API settings
-# ------------------------------------------------------------------------------
-
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'coldfront.api.user.authentication.ExpiringTokenAuthentication',
-    ],
-    'DEFAULT_PAGINATION_CLASS': (
-        'rest_framework.pagination.PageNumberPagination'),
-    'PAGE_SIZE': 100,
-    'DEFAULT_FILTER_BACKENDS': (
-        'django_filters.rest_framework.DjangoFilterBackend',),
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
-    ],
-}
-
-# The number of hours for which a newly created authentication token will be
-# valid.
-TOKEN_EXPIRATION_HOURS = 24
 
 # ------------------------------------------------------------------------------
 # Accounting settings
