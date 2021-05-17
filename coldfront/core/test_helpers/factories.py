@@ -3,7 +3,7 @@ from factory import (
     SubFactory,
 )
 
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.project.models import (
     Project,
@@ -14,7 +14,7 @@ from coldfront.core.publication.models import PublicationSource
 
 class UserFactory(DjangoModelFactory):
     class Meta:
-        model = User
+        model = get_user_model()
 
 
 class FieldOfScienceFactory(DjangoModelFactory):

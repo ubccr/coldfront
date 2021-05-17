@@ -2,7 +2,8 @@ import datetime
 import os
 
 from django.conf import settings
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import Group
+from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 from django.core.exceptions import ObjectDoesNotExist
 
@@ -23,7 +24,7 @@ class Command(BaseCommand):
         lab_name = 'kovac_lab'
         file_name = lab_name + '.csv'
         file_path = os.path.join(base_dir, 'local_data', file_name)
-        
+
         # open file in read mode
         with open (file_path, 'r') as read_obj:
             csv_reader = reader(read_obj) # opt out the first line
@@ -32,7 +33,7 @@ class Command(BaseCommand):
                 try:
                     username = row[0]
                     usage = 666
-                    user = User.objects.get(username=username) #user is an instance of my user object
+                    user = get_user_model().objects.get(username=username) #user is an instance of my user object
 
                     print(username, "already exist, don't add to database")
                     # if the user exists, only need to append this existing user's group
@@ -41,22 +42,22 @@ class Command(BaseCommand):
                         my_group.user_set.add(user)
                         print ("not exist in kovac_lab")
                     continue
-               
+
                 except ObjectDoesNotExist:
                     print(type(row))
                     print("suppose to be userID:",row[0])
                     username = row[0]
-                    full_name = row[1] 
+                    full_name = row[1]
                     full_name_list = full_name.split()
                     first_name = full_name_list[0]
                     if (len(full_name_list) > 1):
                         last_name = full_name_list[1]
-                     
+
                     else:
                         last_name = "N/A"
-             
-                        
-                    email = row[2] 
+
+
+                    email = row[2]
                     is_active = True
                     is_staff = False
                     is_superuser = False
@@ -70,8 +71,8 @@ class Command(BaseCommand):
                         group_obj, _ = Group.objects.get_or_create(name=group.strip()) # gets u the group object based on the group name
                         group_objs.append(group_obj)
 
-                    
-                    user_obj = User.objects.create(
+
+                    user_obj = get_user_model().objects.create(
                         username=username,
                         first_name=first_name,
                         last_name=last_name,

@@ -4,7 +4,6 @@ import json
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
@@ -30,7 +29,7 @@ base_dir = settings.BASE_DIR
 class Command(BaseCommand):
 
     def handle(self, *args, **options):
-     
+
         allocation_obj, _ = Allocation.objects.get_or_create(
             project=project_obj,
             status=AllocationStatusChoice.objects.get(name='Active'),
@@ -39,7 +38,7 @@ class Command(BaseCommand):
             justification='Need extra storage for webserver.'
         )
 
-        
+
         allocation_attribute_type_obj = AllocationAttributeType.objects.get(
             name='Tier 0')
         allocation_attribute_obj, _ = AllocationAttribute.objects.get_or_create(
@@ -50,12 +49,12 @@ class Command(BaseCommand):
         # allocation_attribute_obj.allocationattributeusage.value = 10
         # allocation_attribute_obj.allocationattributeusage.save()
 
-       
+
 
         allocation_obj.resources.add(
             Resource.objects.get(name='University Cloud Storage'))
         allocation_obj.save()
 
-  
+
         ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
         name='quantity_default_value'), resource=Resource.objects.get(name='Budgetstorage'), value=10)

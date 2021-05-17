@@ -2,7 +2,8 @@ import datetime
 import os
 
 from django.conf import settings
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import Group,
+from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.utils import OperationalError
@@ -37,7 +38,7 @@ class Command(BaseCommand):
             if (f_name[len(f_name)-1] == 'csv'):
                 my_file = f_name[len(f_name)-2]+('.csv')
                 lab_list.append(my_file)
-         
+
         print("line 41: lab_list", lab_list)
         for lab in lab_list:
             print("line 39 lab is:", lab)
@@ -50,12 +51,12 @@ class Command(BaseCommand):
             # open file in read mode
             with open (file_path, 'r') as read_obj:
                 csv_reader = reader(read_obj) # opt out the first line
-                first_line = read_obj.readline()  
+                first_line = read_obj.readline()
                 for row in csv_reader:
                     try:
                         username = row[0]
                         print("line52, my username is", username)
-                        user = User.objects.get(username=username)
+                        user = get_user_model().objects.get(username=username)
                         # print("line 54 user is", user)
                         # print("line47",username, "already exist, don't add to database")
                         # if the user exists, I only need to append this existing user's group
@@ -65,28 +66,28 @@ class Command(BaseCommand):
                             my_group.user_set.add(user)
                             print ("user do not exist in", lab_name)
                         continue
-                    # the type of row is 
+                    # the type of row is
                     except ObjectDoesNotExist:
-                        
+
                         print("jumped to line 68")
                         username = row[0]
-                        full_name = row[1] 
+                        full_name = row[1]
                         full_name_list = full_name.split()
                         first_name = full_name_list[0]
-                    
+
                         if (len(full_name_list) > 1):
                             last_name = full_name_list[1]
-                        
+
                         else:
                             last_name = "N/A"
                         print("line76 my username is", username)
                         print("line77 my fullname is", full_name)
-                            
-                        email = row[2] 
+
+                        email = row[2]
                         is_active = True
                         is_staff = False
                         is_superuser = False
-                        groups = lab_name 
+                        groups = lab_name
 
                         # creates my user object to load data from csv to GUI
                         # create user object
@@ -95,8 +96,8 @@ class Command(BaseCommand):
                             group_obj, _ = Group.objects.get_or_create(name=group.strip()) # gets u the group object based on the group name
                             group_objs.append(group_obj)
 
-                        
-                        user_obj = User.objects.create(
+
+                        user_obj = get_user_model().objects.create(
                             username=username,
                             first_name=first_name,
                             last_name=last_name,
@@ -113,24 +114,24 @@ class Command(BaseCommand):
                         print("line110")
                         print("jumped to line 64")
                         username = row[0]
-                        full_name = row[1] 
+                        full_name = row[1]
                         full_name_list = full_name.split()
                         first_name = full_name_list[0]
-                    
-                      
+
+
                         if (len(full_name_list) > 1):
                             last_name = full_name_list[1]
-                        
+
                         else:
                             last_name = "N/A"
                         print("line124 my username is", username)
                         print("line125 my fullname is", full_name)
-                            
-                        email = row[2] 
+
+                        email = row[2]
                         is_active = True
                         is_staff = False
                         is_superuser = False
-                        groups = lab_name 
+                        groups = lab_name
 
                         # creates my user object to load data from csv to GUI
                         # create user object
@@ -139,8 +140,8 @@ class Command(BaseCommand):
                             group_obj, _ = Group.objects.get_or_create(name=group.strip()) # gets u the group object based on the group name
                             group_objs.append(group_obj)
 
-                        
-                        user_obj = User.objects.create(
+
+                        user_obj = get_user_model().objects.create(
                             username=username,
                             first_name=first_name,
                             last_name=last_name,

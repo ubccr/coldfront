@@ -4,7 +4,7 @@ import pprint
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from coldfront.core.utils.common import import_from_settings
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
@@ -129,7 +129,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['project_users'] = project_users # context dictionary; key is project_users; project_users is a variable name
         # print(type(project_users))
         # print(type(project_users[0]))
-       
+
 
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
 
@@ -672,7 +672,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                     added_users_count += 1
 
                     # Will create local copy of user if not already present in local database
-                    user_obj, _ = User.objects.get_or_create(
+                    user_obj, _ = get_user_model().objects.get_or_create(
                         username=user_form_data.get('username'))
                     user_obj.first_name = user_form_data.get('first_name')
                     user_obj.last_name = user_form_data.get('last_name')
@@ -798,7 +798,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
                     remove_users_count += 1
 
-                    user_obj = User.objects.get(
+                    user_obj = get_user_model().objects.get(
                         username=user_form_data.get('username'))
 
                     if project_obj.pi == user_obj:

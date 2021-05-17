@@ -2,7 +2,8 @@ import datetime
 import os
 
 from django.conf import settings
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import Group
+from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 
 from coldfront.core.field_of_science.models import FieldOfScience
@@ -19,10 +20,10 @@ class Command(BaseCommand):
         print('Adding projects ...')
         delimiter = '\t'
         file_path = os.path.join(base_dir, 'local_data', 'project_and_associated_users.tsv')
-      
+
         Project.objects.all().delete()
         ProjectUser.objects.all().delete()
-     
+
         project_status_choices = {}
         project_status_choices['Active'] = ProjectStatusChoice.objects.get(name='Active')
         project_status_choices['Archived'] = ProjectStatusChoice.objects.get(name='Archived')
@@ -46,7 +47,7 @@ class Command(BaseCommand):
             ProjectUserStatusChoice.objects.get_or_create(name=choice)
 
         with open(file_path, 'r') as fp:
-     
+
             for line in fp:
                 line = line.strip()
                 if not line:
@@ -55,20 +56,20 @@ class Command(BaseCommand):
                     continue
                 # read description separated by space
                 created, modified, title, pi_username, description, field_of_science, project_status, user_info = line.split(delimiter)
-               
+
                 created = datetime.datetime.strptime(created.split('.')[0], '%Y-%m-%d %H:%M:%S')
-              
+
                 modified = datetime.datetime.strptime(modified.split('.')[0], '%Y-%m-%d %H:%M:%S')
-                pi_user_obj = User.objects.get(username=pi_username)
-                
+                pi_user_obj = get_user_model().objects.get(username=pi_username)
+
                 try:
-                    pi_user_obj = User.objects.get(username=pi_username)
-                    
+                    pi_user_obj = get_user_model().objects.get(username=pi_username)
+
                 except ObjectDoesNotExist:
                     print("couldn't make the project because user does not exist yet. You need to add user first then add project.")
-                    
+
                     continue
-                
+
                 pi_user_obj.is_pi = True
                 pi_user_obj.save()
 
@@ -82,7 +83,7 @@ class Command(BaseCommand):
                     field_of_science=field_of_science_obj,
                     status=project_status_choices[project_status]
                 )
-                
+
                 for project_user in user_info.split(';'):
                     username, role, enable_email, project_user_status = project_user.split(',')
                     if enable_email == 'True':
@@ -91,13 +92,13 @@ class Command(BaseCommand):
                         enable_email = False
                     print(username, role, enable_email, project_user_status)
                     try:
-                        user_obj = User.objects.get(username=username)
-                    
+                        user_obj = get_user_model().objects.get(username=username)
+
                     except ObjectDoesNotExist:
                         print("couldn't add user", username)
-                    
+
                         continue
-                    
+
                     project_user_obj = ProjectUser.objects.create(
                         user=user_obj,
                         project=project_obj,
@@ -105,7 +106,7 @@ class Command(BaseCommand):
                         status=project_user_status_choices[project_user_status],
                         enable_notifications=enable_email
                     )
-                #when import a project, we can import the user to project as well 
+                #when import a project, we can import the user to project as well
                 if not project_obj.projectuser_set.filter(user=pi_user_obj).exists():
                     project_user_obj = ProjectUser.objects.create(
                         user=pi_user_obj,
@@ -119,6 +120,6 @@ class Command(BaseCommand):
                     project_user_obj.status=project_user_status_choices['ACT']
                     project_user_obj.save()
 
-               
+
 
         print('Finished adding projects')

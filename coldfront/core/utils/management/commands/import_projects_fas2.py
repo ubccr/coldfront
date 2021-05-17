@@ -2,7 +2,8 @@ import datetime
 import os
 
 from django.conf import settings
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import Group
+from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 
 from csv import reader
@@ -31,8 +32,8 @@ class Command(BaseCommand):
             lab_pi_list = lab_pi_name.split(",")
             pi_name = lab_pi_list[1]
             lab_name = lab_pi_list[0]
-       
-        
+
+
             file_name = lab_name + '.csv'
             file_path = os.path.join(base_dir, 'local_data/labs', file_name)
 
@@ -66,39 +67,39 @@ class Command(BaseCommand):
                 for row in csv_reader:
                     user = row[0]
                     if (row[3] == 'FACULTY'):
-                        pi_potential_name = row[3] 
+                        pi_potential_name = row[3]
                         user_info = user_info + user + ',PI' + ',PI' + ',ACT;'
 
                     else:
                         user_info = user_info + user + ',U' + ',U' + ',ACT;'
-                    
-            
+
+
             with open (file_path, 'r') as read_obj:
                 csv_reader = reader(read_obj) # opt out the first line
                 first_line = read_obj.readline()  # opt out the first line
-            
+
                 created = "2021-04-01 10:00:00" # feeding dummy data for now
                 modified = "2021-04-30 10:00:00" # feeding dummy data for now
                 title = lab_name
                 pi_username = lab_name.split("_")
-                pi_username = pi_username[0] # put in username 
-                pi_username = pi_potential_name 
+                pi_username = pi_username[0] # put in username
+                pi_username = pi_potential_name
                 pi_username = pi_name
                 description = "Storage allocation for " + lab_name
                 field_of_science = "Other"
                 project_status = "New"
-                    
+
 
                 created = datetime.datetime.strptime(created.split('.')[0], '%Y-%m-%d %H:%M:%S')
                 modified = datetime.datetime.strptime(modified.split('.')[0], '%Y-%m-%d %H:%M:%S')
                 # find pi object in the file
-                pi_user_obj = User.objects.get(username=pi_username)
+                pi_user_obj = get_user_model().objects.get(username=pi_username)
                 if (row[3] == 'FACULTY'):
                     pi_user_obj.is_pi = True
                 else:
                     pi_user_obj.is_pi = False
                 pi_user_obj.save()
-                # find the project 
+                # find the project
 
                 field_of_science_obj = FieldOfScience.objects.get(description=field_of_science)
                 # project_obj_exist = Project.objects.get(title=lab_name)
@@ -112,7 +113,7 @@ class Command(BaseCommand):
                         field_of_science=field_of_science_obj,
                         status=project_status_choices[project_status]
                     )
-                        
+
                     for project_user in user_info.split(';'):
                         if (project_user != ""): # if excel file read in line is not empty
                             username, role, enable_email, project_user_status = project_user.split(',')
@@ -122,12 +123,12 @@ class Command(BaseCommand):
                                 enable_email = False
                             print(username, role, enable_email, project_user_status)
                             try:
-                                user_obj = User.objects.get(username=username)
-                            
+                                user_obj = get_user_model().objects.get(username=username)
+
                             except ObjectDoesNotExist:
                                 print("couldn't add user", username)
                                 continue
-                            
+
                             project_user_obj = ProjectUser.objects.create(
                                 user=user_obj,
                                 project=project_obj,
@@ -135,7 +136,7 @@ class Command(BaseCommand):
                                 status=project_user_status_choices[project_user_status],
                                 enable_notifications=enable_email
                             )
-                    # when import a project, we can import the user to project as well 
+                    # when import a project, we can import the user to project as well
                     if not project_obj.projectuser_set.filter(user=pi_user_obj).exists():
                         project_user_obj = ProjectUser.objects.create(
                             user=pi_user_obj,
@@ -149,8 +150,7 @@ class Command(BaseCommand):
                         project_user_obj.status=project_user_status_choices['ACT']
                         project_user_obj.save()
                 else:
-                    
-                
+
+
 
             print('Finished adding projects')
-        

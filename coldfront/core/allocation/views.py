@@ -7,7 +7,7 @@ from django import forms
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import IntegrityError
@@ -1265,7 +1265,7 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
             if users_in_allocation:
                 for form in formset:
                     user_form_data = form.cleaned_data
-                    user_obj = User.objects.get(
+                    user_obj = get_user_model().objects.get(
                         username=user_form_data.get('username'))
                     user_status = user_form_data.get('user_status')
 
@@ -1805,7 +1805,7 @@ class ViewPDF(View):
 #Automaticly downloads to PDF file
 class DownloadPDF(View):
 	def get(self, request, *args, **kwargs):
-		
+
 		pdf = render_to_pdf('allocation/pdf_template.html', data)
 
 		response = HttpResponse(pdf, content_type='allocation/pdf')

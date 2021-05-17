@@ -4,7 +4,7 @@ import json
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
@@ -31,22 +31,22 @@ from os import walk
 
 base_dir = settings.BASE_DIR
 
-def splitString(str): 
-  
-    alpha = "" 
-    num = "" 
-    special = "" 
-    for i in range(len(str)): 
-        if (str[i].isdigit()): 
-            num = num+ str[i] 
+def splitString(str):
+
+    alpha = ""
+    num = ""
+    special = ""
+    for i in range(len(str)):
+        if (str[i].isdigit()):
+            num = num+ str[i]
         elif((str[i] >= 'A' and str[i] <= 'Z') or
-             (str[i] >= 'a' and str[i] <= 'z')): 
-            alpha += str[i] 
-        else: 
-            num += str[i] 
-  
+             (str[i] >= 'a' and str[i] <= 'z')):
+            alpha += str[i]
+        else:
+            num += str[i]
+
     return(num, alpha)
-    
+
 def kb_to_tb(kb_storage):
     tb_storage = kb_storage / 1073741824
     return tb_storage
@@ -82,7 +82,7 @@ class Command(BaseCommand):
         lab_names = ['']
         lab_name = 'giribet_lab.json'
         lab_name = lab_name.split(".")
-        pi1 = User.objects.get(username=lab_username_dict[lab_name[0]])
+        pi1 = get_user_model().objects.get(username=lab_username_dict[lab_name[0]])
         file_name = lab_name[0] + '.json'
         resource_type_obj = ResourceType.objects.get(name="Storage")
         parent_resource_obj = None
@@ -105,7 +105,7 @@ class Command(BaseCommand):
         for f in arr:
             lab = f.split(".")
             lab_name = lab[0]
-        
+
             filtered_query = Project.objects.get(title = lab_name) # find project
             data = {} # initialize an empty dictionary
             file_path = file_path + "/" + f
@@ -130,7 +130,7 @@ class Command(BaseCommand):
                 try:
                     allocation_count = Allocation.objects.count()
                     allocations = Allocation.objects.filter(project = filtered_query)
-                
+
                 except Allocation.DoesNotExist:
                     allocations, created = Allocation.objects.get_or_create(
                         project=project_obj,
@@ -139,8 +139,8 @@ class Command(BaseCommand):
                         end_date=end_date,
                         justification='Allocation Information for ' + lab_name
                     )
-                 
-            
+
+
                 if (allocations.count() == 0):
                     project_obj = Project.objects.get(title = lab_name)
                     start_date = datetime.datetime.now()
@@ -158,10 +158,10 @@ class Command(BaseCommand):
                     allocation_obj.save()
                     # import allocation user and user info
                 if (allocation_count >= 1):
-               
+
                     lab_data = data[0]
                     data = data[1:] # skip the usage information
-                    
+
                     lab_allocation, alpha = splitString(lab_data["quota"])
                     lab_allocation = float(lab_allocation)
 
@@ -190,19 +190,19 @@ class Command(BaseCommand):
 
                         except AllocationAttribute.DoesNotExist:
                             allocation_attribute_exist = False
-                            
+
                         if (not allocation_attribute_exist):
                             allocation_attribute_obj =AllocationAttribute.objects.get_or_create(
                                 allocation_attribute_type=allocation_attribute_type_obj,
                                 allocation=allocation,
-                                value = lab_allocation_in_tb_str) 
-                         
+                                value = lab_allocation_in_tb_str)
+
                         else:
                             allocation_attribute_obj.value = lab_allocation_in_tb_str
-                        
+
                         allocation_attribute_type_obj.save()
                         allocation_users = allocation.allocationuser_set.order_by('user__username')
-                    
+
                         user_json_dict = dict() #key: username, value paid: user_lst dictionary
                         # store every user from JSON in a dictionary
                         for user_lst in data: #user_lst is lst
@@ -212,7 +212,7 @@ class Command(BaseCommand):
                         # loop through my allocation_users set
                         for allocation_user in allocation_users:
                             allocation_user_username = (allocation_user.user.username)
-                            
+
                             if allocation_user_username in user_json_dict:
                                 one_user_logical_usage = user_json_dict[allocation_user_username]['logical_usage']
                                 allocation_user.usage_bytes = one_user_logical_usage
@@ -223,13 +223,13 @@ class Command(BaseCommand):
                             else:
                                 # if this allocation_user from web is not in JSON, I delete this allocationuser from Web
                                 allocation_users.remove(allocation_user) # remove this particular allocation_user
-                        
-                        # import allocationuser from JSON; 
+
+                        # import allocationuser from JSON;
                         # if user doesn't exist: I create user object, allocationuser object
                         # if user does exist, I update allocationuser object
                         for json_user in user_json_dict:
                             # if JSON allocationuser is not in user: create user; create allocation user
-                            # if JSON allocationuser is in user, check 
+                            # if JSON allocationuser is in user, check
                             """
                             if user yes AllocationUser yes: then update allocationuser
                             if user yes AllocationUser no: then create allocationuser
@@ -240,10 +240,10 @@ class Command(BaseCommand):
                             user_exist = False
                             allocation_user_exist = False
 
-                            try: 
-                                user_obj = User.objects.get(username = json_user)
+                            try:
+                                user_obj = get_user_model().objects.get(username = json_user)
                                 user_exist = True
-                            except User.DoesNotExist:
+                            except get_user_model().DoesNotExist:
                                 user_exist = False
 
                             if (not user_exist):
@@ -256,7 +256,7 @@ class Command(BaseCommand):
                                 else:
                                     first_name = fullname_lst[0]
                                     last_name = "" # no last_name
-                                user_obj = User.objects.create(
+                                user_obj = get_user_model().objects.create(
                                     username = json_user,
                                     first_name = first_name,
                                     last_name = last_name,
@@ -265,16 +265,16 @@ class Command(BaseCommand):
                                     is_staff = False,
                                     is_superuser = False,
                                 )
-                                User.objects.get(username=json_user).save()
-                            
-                            
-                            try: 
+                                get_user_model().objects.get(username=json_user).save()
+
+
+                            try:
                                 allocationuser_obj = AllocationUser.objects.get(user=user_obj)
                                 allocation_user_exist = True
                             except AllocationUser.DoesNotExist:
                                 allocation_user_exist = False
 
-                    
+
                             if (not allocation_user_exist):
                                 # create allocationuser object
                                 usage_string = user_json_dict[json_user]['usage']
@@ -301,7 +301,7 @@ class Command(BaseCommand):
                                 allocationuser_obj.allocation_group_usage_bytes = lab_data["kbytes"]
                                 allocationuser_obj.allocation_group_quota = lab_data["quota"]
                                 allocationuser_obj.save()
-                                User.objects.get(username=json_user).save()
+                                get_user_model().objects.get(username=json_user).save()
 
             file_path = os.path.join(base_dir, 'local_data/holylfs04')
-           
+
