@@ -1,12 +1,13 @@
 {% extends "common/base.html" %}
 {% load static %}
-{% load common_tags %} 
+{% load common_tags %}
 
-{% block title %} 
-Log In 
-{% endblock %} 
+{% block title %}
+Log In
+{% endblock %}
 
 {% block content %}
+<link rel="stylesheet" type="text/css" href="{% static 'core/user/css/login.css' %}"/>
 <script>
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-login").addClass("active");
@@ -31,20 +32,19 @@ Log In
         If you are an existing BRC cluster user and this is your first time visiting the portal, please <a href="{% url 'password-reset' %}">set your password</a> to activate your account.
       </p>
       <hr>
-      {% include "user/login_form.html" %} 
+      {% include "user/login_form.html" %}
       {% if 'mozilla_django_oidc' in EXTRA_APPS %}
         <hr/>
         <center><strong>OR</strong></center>
         <br>
         <a class="btn btn-primary btn-block" role="button" href="{% url 'oidc_authentication_init' %}?next={{request.GET.next}}">
           <i class="fab fa-openid" aria-hidden="true"></i> Log in via OpenID Connect
-        </a> 
+        </a>
       {% endif %}
     </div>
-    <div class="text-center">
+    <div class="text-center last-form-entry">
       <a href="{% url 'password-reset' %}">Forgot your password?</a>
     </div>
-    <br>
   </div>
 </div>
 {% endblock %}
