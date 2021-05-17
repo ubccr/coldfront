@@ -24,7 +24,7 @@ class ProjectSearchForm(forms.Form):
     """
     LAST_NAME = 'Last Name (PI)'
     USERNAME = 'Username (PI)'
-    FIELD_OF_SCIENCE = 'Field of Science'
+    FIELD_OF_SCIENCE = 'UCB Campus Division or Department'
     PROJECT_TITLE = 'Project Title'
     PROJECT_NAME = 'Project Name'
     CLUSTER_NAME = 'Cluster Name'
@@ -180,12 +180,15 @@ class ProjectUpdateForm(forms.ModelForm):
             'after a delay period, allowing managers to review them. The '
             'default is 6 hours. An empty input is interpreted as 0.'))
 
+    def __init__(self, *args, **kwargs):
+        super(ProjectUpdateForm, self).__init__(*args, **kwargs)
+        self.fields['field_of_science'].disabled = True
+
     class Meta:
         model = Project
         fields = (
             'title', 'description', 'field_of_science',
-            'joins_auto_approval_delay',)
-
+            'joins_auto_approval_delay')
 
 # TODO: Once finalized, move these imports above.
 from coldfront.core.project.models import ProjectUser
