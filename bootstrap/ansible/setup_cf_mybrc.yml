@@ -43,6 +43,7 @@
       pip:
         requirements: '{{ git_prefix }}/{{ reponame }}/requirements.txt'
         executable: '{{ git_prefix }}/venv/bin/pip3'
+      become_user: "{{ djangooperator }}"
 
     - name: Check if PostgreSQL database is initialized
       stat:
