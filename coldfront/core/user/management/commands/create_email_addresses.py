@@ -11,8 +11,9 @@ have none."""
 class Command(BaseCommand):
 
     help = (
-        'Create a primary EmailAddress for each User with zero '
-        'associated EmailAddress objects.')
+        'Create a primary, verified EmailAddress for each User with zero '
+        'associated EmailAddress objects. This script is intended for '
+        'one-time use for existing users loaded in from spreadsheets.')
     logger = logging.getLogger(__name__)
 
     def add_arguments(self, parser):
@@ -20,19 +21,17 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         """For each User that has no EmailAddress, create one with
-        is_primary set to True."""
+        is_primary and is_verified set to True."""
         users = User.objects.prefetch_related(
             'emailaddress_set').filter(emailaddress=None)
         for user in users:
-            # Leave the EmailAddress as unverified. In most cases, it will
-            # be verified during initial account activation.
             email = user.email.lower()
             email_address = EmailAddress.objects.create(
                 user=user,
                 email=email,
-                is_verified=False,
+                is_verified=True,
                 is_primary=True)
             message = (
-                f'Created unverified, primary EmailAddress {email_address.pk} '
+                f'Created verified, primary EmailAddress {email_address.pk} '
                 f'for User {user.pk} and email {email}.')
             self.logger.info(message)
