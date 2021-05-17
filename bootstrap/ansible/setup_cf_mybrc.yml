@@ -119,15 +119,6 @@
         virtualenv: "{{ git_prefix }}/venv"
       become_user: "{{ djangooperator }}"
 
-    - name: CF MyBRC Django app add_brc_accounting_defaults
-      django_manage:
-        command: add_brc_accounting_defaults
-        app_path: "{{ git_prefix }}/{{ reponame }}"
-        settings: "config.settings"
-        pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
-        virtualenv: "{{ git_prefix }}/venv"
-      become_user: "{{ djangooperator }}"
-
     - name: CF MyBRC Django app migrate
       django_manage:
         command: migrate
@@ -137,18 +128,9 @@
         virtualenv: "{{ git_prefix }}/venv"
       become_user: "{{ djangooperator }}"
 
-    - name: CF MyBRC Django app create_existing_brc_data
+    - name: CF MyBRC Django app add_brc_accounting_defaults
       django_manage:
-        command: create_existing_brc_data
-        app_path: "{{ git_prefix }}/{{ reponame }}"
-        settings: "config.settings"
-        pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
-        virtualenv: "{{ git_prefix }}/venv"
-      become_user: "{{ djangooperator }}"
-
-    - name: CF MyBRC Django app loaddata_brc_allocation_data
-      django_manage:
-        command: load_brc_allocation_data
+        command: add_brc_accounting_defaults
         app_path: "{{ git_prefix }}/{{ reponame }}"
         settings: "config.settings"
         pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"

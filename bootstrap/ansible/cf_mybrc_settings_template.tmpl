@@ -1,7 +1,7 @@
 import os
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = '{{ debug }}'
+DEBUG = {{ debug }}
 
 ALLOWED_HOSTS = ['0.0.0.0', '{{ hostname }}:{{ app_port }}', '{{ hostname }}', '{{ host_ip }}']
 
