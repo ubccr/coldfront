@@ -100,19 +100,22 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         if self.request.user.has_perm('allocation.can_view_all_allocations'):
             return True
 
-        pk = self.kwargs.get('pk')
-        allocation_obj = get_object_or_404(Allocation, pk=pk)
-
-        user_can_access_project = allocation_obj.project.projectuser_set.filter(
-            user=self.request.user, status__name__in=['Active', 'New', ]).exists()
-
-        user_can_access_allocation = allocation_obj.allocationuser_set.filter(
-            user=self.request.user, status__name__in=['Active', ]).exists()
-
-        if user_can_access_project and user_can_access_allocation:
-            return True
-
+        # TODO: Remove this block when allocations should be displayed.
         return False
+
+        # pk = self.kwargs.get('pk')
+        # allocation_obj = get_object_or_404(Allocation, pk=pk)
+        #
+        # user_can_access_project = allocation_obj.project.projectuser_set.filter(
+        #     user=self.request.user, status__name__in=['Active', 'New', ]).exists()
+        #
+        # user_can_access_allocation = allocation_obj.allocationuser_set.filter(
+        #     user=self.request.user, status__name__in=['Active', ]).exists()
+        #
+        # if user_can_access_project and user_can_access_allocation:
+        #     return True
+        #
+        # return False
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -329,12 +332,17 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             return render(request, self.template_name, context)
 
 
-class AllocationListView(LoginRequiredMixin, ListView):
+class AllocationListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
     model = Allocation
     template_name = 'allocation/allocation_list.html'
     context_object_name = 'allocation_list'
     paginate_by = 25
+
+    def test_func(self):
+        """Temporary block: Only allow superusers access."""
+        # TODO: Remove this block when allocations should be displayed.
+        return self.request.user.is_superuser
 
     def get_queryset(self):
 
