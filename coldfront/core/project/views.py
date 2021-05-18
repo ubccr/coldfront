@@ -579,8 +579,8 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.userprofile.is_pi:
-            return True
+        # if self.request.user.userprofile.is_pi:
+        #     return True
 
     def form_valid(self, form):
         project_obj = form.save(commit=False)
@@ -1946,6 +1946,7 @@ class ProjectAutoApproveJoinRequestsView(LoginRequiredMixin,
 
 
 # TODO: Once finalized, move these imports above.
+from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.project.forms import ProjectAllocationReviewForm
 from coldfront.core.project.forms import SavioProjectAllocationTypeForm
 from coldfront.core.project.forms import SavioProjectDetailsForm
@@ -2250,8 +2251,8 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
                 name=data['name'],
                 status=status,
                 title=data['title'],
-                description=data['description'],
-                field_of_science=data['field_of_science'])
+                description=data['description'])
+                #field_of_science=data['field_of_science'])
         except IntegrityError as e:
             self.logger.error(
                 f'Project {data["name"]} unexpectedly already exists.')

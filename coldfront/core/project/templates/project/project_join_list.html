@@ -93,11 +93,11 @@ Project List
         </th>
         <th scope="col">Title</th>
         <th scope="col">Cluster</th>
-        <th scope="col" class="text-nowrap">
-          UCB Campus Division or Department
-          <a href="?order_by=field_of_science&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-          <a href="?order_by=field_of_science&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
-        </th>
+<!--        <th scope="col" class="text-nowrap">-->
+<!--          UCB Campus Division or Department-->
+<!--          <a href="?order_by=field_of_science&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>-->
+<!--          <a href="?order_by=field_of_science&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>-->
+<!--        </th>-->
         <th scope="col" class="text-nowrap">
           Status
           <a href="?order_by=status&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
@@ -120,7 +120,7 @@ Project List
         </td>
         <td style="text-align: justify; text-justify: inter-word;">{{ project.title }}</td>
         <td>{{ project.cluster_name }}</td>
-        <td>{{ project.field_of_science.description }}</td>
+<!--        <td>{{ project.field_of_science.description }}</td>-->
         <td>{{ project.status.name }}</td>
         <td>
           {% if project.name in not_joinable %}
