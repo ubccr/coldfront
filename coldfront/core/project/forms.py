@@ -38,7 +38,7 @@ class ProjectSearchForm(forms.Form):
 
     last_name = forms.CharField(label=LAST_NAME, max_length=100, required=False)
     username = forms.CharField(label=USERNAME, max_length=100, required=False)
-    field_of_science = forms.CharField(label=FIELD_OF_SCIENCE, max_length=100, required=False)
+    # field_of_science = forms.CharField(label=FIELD_OF_SCIENCE, max_length=100, required=False)
     project_title = forms.CharField(label=PROJECT_TITLE, max_length=100, required=False)
     project_name = forms.CharField(label=PROJECT_NAME, max_length=100, required=False)
     cluster_name = forms.ChoiceField(
@@ -180,14 +180,14 @@ class ProjectUpdateForm(forms.ModelForm):
             'after a delay period, allowing managers to review them. The '
             'default is 6 hours. An empty input is interpreted as 0.'))
 
-    def __init__(self, *args, **kwargs):
-        super(ProjectUpdateForm, self).__init__(*args, **kwargs)
-        self.fields['field_of_science'].disabled = True
+    # def __init__(self, *args, **kwargs):
+    #     super(ProjectUpdateForm, self).__init__(*args, **kwargs)
+    #     self.fields['field_of_science'].disabled = True
 
     class Meta:
         model = Project
         fields = (
-            'title', 'description', 'field_of_science',
+            'title', 'description', #'field_of_science',
             'joins_auto_approval_delay')
 
 # TODO: Once finalized, move these imports above.
@@ -469,9 +469,9 @@ class SavioProjectDetailsForm(forms.Form):
         label='Description',
         validators=[MinLengthValidator(10)],
         widget=forms.Textarea(attrs={'rows': 3}))
-    field_of_science = forms.ModelChoiceField(
-        empty_label=None,
-        queryset=FieldOfScience.objects.all())
+    # field_of_science = forms.ModelChoiceField(
+    #     empty_label=None,
+    #     queryset=FieldOfScience.objects.all())
 
     def __init__(self, *args, **kwargs):
         self.allocation_type = kwargs.pop('allocation_type', None)
@@ -808,9 +808,9 @@ class VectorProjectDetailsForm(forms.Form):
         label='Description',
         validators=[MinLengthValidator(10)],
         widget=forms.Textarea(attrs={'rows': 3}))
-    field_of_science = forms.ModelChoiceField(
-        empty_label=None,
-        queryset=FieldOfScience.objects.all())
+    # field_of_science = forms.ModelChoiceField(
+    #     empty_label=None,
+    #     queryset=FieldOfScience.objects.all())
 
     def clean_name(self):
         cleaned_data = super().clean()
