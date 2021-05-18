@@ -7,6 +7,8 @@ ALLOWED_HOSTS = ['0.0.0.0', '{{ hostname }}:{{ app_port }}', '{{ hostname }}', '
 
 CENTER_PROJECT_RENEWAl_HELP_URL = 'http://{{ hostname }}:{{ app_port }}/help'
 CENTER_BASE_URL = 'http://{{ hostname }}:{{ app_port }}'
+CENTER_HELP_URL = CENTER_BASE_URL + '/help'
+CENTER_PROJECT_RENEWAL_HELP_URL = CENTER_BASE_URL + '/help'
 
 EMAIL_SUBJECT_PREFIX = '{{ email_subject_prefix }}'
 EMAIL_ADMIN_LIST = ['admin@{{ hostname }}']
