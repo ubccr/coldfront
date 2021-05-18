@@ -310,14 +310,3 @@ class AllocationUser(TimeStampedModel): #allocation user and user are both datab
     class Meta:
         verbose_name_plural = 'Allocation User Status'
         unique_together = ('user', 'allocation')
-
-
-class AllocationAccount(TimeStampedModel):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    name = models.CharField(max_length=64, unique=True)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        ordering = ['name', ]

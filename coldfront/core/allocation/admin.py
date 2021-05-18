@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 from simple_history.admin import SimpleHistoryAdmin
 
-from coldfront.core.allocation.models import (Allocation, AllocationAccount,
+from coldfront.core.allocation.models import (Allocation,
                                               AllocationAdminNote,
                                               AllocationAttribute,
                                               AllocationAttributeType,
@@ -24,7 +24,7 @@ class AllocationStatusChoiceAdmin(admin.ModelAdmin):
 class AllocationUserInline(admin.TabularInline):
     model = AllocationUser
     extra = 0
-    fields = ('user', 'status', )
+    fields = ('user', 'status', 'usage_bytes', 'usage', 'allocation_group_usage_bytes', 'allocation_group_quota', 'unit')
     raw_id_fields = ('user', )
 
 
@@ -342,8 +342,3 @@ class AllocationAttributeUsageAdmin(SimpleHistoryAdmin):
 
     def project_pi(self, obj):
         return obj.allocation_attribute.allocation.project.pi.username
-
-
-@admin.register(AllocationAccount)
-class AllocationAccountAdmin(SimpleHistoryAdmin):
-    list_display = ('name', 'user', )

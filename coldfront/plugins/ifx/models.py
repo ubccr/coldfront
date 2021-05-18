@@ -55,7 +55,7 @@ def allocation_to_product_usage(allocation, product):
         product_user = allocation.project.pi
     product_usage_data['product_user'] = product_user
     storage_quota = allocation.get_attribute('Storage Quota (TB)')
-    product_usage_data['quantity'] = storage_quota
+    product_usage_data['quantity'] = int(float(storage_quota))
     product_usage_data['units'] = 'TB'
     product_usage_data['year'] = allocation.start_date.year
     product_usage_data['month'] = allocation.start_date.strftime("%m")

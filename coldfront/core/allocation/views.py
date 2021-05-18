@@ -23,8 +23,7 @@ from django.views import View
 from django.views.generic import DetailView, ListView, TemplateView
 from django.views.generic.edit import CreateView, FormView, UpdateView
 
-from coldfront.core.allocation.forms import (AllocationAccountForm,
-                                             AllocationAddUserForm,
+from coldfront.core.allocation.forms import (AllocationAddUserForm,
                                              AllocationAttributeDeleteForm,
                                              AllocationForm,
                                              AllocationInvoiceNoteDeleteForm,
@@ -33,7 +32,7 @@ from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationReviewUserForm,
                                              AllocationSearchForm,
                                              AllocationUpdateForm)
-from coldfront.core.allocation.models import (Allocation, AllocationAccount,
+from coldfront.core.allocation.models import (Allocation,
                                               AllocationAttribute,
                                               AllocationAttributeType,
                                               AllocationStatusChoice,
@@ -540,7 +539,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     resource_attribute_type__name='eula').value
                 resources_with_eula[resource.id] = value
 
-        context['AllocationAccountForm'] = AllocationAccountForm()
         context['resources_form_default_quantities'] = resources_form_default_quantities
         context['resources_form_label_texts'] = resources_form_label_texts
         context['resources_with_eula'] = resources_with_eula
@@ -1691,70 +1689,6 @@ class AllocationDeleteInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, T
                 messages.error(request, error)
 
         return HttpResponseRedirect(reverse_lazy('allocation-invoice-detail', kwargs={'pk': allocation_obj.pk}))
-
-
-class AllocationAccountCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
-    model = AllocationAccount
-    template_name = 'allocation/allocation_allocationaccount_create.html'
-    form_class = AllocationAccountForm
-
-    def test_func(self):
-        """ UserPassesTestMixin Tests"""
-
-        if not ALLOCATION_ACCOUNT_ENABLED:
-            return False
-        elif self.request.user.is_superuser:
-            return True
-        elif self.request.user.userprofile.is_pi:
-            return True
-        else:
-            messages.error(
-                self.request, 'You do not have permission to add allocation attributes.')
-            return False
-
-    def form_invalid(self, form):
-        response = super().form_invalid(form)
-        if self.request.is_ajax():
-            return JsonResponse(form.errors, status=400)
-        else:
-            return response
-
-    def form_valid(self, form):
-        form.instance.user = self.request.user
-        response = super().form_valid(form)
-        if self.request.is_ajax():
-            data = {
-                'pk': self.object.pk,
-            }
-            return JsonResponse(data)
-        else:
-            return response
-
-    def get_success_url(self):
-        return reverse_lazy('allocation-account-list')
-
-
-class AllocationAccountListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
-    model = AllocationAccount
-    template_name = 'allocation/allocation_account_list.html'
-    context_object_name = 'allocationaccount_list'
-
-    def test_func(self):
-        """ UserPassesTestMixin Tests"""
-
-        if not ALLOCATION_ACCOUNT_ENABLED:
-            return False
-        elif self.request.user.is_superuser:
-            return True
-        elif self.request.user.userprofile.is_pi:
-            return True
-        else:
-            messages.error(
-                self.request, 'You do not have permission to manage invoices.')
-            return False
-
-    def get_queryset(self):
-        return AllocationAccount.objects.filter(user=self.request.user)
 
 def render_to_pdf(template_src, context_dict={}):
 	template = get_template(template_src)
