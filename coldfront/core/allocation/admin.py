@@ -24,8 +24,8 @@ class AllocationStatusChoiceAdmin(admin.ModelAdmin):
 class AllocationUserInline(admin.TabularInline):
     model = AllocationUser
     extra = 0
-    fields = ('user', 'status', 'usage_bytes', 'usage', 'allocation_group_usage_bytes', 'allocation_group_quota', 'unit')
-    raw_id_fields = ('user', )
+    fields = ('id', 'user', 'status', 'usage_bytes', 'usage', 'allocation_group_usage_bytes', 'allocation_group_quota', 'unit')
+    # raw_id_fields = ('id', )
 
 
 class AllocationAttributeInline(admin.TabularInline):
@@ -231,6 +231,7 @@ class AllocationUserAdmin(SimpleHistoryAdmin):
         'user__username',
     )
     raw_id_fields = ('allocation', 'user', )
+    history_list_display = ['usage', 'unit', 'usage_bytes', 'allocation_group_usage_bytes', 'allocation_group_quota']
 
     def allocation_status(self, obj):
         return obj.allocation.status

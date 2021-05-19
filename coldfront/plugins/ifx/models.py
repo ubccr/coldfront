@@ -6,7 +6,7 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from coldfront.core.allocation.models import Allocation, AllocationAttribute
+from coldfront.core.allocation.models import AllocationUser, AllocationAttribute
 from coldfront.core.resource.models import Resource
 from ifxbilling.models import ProductUsage, Product
 from ifxbilling.fiine import createNewProduct
@@ -15,12 +15,12 @@ from fiine.client import API as FiineAPI
 logger = logging.getLogger(__name__)
 
 
-class AllocationProductUsage(models.Model):
+class AllocationUserProductUsage(models.Model):
     '''
     Link between ProductUsage and Allocation
     '''
-    allocation = models.ForeignKey(
-        Allocation,
+    allocation_user = models.ForeignKey(
+        AllocationUser.history.model,
         on_delete=models.PROTECT
     )
     product_usage = models.ForeignKey(
@@ -41,26 +41,41 @@ class ProductResource(models.Model):
         on_delete=models.CASCADE
     )
 
-def allocation_to_product_usage(allocation, product):
+def allocation_user_to_allocation_product_usage(allocation_user, product, overwrite=False):
     '''
-    Converts an allocation to a product usage.
-    Temporarily using PI as the product_user.  Returns existing
-    product usage if found.
+    Converts an allocation_user to an allocation_product_usage.
+    Unless overwrite flag is true, throws an exception if there is already an
+    allocation_product_usage for this allocation user, year, and month.  Otherwise, removes existing AllocationUserProductUsage
+    and ProductUsage records before creating new ones.
     '''
+    product_user = allocation_user.user
+    month = allocation_user.updated.strftime('%m')
+    year = allocation_user.updated.year
+    aupus = AllocationUserProductUsage.objects.filter(
+        product_usage__product=product,
+        product_usage__product_user=product_user,
+        product_usage__month=month,
+        product_usage__year=year
+    )
+    if len(aupus) > 0:
+        if overwrite:
+            for aupu in aupus:
+                aupu.product_usage.delete()
+                aupu.delete()
+        else:
+            raise Exception(f'AllocationUserProductUsage already exists for use of {product} by {product_user} in month {month} of {year}')
+
     product_usage_data = {
         'product': product,
+        'product_user': product_user,
+        'month': month,
+        'year': year,
     }
-    product_user = get_user_model().objects.get(username='veradmin')
-    if allocation.project.pi:
-        product_user = allocation.project.pi
-    product_usage_data['product_user'] = product_user
-    storage_quota = allocation.get_attribute('Storage Quota (TB)')
-    product_usage_data['quantity'] = int(float(storage_quota))
-    product_usage_data['units'] = 'TB'
-    product_usage_data['year'] = allocation.start_date.year
-    product_usage_data['month'] = allocation.start_date.strftime("%m")
+    product_usage_data['quantity'] = allocation_user.usage_bytes
+    product_usage_data['units'] = 'b'
     product_usage, created = ProductUsage.objects.get_or_create(**product_usage_data)
-    return product_usage
+    aupu = AllocationUserProductUsage.objects.create(allocation_user=allocation_user.history.most_recent(), product_usage=product_usage)
+    return aupu
 
 @receiver(post_save, sender=Resource)
 def resource_post_save(sender, instance, **kwargs):
@@ -79,25 +94,3 @@ def resource_post_save(sender, instance, **kwargs):
             fiine_product.pop('facility')
             (product, created) = Product.objects.get_or_create(**fiine_product)
         product_resource = ProductResource.objects.create(product=product, resource=instance)
-
-
-@receiver(post_save, sender=AllocationAttribute)
-def allocation_post_save(sender, instance, **kwargs):
-    '''
-    Fill out AllocationProductUsage and ProductUsage records when AllocationAttribute changes
-    Need to figure out if existing records must be removed.  Need to figure
-    out if multiple AllocationProductUsages will exist for an allocation- probably yes.
-    '''
-    if instance.allocation_attribute_type.name == 'Storage Quota (TB)':
-        allocation = instance.allocation
-        try:
-            allocation_product_usage = AllocationProductUsage.objects.get(allocation=allocation)
-        except AllocationProductUsage.DoesNotExist:
-            resources = allocation.resources.all()
-            for resource in resources:
-                product_resource = ProductResource.objects.get(resource=resource)
-                product_usage = allocation_to_product_usage(allocation, product_resource.product)
-                allocation_product_usage, created = AllocationProductUsage.objects.get_or_create(
-                    allocation=allocation,
-                    product_usage=product_usage
-                )
