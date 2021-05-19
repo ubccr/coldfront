@@ -241,71 +241,30 @@ class Command(BaseCommand):
                                 if user no allocationuser yes: this scenario does not exist
                                 """
                                 # check whether user is in User object
-                                user_exist = False
                                 allocation_user_exist = False
 
-                                try:
-                                    user_obj = get_user_model().objects.get(username = json_user)
-                                    user_exist = True
-                                except get_user_model().DoesNotExist:
-                                    user_exist = False
-
-                                if (not user_exist):
-                                    # create user object
-                                    fullname = user_json_dict[json_user]['name']
-                                    fullname_lst = fullname.split()
-                                    if (len(fullname_lst) > 1):
-                                        first_name = fullname_lst[0]
-                                        last_name = fullname_lst[1]
-                                    else:
-                                        first_name = fullname_lst[0]
-                                        last_name = "" # no last_name
-                                    user_obj = get_user_model().objects.create(
-                                        username = json_user,
-                                        first_name = first_name,
-                                        last_name = last_name,
-                                        email = "Not_Active@fas.edu",
-                                        is_active = False,
-                                        is_staff = False,
-                                        is_superuser = False,
-                                    )
-                                    get_user_model().objects.get(username=json_user).save()
-
+                                user_obj = get_user_model().objects.get(username = json_user)
 
                                 try:
                                     allocationuser_obj = AllocationUser.objects.get(user=user_obj)
-                                    allocation_user_exist = True
                                 except AllocationUser.DoesNotExist:
-                                    allocation_user_exist = False
-
-
-                                if (not allocation_user_exist):
                                     # create allocationuser object
-                                    usage_string = user_json_dict[json_user]['usage']
-                                    num, alpha = splitString(usage_string)
-                                    allocation_user_obj = AllocationUser.objects.create(
+                                    allocation_user_obj = AllocationUser(
                                         allocation=allocation,
                                         user=user_obj,
                                         status=AllocationUserStatusChoice.objects.get(name='Inactive'),
-                                        usage_bytes = user_json_dict[json_user]['logical_usage'],
-                                        usage = num,
-                                        unit = alpha,
-                                        allocation_group_quota = lab_data["quota"],
-                                        allocation_group_usage_bytes = lab_data["kbytes"],
                                     )
-                                    allocation_user_obj.save()
 
-                                if (allocation_user_exist):
-                                    # only updating allocation user object
-                                    usage_string = user_json_dict[json_user]['usage']
-                                    num, alpha = splitString(usage_string)
-                                    allocationuser_obj.usage = num
-                                    allocationuser_obj.usage_bytes = user_json_dict[json_user]['logical_usage']
-                                    allocationuser_obj.unit = alpha
-                                    allocationuser_obj.allocation_group_usage_bytes = lab_data["kbytes"]
-                                    allocationuser_obj.allocation_group_quota = lab_data["quota"]
-                                    allocationuser_obj.save()
-                                    get_user_model().objects.get(username=json_user).save()
+                                # only updating allocation user object
+                                usage_string = user_json_dict[json_user]['usage']
+                                num, alpha = splitString(usage_string)
+                                allocationuser_obj.usage = num
+                                allocationuser_obj.usage_bytes = user_json_dict[json_user]['logical_usage']
+                                allocationuser_obj.unit = alpha
+                                allocationuser_obj.allocation_group_usage_bytes = lab_data["kbytes"]
+                                allocationuser_obj.allocation_group_quota = lab_data["quota"]
+                                allocationuser_obj.save()
+                                get_user_model().objects.get(username=json_user).save()
             except Exception as e:
                 logger.exception(e)
                 print(f'Error: {e}')
