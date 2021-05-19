@@ -49,8 +49,8 @@ def allocation_user_to_allocation_product_usage(allocation_user, product, overwr
     and ProductUsage records before creating new ones.
     '''
     product_user = allocation_user.user
-    month = allocation_user.updated.strftime('%m')
-    year = allocation_user.updated.year
+    month = allocation_user.modified.strftime('%m')
+    year = allocation_user.modified.year
     aupus = AllocationUserProductUsage.objects.filter(
         product_usage__product=product,
         product_usage__product_user=product_user,
@@ -74,7 +74,7 @@ def allocation_user_to_allocation_product_usage(allocation_user, product, overwr
     product_usage_data['quantity'] = allocation_user.usage_bytes
     product_usage_data['units'] = 'b'
     product_usage, created = ProductUsage.objects.get_or_create(**product_usage_data)
-    aupu = AllocationUserProductUsage.objects.create(allocation_user=allocation_user.history.most_recent(), product_usage=product_usage)
+    aupu = AllocationUserProductUsage.objects.create(allocation_user=allocation_user.history.first(), product_usage=product_usage)
     return aupu
 
 @receiver(post_save, sender=Resource)

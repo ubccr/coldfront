@@ -38,3 +38,4 @@ djangorestframework-datatables==0.6.0
 django-mathfilters==1.0.0
 django-easy-pdf==0.1.1
 ipython
+logging_tree

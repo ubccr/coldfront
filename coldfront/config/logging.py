@@ -34,5 +34,17 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'INFO',
         },
+        '': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+        'ifx': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+        'ifxbilling': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
     },
 }
