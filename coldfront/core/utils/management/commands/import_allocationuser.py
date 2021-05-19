@@ -64,7 +64,7 @@ class Command(BaseCommand):
             "zhuang_lab": "xzhuang",
             "moorcroft_lab": "prm",
             "kuang_lab": "kuang",
-            "kovac_lab": "akovacs",
+            "kovac_lab": "jmkovac",
             "holman_lab": "mholman",
             "giribet_lab": "ggiribet",
             "edwards_lab": "sedwards",
