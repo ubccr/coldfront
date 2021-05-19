@@ -5,7 +5,7 @@ import logging
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user, get_user_model
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
@@ -110,7 +110,11 @@ class Command(BaseCommand):
                 lab = f.split(".")
                 lab_name = lab[0]
 
-                filtered_query = Project.objects.get(title = lab_name) # find project
+                try:
+                    filtered_query = Project.objects.get(title = lab_name) # find project
+                except Project.DoesNotExist:
+                    raise Exception(f'Cannot find project {lab_name}')
+
                 data = {} # initialize an empty dictionary
                 file_path = file_path + "/" + f
                 print("loading",file_path,"...")
@@ -243,13 +247,16 @@ class Command(BaseCommand):
                                 # check whether user is in User object
                                 allocation_user_exist = False
 
-                                user_obj = get_user_model().objects.get(username = json_user)
+                                try:
+                                    user_obj = get_user_model().objects.get(username = json_user)
+                                except get_user_model().DoesNotExist:
+                                    raise Exception(f'Cannot find user {json_user}')
 
                                 try:
                                     allocationuser_obj = AllocationUser.objects.get(user=user_obj)
                                 except AllocationUser.DoesNotExist:
                                     # create allocationuser object
-                                    allocation_user_obj = AllocationUser(
+                                    allocationuser_obj = AllocationUser(
                                         allocation=allocation,
                                         user=user_obj,
                                         status=AllocationUserStatusChoice.objects.get(name='Inactive'),
@@ -266,7 +273,7 @@ class Command(BaseCommand):
                                 allocationuser_obj.save()
                                 get_user_model().objects.get(username=json_user).save()
             except Exception as e:
-                logger.exception(e)
+                # logger.exception(e)
                 print(f'Error: {e}')
             file_path = os.path.join(base_dir, 'local_data/holylfs04')
 
