@@ -22,7 +22,7 @@ class Command(BaseCommand):
         print('Adding projects ...')
         delimiter = ','
 
-        lab_pi_name_list = ['zhuang_lab,xzhuang', 'moorcroft_lab,prm', 'kuang_lab,kuang', 'kovac_lab,akovacs',
+        lab_pi_name_list = ['zhuang_lab,xzhuang', 'moorcroft_lab,prm', 'kuang_lab,kuang', 'kovac_lab,jmkovac',
         'holman_lab,mholman', 'giribet_lab,ggiribet', 'edwards_lab,sedwards', 'denolle_lab,mdenolle',
         'wofsy_lab,steven_wofsy', 'arguelles_delgado_lab,carguelles','balazs_lab,abalazs','barak_lab,bbarak','beam_lab,abeam',
         'berger_lab,berger','bhi,aloeb','brownfield_lab,dbrownfield']
