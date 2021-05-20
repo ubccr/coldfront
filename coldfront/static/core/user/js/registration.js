@@ -34,6 +34,21 @@ $(document).ready(function() {
     clearTimeout(emailTypingTimer);
   });
 
+
+  // When the acknowledgement check box changes, conditionally display the
+  // registration button.
+  let ackDivId = 'new-user-acknowledgement';
+  $(`#${ackDivId}`).change(function() {
+    let registerButton = document.getElementById('register-button');
+    var display;
+    if (this.checked) {
+      display = 'block';
+    } else {
+      display = 'none';
+    }
+    registerButton.style.display = display;
+  });
+
 });
 
 
@@ -77,6 +92,10 @@ function checkNameExists() {
   let isLastNameValid = lastName.length > 0 && pattern.test(lastName);
 
   let alertDiv = document.getElementById('nameExists');
+  let ackDiv = document.getElementById('new-user-acknowledgement-form');
+  let ackInput = document.getElementById('new-user-acknowledgement');
+  let registerButton = document.getElementById('register-button');
+
   if (isFirstNameValid && isLastNameValid) {
     let url = `` +
       `/user/user-name-exists?first_name=${firstName}&last_name=${lastName}`;
@@ -92,11 +111,18 @@ function checkNameExists() {
             passwordResetTag + ' using the existing address to gain access. ' +
             'You may then associate additional email addresses with your ' +
             'account. If you need any assistance, please contact us.';
+          ackDiv.style.display = 'block';
+          registerButton.style.display = 'none';
         } else {
           alertDiv.innerHTML = '';
+          ackDiv.style.display = 'none';
+          registerButton.style.display = 'block';
         }
       });
   } else {
     alertDiv.innerHTML = '';
+    ackDiv.style.display = 'none';
+    registerButton.style.display = 'block';
   }
+  ackInput.checked = false;
 };
