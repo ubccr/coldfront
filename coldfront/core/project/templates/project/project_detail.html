@@ -71,7 +71,9 @@ Project Detail
   <div class="card-body">
     <h4 class="card-title">
       Principal Investigators:
-      <a href=""><i class="far fa-envelope"></i></a>
+      {% comment %}
+        <a href=""><i class="far fa-envelope"></i></a>
+      {% endcomment %}
     </h4>
     <ul class="list-group">
       {% for pi in project.pis %}
@@ -124,7 +126,9 @@ Project Detail
   <h4 class="d-inline"><i class="fas fa-users"></i> <a name="users">Users</a></h4> <span class="badge badge-secondary">{{project_users.count}}</span>
     <div class="float-right">
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
-        <a class="btn btn-primary" href="{{mailto}}" role="button"><i class="far fa-envelope"></i> Email Project Users</a>
+        {% comment %}
+          <a class="btn btn-primary" href="{{mailto}}" role="button"><i class="far fa-envelope"></i> Email Project Users</a>
+        {% endcomment %}
         <a class="btn btn-success" href="{% url 'project-add-users-search' project.id %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
         {% comment %}<a class="btn btn-danger" href="{% url 'project-remove-users' project.id %}" role="button"><i class="fas fa-user-times" aria-hidden="true"></i> Remove Users</a>{% endcomment %}
       {% endif %}
