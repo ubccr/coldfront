@@ -160,10 +160,9 @@ class UserAccessAgreementForm(forms.Form):
 
     pop_quiz_answer = forms.ChoiceField(
         choices=POP_QUIZ_CHOICES,
-        help_text=(
+        label=(
             'You run a job that uses 2 of the 24 cores of a savio2 node, for '
             '1 hour. How many SUs have you used?'),
-        label='Service Unit usage pop quiz',
         required=True,
         widget=forms.RadioSelect())
 
