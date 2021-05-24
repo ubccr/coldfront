@@ -50,8 +50,8 @@ Savio Project Request Detail
                     determine if the requested PI is eligible for an allowance,
                     and if the project is appropriate for Savio.
                     {% if savio_request.allocation_type == "MOU" %}
-                      They must also confirm that the Memorandum of Use has
-                      been signed.
+                      They must also confirm that the Memorandum of
+                      Understanding has been signed.
                     {% endif %}
                   </p>
                 {% elif status == 'Approved - Processing' %}
@@ -167,7 +167,7 @@ Savio Project Request Detail
               {% if savio_request.allocation_type == "MOU" %}
                 {% with memorandum_signed=savio_request.state.memorandum_signed %}
                   <tr>
-                    <td>Confirm that the Memorandum of Use has been signed.</td>
+                    <td>Confirm that the Memorandum of Understanding has been signed.</td>
                     <td>
                       {% if eligibility.status == 'Denied' or readiness.status == 'Denied' %}
                         <span class="badge badge-danger">

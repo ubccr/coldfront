@@ -648,7 +648,8 @@ def savio_request_state_status(savio_request):
             other['timestamp']):
         return ProjectAllocationRequestStatusChoice.objects.get(name='Denied')
 
-    # For MOU projects, retrieve the signed status of the Memorandum of Use.
+    # For MOU projects, retrieve the signed status of the Memorandum of
+    # Understanding.
     if savio_request.allocation_type == SavioProjectAllocationRequest.MOU:
         memorandum_not_signed = (
             state['memorandum_signed']['status'] == 'Pending')
@@ -656,7 +657,7 @@ def savio_request_state_status(savio_request):
         memorandum_not_signed = False
 
     # PI eligibility or readiness are not yet determined, or, in the case of
-    # MOU projects, the Memorandum of Use has not been signed yet.
+    # MOU projects, the Memorandum of Understanding has not been signed yet.
     if (eligibility['status'] == 'Pending' or
             readiness['status'] == 'Pending' or
             memorandum_not_signed):
