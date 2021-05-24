@@ -1,9 +1,10 @@
 import datetime
 import textwrap
 
-from django.contrib.auth.models import User
+
 from django.core.exceptions import ValidationError
 from django.core.validators import MinLengthValidator
+from django.conf import settings
 from django.db import models
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
@@ -30,7 +31,7 @@ We do not have information about your research. Please provide a detailed descri
         '''
 
     title = models.CharField(max_length=255,)
-    pi = models.ForeignKey(User, on_delete=models.CASCADE,)
+    pi = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,)
     description = models.TextField(
         default=DEFAULT_DESCRIPTION,
         validators=[
@@ -122,7 +123,7 @@ We do not have information about your research. Please provide a detailed descri
 
 class ProjectAdminComment(TimeStampedModel):
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     comment = models.TextField()
 
     def __str__(self):
@@ -131,7 +132,7 @@ class ProjectAdminComment(TimeStampedModel):
 
 class ProjectUserMessage(TimeStampedModel):
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     message = models.TextField()
 
     def __str__(self):
@@ -177,7 +178,7 @@ class ProjectUserStatusChoice(TimeStampedModel):
 
 class ProjectUser(TimeStampedModel):
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     role = models.ForeignKey(ProjectUserRoleChoice, on_delete=models.CASCADE)
     status = models.ForeignKey(ProjectUserStatusChoice, on_delete=models.CASCADE, verbose_name='Status')

@@ -2,6 +2,12 @@ import os
 from split_settings.tools import optional, include
 from coldfront.config.env import ENV, PROJECT_ROOT
 
+IFX_APP = {
+    'name': 'coldfront',
+    'token': os.environ.get('COLDFRONT_IFX_APP_TOKEN', 'aslkdfj'),
+}
+FACILITY_NAME = 'Research Computing Storage'
+
 # ColdFront split settings
 coldfront_configs = [
     'base.py',

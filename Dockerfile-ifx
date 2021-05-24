@@ -1,0 +1,35 @@
+# syntax=docker/dockerfile:experimental
+FROM python:3.6
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+RUN mkdir ~/.ssh && echo "Host git*\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+
+WORKDIR /usr/src/app
+COPY requirements.txt ./
+
+ARG IFXURLS_COMMIT=549af42dbe83d07b12dd37055a5ec6368d4b649
+ARG NANITES_CLIENT_COMMIT=a11ff96ccb2c888d0d07ac97f27de1153463bf59
+ARG IFXUSER_COMMIT=2ec278c0324b52c8f008471dae15c2e87459eda4
+ARG FIINE_CLIENT_COMMIT=1701982585571f0a8af8698888bf46426ee21a4d
+ARG IFXBILLING_COMMIT=eb50511d99b7ddf5c430424feee84ed9cbcd445f
+
+RUN --mount=type=ssh pip install --upgrade pip && \
+    pip install 'Django>2.2,<3' && \
+    pip install django-author==1.0.2 && \
+    pip install git+ssh://git@github.com/harvardinformatics/ifxurls.git@${IFXURLS_COMMIT} && \
+    pip install git+ssh://git@github.com/harvardinformatics/nanites.client.git@${NANITES_CLIENT_COMMIT} && \
+    pip install git+ssh://git@github.com/harvardinformatics/ifxuser.git@${IFXUSER_COMMIT} && \
+    pip install git+ssh://git@gitlab-int.rc.fas.harvard.edu/informatics/fiine.client.git@${FIINE_CLIENT_COMMIT} && \
+    pip install git+ssh://git@gitlab-int.rc.fas.harvard.edu/informatics/ifxbilling.git@${IFXBILLING_COMMIT} && \
+    pip install -r requirements.txt
+COPY . .
+
+# RUN python3 ./manage.py initial_setup
+# RUN python3 ./manage.py load_test_data
+
+ENV DEBUG=True
+
+EXPOSE 80
+CMD ["python", "manage.py", "runserver", "0.0.0.0:80"]

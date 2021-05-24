@@ -3,7 +3,8 @@ import datetime
 import os
 
 from django.conf import settings
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import Group
+from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 
 from coldfront.core.project.models import Project
@@ -82,7 +83,7 @@ class Command(BaseCommand):
                 # print(title, pi_username, project_status, quantity, resource_name, status, active_util, justification, attributes, users)
 
                 # print(title, pi_username, project_status)
-                pi_user = User.objects.get(username=pi_username)
+                pi_user = get_user_model().objects.get(username=pi_username)
                 try:
                     project_obj = Project.objects.get(
                         title=title.strip(), pi__username=pi_username.strip(), status__name=project_status)
@@ -143,7 +144,7 @@ class Command(BaseCommand):
                     if users != 'N/A':
                         for user in users.split(';'):
                             username, user_status = user.split(',')
-                            user_obj = User.objects.get(username=username)
+                            user_obj = get_user_model().objects.get(username=username)
                             subscription_user_obj = SubscriptionUser.objects.create(
                                 subscription=subscription_obj,
                                 user=user_obj,

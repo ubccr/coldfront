@@ -1,7 +1,7 @@
 from django import forms
 from django.shortcuts import get_object_or_404
 
-from coldfront.core.allocation.models import (Allocation, AllocationAccount,
+from coldfront.core.allocation.models import (Allocation,
                                               AllocationAttributeType,
                                               AllocationStatusChoice)
 from coldfront.core.allocation.utils import get_user_resources
@@ -22,7 +22,6 @@ We do not have information about your research. Please provide a detailed descri
     quantity = forms.IntegerField(required=True)
     users = forms.MultipleChoiceField(
         widget=forms.CheckboxSelectMultiple, required=False)
-    allocation_account = forms.ChoiceField(required=False)
 
     def __init__(self, request_user, project_pk,  *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -38,17 +37,6 @@ We do not have information about your research. Please provide a detailed descri
             self.fields['users'].help_text = '<br/>Select users in your project to add to this allocation.'
         else:
             self.fields['users'].widget = forms.HiddenInput()
-
-        if ALLOCATION_ACCOUNT_ENABLED:
-            allocation_accounts = AllocationAccount.objects.filter(
-                user=request_user)
-            if allocation_accounts:
-                self.fields['allocation_account'].choices = (((account.name, account.name))
-                                                             for account in allocation_accounts)
-
-            self.fields['allocation_account'].help_text = '<br/>Select account name to associate with resource. <a href="#Modal" id="modal_link">Click here to create an account name!</a>'
-        else:
-            self.fields['allocation_account'].widget = forms.HiddenInput()
 
         self.fields['justification'].help_text = '<br/>Justification for requesting this allocation.'
 
@@ -170,10 +158,3 @@ class AllocationInvoiceNoteDeleteForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['pk'].widget = forms.HiddenInput()
-
-
-class AllocationAccountForm(forms.ModelForm):
-
-    class Meta:
-        model = AllocationAccount
-        fields = ['name', ]

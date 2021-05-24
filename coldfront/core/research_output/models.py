@@ -1,6 +1,6 @@
 from django.core.validators import MinLengthValidator
+from django.conf import settings
 from django.db import models
-from django.contrib.auth.models import User
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
@@ -17,7 +17,7 @@ class ResearchOutput(TimeStampedModel):
 
     # auxiliary fields
     created_by = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         editable=False,
         on_delete=models.SET_NULL,  # don't want to remove the entry when author user is deleted
         null=True,

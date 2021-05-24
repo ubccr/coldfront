@@ -20,4 +20,4 @@ coldfront.db
 db.json
 coldfront/core/user/coldfront.log
 coldfront.log
-.env
+coldfront.env

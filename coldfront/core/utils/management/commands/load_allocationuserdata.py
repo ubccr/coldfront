@@ -3,7 +3,7 @@ import os
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
@@ -92,19 +92,19 @@ class Command(BaseCommand):
             first_name, last_name = user.split()
             username = first_name[0].lower()+last_name.lower().strip()
             email = username + '@example.com'
-            User.objects.get_or_create(
+            get_user_model().objects.get_or_create(
                 first_name=first_name.strip(),
                 last_name=last_name.strip(),
                 username=username.strip(),
                 email=email.strip()
             )
 
-        admin_user, _ = User.objects.get_or_create(username='admin')
+        admin_user, _ = get_user_model().objects.get_or_create(username='admin')
         admin_user.is_superuser = True
         admin_user.is_staff = True
         admin_user.save()
 
-        for user in User.objects.all():
+        for user in get_user_model().objects.all():
             user.set_password('test1234')
             user.save()
 
@@ -129,11 +129,11 @@ class Command(BaseCommand):
             )
 
         resource_obj = Resource.objects.get(name='server-cgray')
-        resource_obj.allowed_users.add(User.objects.get(username='cgray'))
+        resource_obj.allowed_users.add(get_user_model().objects.get(username='cgray'))
         resource_obj = Resource.objects.get(name='server-sfoster')
-        resource_obj.allowed_users.add(User.objects.get(username='sfoster'))
+        resource_obj.allowed_users.add(get_user_model().objects.get(username='sfoster'))
 
-        pi1 = User.objects.get(username='cgray')
+        pi1 = get_user_model().objects.get(username='cgray')
         pi1.userprofile.is_pi = True
         pi1.save()
         project_obj, _ = Project.objects.get_or_create(
@@ -153,7 +153,7 @@ class Command(BaseCommand):
             univ_hpc.save()
 
         publication_source = PublicationSource.objects.get(name='doi')
-    
+
 
         project_user_obj, _ = ProjectUser.objects.get_or_create(
             user=pi1,
@@ -269,7 +269,7 @@ class Command(BaseCommand):
             user=pi1,
             status=AllocationUserStatusChoice.objects.get(name='Active')
         )
-        pi2 = User.objects.get(username='sfoster')
+        pi2 = get_user_model().objects.get(username='sfoster')
         pi2.userprofile.is_pi = True
         pi2.save()
         project_obj, _ = Project.objects.get_or_create(
