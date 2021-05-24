@@ -43,6 +43,11 @@ google_sheets_credentials: '/tmp/credentials.json'
 #host_ip: 131.243.130.236
 #app_port: 8000
 
+#ssl_enabled: false
+#ssl_certificate_file: /etc/ssl/ssl_certificate.file
+#ssl_certificate_key_file: /etc/ssl/ssl_certificate_key.file
+#ssl_certificate_chain_file: /etc/ssl/ssl_certification_chain.file
+
 #####################################
 #PROD SETTINGS
 #####################################
@@ -55,3 +60,7 @@ google_sheets_credentials: '/tmp/credentials.json'
 #host_ip: 10.0.0.40
 #app_port: 8000
 
+#ssl_enabled: true
+#ssl_certificate_file: /etc/ssl/ssl_certificate.file
+#ssl_certificate_key_file: /etc/ssl/ssl_certificate_key.file
+#ssl_certificate_chain_file: /etc/ssl/ssl_certification_chain.file
