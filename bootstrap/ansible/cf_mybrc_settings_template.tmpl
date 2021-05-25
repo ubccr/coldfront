@@ -3,10 +3,9 @@ import os
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = {{ debug }}
 
-ALLOWED_HOSTS = ['0.0.0.0', '{{ hostname }}:{{ app_port }}', '{{ hostname }}', '{{ host_ip }}']
+ALLOWED_HOSTS = ['0.0.0.0', '{{ hostname }}', '{{ host_ip }}']
 
-CENTER_PROJECT_RENEWAl_HELP_URL = 'http://{{ hostname }}:{{ app_port }}/help'
-CENTER_BASE_URL = 'http://{{ hostname }}:{{ app_port }}'
+CENTER_BASE_URL = '{{ full_host_path }}'
 CENTER_HELP_URL = CENTER_BASE_URL + '/help'
 CENTER_PROJECT_RENEWAL_HELP_URL = CENTER_BASE_URL + '/help'
 
@@ -17,10 +16,10 @@ EMAIL_TICKET_SYSTEM_ADDRESS = 'help@{{ hostname }}'
 EMAIL_DIRECTOR_EMAIL_ADDRESS = 'director@{{ hostname }}'
 EMAIL_PROJECT_REVIEW_CONTACT = 'review@{{ hostname }}'
 EMAIL_DEVELOPMENT_EMAIL_LIST = ['dev1@{{ hostname }}', 'dev2@{{ hostname }}']
-EMAIL_OPT_OUT_INSTRUCTION_URL = 'http://{{ hostname }}:{{ app_port }}/optout'
+EMAIL_OPT_OUT_INSTRUCTION_URL = CENTER_BASE_URL + '/optout'
 EMAIL_SIGNATURE = """
 MyBRC User Portal team
-http://{{ hostname }}:{{ app_port }}
+{{ full_host_path }}
 Email : {{ from_email }}
 """
 
