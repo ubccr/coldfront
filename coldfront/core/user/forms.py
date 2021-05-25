@@ -120,7 +120,7 @@ class UserLoginForm(AuthenticationForm):
         super().__init__(*args, **kwargs)
         self.fields['username'].help_text = (
             'This is your BRC cluster account username if you have one, or '
-            'any of the verified email addresses associated with it, not your '
+            'any of the verified email addresses associated with your portal account, not your '
             'CalNet username.')
         self.fields['password'].help_text = (
             'This password is unique to this portal, and is neither your '
