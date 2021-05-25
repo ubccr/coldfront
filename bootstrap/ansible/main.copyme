@@ -42,6 +42,7 @@ google_sheets_credentials: '/tmp/credentials.json'
 #hostname: scgup-dev.lbl.gov
 #host_ip: 131.243.130.236
 #app_port: 8000
+#full_host_path: http://scgup-dev.lbl.gov:8000
 
 #ssl_enabled: false
 #ssl_certificate_file: /etc/ssl/ssl_certificate.file
@@ -55,10 +56,11 @@ google_sheets_credentials: '/tmp/credentials.json'
 #djangooperator: meli
 
 #debug: False
-#git_prefix: /home/meli/
+#git_prefix: /var/www/coldfront_app/
 #hostname: mybrc.brc.berkeley.edu
 #host_ip: 10.0.0.40
 #app_port: 8000
+#full_host_path: https://mybrc.brc.berkeley.edu
 
 #ssl_enabled: true
 #ssl_certificate_file: /etc/ssl/ssl_certificate.file
