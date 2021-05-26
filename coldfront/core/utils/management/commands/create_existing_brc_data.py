@@ -18,9 +18,10 @@ import os
 """An admin command that creates existing users and accounts for BRC."""
 
 
-CLUSTERS = {'cortex', 'savio', 'vector'}
+CLUSTERS = {'abc', 'cortex', 'savio', 'vector'}
 
 PASSWD_FILE = '/tmp/passwd'
+ABC_PASSWD_FILE = '/tmp/passwd.abc'
 
 PROJECT_ALLOWANCES = {
     'ac_': 'allowance_has_recharge',
@@ -30,9 +31,11 @@ PROJECT_ALLOWANCES = {
     'pc_': 'allowance_has_partner'
 }
 
-PROJECT_PREFIXES = {'ac_', 'cortex', 'co_', 'fc_', 'ic_', 'pc_', 'vector_'}
+PROJECT_PREFIXES = {
+    'abc', 'ac_', 'cortex', 'co_', 'fc_', 'ic_', 'pc_', 'vector_'}
 
 PROJECT_PREFIXES_BY_CLUSTER = {
+    'abc': {'abc'},
     'cortex': {'cortex'},
     'savio': {'ac_', 'co_', 'fc_', 'ic_', 'pc_'},
     'vector': {'vector_'}
@@ -62,14 +65,23 @@ USER_SPREADSHEET_ROW_START = 2
 USER_SPREADSHEET_TAB = 'All-Users'
 
 # Settings for the 'Savio-users' tab of the 'BRC-Users' spreadsheet.
-USER_PROJECT_SPREADSHEET_COLS = {
+SAVIO_USER_PROJECT_SPREADSHEET_COLS = {
     'NAME': 1,
     'EMAIL': 2,
     'USERNAME': 3,
     'PROJECTS': 4
 }
-USER_PROJECT_SPREADSHEET_ROW_START = 2
-USER_PROJECT_SPREADSHEET_TAB = 'Savio-users'
+SAVIO_USER_PROJECT_SPREADSHEET_ROW_START = 2
+SAVIO_USER_PROJECT_SPREADSHEET_TAB = 'Savio-users'
+
+# Settings for the 'ABC-users' tab of the 'BRC-Users' spreadsheet.
+ABC_USER_PROJECT_SPREADSHEET_COLS = {
+    'NAME': 1,
+    'EMAIL': 2,
+    'USERNAME': 3,
+}
+ABC_USER_PROJECT_SPREADSHEET_ROW_START = 2
+ABC_USER_PROJECT_SPREADSHEET_TAB = 'ABC-users'
 
 
 class Command(BaseCommand):
@@ -94,8 +106,15 @@ class Command(BaseCommand):
         user_project_data = self.get_user_project_data()
         valid_user_projects = self.get_valid_user_projects(user_project_data)
         self.create_project_users(valid_user_projects)
-        # Create the abc project and associate a PI with it.
+
+        # Create the abc Project and associate a PI with it.
         self.create_abc_project()
+        # Associate some Users with the abc Project (both of which should
+        # already exist).
+        abc_user_project_data = self.get_abc_user_project_data()
+        valid_abc_user_projects = self.get_valid_abc_user_projects(
+            abc_user_project_data)
+        self.create_project_users(valid_abc_user_projects)
 
     def create_abc_project(self):
         """Create the abc project and set its PI manually.
@@ -429,6 +448,31 @@ class Command(BaseCommand):
         return os.path.exists(file_path) and os.path.isfile(file_path)
 
     @staticmethod
+    def get_abc_user_project_data():
+        """Return a list of lists where each entry corresponds to a
+        single user from the abc user project worksheet.
+
+        Parameters:
+            - None
+
+        Returns:
+            - List of lists
+
+        Raises:
+            - Exception, if any errors occur
+        """
+        worksheet = get_gspread_worksheet(
+            settings.GOOGLE_OAUTH2_KEY_FILE, USER_SPREADSHEET_ID,
+            ABC_USER_PROJECT_SPREADSHEET_TAB)
+        row_start = ABC_USER_PROJECT_SPREADSHEET_ROW_START
+        row_end = len(worksheet.col_values(
+            ABC_USER_PROJECT_SPREADSHEET_COLS['USERNAME']))
+        col_start = 1
+        col_end = ABC_USER_PROJECT_SPREADSHEET_COLS['USERNAME']
+        return get_gspread_worksheet_data(
+            worksheet, row_start, row_end, col_start, col_end)
+
+    @staticmethod
     def get_first_middle_last_names(full_name):
         """Return the given full name split into first, middle, and last
         in a dictionary.
@@ -507,22 +551,22 @@ class Command(BaseCommand):
         return get_gspread_worksheet_data(
             worksheet, row_start, row_end, col_start, col_end)
 
-    def get_user_ids(self, password_file_path):
-        """Parse the password file at the given path and return a
-        mapping from user_username to user_id. Each line of the password
-        file has 7 entries delimited by ':'. The first is the user's
-        username. The third is a non-negative user ID.
+    def get_user_ids(self, password_file_path, user_data):
+        """Parse the password file at the given path and update the
+        given mapping from user_username to user_id. Each line of the
+        password file has 7 entries delimited by ':'. The first is the
+        user's username. The third is a non-negative user ID.
 
         Parameters:
             - password_file_path (str): the path to the password file
+            - user_data (dict): the mapping to update
 
         Returns:
-            - Dictionary mapping username to ID
+            - None
 
         Raises:
             - None
         """
-        user_data = {}
         if self.file_exists(password_file_path):
             with open(password_file_path, 'r') as password_file:
                 for line in password_file:
@@ -548,7 +592,6 @@ class Command(BaseCommand):
                             f'{user_id}.')
                         continue
                     user_data[user_username] = user_id
-        return user_data
 
     @staticmethod
     def get_user_project_data():
@@ -566,14 +609,36 @@ class Command(BaseCommand):
         """
         worksheet = get_gspread_worksheet(
             settings.GOOGLE_OAUTH2_KEY_FILE, USER_SPREADSHEET_ID,
-            USER_PROJECT_SPREADSHEET_TAB)
-        row_start = USER_PROJECT_SPREADSHEET_ROW_START
+            SAVIO_USER_PROJECT_SPREADSHEET_TAB)
+        row_start = SAVIO_USER_PROJECT_SPREADSHEET_ROW_START
         row_end = len(worksheet.col_values(
-            USER_PROJECT_SPREADSHEET_COLS['USERNAME']))
+            SAVIO_USER_PROJECT_SPREADSHEET_COLS['USERNAME']))
         col_start = 1
-        col_end = USER_PROJECT_SPREADSHEET_COLS['PROJECTS']
+        col_end = SAVIO_USER_PROJECT_SPREADSHEET_COLS['PROJECTS']
         return get_gspread_worksheet_data(
             worksheet, row_start, row_end, col_start, col_end)
+
+    def get_valid_abc_user_projects(self, abc_user_project_data):
+        """Return the subset of the given abc user project associations
+        for which both the user and project exist.
+
+        Leverage the fact that this tab has the same format as the
+        analogous Savio tab; simply add the abc project name to each
+        row and call an existing method.
+
+        Parameters:
+            - abc_user_project_data (list): a list of lists
+
+        Returns:
+            - List of lists
+
+        Raises:
+            - None
+        """
+        project_name = 'abc'
+        for row in abc_user_project_data:
+            row.append(project_name)
+        return self.get_valid_user_projects(abc_user_project_data)
 
     def get_valid_projects(self, project_data):
         """Return the subset of the given projects that have valid
@@ -691,9 +756,9 @@ class Command(BaseCommand):
         valid, invalid = [], []
         for row in user_project_data:
             username = row[
-                USER_PROJECT_SPREADSHEET_COLS['USERNAME'] - 1].strip()
+                SAVIO_USER_PROJECT_SPREADSHEET_COLS['USERNAME'] - 1].strip()
             projects = row[
-                USER_PROJECT_SPREADSHEET_COLS['PROJECTS'] - 1].strip()
+                SAVIO_USER_PROJECT_SPREADSHEET_COLS['PROJECTS'] - 1].strip()
             row_dict = {
                 'username': username,
                 'projects': projects
@@ -739,7 +804,9 @@ class Command(BaseCommand):
         Raises:
             - None
         """
-        user_ids = self.get_user_ids(PASSWD_FILE)
+        user_ids = {}
+        self.get_user_ids(PASSWD_FILE, user_ids)
+        self.get_user_ids(ABC_PASSWD_FILE, user_ids)
         valid, invalid = [], []
         for row in user_data:
             username = row[USER_SPREADSHEET_COLS['USERNAME'] - 1].strip()
