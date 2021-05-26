@@ -21,6 +21,7 @@ import os
 CLUSTERS = {'abc', 'cortex', 'savio', 'vector'}
 
 PASSWD_FILE = '/tmp/passwd'
+ABC_PASSWD_FILE = '/tmp/passwd.abc'
 
 PROJECT_ALLOWANCES = {
     'ac_': 'allowance_has_recharge',
@@ -550,22 +551,22 @@ class Command(BaseCommand):
         return get_gspread_worksheet_data(
             worksheet, row_start, row_end, col_start, col_end)
 
-    def get_user_ids(self, password_file_path):
-        """Parse the password file at the given path and return a
-        mapping from user_username to user_id. Each line of the password
-        file has 7 entries delimited by ':'. The first is the user's
-        username. The third is a non-negative user ID.
+    def get_user_ids(self, password_file_path, user_data):
+        """Parse the password file at the given path and update the
+        given mapping from user_username to user_id. Each line of the
+        password file has 7 entries delimited by ':'. The first is the
+        user's username. The third is a non-negative user ID.
 
         Parameters:
             - password_file_path (str): the path to the password file
+            - user_data (dict): the mapping to update
 
         Returns:
-            - Dictionary mapping username to ID
+            - None
 
         Raises:
             - None
         """
-        user_data = {}
         if self.file_exists(password_file_path):
             with open(password_file_path, 'r') as password_file:
                 for line in password_file:
@@ -591,7 +592,6 @@ class Command(BaseCommand):
                             f'{user_id}.')
                         continue
                     user_data[user_username] = user_id
-        return user_data
 
     @staticmethod
     def get_user_project_data():
@@ -804,7 +804,9 @@ class Command(BaseCommand):
         Raises:
             - None
         """
-        user_ids = self.get_user_ids(PASSWD_FILE)
+        user_ids = {}
+        self.get_user_ids(PASSWD_FILE, user_ids)
+        self.get_user_ids(ABC_PASSWD_FILE, user_ids)
         valid, invalid = [], []
         for row in user_data:
             username = row[USER_SPREADSHEET_COLS['USERNAME'] - 1].strip()
