@@ -206,7 +206,7 @@ def send_added_to_project_notification_email(project, project_user):
     context = {
         'user': user,
         'project_name': project.name,
-        'support_email': settings.EMAIL_TICKET_SYSTEM_ADDRESS,
+        'support_email': settings.CENTER_HELP_EMAIL,
         'signature': settings.EMAIL_SIGNATURE,
     }
 
@@ -274,7 +274,7 @@ def send_project_join_request_approval_email(project, project_user):
     context = {
         'user': user,
         'project_name': project.name,
-        'support_email': settings.EMAIL_TICKET_SYSTEM_ADDRESS,
+        'support_email': settings.CENTER_HELP_EMAIL,
         'signature': settings.EMAIL_SIGNATURE,
     }
 
@@ -299,7 +299,7 @@ def send_project_join_request_denial_email(project, project_user):
     context = {
         'user': user,
         'project_name': project.name,
-        'support_email': settings.EMAIL_TICKET_SYSTEM_ADDRESS,
+        'support_email': settings.CENTER_HELP_EMAIL,
         'signature': settings.EMAIL_SIGNATURE,
     }
 
@@ -422,7 +422,7 @@ def send_new_project_request_pi_notification_email(request):
         'requester_str': requester_str,
         'pi_str': pi_str,
         'review_url': review_url,
-        'support_email': settings.EMAIL_TICKET_SYSTEM_ADDRESS,
+        'support_email': settings.CENTER_HELP_EMAIL,
     }
 
     sender = settings.EMAIL_SENDER
@@ -453,7 +453,7 @@ def send_project_request_approval_email(request):
         'center_name': settings.CENTER_NAME,
         'project_name': request.project.name,
         'project_url': project_url,
-        'support_email': settings.EMAIL_TICKET_SYSTEM_ADDRESS,
+        'support_email': settings.CENTER_HELP_EMAIL,
         'signature': settings.EMAIL_SIGNATURE,
     }
 
@@ -489,7 +489,7 @@ def send_project_request_denial_email(request):
         'project_name': request.project.name,
         'reason_category': reason.category,
         'reason_justification': reason.justification,
-        'support_email': settings.EMAIL_TICKET_SYSTEM_ADDRESS,
+        'support_email': settings.CENTER_HELP_EMAIL,
         'signature': settings.EMAIL_SIGNATURE,
     }
 
@@ -526,7 +526,7 @@ def send_project_request_pooling_email(request):
         'project_name': request.project.name,
         'requester_str': requester_str,
         'pi_str': pi_str,
-        'support_email': settings.EMAIL_TICKET_SYSTEM_ADDRESS,
+        'support_email': settings.CENTER_HELP_EMAIL,
         'signature': settings.EMAIL_SIGNATURE,
     }
 
