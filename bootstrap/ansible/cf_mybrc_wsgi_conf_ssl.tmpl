@@ -36,3 +36,10 @@ WSGIPassAuthorization On
     CustomLog /var/log/httpd/cf_brc.custom.log combined
 
 </VirtualHost>
+
+<VirtualHost {{ host_ip }}:80>
+
+    ServerName {{ hostname }}
+    Redirect "/" "{{ full_host_path }}"
+
+</VirtualHost>

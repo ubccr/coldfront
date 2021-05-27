@@ -58,7 +58,7 @@ google_sheets_credentials: '/tmp/credentials.json'
 #debug: False
 #git_prefix: /var/www/coldfront_app/
 #hostname: mybrc.brc.berkeley.edu
-#host_ip: 10.0.0.40
+#host_ip: 136.152.224.34
 #app_port: 8000
 #full_host_path: https://mybrc.brc.berkeley.edu
 
