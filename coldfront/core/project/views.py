@@ -2507,7 +2507,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
                 'justification': justification,
                 'timestamp': timestamp,
             }
-            context['support_email'] = settings.EMAIL_TICKET_SYSTEM_ADDRESS
+            context['support_email'] = settings.CENTER_HELP_EMAIL
 
         context['is_checklist_complete'] = self.__is_checklist_complete()
 
@@ -3170,7 +3170,7 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
                 'justification': justification,
                 'timestamp': timestamp,
             }
-            context['support_email'] = settings.EMAIL_TICKET_SYSTEM_ADDRESS
+            context['support_email'] = settings.CENTER_HELP_EMAIL
 
         context['is_checklist_complete'] = self.__is_checklist_complete()
 
