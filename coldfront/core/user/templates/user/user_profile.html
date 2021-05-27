@@ -184,7 +184,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
                   {% if email.is_verified %}
                     <span class="badge badge-success">Verified</span>
                   {% else %}
-                    <span class="badge badge-danger">Unverified</span>
+                    <span class="badge badge-warning">Verification Pending</span>
                   {% endif %}
                 </td>
                 <td>
@@ -193,7 +193,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
                       <form action="{% url 'send-email-verification-email' email.pk %}" method="post" style="display: inline;">
                         {% csrf_token %}
                         <button class="btn btn-primary" type="submit">
-                          Verify
+                          Re-Verify
                         </button>
                       </form>
                     {% endif %}
