@@ -551,20 +551,21 @@ class SavioProjectSurveyForm(forms.Form):
         required=False)
     large_memory_nodes = forms.CharField(
         label=(
-            'BRC has 4 512GB large memory nodes. What is your expected use of '
-            'these nodes?'),
+            'BRC has a number of large memory nodes, each with 512GB or '
+            '384GB. Do you have a need to use these nodes? If so, what is '
+            'your expected use of these nodes?'),
         required=False)
     data_storage_space = forms.CharField(
-        help_text=(
+        help_text=mark_safe(
             'BRC provides each user with 10GB of backed up home directory '
             'space; and free access to a not-backed-up shared Global Scratch '
             'high performance parallel filesystem. Research projects that '
             'need to share datasets among their team members can also be '
             'allocated up to 30 GB of not-backed-up shared filesystem space '
-            'on request. Users needing more storage can be allocated space on '
-            'IST\'s utility storage tier (currently $50/TB/mo as of '
-            '7/1/2014). Please indicate if you need additional space and how '
-            'much.'),
+            'on request. Users needing more storage can choose to join the '
+            'Condo Storage service by purchasing 42TB at the cost of $6539. '
+            'More details about this program are available <a href="https://docs-research-it.berkeley.edu/services/high-performance-computing/condos/condo-storage-service/">here</a>. '
+            'Please indicate if you need additional space and how much.'),
         label='Data Storage Space',
         required=False)
     io = forms.CharField(
@@ -595,18 +596,6 @@ class SavioProjectSurveyForm(forms.Form):
             'file sharing of large datasets?'),
         label='Network connection from SAVIO to the Internet',
         required=False)
-    new_hardware_interest = forms.MultipleChoiceField(
-        choices=(
-            ('Intel Phi', 'Intel Phi'),
-            ('Nvidia GPU', 'Nvidia GPU'),
-        ),
-        help_text=(
-            'Please indicate which of the following hardware would be of '
-            'interest to you. BRC currently have some nodes equipped with '
-            'Nvidia GPUs and no Intel Phi, but it is under consideration. '),
-        label='Many-core, Intel Phi or Nvidia GPU',
-        required=False,
-        widget=forms.CheckboxSelectMultiple())
     cloud_computing = forms.ChoiceField(
         choices=(
             ('', 'Select one...'),
