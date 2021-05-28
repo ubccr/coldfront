@@ -1,6 +1,6 @@
 Dear {{ user.first_name }} {{ user.last_name }},
 
-The managers of Project {{ project_name }} have added you to their project. A request for cluster access under this project has been generated.
+The managers of Project {{ project_name }} have added you to their project. A request for cluster access under this project has been generated and sent to the cluster administrators. Once access is set up, you will receive a message indicating that you can run jobs under this project.
 
 If you have any questions, please contact us at {{ support_email }}.
 
