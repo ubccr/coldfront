@@ -2,10 +2,13 @@ import datetime
 import importlib
 import logging
 from ast import literal_eval
+from decimal import Decimal
 
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.html import mark_safe
 from django.utils.module_loading import import_string
@@ -57,6 +60,8 @@ class Allocation(TimeStampedModel):
             ('can_review_allocation_requests',
              'Can review allocation requests'),
             ('can_manage_invoice', 'Can manage invoice'),
+            ('can_review_cluster_account_requests',
+             'Can review cluster account requests'),
         )
 
     def clean(self):
@@ -110,6 +115,8 @@ class Allocation(TimeStampedModel):
                 try:
                     percent = round(float(attribute.allocationattributeusage.value) /
                                     float(attribute.value) * 10000) / 100
+                except ZeroDivisionError:
+                    percent = 0
                 except ValueError:
                     percent = 'Invalid Value'
                     logger.error("Allocation attribute '%s' is not an int but has a usage",
@@ -167,7 +174,7 @@ class Allocation(TimeStampedModel):
         return [a.value for a in attr]
 
     def __str__(self):
-        return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
+        return "%s (%s)" % (self.get_parent_resource.name, self.project.name)
 
 
 class AllocationAdminNote(TimeStampedModel):
@@ -237,22 +244,8 @@ class AllocationAttribute(TimeStampedModel):
                 self.allocation_attribute_type))
 
         expected_value_type = self.allocation_attribute_type.attribute_type.name.strip()
-
-        if expected_value_type == "Int" and not isinstance(literal_eval(self.value), int):
-            raise ValidationError(
-                'Invalid Value "%s". Value must be an integer.' % (self.value))
-        elif expected_value_type == "Float" and not (isinstance(literal_eval(self.value), float) or isinstance(literal_eval(self.value), int)):
-            raise ValidationError(
-                'Invalid Value "%s". Value must be a float.' % (self.value))
-        elif expected_value_type == "Yes/No" and self.value not in ["Yes", "No"]:
-            raise ValidationError(
-                'Invalid Value "%s". Allowed inputs are "Yes" or "No".' % (self.value))
-        elif expected_value_type == "Date":
-            try:
-                datetime.datetime.strptime(self.value.strip(), "%Y-%m-%d")
-            except ValueError:
-                raise ValidationError(
-                    'Invalid Value "%s". Date must be in format YYYY-MM-DD' % (self.value))
+        validate_allocation_attribute_value_type(
+            expected_value_type, self.value)
 
     def __str__(self):
         return '%s' % (self.allocation_attribute_type.name)
@@ -262,7 +255,14 @@ class AllocationAttributeUsage(TimeStampedModel):
     """ AllocationAttributeUsage. """
     allocation_attribute = models.OneToOneField(
         AllocationAttribute, on_delete=models.CASCADE, primary_key=True)
-    value = models.FloatField(default=0)
+    value = models.DecimalField(
+        max_digits=settings.DECIMAL_MAX_DIGITS,
+        decimal_places=settings.DECIMAL_MAX_PLACES,
+        default=settings.ALLOCATION_MIN,
+        validators=[
+            MinValueValidator(settings.ALLOCATION_MIN),
+            MaxValueValidator(settings.ALLOCATION_MAX),
+        ])
     history = HistoricalRecords()
 
     def __str__(self):
@@ -304,3 +304,88 @@ class AllocationAccount(TimeStampedModel):
 
     class Meta:
         ordering = ['name', ]
+
+
+class AllocationUserAttribute(TimeStampedModel):
+    """ AllocationUserAttribute. """
+    allocation_attribute_type = models.ForeignKey(
+        AllocationAttributeType, on_delete=models.CASCADE)
+    allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
+    allocation_user = models.ForeignKey(
+        AllocationUser, on_delete=models.CASCADE)
+    value = models.CharField(max_length=128)
+    history = HistoricalRecords()
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if (self.allocation_attribute_type.has_usage and
+                not AllocationUserAttributeUsage.objects.filter(
+                    allocation_user_attribute=self).exists()):
+            AllocationUserAttributeUsage.objects.create(
+                allocation_user_attribute=self)
+
+    def clean(self):
+        if self.allocation_attribute_type.is_unique:
+            kwargs = {
+                "allocation_attribute_type": self.allocation_attribute_type,
+            }
+            if self.allocation.allocationuserattribute_set.filter(
+                    **kwargs).exists():
+                raise ValidationError(
+                    ("'{}' attribute already exists for this "
+                     "allocation.").format(self.allocation_attribute_type))
+
+        expected_value_type = \
+            self.allocation_attribute_type.attribute_type.name.strip()
+        validate_allocation_attribute_value_type(
+            expected_value_type, self.value)
+
+    def __str__(self):
+        return self.allocation_attribute_type.name
+
+
+class AllocationUserAttributeUsage(TimeStampedModel):
+    """ AllocationUserAttributeUsage. """
+    allocation_user_attribute = models.OneToOneField(
+        AllocationUserAttribute, on_delete=models.CASCADE, primary_key=True)
+    value = models.DecimalField(
+        max_digits=settings.DECIMAL_MAX_DIGITS,
+        decimal_places=settings.DECIMAL_MAX_PLACES,
+        default=settings.ALLOCATION_MIN,
+        validators=[
+            MinValueValidator(settings.ALLOCATION_MIN),
+            MaxValueValidator(settings.ALLOCATION_MAX),
+        ])
+    history = HistoricalRecords()
+
+    def __str__(self):
+        return '{}: {}'.format(
+            self.allocation_user_attribute.allocation_attribute_type.name,
+            self.value)
+
+
+def validate_allocation_attribute_value_type(expected_value_type, value):
+    """Raise a ValidationError if the given value does not conform to
+    the requirements of the expected value type."""
+    if (expected_value_type == 'Int' and
+            not isinstance(literal_eval(value), int)):
+        raise ValidationError(
+            'Invalid Value "%s". Value must be an integer.' % value)
+    elif (expected_value_type == 'Decimal' and
+            not isinstance(literal_eval(value), (Decimal, int, str))):
+        raise ValidationError(
+            'Invalid Value "%s". Value must be a decimal.' % value)
+    elif (expected_value_type == 'Float' and
+          not isinstance(literal_eval(value), (float, int))):
+        raise ValidationError(
+            'Invalid Value "%s". Value must be a float.' % value)
+    elif expected_value_type == 'Yes/No' and value not in ['Yes', 'No']:
+        raise ValidationError(
+            'Invalid Value "%s". Allowed inputs are "Yes" or "No".' % value)
+    elif expected_value_type == 'Date':
+        try:
+            datetime.datetime.strptime(value.strip(), '%Y-%m-%d')
+        except ValueError:
+            raise ValidationError(
+                ('Invalid Value "%s". Date must be in format '
+                 'YYYY-MM-DD') % value)

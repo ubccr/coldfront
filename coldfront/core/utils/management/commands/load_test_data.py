@@ -13,12 +13,11 @@ from coldfront.core.allocation.models import (Allocation, AllocationAttribute,
                                               AllocationUser,
                                               AllocationUserStatusChoice)
 from coldfront.core.field_of_science.models import FieldOfScience
-from coldfront.core.grant.models import (Grant, GrantFundingAgency,
-                                         GrantStatusChoice)
+# from coldfront.core.grant.models import (Grant, GrantFundingAgency, GrantStatusChoice)
 from coldfront.core.project.models import (Project, ProjectStatusChoice,
                                            ProjectUser, ProjectUserRoleChoice,
                                            ProjectUserStatusChoice)
-from coldfront.core.publication.models import Publication, PublicationSource
+# from coldfront.core.publication.models import Publication, PublicationSource
 from coldfront.core.resource.models import (Resource, ResourceAttribute,
                                             ResourceAttributeType,
                                             ResourceType)
@@ -189,7 +188,6 @@ class Command(BaseCommand):
         pi1.userprofile.is_pi = True
         pi1.save()
         project_obj, _ = Project.objects.get_or_create(
-            pi=pi1,
             title='Angular momentum in QGP holography',
             description='We want to estimate the quark chemical potential of a rotating sample of plasma.',
             field_of_science=FieldOfScience.objects.get(
@@ -204,7 +202,7 @@ class Command(BaseCommand):
             univ_hpc.linked_resources.add(resource_obj)
             univ_hpc.save()
 
-        publication_source = PublicationSource.objects.get(name='doi')
+        # publication_source = PublicationSource.objects.get(name='doi')
         # for title, author, year, unique_id, source in (
         #     ('Angular momentum in QGP holography', 'Brett McInnes',
         #      2014, '10.1016/j.nuclphysb.2014.08.011', 'doi'),
@@ -258,7 +256,7 @@ class Command(BaseCommand):
         project_user_obj, _ = ProjectUser.objects.get_or_create(
             user=pi1,
             project=project_obj,
-            role=ProjectUserRoleChoice.objects.get(name='Manager'),
+            role=ProjectUserRoleChoice.objects.get(name='Principal Investigator'),
             status=ProjectUserStatusChoice.objects.get(name='Active')
         )
 
@@ -373,7 +371,6 @@ class Command(BaseCommand):
         pi2.userprofile.is_pi = True
         pi2.save()
         project_obj, _ = Project.objects.get_or_create(
-            pi=pi2,
             title='Measuring critical behavior of quantum Hall transitions',
             description='This purpose of this project is to measure the critical behavior of quantum Hall transitions.',
             field_of_science=FieldOfScience.objects.get(description='Physics'),
@@ -383,7 +380,7 @@ class Command(BaseCommand):
         project_user_obj, _ = ProjectUser.objects.get_or_create(
             user=pi2,
             project=project_obj,
-            role=ProjectUserRoleChoice.objects.get(name='Manager'),
+            role=ProjectUserRoleChoice.objects.get(name='Principal Investigator'),
             status=ProjectUserStatusChoice.objects.get(name='Active')
         )
 
@@ -416,34 +413,35 @@ class Command(BaseCommand):
              'doi'
              ),
         ):
-            Publication.objects.get_or_create(
-                project=project_obj,
-                title=title,
-                author=author,
-                year=year,
-                journal=journal,
-                unique_id=unique_id,
-                source=publication_source
-            )
+            # Publication.objects.get_or_create(
+                # project=project_obj,
+                # title=title,
+                # author=author,
+                # year=year,
+                # journal=journal,
+                # unique_id=unique_id,
+                # source=publication_source
+            # )
+            pass
 
         start_date = datetime.datetime.now()
         end_date = datetime.datetime.now() + relativedelta(days=900)
 
-        Grant.objects.get_or_create(
-            project=project_obj,
-            title='Quantum Halls',
-            grant_number='12345',
-            role='PI',
-            grant_pi_full_name='Stephanie Foster',
-            funding_agency=GrantFundingAgency.objects.get(
-                name='Department of Defense (DoD)'),
-            grant_start=start_date,
-            grant_end=end_date,
-            percent_credit=20.0,
-            direct_funding=200000.0,
-            total_amount_awarded=1000000.0,
-            status=GrantStatusChoice.objects.get(name='Active')
-        )
+        # Grant.objects.get_or_create(
+            # project=project_obj,
+            # title='Quantum Halls',
+            # grant_number='12345',
+            # role='PI',
+            # grant_pi_full_name='Stephanie Foster',
+            # funding_agency=GrantFundingAgency.objects.get(
+                # name='Department of Defense (DoD)'),
+            # grant_start=start_date,
+            # grant_end=end_date,
+            # percent_credit=20.0,
+            # direct_funding=200000.0,
+            # total_amount_awarded=1000000.0,
+            # status=GrantStatusChoice.objects.get(name='Active')
+        # )
 
         # Add university cloud
         allocation_obj, _ = Allocation.objects.get_or_create(

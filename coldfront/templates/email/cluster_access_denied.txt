@@ -1,0 +1,8 @@
+Dear {{ center_user }} user,
+
+Your cluster access request under project {{ project }} and allocation {{ allocation }} has been denied.
+
+If you would like to opt out of future notifications, instructions can be found here: {{opt_out_instruction_url}}.
+
+Thank you,
+{{ signature }}

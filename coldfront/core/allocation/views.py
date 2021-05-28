@@ -10,6 +10,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.core.validators import validate_email
+from django.core.validators import ValidationError
 from django.db import IntegrityError
 from django.db.models import Q
 from django.db.models.query import QuerySet
@@ -26,10 +28,12 @@ from django.views.generic.edit import CreateView, FormView, UpdateView
 from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationAddUserForm,
                                              AllocationAttributeDeleteForm,
+                                             AllocationClusterAccountRequestActivationForm,
                                              AllocationForm,
                                              AllocationInvoiceNoteDeleteForm,
                                              AllocationInvoiceUpdateForm,
                                              AllocationRemoveUserForm,
+                                             AllocationRequestClusterAccountForm,
                                              AllocationReviewUserForm,
                                              AllocationSearchForm,
                                              AllocationUpdateForm)
@@ -38,12 +42,14 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationAttributeType,
                                               AllocationStatusChoice,
                                               AllocationUser,
+                                              AllocationUserAttribute,
                                               AllocationUserNote,
                                               AllocationUserStatusChoice)
 from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user)
 from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
-                                             get_user_resources)
+                                             get_user_resources,
+                                             set_allocation_user_attribute_value)
 from coldfront.core.project.models import (Project, ProjectUser,
                                            ProjectUserStatusChoice)
 from coldfront.core.resource.models import Resource
@@ -94,19 +100,22 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         if self.request.user.has_perm('allocation.can_view_all_allocations'):
             return True
 
-        pk = self.kwargs.get('pk')
-        allocation_obj = get_object_or_404(Allocation, pk=pk)
-
-        user_can_access_project = allocation_obj.project.projectuser_set.filter(
-            user=self.request.user, status__name__in=['Active', 'New', ]).exists()
-
-        user_can_access_allocation = allocation_obj.allocationuser_set.filter(
-            user=self.request.user, status__name__in=['Active', ]).exists()
-
-        if user_can_access_project and user_can_access_allocation:
-            return True
-
+        # TODO: Remove this block when allocations should be displayed.
         return False
+
+        # pk = self.kwargs.get('pk')
+        # allocation_obj = get_object_or_404(Allocation, pk=pk)
+        #
+        # user_can_access_project = allocation_obj.project.projectuser_set.filter(
+        #     user=self.request.user, status__name__in=['Active', 'New', ]).exists()
+        #
+        # user_can_access_allocation = allocation_obj.allocationuser_set.filter(
+        #     user=self.request.user, status__name__in=['Active', ]).exists()
+        #
+        # if user_can_access_project and user_can_access_allocation:
+        #     return True
+        #
+        # return False
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -148,7 +157,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         elif allocation_obj.project.projectuser_set.filter(user=self.request.user).exists():
             project_user = allocation_obj.project.projectuser_set.get(
                 user=self.request.user)
-            if project_user.role.name == 'Manager':
+            if project_user.role.name in ('Principal Investigator', 'Manager'):
                 context['is_allowed_to_update_project'] = True
             else:
                 context['is_allowed_to_update_project'] = False
@@ -165,7 +174,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         elif allocation_obj.project.projectuser_set.filter(user=self.request.user).exists():
             project_user = allocation_obj.project.projectuser_set.get(
                 user=self.request.user)
-            if project_user.role.name == 'Manager':
+            if project_user.role.name in ('Principal Investigator', 'Manager'):
                 context['is_allowed_to_update_project'] = True
             else:
                 context['is_allowed_to_update_project'] = False
@@ -323,12 +332,17 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             return render(request, self.template_name, context)
 
 
-class AllocationListView(LoginRequiredMixin, ListView):
+class AllocationListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
     model = Allocation
     template_name = 'allocation/allocation_list.html'
     context_object_name = 'allocation_list'
     paginate_by = 25
+
+    def test_func(self):
+        """Temporary block: Only allow superusers access."""
+        # TODO: Remove this block when allocations should be displayed.
+        return self.request.user.is_superuser
 
     def get_queryset(self):
 
@@ -350,9 +364,9 @@ class AllocationListView(LoginRequiredMixin, ListView):
 
             if data.get('show_all_allocations') and (self.request.user.is_superuser or self.request.user.has_perm('allocation.can_view_all_allocations')):
                 allocations = Allocation.objects.prefetch_related(
-                    'project', 'project__pi', 'status',).all().order_by(order_by)
+                    'project', 'status',).all().order_by(order_by)
             else:
-                allocations = Allocation.objects.prefetch_related('project', 'project__pi', 'status',).filter(
+                allocations = Allocation.objects.prefetch_related('project', 'status',).filter(
                     Q(project__status__name='Active') &
                     Q(project__projectuser__user=self.request.user) &
                     Q(project__projectuser__status__name='Active') &
@@ -368,9 +382,9 @@ class AllocationListView(LoginRequiredMixin, ListView):
             # username
             if data.get('username'):
                 allocations = allocations.filter(
-                    Q(project__pi__username__icontains=data.get('username')) |
-                    Q(allocationuser__user__username__icontains=data.get('username')) &
-                    Q(allocationuser__status__name='Active')
+                    Q(username__icontains=data.get('username')) &
+                    (Q(project__projectuser__role__name='Principal Investigator') |
+                     Q(allocationuser__status__name='Active'))
                 )
 
             # Resource Type
@@ -409,7 +423,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
                     status__in=data.get('status'))
 
         else:
-            allocations = Allocation.objects.prefetch_related('project', 'project__pi', 'status',).filter(
+            allocations = Allocation.objects.prefetch_related('project', 'status',).filter(
                 Q(allocationuser__user=self.request.user) &
                 Q(allocationuser__status__name='Active')
             ).order_by(order_by)
@@ -480,10 +494,10 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         project_obj = get_object_or_404(
             Project, pk=self.kwargs.get('project_pk'))
 
-        if project_obj.pi == self.request.user:
-            return True
-
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if project_obj.projectuser_set.filter(
+                user=self.request.user,
+                role__name__in=['Manager', 'Principal Investigator'],
+                status__name='Active').exists():
             return True
 
         messages.error(
@@ -561,12 +575,15 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             return self.form_invalid(form)
 
         usernames = form_data.get('users')
-        usernames.append(project_obj.pi.username)
+        pi_users = project_obj.pis()
+        for pi_user in pi_users:
+            usernames.append(pi_user.username)
         usernames = list(set(usernames))
 
         users = [User.objects.get(username=username) for username in usernames]
-        if project_obj.pi not in users:
-            users.append(project_obj.pi)
+        for pi_user in pi_users:
+            if pi_user not in users:
+                users.append(pi_user)
 
         if INVOICE_ENABLED and resource_obj.requires_payment:
             allocation_status_obj = AllocationStatusChoice.objects.get(
@@ -604,22 +621,26 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 user=user,
                 status=allocation_user_active_status)
 
-        pi_name = '{} {} ({})'.format(allocation_obj.project.pi.first_name,
-                                      allocation_obj.project.pi.last_name, allocation_obj.project.pi.username)
+        pi_names = []
+        for pi in allocation_obj.project.pis():
+            pi_names.append('{} {} ({})'.format(
+                pi.first_name, pi.last_name, pi.username))
+        pi_names = ', '.join(pi_names)
+
         resource_name = allocation_obj.get_parent_resource
         domain_url = get_domain_url(self.request)
         url = '{}{}'.format(domain_url, reverse('allocation-request-list'))
 
         if EMAIL_ENABLED:
             template_context = {
-                'pi': pi_name,
+                'pi': pi_names,
                 'resource': resource_name,
                 'url': url
             }
 
             send_email_template(
                 'New allocation request: {} - {}'.format(
-                    pi_name, resource_name),
+                    project_obj.name, resource_name),
                 'email/new_allocation_request.txt',
                 template_context,
                 EMAIL_SENDER,
@@ -642,12 +663,6 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk'))
-
-        if allocation_obj.project.pi == self.request.user:
-            return True
-
-        if allocation_obj.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
-            return True
 
         messages.error(
             self.request, 'You do not have permission to add users to the allocation.')
@@ -676,8 +691,9 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         missing_users = list(set(active_users_in_project) -
                              set(users_already_in_allocation))
-        missing_users = User.objects.filter(username__in=missing_users).exclude(
-            pk=allocation_obj.project.pi.pk)
+        missing_users = User.objects.filter(username__in=missing_users)
+        pi_pks = allocation_obj.project.pis().values_list('pk', flat=True)
+        missing_users = missing_users.exclude(pk__in=pi_pks)
 
         users_to_add = [
 
@@ -765,12 +781,6 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk'))
 
-        if allocation_obj.project.pi == self.request.user:
-            return True
-
-        if allocation_obj.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
-            return True
-
         messages.error(
             self.request, 'You do not have permission to remove users from allocation.')
 
@@ -794,8 +804,12 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
         users_to_remove = list(allocation_obj.allocationuser_set.exclude(
             status__name__in=['Removed', 'Error', ]).values_list('user__username', flat=True))
 
-        users_to_remove = User.objects.filter(username__in=users_to_remove).exclude(
-            pk__in=[allocation_obj.project.pi.pk, self.request.user.pk])
+        users_to_remove = User.objects.filter(username__in=users_to_remove)
+        exclude_pks = list(
+            allocation_obj.project.pis().values_list('pk', flat=True))
+        exclude_pks.append(self.request.user.pk)
+        users_to_remove = users_to_remove.exclude(pk__in=exclude_pks)
+
         users_to_remove = [
 
             {'username': user.username,
@@ -848,7 +862,8 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
                     user_obj = User.objects.get(
                         username=user_form_data.get('username'))
-                    if allocation_obj.project.pi == user_obj:
+                    if allocation_obj.project.pis().filter(
+                            pk=user_obj.pk).exists():
                         continue
 
                     allocation_user_obj = allocation_obj.allocationuser_set.get(
@@ -1038,11 +1053,10 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
         allocation_obj.end_date = end_date
         allocation_obj.save()
 
-        messages.success(request, 'Allocation to {} has been ACTIVATED for {} {} ({})'.format(
-            allocation_obj.get_parent_resource,
-            allocation_obj.project.pi.first_name,
-            allocation_obj.project.pi.last_name,
-            allocation_obj.project.pi.username)
+        messages.success(
+            request, 'Allocation to {} has been ACTIVATED for {}'.format(
+                allocation_obj.get_parent_resource,
+                allocation_obj.project.name)
         )
 
         resource_name = allocation_obj.get_parent_resource
@@ -1104,11 +1118,10 @@ class AllocationDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
         allocation_obj.end_date = None
         allocation_obj.save()
 
-        messages.success(request, 'Allocation to {} has been DENIED for {} {} ({})'.format(
-            allocation_obj.resources.first(),
-            allocation_obj.project.pi.first_name,
-            allocation_obj.project.pi.last_name,
-            allocation_obj.project.pi.username)
+        messages.success(
+            request, 'Allocation to {} has been DENIED for {}'.format(
+                allocation_obj.resources.first(),
+                allocation_obj.project.name)
         )
 
         resource_name = allocation_obj.get_parent_resource
@@ -1152,10 +1165,10 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk'))
 
-        if allocation_obj.project.pi == self.request.user:
-            return True
-
-        if allocation_obj.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if allocation_obj.project.projectuser_set.filter(
+                user=self.request.user,
+                role__name__in=['Manager', 'Principal Investigator'],
+                status__name='Active').exists():
             return True
 
         messages.error(
@@ -1190,7 +1203,12 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
 
     def get_users_in_allocation(self, allocation_obj):
         users_in_allocation = allocation_obj.allocationuser_set.exclude(
-            status__name__in=['Removed']).exclude(user__pk__in=[allocation_obj.project.pi.pk, self.request.user.pk]).order_by('user__username')
+            status__name__in=['Removed'])
+        exclude_pks = list(
+            allocation_obj.project.pis().values_list('pk', flat=True))
+        exclude_pks.append(self.request.user.pk)
+        users_in_allocation = users_in_allocation.exclude(
+            user__pk__in=exclude_pks).order_by('user__username')
 
         users = [
 
@@ -1284,8 +1302,12 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
                         project_user_obj.status = project_user_remove_status_choice
                         project_user_obj.save()
 
-            pi_name = '{} {} ({})'.format(allocation_obj.project.pi.first_name,
-                                          allocation_obj.project.pi.last_name, allocation_obj.project.pi.username)
+            pi_names = []
+            for pi in allocation_obj.project.pis():
+                pi_names.append('{} {} ({})'.format(
+                    pi.first_name, pi.last_name, pi.username))
+            pi_names = ', '.join(pi_names)
+
             resource_name = allocation_obj.get_parent_resource
             domain_url = get_domain_url(self.request)
             url = '{}{}'.format(domain_url, reverse(
@@ -1293,14 +1315,14 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
 
             if EMAIL_ENABLED:
                 template_context = {
-                    'pi': pi_name,
+                    'pi': pi_names,
                     'resource': resource_name,
                     'url': url
                 }
 
                 send_email_template(
                     'Allocation renewed: {} - {}'.format(
-                        pi_name, resource_name),
+                        allocation_obj.project.name, resource_name),
                     'email/allocation_renewed.txt',
                     template_context,
                     EMAIL_SENDER,
@@ -1566,3 +1588,351 @@ class AllocationAccountListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
 
     def get_queryset(self):
         return AllocationAccount.objects.filter(user=self.request.user)
+
+
+class AllocationRequestClusterAccountView(LoginRequiredMixin,
+                                          UserPassesTestMixin, View):
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        user = self.request.user
+
+        if user.is_superuser:
+            return True
+
+        allocation_obj = get_object_or_404(
+            Allocation, pk=self.kwargs.get('pk'))
+        if allocation_obj.allocationuser_set.filter(
+                user=self.request.user,
+                status__name='Active').exists():
+            return True
+        else:
+            message = (
+                'You do not have permission to request cluster access under '
+                'the allocation.')
+            messages.error(self.request, message)
+            return False
+
+    def dispatch(self, request, *args, **kwargs):
+        allocation_obj = get_object_or_404(
+            Allocation, pk=self.kwargs.get('pk'))
+        user_obj = get_object_or_404(User, pk=self.kwargs.get('user_pk'))
+        project_obj = allocation_obj.project
+
+        redirect = HttpResponseRedirect(
+            reverse('project-detail', kwargs={'pk': project_obj.pk}))
+
+        if not user_obj.userprofile.access_agreement_signed_date:
+            message = (
+                f'User {user_obj.username} has not signed the access '
+                f'agreement.')
+            messages.error(self.request, message)
+            return redirect
+
+        if not allocation_obj.allocationuser_set.filter(
+                user=user_obj, status__name='Active').exists():
+            message = (
+                f'User {user_obj.username} is not a member of allocation '
+                f'{allocation_obj.pk}.')
+            messages.error(self.request, message)
+            return redirect
+
+        acceptable_statuses = [
+            'Active', 'New', 'Renewal Requested', 'Payment Pending',
+            'Payment Requested', 'Paid']
+        if allocation_obj.status.name not in acceptable_statuses:
+            message = (
+                f'You cannot request cluster access under an allocation '
+                f'with status {allocation_obj.status.name}.')
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
+        else:
+            return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        allocation_obj = get_object_or_404(
+            Allocation, pk=self.kwargs.get('pk'))
+        user_obj = get_object_or_404(User, pk=self.kwargs.get('user_pk'))
+        project_obj = allocation_obj.project
+        allocation_user_obj = AllocationUser.objects.get(
+            allocation=allocation_obj, user=user_obj)
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Cluster Account Status')
+
+        pending = 'Pending - Add'
+        active = 'Active'
+
+        redirect = HttpResponseRedirect(
+            reverse('project-detail', kwargs={'pk': project_obj.pk}))
+
+        try:
+            access = allocation_obj.allocationuserattribute_set.get(
+                allocation_user__user=user_obj,
+                allocation_attribute_type=allocation_attribute_type)
+            if access.value in [pending, active]:
+                message = (
+                    f'User {user_obj.username} already has a pending or '
+                    f'active cluster access under Project {project_obj.name}.')
+                messages.warning(self.request, message)
+            else:
+                access.value = pending
+                access.save()
+        except AllocationUserAttribute.DoesNotExist:
+            AllocationUserAttribute.objects.create(
+                allocation_attribute_type=allocation_attribute_type,
+                allocation=allocation_obj,
+                allocation_user=allocation_user_obj,
+                value=pending)
+        except AllocationUserAttribute.MultipleObjectsReturned:
+            message = (
+                'Unexpected server error. Please contact an administrator.')
+            messages.error(self.request, message)
+            return redirect
+
+        message = (
+            f'Requested cluster access under Project {project_obj.name} for '
+            f'User {user_obj.username}.')
+        messages.success(self.request, message)
+
+        return redirect
+
+
+class AllocationClusterAccountRequestListView(LoginRequiredMixin,
+                                              UserPassesTestMixin,
+                                              TemplateView):
+    template_name = 'allocation/allocation_cluster_account_request_list.html'
+    login_url = '/'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        permission = 'allocation.can_review_cluster_account_requests'
+        if self.request.user.has_perm(permission):
+            return True
+        message = (
+            'You do not have permission to review cluster account requests.')
+        messages.error(self.request, message)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        cluster_account_status = AllocationAttributeType.objects.get(
+            name='Cluster Account Status')
+        cluster_account_list = AllocationUserAttribute.objects.filter(
+            allocation_attribute_type=cluster_account_status,
+            value='Pending - Add')
+        context['cluster_account_list'] = cluster_account_list
+        return context
+
+
+class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
+                                                  UserPassesTestMixin,
+                                                  FormView):
+    form_class = AllocationClusterAccountRequestActivationForm
+    login_url = '/'
+    template_name = (
+        'allocation/allocation_activate_cluster_account_request.html')
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        permission = 'allocation.can_review_cluster_account_requests'
+        if self.request.user.has_perm(permission):
+            return True
+        message = (
+            'You do not have permission to activate a cluster access '
+            'request.')
+        messages.error(self.request, message)
+
+    def dispatch(self, request, *args, **kwargs):
+        self.allocation_user_attribute_obj = get_object_or_404(
+            AllocationUserAttribute, pk=self.kwargs.get('pk'))
+        self.user_obj = self.allocation_user_attribute_obj.allocation_user.user
+        status = self.allocation_user_attribute_obj.value
+        if status != 'Pending - Add':
+            message = f'Cluster access has unexpected status {status}.'
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse('allocation-cluster-account-request-list'))
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        form_data = form.cleaned_data
+        username = form_data.get('username')
+        cluster_uid = form_data.get('cluster_uid')
+
+        self.user_obj.username = username
+        self.user_obj.userprofile.cluster_uid = cluster_uid
+        self.user_obj.userprofile.save()
+        self.user_obj.save()
+
+        allocation_obj = self.allocation_user_attribute_obj.allocation
+        project_obj = allocation_obj.project
+
+        # For Savio projects, set the user's service units to that of
+        # the allocation. Attempt this before setting the status to
+        # 'Active' so that failures block completion.
+        if not project_obj.name.startswith('vector_'):
+            self.__set_user_service_units()
+
+        self.allocation_user_attribute_obj.value = 'Active'
+        self.allocation_user_attribute_obj.save()
+
+        message = (
+            f'Cluster access request from User {self.user_obj.email} under '
+            f'Project {project_obj.name} and Allocation {allocation_obj.pk} '
+            f'has been ACTIVATED.')
+        messages.success(self.request, message)
+
+        if EMAIL_ENABLED:
+            subject = 'Cluster Access Activated'
+            template = 'email/cluster_access_activated.txt'
+
+            CENTER_USER_GUIDE = import_from_settings('CENTER_USER_GUIDE')
+            CENTER_LOGIN_GUIDE = import_from_settings('CENTER_LOGIN_GUIDE')
+            CENTER_HELP_EMAIL = import_from_settings('CENTER_HELP_EMAIL')
+
+            template_context = {
+                'user': self.user_obj,
+                'project_name': project_obj.name,
+                'center_user_guide': CENTER_USER_GUIDE,
+                'center_login_guide': CENTER_LOGIN_GUIDE,
+                'center_help_email': CENTER_HELP_EMAIL,
+                'signature': EMAIL_SIGNATURE,
+            }
+            sender = EMAIL_SENDER
+
+            user_filter = Q(user=self.user_obj)
+            manager_pi_filter = Q(
+                role__name__in=['Manager', 'Principal Investigator'],
+                status__name='Active')
+            receiver_list = list(
+                project_obj.projectuser_set.filter(
+                    user_filter | manager_pi_filter, enable_notifications=True
+                ).values_list(
+                    'user__email', flat=True
+                ))
+
+            send_email_template(
+                subject, template, template_context, sender, receiver_list)
+
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['cluster_account'] = self.allocation_user_attribute_obj
+        return context
+
+    def get_form(self, form_class=None):
+        if form_class is None:
+            form_class = self.get_form_class()
+        return form_class(
+            self.user_obj, self.kwargs.get('pk'), **self.get_form_kwargs())
+
+    def get_initial(self):
+        user = self.user_obj
+        initial = {
+            'username': user.username,
+            'cluster_uid': user.userprofile.cluster_uid,
+        }
+        # If the user's username is an email address, because no cluster
+        # username has been set yet, leave the field blank.
+        try:
+            validate_email(user.username)
+        except ValidationError:
+            pass
+        else:
+            initial['username'] = ''
+        return initial
+
+    def get_success_url(self):
+        return reverse('allocation-cluster-account-request-list')
+
+    def __set_user_service_units(self):
+        """Set the AllocationUser's 'Service Units' attribute value to
+        that of the Allocation."""
+        allocation_obj = self.allocation_user_attribute_obj.allocation
+        allocation_user_obj = \
+            self.allocation_user_attribute_obj.allocation_user
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Service Units')
+        allocation_service_units = allocation_obj.allocationattribute_set.get(
+            allocation_attribute_type=allocation_attribute_type)
+        set_allocation_user_attribute_value(
+            allocation_user_obj, 'Service Units',
+            allocation_service_units.value)
+
+
+class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,
+                                              UserPassesTestMixin, View):
+    login_url = '/'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        permission = 'allocation.can_review_cluster_account_requests'
+        if self.request.user.has_perm(permission):
+            return True
+        message = (
+            'You do not have permission to deny a cluster access request.')
+        messages.error(self.request, message)
+
+    def dispatch(self, request, *args, **kwargs):
+        self.allocation_user_attribute_obj = get_object_or_404(
+            AllocationUserAttribute, pk=self.kwargs.get('pk'))
+        self.user_obj = self.allocation_user_attribute_obj.allocation_user.user
+        status = self.allocation_user_attribute_obj.value
+        if status != 'Pending - Add':
+            message = f'Cluster access has unexpected status {status}.'
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse('allocation-cluster-account-request-list'))
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        self.allocation_user_attribute_obj.value = 'Denied'
+        self.allocation_user_attribute_obj.save()
+
+        allocation_obj = self.allocation_user_attribute_obj.allocation
+        project_obj = allocation_obj.project
+        message = (
+            f'Cluster access request from User {self.user_obj.email} under '
+            f'Project {project_obj.name} and Allocation {allocation_obj.pk} '
+            f'has been DENIED.')
+        messages.success(request, message)
+
+        if EMAIL_ENABLED:
+            domain_url = get_domain_url(self.request)
+            view_name = 'allocation-detail'
+            view = reverse(view_name, kwargs={'pk': allocation_obj.pk})
+
+            subject = 'Cluster Access Denied'
+            template = 'email/cluster_access_denied.txt'
+            template_context = {
+                'center_name': EMAIL_CENTER_NAME,
+                'project': project_obj.name,
+                'allocation': allocation_obj.pk,
+                'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL,
+                'signature': EMAIL_SIGNATURE,
+            }
+            sender = EMAIL_SENDER
+
+            user_filter = Q(user=self.user_obj)
+            manager_pi_filter = Q(
+                role__name__in=['Manager', 'Principal Investigator'],
+                status__name='Active')
+            receiver_list = list(
+                project_obj.projectuser_set.filter(
+                    user_filter | manager_pi_filter, enable_notifications=True
+                ).values_list(
+                    'user__email', flat=True
+                ))
+
+            send_email_template(
+                subject, template, template_context, sender, receiver_list)
+
+        return HttpResponseRedirect(
+            reverse('allocation-cluster-account-request-list'))

@@ -13,7 +13,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         print('Adding field of science ...')
         file_path = os.path.join(app_commands_dir, 'data', 'field_of_science_data.csv')
-        FieldOfScience.objects.all().delete()
+        # FieldOfScience.objects.all().delete()
         with open(file_path, 'r') as fp:
             for line in fp:
                 pk, parent_id, is_selectable, description, fos_nsf_id, fos_nsf_abbrev, directorate_fos_id = line.strip().split('\t')

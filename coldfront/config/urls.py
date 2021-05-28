@@ -21,11 +21,15 @@ urlpatterns = [
     path('user/', include('coldfront.core.user.urls')),
     path('project/', include('coldfront.core.project.urls')),
     path('allocation/', include('coldfront.core.allocation.urls')),
-    path('grant/', include('coldfront.core.grant.urls')),
-    path('publication/', include('coldfront.core.publication.urls')),
-    path('research-output/', include('coldfront.core.research_output.urls')),
+    # path('grant/', include('coldfront.core.grant.urls')),
+    # path('publication/', include('coldfront.core.publication.urls')),
+    # path('research-output/', include('coldfront.core.research_output.urls')),
+    path('help', TemplateView.as_view(template_name='portal/help.html'), name='help'),
 ]
 
+
+if 'coldfront.api' in settings.EXTRA_APPS:
+    urlpatterns.append(path('api/', include('coldfront.api.urls')))
 
 if 'coldfront.plugins.iquota' in settings.EXTRA_APPS:
     urlpatterns.append(path('iquota/', include('coldfront.plugins.iquota.urls')))

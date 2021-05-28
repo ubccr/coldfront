@@ -1,5 +1,7 @@
 {% load static %}
-{% load staticfiles %}
+
+{% load tz %}
+{% timezone "America/Los_Angeles" %}
 
 <!DOCTYPE html>
 <html lang="en">
@@ -41,7 +43,7 @@
    <!-- Custom -->
   <link rel="stylesheet" href="{% static 'common/css/common.css' %}">
 
-  <title>{% block title %}Welcome to ColdFront {% endblock %}</title>
+  <title>{% block title %}Welcome to MyBRC Cluster Access Management System {% endblock %}</title>
 </head>
 
 <body>
@@ -56,9 +58,9 @@
 
   <!-- Begin page content -->
   <main class="container">
-    {% include 'common/messages.html' %} 
-    {% block content %} 
-      Content goes here! 
+    {% include 'common/messages.html' %}
+    {% block content %}
+      Content goes here!
     {% endblock %}
   </main>
 
@@ -67,3 +69,5 @@
 </body>
 
 </html>
+
+{% endtimezone %}

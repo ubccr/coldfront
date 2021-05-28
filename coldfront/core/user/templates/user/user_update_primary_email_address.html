@@ -1,0 +1,38 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Update Primary Email Address
+{% endblock %}
+
+
+{% block content %}
+
+<h1>Update Primary Email Address</h1>
+<hr>
+
+<p>Select a verified email address below to set as your new primary address, which receives email notifications and may be used to reset your password.</p>
+<p>Your current primary email address is: {{ request.user.email }}.</p>
+
+<div class="card mb-3">
+  <div class="card-body">
+    {% if has_verified_non_primary_emails %}
+      <form action="" method="post">
+        {% csrf_token %}
+        {{ form|crispy }}
+        <input class="btn btn-primary" type="submit" value="Submit" />
+        <a href="{% url 'user-profile' %}" class="btn btn-secondary">
+          Cancel
+        </a>
+      </form>
+    {% else %}
+      <div class="alert alert-info">
+        You have no other verified email addresses. Please <a href="{% url 'add-email-address' %}">add</a> one before proceeding.
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

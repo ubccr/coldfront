@@ -2,7 +2,7 @@
 {% load common_tags %} 
 <nav class="navbar navbar-expand-md navbar-dark bg-primary">
   <div class="container">
-    <a class="navbar-brand d-block d-sm-none text-primary" href="#">ColdFront</a>
+    <a class="navbar-brand d-block d-sm-none text-primary" href="#">MyBRC</a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-main">
       <span class="navbar-toggler-icon"></span>
     </button>
@@ -20,6 +20,7 @@
       </ul>
       <ul class="navbar-nav ml-auto">
         <li id="navbar-login" class="nav-item"><a class="nav-link" href="{% url 'login' %}"><i class="fas fa-sign-in-alt" aria-hidden="true"></i> Log In</a></li>
+        <li id="navbar-register" class="nav-item"><a class="nav-link" href="{% url 'register' %}">Register</a></li>
       </ul>
     </div>
   </div>

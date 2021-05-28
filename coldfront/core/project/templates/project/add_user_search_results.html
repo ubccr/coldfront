@@ -21,7 +21,7 @@
 
   </div>
   {% if matches %}
-  <div class="card bg-light mb-3 {{div_allocation_class}}">
+  <div class="card bg-light mb-3 {{div_allocation_class}}" style="display: none;">
     <div class="card-header">Available Allocations</div>
     <div class="card-body">
       {{allocation_form|crispy}}
@@ -45,12 +45,25 @@
         {% for form in formset %}
         <tr>
           <td>{{ form.selected }}</td>
-          <td>{{ forloop.counter }}</td>
-          <td>{{ form.username.value }}</td>
-          <td>{{ form.first_name.value }}</td>
-          <td>{{ form.last_name.value }}</td>
-          <td>{{ form.email.value }}</td>
-          <td>{{ form.role }}</td>
+
+          {% if form.selected %}
+            <td>{{ forloop.counter }}</td>
+            <td>{{ form.username.value }}</td>
+            <td>{{ form.first_name.value }}</td>
+            <td>{{ form.last_name.value }}</td>
+            <td>{{ form.email.value }}</td>
+            <td>{{ form.role }}</td>
+          {% else %}
+            <td><div class="text-muted">{{ form.counter }}</div></td>
+            <td><div class="text-muted">{{ form.username.value }}</div></td>
+            <td><div class="text-muted">{{ form.first_name.value }}</div></td>
+            <td><div class="text-muted">{{ form.last_name.value }}</div></td>
+            <td><div class="text-muted">{{ form.email.value }}</div></td>
+
+            {% comment %} NOTE: cannot remove this, so hide it {% endcomment %}
+            <td><div class="d-none">{{ form.role }}</div></td>
+          {% endif %}
+
         </tr>
         {% endfor %}
       </tbody>

@@ -196,40 +196,31 @@ Allocation Detail
   <div class="card-header">
     <h4 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Users in Allocation </h4> <span
       class="badge badge-secondary">{{allocation_users.count}}</span>
-    <div class="float-right">
-      {% if allocation.project.status.name != 'Archived' and is_allowed_to_update_project and allocation.status.name in 'Active,New,Renewal Requested' %}
-      <a class="btn btn-success" href="{% url 'allocation-add-users' allocation.pk %}" role="button"><i
-          class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
-      <a class="btn btn-danger" href="{% url 'allocation-remove-users' allocation.pk %}" role="button"><i
-          class="fas fa-user-times" aria-hidden="true"></i> Remove Users</a>
-      {% endif %}
-    </div>
-
   </div>
   <div class="card-body">
     <div class="table-responsive">
       <table class="table table-hover">
         <thead>
           <tr>
-            <th scope="col">Username</th>
             <th scope="col">Name</th>
             <th scope="col">Email</th>
-            <th scope="col">Status</th>
+            <th scope="col">Cluster Username</th>
             <th scope="col">Last Modified</th>
           </tr>
         </thead>
         <tbody>
           {% for user in allocation_users %}
           <tr>
-            <td>{{ user.user.username }}</td>
             <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
             <td>{{ user.user.email }}</td>
-            {% if user.status.name == 'Active' %}
-            <td class="text-success">{{ user.status.name }}</td>
-            {% elif user.status.name == 'Denied' or user.status.name == 'Error' %}
-            <td class="text-danger">{{ user.status.name }}</td>
+            {% if user.user.userprofile.cluster_uid is not None %}
+              <td>{{ user.user.username }}</td>
             {% else %}
-            <td class="text-info">{{ user.status.name }}</td>
+              <td>
+                <span class="badge badge-danger">
+                  No cluster account.
+                </span>
+              </td>
             {% endif %}
             <td>{{ user.modified|date:"M. d, Y" }}</td>
           </tr>

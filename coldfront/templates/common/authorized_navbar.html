@@ -2,7 +2,7 @@
 {% load common_tags %}
 <nav class="navbar navbar-expand-md navbar-dark bg-primary">
   <div class="container">
-    <a class="navbar-brand d-block d-sm-none text-primary" href="#">ColdFront</a>
+    <a class="navbar-brand d-block d-sm-none text-primary" href="#">MyBRC</a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-main">
       <span class="navbar-toggler-icon"></span>
     </button>
@@ -18,13 +18,13 @@
           <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">Project</a>
           <div class="dropdown-menu">
             <a id="navbar-project" class="dropdown-item" href="{% url 'project-list' %}">Projects</a>
-            <a id="navbar-allocation" class="dropdown-item" href="{% url 'allocation-list' %}">Allocations</a>
-            {% if settings.ALLOCATION_ACCOUNT_ENABLED  %}
-            <a class="dropdown-item" href="{% url 'allocation-account-list' %}">Allocation Accounts</a>
-            {% endif %}
-            {% if request.user.userprofile.is_pi  %}
-            <a id="navbar-user-allocation" class="dropdown-item" href="{% url 'user-list-allocations' %}">User Allocations</a>
-            {% endif %}
+<!--            <a id="navbar-allocation" class="dropdown-item" href="{% url 'allocation-list' %}">Allocations</a>-->
+<!--            {% if settings.ALLOCATION_ACCOUNT_ENABLED  %}-->
+<!--            <a class="dropdown-item" href="{% url 'allocation-account-list' %}">Allocation Accounts</a>-->
+<!--            {% endif %}-->
+<!--            {% if request.user.userprofile.is_pi  %}-->
+<!--            <a id="navbar-user-allocation" class="dropdown-item" href="{% url 'user-list-allocations' %}">User Allocations</a>-->
+<!--            {% endif %}-->
           </div>
         </li>
         {% if request.user.is_superuser %}

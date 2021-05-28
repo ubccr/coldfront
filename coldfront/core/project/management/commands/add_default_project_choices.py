@@ -5,25 +5,37 @@ from django.core.management.base import BaseCommand
 from coldfront.core.project.models import (ProjectReviewStatusChoice,
                                             ProjectStatusChoice,
                                             ProjectUserRoleChoice,
-                                            ProjectUserStatusChoice)
+                                            ProjectUserStatusChoice,
+                                            ProjectAllocationRequestStatusChoice)
 
 
 class Command(BaseCommand):
     help = 'Add default project related choices'
 
     def handle(self, *args, **options):
-        ProjectStatusChoice.objects.all().delete()
-        for choice in ['New', 'Active', 'Archived', ]:
+        # ProjectStatusChoice.objects.all().delete()
+        for choice in ['New', 'Active', 'Archived', 'Denied', ]:
             ProjectStatusChoice.objects.get_or_create(name=choice)
 
-        ProjectReviewStatusChoice.objects.all().delete()
+        # ProjectReviewStatusChoice.objects.all().delete()
         for choice in ['Completed', 'Pending', ]:
             ProjectReviewStatusChoice.objects.get_or_create(name=choice)
 
-        ProjectUserRoleChoice.objects.all().delete()
-        for choice in ['User', 'Manager', ]:
+        # ProjectUserRoleChoice.objects.all().delete()
+        for choice in ['User', 'Manager', 'Principal Investigator', ]:
             ProjectUserRoleChoice.objects.get_or_create(name=choice)
 
-        ProjectUserStatusChoice.objects.all().delete()
+        # ProjectUserStatusChoice.objects.all().delete()
         for choice in ['Active', 'Pending - Add', 'Pending - Remove', 'Denied', 'Removed', ]:
             ProjectUserStatusChoice.objects.get_or_create(name=choice)
+
+        # ProjectAllocationRequestStatusChoice.objects.all().delete()
+        choices = [
+            'Under Review',
+            'Approved - Processing',
+            'Approved - Complete',
+            'Denied',
+        ]
+        for choice in choices:
+            ProjectAllocationRequestStatusChoice.objects.get_or_create(
+                name=choice)

@@ -1,6 +1,6 @@
 {% extends "common/base.html" %}
 {% load crispy_forms_tags %}
-{% load staticfiles %}
+{% load static %}
 {% load common_tags %}
 {% load humanize %}
 
@@ -16,50 +16,10 @@ Center Summary
 <h1>{% settings_value 'CENTER_NAME' %} Scientific Impact</h1>
 <hr>
 
-<!-- Start  Publications -->
-<div class="card mb-3 border-primary">
-  <div class="card-header bg-primary text-white">
-    <i class="fas fa-newspaper" aria-hidden="true"></i> User Entered Publications
-  </div>
-  <div class="card-body">
-    <div id="chartPublications"></div>
-    <strong>Total Publications:</strong> {{total_publications_count}}
-  </div>
-</div>
-<!-- End Publications -->
-
-<!-- Start  Research Outputs -->
-<div class="card mb-3 border-primary">
-  <div class="card-header bg-primary text-white">
-    <i class="far fa-newspaper" aria-hidden="true"></i> User Entered Research Outputs
-  </div>
-  <div class="card-body">
-    <strong>Total Publications:</strong> {{total_research_outputs_count}}
-  </div>
-</div>
-<!-- End Research Outputs -->
-
-<!-- Start  Grants -->
-<div class="card mb-3 border-primary">
-  <div class="card-header bg-primary text-white">
-    <i class="fas fa-trophy"></i> User Grants Summary
-  </div>
-  <div class="card-body">
-    <div id="chartGrants"></div>
-    <hr>
-    <strong> Grants Total:</strong> ${{grants_total}} <br>
-    <strong> Grants Total PI Only:</strong> ${{grants_total_pi_only}} <br>
-    <strong> Grants Total CoPI Only:</strong> ${{grants_total_copi_only}} <br>
-    <strong> Grants Total Senior Personnel Only:</strong> ${{grants_total_sp_only}}
-  </div>
-</div>
-<!-- End Grants -->
-
-
 <!-- Start Allocation by Field of Science -->
 <div class="card mb-3 border-primary">
   <div class="card-header bg-primary text-white">
-    <i class="fas fa-flask"></i> Active Allocations and Users by Field of Science
+    <i class="fas fa-flask"></i> Active Allocations and Users by UCB Campus Divison or Department
   </div>
   <div id="allocation-by-fos" class="card-body">
     <div class="text-center">
@@ -97,8 +57,8 @@ Center Summary
       ]
     });
 
-    drawPublications();
-    drawGrantsByAgency();
+    // drawPublications();
+    // drawGrantsByAgency();
     get_allocation_by_fos()
     get_allocation_summary();
   });
@@ -147,8 +107,8 @@ Center Summary
     }
   }
 
-  var grants_agency_chart_data = {{ grants_agency_chart_data | safe }}
-  var publication_by_year_bar_chart_data = {{ publication_by_year_bar_chart_data | safe }}
+  // var grants_agency_chart_data = {{ grants_agency_chart_data | safe }}
+  // var publication_by_year_bar_chart_data = {{ publication_by_year_bar_chart_data | safe }}
 
   function get_allocation_summary() {
     $.ajax({

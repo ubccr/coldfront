@@ -1,5 +1,5 @@
 {% extends "common/base.html" %}
-{% load staticfiles %}
+{% load static %}
 
 {% block title %}
 User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif %}
@@ -21,7 +21,18 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
       </div>
     </div>
     <div class="card-body">
-      <h4 class="card-title text-center">{{viewed_user.first_name}} {{viewed_user.last_name}}</h4>
+      <h4 class="card-title text-center">
+        {{viewed_user.first_name}}
+        {% if viewed_user.userprofile.middle_name %}
+          {{viewed_user.userprofile.middle_name }}
+        {% endif %}
+        {{viewed_user.last_name}}
+
+        {% if request.user == viewed_user %}
+        <a class="btn btn-sm" href="{% url 'user-profile-update' %}" role="button"><i class="far fa-edit" style="color: #4aa0b5;" aria-hidden="true"></i></a>
+        {% endif %}
+
+      </h4>
       <div class="table-responsive">
     <table class="table">
       <tbody>
@@ -30,28 +41,106 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
           <td>{{group_list}}</td>
         </tr>
         <tr>
-          <th scope="row">Email:</th>
-          <td>{{viewed_user.email}}</td>
-        </tr>  
-        <tr>
-          <th scope="row">PI Status:</th>
-          <td>  {% if viewed_user.userprofile.is_pi %}
-                  <span class="badge badge-success"><i class="fas fa-check"></i></span>
-                {% elif not user == viewed_user %}
-                  <span class="badge badge-danger"><i class="fas fa-times"></i></span>
-                {% else %}
-                  <form class="form-inline" method="post" action="{% url 'user-upgrade' %}">
-                      <div class="form-group mb-2">
-                        <span class="badge badge-danger"><i class="fas fa-times"></i></span>
-                      </div>
-                      <div class="form-group mx-sm-3 mb-2">
-                          {% csrf_token %}
-                          <button class="btn btn-secondary" type="submit"><i class="fas fa-chevron-circle-up" aria-hidden="true"></i> Upgrade Account</button>
-                      </div>
-                  </form>
-                {% endif %}
+          <th scope="row">Primary Email:</th>
+          <td>
+            <p>
+              {{ viewed_user.email }}
+              {% if user == viewed_user %}
+                <a href="{% url 'update-primary-email-address' %}" class="btn btn-secondary float-right">
+                  <i class="far fa-edit" aria-hidden="true"></i>
+                  Update
+                </a>
+              {% endif %}
+            </p>
+            <p>Email notifications are sent to this address.</p>
           </td>
         </tr>
+        <tr>
+          <th scope="row">Cluster Username:</th>
+          {% if has_cluster_access %}
+            <td>
+              <p>{{viewed_user.username}}</p>
+              <p>Use this username to authenticate to this portal and to the cluster.</p>
+            </td>
+          {% else %}
+            <td>You do not have a cluster account.</td>
+          {% endif %}
+        </tr>
+<!--        {% comment %}-->
+<!--        <tr>-->
+<!--          <th scope="row">PI Status:</th>-->
+<!--          <td>  {% if viewed_user.userprofile.is_pi %}-->
+<!--                  <span class="badge badge-success"><i class="fas fa-check"></i></span>-->
+<!--                {% elif not user == viewed_user %}-->
+<!--                  <span class="badge badge-danger"><i class="fas fa-times"></i></span>-->
+<!--                {% else %}-->
+<!--                  <form class="form-inline" method="post" action="{% url 'user-upgrade' %}">-->
+<!--                      <div class="form-group mb-2">-->
+<!--                        <span class="badge badge-danger"><i class="fas fa-times"></i></span>-->
+<!--                      </div>-->
+<!--                      <div class="form-group mx-sm-3 mb-2">-->
+<!--                          {% csrf_token %}-->
+<!--                          <button class="btn btn-secondary" type="submit"><i class="fas fa-chevron-circle-up" aria-hidden="true"></i> Upgrade Account</button>-->
+<!--                      </div>-->
+<!--                  </form>-->
+<!--                {% endif %}-->
+<!--          </td>-->
+<!--        </tr>-->
+<!--        {% endcomment %}-->
+        <tr>
+          <th scope="row" nowrap>Phone Number: </th>
+          <td>
+            {% if user.userprofile.phone_number %}
+              {{ user.userprofile.phone_number }}
+            {% else %}
+                -
+            {% endif %}
+
+            <a href="{% url 'user-profile-update' %}" class="btn btn-secondary float-right">
+              <i class="far fa-edit" aria-hidden="true"></i>
+              Update
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <th>User Access Agreement:</th>
+          <td>
+            {% if user.userprofile.access_agreement_signed_date is not None %}
+              <span class="badge badge-success">
+                <i class="fas fa-check"></i>
+                Signed {{ user.userprofile.access_agreement_signed_date }}
+              </span>
+              {% if user == viewed_user %}
+                <a href="{% url 'user-access-agreement' %}" class="btn btn-secondary float-right">
+                  <i class="far fa-edit" aria-hidden="true"></i>
+                  Review
+                </a>
+              {% endif %}
+            {% else %}
+              <span class="badge badge-danger">
+                <i class="fas fa-times"></i>
+                Unsigned
+              </span>
+              {% if user == viewed_user %}
+                <a href="{% url 'user-access-agreement' %}" class="btn btn-secondary float-right">
+                  <i class="far fa-edit" aria-hidden="true"></i>
+                  Review and Sign
+                </a>
+              {% endif %}
+            {% endif %}
+          </td>
+        </tr>
+        {% if user == viewed_user %}
+          <tr>
+            <th>Change Password:</th>
+            <td>
+              <a href="{% url 'password-change' %}" class="btn btn-secondary">
+                <i class="fas fa-lock" aria-hidden="true"></i>
+                Change Password
+              </a>
+            </td>
+          </tr>
+        {% endif %}
         <tr>
           <th>Last Login:</th>
           <td>{{viewed_user.last_login}}</td>
@@ -62,5 +151,68 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
     </div>
   </div>
 
-{% endblock %}
+  <br>
 
+  <div class="card">
+    <div class="card-header">
+      <i class="far fa-envelope"></i>
+      Other Email Addresses{% if not user == viewed_user %}: {{ viewed_user.username}}{% endif %}
+      {% if user == viewed_user %}
+        <div class="float-right">
+          <a class="btn btn-success float-right" href="{% url 'add-email-address' %}" role="button">
+            <i class="fas fa-plus" aria-hidden="true"></i>
+            Add Email Address
+          </a>
+        </div>
+      {% endif %}
+    </div>
+    <div class="card-body">
+      <p>Below are other email addresses associated with your account. You may authenticate to this portal using any verified addresses.</p>
+      <p>You can verify an address by clicking the “Verify” button, which will send a verification email to the address. The address will remain unverified until you have clicked the link provided in that email.</p>
+      <div class="table-responsive">
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th scope="col">Email Address</th>
+              <th scope="col">Status</th>
+              <th scope="col">Actions</th>
+            </tr>
+            {% for email in other_emails %}
+              <tr>
+                <td>{{ email.email }}</td>
+                <td>
+                  {% if email.is_verified %}
+                    <span class="badge badge-success">Verified</span>
+                  {% else %}
+                    <span class="badge badge-warning">Verification Pending</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if user == viewed_user %}
+                    {% if not email.is_verified %}
+                      <form action="{% url 'send-email-verification-email' email.pk %}" method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <button class="btn btn-primary" type="submit">
+                          Re-Verify
+                        </button>
+                      </form>
+                    {% endif %}
+                    <form action="{% url 'remove-email-address' email.pk %}" method="post" style="display: inline;">
+                      {% csrf_token %}
+                      <button class="btn btn-danger" type="submit">
+                        Remove
+                      </button>
+                    </form>
+                  {% else %}
+                    N/A
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </thead>
+        </table>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}

@@ -1,5 +1,5 @@
 {% extends "common/base.html" %}
-{% load staticfiles %}
+{% load static %}
 
 {% block title %}
 User Projects and Managers{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif %}
@@ -25,11 +25,11 @@ User Projects and Managers{% if not user == viewed_user %}: {{ viewed_user.usern
   </div>
   <div class="card-body">
     {# support non-default roles #}
-    {% if not association.is_project_manager and not association.role.name == 'User' %}
-      <p class="card-text text-justify">User role in project: {{ association.role }}</p>
+    {% if not association.is_project_pi and not association.is_project_manager and not association.role.name == 'User' %}
+      <p class="card-text text-justify"><strong>User role in project: </strong>{{ association.role }}</p>
     {% endif %}
     {# a few Pending statuses may be displayed here #}
-    <p class="card-text text-justify">User status in project:
+    <p class="card-text text-justify"><strong>User status in project:</strong>
       {% if association.status.name == 'Active' %}
         <span class="text-success">{{ association.status.name }}</span>
       {% else %}
@@ -37,15 +37,58 @@ User Projects and Managers{% if not user == viewed_user %}: {{ viewed_user.usern
       {% endif %}
     </p>
     <p class="card-text text-justify"><strong>Description: </strong>{{ project.description }}</p>
-    <p class="card-text text-justify"><strong>Field of Science: </strong>{{ project.field_of_science }}</p>
+<!--    <p class="card-text text-justify"><strong>UCB Campus Division or Department: </strong>{{ project.field_of_science }}</p>-->
     <p class="card-text text-justify"><strong>Project Status: </strong>{{ project.status }} </p>
-    <p class="card-text"><strong>Principal Investigator: </strong>{{ project.pi.first_name }} {{ project.pi.last_name }} ({{ project.pi.username }})
-      <a href="mailto:{{ project.pi.email }} "><i class="far fa-envelope"></i></a>
-      {% if association.is_project_pi %}
-        <span class="text-success">({{ user_pronounish | lower }} <em>{{user_verbform_be}}</em> the project PI)</span>
-      {% endif %}
-    </p>
+
   <!-- End Project Heading -->
+    {# card within a card #}
+    <!-- Start Project Principal Investigators -->
+    <div class="card mb-3">
+      <div class="card-header">
+        <h4 class="d-inline"><i class="fas fa-users"></i> Principal Investigators</a></h4> <span class="badge badge-secondary">{{ project.project_pis | length }}</span>
+        {% if association.is_project_pi %}
+          <div class="float-right">
+            <p class="card-text text-success"><strong>{{ user_pronounish }} {{user_verbform_be}} a PI of this project.</strong></p>
+          </div>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        {% if project.project_pis %}
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for user in project.project_pis %}
+              <tr>
+                <td>{{ user.user.username }}</td>
+                <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
+                <td>
+                  {{ user.user.email }}
+                  <a href="mailto:{{ user.user.email }} "><i class="far fa-envelope"></i></a>
+                </td>
+                {% if user.status.name == 'Active' %}
+                  <td class="text-success">{{ user.status.name }}</td>
+                {% else %}
+                  <td class="text-info">{{ user.status.name }}</td>
+                {% endif %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> There are no project PIs.</div>
+        {% endif %}
+      </div>
+    </div>
+    <!-- End Project Principal Investigators -->
     {# card within a card #}
     <!-- Start Project Managers -->
     <div class="card mb-3">
@@ -71,19 +114,19 @@ User Projects and Managers{% if not user == viewed_user %}: {{ viewed_user.usern
             </thead>
             <tbody>
               {% for user in project.project_managers %}
-              <tr>
-                <td>{{ user.user.username }}</td>
-                <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
-                <td>
-                  {{ user.user.email }}
-                  <a href="mailto:{{ user.user.email }} "><i class="far fa-envelope"></i></a>
-                </td>
-                {% if user.status.name == 'Active' %}
-                  <td class="text-success">{{ user.status.name }}</td>
-                {% else %}
-                  <td class="text-info">{{ user.status.name }}</td>
-                {% endif %}
-              </tr>
+                <tr>
+                  <td>{{ user.user.username }}</td>
+                  <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
+                  <td>
+                    {{ user.user.email }}
+                    <a href="mailto:{{ user.user.email }} "><i class="far fa-envelope"></i></a>
+                  </td>
+                  {% if user.status.name == 'Active' %}
+                    <td class="text-success">{{ user.status.name }}</td>
+                  {% else %}
+                    <td class="text-info">{{ user.status.name }}</td>
+                  {% endif %}
+                </tr>
               {% endfor %}
             </tbody>
           </table>

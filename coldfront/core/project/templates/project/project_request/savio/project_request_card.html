@@ -1,0 +1,84 @@
+<div class="card mb-3">
+  <div class="card-header">
+    <h4>
+      <i class="fas fa-info-circle" aria-hidden="true"></i>
+      Request Information
+    </h4>
+  </div>
+  <div class="card-body">
+    <p class="card-text text-justify">
+      <strong>Request #: </strong>
+      {{ savio_request.pk }}
+    </p>
+    <p class="card-text text-justify">
+      <strong>Date Requested/Last Modified: </strong>
+      {{ savio_request.modified|date:"M. d, Y" }}
+    </p>
+    <p class="card-text text-justify">
+      <strong>Requester: </strong>
+      {% with requester=savio_request.requester %}
+        {{ requester.first_name }} {{ requester.last_name }} ({{ requester.email }})
+      {% endwith %}
+    </p>
+    {% with setup=savio_request.state.setup %}
+      <p class="card-text text-justify">
+        <strong>Requested Project Name: </strong>
+        {{ setup.name_change.requested_name }}
+        {% if setup.status == "Complete" and setup.name_change.final_name != savio_request.project.name %}
+          (will have name changed to {{ setup.name_change.final_name }})
+        {% endif %}
+      </p>
+      <p class="card-text text-justify">
+        <strong>Final Project Name: </strong>
+          {% if setup.status == 'Complete' %}
+            {{ setup.name_change.final_name }}
+          {% else %}
+            To be determined.
+          {% endif %}
+      </p>
+    {% endwith %}
+    <p class="card-text text-justify">
+      <strong>Title: </strong>
+      {{ savio_request.project.title }}
+    </p>
+    <p class="card-text text-justify">
+      <strong>Description: </strong>
+      {{ savio_request.project.description }}
+    </p>
+<!--    <p class="card-text text-justify">-->
+<!--      <strong>UCB Campus Division or Department: </strong>-->
+<!--      {{ savio_request.project.field_of_science }}-->
+<!--    </p>-->
+    <p class="card-text text-justify">
+      <strong>Allocation Type: </strong>
+      {{ savio_request.allocation_type }}
+      {% if savio_request.allocation_type == "MOU" %}
+        <button id="view-extra-fields" class="btn btn-info" role="button">
+          Details
+        </button>
+      {% endif %}
+    </p>
+    <p class="card-text text-justify">
+      <strong>Number of Service Units to Add (if approved now): </strong>
+      {{ allocation_amount }}
+    </p>
+    <p class="card-text text-justify">
+      <strong>Pooling: </strong>
+      {% if savio_request.pool %}
+        Yes
+      {% else %}
+        No
+      {% endif %}
+    </p>
+    <p class="card-text text-justify">
+      <strong>PI: </strong>
+      {% with pi=savio_request.pi %}
+        {{ pi.first_name }} {{ pi.last_name }} ({{ pi.email }})
+      {% endwith %}
+    </p>
+    <p class="card-text text-justify">
+      <strong>Survey Responses: </strong>
+      <button id="view-survey" class="btn btn-info" role="button">View</button>
+    </p>
+  </div>
+</div>

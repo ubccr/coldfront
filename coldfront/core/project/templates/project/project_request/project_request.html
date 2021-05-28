@@ -1,0 +1,152 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Project Request
+{% endblock %}
+
+
+{% block content %}
+
+<h1>Create a Project</h1>
+<hr>
+
+<div class="row">
+  <div class="col-lg-12 mt-2">
+    <p>Request to create a new project (Slurm account) on the Savio or Vector cluster. You may also request to <a href="{% url 'project-join-list' %}">join</a> an existing project.</p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-6 mt-2">
+    <select
+        class="form-control"
+        onchange="this.options[this.selectedIndex].value && (window.location = this.options[this.selectedIndex].value);">
+      <option value="">Select a cluster.</option>
+      <option value="{% url 'project-request-savio-landing' %}">Savio</option>
+      <option value="{% url 'project-request-vector-landing' %}">Vector</option>
+    </select>
+  </div>
+</div>
+
+<br><br>
+
+<h1>Pending Requests</h1>
+<hr>
+
+<div class="row">
+  <div class="col-lg-6 mt-2">
+    <h2>Savio</h2>
+    {% if savio_requests %}
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">PI</th>
+            <th scope="col">Pooling</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for savio_request in savio_requests %}
+            <tr>
+              <td>
+                <a href="{% url 'savio-project-request-detail' savio_request.pk %}">
+                  {{ savio_request.project.name }}
+                </a>
+              </td>
+              {% with pi=savio_request.pi %}
+                <td>{{ pi.first_name }} {{ pi.last_name }} ({{ pi.email }})</td>
+              {% endwith %}
+              <td>
+                {% if savio_request.pool %}
+                  Yes
+                {% else %}
+                  No
+                {% endif %}
+              </td>
+              {% with status=savio_request.status.name %}
+                <td>
+                  {% if status == 'Under Review' %}
+                    <span class="badge badge-warning">{{ status }}</span>
+                  {% elif status == 'Approved - Processing' %}
+                    <span class="badge badge-warning">{{ status }}</span>
+                  {% elif status == 'Approved - Complete' %}
+                    <span class="badge badge-success">{{ status }}</span>
+                  {% else %}
+                    <span class="badge badge-danger">{{ status }}</span>
+                  {% endif %}
+                </td>
+              {% endwith %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="alert alert-info" role="alert">
+        <i class="fa fa-info-circle" aria-hidden="true"></i>
+        No pending requests.
+      </div>
+    {% endif %}
+  </div>
+  <div class="col-lg-6 mt-2">
+    <h2>Vector</h2>
+    {% if vector_requests %}
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">PI</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for vector_request in vector_requests %}
+            <tr>
+              <td>
+                <a href="{% url 'vector-project-request-detail' vector_request.pk %}">
+                  {{ vector_request.project.name }}
+                </a>
+              </td>
+              {% with pi=vector_request.pi %}
+                <td>{{ pi.first_name }} {{ pi.last_name }} ({{ pi.email }})</td>
+              {% endwith %}
+              {% with status=vector_request.status.name %}
+                <td>
+                  {% if status == 'Under Review' %}
+                    <span class="badge badge-warning">{{ status }}</span>
+                  {% elif status == 'Approved - Processing' %}
+                    <span class="badge badge-warning">{{ status }}</span>
+                  {% elif status == 'Approved - Complete' %}
+                    <span class="badge badge-success">{{ status }}</span>
+                  {% else %}
+                    <span class="badge badge-danger">{{ status }}</span>
+                  {% endif %}
+                </td>
+              {% endwith %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="alert alert-info" role="alert">
+        <i class="fa fa-info-circle" aria-hidden="true"></i>
+        No pending requests.
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-12 mt-2">
+    <p>
+      You may also view completed requests for
+      <a href="{% url 'savio-project-completed-request-list' %}">Savio</a> and
+      <a href="{% url 'vector-project-completed-request-list' %}">Vector</a>.
+    </p>
+  </div>
+</div>
+
+{% endblock %}

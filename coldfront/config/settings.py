@@ -1,22 +1,24 @@
 """
 Default Django settings for ColdFront project.
 """
+import coldfront
 import os
 import sys
+from decimal import Decimal
 
 from django.contrib.messages import constants as messages
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Django config for ColdFront
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 ALLOWED_HOSTS = ['*']
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Django Apps
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -25,6 +27,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
+    'django.contrib.sites',
 ]
 
 
@@ -34,6 +37,8 @@ INSTALLED_APPS += [
     'sslserver',
     'django_q',
     'simple_history',
+    'durationwidget',
+    'phonenumber_field'
 ]
 
 # ColdFront Apps
@@ -45,14 +50,20 @@ INSTALLED_APPS += [
     'coldfront.core.project',
     'coldfront.core.resource',
     'coldfront.core.allocation',
-    'coldfront.core.grant',
-    'coldfront.core.publication',
-    'coldfront.core.research_output',
+    # 'coldfront.core.grant',
+    # 'coldfront.core.publication',
+    # 'coldfront.core.research_output',
+    'coldfront.core.statistics',
 ]
 
-#------------------------------------------------------------------------------
+# Savio-specific Additional Apps
+INSTALLED_APPS += [
+    'formtools',
+]
+
+# ------------------------------------------------------------------------------
 # Django Middleware
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -64,9 +75,9 @@ MIDDLEWARE = [
     'simple_history.middleware.HistoryRequestMiddleware',
 ]
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Database settings
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -74,16 +85,34 @@ DATABASES = {
     }
 }
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Authentication backends
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
+    'django.contrib.auth.backends.AllowAllUsersModelBackend',
+]
+
+#------------------------------------------------------------------------------
+# Authentication validators
+#------------------------------------------------------------------------------
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
 ]
 
 #------------------------------------------------------------------------------
 # Django site settings
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 ROOT_URLCONF = 'coldfront.config.urls'
 
 TEMPLATES = [
@@ -109,7 +138,7 @@ TEMPLATES = [
 
 SESSION_COOKIE_AGE = 60 * 15
 SESSION_SAVE_EVERY_REQUEST = True
-SESSION_COOKIE_SAMESITE  = 'Strict'
+SESSION_COOKIE_SAMESITE = 'Strict'
 
 WSGI_APPLICATION = 'coldfront.config.wsgi.application'
 
@@ -153,9 +182,33 @@ SU_LOGOUT_REDIRECT_URL = "/admin/auth/user/"
 
 SETTINGS_EXPORT = []
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+# Accounting settings
+# ------------------------------------------------------------------------------
+
+# Allocation-related fields can have at most 11 digits and 2 decimal places.
+DECIMAL_MAX_DIGITS = 11
+DECIMAL_MAX_PLACES = 2
+
+# The minimum and maximum valid numbers of service units for allocations.
+ALLOCATION_MIN = Decimal('0.00')
+ALLOCATION_MAX = Decimal('100000000.00')
+
+# For accounting purposes, the year begins on June 1st and ends on May 31st.
+ALLOCATION_YEAR_START_MONTH = 6
+ALLOCATION_YEAR_START_DAY = 1
+
+# The default amount of service units to allocate to Savio projects.
+CO_DEFAULT_ALLOCATION = ALLOCATION_MAX
+FCA_DEFAULT_ALLOCATION = Decimal('300000.00')
+PCA_DEFAULT_ALLOCATION = Decimal('200000.00')
+
+# Whether or not to allow all jobs, bypassing all checks.
+ALLOW_ALL_JOBS = False
+
+# ------------------------------------------------------------------------------
 # Local settings overrides (see local_settings.py.sample)
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 try:
     from coldfront.config.local_strings import *
 except ImportError:
@@ -188,10 +241,9 @@ if 'django_su.backends.SuBackend' in EXTRA_AUTHENTICATION_BACKENDS:
     INSTALLED_APPS.insert(0, 'django_su')
     TEMPLATES[0]['OPTIONS']['context_processors'].extend(['django_su.context_processors.is_su', ])
 
-import coldfront
 VERSION = coldfront.__version__
 
 try:
     SETTINGS_EXPORT = SETTINGS_EXPORT + LOCAL_SETTINGS_EXPORT
 except NameError:
-    SETTINGS_EXPORT = SETTINGS_EXPORT 
+    SETTINGS_EXPORT = SETTINGS_EXPORT

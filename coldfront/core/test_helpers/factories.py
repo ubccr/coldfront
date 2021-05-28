@@ -9,7 +9,7 @@ from coldfront.core.project.models import (
     Project,
     ProjectStatusChoice,
 )
-from coldfront.core.publication.models import PublicationSource
+# from coldfront.core.publication.models import PublicationSource
 
 
 class UserFactory(DjangoModelFactory):
@@ -39,10 +39,11 @@ class ProjectFactory(DjangoModelFactory):
     force_review = False
     requires_review = False
 
-
+"""
 class PublicationSourceFactory(DjangoModelFactory):
     class Meta:
         model = PublicationSource
 
     name = 'doi'
     url = 'https://doi.org/'
+"""

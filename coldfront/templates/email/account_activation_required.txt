@@ -1,0 +1,8 @@
+Dear MyBRC Portal user,
+
+Thank you for registering for a MyBRC User Portal account. Please click on the link below to complete registration and activate your account.
+
+{{activation_url}}
+
+Thank you,
+{{signature}}

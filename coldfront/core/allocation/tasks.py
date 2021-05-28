@@ -92,8 +92,8 @@ def send_expiry_emails():
                                 email_receiver_list
                                 )
 
-            logger.info('Allocation to {} expiring in {} days email sent to PI {}.'.format(
-                resource_name, days_remaining, allocation_obj.project.pi.username))
+            logger.info('Allocation to {} expiring in {} days email sent to {}.'.format(
+                resource_name, days_remaining, ', '.join(email_receiver_list)))
 
     # Allocations expiring today
     today = datetime.datetime.now().strftime('%Y-%m-%d')
@@ -137,8 +137,8 @@ def send_expiry_emails():
                             email_receiver_list
                             )
 
-        logger.info('Allocation to {} expiring in {} days email sent to PI {}.'.format(
-            resource_name, days_remaining, allocation_obj.project.pi.username))
+        logger.info('Allocation to {} expiring in {} days email sent to {}.'.format(
+            resource_name, days_remaining, ', '.join(email_receiver_list)))
 
     # Expired allocations
 
@@ -184,5 +184,5 @@ def send_expiry_emails():
                             email_receiver_list
                             )
 
-        logger.info('Allocation to {} expired email sent to PI {}.'.format(
-            resource_name, allocation_obj.project.pi.username))
+        logger.info('Allocation to {} expired email sent to {}.'.format(
+            resource_name, ', '.join(email_receiver_list)))

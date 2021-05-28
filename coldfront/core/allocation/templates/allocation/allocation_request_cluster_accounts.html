@@ -1,0 +1,79 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Request Cluster Access Under Projects
+{% endblock %}
+
+
+
+{% block content %}
+<h1>Request cluster access under projects:</h1> <hr>
+<p>Select one or more projects to request cluster access under. Grayed out entries denote pending or active cluster access.</p>
+{% if allocation_list %}
+<div class="table-response">
+  <table class="table table-sm">
+    <thead>
+      <tr>
+        <th scope="col">Project</th>
+        <th scope="col">Allocation</th>
+        <th scope="col">Request</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for allocation in allocation_list %}
+      <tr>
+        <td>
+          <a href="{% url 'project-detail' allocation.project.pk %}">
+            {{ allocation.project.name }}
+          </a>
+        </td>
+        <td>
+          <a href="{% url 'allocation-detail' allocation.pk %}">
+            {{ allocation.pk }}
+          </a>
+        </td>
+        <td>
+          {% if allocation.pk in not_requestable %}
+            <a class="btn btn-primary disabled" type="submit">
+              <i class="fas fa-terminal" aria-hidden="true"></i>
+              Request
+            </a>
+          {% else %}
+            <form action="{% url 'allocation-request-cluster-account' allocation.pk user.pk %}" method="post">
+              {% csrf_token %}
+              <button class="btn btn-primary" type="submit">
+                <i class="fas fa-terminal" aria-hidden="true"></i>
+                Request
+              </button>
+            </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+  No projects to request cluster accounts under!
+</div>
+{% endif %}
+
+<script>
+$("#selectAll").click(function () {
+    $("input[name^='userform-']").prop('checked', $(this).prop('checked'));
+});
+
+$("input[name^='userform-']").click(function (ele) {
+    var id = $(this).attr('id');
+    if ( id != "selectAll") {
+      $("#selectAll").prop('checked', false);
+    }
+});
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,175 @@
+---
+- hosts:
+    - all
+    - "{{ domain }}"
+  become : true
+  become_user: root
+  become_method: sudo
+
+  vars:
+   cwd: "{{ lookup('env','PWD') }}"
+
+  vars_files:
+    - "{{ cwd }}/main.yml"
+
+  tasks:
+    - name: Install Postgresql repo
+      yum:
+        name: https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+        state: present
+
+    - name: Install Postgresql Packages
+      yum:
+        name: [ 'postgresql96', 'postgresql96-server', 'postgresql96-devel' ]
+        state: present
+
+    - name: Create a folder for keeping Django app logs
+      file:
+       path: '{{ log_path }}'
+       state: directory
+       mode: 0775
+       owner: '{{ djangooperator }}'
+       group: 'apache'
+
+    - name: Create portal Django app log files
+      file:
+       path: '{{ log_path }}/{{ portal_log_file }}'
+       state: touch
+       mode: 0660
+       owner: '{{ djangooperator }}'
+       group: 'apache'
+
+    - name: Install CF MyBRC User Portal Django application dependencies
+      pip:
+        requirements: '{{ git_prefix }}/{{ reponame }}/requirements.txt'
+        executable: '{{ git_prefix }}/venv/bin/pip3'
+      become_user: "{{ djangooperator }}"
+
+    - name: Check if PostgreSQL database is initialized
+      stat:
+        path: /var/lib/pgsql/9.6/data/PG_VERSION
+      register: pgdata_dir_version
+
+    - name: Initialize Postgres if not already initialized
+      command: /usr/pgsql-9.6/bin/postgresql96-setup initdb
+      when: not pgdata_dir_version.stat.exists
+
+    - name: enabling postgresql services
+      service:
+        name: postgresql-9.6
+        state: started
+        enabled: yes
+
+    - name: Update pg_hba.conf to change host auth from ident to md5 (1/2)
+      postgresql_pg_hba:
+        dest: /var/lib/pgsql/9.6/data/pg_hba.conf
+        backup: yes
+        method: md5
+        contype: host
+        source: ::1
+
+    - name: Update pg_hba.conf to change host auth from ident to md5 (2/2)
+      postgresql_pg_hba:
+        dest: /var/lib/pgsql/9.6/data/pg_hba.conf
+        backup: yes
+        method: md5
+        contype: host
+        source: 127.0.0.1/32
+
+    - name: Update pg_hba.conf to set authentication for all to md5
+      postgresql_pg_hba:
+        dest: /var/lib/pgsql/9.6/data/pg_hba.conf
+        backup: yes
+        method: md5
+        contype: host
+        source: '0.0.0.0/0'
+
+    - name: Restart PostgreSQL
+      service: name=postgresql-9.6 state=restarted
+
+    - name: Create New DB in postgres
+      postgresql_db:
+        name: '{{ db_name }}'
+      become_user: postgres
+      vars:
+        ansible_python_interpreter: '{{ git_prefix}}/venv/bin/python3'
+
+    - name: Create admin user and grant permissions
+      postgresql_user:
+        db: '{{ db_name }}'
+        priv: ALL
+        name: '{{ db_admin_user }}'
+        password: '{{ db_admin_passwd }}'
+        role_attr_flags: CREATEDB
+      become_user: postgres
+      vars:
+        ansible_python_interpreter: '{{ git_prefix}}/venv/bin/python3'
+
+    - name: Create the CF MyBRC Django app settings module
+      template: src={{ git_prefix }}/{{ reponame }}/bootstrap/ansible/cf_mybrc_settings_template.tmpl
+                dest={{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/config/{{ deployment }}_settings.py
+      become_user:  "{{ djangooperator }}"
+
+    - name: CF MyBRC Django app initial_setup
+      django_manage:
+        command: initial_setup
+        app_path: "{{ git_prefix }}/{{ reponame }}"
+        settings: "config.settings"
+        pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+        virtualenv: "{{ git_prefix }}/venv"
+      become_user: "{{ djangooperator }}"
+
+    - name: CF MyBRC Django app migrate
+      django_manage:
+        command: migrate
+        app_path: "{{ git_prefix }}/{{ reponame }}"
+        settings: "config.settings"
+        pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+        virtualenv: "{{ git_prefix }}/venv"
+      become_user: "{{ djangooperator }}"
+
+    - name: CF MyBRC Django app add_brc_accounting_defaults
+      django_manage:
+        command: add_brc_accounting_defaults
+        app_path: "{{ git_prefix }}/{{ reponame }}"
+        settings: "config.settings"
+        pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+        virtualenv: "{{ git_prefix }}/venv"
+      become_user: "{{ djangooperator }}"
+
+    - name: CF MyBRC Django app collectstatic
+      django_manage:
+        command: collectstatic --noinput
+        app_path: "{{ git_prefix }}/{{ reponame }}"
+        settings: "config.settings"
+        pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+        virtualenv: "{{ git_prefix }}/venv"
+      become_user: "{{ djangooperator }}"
+
+    - name: Grant read for Apache on djangooperator's $HOME
+      file:
+        path: '{{ git_prefix }}'
+        state: directory
+        mode: 0755
+        group: apache
+
+    - name: Grant read permissions to Apache on git root
+      file:
+        path: '{{ git_prefix }}/{{ reponame }}'
+        state: directory
+        recurse: yes
+        mode: 0755
+        group: apache
+
+    - name: Create a wsgi conf file from a template without SSL
+      template: src={{ git_prefix }}/{{ reponame }}/bootstrap/ansible/cf_mybrc_wsgi_conf.tmpl
+                dest=/etc/httpd/conf.d/cf_mybrc_wsgi.conf
+      when: not ssl_enabled
+
+    - name: Create a wsgi conf file from a template with SSL
+      template: src={{ git_prefix }}/{{ reponame }}/bootstrap/ansible/cf_mybrc_wsgi_conf_ssl.tmpl
+                dest=/etc/httpd/conf.d/cf_mybrc_wsgi.conf
+      when: ssl_enabled
+
+    - name: Restart Apache
+      service: name=httpd state=restarted enabled=yes

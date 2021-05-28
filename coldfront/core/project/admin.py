@@ -29,17 +29,14 @@ class ProjectUserStatusChoiceAdmin(admin.ModelAdmin):
 class ProjectUserAdmin(SimpleHistoryAdmin):
     fields_change = ('user', 'project', 'role', 'status', 'created', 'modified', )
     readonly_fields_change = ('user', 'project', 'created', 'modified', )
-    list_display = ('pk', 'project_title', 'PI', 'User', 'role', 'status',
-                    'created', 'modified',)
+    list_display = ('pk', 'project_title', 'User', 'role', 'status', 'created',
+                    'modified',)
     list_filter = ('role', 'status')
     search_fields = ['user__username', 'user__first_name', 'user__last_name']
     raw_id_fields = ('user', 'project')
 
     def project_title(self, obj):
         return textwrap.shorten(obj.project.title, width=50)
-
-    def PI(self, obj):
-        return '{} {} ({})'.format(obj.project.pi.first_name, obj.project.pi.last_name, obj.project.pi.username)
 
     def User(self, obj):
         return '{} {} ({})'.format(obj.user.first_name, obj.user.last_name, obj.user.username)
@@ -62,7 +59,8 @@ class ProjectUserAdmin(SimpleHistoryAdmin):
             # We are adding an object
             return super().get_inline_instances(request)
         else:
-            return [inline(self.model, self.admin_site) for inline in self.inlines_change]
+            return []
+            # return [inline(self.model, self.admin_site) for inline in self.inlines_change]
 
 
 class ProjectUserInline(admin.TabularInline):
@@ -88,17 +86,21 @@ class ProjectUserMessageInline(admin.TabularInline):
 
 @admin.register(Project)
 class ProjectAdmin(SimpleHistoryAdmin):
-    fields_change = ('title', 'pi', 'description', 'status', 'requires_review', 'force_review', 'created', 'modified', )
+    fields_change = ('title', 'description', 'status', 'requires_review', 'force_review', 'created', 'modified', )
     readonly_fields_change = ('created', 'modified', )
-    list_display = ('pk', 'title', 'PI', 'created', 'modified', 'status')
-    search_fields = ['pi__username', 'projectuser__user__username',
+    list_display = ('pk', 'title', 'PIs', 'created', 'modified', 'status')
+    search_fields = ['projectuser__user__username',
                      'projectuser__user__last_name', 'projectuser__user__last_name', 'title']
     list_filter = ('status', 'force_review')
     inlines = [ProjectUserInline, ProjectAdminCommentInline, ProjectUserMessageInline]
-    raw_id_fields = ['pi', ]
+    raw_id_fields = []
 
-    def PI(self, obj):
-        return '{} {} ({})'.format(obj.pi.first_name, obj.pi.last_name, obj.pi.username)
+    def PIs(self, obj):
+        pi_users = obj.pis()
+        return '\n'.join([
+            '{} {} ({})'.format(
+                pi_user.first_name, pi_user.last_name, pi_user.username)
+            for pi_user in pi_users])
 
     def get_fields(self, request, obj):
         if obj is None:
@@ -132,10 +134,12 @@ class ProjectAdmin(SimpleHistoryAdmin):
 
 @admin.register(ProjectReview)
 class ProjectReviewAdmin(SimpleHistoryAdmin):
-    list_display = ('pk', 'project', 'PI', 'reason_for_not_updating_project', 'created', 'status')
-    search_fields = ['project__pi__username', 'project__pi__first_name', 'project__pi__last_name',]
+    list_display = ('pk', 'project', 'PIs', 'reason_for_not_updating_project', 'created', 'status')
     list_filter = ('status', )
 
-    def PI(self, obj):
-        return '{} {} ({})'.format(obj.project.pi.first_name, obj.project.pi.last_name, obj.project.pi.username)
-
+    def PIs(self, obj):
+        pi_users = obj.pis()
+        return '\n'.join([
+            '{} {} ({})'.format(
+                pi_user.first_name, pi_user.last_name, pi_user.username)
+            for pi_user in pi_users])

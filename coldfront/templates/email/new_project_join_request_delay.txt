@@ -1,0 +1,8 @@
+Dear managers of {{ project_name }},
+
+User {{ user_string }} has requested to join your project, {{ project_name }} via MyBRC user portal.
+
+The request will automatically be approved after a delay of {{ delay }} hours. You may approve or deny it manually at {{ url }}.
+
+Thank you,
+{{ signature }}

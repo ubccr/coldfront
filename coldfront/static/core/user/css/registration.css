@@ -1,0 +1,14 @@
+.ajax-feedback {
+  width: 100%;
+  margin-top: .25rem;
+  font-size: 80%;
+  font-weight: bold;
+  color: #dc3545;
+}
+
+#new-user-acknowledgement-form {
+  display: none;
+  margin-bottom: 1.00rem;
+  color: #dc3545;
+  font-weight: bold;
+}

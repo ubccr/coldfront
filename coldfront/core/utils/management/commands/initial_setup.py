@@ -12,10 +12,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         call_command('migrate')
         call_command('import_field_of_science_data')
-        call_command('add_default_grant_options')
+        # call_command('add_default_grant_options')
         call_command('add_default_project_choices')
         call_command('add_resource_defaults')
         call_command('add_allocation_defaults')
-        call_command('add_default_publication_sources')
+        # call_command('add_default_publication_sources')
         call_command('add_scheduled_tasks')
         # call_command('load_test_data')

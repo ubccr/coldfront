@@ -1,0 +1,31 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Add Email Address
+{% endblock %}
+
+
+{% block content %}
+
+<h1>Add an Email Address</h1>
+<hr>
+
+<p>Associate another email address with your account. Once verified, you may authenticate to this portal using this address.</p>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <form action="" method="post">
+      {% csrf_token %}
+      {{ form|crispy }}
+      <input class="btn btn-primary" type="submit" value="Submit" />
+      <a href="{% url 'user-profile' %}" class="btn btn-secondary">
+        Cancel
+      </a>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
