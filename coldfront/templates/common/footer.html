@@ -1,8 +1,12 @@
 {% load portal_tags %}
+{% load static %}
 
 
 <footer id="footer" class="footer bg-primary customize_footer">
   <div class="container">
+    <div class="row justify-content-center">
+        <img src="{% static 'core/portal/imgs/research_it_logo.png' %}" alt="research_it_logo" height="75">
+    </div>
     <div class="row justify-content-center">
         <p>Powered by ColdFront Version {% get_version %} | <a href="https://github.com/ubccr/coldfront"><i class="fab fa-github" aria-hidden="true"></i> GitHub</a></p>
     </div>
