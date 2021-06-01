@@ -50,7 +50,7 @@ setup(
         'redis==3.2.1',
         'requests==2.22.0',
         'six==1.12.0',
-        'urllib3==1.24.2',
+        'urllib3==1.26.5',
         'wcwidth==0.1.7',
     ],
     entry_points={
