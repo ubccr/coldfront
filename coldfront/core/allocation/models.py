@@ -23,6 +23,10 @@ ALLOCATION_FUNCS_ON_EXPIRE = import_from_settings(
     'ALLOCATION_FUNCS_ON_EXPIRE', [])
 SLURM_ACCOUNT_ATTRIBUTE_NAME = import_from_settings(
     'SLURM_ACCOUNT_ATTRIBUTE_NAME', 'slurm_account_name')
+XDMOD_CLOUD_PROJECT_ATTRIBUTE_NAME = import_from_settings(
+    'XDMOD_CLOUD_PROJECT_ATTRIBUTE_NAME', 'Cloud Account Name')
+UNIX_GROUP_ATTRIBUTE_NAME = import_from_settings(
+    'FREEIPA_GROUP_ATTRIBUTE_NAME', 'freeipa_group')
 
 
 class AllocationStatusChoice(TimeStampedModel):
@@ -102,15 +106,7 @@ class Allocation(TimeStampedModel):
         html_string = ''
         for attribute in self.allocationattribute_set.all():
 
-            if attribute.allocation_attribute_type.name in [SLURM_ACCOUNT_ATTRIBUTE_NAME, ]:
-                html_string += '%s: %s <br>' % (
-                    attribute.allocation_attribute_type.name, attribute.value)
-
-            if attribute.allocation_attribute_type.name == "freeipa_group":
-                html_string += '%s: %s <br>' % (
-                    attribute.allocation_attribute_type.name, attribute.value)
-
-            if attribute.allocation_attribute_type.name == "Cloud Account Name":
+            if attribute.allocation_attribute_type.name in [SLURM_ACCOUNT_ATTRIBUTE_NAME, UNIX_GROUP_ATTRIBUTE_NAME, XDMOD_CLOUD_PROJECT_ATTRIBUTE_NAME,]:
                 html_string += '%s: %s <br>' % (
                     attribute.allocation_attribute_type.name, attribute.value)
 
