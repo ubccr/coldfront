@@ -181,7 +181,11 @@ Project Detail
             <tr>
               <td>{{ allocation.get_parent_resource.name }}</td>
               <td>{{ allocation.get_parent_resource.resource_type.name }}</td>
+              {% if allocation.get_information != '' %}
               <td class="text-nowrap">{{allocation.get_information}}</td>
+              {% else %}
+              <td class="text-nowrap">{{allocation.description}}</td>
+              {% endif %}
               {% if allocation.status.name == 'Active' %}
                 <td class="text-success">{{ allocation.status.name }}</td>
               {% elif  allocation.status.name == 'Expired' or allocation.status.name == 'Denied' %}

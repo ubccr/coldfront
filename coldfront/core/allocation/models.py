@@ -106,6 +106,14 @@ class Allocation(TimeStampedModel):
                 html_string += '%s: %s <br>' % (
                     attribute.allocation_attribute_type.name, attribute.value)
 
+            if attribute.allocation_attribute_type.name == "freeipa_group":
+                html_string += '%s: %s <br>' % (
+                    attribute.allocation_attribute_type.name, attribute.value)
+
+            if attribute.allocation_attribute_type.name == "Cloud Account Name":
+                html_string += '%s: %s <br>' % (
+                    attribute.allocation_attribute_type.name, attribute.value)
+
             if hasattr(attribute, 'allocationattributeusage'):
                 try:
                     percent = round(float(attribute.allocationattributeusage.value) /
