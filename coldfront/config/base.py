@@ -106,6 +106,7 @@ TEMPLATES = [
             PROJECT_ROOT('site/templates'),
             '/usr/share/coldfront/site/templates',
             PROJECT_ROOT('coldfront/templates'),
+            '/usr/local/lib/python3.6/site-packages/rest_framework/templates',
         ],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -117,6 +118,9 @@ TEMPLATES = [
                 'django_settings_export.settings_export',
                 'django.template.context_processors.request',
             ],
+            'libraries': {
+                'rest_framework': 'rest_framework.templatetags.rest_framework',
+            },
         },
     },
 ]
