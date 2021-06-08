@@ -26,7 +26,7 @@ LOGGING = {
     },
     'loggers': {
         'django_auth_ldap': {
-            'level': 'WARN',
+            'level': 'DEBUG',
             # 'handlers': ['console', 'file'],
             'handlers': ['console', ],
         },
