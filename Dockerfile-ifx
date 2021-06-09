@@ -35,4 +35,4 @@ COPY . .
 ENV DEBUG=True
 
 EXPOSE 80
-CMD ["python", "manage.py", "runserver", "0.0.0.0:80"]
+CMD ["python", "manage.py", "runserver", "0.0.0.0:80", "--insecure"]

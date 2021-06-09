@@ -151,9 +151,9 @@ SETTINGS_EXPORT = []
 
 STATIC_URL = '/static/'
 STATIC_ROOT = ENV.str('STATIC_ROOT', default=PROJECT_ROOT('static_root'))
-# STATICFILES_DIRS = [
-#     PROJECT_ROOT('coldfront/static'),
-# ]
+STATICFILES_DIRS = [
+    PROJECT_ROOT('coldfront/static'),
+]
 # COLDFRONT_DATA_LOAD = ENV.str(‘COLDFRONT_DATA_LOAD’, default=PROJECT_ROOT(‘local_data’))
 
 # Add local site static files if set
