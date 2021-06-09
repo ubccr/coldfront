@@ -18,7 +18,7 @@ SU_LOGOUT_REDIRECT_URL = "/admin/auth/user/"
 SESSION_COOKIE_AGE = 60 * 15
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_COOKIE_SAMESITE  = 'Strict'
-SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = False
 
 #------------------------------------------------------------------------------
 # Enable administrators to login as other users
