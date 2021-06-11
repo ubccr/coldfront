@@ -1,0 +1,10 @@
+Dear MyBRC Portal user,
+
+You're receiving this email because you requested a portal account reactivation. However, your account is already active, so no action is required at this time.
+
+Please login here: {{ login_url }}
+
+If needed, you may reset your password here: {{ password_reset_url }}
+
+Thank you,
+{{ signature }}
