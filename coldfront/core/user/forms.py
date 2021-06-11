@@ -200,6 +200,11 @@ class EmailAddressAddForm(forms.Form):
         return email
 
 
+class UserReactivateForm(forms.Form):
+
+    email = forms.EmailField(max_length=100, required=True)
+
+
 class PrimaryEmailAddressSelectionForm(forms.Form):
 
     email_address = forms.ModelChoiceField(

@@ -1,0 +1,32 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Reactivate Account
+{% endblock %}
+
+
+{% block content %}
+
+
+<div class="col-sm-6 offset-sm-3">
+  <div class="card border-primary">
+    <div class="card-header bg-primary text-white">
+      <h5>Reactivate Account</h5>
+    </div>
+    <div class="card-body">
+      <p>
+        Reactivate your account by providing the primary email address
+        associated with your account.
+      </p>
+      <form method="post">
+        {% csrf_token %}
+        {{ form|crispy }}
+        <button type="submit" class="btn btn-primary btn-block">Reactivate</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
