@@ -176,7 +176,7 @@ class ExpiringTokenGenerator(PasswordResetTokenGenerator):
         return True
 
 
-def __account_activation_url(user):
+def account_activation_url(user):
     domain = import_from_settings('CENTER_BASE_URL')
     uidb64 = urlsafe_base64_encode(force_bytes(user.id))
     token = PasswordResetTokenGenerator().make_token(user)
@@ -213,7 +213,7 @@ def send_account_activation_email(user):
     template_name = 'email/account_activation_required.txt'
     context = {
         'center_name': import_from_settings('CENTER_NAME', ''),
-        'activation_url': __account_activation_url(user),
+        'activation_url': account_activation_url(user),
         'signature': import_from_settings('EMAIL_SIGNATURE', ''),
     }
 
