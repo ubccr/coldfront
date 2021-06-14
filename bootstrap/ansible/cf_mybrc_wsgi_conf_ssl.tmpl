@@ -28,6 +28,7 @@ WSGIPassAuthorization On
     </Directory>
 
     SSLEngine on
+    SSLProtocol all -SSLv2 -SSLv3
     SSLCertificateFile {{ ssl_certificate_file }}
     SSLCertificateKeyFile {{ ssl_certificate_key_file }}
     SSLCertificateChainFile {{ ssl_certificate_chain_file }}
