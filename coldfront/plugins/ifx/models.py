@@ -71,8 +71,8 @@ def allocation_user_to_allocation_product_usage(allocation_user, product, overwr
         'month': month,
         'year': year,
     }
-    product_usage_data['quantity'] = allocation_user.usage_bytes
-    product_usage_data['units'] = 'b'
+    product_usage_data['quantity'] = allocation_user.usage_bytes / 1024**4
+    product_usage_data['units'] = 'T'
     product_usage, created = ProductUsage.objects.get_or_create(**product_usage_data)
     aupu = AllocationUserProductUsage.objects.create(allocation_user=allocation_user.history.first(), product_usage=product_usage)
     return aupu
