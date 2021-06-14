@@ -81,13 +81,15 @@ Allocation Detail
               {% else %}
                 {{ allocation.end_date }}
               {% endif %}
-
-              {% if is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
+              {% if allocation.is_locked and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
+              <span class="badge badge-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>
+                Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}}
+              </span>
+              {% elif is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
                 <a href="{% url 'allocation-renew' allocation.pk %}">
-                  <span class="badge badge-warning">
-                    <i class="fas fa-redo-alt" aria-hidden="true"></i>
-                    Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} - click to renew
-                  </span>
+                <span class="badge badge-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>
+                Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} <br> Click to renew
+                </span>
                 </a>
               {% endif %}
             </td>
