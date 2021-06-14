@@ -94,3 +94,10 @@ def resource_post_save(sender, instance, **kwargs):
             fiine_product.pop('facility')
             (product, created) = Product.objects.get_or_create(**fiine_product)
         product_resource = ProductResource.objects.create(product=product, resource=instance)
+
+class SuUser(get_user_model()):
+    '''
+    This is just so that we can have an admin interface with su
+    '''
+    class Meta:
+        proxy = True
