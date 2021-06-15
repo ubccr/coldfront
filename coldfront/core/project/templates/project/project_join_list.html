@@ -129,9 +129,9 @@ Project List
               Join
             </a>
           {% else %}
-            <div class="modal fade" id="reasonModal" tabindex="-1" role="dialog" aria-labelledby="reasonModalLabel" aria-hidden="true">
+            <div class="modal fade" id="reason{{ project.pk }}Modal" tabindex="-1" role="dialog" aria-labelledby="reason{{ project.pk }}ModalLabel" aria-hidden="true">
             <div class="modal-dialog" role="document">
-                <form action="{% url 'project-join' project.pk %}" method="post" id="reasonForm">
+                <form action="{% url 'project-join' project.pk %}" method="post" id="reason{{ project.pk }}Form">
                     {% csrf_token %}
                     <div class="modal-content">
                         <div class="modal-header">
@@ -142,9 +142,9 @@ Project List
                         </div>
 
                         <div class="modal-body">
-                            <label for"reasonInput">Reason*</label>
-                            <textarea required id="reasonInput" aria-describedby="reasonHelp" class="form-control" name="reason" minlength="20" maxlength="1000"></textarea>
-                            <small id="reasonHelp" class="form-text text-muted">Please provide a short reason that will be reviewed by the project managers.</small>
+                            <label for="reason{{ project.pk }}Input">Reason*</label>
+                            <textarea required id="reason{{ project.pk }}Input" aria-describedby="reason{{ project.pk }}Help" class="form-control" name="reason" minlength="20" maxlength="1000"></textarea>
+                            <small id="reason{{ project.pk }}Help" class="form-text text-muted">Please provide a short reason that will be reviewed by the project managers.</small>
                         </div>
 
                         <div class="modal-footer">
@@ -159,7 +159,7 @@ Project List
             </div>
             </div>
 
-            <button class="btn btn-primary" data-toggle="modal" data-target="#reasonModal">
+            <button class="btn btn-primary" data-toggle="modal" data-target="#reason{{ project.pk }}Modal">
                 <i class="fas fa-user-plus" aria-hidden="true"></i>
                 Join
             </button>
