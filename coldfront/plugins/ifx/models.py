@@ -92,6 +92,7 @@ def resource_post_save(sender, instance, **kwargs):
         else:
             fiine_product = products[0].to_dict()
             fiine_product.pop('facility')
+            fiine_product['billing_calculator'] = 'coldfront.plugins.ifx.calculator.ColdfrontBillingCalculator'
             (product, created) = Product.objects.get_or_create(**fiine_product)
         product_resource = ProductResource.objects.create(product=product, resource=instance)
 
