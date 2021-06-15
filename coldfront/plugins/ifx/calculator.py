@@ -54,7 +54,7 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
         percent_str = ''
         if percent < 100:
             percent_str = f'{percent}% split of '
-        description = f'{percent_str}{product_user_percent} of {quota} {product_usage.units} at {rate.price} per {rate.units}'
+        description = f'{percent_str}{product_user_percent}% of {quota} TB at {rate.price} per {rate.units}'
 
         charge = round(rate.price * quota * product_user_percent * percent / 100)
         user = product_usage.product_user
