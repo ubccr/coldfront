@@ -2,6 +2,7 @@
 Custom billing calculator class for Coldfront
 '''
 import logging
+from decimal import Decimal
 from django.db import connection
 from ifxbilling.calculator import BasicBillingCalculator
 
@@ -11,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 class ColdfrontBillingCalculator(BasicBillingCalculator):
     '''
-    Calculate and collect Allocation percentages so that billing can reflect the percentage of the Allocation used
+    Calculate and collect Allocation fractions so that billing can reflect the percentage of the Allocation used
     '''
     def getAllocationFromProductUsage(self, product_usage):
         '''
@@ -24,39 +25,43 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
     def calculateCharges(self, product_usage, percent, usage_data):
         '''
         Check for the Allocation information in the usage_data dictionary.  If it's there, use the
-        percentages to figure out the charge.  If not, get the other AllocationUser data to calculate
-        the percentages and save in the usage_data dict.
+        fractions to figure out the charge.  If not, get the other AllocationUser data to calculate
+        the fractions and save in the usage_data dict.
         '''
         allocation = self.getAllocationFromProductUsage(product_usage)
         if allocation.id not in usage_data:
-            usage_data[allocation.id] = self.calculateAllocationUserPercentages(product_usage)
+            usage_data[allocation.id] = self.calculateAllocationUserFractions(product_usage)
 
-        allocation_user_percentages = usage_data[allocation.id]
+        allocation_user_fractions = usage_data[allocation.id]
 
         product = product_usage.product
         rate = product.rate_set.get(is_active=True)
-        if rate.units != product_usage.units:
-            raise Exception(f'Units for product usage do not match the active rate for {product}')
+        if rate.units != 'TB':
+            raise Exception(f'Units for {product} should be "TB"')
+        if product_usage.units != 'b':
+            raise Exception('Product usage units should be in bytes (b)')
         transactions_data = []
 
         # Get the quota.  Charge will be users percent of quota value.
         quota_attribute = allocation.allocationattribute_set.filter(allocation_attribute_type__name='Storage Quota (TB)').first()
         try:
-            quota = float(quota_attribute.value)
+            quota = Decimal(quota_attribute.value)
         except ValueError:
             raise ValueError(f'Storage quota value for {allocation} cannot be converted to a float.')
 
         try:
-            product_user_percent = allocation_user_percentages[product_usage.product_user.id]['percent']
+            product_user_percent = allocation_user_fractions[product_usage.product_user.id]['fraction']
         except Exception as e:
-            raise Exception(f'Allocation user percentages dict has no percent value for {product_usage.product_user} {product_usage.product_user.id}: {allocation_user_percentages}')
+            raise Exception(f'Allocation user fractions dict has no percent value for {product_usage.product_user} {product_usage.product_user.id}: {allocation_user_fractions}')
 
         percent_str = ''
         if percent < 100:
             percent_str = f'{percent}% split of '
-        description = f'{percent_str}{product_user_percent}% of {quota} TB at {rate.price} per {rate.units}'
+        dollar_price = Decimal(rate.price) / 100
+        description = f'{percent_str}{product_user_percent.quantize(Decimal("100.000")) * 100}% of {quota} TB at ${dollar_price.quantize(Decimal(".01"))} per {rate.units}'
 
-        charge = round(rate.price * quota * product_user_percent * percent / 100)
+        # Round Decimal charge to nearest integer (pennies)
+        charge = round(Decimal(rate.price) * quota * product_user_percent * percent / 100)
         user = product_usage.product_user
 
         transactions_data.append(
@@ -68,28 +73,28 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
         )
         return transactions_data
 
-    def calculateAllocationUserPercentages(self, product_usage):
+    def calculateAllocationUserFractions(self, product_usage):
         '''
         Get the allocation and then get all of the AllocationProductUsages and ProductUsages associated
-        with it for the same year / month.  Calculate percentage for each user and return.
+        with it for the same year / month.  Calculate fraction for each user and return.
         '''
 
         # Of the form
-        # allocation_user_percentages = {
+        # allocation_user_fractions = {
         #    <allocation id>: {
         #        <allocation user id 1>: {
-        #           'percent': 20,
+        #           'fraction': 0.2,
         #           'quantity': 2000
         #        }
         #        <allocation user id 2>: {
-        #            'percent': 80,
+        #            'fraction': 0.8,
         #            'quantity': 8000
         #        }
         #    }
         # }
 
         allocation = self.getAllocationFromProductUsage(product_usage)
-        allocation_user_percentages = {}
+        allocation_user_fractions = {}
 
         sql = '''
             select
@@ -111,12 +116,12 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
         total = 0
         for row in rows:
             logger.error('product_user_id %d, quantity %d', row[0], row[1])
-            allocation_user_percentages[row[0]] = {
+            allocation_user_fractions[row[0]] = {
                 'quantity': row[1]
             }
             total += row[1]
-        for uid in allocation_user_percentages.keys():
-            allocation_user_percentages[uid]['percent'] = allocation_user_percentages[uid]['quantity'] / total * 100
+        for uid in allocation_user_fractions.keys():
+            allocation_user_fractions[uid]['fraction'] = Decimal(allocation_user_fractions[uid]['quantity']) / Decimal(total)
 
-        logger.error('Allocation user percentages %s', str(allocation_user_percentages))
-        return allocation_user_percentages
+        logger.error('Allocation user fractions %s', str(allocation_user_fractions))
+        return allocation_user_fractions
