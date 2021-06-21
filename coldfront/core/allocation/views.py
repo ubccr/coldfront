@@ -52,6 +52,7 @@ from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
                                              set_allocation_user_attribute_value)
 from coldfront.core.project.models import (Project, ProjectUser,
                                            ProjectUserStatusChoice)
+from coldfront.core.project.utils import ProjectClusterAccessRequestRunner
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email_template
@@ -1655,45 +1656,28 @@ class AllocationRequestClusterAccountView(LoginRequiredMixin,
             Allocation, pk=self.kwargs.get('pk'))
         user_obj = get_object_or_404(User, pk=self.kwargs.get('user_pk'))
         project_obj = allocation_obj.project
-        allocation_user_obj = AllocationUser.objects.get(
-            allocation=allocation_obj, user=user_obj)
-        allocation_attribute_type = AllocationAttributeType.objects.get(
-            name='Cluster Account Status')
-
-        pending = 'Pending - Add'
-        active = 'Active'
 
         redirect = HttpResponseRedirect(
             reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
         try:
-            access = allocation_obj.allocationuserattribute_set.get(
-                allocation_user__user=user_obj,
-                allocation_attribute_type=allocation_attribute_type)
-            if access.value in [pending, active]:
-                message = (
-                    f'User {user_obj.username} already has a pending or '
-                    f'active cluster access under Project {project_obj.name}.')
-                messages.warning(self.request, message)
-            else:
-                access.value = pending
-                access.save()
-        except AllocationUserAttribute.DoesNotExist:
-            AllocationUserAttribute.objects.create(
-                allocation_attribute_type=allocation_attribute_type,
-                allocation=allocation_obj,
-                allocation_user=allocation_user_obj,
-                value=pending)
-        except AllocationUserAttribute.MultipleObjectsReturned:
+            project_user_obj = ProjectUser.objects.get(
+                user=user_obj, project=project_obj)
+        except ProjectUser.DoesNotExist:
             message = (
                 'Unexpected server error. Please contact an administrator.')
             messages.error(self.request, message)
             return redirect
 
-        message = (
-            f'Requested cluster access under Project {project_obj.name} for '
-            f'User {user_obj.username}.')
-        messages.success(self.request, message)
+        request_runner = ProjectClusterAccessRequestRunner(project_user_obj)
+        runner_result = request_runner.run()
+        if runner_result.success:
+            message = (
+                f'Created a cluster access request for User {user_obj.pk} '
+                f'under Project {project_obj.pk}.')
+            messages.success(self.request, message)
+        else:
+            messages.error(self.request, runner_result.error_message)
 
         return redirect
 
