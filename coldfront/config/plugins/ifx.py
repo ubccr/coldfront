@@ -10,3 +10,5 @@ from coldfront.config.base import INSTALLED_APPS, MIDDLEWARE
 MIDDLEWARE += [
     'author.middlewares.AuthorDefaultBackendMiddleware',
 ]
+
+NANITE2USER_CLASS = 'coldfront.plugins.ifx.nanites.Nanite2ColdfrontUser'
