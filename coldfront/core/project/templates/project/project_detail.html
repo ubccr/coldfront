@@ -244,6 +244,7 @@ Project Detail
               <th scope="col" class="text-nowrap">Award Amount</th>
               <th scope="col" class="text-nowrap">Grant Start Date</th>
               <th scope="col" class="text-nowrap">Grant End Date</th>
+              <th scope="col" class="text-nowrap">Status</th>
               <th scope="col" class="nosort">Actions</th>
             </tr>
           </thead>
@@ -256,6 +257,13 @@ Project Detail
               <td>{{ grant.total_amount_awarded|intcomma}}</td>
               <td>{{ grant.grant_start|date:"Y-m-d" }}</td>
               <td>{{ grant.grant_end|date:"Y-m-d" }}</td>
+              {% if grant.status.name == 'Active' %}
+                <td class="text-success">{{ grant.status.name }}</td>
+              {% elif  grant.status.name == 'Archived' %}
+                <td class="text-danger">{{ grant.status.name }}</td>
+              {% else %}
+                <td class="text-info">{{ grant.status.name }}</td>
+              {% endif %}
               <td><a href="{% url 'grant-update' grant.id %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
             </tr>
             {% endfor %}

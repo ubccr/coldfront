@@ -126,7 +126,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['research_outputs'] = ResearchOutput.objects.filter(
             project=self.object).order_by('-created')
         context['grants'] = Grant.objects.filter(
-            project=self.object, status__name__in=['Active', 'Pending'])
+            project=self.object, status__name__in=['Active', 'Pending', 'Archived'])
         context['allocations'] = allocations
         context['project_users'] = project_users
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
