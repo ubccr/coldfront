@@ -143,7 +143,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                     'allocation_user__user'
                 ).filter(
                     allocation_attribute_type__name='Cluster Account Status',
-                    value__in=['Pending - Add', 'Active'])
+                    value__in=['Pending - Add', 'Processing', 'Active'])
             for status in statuses:
                 username = status.allocation_user.user.username
                 cluster_access_statuses[username] = status.value

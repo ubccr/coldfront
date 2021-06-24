@@ -1136,15 +1136,15 @@ class ProjectClusterAccessRequestRunner(object):
         kwargs = {
             'allocation_attribute_type': AllocationAttributeType.objects.get(
                 name='Cluster Account Status'),
-            'value__in': ['Pending - Add', 'Active'],
+            'value__in': ['Pending - Add', 'Processing', 'Active'],
         }
         try:
             status = queryset.get(**kwargs)
         except AllocationUserAttribute.DoesNotExist:
             message = (
                 f'Validated that User {self.user_obj.pk} does not already '
-                f'have a pending or active "Cluster Access Status" attribute '
-                f'under Project {self.project_obj.pk}.')
+                f'have a pending, processing, or active "Cluster Access '
+                f'Status" attribute under Project {self.project_obj.pk}.')
             self.logger.info(message)
             return
         except AllocationUserAttribute.MultipleObjectsReturned as e:

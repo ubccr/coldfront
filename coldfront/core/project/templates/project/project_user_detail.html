@@ -105,6 +105,10 @@ Project User Detail
                 <span class="badge badge-warning">
                   Pending
                 </span>
+              {% elif cluster_access_status == 'Processing' %}
+                <span class="badge badge-warning">
+                  Processing
+                </span>
               {% elif cluster_access_status == 'None' %}
                 <span class="badge badge-danger">
                   No Access
