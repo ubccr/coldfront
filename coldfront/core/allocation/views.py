@@ -29,6 +29,7 @@ from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationAddUserForm,
                                              AllocationAttributeDeleteForm,
                                              AllocationClusterAccountRequestActivationForm,
+                                             AllocationClusterAccountUpdateStatusForm,
                                              AllocationForm,
                                              AllocationInvoiceNoteDeleteForm,
                                              AllocationInvoiceUpdateForm,
@@ -1705,9 +1706,72 @@ class AllocationClusterAccountRequestListView(LoginRequiredMixin,
             name='Cluster Account Status')
         cluster_account_list = AllocationUserAttribute.objects.filter(
             allocation_attribute_type=cluster_account_status,
-            value='Pending - Add')
+            value__in=['Pending - Add', 'Processing'])
         context['cluster_account_list'] = cluster_account_list
         return context
+
+
+class AllocationClusterAccountUpdateStatusView(LoginRequiredMixin,
+                                               UserPassesTestMixin, FormView):
+    form_class = AllocationClusterAccountUpdateStatusForm
+    login_url = '/'
+    template_name = (
+        'allocation/allocation_update_cluster_account_status.html')
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        permission = 'allocation.can_review_cluster_account_requests'
+        if self.request.user.has_perm(permission):
+            return True
+        message = (
+            'You do not have permission to modify a cluster access request.')
+        messages.error(self.request, message)
+
+    def dispatch(self, request, *args, **kwargs):
+        self.allocation_user_attribute_obj = get_object_or_404(
+            AllocationUserAttribute, pk=self.kwargs.get('pk'))
+        self.user_obj = self.allocation_user_attribute_obj.allocation_user.user
+        status = self.allocation_user_attribute_obj.value
+        if status != 'Pending - Add':
+            message = f'Cluster access has unexpected status {status}.'
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse('allocation-cluster-account-request-list'))
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        form_data = form.cleaned_data
+        status = form_data.get('status')
+
+        allocation_obj = self.allocation_user_attribute_obj.allocation
+        project_obj = allocation_obj.project
+
+        self.allocation_user_attribute_obj.value = status
+        self.allocation_user_attribute_obj.save()
+
+        message = (
+            f'Cluster access request from User {self.user_obj.email} under '
+            f'Project {project_obj.name} and Allocation {allocation_obj.pk} '
+            f'has been marked for processing.')
+        messages.success(self.request, message)
+
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['cluster_account'] = self.allocation_user_attribute_obj
+        return context
+
+    def get_initial(self):
+        initial = {
+            'status': self.allocation_user_attribute_obj.value,
+        }
+        return initial
+
+    def get_success_url(self):
+        return reverse('allocation-cluster-account-request-list')
 
 
 class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
@@ -1735,7 +1799,7 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
             AllocationUserAttribute, pk=self.kwargs.get('pk'))
         self.user_obj = self.allocation_user_attribute_obj.allocation_user.user
         status = self.allocation_user_attribute_obj.value
-        if status != 'Pending - Add':
+        if status != 'Processing':
             message = f'Cluster access has unexpected status {status}.'
             messages.error(request, message)
             return HttpResponseRedirect(
@@ -1869,7 +1933,7 @@ class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,
             AllocationUserAttribute, pk=self.kwargs.get('pk'))
         self.user_obj = self.allocation_user_attribute_obj.allocation_user.user
         status = self.allocation_user_attribute_obj.value
-        if status != 'Pending - Add':
+        if status not in ('Pending - Add', 'Processing'):
             message = f'Cluster access has unexpected status {status}.'
             messages.error(request, message)
             return HttpResponseRedirect(
