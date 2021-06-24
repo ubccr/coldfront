@@ -25,6 +25,7 @@ from django.views.generic.edit import FormView
 from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.project.models import Project, ProjectUser
 from coldfront.core.user.forms import EmailAddressAddForm
+from coldfront.core.user.forms import UserReactivateForm
 from coldfront.core.user.forms import PrimaryEmailAddressSelectionForm
 from coldfront.core.user.forms import UserAccessAgreementForm
 from coldfront.core.user.forms import UserProfileUpdateForm
@@ -34,6 +35,7 @@ from coldfront.core.user.models import EmailAddress
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.user.utils import ExpiringTokenGenerator
 from coldfront.core.user.utils import send_account_activation_email
+from coldfront.core.user.utils import send_account_already_active_email
 from coldfront.core.user.utils import send_email_verification_email
 from coldfront.core.utils.common import (import_from_settings,
                                          utc_now_offset_aware)
@@ -383,6 +385,42 @@ class UserRegistrationView(CreateView):
         messages.success(self.request, message)
 
         return HttpResponseRedirect(self.get_success_url())
+
+
+class UserReactivateView(FormView):
+    form_class = UserReactivateForm
+    template_name = 'user/user_reactivate.html'
+
+    logger = logging.getLogger(__name__)
+
+    def form_valid(self, form):
+        form_data = form.cleaned_data
+        email = form_data['email']
+        user = None
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            pass
+        except User.MultipleObjectsReturned:
+            self.logger.error(
+                f'Unexpectedly found multiple Users with email address '
+                f'{email}.')
+            message = (
+                'Unexpected server error. Please contact an administrator.')
+            messages.error(self.request, message)
+        if user:
+            if user.is_active:
+                send_account_already_active_email(user)
+            else:
+                send_account_activation_email(user)
+        message = (
+            'If the email address you entered is valid, please check the '
+            'address for instructions to activate your account.')
+        messages.success(self.request, message)
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('login')
 
 
 def activate_user_account(request, uidb64=None, token=None):

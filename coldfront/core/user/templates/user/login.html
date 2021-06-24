@@ -28,9 +28,18 @@ Log In
       <h5><i class="fas fa-lock" aria-hidden="true"></i> Log In </h5>
     </div>
     <div class="card-body">
-      <p>
-        If you are an existing BRC cluster user and this is your first time visiting the portal, please <a href="{% url 'password-reset' %}">set your password</a> to activate your account.
-      </p>
+      <div class="alert alert-info" role="alert">
+        <i class="fas fa-info-circle" aria-hidden="true"></i>
+        Hint: If you are an existing BRC cluster user and this is your first time
+        visiting the portal, please <a href="{% url 'password-reset' %}">set
+        your password</a>.
+      </div>
+      <div class="alert alert-info" role="alert">
+        <i class="fas fa-info-circle" aria-hidden="true"></i>
+        Hint: If you have lost your initial activation email, you may generate
+        another one by logging in below or by
+        <a href="{% url 'reactivate' %}">reactivating your account</a>.
+      </div>
       <hr>
       {% include "user/login_form.html" %}
       {% if 'mozilla_django_oidc' in EXTRA_APPS %}
@@ -43,6 +52,8 @@ Log In
       {% endif %}
     </div>
     <div class="text-center last-form-entry">
+      <a href="{% url 'reactivate' %}">Reactivate your account</a>
+      &nbsp;|&nbsp;
       <a href="{% url 'password-reset' %}">Forgot your password?</a>
     </div>
   </div>

@@ -15,6 +15,7 @@ from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.models import VectorProjectAllocationRequest
+from coldfront.core.user.utils import account_activation_url
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.mail import send_email_template
@@ -412,9 +413,12 @@ def send_new_project_request_pi_notification_email(request):
         detail_view_name = 'vector-project-request-detail'
     else:
         raise TypeError(f'Request has invalid type {type(request)}.')
+    center_base_url = settings.CENTER_BASE_URL
     review_url = urljoin(
-        settings.CENTER_BASE_URL,
-        reverse(detail_view_name, kwargs={'pk': request.pk}))
+        center_base_url, reverse(detail_view_name, kwargs={'pk': request.pk}))
+    login_url = urljoin(center_base_url, reverse('login'))
+    activation_url = account_activation_url(pi)
+    password_reset_url = urljoin(center_base_url, reverse('password-reset'))
 
     context = {
         'pooling': pooling,
@@ -423,6 +427,10 @@ def send_new_project_request_pi_notification_email(request):
         'pi_str': pi_str,
         'review_url': review_url,
         'support_email': settings.CENTER_HELP_EMAIL,
+        'pi_is_active': pi.is_active,
+        'login_url': login_url,
+        'activation_url': activation_url,
+        'password_reset_url': password_reset_url,
     }
 
     sender = settings.EMAIL_SENDER

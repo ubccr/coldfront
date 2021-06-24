@@ -176,7 +176,7 @@ class ExpiringTokenGenerator(PasswordResetTokenGenerator):
         return True
 
 
-def __account_activation_url(user):
+def account_activation_url(user):
     domain = import_from_settings('CENTER_BASE_URL')
     uidb64 = urlsafe_base64_encode(force_bytes(user.id))
     token = PasswordResetTokenGenerator().make_token(user)
@@ -213,7 +213,7 @@ def send_account_activation_email(user):
     template_name = 'email/account_activation_required.txt'
     context = {
         'center_name': import_from_settings('CENTER_NAME', ''),
-        'activation_url': __account_activation_url(user),
+        'activation_url': account_activation_url(user),
         'signature': import_from_settings('EMAIL_SIGNATURE', ''),
     }
 
@@ -225,6 +225,33 @@ def send_account_activation_email(user):
     receiver_list = [user.email, ]
 
     send_email_template(subject, template_name, context, sender, receiver_list)
+
+
+def send_account_already_active_email(user):
+    """Send an email to the given user stating that their account is
+    already active."""
+    email_enabled = import_from_settings('EMAIL_ENABLED', False)
+    if not email_enabled:
+        return
+
+    subject = 'Account already active'
+    template_name = 'email/account_already_active.txt'
+
+    center_base_url = settings.CENTER_BASE_URL
+    login_url = urljoin(center_base_url, reverse('login'))
+    password_reset_url = urljoin(
+        center_base_url, reverse('password-reset'))
+
+    context = {
+        'login_url': login_url,
+        'password_reset_url': password_reset_url,
+    }
+
+    sender = settings.EMAIL_SENDER
+    receiver_list = [user.email]
+
+    send_email_template(
+        subject, template_name, context, sender, receiver_list)
 
 
 def send_email_verification_email(email_address):

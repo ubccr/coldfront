@@ -77,6 +77,9 @@ urlpatterns = [
          user_views.activate_user_account,
          name='activate',
          ),
+    path('reactivate/',
+         user_views.UserReactivateView.as_view(),
+         name='reactivate'),
 
     # Email views
     path('add-email-address',
