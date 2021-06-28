@@ -23,6 +23,7 @@ ARG FIINE_CLIENT_COMMIT=b944730dcdf7de9df3479efdeb48848813a14032
 ARG IFXBILLING_COMMIT=89382408913ac3a3292493dbcf5fbde1573be120
 
 RUN --mount=type=ssh pip install --upgrade pip && \
+    pip install gunicorn && \
     pip install 'Django>2.2,<3' && \
     pip install django-author==1.0.2 && \
     pip install git+ssh://git@github.com/harvardinformatics/ifxurls.git@${IFXURLS_COMMIT} && \
