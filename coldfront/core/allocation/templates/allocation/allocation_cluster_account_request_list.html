@@ -17,7 +17,11 @@ Cluster Account Review New and Pending Requests
     <tbody>
       <tr>
         <td>
-          Below is a list of pending cluster access requests. Requests are created when project join requests that have completed their delay period are automatically approved, which occurs periodically. You may manually perform this step using the Refresh button.
+          Below is a list of cluster access requests that are either pending or
+          being processed on the cluster. Requests are created when project
+          join requests that have completed their delay period are
+          automatically approved, which occurs periodically. You may manually
+          perform this step using the Refresh button.
         </td>
         <td>
           <form method="post" action="{% url 'project-auto-approve-join-requests' %}">
@@ -44,6 +48,7 @@ Cluster Account Review New and Pending Requests
         <th scope="col">Cluster Username</th>
         <th scope="col">Project</th>
         <th scope="col">Allocation</th>
+        <th scope="col">Status</th>
         <th scope="col">Allocation Actions</th>
       </tr>
     </thead>
@@ -72,8 +77,25 @@ Cluster Account Review New and Pending Requests
             {{ cluster_account.allocation.pk }}
           </a>
         </td>
+        <td>
+          <span class="badge badge-warning">
+            {% if cluster_account.value == "Pending - Add" %}
+              Pending
+            {% else %}
+              {{ cluster_account.value }}
+            {% endif %}
+          </span>
+        </td>
         <td class="text-nowrap">
-          <a href="{% url 'allocation-cluster-account-activate-request' cluster_account.pk %}" class="btn btn-success mr-1">Activate</a>
+          {% if cluster_account.value == "Pending - Add" %}
+            <a href="{% url 'allocation-cluster-account-update-status' cluster_account.pk %}" class="btn btn-success mr-1">
+              Activate
+            </a>
+          {% else %}
+            <a href="{% url 'allocation-cluster-account-activate-request' cluster_account.pk %}" class="btn btn-success mr-1">
+              Activate
+            </a>
+          {% endif %}
           <a href="{% url 'allocation-cluster-account-deny-request' cluster_account.pk %}" class="btn btn-danger mr-1">
             Deny
           </a>

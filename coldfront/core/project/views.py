@@ -143,7 +143,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                     'allocation_user__user'
                 ).filter(
                     allocation_attribute_type__name='Cluster Account Status',
-                    value__in=['Pending - Add', 'Active'])
+                    value__in=['Pending - Add', 'Processing', 'Active'])
             for status in statuses:
                 username = status.allocation_user.user.username
                 cluster_access_statuses[username] = status.value
@@ -652,53 +652,42 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
             project_user_obj.status = active_status
             project_user_obj.save()
 
+        for project_user_obj in project_user_objs:
+            # Request cluster access.
+            request_runner = ProjectClusterAccessRequestRunner(
+                project_user_obj)
+            runner_result = request_runner.run()
+            if not runner_result.success:
+                messages.error(self.request, runner_result.error_message)
+            # Send an email to the user.
+            try:
+                send_project_join_request_approval_email(
+                    project_obj, project_user_obj)
+            except Exception as e:
+                message = 'Failed to send notification email. Details:'
+                self.logger.error(message)
+                self.logger.exception(e)
+            # If the Project is a Vector project, automatically add the
+            # User to the designated Savio project for Vector users.
+            if project_obj.name.startswith('vector_'):
+                user_obj = project_user_obj.user
+                try:
+                    add_vector_user_to_designated_savio_project(user_obj)
+                except Exception as e:
+                    message = (
+                        f'Encountered unexpected exception when '
+                        f'automatically providing User {user_obj.pk} with '
+                        f'access to Savio. Details:')
+                    self.logger.error(message)
+                    self.logger.exception(e)
+
         message = (
             f'Join requests no longer require approval, so '
             f'{project_user_objs.count()} pending requests were automatically '
-            f'approved.')
-
-        if project_user_objs.exists():
-            error_message = (
-                'Unexpected server error. Please contact an administrator.')
-            for project_user_obj in project_user_objs:
-                # Request cluster access.
-                try:
-                    request_runner = ProjectClusterAccessRequestRunner(
-                        project_user_obj)
-                    runner_result = request_runner.run()
-                except Exception:
-                    messages.error(self.request, error_message)
-                    return False
-                else:
-                    if not runner_result.success:
-                        messages.error(
-                            self.request, runner_result.error_message)
-                # Send an email to the user.
-                try:
-                    send_project_join_request_approval_email(
-                        project_obj, project_user_obj)
-                except Exception as e:
-                    message = 'Failed to send notification email. Details:'
-                    self.logger.error(message)
-                    self.logger.exception(e)
-                # If the Project is a Vector project, automatically add the
-                # User to the designated Savio project for Vector users.
-                if project_obj.name.startswith('vector_'):
-                    user_obj = project_user_obj.user
-                    try:
-                        add_vector_user_to_designated_savio_project(user_obj)
-                    except Exception as e:
-                        message = (
-                            f'Encountered unexpected exception when '
-                            f'automatically providing User {user_obj.pk} with '
-                            f'access to Savio. Details:')
-                        self.logger.error(message)
-                        self.logger.exception(e)
-            message = message + (
-                ' BRC staff have been notified to set up cluster access for '
-                'each request.')
-
+            f'approved. BRC staff have been notified to set up cluster access '
+            f'for each request.')
         messages.warning(self.request, message)
+
         return True
 
 
@@ -920,44 +909,37 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                                                       allocation_user_pk=allocation_user_obj.pk)
 
                     # Request cluster access for the user.
-                    error_message = (
-                        'Unexpected server error. Please contact an '
-                        'administrator.')
-                    try:
-                        request_runner = ProjectClusterAccessRequestRunner(
-                            project_user_obj)
-                        request_runner.run()
-                    except Exception:
-                        messages.error(self.request, error_message)
-                        continue
-                    else:
+                    request_runner = ProjectClusterAccessRequestRunner(
+                        project_user_obj)
+                    runner_result = request_runner.run()
+                    if runner_result.success:
                         cluster_access_requests_count += 1
+                    else:
+                        messages.error(
+                            self.request, runner_result.error_message)
 
-                        # Notify the user that he/she has been added.
+                    # Notify the user that he/she has been added.
+                    try:
+                        send_added_to_project_notification_email(
+                            project_obj, project_user_obj)
+                    except Exception as e:
+                        message = 'Failed to send notification email. Details:'
+                        self.logger.error(message)
+                        self.logger.exception(e)
+
+                    # If the Project is a Vector project, automatically add the
+                    # User to the designated Savio project for Vector users.
+                    if project_obj.name.startswith('vector_'):
                         try:
-                            send_added_to_project_notification_email(
-                                project_obj, project_user_obj)
+                            add_vector_user_to_designated_savio_project(
+                                user_obj)
                         except Exception as e:
                             message = (
-                                'Failed to send notification email. Details:')
+                                f'Encountered unexpected exception when '
+                                f'automatically providing User {user_obj.pk} '
+                                f'with access to Savio. Details:')
                             self.logger.error(message)
                             self.logger.exception(e)
-
-                        # If the Project is a Vector project, automatically add
-                        # the User to the designated Savio project for Vector
-                        # users.
-                        if project_obj.name.startswith('vector_'):
-                            try:
-                                add_vector_user_to_designated_savio_project(
-                                    user_obj)
-                            except Exception as e:
-                                message = (
-                                    f'Encountered unexpected exception when '
-                                    f'automatically providing User '
-                                    f'{user_obj.pk} with access to Savio. '
-                                    f'Details:')
-                                self.logger.error(message)
-                                self.logger.exception(e)
 
             if added_users_count != 0:
                 messages.success(
@@ -1568,28 +1550,19 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             project_user.status = status
             project_user.save()
 
-            error_message = (
-                'Unexpected server error. Please contact an administrator.')
-
             # Request cluster access.
-            try:
-                request_runner = ProjectClusterAccessRequestRunner(
-                    project_user)
-                runner_result = request_runner.run()
-            except Exception:
-                messages.error(self.request, error_message)
+            request_runner = ProjectClusterAccessRequestRunner(project_user)
+            runner_result = request_runner.run()
+            if runner_result.success:
+                message = (
+                    f'You have requested to join Project {project_obj.name}. '
+                    f'Your request has automatically been approved. BRC staff '
+                    f'have been notified to set up cluster access.')
+                messages.success(self.request, message)
+                next_view = reverse(
+                    'project-detail', kwargs={'pk': project_obj.pk})
             else:
-                if runner_result.success:
-                    message = (
-                        f'You have requested to join Project '
-                        f'{project_obj.name}. Your request has automatically '
-                        f'been approved. BRC staff have been notified to set '
-                        f'up cluster access.')
-                    messages.success(self.request, message)
-                    next_view = reverse(
-                        'project-detail', kwargs={'pk': project_obj.pk})
-                else:
-                    messages.error(self.request, runner_result.error_message)
+                messages.error(self.request, runner_result.error_message)
 
         # Send a notification to the project managers.
         try:
@@ -1864,18 +1837,12 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
 
                     if status_name == 'Active':
                         # Request cluster access.
-                        try:
-                            request_runner = ProjectClusterAccessRequestRunner(
-                                project_user_obj)
-                            runner_result = request_runner.run()
-                        except Exception:
-                            messages.error(self.request, error_message)
-                            return HttpResponseRedirect(
-                                reverse('project-detail', kwargs={'pk': pk}))
-                        else:
-                            if not runner_result.success:
-                                messages.error(
-                                    self.request, runner_result.error_message)
+                        request_runner = ProjectClusterAccessRequestRunner(
+                            project_user_obj)
+                        runner_result = request_runner.run()
+                        if not runner_result.success:
+                            messages.error(
+                                self.request, runner_result.error_message)
                         # If the Project is a Vector project, automatically add
                         # the User to the designated Savio project for Vector
                         # users.
