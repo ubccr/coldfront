@@ -6,6 +6,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth.views import PasswordChangeView
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import IntegrityError
 from django.db.models import BooleanField, Prefetch
 from django.db.models.expressions import ExpressionWrapper, Q
@@ -30,7 +31,7 @@ from coldfront.core.user.forms import PrimaryEmailAddressSelectionForm
 from coldfront.core.user.forms import UserAccessAgreementForm
 from coldfront.core.user.forms import UserProfileUpdateForm
 from coldfront.core.user.forms import UserRegistrationForm
-from coldfront.core.user.forms import UserSearchForm
+from coldfront.core.user.forms import UserSearchForm,UserSearchListForm
 from coldfront.core.user.models import EmailAddress
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.user.utils import ExpiringTokenGenerator
@@ -307,6 +308,101 @@ class UserSearchHome(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
     def test_func(self):
         return self.request.user.is_staff
+
+
+class UserSearchAll(LoginRequiredMixin, ListView):
+    model = User
+    template_name = 'user/user_list.html'
+    context_object_name = 'user_list'
+    paginate_by = 25
+
+    def test_func(self):
+        return self.request.user.is_staff
+
+    def get_queryset(self):
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            if direction == 'asc':
+                direction = ''
+            else:
+                direction = '-'
+            order_by = direction + order_by
+        else:
+            order_by = 'id'
+
+        user_search_form = UserSearchListForm(self.request.GET)
+
+        if user_search_form.is_valid():
+            data = user_search_form.cleaned_data
+            users = User.objects.all().order_by(order_by)
+
+            # first name
+            if data.get('first_name'):
+                users = users.filter(first_name__icontains=data.get('first_name'))
+
+            if data.get('last_name'):
+                users = users.filter(last_name__icontains=data.get('last_name'))
+
+            if data.get('username'):
+                users = users.filter(username__icontains=data.get('username'))
+
+            # TODO(vir): filter through multiple email addresses of a user
+            if data.get('email'):
+                users = users.filter(email__icontains=data.get('email'))
+        else:
+            users = User.objects.all().order_by(order_by)
+
+        return users.distinct()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user_count = self.get_queryset().count()
+        context['user_count'] = user_count
+
+        user_search_form = UserSearchListForm(self.request.GET)
+        if user_search_form.is_valid():
+            context['user_search_form'] = user_search_form
+            data = user_search_form.cleaned_data
+            filter_parameters = ''
+
+            for key, value in data.items():
+                if value:
+                    if isinstance(value, list):
+                        for ele in value:
+                            filter_parameters += '{}={}&'.format(key, ele)
+                    else:
+                        filter_parameters += '{}={}&'.format(key, value)
+            context['user_search_form'] = user_search_form  # ??
+        else:
+            filter_parameters = None
+            context['user_search_form'] = UserSearchListForm()
+
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            filter_parameters_with_order_by = filter_parameters + 'order_by=%s&direction=%s&' % (order_by, direction)
+        else:
+            filter_parameters_with_order_by = filter_parameters
+
+        if filter_parameters:
+            context['expand_accordion'] = 'show'
+
+        context['filter_parameters'] = filter_parameters
+        context['filter_parameters_with_order_by'] = filter_parameters_with_order_by
+
+        user_list = context.get('user_list')
+        paginator = Paginator(user_list, self.paginate_by)
+        page = self.request.GET.get('page')
+
+        try:
+            user_list = paginator.page(page)
+        except PageNotAnInteger:
+            user_list = paginator.page(1)
+        except EmptyPage:
+            user_list = paginator.page(paginator.num_pages)
+
+        return context
 
 
 class UserSearchResults(LoginRequiredMixin, UserPassesTestMixin, View):

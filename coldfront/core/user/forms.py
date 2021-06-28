@@ -16,6 +16,7 @@ from coldfront.core.user.models import UserProfile, EmailAddress
 
 from phonenumber_field.formfields import PhoneNumberField
 
+
 class UserSearchForm(forms.Form):
     CHOICES = [('username_only', 'Exact Username Only'),
                # ('all_fields', mark_safe('All Fields <a href="#" data-toggle="popover" data-trigger="focus" data-content="This option will be ignored if multiple usernames are specified."><i class="fas fa-info-circle"></i></a>')),
@@ -26,6 +27,18 @@ class UserSearchForm(forms.Form):
     search_by = forms.ChoiceField(choices=CHOICES, widget=forms.RadioSelect(), initial='username_only')
 
     search_by.widget.attrs.update({'rows': 4})
+
+
+class UserSearchListForm(forms.Form):
+    FIRST_NAME = 'First Name'
+    LAST_NAME = 'Last Name'
+    USERNAME = 'Cluster Username'
+    EMAIL = 'Email'
+
+    first_name = forms.CharField(label=FIRST_NAME, max_length=100, required=False)
+    last_name = forms.CharField(label=LAST_NAME, max_length=100, required=False)
+    username = forms.CharField(label=USERNAME, max_length=100, required=False)
+    email = forms.EmailField(label=EMAIL, max_length=100, required=False)
 
 
 class UserRegistrationForm(UserCreationForm):
