@@ -41,6 +41,9 @@
           <a href="?order_by=first_name&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
         </th>
         <th scope="col" class="text-nowrap">
+          Middle Name
+        </th>
+        <th scope="col" class="text-nowrap">
           Last Name
           <a href="?order_by=last_name&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
           <a href="?order_by=last_name&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
@@ -50,7 +53,7 @@
           <a href="?order_by=username&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
           <a href="?order_by=username&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
         </th>
-        <th scope="col" class="text-nowrap">Email</th>
+        <th scope="col" class="text-nowrap">Primary Email</th>
       </tr>
     </thead>
     <tbody>
@@ -58,6 +61,7 @@
       <tr>
         <td><a href="{% url 'user-profile' user.username %}">{{ user.id }}</a></td>
         <td>{{ user.first_name }}</td>
+        <td>{{ user.userprofile.middle_name }}</td>
         <td>{{ user.last_name }}</td>
         <td>{{ user.username }}</td>
         <td>{{ user.email }}</td>

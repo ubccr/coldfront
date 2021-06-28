@@ -31,11 +31,13 @@ class UserSearchForm(forms.Form):
 
 class UserSearchListForm(forms.Form):
     FIRST_NAME = 'First Name'
+    MIDDLE_NAME = 'Middle Name'
     LAST_NAME = 'Last Name'
     USERNAME = 'Cluster Username'
     EMAIL = 'Email'
 
     first_name = forms.CharField(label=FIRST_NAME, max_length=100, required=False)
+    middle_name = forms.CharField(label=MIDDLE_NAME, max_length=100, required=False)
     last_name = forms.CharField(label=LAST_NAME, max_length=100, required=False)
     username = forms.CharField(label=USERNAME, max_length=100, required=False)
     email = forms.EmailField(label=EMAIL, max_length=100, required=False)
