@@ -1,4 +1,4 @@
-PRODIMAGE     = registry.gitlab-int.rc.fas.harvard.edu/informatics/coldfront:latest
+PRODIMAGE     = coldfront:latest
 PRODBUILDARGS = --ssh default
 
 DRFIMAGE      = coldfront
@@ -22,7 +22,6 @@ drf:
 prod:
 	./set-version.sh
 	docker build -t $(PRODIMAGE) $(PRODBUILDARGS) .
-	docker push $(PRODIMAGE)
 up: drf
 	docker-compose -f $(DOCKERCOMPOSEFILE) $(DOCKERCOMPOSEARGS) up
 down:
