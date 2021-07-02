@@ -96,9 +96,36 @@ Cluster Account Review New and Pending Requests
               Activate
             </a>
           {% endif %}
-          <a href="{% url 'allocation-cluster-account-deny-request' cluster_account.pk %}" class="btn btn-danger mr-1">
-            Deny
-          </a>
+            <div class="modal fade" id="denial{{ cluster_account.pk }}Modal" tabindex="-1" role="dialog" aria-labelledby="denial{{ cluster_account.pk }}ModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <form action="{% url 'allocation-cluster-account-deny-request' cluster_account.pk %}" method="get" id="denial{{ cluster_account.pk }}Form">
+                    {% csrf_token %}
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Deny Request</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+
+                        <div class="modal-body">
+                            <label for="denial{{ cluster_account.pk }}Input">Are You Sure?</label>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button class="btn btn-danger mr-1" type="submit">
+                                Yes, deny this request.
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            </div>
+
+            <button class="btn btn-danger mr-1" data-toggle="modal" data-target="#denial{{ cluster_account.pk }}Modal">
+                Deny
+            </button>
         </td>
       </tr>
       {% endfor %}
