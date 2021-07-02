@@ -2,7 +2,7 @@ arrow==0.13.1
 bibtexparser==1.1.0
 blessed==1.15.0
 chardet==3.0.4
-Django==3.1.7
+Django==3.2.5
 django-crispy-forms==1.11.1
 django-durationwidget==1.0.5
 django-filter==2.3.0
