@@ -109,7 +109,11 @@ Cluster Account Review New and Pending Requests
                         </div>
 
                         <div class="modal-body">
-                            <label for="denial{{ cluster_account.pk }}Input">Are You Sure?</label>
+                            <label>Are You Sure?</label>
+
+                            <br><b>User:</b> {{ cluster_account.allocation_user.user.email }}
+                            <br><b>Project:</b> {{ cluster_account.allocation.project.name }}
+                            <br><b>Allocation:</b> {{ cluster_account.allocation.pk }}
                         </div>
 
                         <div class="modal-footer">
