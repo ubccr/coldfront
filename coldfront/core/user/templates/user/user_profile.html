@@ -66,6 +66,17 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
             <td>You do not have a cluster account.</td>
           {% endif %}
         </tr>
+        <tr>
+          <th scope="row">Cluster UID:</th>
+          {% if has_cluster_access %}
+            <td>
+              <p>{{viewed_user.userprofile.cluster_uid}}</p>
+              <p>This is your 5-digit Linux UID on the cluster.</p>
+            </td>
+          {% else %}
+            <td>You do not have a cluster account.</td>
+          {% endif %}
+        </tr>
 <!--        {% comment %}-->
 <!--        <tr>-->
 <!--          <th scope="row">PI Status:</th>-->
