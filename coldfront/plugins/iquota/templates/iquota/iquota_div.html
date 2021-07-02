@@ -1,0 +1,29 @@
+<div class="col">
+  <h3>CCR Storage Quotas</h3>
+  <hr>
+  <div id="iquota_inner">
+    <div id="iquota_inner_button">
+      <button id="quota-button" type="button" class="btn btn-primary center-block">Get Quota</button>
+    </div>
+  </div>
+</div>
+<script>
+$("#quota-button").click(function() {
+
+  $('#iquota_inner_button').html('<button id="quota-button" type="button" class="btn btn-primary center-block"><i class="fas fa-sync fa-spin fa-fw" aria-hidden="true"></i> Refreshing Quota <span class="sr-only">...</span></button>');
+  $.ajax({
+    url: "{% url 'get-isilon-quota' %}",
+    method: "POST",
+    data: {
+      csrfmiddlewaretoken: "{{ csrf_token }}",
+    },
+    success: function(data) {
+
+      $('#iquota_inner').html(data);
+    },
+    error: function(data) {
+      $('#iquota_inner').html('<div class="alert alert-warning"><i class="fas fa-info-circle" aria-hidden="true"></i> Error getting quota information.</div>');
+    },
+  });
+});
+</script>

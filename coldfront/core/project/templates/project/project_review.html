@@ -1,0 +1,53 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+{% load common_tags %}
+
+
+{% block title %}
+Review Project
+{% endblock %}
+
+
+{% block content %}
+<h2>Reviewing Project: {{project.title}}</h2>
+<hr>
+
+<div class="card-body">
+  <p class="text-justify">{% settings_value 'CENTER_NAME' %} requires faculty to review their project information annually in order to renew their group’s accounts. The information provided by researchers is compiled and used to help make the case to the University for continued investment in {% settings_value 'CENTER_NAME' %}. Up-to-date and accurate information is crucial to our success. <a href="mailto:{% settings_value 'EMAIL_PROJECT_REVIEW_CONTACT' %}">Questions? Contact us</a></p>
+
+  <p class="text-justify">Please update the following information:</p>
+
+  <ol>
+    <li><a href="{% url 'project-detail' project.pk %}"><i class="fas fa-external-link-alt" aria-hidden="true"></i> Verify</a> your project description is accurate</li>
+    <li><a href="{% url 'project-detail' project.pk %}#publications"><i class="fas fa-external-link-alt" aria-hidden="true"></i> Add</a> Publications</li>
+    <li><a href="{% url 'project-detail' project.pk %}#grants"><i class="fas fa-external-link-alt" aria-hidden="true"></i> Add</a> Grants</li>
+    <li><a href="{% url 'project-detail' project.pk %}#users"><i class="fas fa-external-link-alt" aria-hidden="true"></i> Verify</a> the user accounts in your group and remove any that should no longer have access to {% settings_value 'CENTER_NAME' %} resources</li>
+  </ol>
+
+  <div class="table-responsive">
+    <table class="table table-bordered table-sm">
+      <tr>
+        <th scope="row" class="text-nowrap">Grants Last Updated:</th>
+        <td>{{project.latest_grant.modified|date:"M. d, Y"|default:"No grants"}}</td>
+      </tr>
+      <tr>
+        <th scope="row" class="text-nowrap">Publications Last Updated:</th>
+        <td>{{project.latest_publication.created|date:"M. d, Y"|default:"No publications"}}</td>
+      </tr>
+      <tr>
+        <th scope="row" class="text-nowrap">Users in project:</th>
+        <td>{{project_users}}</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+
+<form method="post">
+  {% csrf_token %}
+  {{project_review_form|crispy}}
+  <input class="btn btn-primary" type="submit" value="Submit" />
+  <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button">Back to Project</a>
+</form>
+{% endblock %}

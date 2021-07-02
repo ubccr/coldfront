@@ -1,0 +1,74 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Project User Detail
+{% endblock %}
+
+
+{% block content %}
+<h2>Project User Detail</h2>
+
+<h3>Project: {{project.title}}</h3>
+<hr>
+
+<form action="{% url 'project-user-detail' project_obj.pk project_user_obj.pk %}" method="post">
+  {% csrf_token %}
+  <div class="card">
+    <div class="card-header"><i class="fas fa-user" aria-hidden="true"></i> User Detail</div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table">
+          <tr>
+            <th scope="row">Username:</th>
+            <td>{{project_user_obj.user.username}}</td>
+          </tr>
+          <tr>
+            <th scope="row">First Name:</th>
+            <td>{{project_user_obj.user.first_name}}</td>
+          </tr>
+          <tr>
+            <th scope="row">Last Name:</th>
+            <td>{{project_user_obj.user.last_name}}</td>
+          </tr>
+          <tr>
+            <th scope="row">Email:</th>
+            <td>{{project_user_obj.user.email}}</td>
+          </tr>
+          <tr>
+            <th scope="row">Status:</th>
+            <td>{{project_user_obj.status.name}}</td>
+          </tr>
+          {% if project_user_obj.user == project_user_obj.project.pi %}
+            <tr>
+              <th scope="row">Role:</th>
+              <td>{{project_user_obj.role}}</td>
+            </tr>
+            <tr>
+              <th scope="row">Notifications Enabled:</th>
+              <td>{{project_user_obj.enable_notifications|yesno:"Yes,No"}}</td>
+            </tr>
+          {% else %}
+            <tr>
+              <th scope="row">Role:</th>
+              <td>{{project_user_update_form.role}}</td>
+            </tr>
+            <tr>
+              <th scope="row">Enable Notifications:</th>
+              <td>{{project_user_update_form.enable_notifications}}</td>
+            </tr>
+          {% endif %}
+        </table>
+      </div>
+    </div> 
+    <div class="card-footer">
+      {% if project_user_obj.user != project_user_obj.project.pi %}
+        <button type="submit" class="btn btn-primary">Update</button>
+      {% endif %}
+      <a class="btn btn-secondary" href="{% url 'project-detail' project_obj.pk %}" role="button">Back to Project</a>
+    </div>
+  </div>
+</form>
+{% endblock%}

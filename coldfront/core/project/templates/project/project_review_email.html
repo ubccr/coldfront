@@ -1,0 +1,58 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Email User
+{% endblock %}
+
+
+{% block content %}
+<h2>Email</h2>
+<hr>
+
+<div class="card mb-3">
+  <div class="card-header">
+    <h3><i class="fas fa-list" aria-hidden="true"></i> Project Review Information</h3>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table">
+        <tr>
+          <th scope="row" class="text-nowrap">Project:</th>
+          <td><a href="{% url 'project-detail' project_review.project.pk %}">{{ project_review.project }}</a></td>
+        </tr>
+        <tr>
+          <th scope="row" class="text-nowrap">PI:</th>
+          <td>{{project_review.project.pi.first_name}} {{project_review.project.pi.last_name}} ({{project_review.project.pi.username}})</td>
+        </tr>
+        <tr>
+          <th scope="row" class="text-nowrap">Reason for not Updating Project</th>
+          <td>{{ project_review.reason_for_not_updating_project}}</td>
+        </tr>
+        <tr>
+          <th scope="row" class="text-nowrap">Date Review Submitted:</th>
+          <td>{{ project_review.created|date:"M-d-Y" }}</td>
+        </tr>
+        <tr>
+          <th scope="row" class="text-nowrap">Grants Last Updated:</th>
+          <td>{{project_review.project.latest_grant.modified|date:"M-d-Y"|default:"No grants"}}</td>
+        </tr>
+        <tr>
+          <th scope="row" class="text-nowrap">Publications Last Updated:</th>
+          <td>{{project_review.project.latest_publication.created|date:"M-d-Y"|default:"No publications"}}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+<form method="post">
+    {% csrf_token %}
+    {{form|crispy}}
+    <input class="btn btn-primary" type="submit" value="Email" />
+    <a class="btn btn-secondary" href="{% url 'project-review-list' %}" role="button">Cancel</a>
+</form>
+{% endblock %}

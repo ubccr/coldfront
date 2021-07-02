@@ -1,0 +1,105 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Export Publications from Project
+{% endblock %}
+
+
+{% block content %}
+<h2>Export publications from project: {{project.title}}</h2>
+<hr>
+
+{% if formset %}
+  <div class="card border-light">
+    <div class="card-body">
+      <form id="export_checkbox" action="{% url 'publication-export-publications' project.pk %}" method="post">
+        {% csrf_token %}
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th>
+                  <input type="checkbox" class="check" id="selectAll">
+                </th>
+                <th scope="col">Title</th>
+                <th scope="col">Year</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for form in formset %}
+                <tr>
+                  <td>{{ form.selected }}</td>
+                  <td>{{ form.title.value }}</td>
+                  <td>{{ form.year.value }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {{ formset.management_form }}
+        <div>
+          <button type="submit" class="btn btn-success" disabled="disabled" id="submitbtn"><i class="fas fa-file-export" aria-hidden="true"></i> Export Selected Publications from Project</button>
+          <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a>
+          <br>
+        </div>
+      </form>
+    </div>
+  </div>
+{% else %}
+  <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to project</a>
+  <div class="alert alert-info">
+    No publications to delete!
+  </div>
+{% endif %}
+
+<script>
+  $(document).ready(function () {
+    $("input[name^='publicationform-']").click(function (ele) {
+      var id = $(this).attr('id');
+      if ( id != "selectAll") {
+        $("#selectAll").prop('checked', false);
+      }
+    });
+
+    $('#selectAll').click(function(e){
+      var table = $(e.target).closest('table');
+
+      $('td input:checkbox',table).prop('checked',this.checked);
+
+      checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('click', () => {
+          anyChecked()
+            ? submitbtn.removeAttribute('disabled')
+            : submitbtn.setAttribute('disabled','')
+        })
+      })
+
+      anyChecked()
+            ? submitbtn.removeAttribute('disabled')
+            : submitbtn.setAttribute('disabled','')
+    });
+
+    $('#selectAll').trigger('click');
+  });
+
+  const checkboxes = [...document.querySelectorAll('input[type=checkbox]')]
+
+  function anyChecked() {
+    return checkboxes.some(x=>x.checked)
+  }
+  checkboxes.forEach(checkbox => {
+    checkbox.addEventListener('click', () => {
+      anyChecked()
+        ? submitbtn.removeAttribute('disabled')
+        : submitbtn.setAttribute('disabled','')
+    })
+  })
+
+  anyChecked()
+        ? submitbtn.removeAttribute('disabled')
+        : submitbtn.setAttribute('disabled','')
+</script>
+{% endblock %}

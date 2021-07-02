@@ -1,0 +1,75 @@
+{% load static %}
+<div class="row">
+  <div class="col">
+    <div id="chartAllocations" style="min-height: 270px;"></div>
+    <div id="chartResources" style="min-height: 270px;"></div>
+  </div>
+  <div class="col">
+    <div class="table-responsive">
+      <table id="resource-table" class="table table-bordered table-condensed table-hover">
+        <thead>
+          <tr>
+            <th scope="col">Resource Name (Type)</th>
+            <th scope="col">Active Allocation Count</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for resource, resource_allocation_count in allocations_count_by_resource.items %}
+            <tr>
+              <td>{{resource.name}} <strong>({{resource.resource_type.name}})</strong></td>
+              <td>{{resource_allocation_count}}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<!-- End Allocation Charts -->
+
+<script>
+  $(document).ready(function () {
+    drawAllocations();
+    drawResources();
+    $('#resource-table').DataTable({
+      "iDisplayLength": 10,
+      "bSortClasses": false,
+      "order": [
+        [1, "desc"]
+      ]
+    });
+  });
+
+  function drawAllocations() {
+    var chart = c3.generate({
+      bindto: '#chartAllocations',
+      donut: {
+        title: "Allocations"
+      },
+      data: allocations_chart_data,
+      legend: {
+        item: {
+          onclick: function (id) { }
+        }
+      }
+    });
+  }
+
+  function drawResources() {
+    var chart = c3.generate({
+      bindto: '#chartResources',
+      data: resources_chart_data,
+      donut: {
+        title: "Active by Type"
+      },
+      legend: {
+        item: {
+          onclick: function (id) { }
+        }
+      }
+    });
+  }
+
+  var allocations_chart_data = {{ allocations_chart_data | safe }}
+  var resources_chart_data = {{ resources_chart_data | safe }}
+</script>

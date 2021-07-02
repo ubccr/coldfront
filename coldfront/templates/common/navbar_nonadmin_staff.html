@@ -1,0 +1,27 @@
+{% comment %}
+  intentionally keeping "navbar-admin" (rather than renaming to navbar-staff),
+  since existing templates use javascript to target it by ID
+{% endcomment %}
+<li id="navbar-admin" class="nav-item dropdown">
+  <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">Staff</a>
+  <div class="dropdown-menu">
+    {# all staff can perform a user search #}
+    <a id="navbar-user-search" class="dropdown-item" href="{% url 'user-search-home' %}">User Search</a>
+    {% if perms.project.can_view_all_projects %}
+      <a class="dropdown-item" href="{% url 'project-list' %}?show_all_projects=on">All Projects</a>
+    {% endif %}
+    {% if perms.allocation.can_view_all_allocations %}
+      <a class="dropdown-item" href="{% url 'allocation-list' %}?show_all_allocations=on">All Allocations</a>
+    {% endif %}
+    {% if perms.project.can_review_pending_project_reviews %}
+      <a id="navbar-project-reviews" class="dropdown-item" href="{% url 'project-review-list' %}">Project Reviews</a>
+    {% endif %}
+    {% if perms.allocation.can_review_allocation_requests %}
+      <a id="navbar-allocation-requests" class="dropdown-item" href="{% url 'allocation-request-list' %}">
+        Allocation Requests</a>
+    {% endif %}
+    {% if perms.grant.can_view_all_grants %}
+      <a id="navbar-grant-report" class="dropdown-item" href="{% url 'grant-report' %}">Grant Report</a>
+    {% endif %}
+  </div>
+</li>

@@ -1,0 +1,24 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Update Project
+{% endblock %}
+
+
+{% block content %}
+<form method="post">
+  {% csrf_token %}
+  {{ form|crispy }}
+  <input class="btn btn-primary" type="submit" value="Save" />
+  <a class="btn btn-secondary" href="{% url 'project-detail' object.pk %}" role="button">Cancel</a>
+</form>
+
+<script>
+  $(document).ready(function() {
+    $('#id_field_of_science').select2();
+  });
+</script>
+{% endblock %}

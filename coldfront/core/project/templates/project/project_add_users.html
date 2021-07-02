@@ -1,0 +1,105 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Add Users to Project
+{% endblock %}
+
+
+{% block content %}
+<h2>Add users to project: {{project.title}}</h2>
+<hr>
+
+<div class="row">
+  <div class="col">
+    <form method="post" action="/search-ldap" id="post-form">
+      {% csrf_token %}
+      {{ user_search_form|crispy }}
+      <button id="search-button" type="submit" class="btn btn-success btn-block"><i class="fas fa-search" aria-hidden="true"></i> Search</button>
+    </form>
+  </div>
+</div>
+
+<br>
+<div class="row">
+  <div class="col" id="search_results">
+      <div class="card border-light">
+        <div class="card-body">
+          <div id="search_results_inner"></div>
+        </div>
+      </div>
+  </div>
+</div>
+<div class="row">
+  <div class="col" id="selected_users">
+      <div class="card border-light">
+        <div class="card-body">
+        </div>
+      </div>
+  </div>
+</div>
+{% endblock %}
+
+
+{% block javascript %}
+  {{ block.super }}
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-ldap-home").addClass("active");
+
+  $('#post-form').on('submit', function(event){
+    event.preventDefault();
+    $('#search_results').show();
+    $("#search_results_inner").html('<div class="alert alert-info text-center"><i class="fas fa-sync fa-spin fa-fw" aria-hidden="true"></i> Searching</div>')
+    create_post();
+  });
+
+  function create_post() {
+    q = $('#id_q').val().trim();
+    search_by = $("#post-form input[type='radio']:checked").val();
+    if (q.indexOf(' ') >= 0) {
+      $("#id_id_search_by_0_1").prop("checked", true);
+    }
+    if (q.indexOf('\n') >= 0) {
+      $("#id_id_search_by_0_1").prop("checked", true);
+    }
+
+    var pk = "{{ pk }}"
+    $.ajax({
+        url : "/project/" + pk + "/add-users-search-results/", // the endpoint
+        type : "POST", // http method
+        data : { 
+          q : q, 
+          search_by : search_by, 
+          csrfmiddlewaretoken: "{{ csrf_token }}"
+        }, // data sent with the post request
+        // handle a successful response
+        success : function(data) {
+            $('#post-text').val(''); // remove the value from the input
+            $('#search_results').show();
+            $('#search_results_inner').html(data);
+
+        },
+
+        // handle a non-successful response
+        error : function(xhr,errmsg,err) {
+            if(xhr.status == 403 || xhr.status == 401) {
+                $('#search_results_inner').html("<div class='alert alert-danger'>Your session expired. Please login again. <a href='#' class='close'>&times;</a></div>");
+            } else {
+                $('#search_results_inner').html("<div class='alert alert-danger'>Oops! We have encountered an error: "+errmsg+
+                    " <a href='#' class='close'>&times;</a></div>"); // add the error to the dom
+            }
+            console.log(xhr.status + ": " + xhr.responseText); // provide a bit more info about the error to the console
+        }
+    });
+  };
+
+  $(document).ready(function(){
+    $('#search_results').hide();
+    $('#selected_users').hide();
+    $('[data-toggle="popover"]').popover(); 
+  });
+</script>
+{% endblock %}

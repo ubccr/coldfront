@@ -1,0 +1,39 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Archive Project
+{% endblock %}
+
+
+{% block content %}
+<h2>Archiving Project</h2>
+
+<!-- Start Project Heading -->
+<div class="card mb-3">
+  <div class="card-body">
+    <h3 class="card-title">
+      Principal Investigator:
+      {{ project.pi.first_name }}
+      {{ project.pi.last_name }}
+      ({{ project.pi.username }})
+      <a href="mailto:{{ project.pi.email }}"><i class="far fa-envelope" aria-hidden="true"></i><span class="sr-only">Email</span></a>
+    </h3>
+    <p class="card-text text-justify"><strong>Description: </strong>{{ project.description }}</p>
+    <p class="card-text text-justify"><strong>Field of Science: </strong>{{ project.field_of_science }}</p>
+    <p class="card-text text-justify"><strong>Status: </strong>{{ project.status}}</p>
+  </div>
+</div>
+
+<div class="alert alert-danger" role="alert">
+  <form method="post">{% csrf_token %}
+    <p>Are you sure you want to archive this project? This will expire all your
+    allocations on this project, which will disable your group's access to the
+    resources in those allocations.</p>
+    <input class="btn btn-danger" type="submit" value="Yes" />
+    <a class="btn btn-secondary" href="{% url 'project-detail' project.id %}" role="button">Cancel</a>
+  </form>
+</div>
+{% endblock %}

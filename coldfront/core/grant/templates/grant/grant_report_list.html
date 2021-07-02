@@ -1,0 +1,77 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+{% load humanize %}
+
+
+{% block title %}
+Grants Report
+{% endblock %}
+
+
+{% block content %}
+<!-- Start Project Grants -->
+<div class="card">
+  <div class="card-header">
+    <h4 class="d-inline"><i class="fas fa-trophy" aria-hidden="true"></i> Grants</h4>
+    <a class="btn btn-success float-right" href="{% url 'grant-download' %}" role="button"><i class="fas fa-download" aria-hidden="true"></i> Export to CSV</a>
+  </div>
+  <div class="card-body">
+    {% if grant_list %}
+      <div class="table-responsive">
+        <table id="grants-table" class="table table-hover table-sm">
+          <thead>
+            <tr>
+              <th scope="col">Grant Title</th>
+              <th scope="col">Project PI</th>
+              <th scope="col">Faculty Role</th>
+              <th scope="col">Grant PI</th>
+              <th scope="col">Total Amount Awarded</th>
+              <th scope="col">Funding Agency</th>
+              <th scope="col">Grant Number</th>
+              <th scope="col">Start Date</th>
+              <th scope="col">End Date</th>
+              <th scope="col">Percent Credit</th>
+              <th scope="col">Direct Funding</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for grant in grant_list %}
+              <tr>
+                <td style="min-width: 400px">{{ grant.title }}</td>
+                <td class="text-nowrap"><a href="{% url 'project-detail' grant.project.pk %}">{{ grant.project.pi.first_name }} {{ grant.project.pi.last_name }}</a></td>
+                <td class="text-nowrap">{{ grant.role }}</td>
+                <td class="text-nowrap">{{ grant.grant_pi }}</td>
+                <td class="text-nowrap">{{ grant.total_amount_awarded|intcomma }}</td>
+                <td class="text-nowrap">{{ grant.funding_agency }}</td>
+                <td class="text-nowrap">{{ grant.grant_number }}</td>
+                <td class="text-nowrap">{{ grant.grant_start|date:"M. d, Y" }}</td>
+                <td class="text-nowrap">{{ grant.grant_end|date:"M. d, Y" }}</td>
+                <td>{{ grant.percent_credit }}</td>
+                <td>{{ grant.direct_funding|intcomma }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> There are no grants to display.</div>
+    {% endif %}
+  </div>
+</div>
+<!-- End Project Grants -->
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active")
+  $("#navbar-admin").addClass("active")
+  $("#navbar-director").addClass("active")
+  $("#navbar-grant-report").addClass("active")
+  $(document).ready(function() {
+    $('#grants-table').DataTable({
+      "iDisplayLength": 50,
+      "bSortClasses": false,
+      "order": [[ 4, "desc" ]]
+    });
+  });
+</script>
+{% endblock %}

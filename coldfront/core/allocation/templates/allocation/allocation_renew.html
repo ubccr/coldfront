@@ -1,0 +1,114 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Renew Allocation
+{% endblock %}
+
+
+{% block content %}
+<h2>Renew allocation to {{allocation.get_parent_resource }} for project: {{allocation.project.title}}</h2>
+<hr>
+
+<div class="card border-light">
+  <div class="card-body">
+    <form action="{% url 'allocation-renew' allocation.pk %}" method="post">
+      {% csrf_token %}
+
+      {{ formset.management_form }}
+
+      {% if formset %}
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Username</th>
+                <th scope="col">First Name</th>
+                <th scope="col">Last Name</th>
+                <th scope="col">Email</th>
+                <th scope="col">User Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for form in formset %}
+                <tr>
+                  <td>{{ forloop.counter }}</td>
+                  <td>{{ form.username.value }}</td>
+                  <td>{{ form.first_name.value }}</td>
+                  <td>{{ form.last_name.value }}</td>
+                  <td>{{ form.email.value }}</td>
+                  <td>{{ form.user_status }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th scope="col">Username</th>
+                <th scope="col">First Name</th>
+                <th scope="col">Last Name</th>
+                <th scope="col">Email</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{{ allocation.project.pi.username }}</td>
+                <td>{{ allocation.project.pi.first_name }}</td>
+                <td>{{ allocation.project.pi.last_name }}</td>
+                <td>{{ allocation.project.pi.email }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>There are no additional users on this allocation. To add new users, click submit to complete the renewal and and
+        return to the project page.</p>
+        <hr>
+      {% endif %}
+
+      <div id="eula-div" style="display: none;">
+        <textarea style="display:none;min-width:100%" id="eula"  rows="15">
+        </textarea>
+        <br>
+        <p class="font-weight-bold">By clicking submit you agree to the Terms and Conditions.</p>
+      </div>
+      <div class="mb-3">
+        <button type="submit" class="btn btn-primary">Submit</button>
+        <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation.pk %}" role="button">
+          <i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Allocation
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  var resource_eula = {{ resource_eula | safe }};
+
+  $(document).ready(function () {
+    if (resource_eula['eula']) {
+      $('#eula').text(resource_eula['eula'])
+      $('#eula-div').show();
+      $('#eula').show();
+    }
+
+    $("#selectAll").click(function () {
+      $("input[name^='userform-']").prop('checked', $(this).prop('checked'));
+    });
+
+    $("input[name^='userform-']").click(function (ele) {
+      var id = $(this).attr('id');
+      if (id != "selectAll") {
+        $("#selectAll").prop('checked', false);
+      }
+    });
+  });
+</script>
+{% endblock %}

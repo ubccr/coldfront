@@ -1,0 +1,11 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /su/ 
+Disallow: /user/ 
+Disallow: /project/ 
+Disallow: /allocation/ 
+Disallow: /grant/ 
+Disallow: /publication/ 
+Disallow: /mokey_oidc/ 
+Disallow: /allocation-by-fos
+Disallow: /allocation-summary

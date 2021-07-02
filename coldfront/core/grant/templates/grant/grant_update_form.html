@@ -1,0 +1,23 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Update Grant
+{% endblock %}
+
+
+{% block content %}
+<form method="post">
+  {% csrf_token %}
+  {{ form|crispy }}
+  <input class="btn btn-primary" type="submit" value="Save" />
+  <a class="btn btn-secondary" href="{% url 'project-detail' object.project.id %}" role="button">Cancel</a>
+</form>
+
+<script>
+ $('#id_grant_start').datepicker();
+ $('#id_grant_end').datepicker();
+</script>
+{% endblock %}

@@ -1,0 +1,132 @@
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Project List
+{% endblock %}
+
+
+{% block content %}
+<div class="card mb-3 bg-light">
+  <div class="card-body">
+    {% if user.userprofile.is_pi or user.is_superuser %}
+    <a class="btn btn-primary" href="{% url 'project-create' %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add a project</a> {% endif %}
+    <div class="float-right">
+      <a class="btn btn-primary" href="{% url 'project-archived-list' %}" role="button"><i class="fas fa-archive" aria-hidden="true"></i> View archived projects</a>
+    </div>
+  </div>
+</div>
+
+<h2>Projects</h2>
+<hr>
+{% if expand_accordion == "show" or project_list or user.is_superuser%}
+  <div class="mb-3" id="accordion">
+    <div class="card">
+      <div class="card-header">
+        <a id="expand_button" role="button" class="card-link " data-toggle="collapse" href="#collapseOne"> 
+          <i class="fas fa-filter" aria-hidden="true"></i> Filter
+          <i id="plus_minus" class="fas {{expand_accordion|get_icon}} float-right"></i>
+        </a>
+      </div>
+      <div id="collapseOne" class="collapse {{expand_accordion}}" data-parent="#accordion">
+        <div class="card-body">
+          <form id="filter_form" method="GET" action="{% url 'project-list' %}" autocomplete="off">
+            {{ project_search_form|crispy }}
+            <input type="submit" class="btn btn-primary" value="Search">
+            <button id="form_reset_button" type="button" class="btn btn-secondary">Reset</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  <hr>
+{% endif %}
+{% if project_list %}
+  <strong>Projects: {{projects_count}}</strong>
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th scope="col" class="text-nowrap">
+            ID
+            <a href="?order_by=id&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort ID asc</span></a>
+            <a href="?order_by=id&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort ID desc</span></a>
+          </th>
+          <th scope="col" class="text-nowrap">
+            PI
+            <a href="?order_by=pi__username&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort PI asc</span></a>
+            <a href="?order_by=pi__username&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort PI desc</span></a>
+          </th>
+          <th scope="col">Title</th>
+          <th scope="col" class="text-nowrap">
+            Field of Science
+            <a href="?order_by=field_of_science&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Field of Science asc</span></a>
+            <a href="?order_by=field_of_science&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Field of Science desc</span></a>
+          </th>
+          <th scope="col" class="text-nowrap">
+            Status
+            <a href="?order_by=status&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Status asc</span></a>
+            <a href="?order_by=status&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Status desc</span></a>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for project in project_list %}
+          <tr>
+            <td><a href="/project/{{project.id}}/">{{ project.id }}</a></td>
+            <td>{{ project.pi.username }}</td>
+            <td style="text-align: justify; text-justify: inter-word;">{{ project.title }}</td>
+            <td>{{ project.field_of_science.description }}</td>
+            <td>{{ project.status.name }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if is_paginated %} Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+      <ul class="pagination float-right mr-3">
+        {% if page_obj.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{filter_parameters_with_order_by}}">Previous</a></li>
+        {% else %}
+          <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{filter_parameters_with_order_by}}">Next</a></li>
+        {% else %}
+          <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
+        {% endif %}
+      </ul>
+    {% endif %}
+  </div>
+{% elif expand_accordion == "show"%}
+  <div class="alert alert-info">
+    No search results!
+  </div>
+{% else %}
+  <div class="alert alert-info">
+    No projects to display!
+  </div>
+{% endif %}
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-project-menu").addClass("active");
+  $("#navbar-project").addClass("active");
+
+  $(document).on('click', '#form_reset_button', function() {
+    resetForm($('#filter_form'));
+  });
+
+  function resetForm($form) {
+    $form.find('input:text, textarea').val('');
+  };
+
+  $("#expand_button").click(function() {
+    $('#collapseOne').collapse();
+    icon = $("#plus_minus");
+    icon.toggleClass("fa-plus fa-minus");
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% include 'common/navbar_brand.html' %}
+{% load common_tags %}
+
+<nav class="navbar navbar-expand-md navbar-dark bg-primary">
+  <div class="container">
+    <a class="navbar-brand d-block d-sm-none text-primary" href="#">ColdFront</a>
+
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-main">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="navbar-collapse collapse" id="navbar-main">
+      <ul class="navbar-nav">
+        <li id="navbar-home" class="nav-item active">
+          <a class="nav-link" href="/">Home</a>
+        </li>
+        <li id="navbar-center-summary" class="nav-item">
+          <a class="nav-link" href="{% url 'center-summary' %}">Center Summary</a>
+        </li>
+        <li id="navbar-project-menu" class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">Project</a>
+          <div class="dropdown-menu">
+            <a id="navbar-project" class="dropdown-item" href="{% url 'project-list' %}">Projects</a>
+            <a id="navbar-allocation" class="dropdown-item" href="{% url 'allocation-list' %}">Allocations</a>
+            {% if settings.ALLOCATION_ACCOUNT_ENABLED  %}
+              <a class="dropdown-item" href="{% url 'allocation-account-list' %}">Allocation Accounts</a>
+            {% endif %}
+            {% if request.user.userprofile.is_pi  %}
+              <a id="navbar-user-allocation" class="dropdown-item" href="{% url 'user-list-allocations' %}">User Allocations</a>
+            {% endif %}
+          </div>
+        </li>
+        {% if request.user.is_superuser %}
+          {% include 'common/navbar_admin.html' %}
+        {% elif request.user.is_staff %}
+          {% include 'common/navbar_nonadmin_staff.html' %}
+        {% elif perms.project.can_review_pending_project_reviews or perms.grant.can_view_all_grants %}
+          {% include 'common/navbar_director.html' %}
+        {% endif %}
+        {% if request.user.is_superuser or perms.allocation.can_manage_invoice %}
+          {% include 'common/navbar_invoice.html' %}
+        {% endif %}
+        <li id="navbar-help" class="nav-item">
+          <a class="nav-link" href="{% settings_value 'CENTER_HELP_URL' %}">Help</a>
+        </li>
+      </ul>
+
+      <ul class="navbar-nav ml-auto">
+        {% include 'common/navbar_login.html' %}
+      </ul>
+    </div>
+  </div>
+</nav>

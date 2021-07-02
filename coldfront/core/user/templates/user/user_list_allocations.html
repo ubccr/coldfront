@@ -1,0 +1,63 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+
+
+{% block content %}
+{% if user_dict %}
+  <div class="card border-light">
+    <div class="card-body">
+        <div class="table-responsive">
+          <table id="user-table" class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Username</th>
+                <th scope="col">First Name</th>
+                <th scope="col">Last Name</th>
+                <th scope="col">Allocations</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for user, allocations in user_dict.items %}
+                <tr>
+                  <td>{{ forloop.counter }}</td>
+                  <td>{{ user.username }}</td>
+                  <td>{{ user.first_name }}</td>
+                  <td>{{ user.first_name }}</td>
+                  <td class="text-nowrap">
+                    {% for allocation in allocations %}
+                      <a target="_blank" href="{% url 'allocation-detail' allocation.pk %}">{{ allocation.get_parent_resource.name }} ({{ allocation.get_parent_resource.resource_type.name }})</a>  {% if 'slurm' in allocation.get_information %} -- {{allocation.get_information}} {% else %} <br> {% endif %}
+                    {% endfor %} 
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+    </div>
+  </div>
+  <script>
+    $(document).ready(function(){
+      $('#user-table').DataTable({
+        "iDisplayLength": 25,
+        "bSortClasses": false,
+        "columnDefs": [ {
+        "targets": 4,
+        "orderable": false
+      } ]
+      });
+    });
+  </script>
+{% else %}
+  <div class="alert alert-secondary">
+    You are not a PI on any project with an allocation!
+  </div>
+{% endif %}
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-project-menu").addClass("active");
+  $("#navbar-user-allocation").addClass("active");
+</script>
+{% endblock %}
+

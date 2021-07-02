@@ -1,0 +1,62 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Delete Research Outputs
+{% endblock %}
+
+
+{% block content %}
+<h2>Delete research outputs from project: {{project.title}}</h2>
+<hr>
+{% with object_list as research_outputs %}
+  {% if research_outputs %}
+    <div class="card border-light">
+      <div class="card-body">
+        <form action="{% url 'research-output-delete-research-outputs' project.pk %}" method="post">
+          {% csrf_token %}
+          <div class="table-responsive">
+            <table class="table table-sm table-hover">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th scope="col">Research Output</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for research_output in research_outputs %}
+                  <tr>
+                    <td>
+                      <input type="checkbox" name="{{ research_output.pk }}">
+                    </td>
+                    <td title="Entered by {{ research_output.created_by }} on {{ research_output.created|date:"M. d, Y"}}">
+                      {% if research_output.title %}
+                        <strong>{{ research_output.title }}</strong>
+                      {% endif %}
+                      <div style="max-height: 120px; overflow: auto;">
+                        {{ research_output.description | linebreaks }}
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <button type="submit" class="btn btn-danger"><i class="fas fa-minus" aria-hidden="true"></i> Delete Selected Research Outputs from Project</button>
+            <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a>
+            <br>
+          </div>
+        </form>
+      </div>
+    </div>
+  {% else %}
+    <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to project</a>
+    <div class="alert alert-info">
+      No research outputs to delete!
+    </div>
+  {% endif %}
+{% endwith %}
+{% endblock %}

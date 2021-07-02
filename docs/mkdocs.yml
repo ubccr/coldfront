@@ -1,0 +1,41 @@
+site_name: ColdFront
+docs_dir: 'pages'
+site_description: 'HPC Resource Allocation Management System'
+site_url: 'https://coldfront.readthedocs.io'
+copyright: 'Copyright &copy; 2021 Center for Computational Research, University at Buffalo'
+repo_name: 'ubccr/coldfront'
+repo_url: 'https://github.com/ubccr/coldfront'
+edit_uri: ''
+
+theme:
+  name: 'material'
+  logo: 'images/logo.png'
+  favicon: 'images/favicon.png'
+  palette:
+        primary: 'blue'
+
+  features:
+    - toc.integrate
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.indexes
+
+plugins: 
+  - search
+  - awesome-pages
+
+markdown_extensions:
+  - footnotes
+  - admonition
+  - codehilite:
+      guess_lang: false
+  - pymdownx.arithmatex
+  - pymdownx.caret
+  - pymdownx.critic
+  - pymdownx.details
+  - pymdownx.inlinehilite
+  - pymdownx.magiclink
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences
+  - pymdownx.tilde

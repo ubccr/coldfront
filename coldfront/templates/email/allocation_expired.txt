@@ -1,0 +1,15 @@
+Dear {{center_name}} user,
+
+Your allocation for access to {{ allocation_type }} has expired. Any accounts under this allocation are now unable to
+access this resource. If you wish to continue using it, the group owner responsible for this project must create a new
+allocation request. {{project_url}}
+
+The group owner responsible for this project is required to renew it on a yearly basis. If you have not done so in the
+last year, you will be required to before requesting a new allocation.
+For more information about the yearly renewal, visit our knowledge base: {{ project_renewal_help_url }}.
+
+If you are a student or collaborator under this project, you are receiving this notice as a courtesy. If you would like
+to opt out of future notifications, instructions can be found here: {{ opt_out_instruction_url }}
+
+Thank you,
+{{ signature }}

@@ -1,0 +1,100 @@
+{% load crispy_forms_tags %}
+
+<form action="{% url 'project-add-users' pk %}" method="post">
+  {% csrf_token %}
+  <div class="mb-3">
+    {% if number_of_usernames_found %}
+      <strong>Found {{number_of_usernames_found}} of
+      {{number_of_usernames_searched}} usernames searched.</strong>
+    {% elif matches %}
+      <strong>Found {{matches|length}} match{{matches|length|pluralize}}.</strong>
+    {% endif %}
+    <br>
+    {% if usernames_not_found %}
+      Username{{usernames_not_found|length|pluralize}} missing from database
+      {{usernames_not_found|length|pluralize:"is, are"}}: {{ usernames_not_found|join:", " }}.
+    {% endif %}
+    <br>
+    {% if users_already_in_project %} The following
+      user{{users_already_in_project|length|pluralize}}
+      {{users_already_in_project|length|pluralize:"is, are"}} already in project:
+      {{users_already_in_project|join:", "}}
+    {% endif %}
+  </div>
+
+  {% if matches %}
+    <div class="card bg-light mb-3 {{div_allocation_class}}">
+      <div class="card-header">Available Allocations</div>
+      <div class="card-body">
+        {{allocation_form|crispy}}
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-sm table-hover">
+        <thead>
+          <tr>
+            <th><input type="checkbox" class="check" id="selectAll"></th>
+            <th scope="col">#</th>
+            <th scope="col">Username</th>
+            <th scope="col">First Name</th>
+            <th scope="col">Last Name</th>
+            <th scope="col">Email</th>
+            <th scope="col">Role</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for form in formset %}
+            <tr>
+              <td>{{ form.selected }}</td>
+              <td>{{ forloop.counter }}</td>
+              <td>{{ form.username.value }}</td>
+              <td>{{ form.first_name.value }}</td>
+              <td>{{ form.last_name.value }}</td>
+              <td>{{ form.email.value }}</td>
+              <td>{{ form.role }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {{ formset.management_form }}
+
+    <input id="q" type="hidden" name="q" value="{{user_search_string}}">
+    <input id="search_by" type="hidden" name="search_by" value="{{search_by}}">
+    <div class="mb-3">
+      {% if matches %}
+        <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Selected Users to Project</button>
+      {% endif %}
+      <a class="btn btn-secondary" href="{% url 'project-detail' pk %}" role="button">Back to Project</a><br>
+    </div>
+  {% else %}
+    <div class="alert alert-info text-center">
+      No results!
+    </div>
+  {% endif %}
+</form>
+
+<script>
+  $("#selectAll").click(function () {
+    $("input[name^='userform-']").prop('checked', $(this).prop('checked'));
+  });
+
+  $("input[name^='userform-']").click(function (ele) {
+    var id = $(this).attr('id');
+    if ( id != "selectAll") {
+      $("#selectAll").prop('checked', false);
+    }
+  });
+
+  $("#id_allocationform-allocation_1").click(function () {
+    $("input[name^='allocationform-']").prop('checked', $(this).prop('checked'));
+  });
+
+  $("input[name^='allocationform-']").click(function (ele) {
+    var id = $(this).attr('id');
+    if ( id != "id_allocationform-allocation_1") {
+      $("#id_allocationform-allocation_1").prop('checked', false);
+    }
+  });
+</script>

@@ -1,0 +1,12 @@
+recursive-include coldfront/core/field_of_science/management/commands/data *
+recursive-include coldfront/plugins/iquota/templates *
+recursive-include coldfront/plugins/system_monitor/templates *
+recursive-include coldfront/templates *
+recursive-include coldfront/static *
+recursive-include coldfront/core/portal/templates *
+recursive-include coldfront/core/allocation/templates *
+recursive-include coldfront/core/project/templates *
+recursive-include coldfront/core/research_output/templates *
+recursive-include coldfront/core/publication/templates *
+recursive-include coldfront/core/grant/templates *
+recursive-include coldfront/core/user/templates *

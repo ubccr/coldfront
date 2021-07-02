@@ -1,0 +1,72 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Delete Grants from Project
+{% endblock %}
+
+
+{% block content %}
+<h2>Delete grants from project: {{project.title}}</h2>
+<hr>
+
+{% if formset %}
+  <div class="card border-light">
+    <div class="card-body">
+      <form action="{% url 'grant-delete-grants' project.pk %}" method="post">
+        {% csrf_token %}
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th scope="col">
+                  <input type="checkbox" class="check" id="selectAll">
+                </th>
+                <th scope="col">Title</th>
+                <th scope="col">Grant Number</th>
+                <th scope="col">Grant End Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for form in formset %}
+                <tr>
+                  <td>{{ form.selected }}</td>
+                  <td>{{ form.title.value }}</td>
+                  <td>{{ form.grant_number.value }}</td>
+                  <td>{{ form.grant_end.value }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {{ formset.management_form }}
+        <div>
+          <button type="submit" class="btn btn-danger"><i class="fas fa-minus" aria-hidden="true"></i> Delete Selected Grants from Project</button>
+          <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a>
+          <br>
+        </div>
+      </form>
+    </div>
+  </div>
+{% else %}
+  <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to project</a>
+  <div class="alert alert-info">
+    No grants to delete!
+  </div>
+{% endif %}
+
+<script>
+  $("#selectAll").click(function () {
+    $("input[name^='grantform-']").prop('checked', $(this).prop('checked'));
+  });
+
+  $("input[name^='grantform-']").click(function (ele) {
+    var id = $(this).attr('id');
+    if ( id != "selectAll") {
+      $("#selectAll").prop('checked', false);
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,2 @@
+A new allocation has been requested for {{pi}} - {{resource}}. Please activate the allocation:
+{{url}}

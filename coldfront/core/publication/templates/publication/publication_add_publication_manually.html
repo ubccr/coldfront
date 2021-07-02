@@ -1,0 +1,48 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Add Publication to Project Manually
+{% endblock %}
+
+
+{% block content %}
+<h2>Add publication to project: {{project.title}}</h2> <hr>
+
+{% if form.non_field_errors %}
+  <div class="alert alert-danger" role="alert">
+    {{ form.non_field_errors }}
+  </div>
+{% endif %}
+
+<div class="row">
+  <div class="col">
+    <form method="post">
+      {% csrf_token %}
+      {{ form|crispy }}
+      <div>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-plus" aria-hidden="true"></i> Add Publication</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<br/>
+
+<div class="row">
+  <div class="col">
+    <div class="card border-light">
+      <div class="card-body">
+        <a class="btn btn-info" href="{% url 'publication-search' project.pk %}" role="button">
+          <i class="fas fa-search" aria-hidden="true"></i> Back to Search
+        </a>
+        <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button">
+          <i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

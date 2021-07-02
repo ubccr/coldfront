@@ -1,0 +1,31 @@
+{% extends "common/base.html" %}
+{% load common_tags %}
+
+
+{% block content %}
+<div class="row mt-4">
+  <div class="col mr-5">
+    <h2 class="text-center">Log In to ColdFront</h2>
+    <hr>
+
+    <p><a class="btn btn-primary btn-block" href="{% url 'login' %}" role="button"><i class="fas fa-sign-in-alt" aria-hidden="true"></i> Log In</a></p>
+
+    <div class="card bg-light">
+      <div class="card-body">
+        <h3 class="card-title h5">Do not have an Account?</h3>
+        <p class="card-text" style="text-align: justify;text-justify: inter-word;">{% settings_value 'ACCOUNT_CREATION_TEXT' %}</p>
+      </div>
+    </div>
+  </div>
+  {% include "portal/extra_app_templates.html" %}
+</div>
+{% endblock %}
+
+
+{% block javascript %}
+  {{ block.super }}
+  <script>
+    $("#navbar-main > ul > li.active").removeClass("active");
+    $("#navbar-home").addClass("active");
+  </script>
+{% endblock %}

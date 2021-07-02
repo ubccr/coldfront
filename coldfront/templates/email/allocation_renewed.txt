@@ -1,0 +1,2 @@
+A allocation has been renewed for {{pi}} - {{resource}}. Please activate the allocation:
+{{url}}

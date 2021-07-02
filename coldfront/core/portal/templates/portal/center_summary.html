@@ -1,0 +1,195 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load staticfiles %}
+{% load common_tags %}
+{% load humanize %}
+
+
+{% block title %}
+Center Summary
+{% endblock %}
+
+
+{% block content %}
+<h2>{% settings_value 'CENTER_NAME' %} Scientific Impact</h2>
+<hr>
+
+<!-- Start  Publications -->
+<div class="card mb-3 border-primary">
+  <div class="card-header bg-primary text-white">
+    <i class="fas fa-newspaper" aria-hidden="true"></i> User Entered Publications
+  </div>
+  <div class="card-body">
+    <div id="chartPublications"></div>
+    <strong>Total Publications:</strong> {{total_publications_count}}
+  </div>
+</div>
+<!-- End Publications -->
+
+<!-- Start  Research Outputs -->
+<div class="card mb-3 border-primary">
+  <div class="card-header bg-primary text-white">
+    <i class="far fa-newspaper" aria-hidden="true"></i> User Entered Research Outputs
+  </div>
+  <div class="card-body">
+    <strong>Total Publications:</strong> {{total_research_outputs_count}}
+  </div>
+</div>
+<!-- End Research Outputs -->
+
+<!-- Start  Grants -->
+<div class="card mb-3 border-primary">
+  <div class="card-header bg-primary text-white">
+    <i class="fas fa-trophy" aria-hidden="true"></i> User Grants Summary
+  </div>
+  <div class="card-body">
+    <div id="chartGrants"></div>
+    <hr>
+    <strong> Grants Total:</strong> ${{grants_total}} <br>
+    <strong> Grants Total PI Only:</strong> ${{grants_total_pi_only}} <br>
+    <strong> Grants Total CoPI Only:</strong> ${{grants_total_copi_only}} <br>
+    <strong> Grants Total Senior Personnel Only:</strong> ${{grants_total_sp_only}}
+  </div>
+</div>
+<!-- End Grants -->
+
+<!-- Start Allocation by Field of Science -->
+<div class="card mb-3 border-primary">
+  <div class="card-header bg-primary text-white">
+    <i class="fas fa-flask" aria-hidden="true"></i> Active Allocations and Users by Field of Science
+  </div>
+  <div id="allocation-by-fos" class="card-body">
+    <div class="text-center">
+      <button type="button" class="btn btn-primary"><i class="fas fa-sync fa-spin fa-fw" aria-hidden="true"></i> Getting Data <span
+          class="sr-only">...</span></button>
+    </div>
+  </div>
+</div>
+<!-- End Allocation by Field of Science -->
+
+<!-- Start Allocation Charts -->
+<div class="card mb-3 border-primary">
+  <div class="card-header bg-primary text-white">
+    <i class="fas fa-trophy"></i> Resources and Allocations Summary
+  </div>
+  <div id="allocation-summary" class="card-body">
+    <div class="text-center">
+      <button type="button" class="btn btn-primary"><i class="fas fa-sync fa-spin fa-fw" aria-hidden="true"></i> Getting Data <span
+          class="sr-only">...</span></button>
+    </div>
+  </div>
+</div>
+<!-- End Allocation Charts -->
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active")
+  $("#navbar-center-summary").addClass("active")
+
+  $(document).ready(function () {
+    $('#fos-table').DataTable({
+      "iDisplayLength": 10,
+      "bSortClasses": false,
+      "order": [
+        [1, "desc"]
+      ]
+    });
+
+    drawPublications();
+    drawGrantsByAgency();
+    get_allocation_by_fos()
+    get_allocation_summary();
+  });
+
+  function drawPublications() {
+    if (publication_by_year_bar_chart_data['columns'].length != 0) {
+      var chart = c3.generate({
+        bindto: '#chartPublications',
+        data: publication_by_year_bar_chart_data,
+        legend: {
+          show: false,
+          item: {
+            onclick: function (id) { }
+          }
+        },
+        axis: {
+          x: {
+            label: {
+              text: 'Year',
+              position: 'outer-center'
+            }
+          },
+          y: {
+            label: 'Number of Publications',
+            position: 'outer-middle'
+          }
+        }
+      });
+    };
+  }
+
+  function drawGrantsByAgency() {
+    if (grants_agency_chart_data['columns'].length != 0) {
+      var chart = c3.generate({
+        bindto: '#chartGrants',
+        data: grants_agency_chart_data,
+        donut: {
+          title: "Grants"
+        },
+        legend: {
+          item: {
+            onclick: function (id) { }
+          }
+        }
+      });
+    }
+  }
+
+  var grants_agency_chart_data = {{ grants_agency_chart_data | safe }}
+  var publication_by_year_bar_chart_data = {{ publication_by_year_bar_chart_data | safe }}
+
+  function get_allocation_summary() {
+    $.ajax({
+      headers: { 'X-CSRFToken': getCookie('csrftoken') },
+      type: "GET",
+      url: "/allocation-summary",
+      success: function (data) {
+        $('#allocation-summary').html(data);
+      }
+    });
+  };
+
+  function get_allocation_by_fos() {
+    $.ajax({
+      headers: { 'X-CSRFToken': getCookie('csrftoken') },
+      type: "GET",
+      url: "/allocation-by-fos",
+      success: function (data) {
+        $('#allocation-by-fos').html(data);
+        $('#fos-table').DataTable({
+          "iDisplayLength": 10,
+          "bSortClasses": false,
+          "order": [
+            [1, "desc"]
+          ]
+        });
+      }
+    });
+  };
+
+  function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie != '') {
+      var cookies = document.cookie.split(';');
+      for (var i = 0; i < cookies.length; i++) {
+        var cookie = jQuery.trim(cookies[i]);
+        // Does this cookie string begin with the name we want?
+        if (cookie.substring(0, name.length + 1) == (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+</script>
+{% endblock %}

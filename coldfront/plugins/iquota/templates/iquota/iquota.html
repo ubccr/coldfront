@@ -1,0 +1,51 @@
+
+<div id="iquota_inner">
+
+{{user_quota.path}} <span style="float:right">{{user_quota.used}} of {{user_quota.limit}}</span>
+<div class="progress" style="height:38px;">
+  <div class="progress-bar" style="width:{{user_quota.percent_used}}%;">
+    {{user_quota.percent_used}}%
+  </div>
+</div>
+
+<br>
+
+{% for key, value in group_quotas.items %}
+    {{value.path}} <span style="float:right">{{value.used}} of {{value.limit}}</span>
+    <div class="progress" style="height:38px;">
+      <div class="progress-bar" style="width:{{value.percent_used}}%">
+        {{value.percent_used}}%
+      </div>
+    </div>
+    <br>
+
+{% endfor %}
+
+    <div id="iquota_inner_button">
+        <button id="quota-button" type="button" class="btn btn-primary"><i class="fas fa-sync" aria-hidden="true"></i> Refresh Quota</button>
+    </div>
+</div>
+
+<script>
+
+        $("#quota-button").click(function() {
+
+            $('#iquota_inner_button').html('<button id="quota-button" type="button" class="btn btn-primary"><i class="fas fa-sync fa-spin fa-fw" aria-hidden="true"></i> Refreshing Quota <span class="sr-only">...</span></button>');
+
+            $.ajax({
+                url: "{% url 'get-isilon-quota' %}",
+                method: "POST",
+                data: {
+                    csrfmiddlewaretoken: "{{ csrf_token }}",
+                },
+                success: function(data) {
+
+                    $('#iquota_inner').html(data);
+                },
+                error: function(data) {
+                    $('#iquota_inner').html('<div class="alert alert-warning"><i class="fas fa-info-circle" aria-hidden="true"></i> Error refreshing quota information.</div>');
+                },
+            });
+        });
+
+    </script>

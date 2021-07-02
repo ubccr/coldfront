@@ -1,0 +1,59 @@
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Project Review List
+{% endblock %}
+
+
+{% block content %}
+<h2>Pending Project Reviews</h2>
+
+{% if project_review_list %}
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th scope="col">Project Title</th>
+          <th scope="col">Date Review Submitted</th>
+          <th scope="col">PI</th>
+          <th scope="col">Grants Last Updated</th>
+          <th scope="col">Publications Last Updated</th>
+          <th scope="col">Reason for not Updating Project</th>
+          <th scope="col">Project Review Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for project_review in project_review_list %}
+          <tr>
+            <td><a target="_blank" href="{% url 'project-detail' project_review.project.pk %}">{{project_review.project.title|truncatechars:50}}</a></td>
+            <td >{{ project_review.created|date:"M. d, Y" }}</td>        
+            <td>{{project_review.project.pi.first_name}} {{project_review.project.pi.last_name}} ({{project_review.project.pi.username}})</td>
+            <td >{{ project_review.project.latest_grant.modified|date:"M. d, Y"|default:"No grants" }}</td>
+            <td >{{ project_review.project.latest_publication.created|date:"M. d, Y"|default:"No publications" }}</td>
+            <td >{{ project_review.reason_for_not_updating_project}}</td>
+            <td class="text-nowrap">
+              <a href="{% url 'project-review-complete' project_review.pk %}" class="btn btn-success mr-1">Mark Complete</a>
+              <a href="{% url 'project-review-email' project_review.pk %}" class="btn btn-info mr-1">Email</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="alert alert-info">
+    No pending project reviews!
+  </div>
+{% endif %}
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-admin").addClass("active");
+  $("#navbar-director").addClass("active");
+  $("#navbar-project-reviews").addClass("active");
+</script>
+{% endblock %}
