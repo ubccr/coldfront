@@ -182,6 +182,9 @@ SU_LOGOUT_REDIRECT_URL = "/admin/auth/user/"
 
 SETTINGS_EXPORT = []
 
+# Django 3.2: Set DEFAULT_AUTO_FIELD.
+DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
+
 # ------------------------------------------------------------------------------
 # Accounting settings
 # ------------------------------------------------------------------------------
