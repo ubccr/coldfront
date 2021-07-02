@@ -40,7 +40,8 @@ class UserSearchListForm(forms.Form):
     middle_name = forms.CharField(label=MIDDLE_NAME, max_length=100, required=False)
     last_name = forms.CharField(label=LAST_NAME, max_length=100, required=False)
     username = forms.CharField(label=USERNAME, max_length=100, required=False)
-    email = forms.EmailField(label=EMAIL, max_length=100, required=False)
+    email = forms.EmailField(label=EMAIL, max_length=100, required=False,
+            help_text=('You may use this field to find the user that an email address belongs to, even if it is not a primary address.'))
 
 
 class UserRegistrationForm(UserCreationForm):
