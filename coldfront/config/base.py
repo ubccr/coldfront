@@ -54,9 +54,9 @@ INSTALLED_APPS += [
     'django_q',
     'simple_history',
     'mathfilters',
-    'ifxuser',
-    'author',
-    'ifxbilling',
+    # 'ifxuser',
+    # 'author',
+    # 'ifxbilling',
 ]
 
 # ColdFront Apps

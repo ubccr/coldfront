@@ -5,7 +5,7 @@ Installs ifxuser, ifxbilling, and author.  Sets AUTH_USER_MODEL
 import os
 from coldfront.config.base import INSTALLED_APPS, MIDDLEWARE
 
-# INSTALLED_APPS = ['ifxuser'] + INSTALLED_APPS + ['author', 'ifxbilling']
+INSTALLED_APPS = ['ifxuser'] + INSTALLED_APPS + ['author', 'ifxbilling', 'rest_framework.authtoken',]
 
 MIDDLEWARE += [
     'author.middlewares.AuthorDefaultBackendMiddleware',
