@@ -1774,7 +1774,7 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
         # For Savio projects, set the user's service units to that of
         # the allocation. Attempt this before setting the status to
         # 'Active' so that failures block completion.
-        if not project_obj.name.startswith('vector_'):
+        if not project_obj.name.startswith(('abc', 'vector_')):
             self.__set_user_service_units()
 
         self.allocation_user_attribute_obj.value = 'Active'
