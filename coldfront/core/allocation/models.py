@@ -18,15 +18,10 @@ from coldfront.core.utils.common import import_from_settings
 
 logger = logging.getLogger(__name__)
 
-
+ALLOCATION_ATTRIBUTE_VIEW_LIST = import_from_settings(
+    'ALLOCATION_ATTRIBUTE_VIEW_LIST', [])
 ALLOCATION_FUNCS_ON_EXPIRE = import_from_settings(
     'ALLOCATION_FUNCS_ON_EXPIRE', [])
-SLURM_ACCOUNT_ATTRIBUTE_NAME = import_from_settings(
-    'SLURM_ACCOUNT_ATTRIBUTE_NAME', 'slurm_account_name')
-XDMOD_CLOUD_PROJECT_ATTRIBUTE_NAME = import_from_settings(
-    'XDMOD_CLOUD_PROJECT_ATTRIBUTE_NAME', 'Cloud Account Name')
-UNIX_GROUP_ATTRIBUTE_NAME = import_from_settings(
-    'FREEIPA_GROUP_ATTRIBUTE_NAME', 'freeipa_group')
 
 
 class AllocationStatusChoice(TimeStampedModel):
@@ -105,8 +100,7 @@ class Allocation(TimeStampedModel):
     def get_information(self):
         html_string = ''
         for attribute in self.allocationattribute_set.all():
-
-            if attribute.allocation_attribute_type.name in [SLURM_ACCOUNT_ATTRIBUTE_NAME, UNIX_GROUP_ATTRIBUTE_NAME, XDMOD_CLOUD_PROJECT_ATTRIBUTE_NAME,]:
+            if attribute.allocation_attribute_type.name in ALLOCATION_ATTRIBUTE_VIEW_LIST:
                 html_string += '%s: %s <br>' % (
                     attribute.allocation_attribute_type.name, attribute.value)
 
