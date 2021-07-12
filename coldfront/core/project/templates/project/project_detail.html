@@ -132,9 +132,10 @@ Project Detail
         <thead>
           <tr>
             <th>Resource Name</th>
-            <th>Resource Type</th>
+<!--            <th>Resource Type</th>-->
             <th>Information</th>
             <th>Status</th>
+            <th>Start Date</th>
             <th>End Date</th>
             <th class="nosort">More Details</th>
           </tr>
@@ -143,7 +144,7 @@ Project Detail
           {% for allocation in allocations %}
           <tr>
             <td>{{ allocation.get_parent_resource.name }}</td>
-            <td>{{ allocation.get_parent_resource.resource_type.name }}</td>
+<!--            <td>{{ allocation.get_parent_resource.resource_type.name }}</td>-->
             <td class="text-nowrap">{{allocation.get_information}}</td>
             {% if allocation.status.name == 'Active' %}
               <td class="text-success">{{ allocation.status.name }}</td>
@@ -152,6 +153,7 @@ Project Detail
             {% else %}
               <td class="text-info">{{ allocation.status.name }}</td>
             {% endif %}
+            <td>{{allocation.start_date|date:"Y-m-d"}}</td>
             <td>{{allocation.end_date|date:"Y-m-d"}}</td>
             <td>
               <a href="{% url 'allocation-detail' allocation.pk %}"><i class="far fa-folder-open"></i></a>
