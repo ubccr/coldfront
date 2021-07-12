@@ -1,5 +1,6 @@
 {% extends "common/base.html" %}
 {% load crispy_forms_tags %}
+{% load common_tags %}
 {% load static %}
 
 
@@ -125,14 +126,16 @@ Allocation Detail
 <div class="card mb-3">
   <div class="card-header">
     <h4 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Attributes</h4>
-<!--    <div class="float-right">-->
-<!--      {% if request.user.is_superuser %}-->
-<!--      <a class="btn btn-success" href="{% url 'allocation-attribute-add' allocation.pk %}" role="button"><i-->
-<!--          class="fas fa-plus" aria-hidden="true"></i> Add Allocation Attribute</a>-->
-<!--      <a class="btn btn-danger" href="{% url 'allocation-attribute-delete' allocation.pk %}" role="button"><i-->
-<!--          class="fas fa-minus" aria-hidden="true"></i> Delete Allocation Attributes</a>-->
-<!--      {% endif %}-->
-<!--    </div>-->
+  {% comment %}
+    <div class="float-right">
+      {% if request.user.is_superuser %}
+      <a class="btn btn-success" href="{% url 'allocation-attribute-add' allocation.pk %}" role="button"><i
+          class="fas fa-plus" aria-hidden="true"></i> Add Allocation Attribute</a>
+      <a class="btn btn-danger" href="{% url 'allocation-attribute-delete' allocation.pk %}" role="button"><i
+          class="fas fa-minus" aria-hidden="true"></i> Delete Allocation Attributes</a>
+      {% endif % }
+    </div>
+  {% endcomment %}
   </div>
   <div class="card-body">
     {% if attributes %}
@@ -194,6 +197,7 @@ Allocation Detail
             <th scope="col">Email</th>
             <th scope="col">Cluster Username</th>
 <!--            <th scope="col">Last Modified</th>-->
+            <th scope="col">Usage</th>
           </tr>
         </thead>
         <tbody>
@@ -211,6 +215,7 @@ Allocation Detail
               </td>
             {% endif %}
 <!--            <td>{{ user.modified|date:"M. d, Y" }}</td>-->
+            <td>{{ allocation_user_su_usages|get_value_from_dict:user.user.username }}</td>
           </tr>
           {% endfor %}
         </tbody>
