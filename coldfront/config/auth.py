@@ -10,14 +10,14 @@ AUTHENTICATION_BACKENDS += [
 
 LOGIN_URL = '/user/login'
 LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = ENV.str('LOGOUT_REDIRECT_URL', LOGIN_URL)
 
 SU_LOGIN_CALLBACK = "coldfront.core.utils.common.su_login_callback"
 SU_LOGOUT_REDIRECT_URL = "/admin/auth/user/"
 
 SESSION_COOKIE_AGE = 60 * 15
 SESSION_SAVE_EVERY_REQUEST = True
-SESSION_COOKIE_SAMESITE  = 'Strict'
+SESSION_COOKIE_SAMESITE = 'Strict'
 SESSION_COOKIE_SECURE = True
 
 #------------------------------------------------------------------------------
