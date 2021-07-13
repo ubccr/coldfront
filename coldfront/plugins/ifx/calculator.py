@@ -2,6 +2,7 @@
 Custom billing calculator class for Coldfront
 '''
 import logging
+from functools import reduce
 from decimal import Decimal
 from django.db import connection
 from ifxbilling.calculator import BasicBillingCalculator
@@ -58,10 +59,12 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
         if percent < 100:
             percent_str = f'{percent}% split of '
         dollar_price = Decimal(rate.price) / 100
-        description = f'{percent_str}{product_user_percent.quantize(Decimal("100.000")) * 100}% of {quota} TB at ${dollar_price.quantize(Decimal(".01"))} per {rate.units}'
 
         # Round Decimal charge to nearest integer (pennies)
         charge = round(Decimal(rate.price) * quota * product_user_percent * percent / 100)
+        dollar_charge = Decimal(charge / 100).quantize(Decimal("100.00"))
+
+        description = f'${dollar_charge} {percent_str}{product_user_percent.quantize(Decimal("100.000")) * 100}% of {quota} TB at ${dollar_price.quantize(Decimal(".01"))} per {rate.units}'
         user = product_usage.product_user
 
         transactions_data.append(
@@ -125,3 +128,14 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
 
         logger.error('Allocation user fractions %s', str(allocation_user_fractions))
         return allocation_user_fractions
+
+    def createBillingRecordForUsage(self, product_usage, account, percent, year=None, month=None, description=None, usage_data=None):
+        '''
+        Run base class method then update BillingRecord description to combination of transaction descriptions
+        '''
+        billing_record = super().createBillingRecordForUsage(product_usage, account, percent, year, month, description, usage_data)
+        # Join the transaction descriptions
+        description = '\n'.join([trxn.description for trxn in billing_record.transaction_set.all()])
+        billing_record.description = description
+        billing_record.save()
+        return billing_record
