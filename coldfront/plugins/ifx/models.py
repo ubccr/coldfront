@@ -2,6 +2,9 @@
 Models for ifxbilling plugin
 '''
 import logging
+from decimal import Decimal
+from datetime import datetime
+from django.utils import timezone
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.db.models.signals import post_save
@@ -49,7 +52,7 @@ def allocation_user_to_allocation_product_usage(allocation_user, product, overwr
     and ProductUsage records before creating new ones.
     '''
     product_user = allocation_user.user
-    month = allocation_user.modified.strftime('%m')
+    month = int(allocation_user.modified.strftime('%m'))
     year = allocation_user.modified.year
     aupus = AllocationUserProductUsage.objects.filter(
         product_usage__product=product,
@@ -70,9 +73,12 @@ def allocation_user_to_allocation_product_usage(allocation_user, product, overwr
         'product_user': product_user,
         'month': month,
         'year': year,
+        'start_date': timezone.make_aware(datetime(year, month, 1))
     }
-    product_usage_data['quantity'] = allocation_user.usage_bytes / 1024**4
-    product_usage_data['units'] = 'T'
+    product_usage_data['quantity'] = allocation_user.usage_bytes
+    product_usage_data['units'] = 'b'
+    tb_quantity = Decimal(product_usage_data['quantity'] / 1024**4).quantize(Decimal("100.00"))
+    product_usage_data['description'] = f"{tb_quantity} TB of {allocation_user.allocation.get_attribute('Storage Quota (TB)')} TB allocation of {product_usage_data['product']} for {product_usage_data['product_user']} on {product_usage_data['start_date']}"
     product_usage, created = ProductUsage.objects.get_or_create(**product_usage_data)
     aupu = AllocationUserProductUsage.objects.create(allocation_user=allocation_user.history.first(), product_usage=product_usage)
     return aupu

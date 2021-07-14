@@ -44,7 +44,6 @@ class Command(BaseCommand):
         month = int(kwargs['month'])
         year = int(kwargs['year'])
         overwrite = kwargs['overwrite']
-        logger.debug('testing debug')
         successes = 0
         errors = []
         for resource in Resource.objects.filter(requires_payment=True):
@@ -60,6 +59,7 @@ class Command(BaseCommand):
                             allocation_user_to_allocation_product_usage(allocation_user, product, overwrite)
                             successes += 1
                         except Exception as e:
+                            logger.exception(e)
                             errors.append(f'Error creating product usage for {product} and user {allocation_user.user}: {e}')
             else:
                 errors.append(f'Unable to fine a Product for resource {resource}')
