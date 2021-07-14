@@ -57,14 +57,14 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
 
         percent_str = ''
         if percent < 100:
-            percent_str = f'{percent}% split of '
+            percent_str = f'a {percent}% split of '
         dollar_price = Decimal(rate.price) / 100
 
         # Round Decimal charge to nearest integer (pennies)
         charge = round(Decimal(rate.price) * quota * product_user_percent * percent / 100)
         dollar_charge = Decimal(charge / 100).quantize(Decimal("100.00"))
 
-        description = f'${dollar_charge} {percent_str}{product_user_percent.quantize(Decimal("100.000")) * 100}% of {quota} TB at ${dollar_price.quantize(Decimal(".01"))} per {rate.units}'
+        description = f'${dollar_charge} for {percent_str}{product_user_percent.quantize(Decimal("100.000")) * 100}% of {quota} TB at ${dollar_price.quantize(Decimal(".01"))} per {rate.units}'
         user = product_usage.product_user
 
         transactions_data.append(
