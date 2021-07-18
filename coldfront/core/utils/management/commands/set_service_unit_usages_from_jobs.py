@@ -51,7 +51,7 @@ class Command(BaseCommand):
             try:
                 allocation_attribute_usage = AllocationAttributeUsage.objects.get(
                     allocation_attribute__allocation=allocation.pk)
-                allocation_attribute_usage.usage = project_total
+                allocation_attribute_usage.value = project_total
                 allocation_attribute_usage.save()
                 message = (
                     f'Set usage for Project {project.pk} to {project_total}.')
@@ -74,7 +74,7 @@ class Command(BaseCommand):
                     allocation_user_attribute_usage = \
                         AllocationUserAttributeUsage.objects.get(
                             allocation_user_attribute__allocation_user=allocation_user)
-                    allocation_user_attribute_usage.usage = amount
+                    allocation_user_attribute_usage.value = amount
                     allocation_user_attribute_usage.save()
                     message = (
                         f'Set usage for Project {project.pk} and User '
