@@ -15,6 +15,7 @@ from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.models import VectorProjectAllocationRequest
+from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.user.utils import account_activation_url
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -890,8 +891,13 @@ class SavioProjectApprovalRunner(ProjectApprovalRunner):
             else:
                 new_value = self.num_service_units
         allocation_attribute.value = str(new_value)
-
         allocation_attribute.save()
+
+        # Create a ProjectTransaction to store the change in service units.
+        ProjectTransaction.objects.create(
+            project=project,
+            date_time=utc_now_offset_aware(),
+            allocation=Decimal(new_value))
 
         return allocation
 

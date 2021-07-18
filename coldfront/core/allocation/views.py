@@ -3,6 +3,7 @@ import logging
 from datetime import date
 
 from dateutil.relativedelta import relativedelta
+from decimal import Decimal
 from django import forms
 from django.conf import settings
 from django.contrib import messages
@@ -53,7 +54,9 @@ from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
 from coldfront.core.project.models import (Project, ProjectUser,
                                            ProjectUserStatusChoice)
 from coldfront.core.resource.models import Resource
+from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.utils.common import get_domain_url, import_from_settings
+from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.mail import send_email_template
 
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
@@ -1863,6 +1866,14 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
         set_allocation_user_attribute_value(
             allocation_user_obj, 'Service Units',
             allocation_service_units.value)
+        # Create a ProjectUserTransaction to store the change in service units.
+        project_user = ProjectUser.objects.get(
+            user=self.user_obj,
+            project=self.allocation_user_attribute_obj.allocation.project)
+        ProjectUserTransaction.objects.create(
+            project_user=project_user,
+            date_time=utc_now_offset_aware(),
+            allocation=Decimal(allocation_service_units.value))
 
 
 class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,
