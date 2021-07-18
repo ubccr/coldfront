@@ -28,7 +28,7 @@ from django.test import override_settings
 from rest_framework.test import APIClient
 
 
-@override_settings(USE_TZ=False)
+# @override_settings(USE_TZ=False)
 class TestJobList(TestJobBase):
     """A suite for testing requests to retrieve Jobs."""
 
@@ -153,7 +153,7 @@ class TestJobList(TestJobBase):
             job = results_dict[jobslurmid]
             self.assertIn('submitdate', job)
             submitdate = datetime.strptime(
-                job['submitdate'], "%Y-%m-%dT%H:%M:%S")
+                job['submitdate'], "%Y-%m-%dT%H:%M:%SZ")
             self.assertGreaterEqual(submitdate, start_time)
             self.assertLessEqual(submitdate, end_time)
 
@@ -289,7 +289,7 @@ class TestJobList(TestJobBase):
             job = results_dict[jobslurmid]
             self.assertIn('submitdate', job)
             submitdate = datetime.strptime(
-                job['submitdate'], "%Y-%m-%dT%H:%M:%S")
+                job['submitdate'], "%Y-%m-%dT%H:%M:%SZ")
             self.assertGreaterEqual(submitdate, start_dt)
             self.assertLessEqual(submitdate, default_end)
 
@@ -316,7 +316,7 @@ class TestJobList(TestJobBase):
             job = results_dict[jobslurmid]
             self.assertIn('submitdate', job)
             submitdate = datetime.strptime(
-                job['submitdate'], "%Y-%m-%dT%H:%M:%S")
+                job['submitdate'], "%Y-%m-%dT%H:%M:%SZ")
             self.assertGreaterEqual(submitdate, default_start)
             self.assertLessEqual(submitdate, end_dt)
 
@@ -343,7 +343,7 @@ class TestJobList(TestJobBase):
             job = results_dict[jobslurmid]
             self.assertIn('submitdate', job)
             submitdate = datetime.strptime(
-                job['submitdate'], "%Y-%m-%dT%H:%M:%S")
+                job['submitdate'], "%Y-%m-%dT%H:%M:%SZ")
             self.assertGreaterEqual(submitdate, start_dt)
             self.assertLessEqual(submitdate, end_dt)
         # If end_time comes before start_time, no jobs should be returned.
@@ -371,7 +371,7 @@ class TestJobList(TestJobBase):
         for job in jobs:
             self.assertIn('submitdate', job)
             submitdate = datetime.strptime(
-                job['submitdate'], "%Y-%m-%dT%H:%M:%S")
+                job['submitdate'], "%Y-%m-%dT%H:%M:%SZ")
             self.assertGreaterEqual(submitdate, prev_submitdate)
             prev_submitdate = submitdate
 

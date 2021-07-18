@@ -18,7 +18,8 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "dt", help="The end date to set, in the form: {self.time_format}.")
+            "dt",
+            help=f"The end date to set, in the form: {self.time_format}.")
 
     def handle(self, *args, **kwargs):
         date_time = kwargs["dt"]
