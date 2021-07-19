@@ -43,6 +43,7 @@ class Command(BaseCommand):
                 name='Service Units', attribute_type=attribute_type)
         allocation_attribute_type.has_usage = True
         allocation_attribute_type.is_unique = True
+        allocation_attribute_type.is_private = False
         allocation_attribute_type.save()
 
         # Each Allocation has at most one 'Savio Allocation Type' attribute of

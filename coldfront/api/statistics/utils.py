@@ -11,6 +11,9 @@ from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.resource.models import Resource
+from coldfront.core.statistics.models import ProjectTransaction
+from coldfront.core.statistics.models import ProjectUserTransaction
+from coldfront.core.utils.common import utc_now_offset_aware
 from datetime import datetime
 from datetime import timedelta
 from decimal import Decimal
@@ -91,6 +94,12 @@ def create_project_allocation(project, value):
         allocation_attribute_type=allocation_attribute_type,
         allocation=allocation, value=str(value))
 
+    # Create a ProjectTransaction to store the change in service units.
+    ProjectTransaction.objects.create(
+        project=project,
+        date_time=utc_now_offset_aware(),
+        allocation=value)
+
     return AccountingAllocationObjects(
         allocation=allocation,
         allocation_attribute=allocation_attribute)
@@ -140,6 +149,13 @@ def create_user_project_allocation(user, project, value):
         allocation_attribute_type=allocation_attribute_type,
         allocation=allocation, allocation_user=allocation_user,
         value=str(value))
+
+    # Create a ProjectUserTransaction to store the change in service units.
+    project_user = ProjectUser.objects.get(project=project, user=user)
+    ProjectUserTransaction.objects.create(
+        project_user=project_user,
+        date_time=utc_now_offset_aware(),
+        allocation=value)
 
     return AccountingAllocationObjects(
         allocation=allocation,

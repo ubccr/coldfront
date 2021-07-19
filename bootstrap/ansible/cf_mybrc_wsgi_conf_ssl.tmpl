@@ -36,6 +36,10 @@ WSGIPassAuthorization On
     ErrorLog /var/log/httpd/cf_brc.error.log
     CustomLog /var/log/httpd/cf_brc.custom.log combined
 
+    <LocationMatch /(api(/|$))>
+        Require ip {{ ip_range_with_api_access }}
+    </LocationMatch>
+
 </VirtualHost>
 
 <VirtualHost {{ host_ip }}:80>

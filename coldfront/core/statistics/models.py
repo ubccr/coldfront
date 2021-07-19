@@ -1,9 +1,11 @@
 from coldfront.core.project.models import Project
+from coldfront.core.project.models import ProjectUser
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.validators import MaxValueValidator
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.utils import timezone
 from model_utils.models import TimeStampedModel
 
 
@@ -65,3 +67,43 @@ class Job(TimeStampedModel):
 
     def __str__(self):
         return self.jobslurmid
+
+
+class ProjectTransaction(models.Model):
+    project = models.ForeignKey(
+        Project, on_delete=models.CASCADE, related_name='transactions')
+    date_time = models.DateTimeField(
+        blank=True, null=True, default=timezone.now)
+    allocation = models.DecimalField(
+        max_digits=settings.DECIMAL_MAX_DIGITS,
+        decimal_places=settings.DECIMAL_MAX_PLACES,
+        default=settings.ALLOCATION_MIN,
+        validators=[
+            MaxValueValidator(settings.ALLOCATION_MAX),
+            MinValueValidator(settings.ALLOCATION_MIN)
+        ],
+        blank=True,
+        null=True)
+
+    class Meta:
+        verbose_name = 'Project Transaction'
+
+
+class ProjectUserTransaction(models.Model):
+    project_user = models.ForeignKey(
+        ProjectUser, on_delete=models.CASCADE, related_name='transactions')
+    date_time = models.DateTimeField(
+        blank=True, null=True, default=timezone.now)
+    allocation = models.DecimalField(
+        max_digits=settings.DECIMAL_MAX_DIGITS,
+        decimal_places=settings.DECIMAL_MAX_PLACES,
+        default=settings.ALLOCATION_MIN,
+        validators=[
+            MaxValueValidator(settings.ALLOCATION_MAX),
+            MinValueValidator(settings.ALLOCATION_MIN)
+        ],
+        blank=True,
+        null=True)
+
+    class Meta:
+        verbose_name = 'Project User Transaction'
