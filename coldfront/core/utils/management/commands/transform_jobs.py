@@ -51,6 +51,7 @@ class Command(BaseCommand):
                     except Exception as e:
                         message = f'Failed to transform line: {line}'
                         self.stderr.write(message)
+                        continue
                     new_jsonl.write(f'{new_line}\n')
 
     @staticmethod
