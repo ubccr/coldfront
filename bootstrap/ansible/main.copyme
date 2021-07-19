@@ -49,6 +49,8 @@ google_sheets_credentials: '/tmp/credentials.json'
 #ssl_certificate_key_file: /etc/ssl/ssl_certificate_key.file
 #ssl_certificate_chain_file: /etc/ssl/ssl_certification_chain.file
 
+ip_range_with_api_access: 0.0.0.0/0
+
 #####################################
 #PROD SETTINGS
 #####################################
@@ -66,3 +68,5 @@ google_sheets_credentials: '/tmp/credentials.json'
 #ssl_certificate_file: /etc/ssl/ssl_certificate.file
 #ssl_certificate_key_file: /etc/ssl/ssl_certificate_key.file
 #ssl_certificate_chain_file: /etc/ssl/ssl_certification_chain.file
+
+ip_range_with_api_access: 10.0.0.0/8
