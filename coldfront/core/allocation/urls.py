@@ -2,6 +2,7 @@ from django.urls import path
 
 import coldfront.core.allocation.views as allocation_views
 
+
 urlpatterns = [
     path('', allocation_views.AllocationListView.as_view(), name='allocation-list'),
     path('project/<int:project_pk>/create',
@@ -33,12 +34,12 @@ urlpatterns = [
     path('cluster-account-request-list',
          allocation_views.AllocationClusterAccountRequestListView.as_view(),
          name='allocation-cluster-account-request-list'),
-    path('<int:pk>/renew', allocation_views.AllocationRenewView.as_view(),
-         name='allocation-renew'),
-    path('<int:pk>/allocationattribute/add',
-         allocation_views.AllocationAttributeCreateView.as_view(), name='allocation-attribute-add'),
-    path('<int:pk>/allocationattribute/delete',
-         allocation_views.AllocationAttributeDeleteView.as_view(), name='allocation-attribute-delete'),
+    # path('<int:pk>/renew', allocation_views.AllocationRenewView.as_view(),
+    #      name='allocation-renew'),
+    # path('<int:pk>/allocationattribute/add',
+    #      allocation_views.AllocationAttributeCreateView.as_view(), name='allocation-attribute-add'),
+    # path('<int:pk>/allocationattribute/delete',
+    #      allocation_views.AllocationAttributeDeleteView.as_view(), name='allocation-attribute-delete'),
     path('allocation-invoice-list', allocation_views.AllocationInvoiceListView.as_view(),
          name='allocation-invoice-list'),
     path('<int:pk>/invoice/', allocation_views.AllocationInvoiceDetailView.as_view(),

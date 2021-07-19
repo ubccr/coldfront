@@ -28,7 +28,7 @@ class TestCanSubmitJobView(TestJobBase):
     @staticmethod
     def get_url(job_cost, user_id, account_id):
         """Return the request URL for the given parameters."""
-        return f'/api/jobs/can_submit_job/{job_cost}/{user_id}/{account_id}/'
+        return f'/api/can_submit_job/{job_cost}/{user_id}/{account_id}/'
 
     def test_other_requests_not_allowed(self):
         """Test that other requests (e.g. POST; PATCH; DELETE) are not

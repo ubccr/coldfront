@@ -3,6 +3,7 @@ import logging
 from datetime import date
 
 from dateutil.relativedelta import relativedelta
+from decimal import Decimal
 from django import forms
 from django.conf import settings
 from django.contrib import messages
@@ -55,7 +56,9 @@ from coldfront.core.project.models import (Project, ProjectUser,
                                            ProjectUserStatusChoice)
 from coldfront.core.project.utils import ProjectClusterAccessRequestRunner
 from coldfront.core.resource.models import Resource
+from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.utils.common import get_domain_url, import_from_settings
+from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.mail import send_email_template
 
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
@@ -102,22 +105,19 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         if self.request.user.has_perm('allocation.can_view_all_allocations'):
             return True
 
-        # TODO: Remove this block when allocations should be displayed.
-        return False
+        pk = self.kwargs.get('pk')
+        allocation_obj = get_object_or_404(Allocation, pk=pk)
 
-        # pk = self.kwargs.get('pk')
-        # allocation_obj = get_object_or_404(Allocation, pk=pk)
-        #
-        # user_can_access_project = allocation_obj.project.projectuser_set.filter(
-        #     user=self.request.user, status__name__in=['Active', 'New', ]).exists()
-        #
-        # user_can_access_allocation = allocation_obj.allocationuser_set.filter(
-        #     user=self.request.user, status__name__in=['Active', ]).exists()
-        #
-        # if user_can_access_project and user_can_access_allocation:
-        #     return True
-        #
-        # return False
+        user_can_access_project = allocation_obj.project.projectuser_set.filter(
+            user=self.request.user, status__name__in=['Active', 'New', ]).exists()
+
+        user_can_access_allocation = allocation_obj.allocationuser_set.filter(
+            user=self.request.user, status__name__in=['Active', ]).exists()
+
+        if user_can_access_project and user_can_access_allocation:
+            return True
+
+        return False
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -125,6 +125,33 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         allocation_obj = get_object_or_404(Allocation, pk=pk)
         allocation_users = allocation_obj.allocationuser_set.exclude(
             status__name__in=['Removed']).order_by('user__username')
+
+        # Manually display "Service Units" for each user if applicable.
+        # TODO: Avoid doing this manually.
+        kwargs = {
+            'allocation_attribute_type__name': 'Service Units',
+        }
+        has_service_units = allocation_obj.allocationattribute_set.filter(
+            **kwargs)
+        allocation_user_su_usages = {}
+        if has_service_units:
+            for allocation_user in allocation_users:
+                username = allocation_user.user.username
+                user_attributes = \
+                    allocation_user.allocationuserattribute_set.select_related(
+                        'allocationuserattributeusage'
+                    ).filter(**kwargs)
+                usage = '0.00'
+                if user_attributes.exists():
+                    attribute = user_attributes.first()
+                    try:
+                        usage = str(
+                            attribute.allocationuserattributeusage.value)
+                    except AttributeError:
+                        pass
+                allocation_user_su_usages[username] = usage
+        context['has_service_units'] = has_service_units
+        context['allocation_user_su_usages'] = allocation_user_su_usages
 
         if self.request.user.is_superuser:
             attributes_with_usage = [attribute for attribute in allocation_obj.allocationattribute_set.all(
@@ -1911,6 +1938,14 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
         set_allocation_user_attribute_value(
             allocation_user_obj, 'Service Units',
             allocation_service_units.value)
+        # Create a ProjectUserTransaction to store the change in service units.
+        project_user = ProjectUser.objects.get(
+            user=self.user_obj,
+            project=self.allocation_user_attribute_obj.allocation.project)
+        ProjectUserTransaction.objects.create(
+            project_user=project_user,
+            date_time=utc_now_offset_aware(),
+            allocation=Decimal(allocation_service_units.value))
 
 
 class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,

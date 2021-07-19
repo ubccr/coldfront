@@ -1,5 +1,6 @@
 {% extends "common/base.html" %}
 {% load crispy_forms_tags %}
+{% load common_tags %}
 {% load static %}
 
 
@@ -35,8 +36,8 @@ Allocation Detail
     <h4><i class="fas fa-list"></i> Allocation Information</h4>
   </div>
   <div class="card-body">
-    <form method="post">
-      {% csrf_token %}
+<!--    <form method="post">-->
+<!--      {% csrf_token %}-->
       <div class="table-responsive">
         <table class="table table-bordered table-sm">
           <tr>
@@ -47,88 +48,76 @@ Allocation Detail
             <th scope="row" class="text-nowrap">Resource{{ allocation.resources.all|pluralize }} in allocation:</th>
             <td>{{ allocation.get_resources_as_string }}</td>
           </tr>
-          {% if request.user.is_superuser %}
-          <tr>
-            <th scope="row" class="text-nowrap">Quantity:</th>
-            <td>{{ allocation.quantity }}</td>
-          </tr>
-          {% endif %}
-          <tr>
-            <th scope="row" class="text-nowrap">Justification:</th>
-            <td>{{ allocation.justification }}</td>
-          </tr>
+<!--          {% if request.user.is_superuser %}-->
+<!--          <tr>-->
+<!--            <th scope="row" class="text-nowrap">Quantity:</th>-->
+<!--            <td>{{ allocation.quantity }}</td>-->
+<!--          </tr>-->
+<!--          {% endif %}-->
+<!--          <tr>-->
+<!--            <th scope="row" class="text-nowrap">Justification:</th>-->
+<!--            <td>{{ allocation.justification }}</td>-->
+<!--          </tr>-->
           <tr>
             <th scope="row" class="text-nowrap">Status:</th>
             <td>
-              {% if request.user.is_superuser %}
-              {{ form.status }}
-              {% else %}
               {{ allocation.status }}
-              {% endif %}
             </td>
           </tr>
           <tr>
             <th scope="row" class="text-nowrap">Start Date:</th>
             <td>
-              {% if request.user.is_superuser %}
-              {{ form.start_date }}
-              {% else %}
               {{ allocation.start_date }}
-              {% endif %}
             </td>
           </tr>
           <tr>
             <th scope="row" class="text-nowrap">End Date:</th>
             <td>
-              {% if request.user.is_superuser %}
-              {{ form.end_date }}
-              {% else %}
               {{ allocation.end_date }}
-              {% endif %}
 
-              {% if is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
-              <a href="{% url 'allocation-renew' allocation.pk %}">
-                <span class="badge badge-warning">
-                  <i class="fas fa-redo-alt"></i>
-                  Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} - click to renew
-                </span>
-              </a>
-              {% endif %}
+<!--              {% if is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}-->
+<!--              <a href="{% url 'allocation-renew' allocation.pk %}">-->
+<!--                <span class="badge badge-warning">-->
+<!--                  <i class="fas fa-redo-alt"></i>-->
+<!--                  Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} - click to renew-->
+<!--                </span>-->
+<!--              </a>-->
+<!--              {% endif %}-->
             </td>
           </tr>
-          <tr>
-            <th scope="row" class="text-nowrap">Description:</th>
-            <td>
-              {% if request.user.is_superuser %}
-              {{ form.description }}
-              {% else %}
-              {{ allocation.description }}
-              {% endif %}
-            </td>
-          </tr>
-          <tr>
-            <th scope="row" class="text-nowrap">Created:</th>
-            <td>{{ allocation.created|date:"M. d, Y" }}</td>
-          </tr>
-          <tr>
-            <th scope="row" class="text-nowrap">Last Modified:</th>
-            <td>{{ allocation.modified|date:"M. d, Y" }}</td>
-          </tr>
-          <tr>
-            {% if allocation.is_locked %}
-              <th scope="row" class="text-nowrap">Locked</th>
-              <td><i class="fas fa-lock"></i></td>
-            {% else %}
-              <th scope="row" class="text-nowrap">Unlocked</th>
-              <td><i class="fas fa-lock-open"></i></td>
-            {% endif %}
-          </tr>
+<!--          <tr>-->
+<!--            <th scope="row" class="text-nowrap">Description:</th>-->
+<!--            <td>-->
+<!--              {% if request.user.is_superuser %}-->
+<!--              {{ form.description }}-->
+<!--              {% else %}-->
+<!--              {{ allocation.description }}-->
+<!--              {% endif %}-->
+<!--            </td>-->
+<!--          </tr>-->
+<!--          <tr>-->
+<!--            <th scope="row" class="text-nowrap">Created:</th>-->
+<!--            <td>{{ allocation.created|date:"M. d, Y" }}</td>-->
+<!--          </tr>-->
+<!--          <tr>-->
+<!--            <th scope="row" class="text-nowrap">Last Modified:</th>-->
+<!--            <td>{{ allocation.modified|date:"M. d, Y" }}</td>-->
+<!--          </tr>-->
+<!--          <tr>-->
+<!--            {% if allocation.is_locked %}-->
+<!--              <th scope="row" class="text-nowrap">Locked</th>-->
+<!--              <td><i class="fas fa-lock"></i></td>-->
+<!--            {% else %}-->
+<!--              <th scope="row" class="text-nowrap">Unlocked</th>-->
+<!--              <td><i class="fas fa-lock-open"></i></td>-->
+<!--            {% endif %}-->
+<!--          </tr>-->
         </table>
       </div>
-      {% if request.user.is_superuser %}
-      <button type="submit" class="btn btn-success float-right"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
-      {% endif %}
-    </form>
+<!--      {% if request.user.is_superuser %}-->
+<!--      <button type="submit" class="btn btn-success float-right"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>-->
+<!--      {% endif %}-->
+<!--    </form>-->
 
   </div>
 </div>
@@ -137,14 +126,16 @@ Allocation Detail
 <div class="card mb-3">
   <div class="card-header">
     <h4 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Attributes</h4>
+  {% comment %}
     <div class="float-right">
       {% if request.user.is_superuser %}
       <a class="btn btn-success" href="{% url 'allocation-attribute-add' allocation.pk %}" role="button"><i
           class="fas fa-plus" aria-hidden="true"></i> Add Allocation Attribute</a>
       <a class="btn btn-danger" href="{% url 'allocation-attribute-delete' allocation.pk %}" role="button"><i
           class="fas fa-minus" aria-hidden="true"></i> Delete Allocation Attributes</a>
-      {% endif %}
+      {% endif % }
     </div>
+  {% endcomment %}
   </div>
   <div class="card-body">
     {% if attributes %}
@@ -205,7 +196,8 @@ Allocation Detail
             <th scope="col">Name</th>
             <th scope="col">Email</th>
             <th scope="col">Cluster Username</th>
-            <th scope="col">Last Modified</th>
+<!--            <th scope="col">Last Modified</th>-->
+            <th scope="col">Usage</th>
           </tr>
         </thead>
         <tbody>
@@ -222,7 +214,8 @@ Allocation Detail
                 </span>
               </td>
             {% endif %}
-            <td>{{ user.modified|date:"M. d, Y" }}</td>
+<!--            <td>{{ user.modified|date:"M. d, Y" }}</td>-->
+            <td>{{ allocation_user_su_usages|get_value_from_dict:user.user.username }}</td>
           </tr>
           {% endfor %}
         </tbody>
