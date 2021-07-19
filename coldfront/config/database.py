@@ -12,7 +12,7 @@ from coldfront.config.env import ENV
 #  DB_URL=mysql://user:password@127.0.0.1:3306/database
 #
 # Postgresql:
-#  DB_URL=psql://user:password@127.0.0.1:8458/database
+#  DB_URL=psql://user:password@127.0.0.1:5432/database
 #------------------------------------------------------------------------------
 DATABASES = {
     'default': ENV.db_url(
