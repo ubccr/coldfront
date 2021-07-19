@@ -39,6 +39,14 @@
        owner: '{{ djangooperator }}'
        group: 'apache'
 
+    - name: Create API Django app log files
+      file:
+       path: '{{ log_path }}/{{ api_log_file }}'
+       state: touch
+       mode: 0660
+       owner: '{{ djangooperator }}'
+       group: 'apache'
+
     - name: Install CF MyBRC User Portal Django application dependencies
       pip:
         requirements: '{{ git_prefix }}/{{ reponame }}/requirements.txt'
