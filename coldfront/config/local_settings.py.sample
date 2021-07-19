@@ -323,12 +323,12 @@ LOCAL_SETTINGS_EXPORT += [
 # ------------------------------------------------------------------------------
 # Enable myBRC REST API
 # ------------------------------------------------------------------------------
-# EXTRA_APPS += [
-#     'rest_framework',
-#     'django_filters',
-#     'drf_yasg',
-#     'coldfront.api',
-# ]
+EXTRA_APPS += [
+    'rest_framework',
+    'django_filters',
+    'drf_yasg',
+    'coldfront.api',
+]
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
