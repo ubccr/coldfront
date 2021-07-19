@@ -63,6 +63,7 @@ TIME_ZONE = 'UTC'
 #------------------------------------------------------------------------------
 import os
 LOG_PATH = os.path.join('/var/log/user_portals/cf_mybrc', 'cf_mybrc_portal.log')
+API_LOG_PATH = os.path.join('/var/log/user_portals/cf_mybrc', 'cf_mybrc_api.log')
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -82,6 +83,12 @@ LOGGING = {
             'filename': LOG_PATH,
             'formatter': 'verbose',
         },
+        'api_file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': API_LOG_PATH,
+            'formatter': 'verbose',
+        },
     },
     'loggers': {
         'django_auth_ldap': {
@@ -92,6 +99,11 @@ LOGGING = {
         'django': {
             'handlers': ['file'],
             'level': 'INFO',
+        },
+        'coldfront.api': {
+            'handlers': ['api_file'],
+            'level': 'INFO',
+            'propagate': False,
         },
         'coldfront': {
             'handlers': ['file'],
