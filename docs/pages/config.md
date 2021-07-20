@@ -105,7 +105,7 @@ Examples:
 
 ```
 DB_URL=mysql://user:password@127.0.0.1:3306/database
-DB_URL=psql://user:password@127.0.0.1:8458/database
+DB_URL=psql://user:password@127.0.0.1:5432/database
 DB_URL=sqlite:////usr/share/coldfront/coldfront.db
 ```
 
