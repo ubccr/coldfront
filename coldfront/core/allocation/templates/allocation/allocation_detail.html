@@ -270,6 +270,7 @@ Allocation Detail
   <script>
       $(document).ready( function () {
       $('#mydatatable').DataTable({
+       "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
        "pageLength": 25, 
       dom: 'B<"clear">lfrtip',
       "order": [[ 3, "desc" ]],
