@@ -24,3 +24,10 @@ class FACILITY():
 
 class GROUPS():
     ADMIN_GROUP_NAME = 'rc_admin'
+
+# Ignore billing models in the django-author pre-save so that values are set directly
+AUTHOR_IGNORE_MODELS = [
+    'ifxbilling.BillingRecord',
+    'ifxbilling.Transaction',
+]
+
