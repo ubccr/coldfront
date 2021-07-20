@@ -24,9 +24,11 @@ from collections import namedtuple
 from datetime import timedelta
 from decimal import Decimal
 from django.conf import settings
+from django.contrib import messages
 from django.core.exceptions import MultipleObjectsReturned
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
+from django.http import HttpRequest
 
 from django.urls import reverse
 from urllib.parse import urljoin
@@ -116,67 +118,52 @@ def auto_approve_project_join_requests():
                 JoinAutoApprovalResult(success=False, message=message))
             continue
 
-        # If the request has completed the Project's delay period, auto-
-        # approve the user and request cluster access.
+        # If the request has not yet completed the Project's delay period,
+        # continue to the next one. Otherwise, auto-approve the user and
+        # request cluster access.
         delay = project_obj.joins_auto_approval_delay
-        if join_request.created + delay <= now:
-            # Set the ProjectUser's status to 'Active'.
-            project_user_obj.status = active_status
-            project_user_obj.save()
+        if join_request.created + delay > now:
+            continue
 
-            error_message = (
-                f'Failed to request cluster access for User '
-                f'{user_obj.username} under Project {project_obj.name}. '
-                f'Details:')
+        # Set the ProjectUser's status to 'Active'.
+        project_user_obj.status = active_status
+        project_user_obj.save()
 
-            # Request cluster access.
-            success = False
+        # Request cluster access.
+        request_runner = ProjectClusterAccessRequestRunner(project_user_obj)
+        runner_result = request_runner.run()
+        success = runner_result.success
+        if success:
+            message = (
+                f'Created a cluster access request for User {user_obj.pk} '
+                f'under Project {project_obj.pk}.')
+        else:
+            message = runner_result.error_message
+
+        results.append(
+            JoinAutoApprovalResult(success=success, message=message))
+
+        # Send an email to the user.
+        try:
+            send_project_join_request_approval_email(
+                project_obj, project_user_obj)
+        except Exception as e:
+            message = 'Failed to send notification email. Details:'
+            logger.error(message)
+            logger.exception(e)
+
+        # If the Project is a Vector project, automatically add the User to the
+        # designated Savio project for Vector users.
+        if project_obj.name.startswith('vector_'):
             try:
-                request_runner = ProjectClusterAccessRequestRunner(
-                    project_user_obj)
-                runner_result = request_runner.run()
+                add_vector_user_to_designated_savio_project(user_obj)
             except Exception as e:
-                message = error_message
+                message = (
+                    f'Encountered unexpected exception when automatically '
+                    f'providing User {user_obj.pk} with access to Savio. '
+                    f'Details:')
                 logger.error(message)
                 logger.exception(e)
-            else:
-                success = runner_result.success
-                if success:
-                    message = (
-                        f'Created a cluster access request for User '
-                        f'{user_obj.username} under Project '
-                        f'{project_obj.name}.')
-                    logger.info(message)
-                else:
-                    message = error_message
-                    logger.error(message)
-                    logger.exception(runner_result.error_message)
-
-            results.append(
-                JoinAutoApprovalResult(success=success, message=message))
-
-            if success:
-                # Send an email to the user.
-                try:
-                    send_project_join_request_approval_email(
-                        project_obj, project_user_obj)
-                except Exception as e:
-                    message = 'Failed to send notification email. Details:'
-                    logger.error(message)
-                    logger.exception(e)
-
-                # If the Project is a Vector project, automatically add the
-                # User to the designated Savio project for Vector users.
-                if project_obj.name.startswith('vector_'):
-                    try:
-                        add_vector_user_to_designated_savio_project(user_obj)
-                    except Exception as e:
-                        message = (
-                            f'Encountered unexpected exception when '
-                            f'automatically providing User {user_obj.pk} with '
-                            f'access to Savio. Details:')
-                        logger.error(message)
-                        logger.exception(e)
 
     return results
 
@@ -1163,15 +1150,15 @@ class ProjectClusterAccessRequestRunner(object):
         kwargs = {
             'allocation_attribute_type': AllocationAttributeType.objects.get(
                 name='Cluster Account Status'),
-            'value__in': ['Pending - Add', 'Active'],
+            'value__in': ['Pending - Add', 'Processing', 'Active'],
         }
         try:
             status = queryset.get(**kwargs)
         except AllocationUserAttribute.DoesNotExist:
             message = (
                 f'Validated that User {self.user_obj.pk} does not already '
-                f'have a pending or active "Cluster Access Status" attribute '
-                f'under Project {self.project_obj.pk}.')
+                f'have a pending, processing, or active "Cluster Access '
+                f'Status" attribute under Project {self.project_obj.pk}.')
             self.logger.info(message)
             return
         except AllocationUserAttribute.MultipleObjectsReturned as e:
@@ -1229,7 +1216,7 @@ class ProjectClusterAccessRequestRunner(object):
 
 def add_vector_user_to_designated_savio_project(user_obj):
     """Add the given User to the Savio project that all Vector users
-    also have access to. Return whether or not all steps succeeded.
+    also have access to.
 
     This is intended for use after the user's request has been approved
     and the user has been successfully added to a Vector project."""
@@ -1267,23 +1254,5 @@ def add_vector_user_to_designated_savio_project(user_obj):
             logger.exception(e)
 
     # Request cluster access for the user.
-    try:
-        request_runner = ProjectClusterAccessRequestRunner(project_user_obj)
-        runner_result = request_runner.run()
-    except Exception as e:
-        message = (
-            f'Failed to request cluster access for User {user_obj.pk} under '
-            f'Project {project_obj.pk}. Details:')
-        logger.error(message)
-        logger.exception(e)
-        return False
-    else:
-        if runner_result.success:
-            message = (
-                f'Created a cluster access request for User {user_obj.pk} '
-                f'under Project {project_obj.pk}.')
-            logger.info(message)
-        else:
-            message = runner_result.error_message
-            logger.error(message)
-        return runner_result.success
+    request_runner = ProjectClusterAccessRequestRunner(project_user_obj)
+    request_runner.run()

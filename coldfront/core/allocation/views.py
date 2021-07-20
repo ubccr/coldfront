@@ -30,6 +30,7 @@ from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationAddUserForm,
                                              AllocationAttributeDeleteForm,
                                              AllocationClusterAccountRequestActivationForm,
+                                             AllocationClusterAccountUpdateStatusForm,
                                              AllocationForm,
                                              AllocationInvoiceNoteDeleteForm,
                                              AllocationInvoiceUpdateForm,
@@ -53,6 +54,7 @@ from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
                                              set_allocation_user_attribute_value)
 from coldfront.core.project.models import (Project, ProjectUser,
                                            ProjectUserStatusChoice)
+from coldfront.core.project.utils import ProjectClusterAccessRequestRunner
 from coldfront.core.resource.models import Resource
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.utils.common import get_domain_url, import_from_settings
@@ -103,22 +105,19 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         if self.request.user.has_perm('allocation.can_view_all_allocations'):
             return True
 
-        # TODO: Remove this block when allocations should be displayed.
-        return False
+        pk = self.kwargs.get('pk')
+        allocation_obj = get_object_or_404(Allocation, pk=pk)
 
-        # pk = self.kwargs.get('pk')
-        # allocation_obj = get_object_or_404(Allocation, pk=pk)
-        #
-        # user_can_access_project = allocation_obj.project.projectuser_set.filter(
-        #     user=self.request.user, status__name__in=['Active', 'New', ]).exists()
-        #
-        # user_can_access_allocation = allocation_obj.allocationuser_set.filter(
-        #     user=self.request.user, status__name__in=['Active', ]).exists()
-        #
-        # if user_can_access_project and user_can_access_allocation:
-        #     return True
-        #
-        # return False
+        user_can_access_project = allocation_obj.project.projectuser_set.filter(
+            user=self.request.user, status__name__in=['Active', 'New', ]).exists()
+
+        user_can_access_allocation = allocation_obj.allocationuser_set.filter(
+            user=self.request.user, status__name__in=['Active', ]).exists()
+
+        if user_can_access_project and user_can_access_allocation:
+            return True
+
+        return False
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -126,6 +125,33 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         allocation_obj = get_object_or_404(Allocation, pk=pk)
         allocation_users = allocation_obj.allocationuser_set.exclude(
             status__name__in=['Removed']).order_by('user__username')
+
+        # Manually display "Service Units" for each user if applicable.
+        # TODO: Avoid doing this manually.
+        kwargs = {
+            'allocation_attribute_type__name': 'Service Units',
+        }
+        has_service_units = allocation_obj.allocationattribute_set.filter(
+            **kwargs)
+        allocation_user_su_usages = {}
+        if has_service_units:
+            for allocation_user in allocation_users:
+                username = allocation_user.user.username
+                user_attributes = \
+                    allocation_user.allocationuserattribute_set.select_related(
+                        'allocationuserattributeusage'
+                    ).filter(**kwargs)
+                usage = '0.00'
+                if user_attributes.exists():
+                    attribute = user_attributes.first()
+                    try:
+                        usage = str(
+                            attribute.allocationuserattributeusage.value)
+                    except AttributeError:
+                        pass
+                allocation_user_su_usages[username] = usage
+        context['has_service_units'] = has_service_units
+        context['allocation_user_su_usages'] = allocation_user_su_usages
 
         if self.request.user.is_superuser:
             attributes_with_usage = [attribute for attribute in allocation_obj.allocationattribute_set.all(
@@ -1658,45 +1684,28 @@ class AllocationRequestClusterAccountView(LoginRequiredMixin,
             Allocation, pk=self.kwargs.get('pk'))
         user_obj = get_object_or_404(User, pk=self.kwargs.get('user_pk'))
         project_obj = allocation_obj.project
-        allocation_user_obj = AllocationUser.objects.get(
-            allocation=allocation_obj, user=user_obj)
-        allocation_attribute_type = AllocationAttributeType.objects.get(
-            name='Cluster Account Status')
-
-        pending = 'Pending - Add'
-        active = 'Active'
 
         redirect = HttpResponseRedirect(
             reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
         try:
-            access = allocation_obj.allocationuserattribute_set.get(
-                allocation_user__user=user_obj,
-                allocation_attribute_type=allocation_attribute_type)
-            if access.value in [pending, active]:
-                message = (
-                    f'User {user_obj.username} already has a pending or '
-                    f'active cluster access under Project {project_obj.name}.')
-                messages.warning(self.request, message)
-            else:
-                access.value = pending
-                access.save()
-        except AllocationUserAttribute.DoesNotExist:
-            AllocationUserAttribute.objects.create(
-                allocation_attribute_type=allocation_attribute_type,
-                allocation=allocation_obj,
-                allocation_user=allocation_user_obj,
-                value=pending)
-        except AllocationUserAttribute.MultipleObjectsReturned:
+            project_user_obj = ProjectUser.objects.get(
+                user=user_obj, project=project_obj)
+        except ProjectUser.DoesNotExist:
             message = (
                 'Unexpected server error. Please contact an administrator.')
             messages.error(self.request, message)
             return redirect
 
-        message = (
-            f'Requested cluster access under Project {project_obj.name} for '
-            f'User {user_obj.username}.')
-        messages.success(self.request, message)
+        request_runner = ProjectClusterAccessRequestRunner(project_user_obj)
+        runner_result = request_runner.run()
+        if runner_result.success:
+            message = (
+                f'Created a cluster access request for User {user_obj.pk} '
+                f'under Project {project_obj.pk}.')
+            messages.success(self.request, message)
+        else:
+            messages.error(self.request, runner_result.error_message)
 
         return redirect
 
@@ -1724,9 +1733,72 @@ class AllocationClusterAccountRequestListView(LoginRequiredMixin,
             name='Cluster Account Status')
         cluster_account_list = AllocationUserAttribute.objects.filter(
             allocation_attribute_type=cluster_account_status,
-            value='Pending - Add')
+            value__in=['Pending - Add', 'Processing'])
         context['cluster_account_list'] = cluster_account_list
         return context
+
+
+class AllocationClusterAccountUpdateStatusView(LoginRequiredMixin,
+                                               UserPassesTestMixin, FormView):
+    form_class = AllocationClusterAccountUpdateStatusForm
+    login_url = '/'
+    template_name = (
+        'allocation/allocation_update_cluster_account_status.html')
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        permission = 'allocation.can_review_cluster_account_requests'
+        if self.request.user.has_perm(permission):
+            return True
+        message = (
+            'You do not have permission to modify a cluster access request.')
+        messages.error(self.request, message)
+
+    def dispatch(self, request, *args, **kwargs):
+        self.allocation_user_attribute_obj = get_object_or_404(
+            AllocationUserAttribute, pk=self.kwargs.get('pk'))
+        self.user_obj = self.allocation_user_attribute_obj.allocation_user.user
+        status = self.allocation_user_attribute_obj.value
+        if status != 'Pending - Add':
+            message = f'Cluster access has unexpected status {status}.'
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse('allocation-cluster-account-request-list'))
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        form_data = form.cleaned_data
+        status = form_data.get('status')
+
+        allocation_obj = self.allocation_user_attribute_obj.allocation
+        project_obj = allocation_obj.project
+
+        self.allocation_user_attribute_obj.value = status
+        self.allocation_user_attribute_obj.save()
+
+        message = (
+            f'Cluster access request from User {self.user_obj.email} under '
+            f'Project {project_obj.name} and Allocation {allocation_obj.pk} '
+            f'has been marked for processing.')
+        messages.success(self.request, message)
+
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['cluster_account'] = self.allocation_user_attribute_obj
+        return context
+
+    def get_initial(self):
+        initial = {
+            'status': self.allocation_user_attribute_obj.value,
+        }
+        return initial
+
+    def get_success_url(self):
+        return reverse('allocation-cluster-account-request-list')
 
 
 class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
@@ -1754,7 +1826,7 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
             AllocationUserAttribute, pk=self.kwargs.get('pk'))
         self.user_obj = self.allocation_user_attribute_obj.allocation_user.user
         status = self.allocation_user_attribute_obj.value
-        if status != 'Pending - Add':
+        if status != 'Processing':
             message = f'Cluster access has unexpected status {status}.'
             messages.error(request, message)
             return HttpResponseRedirect(
@@ -1896,7 +1968,7 @@ class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,
             AllocationUserAttribute, pk=self.kwargs.get('pk'))
         self.user_obj = self.allocation_user_attribute_obj.allocation_user.user
         status = self.allocation_user_attribute_obj.value
-        if status != 'Pending - Add':
+        if status not in ('Pending - Add', 'Processing'):
             message = f'Cluster access has unexpected status {status}.'
             messages.error(request, message)
             return HttpResponseRedirect(

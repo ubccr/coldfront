@@ -3,6 +3,7 @@
   <div class="dropdown-menu">
     <a class="dropdown-item" href="/admin">MyBRC Administration</a>
     <a id="navbar-user-search" class="dropdown-item" href="{% url 'user-search-home' %}">User Search</a>
+    <a class="dropdown-item" href="{% url 'user-search-all' %}">All Users</a>
     <a class="dropdown-item" href="{% url 'project-list' %}?show_all_projects=on">All Projects</a>
     <a class="dropdown-item" href="{% url 'allocation-list' %}?show_all_allocations=on">All Allocations</a>
     <a id="navbar-project-reviews" class="dropdown-item" href="{% url 'project-review-list' %}">Project Reviews</a>

@@ -190,6 +190,18 @@ class AllocationRequestClusterAccountForm(forms.Form):
     selected = forms.BooleanField(initial=False, required=False)
 
 
+class AllocationClusterAccountUpdateStatusForm(forms.Form):
+
+    STATUS_CHOICES = [
+        ('Pending', 'Pending - Add'),
+        ('Processing', 'Processing'),
+    ]
+
+    status = forms.ChoiceField(
+        label='Status', choices=STATUS_CHOICES, required=True,
+        widget=forms.Select())
+
+
 class AllocationClusterAccountRequestActivationForm(forms.Form):
     username = forms.CharField(
         max_length=150,
