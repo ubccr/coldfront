@@ -17,7 +17,12 @@ Request New Allocation
   resources are available to request for this project. If you need access to
   more than one of these, please submit a separate allocation request for each
   resource. For each request you must provide the justification for how you
-  intend to use the resource to further the research goals of your project.</p>
+  intend to use the resource to further the research goals of your project. </br></br>
+  <b>Note : </b> Following link has the latest Tier information so please check this out before 
+  submitting your request</p>
+
+<p class="details"> <a target="_blank" href="https://www.rc.fas.harvard.edu/services/data-storage/#Offerings_Tiers_of_Service"> FASRC Stoage Service Details</a>
+</p>
 
 <p class="text-justify">Tier 0:  Bulk - Lustre </p>
 <ul>
@@ -48,7 +53,7 @@ Request New Allocation
 <ul>
   <li>Features: Low performance, S3 object store access, single copy, network attached to data transfer nodes, Globus transfer access.</li>
   <li>Availability July 2021</li>
-  <li>Cost: estimate $8/TB/yr</li>
+  <li>Cost: estimate $5/TB/yr</li>
 </ul>  
 
 <form method="post">
@@ -99,7 +104,7 @@ Request New Allocation
   var resources_with_eula = {{ resources_with_eula | safe }};
 
   $(document).ready(function () {
-    $('<br><input id="selectAll" class="check" type="checkbox"> <strong>Select All Users</strong>').insertAfter($("#div_id_users > label"))
+    $('<br><input id="selectAll" class="check" type="checkbox" checked> <strong>Select All Users</strong>').insertAfter($("#div_id_users > label"))
     $("#id_resource").trigger('change');
 
     $("#selectAll").click(function () {

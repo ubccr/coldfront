@@ -156,9 +156,15 @@ body > main > div > div.card.border-primary > div.card-body > form > div.alert.a
 .text-nowrap {
   color: black !important;
 }
+.btn-info {
+  background-color:#007bff !important;
+}
 .btn-success {
-  background-color:#A51C30 !important;
+  background-color:#007bff !important;
 }  
+.btn-danger {
+  background-color:#ffc107 !important;
+}
 #expand_button {
   color:#A51C30 !important;
 }

@@ -8,6 +8,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import IntegrityError
@@ -568,11 +569,12 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 'You need to create an account name. Create it by clicking the link under the "Allocation account" field.'))
             return self.form_invalid(form)
 
-        usernames = form_data.get('users')
+        #usernames = form_data.get('users')
+        usernames = []
         usernames.append(project_obj.pi.username)
         usernames = list(set(usernames))
-
-        users = [User.objects.get(username=username) for username in usernames]
+                 
+        users = [get_user_model().objects.get(username=username) for username in usernames]
         if project_obj.pi not in users:
             users.append(project_obj.pi)
 
@@ -684,7 +686,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         missing_users = list(set(active_users_in_project) -
                              set(users_already_in_allocation))
-        missing_users = User.objects.filter(username__in=missing_users).exclude(
+        missing_users = get_user_model().objects.filter(username__in=missing_users).exclude(
             pk=allocation_obj.project.pi.pk)
 
         users_to_add = [
@@ -739,7 +741,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
                     users_added_count += 1
 
-                    user_obj = User.objects.get(
+                    user_obj = get_user_model().objects.get(
                         username=user_form_data.get('username'))
 
                     if allocation_obj.allocationuser_set.filter(user=user_obj).exists():
@@ -802,7 +804,7 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
         users_to_remove = list(allocation_obj.allocationuser_set.exclude(
             status__name__in=['Removed', 'Error', ]).values_list('user__username', flat=True))
 
-        users_to_remove = User.objects.filter(username__in=users_to_remove).exclude(
+        users_to_remove = get_user_model().objects.filter(username__in=users_to_remove).exclude(
             pk__in=[allocation_obj.project.pi.pk, self.request.user.pk])
         users_to_remove = [
 
@@ -854,7 +856,7 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
                     remove_users_count += 1
 
-                    user_obj = User.objects.get(
+                    user_obj = get_user_model().objects.get(
                         username=user_form_data.get('username'))
                     if allocation_obj.project.pi == user_obj:
                         continue
