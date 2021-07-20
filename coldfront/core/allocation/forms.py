@@ -18,25 +18,25 @@ class AllocationForm(forms.Form):
 We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!
         '''
     resource = forms.ModelChoiceField(queryset=None, empty_label=None)
-    justification = forms.CharField(widget=forms.Textarea)
     quantity = forms.IntegerField(required=True)
-    users = forms.MultipleChoiceField(
-        widget=forms.CheckboxSelectMultiple, required=False)
+    justification = forms.CharField(widget=forms.Textarea)
+    #users = forms.MultipleChoiceField(
+    #    widget=forms.CheckboxSelectMultiple, required=False)
 
     def __init__(self, request_user, project_pk,  *args, **kwargs):
         super().__init__(*args, **kwargs)
         project_obj = get_object_or_404(Project, pk=project_pk)
         self.fields['resource'].queryset = get_user_resources(request_user)
         self.fields['quantity'].initial = 1
-        user_query_set = project_obj.projectuser_set.select_related('user').filter(
-            status__name__in=['Active', ])
-        user_query_set = user_query_set.exclude(user=project_obj.pi)
-        if user_query_set:
-            self.fields['users'].choices = ((user.user.username, "%s %s (%s)" % (
-                user.user.first_name, user.user.last_name, user.user.username)) for user in user_query_set)
-            self.fields['users'].help_text = '<br/>Select users in your project to add to this allocation.'
-        else:
-            self.fields['users'].widget = forms.HiddenInput()
+        # user_query_set = project_obj.projectuser_set.select_related('user').filter(
+        #     status__name__in=['Active', ])
+        # user_query_set = user_query_set.exclude(user=project_obj.pi)
+        # if user_query_set:
+        #     self.fields['users'].choices = ((user.user.username, "%s %s (%s)" % (
+        #         user.user.first_name, user.user.last_name, user.user.username)) for user in user_query_set)
+        #     self.fields['users'].help_text = '<br/>Select users in your project to add to this allocation.'
+        # else:
+        #     self.fields['users'].widget = forms.HiddenInput()
 
         self.fields['justification'].help_text = '<br/>Justification for requesting this allocation.'
 

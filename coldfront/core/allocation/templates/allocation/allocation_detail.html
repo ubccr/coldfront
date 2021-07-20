@@ -2,6 +2,8 @@
     <meta charset="utf-8">
     <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/css/bootstrap.css">
     <link rel="stylesheet" href="//cdn.datatables.net/1.10.16/css/dataTables.bootstrap4.min.css">
+    <script src="pdf.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.js"></script>
   </head>
   
 {% extends "common/base.html" %}
@@ -25,9 +27,10 @@ Allocation Detail
     This is a allocation from an archived project! You cannot make any changes.
   </div>
 {% endif %}
-
+<div id = "allocation">
 <div class="mb-3">
   <h2>Allocation Detail</h2>
+  <button class = "btn btn-primary" id = "download"> Download PDF </button>
   <hr>
 </div>
 
@@ -52,10 +55,16 @@ Allocation Detail
             <td><a href="{% url 'project-detail' allocation.project.pk %}">{{ allocation.project }}</a></td>
           </tr>
           <tr>
+              <th scope="row" class="text-nowrap">Principal Investigator:</th>
+              <td>
+                {{ allocation.project.pi.first_name }} {{ allocation.project.pi.last_name }}
+                ({{ allocation.project.pi.email }})
+              </td>
+          </tr> 
+          <tr>
             <th scope="row" class="text-nowrap">Resource{{ allocation.resources.all|pluralize }} in allocation:</th>
             <td>{{ allocation.get_resources_as_string }}</td>
           </tr>
-      
           <tr>
             <th scope="row" class="text-nowrap">Justification:</th>
             <td>{{ allocation.justification }}</td>
@@ -70,35 +79,29 @@ Allocation Detail
               {% endif %}
             </td>
           </tr>
+                      <tr>
+              <th scope="row" class="text-nowrap">Service Period:</th>
+              <td> 1 Month
+             </td>
+            </tr>
+            <tr>
+                <th scope="row" class="text-nowrap">Total Users in Your Bill:</th>
+                <td>{{ allocation_users.count }}</td>
+            </tr>
+            <tr>
+                <th scope="row" class="text-nowrap">Total Usage (TB):</th>
+                <td>{{ allocation_users.0.allocation_group_usage_bytes| div:1073741824|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <th scope="row" class="text-nowrap">Quota (TB):</th>
+                <td id = "group_quota">{{ allocation_users.0.allocation_group_quota| div:1073741824|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <th  style="background-color:#D3D3D3" bordercolor="red" scope="row" class="text-nowrap">Total Amount Due:	</th>
+               
+                <td style="background-color:#D3D3D3">${{allocation_users.0.allocation_group_quota| div:1073741824|mul:50| div:12|floatformat:2}}</td>
+              </tr>
           <tr>
-            <th scope="row" class="text-nowrap">Service Start Date:</th>
-            <td>
-              {% if request.user.is_superuser %}
-                {{ form.start_date }}
-              {% else %}
-                {{ allocation.start_date }}
-              {% endif %}
-            </td>
-          </tr>
-          <tr>
-            <th scope="row" class="text-nowrap">Service End Date:</th>
-            <td>
-              {% if request.user.is_superuser %}
-                {{ form.end_date }}
-              {% else %}
-                {{ allocation.end_date }}
-              {% endif %}
-
-              {% if is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
-                <a href="{% url 'allocation-renew' allocation.pk %}">
-                  <span class="badge badge-warning">
-                    <i class="fas fa-redo-alt" aria-hidden="true"></i>
-                    Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} - click to renew
-                  </span>
-                </a>
-              {% endif %}
-            </td>
-          </tr>
           <tr>
             <th scope="row" class="text-nowrap">Description:</th>
             <td>
@@ -109,17 +112,7 @@ Allocation Detail
               {% endif %}
             </td>
           </tr>
-
-          <tr>
-            {% if allocation.is_locked %}
-              <th scope="row" class="text-nowrap">Locked</th>
-              <td><i class="fas fa-lock" aria-hidden="true"></i></td>
-            {% else %}
-              <th scope="row" class="text-nowrap">Unlocked</th>
-              <td><i class="fas fa-lock-open" aria-hidden="true"></i></td>
-            {% endif %}
-          </tr>
-        </table>
+       </table>
       </div>
       </div>
       {% if request.user.is_superuser %}
@@ -128,7 +121,6 @@ Allocation Detail
     </form>
   </div>
 </div>
-
 {% if attributes or attributes_with_usage or request.user.is_superuser %}
   <div class="card mb-3">
     <div class="card-header">
@@ -187,14 +179,14 @@ Allocation Detail
     </div>
   </div>
 {% endif %}
-
+<div class="html2pdf__page-break"></div>
 <!-- Start Allocation Users -->
 <div class="card mb-3">
   <div class="card-header">
     <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Users in Allocation</h3>
     <span class="badge badge-secondary">{{allocation_users.count}}</span>
     <div class="float-right">
-      {% if allocation.project.status.name != 'Archived' and is_allowed_to_update_project and allocation.status.name in 'Active,New,Renewal Requested' %}
+      {% if allocation.project.status.name != 'Archived' and is_allowed_to_update_project and allocation.status.name in 'Active,New,Renewal Requested' and request.user.is_superuser %}
         <a class="btn btn-success" href="{% url 'allocation-add-users' allocation.pk %}" role="button">
           <i class="fas fa-user-plus" aria-hidden="true"></i> Add Users
         </a>
@@ -278,7 +270,7 @@ Allocation Detail
   <script>
       $(document).ready( function () {
       $('#mydatatable').DataTable({
-      
+       "pageLength": 25, 
       dom: 'B<"clear">lfrtip',
       "order": [[ 3, "desc" ]],
       buttons: {
@@ -290,7 +282,7 @@ Allocation Detail
       );
       } );
       </script>
-
+<div class="html2pdf__page-break"></div>
 <!-- Start Admin Messages -->
 <div class="card mb-3">
   <div class="card-header">
@@ -328,7 +320,25 @@ Allocation Detail
     {% endif %}
   </div>
 </div>
-
+</div>
+<script type="text/javascript">
+window.onload = function () {
+    document.getElementById("download")
+        .addEventListener("click", () => {
+            const allocation = this.document.getElementById("allocation");
+            console.log(allocation);
+            console.log(window);
+            var opt = {
+                margin: 1,
+                filename: 'allocation.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'legal', orientation: 'landscape' }
+            };
+            html2pdf().from(allocation).set(opt).save();
+        })
+}
+</script>
 <script>
   $(document).ready(function () {
     var guage_data = {{ guage_data | safe }};

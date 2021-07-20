@@ -1,20 +1,12 @@
 <head>
     <meta charset="utf-8">
-   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href = "https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel = "stylesheet">
-<link href = "jquery.datetimepicker.min.css" rel = "stylesheet"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href = "https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel = "stylesheet">
+    <link href = "jquery.datetimepicker.min.css" rel = "stylesheet"/>
     <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/css/bootstrap.css">
     <link rel="stylesheet" href="//cdn.datatables.net/1.10.16/css/dataTables.bootstrap4.min.css">
     <script src="pdf.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.js"></script>
-    <!-- <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.0.0-rc.7/dist/html2canvas.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jspdf-html2canvas@latest/dist/jspdf-html2canvas.min.js"></script> -->
-    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.8.0/html2pdf.bundle.min.js"></script> -->
-    <!-- calendar picker -->
-
-
-
   </head>
   
 {% extends "common/base.html" %}
@@ -40,7 +32,7 @@
 {% endif %}
 <div id = "invoice">
 <div class="mb-3" >
-    <h2>FAS Research Computing Invoice</h2>
+    <h2>FAS Research Computing Usage Report</h2>
     <!-- <a class="btn btn-info" href="{% url 'pdf_view' allocation.id %}" target="_blank">View Invoice</a> -->
     <button class = "btn btn-primary" id = "download"> Download PDF </button>
 <!--     
@@ -62,7 +54,7 @@
  
   <div class="card mb-3">
     <div class="card-header">
-      <h3><i class="fas fa-list" aria-hidden="true"></i> Invoice Summary For: {{ allocation.project.pi.first_name }} {{ allocation.project.pi.last_name }}</h3>
+      <h3><i class="fas fa-list" aria-hidden="true"></i> Usage Summary For: {{ allocation.project.pi.first_name }} {{ allocation.project.pi.last_name }}</h3>
     </div>
     <div class="card-body">
       <form method="post">
@@ -96,81 +88,16 @@
               <th scope="row" class="text-nowrap">Resource{{ allocation.resources.all|pluralize }} in allocation:</th>
               <td>{{ allocation.get_resources_as_string }}</td>
             </tr>
-            <!-- <tr>
-              <th scope="row" class="text-nowrap">Quantity:</th>
-              <td>
-                {{ allocation.quantity }}
-              </td>
-            </tr> -->
-            <!-- <tr>
-              <th scope="row" class="text-nowrap">Status:</th>
-              <td>
-                {{ form.status }}
-              </td>
-            </tr> -->
             <tr>
               <th scope="row" class="text-nowrap">Service Period:</th>
-              <td>
-               
- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script> 
-  <!-- <script>
-    function onLoad2() {
-      //method for button times
-      if (document.getElementById('1month').checked ) {
-        var price = {{ allocation_users.0.allocation_group_quota }} * 1 / 12 * 50;
-        var n = price.toFixed(2);
-        console.log(price);
-        document.getElementById("totalamount").innerHTML = n;
-      }
-      
-
-      if (document.getElementById('3month').checked ) {
-        var price = {{ allocation_users.0.allocation_group_quota }} * 3 / 12 * 50; 
-        var n = price.toFixed(2);
-        console.log(price);
-        document.getElementById("totalamount").innerHTML = n;
-  
-      }
-
-      if (document.getElementById('6month').checked ) {
-        var price = {{ allocation_users.0.allocation_group_quota }} * 6 / 12 * 50;
-        var n = price.toFixed(2);
-        document.getElementById("totalamount").innerHTML = n;
-
-      }
-      if (document.getElementById('1year').checked ) {
-        var price = {{ allocation_users.0.allocation_group_quota }} * 12 / 12 * 50;
-        var n = price.toFixed(2);
-        document.getElementById("totalamount").innerHTML = n;
-
-      }
-    }
-  
-  </script> --> 
-
- 
-
-  <!-- <input type="radio" id="1month" name="period" value="1month" onclick="onLoad2(); ">
-  <label for="period">1 Month</label><br>
-  <input type="radio" id="3month" name="period" value="3month" onclick="onLoad2();">
-  <label for="period">3 Months</label><br>
-  <input type="radio" id="6month" name="period" value="6month" onclick="onLoad2();">
-  <label for="period">6 Months</label><br>
-  <input type="radio" id="1year" name="period" value="1year" onclick="onLoad2();">
-  <label for="period">1 Year</label> -->
-  <!-- <br>   -->
-
-  <!-- <input type="submit" value="Submit"> -->
-<!-- </form> -->
-
-        <select class = "dropdown" name="dropdown" id="billingPeriod" >
-            <option value="1month" id = "1month" selected>1 Month</option>
-            <option value="3month" id = "3month">3 Months</option>
-            <option value="6month" id = "6month">6 Months</option>
-            <option value="1year" id ="1year">1 Year</option>
-        </select>
-
-                </td>
+              <td> 1 Month
+              {% comment %} <select class = "dropdown" name="dropdown" id="billingPeriod" >
+                  <option value="1month" id = "1month" selected>1 Month</option>
+                  <option value="3month" id = "3month">3 Months</option>
+                  <option value="6month" id = "6month">6 Months</option>
+                  <option value="1year" id ="1year">1 Year</option>
+              </select> {% endcomment %}
+             </td>
             </tr>
 
    
@@ -180,11 +107,11 @@
             </tr>
             <tr>
                 <th scope="row" class="text-nowrap">Total Usage (TB):</th>
-                <td>{{ allocation_users.0.allocation_group_usage_bytes| div:1099511627776|floatformat:2 }}</td>
+                <td>{{ allocation_users.0.allocation_group_usage_bytes| div:1073741824|floatformat:2 }}</td>
             </tr>
             <tr>
                 <th scope="row" class="text-nowrap">Quota (TB):</th>
-                <td id = "group_quota">{{ allocation_users.0.allocation_group_quota }}</td>
+                <td id = "group_quota">{{ allocation_users.0.allocation_group_quota| div:1073741824|floatformat:2 }}</td>
             </tr>
 
             <tr>
@@ -198,14 +125,11 @@
             <tr>
                 <th  style="background-color:#D3D3D3" bordercolor="red" scope="row" class="text-nowrap">Total Amount Due:	</th>
                
-                <!-- <td style="background-color:#D3D3D3">${{allocation_users.0.allocation_group_usage_bytes| div:1099511627776|mul:50| div:12|floatformat:2}}</td> -->
-                <td  style="background-color:#D3D3D3" id = "totalamount"></td>
+                <td style="background-color:#D3D3D3">${{allocation_users.0.allocation_group_quota| div:1073741824|mul:50| div:12|floatformat:2}}</td>
+                {% comment %} <td  style="background-color:#D3D3D3" id = "totalamount"></td> {% endcomment %}
               </tr>
           </table>
         </div>
-        <!-- {% if request.user.is_superuser or perms.allocation.can_manage_invoice%}
-          <button type="submit" class="btn btn-success float-right"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
-        {% endif %} -->
       </form>
     </div>
   </div>
@@ -213,32 +137,32 @@
   <script>
       const selectElement = document.getElementById('billingPeriod');
       console.log(selectElement);
-      var price = {{ allocation_users.0.allocation_group_quota }} * 1 / 12 * 50;
+      var price = {{ allocation_users.0.allocation_group_quota | div:1073741824|floatformat:2 }} * 1 / 12 * 50;
       var n = price.toFixed(2);
               
       document.getElementById("totalamount").innerHTML = n;
       selectElement.addEventListener('change', (event) => {
             if (event.target.value=="1month") {
-              var price = {{ allocation_users.0.allocation_group_quota }} * 1 / 12 * 50;
+              var price = {{ allocation_users.0.allocation_group_quota | div:1073741824|floatformat:2 }} * 1 / 12 * 50;
               var n = price.toFixed(2);
               
               document.getElementById("totalamount").innerHTML = n;
             }
             // console.log(event.target.value);
             if (event.target.value=="3month") {
-              var price = {{ allocation_users.0.allocation_group_quota }} * 3 / 12 * 50;
+              var price = {{ allocation_users.0.allocation_group_quota | div:1073741824|floatformat:2 }} * 3 / 12 * 50;
               var n = price.toFixed(2);
               
               document.getElementById("totalamount").innerHTML = n;
             }
             if (event.target.value=="6month") {
-              var price = {{ allocation_users.0.allocation_group_quota }} * 6 / 12 * 50;
+              var price = {{ allocation_users.0.allocation_group_quota | div:1073741824|floatformat:2 }} * 6 / 12 * 50;
               var n = price.toFixed(2);
               
               document.getElementById("totalamount").innerHTML = n;
             }
             if (event.target.value=="1year") {
-              var price = {{ allocation_users.0.allocation_group_quota }} * 12 / 12 * 50;
+              var price = {{ allocation_users.0.allocation_group_quota | div:1073741824|floatformat:2 }} * 12 / 12 * 50;
               var n = price.toFixed(2);
               
               document.getElementById("totalamount").innerHTML = n;
@@ -282,7 +206,7 @@
   <div class="card-header">
     <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Users in Allocation</h3>
     <span class="badge badge-secondary">{{allocation_users.count}}</span>
-    <div class="float-right">
+    {% comment %} <div class="float-right">
       {% if allocation.project.status.name != 'Archived' and is_allowed_to_update_project and allocation.status.name in 'Active,New,Renewal Requested' %}
         <a class="btn btn-success" href="{% url 'allocation-add-users' allocation.pk %}" role="button">
           <i class="fas fa-user-plus" aria-hidden="true"></i> Add Users
@@ -292,7 +216,7 @@
         </a>
       {% endif %}
 
-    </div>
+    </div> {% endcomment %}
   </div>
   <div class="card-body">
     <div class="table-responsive">
@@ -325,9 +249,11 @@
               <!-- <td>{{ user.usage_bytes}}</td> -->
 
               <td data-sort = "{{user.usage_bytes}}">{{ user.usage }}{{ user.unit }}</td>
-        
-              <td>{{user.usage_bytes|mul:100 | div:user.allocation_group_usage_bytes|floatformat:2}}</td>
-              <td>{{user.usage_bytes|mul:100 | div:user.allocation_group_usage_bytes|floatformat:2|div:100|mul:allocation_users.0.allocation_group_quota|mul:50|div:12|floatformat:2}}</td>
+              <td>{{user.usage_bytes|div:1024|div:user.allocation_group_usage_bytes|mul:100|floatformat:2}}</td>
+              <td>{{4.167|mul:user.allocation_group_quota|div:1073741824|mul:user.usage_bytes|div:1024|div:user.allocation_group_usage_bytes|floatformat:2}}</td>
+
+              {% comment %} <td>{{user.usage_bytes|mul:100 | div:user.allocation_group_usage_bytes|floatformat:2}}</td>
+              <td>{{user.usage_bytes|mul:100 | div:user.allocation_group_usage_bytes|floatformat:2|div:100|mul:allocation_users.0.allocation_group_quota|mul:50|div:12|floatformat:2}}</td> {% endcomment %}
 
               <!-- <td>{{user.usage_bytes|mul:100 | div:user.allocation_group_usage_bytes|floatformat:2|mul:50|mul:50| div:12|floatformat:2}}</td> -->
             
@@ -374,6 +300,7 @@ btn.addEventListener('click', function(){
 <script>
     $(document).ready( function () {
     $('#mydatatable').DataTable({
+    "pageLength": 25,
     "order": [[ 3, "desc" ]],
     iDisplayLength: -1,
     dom: 'B<"clear">lfrtip',
