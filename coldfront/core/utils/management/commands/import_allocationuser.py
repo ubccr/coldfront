@@ -51,7 +51,7 @@ def kb_to_bytes(kb_storage):
     return tb_storage
 
 class Command(BaseCommand):
-    help = "./manage.py import_allocationuser --storagename "
+    help = "./manage.py import_allocationuser --storagename '' --tier ''"
     def add_arguments(self, parser):
         parser.add_argument(
             '--storagename',
@@ -106,9 +106,9 @@ class Command(BaseCommand):
                 #     end_date = datetime.datetime.now() + relativedelta(days=365)
 
                 # else: # found project
-                try:
-                    allocations = Allocation.objects.filter(project = filtered_query)
-                except Allocation.DoesNotExist:
+                allocations = Allocation.objects.filter(project = filtered_query, resources__name=resource_name, status__name='Active')
+                if(allocations.count() == 0):
+                    print("create allocation")
                     project_obj = Project.objects.get(title = lab_name)
                     start_date = datetime.datetime.now()
                     end_date = datetime.datetime.now() + relativedelta(days=365)
@@ -123,14 +123,7 @@ class Command(BaseCommand):
                     allocation_obj.resources.add(
                         Resource.objects.get(name=resource_name))
                     allocation_obj.save()
-                    allocations = Allocation.objects.filter(project = filtered_query)
-                    # allocations, created = Allocation.objects.get_or_create(
-                    #     project=project_obj,
-                    #     status=AllocationStatusChoice.objects.get(name='Active'),
-                    #     start_date=start_date,
-                    #     end_date=end_date,
-                    #     justification='Allocation Information for ' + lab_name
-                    # )
+                    allocations = Allocation.objects.filter(project = filtered_query,resources__name=resource_name, status__name='Active')
                 
                 lab_data = data[0]
                 data = data[1:] # skip the usage information
@@ -147,8 +140,7 @@ class Command(BaseCommand):
                 lab_usage_in_tb = kb_to_tb(lab_usage_in_kb)
                 lab_usage_in_tb = round(lab_usage_in_tb, 2)
                 # lab_usage_in_tb_str = str(lab_usage_in_tb)
-                
-                allocation= allocations.filter(resources__name=resource_name, status__name='Active')[0]
+                allocation= allocations[0]
                 if (allocation): # get allocation
                     allocation_attribute_type_obj = AllocationAttributeType.objects.get(
                         name='Storage Quota (TB)')
@@ -160,7 +152,6 @@ class Command(BaseCommand):
                         allocation_attribute_obj.value = lab_allocation_in_tb_str
                         allocation_attribute_obj.save()
                         allocation_attribute_exist = True
-                        
                     except AllocationAttribute.DoesNotExist:
                         allocation_attribute_exist = False
 
@@ -171,12 +162,10 @@ class Command(BaseCommand):
                             value = lab_allocation_in_tb_str)
                         allocation_attribute_type_obj.save()
                     
-                    # else:
-                    #     allocation_attribute_obj.value = lab_allocation_in_tb_str
 
                     allocation_attribute_obj.allocationattributeusage.value = lab_usage_in_tb
                     allocation_attribute_obj.allocationattributeusage.save()
-                    allocation_users = allocation.allocationuser_set.order_by('user__username')
+                    allocation_users = allocation.allocationuser_set.filter(status__name='Active').order_by('user__username')
 
                     user_json_dict = dict() #key: username, value paid: user_lst dictionary
                     # store every user from JSON in a dictionary
@@ -187,18 +176,20 @@ class Command(BaseCommand):
                     # loop through my allocation_users set
                     for allocation_user in allocation_users:
                         allocation_user_username = (allocation_user.user.username)
-
                         if allocation_user_username in user_json_dict:
-                            allocation_user.status = AllocationUserStatusChoice.objects.get(name='Active')
+                            user_obj = get_user_model().objects.get(username = allocation_user_username)
+                            allocationuser_obj = AllocationUser.objects.get(user=user_obj)
+                            allocationuser_obj.status = AllocationUserStatusChoice.objects.get(name='Active')
                             one_user_logical_usage = user_json_dict[allocation_user_username]['logical_usage']
-                            allocation_user.usage_bytes = one_user_logical_usage
+                            allocationuser_obj.usage_bytes = one_user_logical_usage
                             num, alpha = splitString(user_json_dict[allocation_user_username]['usage'])
-                            allocation_user.usage = num
-                            allocation_user.unit = alpha
-                            allocation_user.save()
+                            allocationuser_obj.usage = num
+                            allocationuser_obj.unit = alpha
+                            allocationuser_obj.save()
+                            allocation.save()
+                            user_json_dict.pop(allocation_user_username)
                         else:
                             try:
-                                print("Following user set to Removed as no data found in Starfish: " + allocation_user_username)
                                 user_obj = get_user_model().objects.get(username = allocation_user_username)
                                 allocationuser_obj = AllocationUser.objects.get(user=user_obj)
                                 allocationuser_obj.status = AllocationUserStatusChoice.objects.get(name='Removed')
@@ -208,51 +199,40 @@ class Command(BaseCommand):
                                 allocationuser_obj.allocation_group_usage_bytes = lab_data["kbytes"]
                                 allocationuser_obj.allocation_group_quota = lab_data["quota"]
                                 allocationuser_obj.save()
+                                allocation.save()
                             except Exception as e:
                                     print(f'Error: {e}')
                                 # allocation_users.remove(allocation_user) # remove this particular allocation_user
 
-                            # import allocationuser from JSON;
-                            # if user doesn't exist: I create user object, allocationuser object
-                            # if user does exist, I update allocationuser object
-                            for json_user in user_json_dict:
-                                # if JSON allocationuser is not in user: create user; create allocation user
-                                # if JSON allocationuser is in user, check
-                                """
-                                if user yes AllocationUser yes: then update allocationuser
-                                if user yes AllocationUser no: then create allocationuser
-                                if user no allocationuser no: create both
-                                if user no allocationuser yes: this scenario does not exist
-                                """
-                                # check whether user is in User object
-                                allocation_user_exist = False
+                    for json_user in user_json_dict:
+                        try:
+                            user_obj = get_user_model().objects.get(username = json_user)
+                        except get_user_model().DoesNotExist:
+                            raise Exception(f'Cannot find user {json_user}')
 
-                                try:
-                                    user_obj = get_user_model().objects.get(username = json_user)
-                                except get_user_model().DoesNotExist:
-                                    raise Exception(f'Cannot find user {json_user}')
+                        try:
+                            allocationuser_obj = AllocationUser.objects.get(user=user_obj)
+                            print(allocationuser_obj.status)
+                            allocationuser_obj.status= AllocationUserStatusChoice.objects.get(name='Active')
+                        except AllocationUser.DoesNotExist:
+                            # create allocationuser object
+                            allocationuser_obj = AllocationUser(
+                                allocation=allocation,
+                                user=user_obj,
+                                status=AllocationUserStatusChoice.objects.get(name='Active'),
+                            )
 
-                                try:
-                                    allocationuser_obj = AllocationUser.objects.get(user=user_obj)
-                                    allocationuser_obj.staus = AllocationUserStatusChoice.objects.get(name='Active')
-                                except AllocationUser.DoesNotExist:
-                                    # create allocationuser object
-                                    allocationuser_obj = AllocationUser(
-                                        allocation=allocation,
-                                        user=user_obj,
-                                        status=AllocationUserStatusChoice.objects.get(name='Inactive'),
-                                    )
-
-                                # only updating allocation user object
-                                usage_string = user_json_dict[json_user]['usage']
-                                num, alpha = splitString(usage_string)
-                                allocationuser_obj.usage = num
-                                allocationuser_obj.usage_bytes = user_json_dict[json_user]['logical_usage']
-                                allocationuser_obj.unit = alpha
-                                allocationuser_obj.allocation_group_usage_bytes = lab_data["kbytes"]
-                                allocationuser_obj.allocation_group_quota = lab_data["quota"]
-                                allocationuser_obj.save()
-                                get_user_model().objects.get(username=json_user).save()
+                        # only updating allocation user object
+                        usage_string = user_json_dict[json_user]['usage']
+                        num, alpha = splitString(usage_string)
+                        allocationuser_obj.usage = num
+                        allocationuser_obj.usage_bytes = user_json_dict[json_user]['logical_usage']
+                        allocationuser_obj.unit = alpha
+                        allocationuser_obj.allocation_group_usage_bytes = lab_data["kbytes"]
+                        allocationuser_obj.allocation_group_quota = lab_data["quota"]
+                        allocationuser_obj.save()
+                        allocation.save()
+                        # get_user_model().objects.get(username=json_user).save()
             except Exception as e:
                 # logger.exception(e)
                 print(f'Error: {e}')
