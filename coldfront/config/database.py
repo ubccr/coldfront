@@ -4,7 +4,7 @@ from coldfront.config.env import ENV
 #------------------------------------------------------------------------------
 # Database settings
 #------------------------------------------------------------------------------
-# Set this using the DB_URL env variable. Defaults to sqlite. 
+# Set this using the DB_URL env variable. Defaults to sqlite.
 #
 # Examples:
 #
@@ -17,7 +17,7 @@ from coldfront.config.env import ENV
 DATABASES = {
     'default': ENV.db_url(
         var='DB_URL',
-        default='sqlite:///'+os.path.join(os.getcwd(), 'coldfront.db')
+        default='sqlite:///' + os.path.join(os.getcwd(), 'coldfront.db')
     )
 }
 
