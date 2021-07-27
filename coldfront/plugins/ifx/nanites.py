@@ -26,7 +26,6 @@ class Nanite2ColdfrontUser(Nanite2User):
         '''
         Ensure that regular users cannot login
         '''
-        logger.debug("Running setUpForRole")
         if role == 'coldfront_user':
             user.is_active = False
             user.save()
