@@ -129,35 +129,7 @@ You can log in as `admin` with password `test1234`.
 You can log in as a PI using username `cgray` with password `test1234`.
 You can log in as another PI using username `sfoster` with password `test1234`.
 
-Password for all users is also `test1234`. 
-
-### BRC Development Database Setup
-
-Instead of steps 6-7 above, data may be loaded in from a fixture. Please request access to this file.
-
-1. Checkout the development branch.
-```
-git checkout develop
-```
-
-2. Initially, no `coldfront.db` file exists. Create it:
-```
-python manage.py migrate
-```
-
-3. Load in the data.
-```
-python manage.py loaddata development_data.json
-```
-
-4. Create a superuser.
-```
-python manage.py shell
->>> from django.contrib.auth.models import User
->>> User.objects.create_superuser(email="email@address.com", username="username", password="test1234")
-```
-
-Note that all users have password "test1234".
+Password for all users is also `test1234`.
 
 ## Directory structure
 
