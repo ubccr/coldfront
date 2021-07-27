@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:experimental
 FROM python:3.6
 
-EXPOSE 80
+EXPOSE 9000
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libsasl2-dev libldap2-dev libssl-dev \
     nginx supervisor \
