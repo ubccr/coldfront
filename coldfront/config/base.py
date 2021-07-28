@@ -112,7 +112,7 @@ TEMPLATES = [
 SITE_TEMPLATES = ENV.str('SITE_TEMPLATES', default='')
 if len(SITE_TEMPLATES) > 0:
     if os.path.isdir(SITE_TEMPLATES):
-        TEMPLATES[0].DIRS.insert(0, SITE_TEMPLATES)
+        TEMPLATES[0]["DIRS"].insert(0, SITE_TEMPLATES)
     else:
         raise ImproperlyConfigured('SITE_TEMPLATES should be a path to a directory')
 
