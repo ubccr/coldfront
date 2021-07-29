@@ -15,6 +15,17 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
     '''
     Calculate and collect Allocation fractions so that billing can reflect the percentage of the Allocation used
     '''
+    def getRateDescription(self, rate):
+        '''
+        Text description of rate for use in txn rate and description.
+        Empty string is returned if rate.price or rate.units is None.
+        '''
+        desc = ''
+        if rate.price is not None and rate.units is not None:
+            dollar_price = Decimal(rate.price) / 100
+            desc = f'${dollar_price.quantize(Decimal(".01"))} per {rate.units}'
+        return desc
+
     def getAllocationFromProductUsage(self, product_usage):
         '''
         Returns the relevant Allocation
@@ -41,6 +52,9 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
             raise Exception(f'Units for {product} should be "TB"')
         if product_usage.units != 'b':
             raise Exception('Product usage units should be in bytes (b)')
+
+        rate_desc = self.getRateDescription(rate)
+
         transactions_data = []
 
         # Get the quota.  Charge will be users percent of quota value.
@@ -71,7 +85,8 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
             {
                 'charge': charge,
                 'description': description,
-                'author': user
+                'author': user,
+                'rate': rate_desc,
             }
         )
         return transactions_data
