@@ -42,6 +42,9 @@ class Allocation(TimeStampedModel):
     status = models.ForeignKey(
         AllocationStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
     quantity = models.IntegerField(default=1)
+    leverage_multiple_gpus = models.CharField(max_length=4, choices=(('No', 'No'), ('Yes', 'Yes')), null=True)
+    training_or_inference = models.CharField(max_length=9, choices=(('Training', 'Training'), ('Inference', 'Inference'), ('Both', 'Both')), null=True)
+    for_coursework = models.CharField(max_length=4, choices=(('No', 'No'), ('Yes', 'Yes')), null=True)
     start_date = models.DateField(blank=True, null=True)
     end_date = models.DateField(blank=True, null=True)
     justification = models.TextField()
@@ -247,6 +250,7 @@ class AllocationAttribute(TimeStampedModel):
         elif expected_value_type == "Yes/No" and self.value not in ["Yes", "No"]:
             raise ValidationError(
                 'Invalid Value "%s". Allowed inputs are "Yes" or "No".' % (self.value))
+        # TODO - Put check for 'True/False' attribute
         elif expected_value_type == "Date":
             try:
                 datetime.datetime.strptime(self.value.strip(), "%Y-%m-%d")

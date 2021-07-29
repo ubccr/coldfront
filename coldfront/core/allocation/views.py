@@ -514,6 +514,12 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         user_resources = get_user_resources(self.request.user)
         resources_form_default_quantities = {}
         resources_form_label_texts = {}
+        resources_form_leverage_multiple_gpus = {}
+        resources_form_leverage_multiple_gpus_label = {}
+        resources_form_training_or_inference = {}
+        resources_form_training_or_inference_label = {}
+        resources_form_for_coursework = {}
+        resources_form_for_coursework_label = {}
         resources_with_eula = {}
         for resource in user_resources:
             if resource.resourceattribute_set.filter(resource_attribute_type__name='quantity_default_value').exists():
@@ -525,6 +531,37 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     resource_attribute_type__name='quantity_label').value
                 resources_form_label_texts[resource.id] = mark_safe(
                     '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='leverage_multiple_gpus').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='leverage_multiple_gpus').value
+                resources_form_leverage_multiple_gpus[resource.id] = value         
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='leverage_multiple_gpus_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='leverage_multiple_gpus_label').value
+                resources_form_leverage_multiple_gpus_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='training_or_inference').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='training_or_inference').value
+                resources_form_training_or_inference[resource.id] = value         
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='training_or_inference_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='training_or_inference_label').value
+                resources_form_training_or_inference_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='for_coursework').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='for_coursework').value
+                resources_form_for_coursework[resource.id] = value         
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='for_coursework_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='for_coursework_label').value
+                resources_form_for_coursework_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
             if resource.resourceattribute_set.filter(resource_attribute_type__name='eula').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='eula').value
@@ -533,6 +570,12 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         context['AllocationAccountForm'] = AllocationAccountForm()
         context['resources_form_default_quantities'] = resources_form_default_quantities
         context['resources_form_label_texts'] = resources_form_label_texts
+        context['resources_form_leverage_multiple_gpus_label'] = resources_form_leverage_multiple_gpus_label
+        context['resources_form_leverage_multiple_gpus'] = resources_form_leverage_multiple_gpus
+        context['resources_form_training_or_inference_label'] = resources_form_training_or_inference_label
+        context['resources_form_training_or_inference'] = resources_form_training_or_inference
+        context['resources_form_for_coursework_label'] = resources_form_for_coursework_label
+        context['resources_form_for_coursework'] = resources_form_for_coursework
         context['resources_with_eula'] = resources_with_eula
         context['resources_with_accounts'] = list(Resource.objects.filter(
             name__in=list(ALLOCATION_ACCOUNT_MAPPING.keys())).values_list('id', flat=True))
@@ -552,6 +595,9 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         resource_obj = form_data.get('resource')
         justification = form_data.get('justification')
         quantity = form_data.get('quantity', 1)
+        leverage_multiple_gpus = form_data.get('leverage_multiple_gpus')
+        training_or_inference = form_data.get('training_or_inference')
+        for_coursework = form_data.get('for_coursework')
         allocation_account = form_data.get('allocation_account', None)
         # A resource is selected that requires an account name selection but user has no account names
         if ALLOCATION_ACCOUNT_ENABLED and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING and AllocationAttributeType.objects.filter(
@@ -579,6 +625,9 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             project=project_obj,
             justification=justification,
             quantity=quantity,
+            leverage_multiple_gpus=leverage_multiple_gpus,
+            training_or_inference=training_or_inference,
+            for_coursework=for_coursework,
             status=allocation_status_obj
         )
         allocation_obj.resources.add(resource_obj)

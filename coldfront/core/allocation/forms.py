@@ -1,4 +1,5 @@
 from django import forms
+from django.forms.widgets import RadioSelect
 from django.shortcuts import get_object_or_404
 
 from coldfront.core.allocation.models import (Allocation, AllocationAccount,
@@ -17,6 +18,9 @@ class AllocationForm(forms.Form):
     resource = forms.ModelChoiceField(queryset=None, empty_label=None)
     justification = forms.CharField(widget=forms.Textarea)
     quantity = forms.IntegerField(required=True)
+    leverage_multiple_gpus = forms.ChoiceField(choices=(("No", "No"), ("Yes", "Yes")))
+    training_or_inference = forms.ChoiceField(choices=(('Training', 'Training'), ('Inference', 'Inference'), ('Both', 'Both')))
+    for_coursework = forms.ChoiceField(choices=(("No", "No"), ("Yes", "Yes")))
     users = forms.MultipleChoiceField(
         widget=forms.CheckboxSelectMultiple, required=False)
     allocation_account = forms.ChoiceField(required=False)
