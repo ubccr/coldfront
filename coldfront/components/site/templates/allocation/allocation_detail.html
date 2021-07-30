@@ -62,6 +62,24 @@ Allocation Detail
                 <td>{{ allocation.for_coursework }}</td>
               </tr>
             {% endif %}
+            {% if allocation.get_resources_as_string == "Carbonate GPU" %}
+              <tr>
+                <th scope="row" class="text-nowrap">Leverage Multiple GPUs</th>
+                <td>{{ allocation.leverage_multiple_gpus }}</td>
+              </tr>
+              <tr>
+                <th scope="row" class="text-nowrap">Deep Learning Workflow</th>
+                <td>{{ allocation.dl_workflow }}</td>
+              </tr>
+              <tr>
+                <th scope="row" class="text-nowrap">Applications To Be Used</th>
+                <td>{{ allocation.applications_list }}</td>
+              </tr>
+              <tr>
+                <th scope="row" class="text-nowrap">For Coursework</th>
+                <td>{{ allocation.for_coursework }}</td>
+              </tr>
+            {% endif %}
           {% endif %}
           <tr>
             <th scope="row" class="text-nowrap">Justification:</th>

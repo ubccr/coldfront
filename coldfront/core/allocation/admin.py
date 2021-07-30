@@ -52,12 +52,42 @@ class AllocationUserNoteInline(admin.TabularInline):
 class AllocationAdmin(SimpleHistoryAdmin):
     readonly_fields_change = (
         'project', 'justification', 'created', 'modified',)
-    fields_change = ('project', 'resources', 'quantity', 'justification', 'leverage_multiple_gpus',
-                     'training_or_inference', 'for_coursework', 'status', 'start_date', 'end_date',
-                     'description', 'created', 'modified', 'is_locked')
-    list_display = ('pk', 'project_title', 'project_pi', 'resource', 'quantity',
-                    'justification', 'leverage_multiple_gpus', 'training_or_inference',
-                    'for_coursework', 'start_date', 'end_date', 'status', 'created', 'modified', )
+    fields_change = (
+        'project',
+        'resources',
+        'quantity',
+        'justification',
+        'leverage_multiple_gpus',
+        'dl_workflow',
+        'applications_list',
+        'training_or_inference',
+        'for_coursework',
+        'status',
+        'start_date',
+        'end_date',
+        'description',
+        'created',
+        'modified',
+        'is_locked'
+    )
+    list_display = (
+        'pk',
+        'project_title',
+        'project_pi',
+        'resource',
+        'quantity',
+        'justification',
+        'leverage_multiple_gpus',
+        'dl_workflow',
+        'applications_list',
+        'training_or_inference',
+        'for_coursework',
+        'start_date',
+        'end_date',
+        'status',
+        'created',
+        'modified'
+    )
     inlines = [AllocationUserInline,
                AllocationAttributeInline,
                AllocationAdminNoteInline,

@@ -67,6 +67,10 @@ Request New Allocation
   var resources_with_eula = {{ resources_with_eula | safe }};
   var resources_form_leverage_multiple_gpus_label = {{ resources_form_leverage_multiple_gpus_label | safe }};
   var resources_form_leverage_multiple_gpus = {{ resources_form_leverage_multiple_gpus | safe }};
+  var resources_form_dl_workflow_label = {{ resources_form_dl_workflow_label | safe }};
+  var resources_form_dl_workflow = {{ resources_form_dl_workflow | safe }};
+  var resources_form_applications_list_label = {{ resources_form_applications_list_label | safe }};
+  var resources_form_applications_list = {{ resources_form_applications_list | safe }};
   var resources_form_training_or_inference_label = {{ resources_form_training_or_inference_label | safe }};
   var resources_form_training_or_inference = {{ resources_form_training_or_inference | safe }};
   var resources_form_for_coursework_label = {{ resources_form_for_coursework_label | safe }};
@@ -167,6 +171,32 @@ Request New Allocation
       $('#div_id_leverage_multiple_gpus').hide();
     }
     
+    if (resources_form_dl_workflow[resource_id]) {
+      var label = $('label[for="id_dl_workflow"]')
+      if (resources_form_dl_workflow_label[resource_id]) {
+        label.html(resources_form_dl_workflow_label[resource_id])
+      } else {
+        label.html('<strong>DL Workflow*</strong>')
+      }
+      $('#id_dl_workflow').val(resources_form_dl_workflow[resource_id])
+      $('#div_id_dl_workflow').show();
+    } else {
+      $('#div_id_dl_workflow').hide();
+    }
+
+    if (resources_form_applications_list[resource_id]) {
+      var label = $('label[for="id_applications_list"]')
+      if (resources_form_applications_list_label[resource_id]) {
+        label.html(resources_form_applications_list_label[resource_id])
+      } else {
+        label.html('<strong>Applications List*</strong>')
+      }
+      $('#id_applications_list').val(resources_form_applications_list[resource_id])
+      $('#div_id_applications_list').show();
+    } else {
+      $('#div_id_applications_list').hide();
+    }
+
     if (resources_form_training_or_inference[resource_id]) {
       var label = $('label[for="id_training_or_inference"]')
       if (resources_form_training_or_inference_label[resource_id]) {

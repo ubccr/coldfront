@@ -43,6 +43,8 @@ class Allocation(TimeStampedModel):
         AllocationStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
     quantity = models.IntegerField(default=1)
     leverage_multiple_gpus = models.CharField(max_length=4, choices=(('No', 'No'), ('Yes', 'Yes')), null=True)
+    dl_workflow = models.CharField(max_length=4, choices=(('No', 'No'), ('Yes', 'Yes')), null=True)
+    applications_list = models.CharField(max_length=150, null=True)
     training_or_inference = models.CharField(max_length=9, choices=(('Training', 'Training'), ('Inference', 'Inference'), ('Both', 'Both')), null=True)
     for_coursework = models.CharField(max_length=4, choices=(('No', 'No'), ('Yes', 'Yes')), null=True)
     start_date = models.DateField(blank=True, null=True)

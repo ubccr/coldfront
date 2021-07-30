@@ -516,6 +516,10 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         resources_form_label_texts = {}
         resources_form_leverage_multiple_gpus = {}
         resources_form_leverage_multiple_gpus_label = {}
+        resources_form_dl_workflow = {}
+        resources_form_dl_workflow_label = {}
+        resources_form_applications_list = {}
+        resources_form_applications_list_label = {}
         resources_form_training_or_inference = {}
         resources_form_training_or_inference_label = {}
         resources_form_for_coursework = {}
@@ -540,6 +544,26 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='leverage_multiple_gpus_label').value
                 resources_form_leverage_multiple_gpus_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='applications_list').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='applications_list').value
+                resources_form_applications_list[resource.id] = value         
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='applications_list_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='applications_list_label').value
+                resources_form_applications_list_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='dl_workflow').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='dl_workflow').value
+                resources_form_dl_workflow[resource.id] = value         
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='dl_workflow_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='dl_workflow_label').value
+                resources_form_dl_workflow_label[resource.id] = mark_safe(
                     '<strong>{}*</strong>'.format(value))
 
             if resource.resourceattribute_set.filter(resource_attribute_type__name='training_or_inference').exists():
@@ -572,6 +596,10 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         context['resources_form_label_texts'] = resources_form_label_texts
         context['resources_form_leverage_multiple_gpus_label'] = resources_form_leverage_multiple_gpus_label
         context['resources_form_leverage_multiple_gpus'] = resources_form_leverage_multiple_gpus
+        context['resources_form_dl_workflow_label'] = resources_form_dl_workflow_label
+        context['resources_form_dl_workflow'] = resources_form_dl_workflow
+        context['resources_form_applications_list_label'] = resources_form_applications_list_label
+        context['resources_form_applications_list'] = resources_form_applications_list
         context['resources_form_training_or_inference_label'] = resources_form_training_or_inference_label
         context['resources_form_training_or_inference'] = resources_form_training_or_inference
         context['resources_form_for_coursework_label'] = resources_form_for_coursework_label
@@ -596,6 +624,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         justification = form_data.get('justification')
         quantity = form_data.get('quantity', 1)
         leverage_multiple_gpus = form_data.get('leverage_multiple_gpus')
+        dl_workflow = form_data.get('dl_workflow')
+        applications_list = form_data.get('applications_list')
         training_or_inference = form_data.get('training_or_inference')
         for_coursework = form_data.get('for_coursework')
         allocation_account = form_data.get('allocation_account', None)
@@ -626,6 +656,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             justification=justification,
             quantity=quantity,
             leverage_multiple_gpus=leverage_multiple_gpus,
+            dl_workflow=dl_workflow,
+            applications_list=applications_list,
             training_or_inference=training_or_inference,
             for_coursework=for_coursework,
             status=allocation_status_obj
