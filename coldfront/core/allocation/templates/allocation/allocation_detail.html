@@ -92,6 +92,11 @@ Allocation Detail
                 </span>
                 </a>
               {% endif %}
+              {% if request.user.userprofile.is_pi or request.user.role.name == "Manager" %}
+                <a class="btn btn-sm btn-primary" href="{% url 'allocation-attribute-change' allocation.pk %}" role="button" style="float: right;">
+                  Request Change
+                </a>
+              {% endif %}
             </td>
           </tr>
           <tr>
@@ -165,7 +170,14 @@ Allocation Detail
                 {% else %}
                   <tr>
                     <td>{{attribute}}</td>
-                    <td>{{attribute.value}}</td>
+                    <td>
+                      {{attribute.value}}
+                      {% if request.user.userprofile.is_pi and attribute.allocation_attribute_type.is_changeable or request.user.role.name == "Manager" and attribute.allocation_attribute_type.is_changeable %}
+                        <a class="btn btn-sm btn-primary" href="{% url 'allocation-attribute-change' allocation.pk %}" role="button" style="float: right;">
+                          Request Change
+                        </a>
+                      {% endif %}
+                    </td>
                   </tr>
                 {% endif %}
               {% endfor %}

@@ -206,6 +206,7 @@ class AllocationAttributeType(TimeStampedModel):
     is_required = models.BooleanField(default=False)
     is_unique = models.BooleanField(default=False)
     is_private = models.BooleanField(default=True)
+    is_changeable = models.BooleanField(default=False)
     history = HistoricalRecords()
 
     def __str__(self):

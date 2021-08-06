@@ -631,6 +631,169 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     def get_success_url(self):
         return reverse('project-detail', kwargs={'pk': self.kwargs.get('project_pk')})
 
+class AllocationAttributeChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+    form_class = AllocationForm
+    template_name = 'allocation/allocation_create.html'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        project_obj = get_object_or_404(
+            Project, pk=self.kwargs.get('project_pk'))
+
+        if project_obj.pi == self.request.user:
+            return True
+
+        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+            return True
+
+        messages.error(
+            self.request, 'You do not have permission to create a new allocation.')
+
+    def dispatch(self, request, *args, **kwargs):
+        project_obj = get_object_or_404(
+            Project, pk=self.kwargs.get('project_pk'))
+
+        if project_obj.needs_review:
+            messages.error(
+                request, 'You cannot request a new allocation because you have to review your project first.')
+            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+
+        if project_obj.status.name not in ['Active', 'New', ]:
+            messages.error(
+                request, 'You cannot request a new allocation to an archived project.')
+            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        project_obj = get_object_or_404(
+            Project, pk=self.kwargs.get('project_pk'))
+        context['project'] = project_obj
+
+        user_resources = get_user_resources(self.request.user)
+        resources_form_default_quantities = {}
+        resources_form_label_texts = {}
+        resources_with_eula = {}
+        for resource in user_resources:
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='quantity_default_value').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='quantity_default_value').value
+                resources_form_default_quantities[resource.id] = int(value)
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='quantity_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='quantity_label').value
+                resources_form_label_texts[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='eula').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='eula').value
+                resources_with_eula[resource.id] = value
+
+        context['AllocationAccountForm'] = AllocationAccountForm()
+        context['resources_form_default_quantities'] = resources_form_default_quantities
+        context['resources_form_label_texts'] = resources_form_label_texts
+        context['resources_with_eula'] = resources_with_eula
+        context['resources_with_accounts'] = list(Resource.objects.filter(
+            name__in=list(ALLOCATION_ACCOUNT_MAPPING.keys())).values_list('id', flat=True))
+
+        return context
+
+    def get_form(self, form_class=None):
+        """Return an instance of the form to be used in this view."""
+        if form_class is None:
+            form_class = self.get_form_class()
+        return form_class(self.request.user, self.kwargs.get('project_pk'), **self.get_form_kwargs())
+
+    def form_valid(self, form):
+        form_data = form.cleaned_data
+        project_obj = get_object_or_404(
+            Project, pk=self.kwargs.get('project_pk'))
+        resource_obj = form_data.get('resource')
+        justification = form_data.get('justification')
+        quantity = form_data.get('quantity', 1)
+        allocation_account = form_data.get('allocation_account', None)
+        # A resource is selected that requires an account name selection but user has no account names
+        if ALLOCATION_ACCOUNT_ENABLED and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING and AllocationAttributeType.objects.filter(
+                name=ALLOCATION_ACCOUNT_MAPPING[resource_obj.name]).exists() and not allocation_account:
+            form.add_error(None, format_html(
+                'You need to create an account name. Create it by clicking the link under the "Allocation account" field.'))
+            return self.form_invalid(form)
+
+        usernames = form_data.get('users')
+        usernames.append(project_obj.pi.username)
+        usernames = list(set(usernames))
+
+        users = [User.objects.get(username=username) for username in usernames]
+        if project_obj.pi not in users:
+            users.append(project_obj.pi)
+
+        if INVOICE_ENABLED and resource_obj.requires_payment:
+            allocation_status_obj = AllocationStatusChoice.objects.get(
+                name=INVOICE_DEFAULT_STATUS)
+        else:
+            allocation_status_obj = AllocationStatusChoice.objects.get(
+                name='New')
+
+        allocation_obj = Allocation.objects.create(
+            project=project_obj,
+            justification=justification,
+            quantity=quantity,
+            status=allocation_status_obj
+        )
+        allocation_obj.resources.add(resource_obj)
+
+        if ALLOCATION_ACCOUNT_ENABLED and allocation_account and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING:
+
+            allocation_attribute_type_obj = AllocationAttributeType.objects.get(
+                name=ALLOCATION_ACCOUNT_MAPPING[resource_obj.name])
+            AllocationAttribute.objects.create(
+                allocation_attribute_type=allocation_attribute_type_obj,
+                allocation=allocation_obj,
+                value=allocation_account
+            )
+
+        for linked_resource in resource_obj.linked_resources.all():
+            allocation_obj.resources.add(linked_resource)
+
+        allocation_user_active_status = AllocationUserStatusChoice.objects.get(
+            name='Active')
+        for user in users:
+            allocation_user_obj = AllocationUser.objects.create(
+                allocation=allocation_obj,
+                user=user,
+                status=allocation_user_active_status)
+
+        pi_name = '{} {} ({})'.format(allocation_obj.project.pi.first_name,
+                                      allocation_obj.project.pi.last_name, allocation_obj.project.pi.username)
+        resource_name = allocation_obj.get_parent_resource
+        domain_url = get_domain_url(self.request)
+        url = '{}{}'.format(domain_url, reverse('allocation-request-list'))
+
+        if EMAIL_ENABLED:
+            template_context = {
+                'pi': pi_name,
+                'resource': resource_name,
+                'url': url
+            }
+
+            send_email_template(
+                'New allocation request: {} - {}'.format(
+                    pi_name, resource_name),
+                'email/new_allocation_request.txt',
+                template_context,
+                EMAIL_SENDER,
+                [EMAIL_TICKET_SYSTEM_ADDRESS, ]
+            )
+
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('project-detail', kwargs={'pk': self.kwargs.get('project_pk')})
+
 
 class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'allocation/allocation_add_users.html'

@@ -60,6 +60,7 @@ class Migration(migrations.Migration):
                 ('is_required', models.BooleanField(default=False)),
                 ('is_unique', models.BooleanField(default=False)),
                 ('is_private', models.BooleanField(default=True)),
+                ('is_changeable', models.BooleanField(default=False)),
             ],
             options={
                 'ordering': ['name'],
@@ -166,6 +167,7 @@ class Migration(migrations.Migration):
                 ('is_required', models.BooleanField(default=False)),
                 ('is_unique', models.BooleanField(default=False)),
                 ('is_private', models.BooleanField(default=True)),
+                ('is_changeable', models.BooleanField(default=False)),
                 ('history_id', models.AutoField(primary_key=True, serialize=False)),
                 ('history_date', models.DateTimeField()),
                 ('history_change_reason', models.CharField(max_length=100, null=True)),
