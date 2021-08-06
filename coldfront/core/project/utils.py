@@ -775,7 +775,7 @@ class ProjectApprovalRunner(object):
                     f'AllocationUser {allocation_user.pk} for requester '
                     f'{allocation_user.user.pk} unexpectedly already has '
                     f'active cluster access status.')
-                self.logger.warning(message)
+                logger.warning(message)
             else:
                 allocation_user_attribute.value = pending_add
                 allocation_user_attribute.save()
