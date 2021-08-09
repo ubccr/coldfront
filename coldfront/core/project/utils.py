@@ -1,9 +1,11 @@
+from coldfront.api.statistics.utils import set_user_project_allocation_value
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.utils import get_or_create_active_allocation_user
+from coldfront.core.allocation.utils import next_allocation_start_datetime
 from coldfront.core.allocation.utils import review_cluster_access_requests_url
 from coldfront.core.allocation.utils import set_allocation_user_attribute_value
 from coldfront.core.project.models import Project
@@ -16,6 +18,7 @@ from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.models import VectorProjectAllocationRequest
 from coldfront.core.statistics.models import ProjectTransaction
+from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.user.utils import account_activation_url
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -705,8 +708,14 @@ class ProjectApprovalRunner(object):
     def run(self):
         self.upgrade_pi_user()
         project = self.activate_project()
+
+        allocation, new_value = self.update_allocation()
+        # In the pooling case, set the Service Units of the existing users to
+        # the updated value.
+        if self.request_obj.pool:
+            self.update_existing_user_allocations(new_value)
+
         self.create_project_users()
-        allocation = self.update_allocation()
         requester_allocation_user, pi_allocation_user = \
             self.create_allocation_users(allocation)
 
@@ -786,20 +795,22 @@ class ProjectApprovalRunner(object):
         project = self.request_obj.project
         requester = self.request_obj.requester
         pi = self.request_obj.pi
-        # get_or_create's 'defaults' arguments are only considered if a create
-        # is required.
-        defaults = {
-            'status': ProjectUserStatusChoice.objects.get(name='Active')
-        }
+        status = ProjectUserStatusChoice.objects.get(name='Active')
+
         if requester.pk != pi.pk:
-            defaults['role'] = ProjectUserRoleChoice.objects.get(
-                name='Manager')
             requester_project_user, _ = ProjectUser.objects.get_or_create(
-                project=project, user=requester, defaults=defaults)
-        defaults['role'] = ProjectUserRoleChoice.objects.get(
-            name='Principal Investigator')
+                project=project, user=requester)
+            requester_project_user.role = ProjectUserRoleChoice.objects.get(
+                name='Manager')
+            requester_project_user.status = status
+            requester_project_user.save()
+
         pi_project_user, _ = ProjectUser.objects.get_or_create(
-            project=project, user=pi, defaults=defaults)
+            project=project, user=pi)
+        pi_project_user.role = ProjectUserRoleChoice.objects.get(
+            name='Principal Investigator')
+        pi_project_user.status = status
+        pi_project_user.save()
 
     def get_user_messages(self):
         """A getter for this instance's user_messages."""
@@ -829,6 +840,11 @@ class ProjectApprovalRunner(object):
         pi.userprofile.is_pi = True
         pi.userprofile.save()
 
+    def update_user_allocations(self):
+        """Perform user-allocation-related handling. This should be
+        implemented by subclasses."""
+        raise NotImplementedError('This method is not implemented.')
+
 
 class SavioProjectApprovalRunner(ProjectApprovalRunner):
     """An object that performs necessary database changes when a new
@@ -847,9 +863,17 @@ class SavioProjectApprovalRunner(ProjectApprovalRunner):
 
         allocation = get_project_compute_allocation(project)
         allocation.status = AllocationStatusChoice.objects.get(name='Active')
-        # TODO: Set start_date and end_date.
-        # allocation.start_date = utc_now_offset_aware()
-        # allocation.end_date =
+        # If this is a new Project, set its Allocation's start and end dates.
+        if not pool:
+            allocation.start_date = utc_now_offset_aware()
+            # Only set the end date when applicable.
+            types_with_end_dates = (
+                SavioProjectAllocationRequest.FCA,
+                SavioProjectAllocationRequest.PCA
+            )
+            if allocation_type in types_with_end_dates:
+                allocation.end_date = \
+                    next_allocation_start_datetime() - timedelta(seconds=1)
         allocation.save()
 
         # Set the allocation's allocation type.
@@ -886,7 +910,24 @@ class SavioProjectApprovalRunner(ProjectApprovalRunner):
             date_time=utc_now_offset_aware(),
             allocation=Decimal(new_value))
 
-        return allocation
+        return allocation, new_value
+
+    def update_existing_user_allocations(self, value):
+        """Perform user-allocation-related handling.
+
+        In particular, update the Service Units for existing Users to
+        the given value. The requester and/or PI will have their values
+        set once their cluster account requests are approved."""
+        project = self.request_obj.project
+        date_time = utc_now_offset_aware()
+        for project_user in project.projectuser_set.all():
+            user = project_user.user
+            set_user_project_allocation_value(user, project, value)
+            ProjectUserTransaction.objects.create(
+                project_user=project_user,
+                date_time=date_time,
+                allocation=Decimal(value))
+
 
     @staticmethod
     def __validate_num_service_units(num_service_units):
@@ -927,9 +968,7 @@ class VectorProjectApprovalRunner(ProjectApprovalRunner):
         project = self.request_obj.project
         allocation = get_project_compute_allocation(project)
         allocation.status = AllocationStatusChoice.objects.get(name='Active')
-        # TODO: Set start_date and end_date.
-        # allocation.start_date = utc_now_offset_aware()
-        # allocation.end_date =
+        allocation.start_date = utc_now_offset_aware()
         allocation.save()
         return allocation
 
