@@ -367,13 +367,14 @@ def set_user_project_allocation_value(user, project, value):
     if not isinstance(value, Decimal):
         raise TypeError(f'Value {value} is not a Decimal.')
     try:
-        allocation_objects = get_accounting_allocation_objects(project)
+        allocation_objects = get_accounting_allocation_objects(
+            project, user=user)
     except Exception as e:
         logger = logging.getLogger(__name__)
         logger.error(e)
         return False
     user_project_allocation = allocation_objects.allocation_user_attribute
-    user_project_allocation.value = value
+    user_project_allocation.value = str(value)
     user_project_allocation.save()
     return True
 
