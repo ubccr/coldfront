@@ -12,8 +12,10 @@ from coldfront.core.allocation.models import (AllocationAttributeType,
                                               AllocationUserStatusChoice)
 from coldfront.core.allocation.signals import allocation_activate_user
 from coldfront.core.resource.models import Resource
+from coldfront.core.utils.common import utc_now_offset_aware
 
 import math
+import pytz
 
 
 def set_allocation_user_status_to_error(allocation_user_pk):
@@ -106,6 +108,26 @@ def get_allocation_user_cluster_access_status(allocation_obj, user_obj):
         allocation_user__user=user_obj,
         allocation_attribute_type__name='Cluster Account Status',
         value__in=['Pending - Add', 'Processing', 'Active'])
+
+
+def next_allocation_start_datetime():
+    """Return a timezone-aware datetime object representing the start of
+    the next allocation year.
+
+    Parameters:
+        - None
+
+    Returns:
+        - datetime
+    """
+    start_month = settings.ALLOCATION_YEAR_START_MONTH
+    start_day = settings.ALLOCATION_YEAR_START_DAY
+    local_tz = pytz.timezone('America/Los_Angeles')
+    dt = utc_now_offset_aware().astimezone(local_tz)
+    start_year = dt.year + int(dt.month >= start_month)
+    return datetime(
+        start_year, start_month, start_day, tzinfo=local_tz).astimezone(
+            pytz.timezone(settings.TIME_ZONE))
 
 
 def prorated_allocation_amount(amount, dt):
