@@ -273,10 +273,7 @@ def send_project_join_request_approval_email(project, project_user):
     sender = settings.EMAIL_SENDER
     receiver_list = [user.email]
 
-    cc = settings.REQUEST_APPROVAL_CC_LIST
-
-    send_email_template(
-        subject, template_name, context, sender, receiver_list, cc=cc)
+    send_email_template(subject, template_name, context, sender, receiver_list)
 
 
 def send_project_join_request_denial_email(project, project_user):
@@ -301,10 +298,7 @@ def send_project_join_request_denial_email(project, project_user):
     sender = settings.EMAIL_SENDER
     receiver_list = [user.email]
 
-    cc = settings.REQUEST_APPROVAL_CC_LIST
-
-    send_email_template(
-        subject, template_name, context, sender, receiver_list, cc=cc)
+    send_email_template(subject, template_name, context, sender, receiver_list)
 
 
 def send_new_cluster_access_request_notification_email(project, project_user):
@@ -464,8 +458,10 @@ def send_project_request_approval_email(request):
 
     sender = settings.EMAIL_SENDER
     receiver_list = [request.requester.email, request.pi.email]
+    cc = settings.REQUEST_APPROVAL_CC_LIST
 
-    send_email_template(subject, template_name, context, sender, receiver_list)
+    send_email_template(
+        subject, template_name, context, sender, receiver_list, cc=cc)
 
 
 def send_project_request_denial_email(request):
@@ -500,8 +496,10 @@ def send_project_request_denial_email(request):
 
     sender = settings.EMAIL_SENDER
     receiver_list = [request.requester.email, request.pi.email]
+    cc = settings.REQUEST_APPROVAL_CC_LIST
 
-    send_email_template(subject, template_name, context, sender, receiver_list)
+    send_email_template(
+        subject, template_name, context, sender, receiver_list, cc=cc)
 
 
 def send_project_request_pooling_email(request):
