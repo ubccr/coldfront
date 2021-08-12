@@ -56,9 +56,13 @@ def send_email(subject, body, sender, receiver_list, cc=[]):
                      sender, ','.join(receiver_list), subject)
 
 
-def send_email_template(subject, template_name, context, sender, receiver_list):
+def send_email_template(subject, template_name, context, sender,
+                        receiver_list, cc=[]):
     """Helper function for sending emails from a template
+
+    It is the responsibility of the caller to avoid duplicates between the
+    receiver_list and cc list.
     """
     body = render_to_string(template_name, context)
 
-    return send_email(subject, body, sender, receiver_list)
+    return send_email(subject, body, sender, receiver_list, cc=cc)

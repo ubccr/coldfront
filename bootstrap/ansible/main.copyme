@@ -52,6 +52,8 @@ google_sheets_credentials: '/tmp/credentials.json'
 
 ip_range_with_api_access: 0.0.0.0/0
 
+request_approval_cc_list: []
+
 #####################################
 #PROD SETTINGS
 #####################################
@@ -71,3 +73,5 @@ ip_range_with_api_access: 0.0.0.0/0
 #ssl_certificate_chain_file: /etc/ssl/ssl_certification_chain.file
 
 ip_range_with_api_access: 10.0.0.0/8
+
+request_approval_cc_list: ['wfeinstein@lbl.gov']

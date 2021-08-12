@@ -39,6 +39,9 @@ VECTOR_PI_USERNAME = "channsoden@berkeley.edu"
 # The name of the Savio project to which all Vector users are given access to.
 SAVIO_PROJECT_FOR_VECTOR_USERS = "co_rosalind"
 
+# A list of admin email addresses to CC when certain requests are approved.
+REQUEST_APPROVAL_CC_LIST = []
+
 #------------------------------------------------------------------------------
 # General Center Information
 #------------------------------------------------------------------------------
