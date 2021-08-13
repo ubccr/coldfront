@@ -1913,11 +1913,11 @@ class ProjectAutoApproveJoinRequestsView(LoginRequiredMixin,
 
 
 # TODO: Once finalized, move these imports above.
-from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.project.forms import ProjectAllocationReviewForm
 from coldfront.core.project.forms import SavioProjectAllocationTypeForm
 from coldfront.core.project.forms import SavioProjectDetailsForm
 from coldfront.core.project.forms import SavioProjectExistingPIForm
+from coldfront.core.project.forms import SavioProjectICAExtraFieldsForm
 from coldfront.core.project.forms import SavioProjectMOUExtraFieldsForm
 from coldfront.core.project.forms import SavioProjectNewPIForm
 from coldfront.core.project.forms import SavioProjectPoolAllocationsForm
@@ -1929,6 +1929,7 @@ from coldfront.core.project.forms import SavioProjectSurveyForm
 from coldfront.core.project.forms import VectorProjectDetailsForm
 from coldfront.core.project.forms import VectorProjectReviewSetupForm
 from coldfront.core.project.models import SavioProjectAllocationRequest
+from coldfront.core.project.models import savio_project_request_ica_extra_fields_schema
 from coldfront.core.project.models import savio_project_request_mou_extra_fields_schema
 from coldfront.core.project.models import savio_project_request_mou_state_schema
 from coldfront.core.project.models import VectorProjectAllocationRequest
@@ -1980,6 +1981,7 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
         ('allocation_type', SavioProjectAllocationTypeForm),
         ('existing_pi', SavioProjectExistingPIForm),
         ('new_pi', SavioProjectNewPIForm),
+        ('ica_extra_fields', SavioProjectICAExtraFieldsForm),
         ('mou_extra_fields', SavioProjectMOUExtraFieldsForm),
         ('pool_allocations', SavioProjectPoolAllocationsForm),
         ('pooled_project_selection', SavioProjectPooledProjectSelectionForm),
@@ -1991,6 +1993,7 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
         'allocation_type': 'project/project_request/savio/project_allocation_type.html',
         'existing_pi': 'project/project_request/savio/project_existing_pi.html',
         'new_pi': 'project/project_request/savio/project_new_pi.html',
+        'ica_extra_fields': 'project/project_request/savio/project_ica_extra_fields.html',
         'mou_extra_fields': 'project/project_request/savio/project_mou_extra_fields.html',
         'pool_allocations': 'project/project_request/savio/project_pool_allocations.html',
         'pooled_project_selection': 'project/project_request/savio/project_pooled_project_selection.html',
@@ -2002,6 +2005,7 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
         SavioProjectAllocationTypeForm,
         SavioProjectExistingPIForm,
         SavioProjectNewPIForm,
+        SavioProjectICAExtraFieldsForm,
         SavioProjectMOUExtraFieldsForm,
         SavioProjectPoolAllocationsForm,
         SavioProjectPooledProjectSelectionForm,
@@ -2014,11 +2018,12 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
         'allocation_type': 0,
         'existing_pi': 1,
         'new_pi': 2,
-        'mou_extra_fields': 3,
-        'pool_allocations': 4,
-        'pooled_project_selection': 5,
-        'details': 6,
-        'survey': 7,
+        'ica_extra_fields': 3,
+        'mou_extra_fields': 4,
+        'pool_allocations': 5,
+        'pooled_project_selection': 6,
+        'details': 7,
+        'survey': 8,
     }
 
     logger = logging.getLogger(__name__)
@@ -2049,6 +2054,7 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
             'existing_pi',
             'pooled_project_selection',
             'details',
+            'survey',
         ]
         step_numbers = [
             self.step_numbers_by_form_name[name] for name in step_names]
@@ -2152,6 +2158,19 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
         """Return provided survey data."""
         step_number = self.step_numbers_by_form_name['survey']
         return form_data[step_number]
+
+    def __handle_ica_allocation_type(self, form_data, request_kwargs):
+        """Perform ICA-specific handling.
+
+        In particular, set fields in the given dictionary to be used
+        during request creation. Set the extra_fields field from the
+        given form data."""
+        step_number = self.step_numbers_by_form_name['ica_extra_fields']
+        data = form_data[step_number]
+        extra_fields = savio_project_request_ica_extra_fields_schema()
+        for field in extra_fields:
+            extra_fields[field] = data[field]
+        request_kwargs['extra_fields'] = extra_fields
 
     def __handle_pi_data(self, form_data):
         """Return the requested PI. If the PI did not exist, create a
@@ -2293,7 +2312,11 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
             self.step_numbers_by_form_name['pool_allocations']
         if step > pool_allocations_step:
             allocation_type = dictionary['allocation_type']
-            if allocation_type != SavioProjectAllocationRequest.MOU:
+            non_poolable_allocation_types = (
+                SavioProjectAllocationRequest.ICA,
+                SavioProjectAllocationRequest.MOU,
+            )
+            if allocation_type not in non_poolable_allocation_types:
                 pool_allocations_form_data = self.get_cleaned_data_for_step(
                     str(pool_allocations_step))
                 pooling_requested = pool_allocations_form_data['pool']
@@ -2334,6 +2357,14 @@ def show_new_pi_form_condition(wizard):
     return cleaned_data.get('PI', None) is None
 
 
+def show_ica_extra_fields_form_condition(wizard):
+    step_name = 'allocation_type'
+    step = str(SavioProjectRequestWizard.step_numbers_by_form_name[step_name])
+    cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
+    ica_allocation_type = SavioProjectAllocationRequest.ICA
+    return cleaned_data.get('allocation_type', None) == ica_allocation_type
+
+
 def show_mou_extra_fields_form_condition(wizard):
     step_name = 'allocation_type'
     step = str(SavioProjectRequestWizard.step_numbers_by_form_name[step_name])
@@ -2346,8 +2377,12 @@ def show_pool_allocations_form_condition(wizard):
     step_name = 'allocation_type'
     step = str(SavioProjectRequestWizard.step_numbers_by_form_name[step_name])
     cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
-    mou_allocation_type = SavioProjectAllocationRequest.MOU
-    return cleaned_data.get('allocation_type', None) != mou_allocation_type
+    non_poolable_allocation_types = (
+        SavioProjectAllocationRequest.ICA,
+        SavioProjectAllocationRequest.MOU,
+    )
+    allocation_type = cleaned_data.get('allocation_type', None)
+    return allocation_type not in non_poolable_allocation_types
 
 
 def show_pooled_project_selection_form_condition(wizard):

@@ -326,6 +326,22 @@ def savio_project_request_state_schema():
     }
 
 
+def savio_project_request_ica_extra_fields_schema():
+    """Return the schema for the
+    SavioProjectAllocationRequest.extra_fields for Instructional Compute
+    Allowance (ICA) projects."""
+    return {
+        'semester': '',
+        'year': '',
+        'num_students': 0,
+        'num_gsis': 0,
+        'manager_experience_description': '',
+        'student_experience_description': '',
+        'max_simultaneous_jobs': 0,
+        'max_simultaneous_nodes': 0,
+    }
+
+
 def savio_project_request_mou_state_schema():
     """Return the schema for the SavioProjectAllocationRequest.state
     field for Memorandum of Understanding (MOU) projects."""
@@ -377,11 +393,13 @@ class SavioProjectAllocationRequest(TimeStampedModel):
 
     FCA = 'FCA'
     CO = 'CO'
+    ICA = 'ICA'
     PCA = 'PCA'
     MOU = 'MOU'
     ALLOCATION_TYPE_CHOICES = (
         (FCA, 'Faculty Compute Allowance (FCA)'),
         (CO, 'Condo Allocation'),
+        (ICA, 'Instructional Compute Allowance (ICA)'),
         (PCA, 'Partner Compute Allowance (PCA)'),
         (MOU, 'Memorandum of Understanding (MOU)'),
     )

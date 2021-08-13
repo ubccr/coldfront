@@ -193,6 +193,7 @@ class ProjectUpdateForm(forms.ModelForm):
 # TODO: Once finalized, move these imports above.
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import SavioProjectAllocationRequest
+from coldfront.core.utils.common import utc_now_offset_aware
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.validators import MaxValueValidator
@@ -315,6 +316,131 @@ class SavioProjectNewPIForm(forms.Form):
             raise forms.ValidationError(
                 'A user with that email address already exists.')
         return email
+
+
+class SavioProjectICAExtraFieldsForm(forms.Form):
+
+    SEMESTER_CHOICES = (
+        ('', 'Select one...'),
+        ('Spring', 'Spring'),
+        ('Summer', 'Summer'),
+        ('Fall', 'Fall'),
+    )
+
+    semester = forms.ChoiceField(
+        choices=SEMESTER_CHOICES,
+        help_text=(
+            'Specify the name of the next semester you intend to hold this '
+            'course.'),
+        label='Semester',
+        required=True)
+    year = forms.ChoiceField(
+        help_text=(
+            'Specify the year of the next semester you intend to hold this '
+            'course.'),
+        label='Year',
+        required=True)
+    num_students = forms.IntegerField(
+        help_text=(
+            'Specify the number of students you anticipate having in this '
+            'course.'),
+        label='Number of Students',
+        required=True,
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(3000),
+        ],
+        widget=TextInput(
+            attrs={
+                'type': 'number',
+                'min': '1',
+                'max': '3000',
+                'step': '1'}))
+    num_gsis = forms.IntegerField(
+        help_text=(
+            'Specify the number of Graduate Student Instructors (GSIs) you '
+            'anticipate having in this course.'),
+        label='Number of GSIs',
+        required=True,
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(50),
+        ],
+        widget=TextInput(
+            attrs={
+                'type': 'number',
+                'min': '1',
+                'max': '50',
+                'step': '1'}))
+    manager_experience_description = forms.CharField(
+        help_text=(
+            'Describe your computational skills and experience. As the main '
+            'contact/manager, you should be familiar with using the UNIX '
+            'command line, accessing remote computing resources via SSH, '
+            'using and troubleshooting the software required for the course, '
+            'and running said software in parallel (if applicable). You will '
+            'also be expected to become familiar with submitting batch jobs '
+            'via the Slurm scheduler, based on Savio\'s documentation and/or '
+            'other online tutorials.'),
+        label='Your Computational Skills and Experience',
+        required=True,
+        validators=[
+            MinLengthValidator(50),
+        ],
+        widget=forms.Textarea(attrs={'rows': 3}))
+    student_experience_description = forms.CharField(
+        help_text=(
+            'Describe the computational skills and experience of the students '
+            'in the course. In particular, describe their experience with the '
+            'UNIX command line and with the primary software to be run on '
+            'Savio.'),
+        label='Student Computational Skills and Experience',
+        required=True,
+        validators=[
+            MinLengthValidator(50),
+        ],
+        widget=forms.Textarea(attrs={'rows': 3}))
+    max_simultaneous_jobs = forms.IntegerField(
+        help_text=(
+            'Specify an estimate of the maximum total number of jobs you '
+            'expect would be run simultaneously by students in the course.'),
+        label='Maximum Number of Simultaneous Jobs',
+        required=True,
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(100000),
+        ],
+        widget=TextInput(
+            attrs={
+                'type': 'number',
+                'min': '1',
+                'max': '100000',
+                'step': '1'}))
+    max_simultaneous_nodes = forms.IntegerField(
+        help_text=(
+            'Specify an estimate of the maximum total number of nodes you '
+            'expect would be used simultaneously by students in the course.'),
+        label='Maximum Number of Simultaneous Nodes',
+        required=True,
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(10000),
+        ],
+        widget=TextInput(
+            attrs={
+                'type': 'number',
+                'min': '1',
+                'max': '10000',
+                'step': '1'}))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        year = utc_now_offset_aware().year
+        self.fields['year'].choices = (
+            ('', 'Select one...'),
+            (f'{year}', f'{year}'),
+            (f'{year + 1}', f'{year + 1}'),
+        )
 
 
 class SavioProjectMOUExtraFieldsForm(forms.Form):
@@ -443,9 +569,9 @@ class SavioProjectDetailsForm(forms.Form):
 
     name = forms.CharField(
         help_text=(
-            'The unique name of the project, which must contain only '
-            'lowercase letters and numbers. This will be used to set up the '
-            'project\'s SLURM scheduler account.'),
+            'A unique name for the project, which must contain only lowercase '
+            'letters and numbers. This will be used to set up the project\'s '
+            'SLURM scheduler account.'),
         label='Name',
         max_length=12,
         required=True,
@@ -478,6 +604,12 @@ class SavioProjectDetailsForm(forms.Form):
         kwargs.pop('breadcrumb_pi', None)
         kwargs.pop('breadcrumb_pooling', None)
         super().__init__(*args, **kwargs)
+        if self.allocation_type == SavioProjectAllocationRequest.ICA:
+            self.fields['name'].help_text = (
+                'A unique name for the course, which must contain only '
+                'lowercase letters and numbers. This will be used to set up '
+                'the project\'s SLURM scheduler account. It may be the course '
+                'number (e.g., pmb220b, pht32, etc.).')
 
     def clean_name(self):
         cleaned_data = super().clean()
@@ -498,8 +630,6 @@ class SavioProjectDetailsForm(forms.Form):
 
 class SavioProjectSurveyForm(forms.Form):
 
-    # TODO: Modify survey questions for Condo.
-
     # Question 3
     scope_and_intent = forms.CharField(
         label='Scope and intent of research needing computation',
@@ -513,7 +643,7 @@ class SavioProjectSurveyForm(forms.Form):
         widget=forms.Textarea(attrs={'rows': 3}))
     existing_resources = forms.CharField(
         label=(
-            'Existing computing resources (outside of SAVIO) currently being '
+            'Existing computing resources (outside of Savio) currently being '
             'used by this project. If you use cloud computing resources, we '
             'would be interested in hearing about it.'),
         required=False,
@@ -570,7 +700,7 @@ class SavioProjectSurveyForm(forms.Form):
         required=False)
     io = forms.CharField(
         help_text=(
-            'SAVIO provides a shared Lustre parallel filesystem for jobs '
+            'Savio provides a shared Lustre parallel filesystem for jobs '
             'needing access to high performance storage.'),
         label='Describe your applications I/O requirements',
         required=False)
@@ -594,7 +724,7 @@ class SavioProjectSurveyForm(forms.Form):
             'cluster? If yes, what is the max you you might transfer in a '
             'day? What would be typical for a month? Do you have need for '
             'file sharing of large datasets?'),
-        label='Network connection from SAVIO to the Internet',
+        label='Network connection from Savio to the Internet',
         required=False)
     cloud_computing = forms.ChoiceField(
         choices=(
@@ -625,8 +755,32 @@ class SavioProjectSurveyForm(forms.Form):
         required=False)
 
     def __init__(self, *args, **kwargs):
+        allocation_type = kwargs.pop('allocation_type', None)
+        kwargs.pop('breadcrumb_pi', None)
+        kwargs.pop('breadcrumb_pooling', None)
+        kwargs.pop('breadcrumb_project', None)
         disable_fields = kwargs.pop('disable_fields', False)
         super().__init__(*args, **kwargs)
+        if allocation_type == SavioProjectAllocationRequest.ICA:
+            self.fields['scope_and_intent'].label = (
+                'Scope and intent of coursework needing computation')
+            self.fields['computational_aspects'].help_text = (
+                'Describe the nature of the coursework for which students '
+                'will use Savio (e.g., homework, problem sets, projects, '
+                'etc.).')
+            self.fields['computational_aspects'].label = (
+                'Computational aspects of the coursework')
+            self.fields['existing_resources'].label = (
+                'Existing computing resources (outside of Savio) currently '
+                'being used by this course. If you use cloud computing '
+                'resources, we would be interested in hearing about it.')
+            self.fields['num_processor_cores'].label = (
+                'How many processor cores does a single execution (i.e., by '
+                'one student) of your application use? (min, max, typical '
+                'runs)')
+            self.fields['processor_core_hours_year'].label = (
+                'Estimate how many processor-core-hrs your students will need '
+                'over the duration of the course.')
         if disable_fields:
             for field in self.fields:
                 self.fields[field].disabled = True
