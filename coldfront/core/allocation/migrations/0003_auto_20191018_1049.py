@@ -20,4 +20,14 @@ class Migration(migrations.Migration):
             name='is_locked',
             field=models.BooleanField(default=False),
         ),
+        migrations.AddField(
+            model_name='allocation',
+            name='is_changeable',
+            field=models.BooleanField(default=False),
+        ),
+        migrations.AddField(
+            model_name='historicalallocation',
+            name='is_changeable',
+            field=models.BooleanField(default=False),
+        ),
     ]

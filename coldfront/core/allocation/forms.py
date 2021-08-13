@@ -96,6 +96,22 @@ class AllocationRemoveUserForm(forms.Form):
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
 
+class AllocationAttributeChangeForm(forms.Form):
+    username = forms.CharField(max_length=150, disabled=True)
+    first_name = forms.CharField(max_length=30, required=False, disabled=True)
+    last_name = forms.CharField(max_length=150, required=False, disabled=True)
+    # attribute = forms.ModelChoiceField(queryset=None, empty_label=None)
+    # change = forms.CharField(widget=forms.Textarea)
+    # justification = forms.CharField(widget=forms.Textarea)
+    # allocation_account = forms.ChoiceField(required=False)
+
+    # def __init__(self, pk,  *args, **kwargs):
+    #     super().__init__(*args, **kwargs)
+    #     allocation_obj = get_object_or_404(Allocation, pk=pk)
+
+    #     self.fields['change'].help_text = '<br/>Desired change for this attribute.'
+    #     self.fields['justification'].help_text = '<br/>Justification for requesting this allocation.'
+
 
 class AllocationAttributeDeleteForm(forms.Form):
     pk = forms.IntegerField(required=False, disabled=True)

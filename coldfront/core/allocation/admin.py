@@ -53,7 +53,7 @@ class AllocationAdmin(SimpleHistoryAdmin):
     readonly_fields_change = (
         'project', 'justification', 'created', 'modified',)
     fields_change = ('project', 'resources', 'quantity', 'justification',
-                     'status', 'start_date', 'end_date', 'description', 'created', 'modified', 'is_locked')
+                     'status', 'start_date', 'end_date', 'description', 'created', 'modified', 'is_locked', 'is_changeable')
     list_display = ('pk', 'project_title', 'project_pi', 'resource', 'quantity',
                     'justification', 'start_date', 'end_date', 'status', 'created', 'modified', )
     inlines = [AllocationUserInline,

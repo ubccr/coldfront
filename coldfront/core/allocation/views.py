@@ -26,6 +26,7 @@ from django.views.generic.edit import CreateView, FormView, UpdateView
 from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationAddUserForm,
                                              AllocationAttributeDeleteForm,
+                                             AllocationAttributeChangeForm,
                                              AllocationForm,
                                              AllocationInvoiceNoteDeleteForm,
                                              AllocationInvoiceUpdateForm,
@@ -632,47 +633,46 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         return reverse('project-detail', kwargs={'pk': self.kwargs.get('project_pk')})
 
 class AllocationAttributeChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
-    form_class = AllocationForm
-    template_name = 'allocation/allocation_create.html'
+    form_class = AllocationAttributeChangeForm
+    template_name = 'allocation/allocation_attribute_change.html'
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
         if self.request.user.is_superuser:
             return True
+        
+        pk = self.kwargs.get('pk')
+        allocation_obj = get_object_or_404(Allocation, pk=pk)
 
-        project_obj = get_object_or_404(
-            Project, pk=self.kwargs.get('project_pk'))
-
-        if project_obj.pi == self.request.user:
+        if allocation_obj.project.pi == self.request.user:
             return True
 
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if allocation_obj.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
             return True
 
         messages.error(
-            self.request, 'You do not have permission to create a new allocation.')
+            self.request, 'You do not have permission to request changes to this allocation.')
 
     def dispatch(self, request, *args, **kwargs):
-        project_obj = get_object_or_404(
-            Project, pk=self.kwargs.get('project_pk'))
+        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
 
-        if project_obj.needs_review:
+        if allocation_obj.project.needs_review:
             messages.error(
-                request, 'You cannot request a new allocation because you have to review your project first.')
-            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+                request, 'You cannot request a change to this allocation because you have to review your project first.')
+            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': allocation_obj.project.pk}))
 
-        if project_obj.status.name not in ['Active', 'New', ]:
+        if allocation_obj.project.status.name not in ['Active', 'New', ]:
             messages.error(
-                request, 'You cannot request a new allocation to an archived project.')
-            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+                request, 'You cannot request a change to an allocation in an archived project.')
+            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': allocation_obj.project.pk}))
 
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        project_obj = get_object_or_404(
-            Project, pk=self.kwargs.get('project_pk'))
-        context['project'] = project_obj
+        allocation_obj = get_object_or_404(
+            Allocation, pk=self.kwargs.get('pk'))
+        context['project'] = allocation_obj.project
 
         user_resources = get_user_resources(self.request.user)
         resources_form_default_quantities = {}
@@ -706,12 +706,12 @@ class AllocationAttributeChangeView(LoginRequiredMixin, UserPassesTestMixin, For
         """Return an instance of the form to be used in this view."""
         if form_class is None:
             form_class = self.get_form_class()
-        return form_class(self.request.user, self.kwargs.get('project_pk'), **self.get_form_kwargs())
+        return form_class(self.request.user, self.kwargs.get('pk'), **self.get_form_kwargs())
 
     def form_valid(self, form):
         form_data = form.cleaned_data
-        project_obj = get_object_or_404(
-            Project, pk=self.kwargs.get('project_pk'))
+        allocation_obj = get_object_or_404(
+            Project, pk=self.kwargs.get('pk'))
         resource_obj = form_data.get('resource')
         justification = form_data.get('justification')
         quantity = form_data.get('quantity', 1)
@@ -724,12 +724,12 @@ class AllocationAttributeChangeView(LoginRequiredMixin, UserPassesTestMixin, For
             return self.form_invalid(form)
 
         usernames = form_data.get('users')
-        usernames.append(project_obj.pi.username)
+        usernames.append(allocation_obj.project.pi.username)
         usernames = list(set(usernames))
 
         users = [User.objects.get(username=username) for username in usernames]
-        if project_obj.pi not in users:
-            users.append(project_obj.pi)
+        if allocation_obj.project.pi not in users:
+            users.append(allocation_obj.project.pi)
 
         if INVOICE_ENABLED and resource_obj.requires_payment:
             allocation_status_obj = AllocationStatusChoice.objects.get(
@@ -792,7 +792,8 @@ class AllocationAttributeChangeView(LoginRequiredMixin, UserPassesTestMixin, For
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse('project-detail', kwargs={'pk': self.kwargs.get('project_pk')})
+        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+        return reverse('project-detail', kwargs={'pk': allocation_obj.project.pk})
 
 
 class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):

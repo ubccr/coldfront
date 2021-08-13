@@ -22,7 +22,7 @@ urlpatterns = [
          name='allocation-renew'),
     path('<int:pk>/allocationattribute/add',
          allocation_views.AllocationAttributeCreateView.as_view(), name='allocation-attribute-add'),
-    path('project/<int:project_pk>/change-attribute',
+    path('<int:pk>/change-attribute',
          allocation_views.AllocationAttributeChangeView.as_view(), name='allocation-attribute-change'),
     path('<int:pk>/allocationattribute/delete',
          allocation_views.AllocationAttributeDeleteView.as_view(), name='allocation-attribute-delete'),
