@@ -56,3 +56,43 @@ class LDAPUserSearch(UserSearch):
 
         logger.info("LDAP user search for %s found %s results", user_search_string, len(users))
         return users
+
+class LDAPResourceSearch(UserSearch):
+    search_source = 'LDAP'
+
+    def __init__(self, user_search_string, search_by):
+        super().__init__(user_search_string, search_by)
+        self.LDAP_SERVER_URI = import_from_settings('LDAP_USER_SEARCH_SERVER_URI')
+        self.LDAP_USER_SEARCH_BASE = import_from_settings('LDAP_USER_SEARCH_BASE')
+        self.LDAP_BIND_DN = import_from_settings('LDAP_USER_SEARCH_BIND_DN', None)
+        self.LDAP_BIND_PASSWORD = import_from_settings('LDAP_USER_SEARCH_BIND_PASSWORD', None)
+
+        self.server = Server(self.LDAP_SERVER_URI, use_ssl=True, connect_timeout=1)
+        self.conn = Connection(self.server, self.LDAP_BIND_DN, self.LDAP_BIND_PASSWORD, auto_bind=True)
+
+    def parse_ldap_entry(self, entry):
+        entry_dict = json.loads(entry.entry_to_json()).get('attributes')
+
+        accounts = entry_dict.get('memberOf') if entry_dict.get('memberOf') else []
+
+        return accounts
+
+    def search_a_user(self, user_search_string=None, search_by='all_fields'):
+        size_limit = 50
+        if user_search_string and search_by == 'username_only':
+            filter = ldap.filter.filter_format("(cn=%s)", [user_search_string])
+            size_limit = 1
+        else:
+            filter = '(objectclass=person)'
+
+        searchParameters = {'search_base': self.LDAP_USER_SEARCH_BASE,
+                            'search_filter': filter,
+                            'attributes': ['memberOf'],
+                            'size_limit': size_limit}
+        self.conn.search(**searchParameters)
+        accounts = []
+        if self.conn.entries:
+            accounts = self.parse_ldap_entry(self.conn.entries[0])
+
+        logger.info("LDAP accounts search for user %s found %s accounts", user_search_string, len(accounts))
+        return accounts

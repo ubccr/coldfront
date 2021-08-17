@@ -22,6 +22,7 @@ from django.utils.html import format_html, mark_safe
 from django.views import View
 from django.views.generic import DetailView, ListView, TemplateView
 from django.views.generic.edit import CreateView, FormView, UpdateView
+from django.utils.module_loading import import_string
 
 from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationAddUserForm,
@@ -568,6 +569,27 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         if project_obj.pi not in users:
             users.append(project_obj.pi)
 
+        ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPResourceSearch')
+        resources = {
+            "Carbonate DL": "CN=iu-entlmt-app-rt-carbonate-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu",
+            "Carbonate GPU": "CN=iu-entlmt-app-rt-carbonate-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu",
+            "Big Red 3": "CN=iu-entlmt-app-rt-bigred3-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu"
+        }
+
+        denied_users = []
+        for user in users:
+            username = user.username
+            search_class_obj = ldap_search(username, 'username_only')
+            accounts = search_class_obj.search_a_user(username, 'username_only')
+            if not resources[resource_obj.name] in accounts:
+                denied_users.append(username)
+
+        if denied_users:
+            form.add_error(None, format_html(
+                'The following users do not have an account on this resource: {}. They will need to create an account <a href="https://access.iu.edu/Accounts/Create">here</a>.'.format(', '.join(denied_users))
+            ))
+            return self.form_invalid(form)
+
         if INVOICE_ENABLED and resource_obj.requires_payment:
             allocation_status_obj = AllocationStatusChoice.objects.get(
                 name=INVOICE_DEFAULT_STATUS)
@@ -718,7 +740,16 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         formset = formset(request.POST, initial=users_to_add,
                           prefix='userform')
 
-        users_added_count = 0
+        added_users = []
+        denied_users = []
+
+        ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPResourceSearch')
+        resource_name = allocation_obj.get_parent_resource.name
+        resources = {
+            "Carbonate DL": "CN=iu-entlmt-app-rt-carbonate-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu",
+            "Carbonate GPU": "CN=iu-entlmt-app-rt-carbonate-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu",
+            "Big Red 3": "CN=iu-entlmt-app-rt-bigred3-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu"
+        }
 
         if formset.is_valid():
 
@@ -729,10 +760,17 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                 user_form_data = form.cleaned_data
                 if user_form_data['selected']:
 
-                    users_added_count += 1
-
                     user_obj = User.objects.get(
                         username=user_form_data.get('username'))
+
+                    username = user_obj.username
+                    search_class_obj = ldap_search(username, 'username_only')
+                    accounts = search_class_obj.search_a_user(username, 'username_only')
+                    if resources[resource_name] in accounts:
+                        added_users.append(username)
+                    else:
+                        denied_users.append(username)
+                        continue
 
                     if allocation_obj.allocationuser_set.filter(user=user_obj).exists():
                         allocation_user_obj = allocation_obj.allocationuser_set.get(
@@ -745,8 +783,16 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
                     allocation_activate_user.send(sender=self.__class__,
                                                   allocation_user_pk=allocation_user_obj.pk)
-            messages.success(
-                request, 'Added {} users to allocation.'.format(users_added_count))
+            if added_users:
+                messages.success(
+                    request,
+                    'Added user(s) {} to allocation.'.format(', '.join(added_users))
+                )
+            if denied_users:
+                messages.warning(
+                    request,
+                    'Did not add user(s) {} to allocation. An account is needed for this resource: https://access.iu.edu/Accounts/Create.'.format(', '.join(denied_users))
+                )
         else:
             for error in formset.errors:
                 messages.error(request, error)
