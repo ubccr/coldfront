@@ -57,7 +57,7 @@ class LDAPUserSearch(UserSearch):
         logger.info("LDAP user search for %s found %s results", user_search_string, len(users))
         return users
 
-class LDAPResourceSearch(UserSearch):
+class LDAPAccountSearch(UserSearch):
     search_source = 'LDAP'
 
     def __init__(self, user_search_string, search_by):

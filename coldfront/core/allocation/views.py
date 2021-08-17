@@ -569,7 +569,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         if project_obj.pi not in users:
             users.append(project_obj.pi)
 
-        ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPResourceSearch')
+        ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPAccountSearch')
         resources = {
             "Carbonate DL": "CN=iu-entlmt-app-rt-carbonate-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu",
             "Carbonate GPU": "CN=iu-entlmt-app-rt-carbonate-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu",
@@ -743,7 +743,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         added_users = []
         denied_users = []
 
-        ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPResourceSearch')
+        ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPAccountSearch')
         resource_name = allocation_obj.get_parent_resource.name
         resources = {
             "Carbonate DL": "CN=iu-entlmt-app-rt-carbonate-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu",
