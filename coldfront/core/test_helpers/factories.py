@@ -1,7 +1,5 @@
-from factory import (
-    DjangoModelFactory,
-    SubFactory,
-)
+from factory.django import DjangoModelFactory
+from factory import SubFactory
 
 from django.contrib.auth.models import User
 from coldfront.core.field_of_science.models import FieldOfScience
