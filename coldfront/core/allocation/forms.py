@@ -18,11 +18,17 @@ class AllocationForm(forms.Form):
     resource = forms.ModelChoiceField(queryset=None, empty_label=None)
     justification = forms.CharField(widget=forms.Textarea)
     quantity = forms.IntegerField(required=True)
-    leverage_multiple_gpus = forms.ChoiceField(choices=(("No", "No"), ("Yes", "Yes")), required=False)
-    dl_workflow = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False)
+    # Leave an empty value as a choice so the form picks it as the value to check if the user has
+    # already picked a choice (relevent if the form errors after submission due to missing required
+    # values, prevents what the user chose from being reset. We want to check against an empty
+    # string).
+    leverage_multiple_gpus = forms.ChoiceField(choices=(("", ""), ("No", "No"), ("Yes", "Yes")), required=False)
+    dl_workflow = forms.ChoiceField(choices=(("", ""), ('No', 'No'), ('Yes', 'Yes')), required=False)
     applications_list = forms.CharField(max_length=150, required=False)
-    training_or_inference = forms.ChoiceField(choices=(('Training', 'Training'), ('Inference', 'Inference'), ('Both', 'Both')), required=False)
-    for_coursework = forms.ChoiceField(choices=(("No", "No"), ("Yes", "Yes")), required=False)
+    training_or_inference = forms.ChoiceField(choices=(("", ""), ('Training', 'Training'), ('Inference', 'Inference'), ('Both', 'Both')), required=False)
+    for_coursework = forms.ChoiceField(choices=(("", ""), ("No", "No"), ("Yes", "Yes")), required=False)
+    system = forms.ChoiceField(choices=(("", ""), ("Carbonate", "Carbonate"), ("BigRed3", "Big Red 3")), required=False)
+    end_date = forms.DateField(required=False)
     users = forms.MultipleChoiceField(
         widget=forms.CheckboxSelectMultiple, required=False)
     allocation_account = forms.ChoiceField(required=False)
@@ -54,6 +60,7 @@ class AllocationForm(forms.Form):
             self.fields['allocation_account'].widget = forms.HiddenInput()
 
         self.fields['justification'].help_text = '<br/>Justification for requesting this allocation.'
+        self.fields['end_date'].help_text = 'Format: mm/dd/yyyy'
 
 
 class AllocationUpdateForm(forms.Form):

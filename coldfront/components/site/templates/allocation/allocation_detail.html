@@ -50,36 +50,42 @@ Allocation Detail
             </tr>
             {% if allocation.get_resources_as_string == "Carbonate DL" %}
               <tr>
-                <th scope="row" class="text-nowrap">Leverage Multiple GPUs</th>
+                <th scope="row" class="text-nowrap">Leverage Multiple GPUs:</th>
                 <td>{{ allocation.leverage_multiple_gpus }}</td>
               </tr>
               <tr>
-                <th scope="row" class="text-nowrap">Training or Inference</th>
+                <th scope="row" class="text-nowrap">Training or Inference:</th>
                 <td>{{ allocation.training_or_inference }}</td>
               </tr>
               <tr>
-                <th scope="row" class="text-nowrap">For Coursework</th>
+                <th scope="row" class="text-nowrap">For Coursework:</th>
                 <td>{{ allocation.for_coursework }}</td>
               </tr>
             {% endif %}
             {% if allocation.get_resources_as_string == "Carbonate GPU" %}
               <tr>
-                <th scope="row" class="text-nowrap">Leverage Multiple GPUs</th>
+                <th scope="row" class="text-nowrap">Leverage Multiple GPUs:</th>
                 <td>{{ allocation.leverage_multiple_gpus }}</td>
               </tr>
               <tr>
-                <th scope="row" class="text-nowrap">Deep Learning Workflow</th>
+                <th scope="row" class="text-nowrap">Deep Learning Workflow:</th>
                 <td>{{ allocation.dl_workflow }}</td>
               </tr>
               <tr>
-                <th scope="row" class="text-nowrap">Applications To Be Used</th>
+                <th scope="row" class="text-nowrap">Applications To Be Used:</th>
                 <td>{{ allocation.applications_list }}</td>
               </tr>
               <tr>
-                <th scope="row" class="text-nowrap">For Coursework</th>
+                <th scope="row" class="text-nowrap">For Coursework:</th>
                 <td>{{ allocation.for_coursework }}</td>
               </tr>
             {% endif %}
+          {% endif %}
+          {% if allocation.get_resources_as_string == "Priority Boost" %}
+              <tr>
+                <th scope="row" class="text-nowrap">System:</th>
+                <td>{{ allocation.system }}</td>
+              </tr>
           {% endif %}
           <tr>
             <th scope="row" class="text-nowrap">Justification:</th>

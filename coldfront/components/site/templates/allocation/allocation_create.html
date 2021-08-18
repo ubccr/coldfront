@@ -75,6 +75,10 @@ Request New Allocation
   var resources_form_training_or_inference = {{ resources_form_training_or_inference | safe }};
   var resources_form_for_coursework_label = {{ resources_form_for_coursework_label | safe }};
   var resources_form_for_coursework = {{ resources_form_for_coursework | safe }};
+  var resources_form_system_label = {{ resources_form_system_label | safe }};
+  var resources_form_system = {{ resources_form_system | safe }};
+  var resources_form_end_date_label = {{ resources_form_end_date_label | safe }};
+  var resources_form_end_date = {{ resources_form_end_date | safe }};
 
   $(document).ready(function () {
     $('<br><input id="selectAll" class="check" type="checkbox"> <strong>Select All Users</strong>').insertAfter($("#div_id_users > label"))
@@ -158,77 +162,85 @@ Request New Allocation
       $('#id_quantity').val(1)
     }
 
-    if (resources_form_leverage_multiple_gpus[resource_id]) {
+    if (resources_form_leverage_multiple_gpus_label[resource_id]) {
       var label = $('label[for="id_leverage_multiple_gpus"]')
-      if (resources_form_leverage_multiple_gpus_label[resource_id]) {
-        label.html(resources_form_leverage_multiple_gpus_label[resource_id])
-      } else {
-        label.html('<strong>Leverage Multiple GPUs*</strong>')
+      label.html(resources_form_leverage_multiple_gpus_label[resource_id])
+      // Do not reset the value if the user has already entered one (relevent if the form errors
+      // after submission because not all the required values were given).
+      if ($('#id_leverage_multiple_gpus').val().length < 1) {
+        $('#id_leverage_multiple_gpus').val(resources_form_leverage_multiple_gpus[resource_id])
       }
-      $('#id_leverage_multiple_gpus').val(resources_form_leverage_multiple_gpus[resource_id])
       $('#div_id_leverage_multiple_gpus').show();
     } else {
       $('#div_id_leverage_multiple_gpus').hide();
     }
     
-    if (resources_form_dl_workflow[resource_id]) {
+    if (resources_form_dl_workflow_label[resource_id]) {
       var label = $('label[for="id_dl_workflow"]')
-      if (resources_form_dl_workflow_label[resource_id]) {
-        label.html(resources_form_dl_workflow_label[resource_id])
-      } else {
-        label.html('<strong>DL Workflow*</strong>')
+      label.html(resources_form_dl_workflow_label[resource_id])
+      if ($('#id_dl_workflow').val().length < 1) {
+        $('#id_dl_workflow').val(resources_form_dl_workflow[resource_id])
       }
-      $('#id_dl_workflow').val(resources_form_dl_workflow[resource_id])
       $('#div_id_dl_workflow').show();
     } else {
       $('#div_id_dl_workflow').hide();
     }
 
-    if (resources_form_applications_list[resource_id]) {
+    if (resources_form_applications_list_label[resource_id]) {
       var label = $('label[for="id_applications_list"]')
-      if (resources_form_applications_list_label[resource_id]) {
-        label.html(resources_form_applications_list_label[resource_id])
-      } else {
-        label.html('<strong>Applications List*</strong>')
+      label.html(resources_form_applications_list_label[resource_id])
+      if ($('#id_applications_list').val().length < 1) {
+        $('#id_applications_list').val(resources_form_applications_list[resource_id])
       }
-      $('#id_applications_list').val(resources_form_applications_list[resource_id])
       $('#div_id_applications_list').show();
     } else {
       $('#div_id_applications_list').hide();
     }
 
-    if (resources_form_training_or_inference[resource_id]) {
+    if (resources_form_training_or_inference_label[resource_id]) {
       var label = $('label[for="id_training_or_inference"]')
-      if (resources_form_training_or_inference_label[resource_id]) {
-        label.html(resources_form_training_or_inference_label[resource_id])
-      } else {
-        label.html('<strong>Training, Inference, or Both*</strong>')
+      label.html(resources_form_training_or_inference_label[resource_id])
+      if ($('#id_training_or_inference').val().length < 1) {
+        $('#id_training_or_inference').val(resources_form_training_or_inference[resource_id])
       }
-      $('#id_training_or_inference').val(resources_form_training_or_inference[resource_id])
       $('#div_id_training_or_inference').show();
     } else {
       $('#div_id_training_or_inference').hide();
     }
-
-    if (resources_with_accounts.includes(parseInt(resource_id))) {
-      $('#div_id_allocation_account').show();
-    } else {
-      $('#div_id_allocation_account').hide();
-    }
     
-    if (resources_form_for_coursework[resource_id]) {
+    if (resources_form_for_coursework_label[resource_id]) {
       var label = $('label[for="id_for_coursework"]')
-      if (resources_form_for_coursework_label[resource_id]) {
-        label.html(resources_form_for_coursework_label[resource_id])
-      } else {
-        label.html('<strong>For Coursework*</strong>')
+      label.html(resources_form_for_coursework_label[resource_id])
+      if ($('#id_for_coursework').val().length < 1) {
+        $('#id_for_coursework').val(resources_form_for_coursework[resource_id])
       }
-      $('#id_for_coursework').val(resources_form_for_coursework[resource_id])
       $('#div_id_for_coursework').show();
     } else {
       $('#div_id_for_coursework').hide();
     }
+    
+    if (resources_form_system_label[resource_id]) {
+      var label = $('label[for="id_system"')
+      label.html(resources_form_system_label[resource_id])
+      if ($('#id_system').val().length < 1){
+        $('#id_system').val(resources_form_system[resource_id])
+      }
+      $('#div_id_system').show();
+    } else {
+      $('#div_id_system').hide();
+    }
 
+    if (resources_form_end_date_label[resource_id]) {
+      var label = $('label[for="id_end_date"')
+      label.html(resources_form_end_date_label[resource_id])
+      if ($('#id_end_date').val().length < 1){
+        $('#id_end_date').val(resources_form_end_date[resource_id])
+      }
+      $('#div_id_end_date').show();
+    } else {
+      $('#div_id_end_date').hide();
+    }
+    
     if (resources_with_accounts.includes(parseInt(resource_id))) {
       $('#div_id_allocation_account').show();
     } else {

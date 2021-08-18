@@ -122,13 +122,13 @@ class ResourceAttribute(TimeStampedModel):
     resource_attribute_type = models.ForeignKey(
         ResourceAttributeType, on_delete=models.CASCADE)
     resource = models.ForeignKey(Resource, on_delete=models.CASCADE)
-    value = models.TextField()
+    value = models.TextField(blank=True)
     history = HistoricalRecords()
 
     def clean(self):
 
         expected_value_type = self.resource_attribute_type.attribute_type.name.strip()
-
+        """
         if expected_value_type == "Int" and not self.value.isdigit():
             raise ValidationError(
                 'Invalid Value "%s". Value must be an integer.' % (self.value))
@@ -144,6 +144,7 @@ class ResourceAttribute(TimeStampedModel):
             except ValueError:
                 raise ValidationError(
                     'Invalid Value "%s". Date must be in format MM/DD/YYYY' % (self.value))
+        """
 
     def __str__(self):
         return '%s: %s (%s)' % (self.resource_attribute_type, self.value, self.resource)

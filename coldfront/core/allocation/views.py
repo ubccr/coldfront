@@ -524,7 +524,12 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         resources_form_training_or_inference_label = {}
         resources_form_for_coursework = {}
         resources_form_for_coursework_label = {}
+        resources_form_system = {}
+        resources_form_system_label = {}
+        resources_form_end_date = {}
+        resources_form_end_date_label = {}
         resources_with_eula = {}
+
         for resource in user_resources:
             if resource.resourceattribute_set.filter(resource_attribute_type__name='quantity_default_value').exists():
                 value = resource.resourceattribute_set.get(
@@ -586,6 +591,26 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 resources_form_for_coursework_label[resource.id] = mark_safe(
                     '<strong>{}*</strong>'.format(value))
 
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='system').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='system').value
+                resources_form_system[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='system_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='system_label').value
+                resources_form_system_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='end_date').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='end_date').value
+                resources_form_end_date[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='end_date_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='end_date_label').value
+                resources_form_end_date_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
             if resource.resourceattribute_set.filter(resource_attribute_type__name='eula').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='eula').value
@@ -604,6 +629,10 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         context['resources_form_training_or_inference'] = resources_form_training_or_inference
         context['resources_form_for_coursework_label'] = resources_form_for_coursework_label
         context['resources_form_for_coursework'] = resources_form_for_coursework
+        context['resources_form_system_label'] = resources_form_system_label
+        context['resources_form_system'] = resources_form_system
+        context['resources_form_end_date_label'] = resources_form_end_date_label
+        context['resources_form_end_date'] = resources_form_end_date
         context['resources_with_eula'] = resources_with_eula
         context['resources_with_accounts'] = list(Resource.objects.filter(
             name__in=list(ALLOCATION_ACCOUNT_MAPPING.keys())).values_list('id', flat=True))
@@ -628,12 +657,33 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         applications_list = form_data.get('applications_list')
         training_or_inference = form_data.get('training_or_inference')
         for_coursework = form_data.get('for_coursework')
+        system = form_data.get('system')
+        end_date = form_data.get('end_date')
         allocation_account = form_data.get('allocation_account', None)
         # A resource is selected that requires an account name selection but user has no account names
         if ALLOCATION_ACCOUNT_ENABLED and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING and AllocationAttributeType.objects.filter(
                 name=ALLOCATION_ACCOUNT_MAPPING[resource_obj.name]).exists() and not allocation_account:
             form.add_error(None, format_html(
                 'You need to create an account name. Create it by clicking the link under the "Allocation account" field.'))
+            return self.form_invalid(form)
+
+        # Manually check if the required values exist based on what resource was selected.
+        error = False
+        if resource_obj.name == "Priority Boost":
+            if system == "" or end_date == None:
+                error = True
+        elif resource_obj.name == "Carbonate DL":
+            if leverage_multiple_gpus == "" or training_or_inference == "" or for_coursework == "":
+                error = True
+        elif resource_obj.name == "Carbonate GPU":
+            if leverage_multiple_gpus == "" or dl_workflow == "" or applications_list == "" or for_coursework == "":
+                error = True
+
+        if error:
+            form.add_error(None, format_html(
+                "Please fill out all the required fields."
+                )
+            )
             return self.form_invalid(form)
 
         usernames = form_data.get('users')
@@ -660,6 +710,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             applications_list=applications_list,
             training_or_inference=training_or_inference,
             for_coursework=for_coursework,
+            system=system,
+            end_date=end_date,
             status=allocation_status_obj
         )
         allocation_obj.resources.add(resource_obj)
