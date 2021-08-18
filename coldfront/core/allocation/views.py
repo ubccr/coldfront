@@ -530,6 +530,10 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         resources_form_end_date_label = {}
         resources_form_phi_association = {}
         resources_form_phi_association_label = {}
+        resources_form_access_level = {}
+        resources_form_access_level_label = {}
+        resources_form_confirm_understanding = {}
+        resources_form_confirm_understanding_label = {}
         resources_with_eula = {}
 
         for resource in user_resources:
@@ -623,6 +627,26 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 resources_form_phi_association_label[resource.id] = mark_safe(
                     '<strong>{}*</strong>'.format(value))
 
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='access_level').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='access_level').value
+                resources_form_access_level[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='access_level_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='access_level_label').value
+                resources_form_access_level_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='confirm_understanding').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='confirm_understanding').value
+                resources_form_confirm_understanding[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='confirm_understanding_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='confirm_understanding_label').value
+                resources_form_confirm_understanding_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
             if resource.resourceattribute_set.filter(resource_attribute_type__name='eula').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='eula').value
@@ -647,6 +671,10 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         context['resources_form_end_date'] = resources_form_end_date
         context['resources_form_phi_association_label'] = resources_form_phi_association_label
         context['resources_form_phi_association'] = resources_form_phi_association
+        context['resources_form_access_level_label'] = resources_form_access_level_label
+        context['resources_form_access_level'] = resources_form_access_level
+        context['resources_form_confirm_understanding_label'] = resources_form_confirm_understanding_label
+        context['resources_form_confirm_understanding'] = resources_form_confirm_understanding
         context['resources_with_eula'] = resources_with_eula
         context['resources_with_accounts'] = list(Resource.objects.filter(
             name__in=list(ALLOCATION_ACCOUNT_MAPPING.keys())).values_list('id', flat=True))
@@ -674,6 +702,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         system = form_data.get('system')
         end_date = form_data.get('end_date')
         phi_association = form_data.get('phi_association')
+        access_level = form_data.get('access_level')
+        confirm_understanding = form_data.get('confirm_understanding')
         allocation_account = form_data.get('allocation_account', None)
         # A resource is selected that requires an account name selection but user has no account names
         if ALLOCATION_ACCOUNT_ENABLED and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING and AllocationAttributeType.objects.filter(
@@ -695,6 +725,9 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 error = True
         elif resource_obj.name == "Carbonate Precision Health Initiative (PHI) Nodes":
             if phi_association == "":
+                error = True
+        elif resource_obj.name == "cBioPortal":
+            if phi_association == "" or access_level == "" or confirm_understanding == "":
                 error = True
 
         if error:
@@ -731,6 +764,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             system=system,
             end_date=end_date,
             phi_association=phi_association,
+            access_level=access_level,
+            confirm_understanding=confirm_understanding,
             status=allocation_status_obj
         )
         allocation_obj.resources.add(resource_obj)

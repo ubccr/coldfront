@@ -93,6 +93,20 @@ Allocation Detail
                 <td>{{ allocation.phi_association }}</td>
               </tr>
           {% endif %}
+          {% if allocation.get_resources_as_string == "cBioPortal" %}
+             <tr>
+              <th scope="row" class="text-nowrap">Is Associated With PHI:</th>
+              <td>{{ allocation.phi_association }}</td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">Authorized Access Level:</th>
+              <td>{{ allocation.access_level }}</td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">Confirmed For Research Purposes Only:</th>
+              <td>{{ allocation.confirm_understanding }}</td>
+            </tr>
+          {% endif %}
           <tr>
             <th scope="row" class="text-nowrap">Justification:</th>
             <td>{{ allocation.justification }}</td>

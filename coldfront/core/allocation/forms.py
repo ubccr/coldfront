@@ -30,6 +30,8 @@ class AllocationForm(forms.Form):
     system = forms.ChoiceField(choices=(('', ''), ('Carbonate', 'Carbonate'), ('BigRed3', 'Big Red 3')), required=False)
     end_date = forms.DateField(required=False)
     phi_association = forms.ChoiceField(choices=(('', ''), ('No', 'No'), ('Yes', 'Yes')), required=False)
+    access_level = forms.ChoiceField(choices=(('', ''), ('Masked', 'Masked'), ('Unmasked', 'Unmasked')), required=False)
+    confirm_understanding = forms.ChoiceField(choices=(('', ''), ('Yes', 'Yes')), required=False)
     users = forms.MultipleChoiceField(
         widget=forms.CheckboxSelectMultiple, required=False)
     allocation_account = forms.ChoiceField(required=False)

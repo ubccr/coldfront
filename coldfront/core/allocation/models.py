@@ -51,6 +51,8 @@ class Allocation(TimeStampedModel):
     start_date = models.DateField(blank=True, null=True)
     end_date = models.DateField(blank=True, null=True)
     phi_association = models.CharField(max_length=4, choices=(('No', 'No'), ('Yes', 'Yes')), blank=True, null=True)
+    access_level = models.CharField(max_length=8, choices=(('', ''), ('Masked', 'Masked'), ('Unmasked', 'Unmasked')), blank=True, null=True)
+    confirm_understanding = models.CharField(max_length=4, choices=(('', ''), ('Yes', 'Yes')), blank=True, null=True)
     justification = models.TextField()
     description = models.CharField(max_length=512, blank=True, null=True)
     is_locked = models.BooleanField(default=False)
@@ -254,7 +256,6 @@ class AllocationAttribute(TimeStampedModel):
         elif expected_value_type == "Yes/No" and self.value not in ["Yes", "No"]:
             raise ValidationError(
                 'Invalid Value "%s". Allowed inputs are "Yes" or "No".' % (self.value))
-        # TODO - Put check for 'True/False' attribute
         elif expected_value_type == "Date":
             try:
                 datetime.datetime.strptime(self.value.strip(), "%Y-%m-%d")

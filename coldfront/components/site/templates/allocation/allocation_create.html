@@ -81,6 +81,10 @@ Request New Allocation
   var resources_form_end_date = {{ resources_form_end_date | safe }};
   var resources_form_phi_association_label = {{ resources_form_phi_association_label | safe }};
   var resources_form_phi_association = {{ resources_form_phi_association | safe }};
+  var resources_form_access_level_label = {{ resources_form_access_level_label | safe }};
+  var resources_form_access_level = {{ resources_form_access_level | safe }};
+  var resources_form_confirm_understanding_label = {{ resources_form_confirm_understanding_label | safe }};
+  var resources_form_confirm_understanding = {{ resources_form_confirm_understanding | safe }};
 
   $(document).ready(function () {
     $('<br><input id="selectAll" class="check" type="checkbox"> <strong>Select All Users</strong>').insertAfter($("#div_id_users > label"))
@@ -252,6 +256,28 @@ Request New Allocation
       $('#div_id_phi_association').show();
     } else {
       $('#div_id_phi_association').hide();
+    }
+
+    if (resources_form_access_level_label[resource_id]) {
+      var label = $('label[for="id_access_level"')
+      label.html(resources_form_access_level_label[resource_id])
+      if ($('#id_access_level').val().length < 1){
+        $('#id_access_level').val(resources_form_access_level[resource_id])
+      }
+      $('#div_id_access_level').show();
+    } else {
+      $('#div_id_access_level').hide();
+    }
+    
+    if (resources_form_confirm_understanding_label[resource_id]) {
+      var label = $('label[for="id_confirm_understanding"')
+      label.html(resources_form_confirm_understanding_label[resource_id])
+      if ($('#id_confirm_understanding').val().length < 1){
+        $('#id_confirm_understanding').val(resources_form_confirm_understanding[resource_id])
+      }
+      $('#div_id_confirm_understanding').show();
+    } else {
+      $('#div_id_confirm_understanding').hide();
     }
     
     if (resources_with_accounts.includes(parseInt(resource_id))) {
