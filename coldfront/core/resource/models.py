@@ -128,23 +128,29 @@ class ResourceAttribute(TimeStampedModel):
     def clean(self):
 
         expected_value_type = self.resource_attribute_type.attribute_type.name.strip()
-        """
         if expected_value_type == "Int" and not self.value.isdigit():
             raise ValidationError(
-                'Invalid Value "%s". Value must be an integer.' % (self.value))
-        elif expected_value_type == "Active/Inactive" and self.value not in ["Active", "Inactive"]:
+                'Invalid Value "%s". Value must be an integer.' % (self.value)
+            )
+        elif expected_value_type == "Active/Inactive" and self.value not in ["Active", "Inactive", ""]:
             raise ValidationError(
-                'Invalid Value "%s". Allowed inputs are "Active" or "Inactive".' % (self.value))
-        elif expected_value_type == "Public/Private" and self.value not in ["Public", "Private"]:
+                'Invalid Value "%s". Allowed inputs are "Active" or "Inactive".' % (self.value)
+            )
+        elif expected_value_type == "Public/Private" and self.value not in ["Public", "Private", ""]:
             raise ValidationError(
-                'Invalid Value "%s". Allowed inputs are "Public" or "Private".' % (self.value))
-        elif expected_value_type == "Date":
+                'Invalid Value "%s". Allowed inputs are "Public" or "Private".' % (self.value)
+            )
+        elif expected_value_type == "Yes/No" and self.value not in ["Yes", "No", ""]:
+            raise ValidationError(
+                'Invalid Value "%s". Allowed inputs are "Yes" or "No".' % (self.value)
+            )
+        elif expected_value_type == "Date" and self.value is not None:
             try:
                 datetime.strptime(self.value.strip(), "%m/%d/%Y")
             except ValueError:
                 raise ValidationError(
-                    'Invalid Value "%s". Date must be in format MM/DD/YYYY' % (self.value))
-        """
+                    'Invalid Value "%s". Date must be in format MM/DD/YYYY' % (self.value)
+                )
 
     def __str__(self):
         return '%s: %s (%s)' % (self.resource_attribute_type, self.value, self.resource)

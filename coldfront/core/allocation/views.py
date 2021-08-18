@@ -667,7 +667,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 'You need to create an account name. Create it by clicking the link under the "Allocation account" field.'))
             return self.form_invalid(form)
 
-        # Manually check if the required values exist based on what resource was selected.
+        # Check if the required values exist based on what resource was selected.
         error = False
         if resource_obj.name == "Priority Boost":
             if system == "" or end_date == None:
