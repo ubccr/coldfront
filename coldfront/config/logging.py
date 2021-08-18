@@ -26,7 +26,7 @@ LOGGING = {
     },
     'loggers': {
         'django_auth_ldap': {
-            'level': 'DEBUG',
+            'level': 'INFO',
             # 'handlers': ['console', 'file'],
             'handlers': ['console', ],
         },
@@ -36,15 +36,15 @@ LOGGING = {
         },
         '': {
             'handlers': ['console'],
-            'level': 'DEBUG',
+            'level': 'INFO',
         },
         'ifx': {
             'handlers': ['console'],
-            'level': 'DEBUG',
+            'level': 'INFO',
         },
         'ifxbilling': {
             'handlers': ['console'],
-            'level': 'DEBUG',
+            'level': 'INFO',
         },
     },
 }
