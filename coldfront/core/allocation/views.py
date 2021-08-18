@@ -693,6 +693,9 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         elif resource_obj.name == "Carbonate GPU":
             if leverage_multiple_gpus == "" or dl_workflow == "" or applications_list == "" or for_coursework == "":
                 error = True
+        elif resource_obj.name == "Carbonate Precision Health Initiative (PHI) Nodes":
+            if phi_association == "":
+                error = True
 
         if error:
             form.add_error(None, format_html(
