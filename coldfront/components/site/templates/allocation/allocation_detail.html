@@ -87,6 +87,12 @@ Allocation Detail
                 <td>{{ allocation.system }}</td>
               </tr>
           {% endif %}
+          {% if allocation.get_resources_as_string == "Carbonate Precision Health Initiative (PHI) Nodes" %}
+              <tr>
+                <th scope="row" class="text-nowrap">Is Associated With PHI:</th>
+                <td>{{ allocation.phi_association }}</td>
+              </tr>
+          {% endif %}
           <tr>
             <th scope="row" class="text-nowrap">Justification:</th>
             <td>{{ allocation.justification }}</td>

@@ -22,13 +22,14 @@ class AllocationForm(forms.Form):
     # already picked a choice (relevent if the form errors after submission due to missing required
     # values, prevents what the user chose from being reset. We want to check against an empty
     # string).
-    leverage_multiple_gpus = forms.ChoiceField(choices=(("", ""), ("No", "No"), ("Yes", "Yes")), required=False)
-    dl_workflow = forms.ChoiceField(choices=(("", ""), ('No', 'No'), ('Yes', 'Yes')), required=False)
+    leverage_multiple_gpus = forms.ChoiceField(choices=(('', ''), ('No', 'No'), ('Yes', 'Yes')), required=False)
+    dl_workflow = forms.ChoiceField(choices=(('', ''), ('No', 'No'), ('Yes', 'Yes')), required=False)
     applications_list = forms.CharField(max_length=150, required=False)
-    training_or_inference = forms.ChoiceField(choices=(("", ""), ('Training', 'Training'), ('Inference', 'Inference'), ('Both', 'Both')), required=False)
-    for_coursework = forms.ChoiceField(choices=(("", ""), ("No", "No"), ("Yes", "Yes")), required=False)
-    system = forms.ChoiceField(choices=(("", ""), ("Carbonate", "Carbonate"), ("BigRed3", "Big Red 3")), required=False)
+    training_or_inference = forms.ChoiceField(choices=(('', ''), ('Training', 'Training'), ('Inference', 'Inference'), ('Both', 'Both')), required=False)
+    for_coursework = forms.ChoiceField(choices=(('', ''), ('No', 'No'), ('Yes', 'Yes')), required=False)
+    system = forms.ChoiceField(choices=(('', ''), ('Carbonate', 'Carbonate'), ('BigRed3', 'Big Red 3')), required=False)
     end_date = forms.DateField(required=False)
+    phi_association = forms.ChoiceField(choices=(('', ''), ('No', 'No'), ('Yes', 'Yes')), required=False)
     users = forms.MultipleChoiceField(
         widget=forms.CheckboxSelectMultiple, required=False)
     allocation_account = forms.ChoiceField(required=False)

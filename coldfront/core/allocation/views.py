@@ -528,6 +528,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         resources_form_system_label = {}
         resources_form_end_date = {}
         resources_form_end_date_label = {}
+        resources_form_phi_association = {}
+        resources_form_phi_association_label = {}
         resources_with_eula = {}
 
         for resource in user_resources:
@@ -611,6 +613,16 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 resources_form_end_date_label[resource.id] = mark_safe(
                     '<strong>{}*</strong>'.format(value))
 
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='phi_association').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='phi_association').value
+                resources_form_phi_association[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='phi_association_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='phi_association_label').value
+                resources_form_phi_association_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
             if resource.resourceattribute_set.filter(resource_attribute_type__name='eula').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='eula').value
@@ -633,6 +645,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         context['resources_form_system'] = resources_form_system
         context['resources_form_end_date_label'] = resources_form_end_date_label
         context['resources_form_end_date'] = resources_form_end_date
+        context['resources_form_phi_association_label'] = resources_form_phi_association_label
+        context['resources_form_phi_association'] = resources_form_phi_association
         context['resources_with_eula'] = resources_with_eula
         context['resources_with_accounts'] = list(Resource.objects.filter(
             name__in=list(ALLOCATION_ACCOUNT_MAPPING.keys())).values_list('id', flat=True))
@@ -659,6 +673,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         for_coursework = form_data.get('for_coursework')
         system = form_data.get('system')
         end_date = form_data.get('end_date')
+        phi_association = form_data.get('phi_association')
         allocation_account = form_data.get('allocation_account', None)
         # A resource is selected that requires an account name selection but user has no account names
         if ALLOCATION_ACCOUNT_ENABLED and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING and AllocationAttributeType.objects.filter(
@@ -712,6 +727,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             for_coursework=for_coursework,
             system=system,
             end_date=end_date,
+            phi_association=phi_association,
             status=allocation_status_obj
         )
         allocation_obj.resources.add(resource_obj)

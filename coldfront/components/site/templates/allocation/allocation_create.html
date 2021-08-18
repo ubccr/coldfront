@@ -79,6 +79,8 @@ Request New Allocation
   var resources_form_system = {{ resources_form_system | safe }};
   var resources_form_end_date_label = {{ resources_form_end_date_label | safe }};
   var resources_form_end_date = {{ resources_form_end_date | safe }};
+  var resources_form_phi_association_label = {{ resources_form_phi_association_label | safe }};
+  var resources_form_phi_association = {{ resources_form_phi_association | safe }};
 
   $(document).ready(function () {
     $('<br><input id="selectAll" class="check" type="checkbox"> <strong>Select All Users</strong>').insertAfter($("#div_id_users > label"))
@@ -239,6 +241,17 @@ Request New Allocation
       $('#div_id_end_date').show();
     } else {
       $('#div_id_end_date').hide();
+    }
+
+    if (resources_form_phi_association_label[resource_id]) {
+      var label = $('label[for="id_phi_association"')
+      label.html(resources_form_phi_association_label[resource_id])
+      if ($('#id_phi_association').val().length < 1){
+        $('#id_phi_association').val(resources_form_phi_association[resource_id])
+      }
+      $('#div_id_phi_association').show();
+    } else {
+      $('#div_id_phi_association').hide();
     }
     
     if (resources_with_accounts.includes(parseInt(resource_id))) {
