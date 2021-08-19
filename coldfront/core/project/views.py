@@ -2107,8 +2107,6 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
             request_kwargs['status'] = \
                 ProjectAllocationRequestStatusChoice.objects.get(
                     name='Under Review')
-            print(savio_project_request_ica_state_schema())
-            print(request_kwargs['state'])
             request = SavioProjectAllocationRequest.objects.create(
                 **request_kwargs)
 
