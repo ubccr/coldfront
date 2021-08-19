@@ -1944,6 +1944,7 @@ from coldfront.core.user.models import UserProfile
 from decimal import Decimal
 from formtools.wizard.views import SessionWizardView
 import iso8601
+import pytz
 
 
 class ProjectRequestView(LoginRequiredMixin, UserPassesTestMixin,
@@ -2829,8 +2830,29 @@ class SavioProjectReviewAllocationDatesView(LoginRequiredMixin,
         status = form_data['status']
         timestamp = utc_now_offset_aware().isoformat()
 
+        # The allocation starts at the beginning of the start date and ends at
+        # the end of the end date.
+        local_tz = pytz.timezone('America/Los_Angeles')
+        tz = pytz.timezone(settings.TIME_ZONE)
+        if form_data['start_date']:
+            naive_dt = datetime.datetime.combine(
+                form_data['start_date'], datetime.datetime.min.time())
+            start = local_tz.localize(naive_dt).astimezone(tz).isoformat()
+        else:
+            start = ''
+        if form_data['end_date']:
+            naive_dt = datetime.datetime.combine(
+                form_data['end_date'], datetime.datetime.max.time())
+            end = local_tz.localize(naive_dt).astimezone(tz).isoformat()
+        else:
+            end = ''
+
         self.request_obj.state['allocation_dates'] = {
             'status': status,
+            'dates': {
+                'start': start,
+                'end': end,
+            },
             'timestamp': timestamp,
         }
 
@@ -2857,10 +2879,12 @@ class SavioProjectReviewAllocationDatesView(LoginRequiredMixin,
         initial = super().get_initial()
         allocation_dates = self.request_obj.state['allocation_dates']
         initial['status'] = allocation_dates['status']
+        local_tz = pytz.timezone('America/Los_Angeles')
         for key in ('start', 'end'):
             value = allocation_dates['dates'][key]
             if value:
-                initial[key] = iso8601.parse_date(value)
+                initial[f'{key}_date'] = iso8601.parse_date(value).astimezone(
+                    pytz.utc).astimezone(local_tz).date()
         return initial
 
     def get_success_url(self):

@@ -35,6 +35,7 @@ from coldfront.core.project.views import ProjectRequestView
 from coldfront.core.project.views import SavioProjectRequestDetailView
 from coldfront.core.project.views import SavioProjectRequestListView
 from coldfront.core.project.views import SavioProjectRequestWizard
+from coldfront.core.project.views import SavioProjectReviewAllocationDatesView
 from coldfront.core.project.views import SavioProjectReviewDenyView
 from coldfront.core.project.views import SavioProjectReviewEligibilityView
 from coldfront.core.project.views import SavioProjectReviewMemorandumSignedView
@@ -89,6 +90,9 @@ urlpatterns += [
     path('savio-project-request/<int:pk>/readiness/',
          SavioProjectReviewReadinessView.as_view(),
          name='savio-project-request-review-readiness'),
+    path('savio-project-request/<int:pk>/allocation-dates/',
+         SavioProjectReviewAllocationDatesView.as_view(),
+         name='savio-project-request-review-allocation-dates'),
     path('savio-project-request/<int:pk>/memorandum-signed/',
          SavioProjectReviewMemorandumSignedView.as_view(),
          name='savio-project-request-review-memorandum-signed'),

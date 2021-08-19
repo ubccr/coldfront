@@ -318,7 +318,18 @@ class SavioProjectNewPIForm(forms.Form):
         return email
 
 
-class SavioProjectICAExtraFieldsForm(forms.Form):
+class SavioProjectExtraFieldsForm(forms.Form):
+    """A placeholder for extra fields for non-ICA/MOU projects."""
+
+    def __init__(self, *args, **kwargs):
+        disable_fields = kwargs.pop('disable_fields', False)
+        super().__init__(*args, **kwargs)
+        if disable_fields:
+            for field in self.fields:
+                self.fields[field].disabled = True
+
+
+class SavioProjectICAExtraFieldsForm(SavioProjectExtraFieldsForm):
 
     SEMESTER_CHOICES = (
         ('', 'Select one...'),
@@ -443,7 +454,7 @@ class SavioProjectICAExtraFieldsForm(forms.Form):
         )
 
 
-class SavioProjectMOUExtraFieldsForm(forms.Form):
+class SavioProjectMOUExtraFieldsForm(SavioProjectExtraFieldsForm):
 
     num_service_units = forms.IntegerField(
         help_text=(
@@ -492,13 +503,6 @@ class SavioProjectMOUExtraFieldsForm(forms.Form):
         label='Chartstring Contact Email',
         max_length=100,
         required=True)
-
-    def __init__(self, *args, **kwargs):
-        disable_fields = kwargs.pop('disable_fields', False)
-        super().__init__(*args, **kwargs)
-        if disable_fields:
-            for field in self.fields:
-                self.fields[field].disabled = True
 
     def clean_num_service_units(self):
         cleaned_data = super().clean()
@@ -614,14 +618,16 @@ class SavioProjectDetailsForm(forms.Form):
     def clean_name(self):
         cleaned_data = super().clean()
         name = cleaned_data['name'].lower()
-        if self.allocation_type == SavioProjectAllocationRequest.FCA:
-            name = f'fc_{name}'
-        elif self.allocation_type == SavioProjectAllocationRequest.CO:
+        if self.allocation_type == SavioProjectAllocationRequest.CO:
             name = f'co_{name}'
-        elif self.allocation_type == SavioProjectAllocationRequest.PCA:
-            name = f'pc_{name}'
+        elif self.allocation_type == SavioProjectAllocationRequest.FCA:
+            name = f'fc_{name}'
+        elif self.allocation_type == SavioProjectAllocationRequest.ICA:
+            name = f'ic_{name}'
         elif self.allocation_type == SavioProjectAllocationRequest.MOU:
             name = f'ac_{name}'
+        elif self.allocation_type == SavioProjectAllocationRequest.PCA:
+            name = f'pc_{name}'
         if Project.objects.filter(name=name):
             raise forms.ValidationError(
                 f'A project with name {name} already exists.')
@@ -820,6 +826,47 @@ class ProjectAllocationReviewForm(forms.Form):
         return cleaned_data
 
 
+class SavioProjectReviewAllocationDatesForm(forms.Form):
+
+    status = forms.ChoiceField(
+        choices=(
+            ('', 'Select one.'),
+            ('Pending', 'Pending'),
+            ('Complete', 'Complete'),
+        ),
+        help_text='If you are unsure, leave the status as "Pending".',
+        label='Status',
+        required=True)
+    start_date = forms.DateField(
+        help_text=(
+            'Specify the date on which the allocation should start, in local '
+            'time.'),
+        label='Start Date',
+        required=False,
+        widget=forms.widgets.DateInput())
+    end_date = forms.DateField(
+        help_text=(
+            'Specify the date on which the allocation should end, in local '
+            'time.'),
+        label='End Date',
+        required=False,
+        widget=forms.widgets.DateInput())
+
+    def clean(self):
+        cleaned_data = super().clean()
+        status = cleaned_data.get('status')
+        start_date = cleaned_data.get('start_date')
+        end_date = cleaned_data.get('end_date')
+        if start_date and end_date:
+            if end_date < start_date:
+                raise forms.ValidationError(
+                    'End date cannot be less than start date.')
+        else:
+            if status == 'Complete':
+                raise forms.ValidationError(
+                    'One or more dates have not been set.')
+
+
 class SavioProjectReviewMemorandumSignedForm(forms.Form):
 
     status = forms.ChoiceField(
@@ -889,7 +936,7 @@ class SavioProjectReviewSetupForm(forms.Form):
         cleaned_data = super().clean()
         final_name = cleaned_data.get('final_name', '').lower()
         expected_prefix = None
-        for prefix in ('ac_', 'co_', 'fc_', 'pc_'):
+        for prefix in ('ac_', 'co_', 'fc_', 'ic_', 'pc_'):
             if self.requested_name.startswith(prefix):
                 expected_prefix = prefix
                 break
