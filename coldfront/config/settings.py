@@ -204,6 +204,7 @@ ALLOCATION_YEAR_START_DAY = 1
 # The default amount of service units to allocate to Savio projects.
 CO_DEFAULT_ALLOCATION = ALLOCATION_MAX
 FCA_DEFAULT_ALLOCATION = Decimal('300000.00')
+ICA_DEFAULT_ALLOCATION = Decimal('200000.00')
 PCA_DEFAULT_ALLOCATION = Decimal('200000.00')
 
 # Whether or not to allow all jobs, bypassing all checks.
