@@ -459,8 +459,10 @@ def send_project_request_approval_email(request):
 
     sender = settings.EMAIL_SENDER
     receiver_list = [request.requester.email, request.pi.email]
+    cc = settings.REQUEST_APPROVAL_CC_LIST
 
-    send_email_template(subject, template_name, context, sender, receiver_list)
+    send_email_template(
+        subject, template_name, context, sender, receiver_list, cc=cc)
 
 
 def send_project_request_denial_email(request):
@@ -495,8 +497,10 @@ def send_project_request_denial_email(request):
 
     sender = settings.EMAIL_SENDER
     receiver_list = [request.requester.email, request.pi.email]
+    cc = settings.REQUEST_APPROVAL_CC_LIST
 
-    send_email_template(subject, template_name, context, sender, receiver_list)
+    send_email_template(
+        subject, template_name, context, sender, receiver_list, cc=cc)
 
 
 def send_project_request_pooling_email(request):
@@ -809,19 +813,27 @@ class ProjectApprovalRunner(object):
         status = ProjectUserStatusChoice.objects.get(name='Active')
 
         if requester.pk != pi.pk:
-            requester_project_user, _ = ProjectUser.objects.get_or_create(
-                project=project, user=requester)
-            requester_project_user.role = ProjectUserRoleChoice.objects.get(
-                name='Manager')
-            requester_project_user.status = status
-            requester_project_user.save()
+            role = ProjectUserRoleChoice.objects.get(name='Manager')
+            if project.projectuser_set.filter(user=requester).exists():
+                requester_project_user = project.projectuser_set.get(
+                    user=requester)
+                requester_project_user.role = role
+                requester_project_user.status = status
+                requester_project_user.save()
+            else:
+                ProjectUser.objects.create(
+                    project=project, user=requester, role=role, status=status)
 
-        pi_project_user, _ = ProjectUser.objects.get_or_create(
-            project=project, user=pi)
-        pi_project_user.role = ProjectUserRoleChoice.objects.get(
+        role = ProjectUserRoleChoice.objects.get(
             name='Principal Investigator')
-        pi_project_user.status = status
-        pi_project_user.save()
+        if project.projectuser_set.filter(user=pi).exists():
+            pi_project_user = project.projectuser_set.get(user=pi)
+            pi_project_user.role = role
+            pi_project_user.status = status
+            pi_project_user.save()
+        else:
+            ProjectUser.objects.create(
+                project=project, user=pi, role=role, status=status)
 
     def get_user_messages(self):
         """A getter for this instance's user_messages."""

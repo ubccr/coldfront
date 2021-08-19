@@ -101,25 +101,24 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
         <tr>
           <th scope="row" nowrap>Phone Number: </th>
           <td>
-            {% if user.userprofile.phone_number %}
-              {{ user.userprofile.phone_number }}
+            {% if viewed_user.userprofile.phone_number %}
+              {{ viewed_user.userprofile.phone_number }}
+              <a href="{% url 'user-profile-update' %}" class="btn btn-secondary float-right">
+                <i class="far fa-edit" aria-hidden="true"></i>
+                Update
+              </a>
             {% else %}
                 -
             {% endif %}
-
-            <a href="{% url 'user-profile-update' %}" class="btn btn-secondary float-right">
-              <i class="far fa-edit" aria-hidden="true"></i>
-              Update
-            </a>
           </td>
         </tr>
         <tr>
           <th>User Access Agreement:</th>
           <td>
-            {% if user.userprofile.access_agreement_signed_date is not None %}
+            {% if viewed_user.userprofile.access_agreement_signed_date is not None %}
               <span class="badge badge-success">
                 <i class="fas fa-check"></i>
-                Signed {{ user.userprofile.access_agreement_signed_date }}
+                Signed {{ viewed_user.userprofile.access_agreement_signed_date }}
               </span>
               {% if user == viewed_user %}
                 <a href="{% url 'user-access-agreement' %}" class="btn btn-secondary float-right">
