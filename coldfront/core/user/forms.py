@@ -115,7 +115,6 @@ class UserRegistrationForm(UserCreationForm):
         name = self.cleaned_data.pop('last_name', '')
         return name.title()
 
-
     def save(self, commit=True):
         model = super().save(commit=False)
         model.username = model.email
@@ -179,6 +178,41 @@ class UserProfileUpdateForm(forms.Form):
     phone_number = PhoneNumberField(
         help_text='The number must be in E.164 format (e.g. +12125552368).',
         label='Phone Number', required=False)
+
+    def clean_phone_number(self):
+        cleaned_data = super().clean()
+        self.phone_number = cleaned_data.pop('phone_number', '')
+        return cleaned_data
+
+    def clean_first_name(self):
+        cleaned_data = super().clean()
+        name = self.cleaned_data.pop('first_name', '')
+        return name.title()
+
+    def clean_middle_name(self):
+        cleaned_data = super().clean()
+        name = cleaned_data.pop('middle_name', '')
+        return name.title()
+
+    def clean_last_name(self):
+        cleaned_data = super().clean()
+        name = self.cleaned_data.pop('last_name', '')
+        return name.title()
+
+    def save(self, commit=True):
+        model = super().save(commit=False)
+        model.username = model.email
+        model.is_active = False
+        if commit:
+            model.save()
+        model.refresh_from_db()
+        model.userprofile.middle_name = self.middle_name
+        model.userprofile.phone_number = self.phone_number
+        model.userprofile.first_name = self.first_name
+        model.userprofile.middle_name = self.middle_name
+        model.userprofile.last_name = self.last_name
+        model.userprofile.save()
+        return model
 
 
 class UserAccessAgreementForm(forms.Form):
