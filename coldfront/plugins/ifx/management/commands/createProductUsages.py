@@ -66,7 +66,7 @@ class Command(BaseCommand):
                 product = product_resources[0].product
 
                 # Get the AllocationUser records
-                allocations = Allocation.objects.filter(resources__in=[resource])
+                allocations = Allocation.objects.filter(resources__in=[resource], status__name='Active')
                 print(f'Processing {len(allocations)} allocations for {resource}')
                 for allocation in allocations:
                     for allocation_user in AllocationUser.objects.filter(allocation=allocation, modified__month=select_month, modified__year=select_year):
