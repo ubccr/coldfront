@@ -144,6 +144,10 @@ class ResourceAttribute(TimeStampedModel):
             raise ValidationError(
                 'Invalid Value "%s". Allowed inputs are "Yes" or "No".' % (self.value)
             )
+        elif expected_value_type == "True/False" and self.value not in ["True", "False", ""]:
+            raise ValidationError(
+                'Invalid Value "%s". Allowed inputs are "True" or "False".'
+            )
         elif expected_value_type == "Date" and self.value is not None:
             try:
                 datetime.strptime(self.value.strip(), "%m/%d/%Y")

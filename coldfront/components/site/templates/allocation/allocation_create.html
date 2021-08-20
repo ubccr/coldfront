@@ -16,8 +16,9 @@ Request New Allocation
 <p class="text-justify">The following {% settings_value 'CENTER_NAME' %}
   resources are available to request for this project. If you need access to
   more than one of these, please submit a separate allocation request for each
-  resource. For each request you must provide the justification for how you
-  intend to use the resource to further the research goals of your project.</p>
+  resource. For each request you must fill out all required the fields and  
+  provide the justification for how you intend to use the resource to further 
+  the research goals of your project.</p>
 
 <form method="post">
   {% csrf_token %}
@@ -154,6 +155,41 @@ Request New Allocation
 
   $("#id_resource").change(function () {
     var resource_id = $("#id_resource option:selected").val();
+
+    if (resource_id === '2') { // Carbonate DL
+      $('#additional_info_1').remove();
+      $('#div_id_justification').after(
+        '<p id="additional_info_1">In order to gain access to the Carbonate Deep Learning Partition, you must first have \
+        an account on Carbonate. To create an account, go to \
+        <a href="https://access.iu.edu/Accounts/Create" target = "_blank">Create Additional Accounts.</a></p>'
+      );
+    } else {
+      $('#additional_info_1').remove();
+    }
+
+
+    if (resource_id === '3') { // Carbonate GPU
+      $('#additional_info_2').remove();
+      $('#div_id_justification').after(
+        '<p id="additional_info_2">In order to gain access to the Carbonate GPU Partition, you must first have \
+        an account on Carbonate. To create an account, go to \
+        <a href="https://access.iu.edu/Accounts/Create" target = "_blank">Create Additional Accounts.</a></p>'
+      );
+    } else {
+      $('#additional_info_2').remove();
+    }
+
+    if (resource_id === '4') { // Carbonate PHI
+      $('#additional_info_3').remove();
+      $('#div_id_justification').after(
+        '<p id="additional_info_3">A priority increase will prioritize your jobs ahead of the general workload. If you are \
+        affiliated with a Grand Challenge, you will receive this boost indefinitely. Otherwise, we \
+        can assist you in receiving a short-term priority boost up to your required deadline.</p>'
+      );
+    } else {
+      $('#additional_info_3').remove();
+    }
+
     if (resources_form_default_quantities[resource_id]) {
       var label = $('label[for="id_quantity"]');
       if (resources_form_label_texts[resource_id]) {
@@ -167,25 +203,25 @@ Request New Allocation
       $('#div_id_quantity').hide();
       $('#id_quantity').val(1)
     }
-
+    
     if (resources_form_leverage_multiple_gpus_label[resource_id]) {
-      var label = $('label[for="id_leverage_multiple_gpus"]')
-      label.html(resources_form_leverage_multiple_gpus_label[resource_id])
+      var label = $('label[for="id_leverage_multiple_gpus_0"]');
+      label.html(resources_form_leverage_multiple_gpus_label[resource_id]);
       // Do not reset the value if the user has already entered one (relevent if the form errors
       // after submission because not all the required values were given).
-      if ($('#id_leverage_multiple_gpus').val().length < 1) {
-        $('#id_leverage_multiple_gpus').val(resources_form_leverage_multiple_gpus[resource_id])
+      if ($('input[type=radio][name=leverage_multiple_gpus]:checked').val() === undefined) {
+        $('input[type=radio][name=leverage_multiple_gpus]').val([resources_form_leverage_multiple_gpus[resource_id]]);
       }
       $('#div_id_leverage_multiple_gpus').show();
     } else {
       $('#div_id_leverage_multiple_gpus').hide();
     }
-    
+
     if (resources_form_dl_workflow_label[resource_id]) {
-      var label = $('label[for="id_dl_workflow"]')
-      label.html(resources_form_dl_workflow_label[resource_id])
-      if ($('#id_dl_workflow').val().length < 1) {
-        $('#id_dl_workflow').val(resources_form_dl_workflow[resource_id])
+      var label = $('label[for="id_dl_workflow_0"]');
+      label.html(resources_form_dl_workflow_label[resource_id]);
+      if ($('input[type=radio][name=dl_workflow]:checked').val() === undefined) {
+        $('input[type=radio][name=dl_workflow]').val([resources_form_dl_workflow[resource_id]]);
       }
       $('#div_id_dl_workflow').show();
     } else {
@@ -193,10 +229,10 @@ Request New Allocation
     }
 
     if (resources_form_applications_list_label[resource_id]) {
-      var label = $('label[for="id_applications_list"]')
-      label.html(resources_form_applications_list_label[resource_id])
+      var label = $('label[for="id_applications_list"]');
+      label.html(resources_form_applications_list_label[resource_id]);
       if ($('#id_applications_list').val().length < 1) {
-        $('#id_applications_list').val(resources_form_applications_list[resource_id])
+        $('#id_applications_list').val(resources_form_applications_list[resource_id]);
       }
       $('#div_id_applications_list').show();
     } else {
@@ -204,21 +240,21 @@ Request New Allocation
     }
 
     if (resources_form_training_or_inference_label[resource_id]) {
-      var label = $('label[for="id_training_or_inference"]')
-      label.html(resources_form_training_or_inference_label[resource_id])
+      var label = $('label[for="id_training_or_inference"]');
+      label.html(resources_form_training_or_inference_label[resource_id]);
       if ($('#id_training_or_inference').val().length < 1) {
-        $('#id_training_or_inference').val(resources_form_training_or_inference[resource_id])
+        $('#id_training_or_inference').val(resources_form_training_or_inference[resource_id]);
       }
       $('#div_id_training_or_inference').show();
     } else {
       $('#div_id_training_or_inference').hide();
     }
-    
+
     if (resources_form_for_coursework_label[resource_id]) {
-      var label = $('label[for="id_for_coursework"]')
-      label.html(resources_form_for_coursework_label[resource_id])
-      if ($('#id_for_coursework').val().length < 1) {
-        $('#id_for_coursework').val(resources_form_for_coursework[resource_id])
+      var label = $('label[for="id_for_coursework_0"]');
+      label.html(resources_form_for_coursework_label[resource_id]);
+      if ($('input[type=radio][name=for_coursework]:checked').val() === undefined) {
+        $('input[type=radio][name=for_coursework]').val([resources_form_for_coursework[resource_id]]);
       }
       $('#div_id_for_coursework').show();
     } else {
@@ -226,10 +262,10 @@ Request New Allocation
     }
     
     if (resources_form_system_label[resource_id]) {
-      var label = $('label[for="id_system"')
-      label.html(resources_form_system_label[resource_id])
-      if ($('#id_system').val().length < 1){
-        $('#id_system').val(resources_form_system[resource_id])
+      var label = $('label[for="id_system_0"]');
+      label.html(resources_form_system_label[resource_id]);
+      if ($('input[type=radio][name=system]:checked').val() === undefined){
+        $('input[type=radio][name=system]').val([resources_form_system[resource_id]]);
       }
       $('#div_id_system').show();
     } else {
@@ -237,10 +273,10 @@ Request New Allocation
     }
 
     if (resources_form_end_date_label[resource_id]) {
-      var label = $('label[for="id_end_date"')
-      label.html(resources_form_end_date_label[resource_id])
+      var label = $('label[for="id_end_date"]');
+      label.html(resources_form_end_date_label[resource_id]);
       if ($('#id_end_date').val().length < 1){
-        $('#id_end_date').val(resources_form_end_date[resource_id])
+        $('#id_end_date').val(resources_form_end_date[resource_id]);
       }
       $('#div_id_end_date').show();
     } else {
@@ -248,10 +284,10 @@ Request New Allocation
     }
 
     if (resources_form_phi_association_label[resource_id]) {
-      var label = $('label[for="id_phi_association"')
-      label.html(resources_form_phi_association_label[resource_id])
-      if ($('#id_phi_association').val().length < 1){
-        $('#id_phi_association').val(resources_form_phi_association[resource_id])
+      var label = $('label[for="id_phi_association_0"]');
+      label.html(resources_form_phi_association_label[resource_id]);
+      if ($('input[type=radio][name=phi_association]:checked').val() === undefined){
+        $('input[type=radio][name=phi_association]').val([resources_form_phi_association[resource_id]]);
       }
       $('#div_id_phi_association').show();
     } else {
@@ -259,10 +295,12 @@ Request New Allocation
     }
 
     if (resources_form_access_level_label[resource_id]) {
-      var label = $('label[for="id_access_level"')
-      label.html(resources_form_access_level_label[resource_id])
-      if ($('#id_access_level').val().length < 1){
-        $('#id_access_level').val(resources_form_access_level[resource_id])
+      var label = $('label[for="id_access_level_0"]');
+      label.html(resources_form_access_level_label[resource_id]);
+      console.log('Access')
+      console.log($('input[type=radio][name=access_level]:checked').val());
+      if ($('input[type=radio][name=access_level]:checked').val() === undefined){
+        $('input[type=radio][name=access_level]').val([resources_form_access_level[resource_id]]);
       }
       $('#div_id_access_level').show();
     } else {
@@ -270,10 +308,22 @@ Request New Allocation
     }
     
     if (resources_form_confirm_understanding_label[resource_id]) {
-      var label = $('label[for="id_confirm_understanding"')
-      label.html(resources_form_confirm_understanding_label[resource_id])
-      if ($('#id_confirm_understanding').val().length < 1){
-        $('#id_confirm_understanding').val(resources_form_confirm_understanding[resource_id])
+      // Changing the label also deletes the value so we need to save it beforehand.
+      value = $('input[type=checkbox][name=confirm_understanding]:checked').val();
+
+      var label = $('label[for="id_confirm_understanding"]')
+      // Changing the label removes the <input> so we need to include that in our change.
+      label.html(
+        '<input id="id_confirm_understanding"\
+          class="checkboxinput form-check-input"\
+          type="checkbox" name="confirm_understanding"\
+          >\n'
+        + resources_form_confirm_understanding_label[resource_id]
+      );
+      if (value === undefined){
+        $('input[type=checkbox][name=confirm_understanding]').val([resources_form_confirm_understanding[resource_id]]);
+      } else {
+        $('input[type=checkbox][name=confirm_understanding]').val([value]);
       }
       $('#div_id_confirm_understanding').show();
     } else {

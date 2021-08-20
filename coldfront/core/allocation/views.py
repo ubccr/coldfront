@@ -645,7 +645,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='confirm_understanding_label').value
                 resources_form_confirm_understanding_label[resource.id] = mark_safe(
-                    '<strong>{}*</strong>'.format(value))
+                    '{}'.format(value))
 
             if resource.resourceattribute_set.filter(resource_attribute_type__name='eula').exists():
                 value = resource.resourceattribute_set.get(
@@ -714,25 +714,25 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         # Check if the required values exist based on what resource was selected.
         error = False
-        if resource_obj.name == "Priority Boost":
-            if system == "" or end_date == None:
+        if resource_obj.name == 'Priority Boost':
+            if system == '' or end_date == None:
                 error = True
-        elif resource_obj.name == "Carbonate DL":
-            if leverage_multiple_gpus == "" or training_or_inference == "" or for_coursework == "":
+        elif resource_obj.name == 'Carbonate DL':
+            if leverage_multiple_gpus == '' or training_or_inference == '' or for_coursework == '':
                 error = True
-        elif resource_obj.name == "Carbonate GPU":
-            if leverage_multiple_gpus == "" or dl_workflow == "" or applications_list == "" or for_coursework == "":
+        elif resource_obj.name == 'Carbonate GPU':
+            if leverage_multiple_gpus == '' or dl_workflow == '' or applications_list == '' or for_coursework == '':
                 error = True
-        elif resource_obj.name == "Carbonate Precision Health Initiative (PHI) Nodes":
-            if phi_association == "":
+        elif resource_obj.name == 'Carbonate Precision Health Initiative (PHI) Nodes':
+            if phi_association == '':
                 error = True
-        elif resource_obj.name == "cBioPortal":
-            if phi_association == "" or access_level == "" or confirm_understanding == "":
+        elif resource_obj.name == 'cBioPortal':
+            if phi_association == '' or access_level == '' or confirm_understanding == False:
                 error = True
 
         if error:
             form.add_error(None, format_html(
-                "Please fill out all the required fields."
+                'Please fill out all the required fields.'
                 )
             )
             return self.form_invalid(form)
