@@ -44,16 +44,20 @@ class ProductResource(models.Model):
         on_delete=models.CASCADE
     )
 
-def allocation_user_to_allocation_product_usage(allocation_user, product, overwrite=False):
+def allocation_user_to_allocation_product_usage(allocation_user, product, overwrite=False, year=None, month=None):
     '''
     Converts an allocation_user to an allocation_product_usage.
     Unless overwrite flag is true, throws an exception if there is already an
     allocation_product_usage for this allocation user, year, and month.  Otherwise, removes existing AllocationUserProductUsage
     and ProductUsage records before creating new ones.
+
+    Year and month can be overridden for "backdating"
     '''
     product_user = allocation_user.user
-    month = int(allocation_user.modified.strftime('%m'))
-    year = allocation_user.modified.year
+    if month is None:
+        month = int(allocation_user.modified.strftime('%m'))
+    if year is None:
+        year = allocation_user.modified.year
     aupus = AllocationUserProductUsage.objects.filter(
         product_usage__product=product,
         product_usage__product_user=product_user,
