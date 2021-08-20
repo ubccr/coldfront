@@ -39,3 +39,5 @@ django-mathfilters==1.0.0
 django-easy-pdf==0.1.1
 ipython==7.1.1
 logging_tree
+mysqlclient
+
