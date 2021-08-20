@@ -130,10 +130,9 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
 
         cursor = connection.cursor()
         rows = cursor.execute(sql, [allocation.id, product_usage.year, product_usage.month])
-        logger.error('Rows is %s', str(rows))
+        logger.debug('Rows is %s', str(rows))
         total = 0
         for row in rows:
-            logger.error('product_user_id %d, quantity %d', row[0], row[1])
             allocation_user_fractions[row[0]] = {
                 'quantity': row[1]
             }
@@ -141,7 +140,7 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
         for uid in allocation_user_fractions.keys():
             allocation_user_fractions[uid]['fraction'] = Decimal(allocation_user_fractions[uid]['quantity']) / Decimal(total)
 
-        logger.error('Allocation user fractions %s', str(allocation_user_fractions))
+        logger.debug('Allocation user fractions %s', str(allocation_user_fractions))
         return allocation_user_fractions
 
     def createBillingRecordForUsage(self, product_usage, account, percent, year=None, month=None, description=None, usage_data=None):

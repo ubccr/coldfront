@@ -69,14 +69,19 @@ class Command(BaseCommand):
                 allocations = Allocation.objects.filter(resources__in=[resource], status__name='Active')
                 print(f'Processing {len(allocations)} allocations for {resource}')
                 for allocation in allocations:
-                    for allocation_user in AllocationUser.objects.filter(allocation=allocation, modified__month=select_month, modified__year=select_year):
-                        try:
-                            allocation_user_to_allocation_product_usage(allocation_user, product, overwrite, month=month, year=year)
-                            successes += 1
-                        except Exception as e:
-                            if 'AllocationUserProductUsage already exists for use of' not in str(e):
-                                logger.exception(e)
-                            errors.append(f'Error creating product usage for {product} and user {allocation_user.user}: {e}')
+                    requires_payment = allocation.get_attribute('RequiresPayment')
+                    if requires_payment == 'True':
+                        print(f'Generating product usages for {allocation}')
+                        for allocation_user in AllocationUser.objects.filter(allocation=allocation, modified__month=select_month, modified__year=select_year):
+                            try:
+                                allocation_user_to_allocation_product_usage(allocation_user, product, overwrite, month=month, year=year)
+                                successes += 1
+                            except Exception as e:
+                                if 'AllocationUserProductUsage already exists for use of' not in str(e):
+                                    logger.exception(e)
+                                errors.append(f'Error creating product usage for {product} and user {allocation_user.user}: {e}')
+                    else:
+                        print(f'Allocation {allocation} does not require payment')
             else:
                 errors.append(f'Unable to fine a Product for resource {resource}')
         print(f'{successes} records successfully created.')
