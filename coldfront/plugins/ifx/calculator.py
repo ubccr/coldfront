@@ -129,10 +129,9 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
         '''.replace('\n', ' ')
 
         cursor = connection.cursor()
-        rows = cursor.execute(sql, [allocation.id, product_usage.year, product_usage.month])
-        logger.debug('Rows is %s', str(rows))
+        cursor.execute(sql, [allocation.id, product_usage.year, product_usage.month])
         total = 0
-        for row in rows:
+        for row in cursor.fetchall():
             allocation_user_fractions[row[0]] = {
                 'quantity': row[1]
             }
