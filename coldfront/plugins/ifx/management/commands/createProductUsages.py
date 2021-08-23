@@ -72,14 +72,16 @@ class Command(BaseCommand):
                     requires_payment = allocation.get_attribute('RequiresPayment')
                     if requires_payment == 'True':
                         print(f'Generating product usages for {allocation}')
-                        for allocation_user in AllocationUser.objects.filter(allocation=allocation, modified__month=select_month, modified__year=select_year):
-                            try:
-                                allocation_user_to_allocation_product_usage(allocation_user, product, overwrite, month=month, year=year)
-                                successes += 1
-                            except Exception as e:
-                                if 'AllocationUserProductUsage already exists for use of' not in str(e):
-                                    logger.exception(e)
-                                errors.append(f'Error creating product usage for {product} and user {allocation_user.user}: {e}')
+                        for allocation_user in AllocationUser.objects.filter(allocation=allocation, modified__year=select_year):
+                            # Don't know why the filter for month is not working
+                            if allocation_user.modified.month == select_month:
+                                try:
+                                    allocation_user_to_allocation_product_usage(allocation_user, product, overwrite, month=month, year=year)
+                                    successes += 1
+                                except Exception as e:
+                                    if 'AllocationUserProductUsage already exists for use of' not in str(e):
+                                        logger.exception(e)
+                                    errors.append(f'Error creating product usage for {product} and user {allocation_user.user}: {e}')
                     else:
                         print(f'Allocation {allocation} does not require payment')
             else:
