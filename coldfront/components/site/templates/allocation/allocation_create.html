@@ -153,6 +153,23 @@ Request New Allocation
     });
   });
 
+  $(function() {
+    var date = new Date();
+    var currentYear = date.getFullYear();
+    $(".datepicker")
+      .wrap('<div class="input-group">')
+      .datepicker({
+        changeMonth: true,
+        changeYear: true,
+        yearRange: currentYear + ':' + (currentYear + 5),
+        showOn: "button",
+        buttonText: "Select Date"
+      })
+      .next("button")
+      .addClass("btn btn-secondary")
+      .wrap('<span class="input-group-btn">')
+  });
+
   $("#id_resource").change(function () {
     var resource_id = $("#id_resource option:selected").val();
 
@@ -297,8 +314,6 @@ Request New Allocation
     if (resources_form_access_level_label[resource_id]) {
       var label = $('label[for="id_access_level_0"]');
       label.html(resources_form_access_level_label[resource_id]);
-      console.log('Access')
-      console.log($('input[type=radio][name=access_level]:checked').val());
       if ($('input[type=radio][name=access_level]:checked').val() === undefined){
         $('input[type=radio][name=access_level]').val([resources_form_access_level[resource_id]]);
       }

@@ -28,7 +28,7 @@ class AllocationForm(forms.Form):
     training_or_inference = forms.ChoiceField(choices=(('', ''), ('Training', 'Training'), ('Inference', 'Inference'), ('Both', 'Both')), required=False)
     for_coursework = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False, widget=forms.RadioSelect)
     system = forms.ChoiceField(choices=(('Carbonate', 'Carbonate'), ('BigRed3', 'Big Red 3')), required=False, widget=forms.RadioSelect)
-    end_date = forms.DateField(required=False)
+    end_date = forms.DateField(widget=forms.TextInput(attrs={'class':'datepicker'}), required=False)
     phi_association = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False, widget=forms.RadioSelect)
     access_level = forms.ChoiceField(choices=(('Masked', 'Masked'), ('Unmasked', 'Unmasked')), required=False, widget=forms.RadioSelect)
     confirm_understanding = forms.BooleanField(required=False)

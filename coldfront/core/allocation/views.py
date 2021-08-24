@@ -717,6 +717,13 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         if resource_obj.name == 'Priority Boost':
             if system == '' or end_date == None:
                 error = True
+            elif end_date <= date.today():
+                form.add_error(None, format_html(
+                    'Please select a date later than today.'
+                    )
+                )
+                return self.form_invalid(form)
+
         elif resource_obj.name == 'Carbonate DL':
             if leverage_multiple_gpus == '' or training_or_inference == '' or for_coursework == '':
                 error = True
