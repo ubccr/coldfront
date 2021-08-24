@@ -723,12 +723,11 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     )
                 )
                 return self.form_invalid(form)
-
         elif resource_obj.name == 'Carbonate DL':
             if leverage_multiple_gpus == '' or training_or_inference == '' or for_coursework == '':
                 error = True
         elif resource_obj.name == 'Carbonate GPU':
-            if leverage_multiple_gpus == '' or dl_workflow == '' or applications_list == '' or for_coursework == '':
+            if leverage_multiple_gpus == '' or dl_workflow == '' or for_coursework == '':
                 error = True
         elif resource_obj.name == 'Carbonate Precision Health Initiative (PHI) Nodes':
             if phi_association == '':
