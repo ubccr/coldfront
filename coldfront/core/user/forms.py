@@ -122,11 +122,8 @@ class UserRegistrationForm(UserCreationForm):
         if commit:
             model.save()
         model.refresh_from_db()
-        model.userprofile.middle_name = self.middle_name
         model.userprofile.phone_number = self.phone_number
-        model.userprofile.first_name = self.first_name
         model.userprofile.middle_name = self.middle_name
-        model.userprofile.last_name = self.last_name
         model.userprofile.save()
         return model
 
@@ -181,8 +178,8 @@ class UserProfileUpdateForm(forms.Form):
 
     def clean_phone_number(self):
         cleaned_data = super().clean()
-        self.phone_number = cleaned_data.pop('phone_number', '')
-        return cleaned_data
+        phone_number = cleaned_data.pop('phone_number', '')
+        return phone_number
 
     def clean_first_name(self):
         cleaned_data = super().clean()
@@ -206,11 +203,8 @@ class UserProfileUpdateForm(forms.Form):
         if commit:
             model.save()
         model.refresh_from_db()
-        model.userprofile.middle_name = self.middle_name
         model.userprofile.phone_number = self.phone_number
-        model.userprofile.first_name = self.first_name
         model.userprofile.middle_name = self.middle_name
-        model.userprofile.last_name = self.last_name
         model.userprofile.save()
         return model
 
