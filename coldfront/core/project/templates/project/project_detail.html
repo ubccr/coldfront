@@ -155,6 +155,9 @@ Project Detail
             {% endif %}
             <td>{{allocation.start_date|date:"Y-m-d"}}</td>
             <td>{{allocation.end_date|date:"Y-m-d"}}</td>
+            <td>
+              <a href="{% url 'allocation-detail' allocation.pk %}"><i class="far fa-folder-open"></i></a>
+            </td>
             {% comment %}
             <td>
               <a href="{% url 'allocation-detail' allocation.pk %}"><i class="far fa-folder-open"></i></a>
