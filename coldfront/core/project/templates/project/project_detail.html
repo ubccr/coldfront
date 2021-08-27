@@ -155,6 +155,7 @@ Project Detail
             {% endif %}
             <td>{{allocation.start_date|date:"Y-m-d"}}</td>
             <td>{{allocation.end_date|date:"Y-m-d"}}</td>
+            {% comment %}
             <td>
               <a href="{% url 'allocation-detail' allocation.pk %}"><i class="far fa-folder-open"></i></a>
               {% if is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
@@ -165,6 +166,7 @@ Project Detail
                 </a>
               {% endif %}
             </td>
+            {% endcomment %}
           </tr>
           {% endfor %}
         </tbody>
