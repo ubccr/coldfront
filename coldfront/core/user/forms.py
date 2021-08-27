@@ -46,6 +46,8 @@ class UserSearchListForm(forms.Form):
 
 class UserRegistrationForm(UserCreationForm):
 
+    cleaned_data = {}
+
     email = forms.EmailField(
         label='Email Address', widget=forms.EmailInput(),
         help_text=(
@@ -78,9 +80,12 @@ class UserRegistrationForm(UserCreationForm):
         self.middle_name = ''
         super().__init__(*args, **kwargs)
 
+    def clean(self):
+        self.cleaned_data = super().clean()
+        return self.cleaned_data
+
     def clean_email(self):
-        cleaned_data = super().clean()
-        email = cleaned_data['email'].lower()
+        email = self.cleaned_data['email'].lower()
         if (User.objects.filter(username=email).exists() or
                 User.objects.filter(email=email).exists() or
                 EmailAddress.objects.filter(email=email).exists()):
@@ -96,24 +101,20 @@ class UserRegistrationForm(UserCreationForm):
         return email
 
     def clean_phone_number(self):
-        cleaned_data = super().clean()
-        self.phone_number = cleaned_data.pop('phone_number', '')
-        return cleaned_data
+        self.phone_number = self.cleaned_data['phone_number']
+        return self.phone_number
 
     def clean_first_name(self):
-        cleaned_data = super().clean()
-        name = self.cleaned_data.pop('first_name', '')
-        return name.title()
+        self.first_name = self.cleaned_data['first_name'].title()
+        return self.first_name
 
     def clean_middle_name(self):
-        cleaned_data = super().clean()
-        name = cleaned_data.pop('middle_name', '')
-        return name.title()
+        self.middle_name = self.cleaned_data['middle_name'].title()
+        return self.middle_name
 
     def clean_last_name(self):
-        cleaned_data = super().clean()
-        name = self.cleaned_data.pop('last_name', '')
-        return name.title()
+        self.last_name = self.cleaned_data['last_name'].title()
+        return self.last_name
 
     def save(self, commit=True):
         model = super().save(commit=False)
@@ -156,8 +157,6 @@ class UserLoginForm(AuthenticationForm):
     def clean_username(self):
         cleaned_data = super().clean()
         return cleaned_data.get('username').lower()
-
-
  
     def confirm_login_allowed(self, user):
         if not user.is_active:
@@ -195,18 +194,6 @@ class UserProfileUpdateForm(forms.Form):
         cleaned_data = super().clean()
         name = self.cleaned_data.pop('last_name', '')
         return name.title()
-
-    def save(self, commit=True):
-        model = super().save(commit=False)
-        model.username = model.email
-        model.is_active = False
-        if commit:
-            model.save()
-        model.refresh_from_db()
-        model.userprofile.phone_number = self.phone_number
-        model.userprofile.middle_name = self.middle_name
-        model.userprofile.save()
-        return model
 
 
 class UserAccessAgreementForm(forms.Form):
