@@ -10,5 +10,5 @@ router.register(r'billing-records', ColdfrontBillingRecordViewSet, 'billing-reco
 urlpatterns = [
     path('api/unauthorized/', unauthorized_api),
     path('api/', include(router.urls)),
-    path('unauthorized/', unauthorized),
+    path('unauthorized/', unauthorized, name='unauthorized'),
 ]
