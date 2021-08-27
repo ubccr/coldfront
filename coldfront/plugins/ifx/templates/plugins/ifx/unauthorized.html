@@ -1,0 +1,47 @@
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Unauthorized usage
+{% endblock %}
+
+
+{% block content %}
+<div>
+    <table id="unauthorized" style="width: 100%" cellpadding="5px">
+        <thead>
+            <tr>
+                <td>User</td>
+                <td>Affiliation</td>
+                <td>Service</td>
+                <td>Description</td>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    $(document).ready(function(){
+        $("#unauthorized").DataTable({
+            order: [
+                [1, 'asc']
+            ],
+            columns: [
+                {data: 'user.full_name', width: '200px'},
+                {data: function(item){ return item.user.primary_affiliation.replace(/\(.*/,'') }, width: '200px'},
+                {data: 'product.product_name'},
+                {data: 'description', width: '600px'}
+            ],
+            ajax: {
+                url: '/ifx/api/unauthorized/',
+                dataSrc: '',
+            }
+        })
+    })
+</script>
+{% endblock %}
