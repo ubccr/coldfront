@@ -18,9 +18,12 @@ User Projects and Managers{% if not user == viewed_user %}: {{ viewed_user.usern
 <div class="card mb-3">
   <!-- Start Project Heading -->
   <div class="card-header">
-    <h4 class="d-inline">{{ project.title }}</h4>
+    <h2 class="d-inline">{{ project.title }}</h2>
     {% if user == viewed_user or perms.project.can_view_all_projects %}
-      <a href="{% url 'project-detail' project.pk %}" role="button"><i class="far fa-folder-open" aria-hidden="true"></i></a>
+      <a href="{% url 'project-detail' project.pk %}" role="button">
+        <span class="accessibility-link-text">Project {{ project.pk }}</span>
+        <i class="far fa-folder-open" aria-hidden="true"></i>
+      </a>
     {% endif %}
   </div>
   <div class="card-body">
@@ -45,7 +48,7 @@ User Projects and Managers{% if not user == viewed_user %}: {{ viewed_user.usern
     <!-- Start Project Principal Investigators -->
     <div class="card mb-3">
       <div class="card-header">
-        <h4 class="d-inline"><i class="fas fa-users"></i> Principal Investigators</a></h4> <span class="badge badge-secondary">{{ project.project_pis | length }}</span>
+        <h3 class="d-inline"><i class="fas fa-users"></i> Principal Investigators</a></h3> <span class="badge badge-secondary">{{ project.project_pis | length }}</span>
         {% if association.is_project_pi %}
           <div class="float-right">
             <p class="card-text text-success"><strong>{{ user_pronounish }} {{user_verbform_be}} a PI of this project.</strong></p>
@@ -71,7 +74,10 @@ User Projects and Managers{% if not user == viewed_user %}: {{ viewed_user.usern
                 <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
                 <td>
                   {{ user.user.email }}
-                  <a href="mailto:{{ user.user.email }} "><i class="far fa-envelope"></i></a>
+                  <a href="mailto:{{ user.user.email }} ">
+                    <span class="accessibility-link-text">Email {{ user.user.email }}</span>
+                    <i class="far fa-envelope"></i>
+                  </a>
                 </td>
                 {% if user.status.name == 'Active' %}
                   <td class="text-success">{{ user.status.name }}</td>
@@ -93,7 +99,7 @@ User Projects and Managers{% if not user == viewed_user %}: {{ viewed_user.usern
     <!-- Start Project Managers -->
     <div class="card mb-3">
       <div class="card-header">
-        <h4 class="d-inline"><i class="fas fa-users"></i> Additional Managers</a></h4> <span class="badge badge-secondary">{{ project.project_managers | length }}</span>
+        <h3 class="d-inline"><i class="fas fa-users"></i> Additional Managers</a></h3> <span class="badge badge-secondary">{{ project.project_managers | length }}</span>
         {% if association.is_project_manager and not association.is_project_pi %}
           <div class="float-right">
             <p class="card-text text-success"><strong>{{ user_pronounish }} {{user_verbform_be}} a manager of this project.</strong></p>

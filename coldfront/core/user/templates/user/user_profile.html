@@ -17,11 +17,11 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
     <div class="card-header"><i class="fas fa-user" aria-hidden="true"></i>
       User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif %}
       <div class="float-right">
-        <a class="btn btn-info" href="{% url 'user-projects-managers' viewed_user %}" role="button"><i class="far fa-user-circle" aria-hidden="true"></i> View user projects and managers</a>
+        <a class="btn btn-primary" href="{% url 'user-projects-managers' viewed_user %}" role="button"><i class="far fa-user-circle" aria-hidden="true"></i> View user projects and managers</a>
       </div>
     </div>
     <div class="card-body">
-      <h4 class="card-title text-center">
+      <h2 class="card-title text-center">
         {{viewed_user.first_name}}
         {% if viewed_user.userprofile.middle_name %}
           {{viewed_user.userprofile.middle_name }}
@@ -29,10 +29,13 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
         {{viewed_user.last_name}}
 
         {% if request.user == viewed_user %}
-        <a class="btn btn-sm" href="{% url 'user-profile-update' %}" role="button"><i class="far fa-edit" style="color: #4aa0b5;" aria-hidden="true"></i></a>
+        <a class="btn btn-sm" href="{% url 'user-profile-update' %}" role="button">
+          <span class="accessibility-link-text">Update User Profile</span>
+          <i class="far fa-edit" style="color: #4aa0b5;" aria-hidden="true"></i>
+        </a>
         {% endif %}
 
-      </h4>
+      </h2>
       <div class="table-responsive">
     <table class="table">
       <tbody>

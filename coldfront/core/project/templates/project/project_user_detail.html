@@ -12,7 +12,7 @@ Project User Detail
 
 <h1>Project User Detail</h1>
 
-<h3>Project: {{project_obj.name}}</h3> <hr>
+<h2>Project: {{project_obj.name}}</h2> <hr>
 
 <form action="{% url 'project-user-detail' project_obj.pk project_user_obj.pk %}" method="post">
 {% csrf_token %}
@@ -40,7 +40,12 @@ Project User Detail
           </tr>
           <tr>
             <th scope="row">Enable Notifications:</th>
-            <td>{{project_user_update_form.enable_notifications}}</td>
+            <td>
+              {{project_user_update_form.enable_notifications}}
+              <label class="accessibility-link-text" for="id_enable_notifications">
+                Enable Notifications
+              </label>
+            </td>
           </tr>
         {% else %}
           <tr>

@@ -74,6 +74,7 @@ Cluster Account Review New and Pending Requests
         </td>
         <td>
           <a href="{% url 'allocation-detail' cluster_account.allocation.pk %}">
+            <span class="accessibility-link-text">Allocation {{ allocation.pk }}</span>
             {{ cluster_account.allocation.pk }}
           </a>
         </td>
@@ -102,7 +103,7 @@ Cluster Account Review New and Pending Requests
                     {% csrf_token %}
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title">Deny Request</h5>
+                            <p class="modal-title">Deny Request</p>
                             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                 <span aria-hidden="true">&times;</span>
                             </button>
