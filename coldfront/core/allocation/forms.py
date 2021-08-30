@@ -1,4 +1,5 @@
 from django import forms
+from django.forms.widgets import RadioSelect
 from django.shortcuts import get_object_or_404
 
 from coldfront.core.allocation.models import (Allocation, AllocationAccount,
@@ -16,7 +17,36 @@ ALLOCATION_ACCOUNT_ENABLED = import_from_settings(
 class AllocationForm(forms.Form):
     resource = forms.ModelChoiceField(queryset=None, empty_label=None)
     justification = forms.CharField(widget=forms.Textarea)
-    quantity = forms.IntegerField(required=True)
+    quantity = forms.IntegerField(required=False)
+    storage_space = forms.IntegerField(required=False)
+    leverage_multiple_gpus = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False, widget=forms.RadioSelect)
+    dl_workflow = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False, widget=forms.RadioSelect)
+    applications_list = forms.CharField(max_length=150, required=False)
+    # Leave an empty value as a choice so the form picks it as the value to check if the user has
+    # already picked a choice (relevent if the form errors after submission due to missing required
+    # values, prevents what the user chose from being reset. We want to check against an empty
+    # string).
+    training_or_inference = forms.ChoiceField(choices=(('', ''), ('Training', 'Training'), ('Inference', 'Inference'), ('Both', 'Both')), required=False)
+    for_coursework = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False, widget=forms.RadioSelect)
+    system = forms.ChoiceField(choices=(('Carbonate', 'Carbonate'), ('BigRed3', 'Big Red 3')), required=False, widget=forms.RadioSelect)
+    start_date = forms.DateField(widget=forms.TextInput(attrs={'class':'datepicker'}), required=False)
+    end_date = forms.DateField(widget=forms.TextInput(attrs={'class':'datepicker'}), required=False)
+    use_indefinitely = forms.BooleanField(required=False)
+    phi_association = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False, widget=forms.RadioSelect)
+    access_level = forms.ChoiceField(choices=(('Masked', 'Masked'), ('Unmasked', 'Unmasked')), required=False, widget=forms.RadioSelect)
+    unit = forms.CharField(max_length=10, required=False)
+    confirm_understanding = forms.BooleanField(required=False)
+    primary_contact = forms.CharField(max_length=20, required=False)
+    secondary_contact = forms.CharField(max_length=20, required=False)
+    department_full_name = forms.CharField(max_length=30, required=False)
+    department_short_name = forms.CharField(max_length=15, required=False)
+    fiscal_officer = forms.CharField(max_length=20, required=False)
+    account_number = forms.CharField(max_length=9, required=False)
+    sub_account_number = forms.CharField(max_length=20, required=False)
+    it_pros = forms.CharField(max_length=100, required=False)
+    devices_ip_addresses = forms.CharField(max_length=200, required=False)
+    data_management_plan = forms.CharField(widget=forms.Textarea, required=False)
+
     users = forms.MultipleChoiceField(
         widget=forms.CheckboxSelectMultiple, required=False)
     allocation_account = forms.ChoiceField(required=False)
@@ -25,7 +55,6 @@ class AllocationForm(forms.Form):
         super().__init__(*args, **kwargs)
         project_obj = get_object_or_404(Project, pk=project_pk)
         self.fields['resource'].queryset = get_user_resources(request_user)
-        self.fields['quantity'].initial = 1
         user_query_set = project_obj.projectuser_set.select_related('user').filter(
             status__name__in=['Active', ])
         user_query_set = user_query_set.exclude(user=project_obj.pi)
@@ -48,6 +77,10 @@ class AllocationForm(forms.Form):
             self.fields['allocation_account'].widget = forms.HiddenInput()
 
         self.fields['justification'].help_text = '<br/>Justification for requesting this allocation.'
+        self.fields['start_date'].help_text = 'Format: mm/dd/yyyy'
+        self.fields['end_date'].help_text = 'Format: mm/dd/yyyy'
+        self.fields['storage_space'].help_text = 'Amount must be greater than or equal to 200GB.'
+        self.fields['account_number'].help_text = 'Format: 00-000-00'
 
 
 class AllocationUpdateForm(forms.Form):
