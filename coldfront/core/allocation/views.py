@@ -862,6 +862,16 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             form_class = self.get_form_class()
         return form_class(self.request.user, self.kwargs.get('project_pk'), **self.get_form_kwargs())
 
+    def ldap_check_users(self, search_class_obj, users, resource):
+        denied_users = []
+        for user in users:
+            username = user.username
+            attributes = search_class_obj.search_a_user(username, ['memberOf'])
+            if attributes['memberOf'] is None or not resource in attributes['memberOf']:
+                denied_users.append(username)
+
+        return denied_users
+
     def form_valid(self, form):
         form_data = form.cleaned_data
         project_obj = get_object_or_404(
@@ -996,24 +1006,49 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         if project_obj.pi not in users:
             users.append(project_obj.pi)
 
-        ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPAccountSearch')
         resources = {
             "Carbonate DL": "CN=iu-entlmt-app-rt-carbonate-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu",
             "Carbonate GPU": "CN=iu-entlmt-app-rt-carbonate-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu",
             "Big Red 3": "CN=iu-entlmt-app-rt-bigred3-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu"
         }
-
+        ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
+        search_class_obj = ldap_search()
         denied_users = []
-        for user in users:
-            username = user.username
-            search_class_obj = ldap_search(username, 'username_only')
-            accounts = search_class_obj.search_a_user(username, 'username_only')
-            if not resources[resource_obj.name] in accounts:
-                denied_users.append(username)
+        resource_name = ''
+        if resource_obj.name == 'Priority Boost':
+            if system == "Carbonate":
+                denied_users = self.ldap_check_users(search_class_obj, users, resources['Carbonate DL'])
+                resource_name = 'Carbonate'
+            elif system == "BigRed3":
+                denied_users = self.ldap_check_users(search_class_obj, users, resources['Big Red 3'])
+                resource_name = 'Big Red 3'
+        elif resource_obj.name == 'Carbonate DL':
+            denied_users = self.ldap_check_users(search_class_obj, users, resources[resource_obj.name])
+            resource_name = 'Carbonate'
+        elif resource_obj.name == 'Carbonate GPU':
+            denied_users = self.ldap_check_users(search_class_obj, users, resources[resource_obj.name])
+            resource_name = 'Carbonate'
+        elif resource_obj.name == 'Carbonate Precision Health Initiative (PHI) Nodes':
+            denied_users = self.ldap_check_users(search_class_obj, users, resources['Carbonate DL'])
+            resource_name = 'Carbonate'
+
 
         if denied_users:
             form.add_error(None, format_html(
-                'The following users do not have an account on this resource: {}. They will need to create an account <a href="https://access.iu.edu/Accounts/Create">here</a>.'.format(', '.join(denied_users))
+                'The following users do not have an account on {}: {}. They will need to create an account <a href="https://access.iu.edu/Accounts/Create">here</a>.'.format(resource_name, ', '.join(denied_users))
+            ))
+            return self.form_invalid(form)
+
+        denied_users = []
+        if resource_obj.name == "Geode-Projects":
+            for username in [primary_contact, secondary_contact, fiscal_officer] + it_pros.split(','):
+                attributes = search_class_obj.search_a_user(username, ['memberOf'])
+                if attributes['memberOf'] is None:
+                    denied_users.append(username)
+
+        if denied_users:
+            form.add_error(None, format_html(
+                'The following usernames are not valid: {}'.format(', '.join(denied_users))
             ))
             return self.form_invalid(form)
 
@@ -1179,6 +1214,13 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         context['allocation'] = allocation_obj
         return render(request, self.template_name, context)
 
+    def ldap_check_user(self, search_class_obj, username, resource):
+        attributes = search_class_obj.search_a_user(username, ['memberOf'])
+        if attributes['memberOf'] is None or not resource in attributes['memberOf']:
+            return False
+
+        return True
+
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
@@ -1193,13 +1235,15 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         added_users = []
         denied_users = []
 
-        ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPAccountSearch')
+        ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
+        search_class_obj = ldap_search()
         resource_name = allocation_obj.get_parent_resource.name
         resources = {
             "Carbonate DL": "CN=iu-entlmt-app-rt-carbonate-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu",
             "Carbonate GPU": "CN=iu-entlmt-app-rt-carbonate-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu",
             "Big Red 3": "CN=iu-entlmt-app-rt-bigred3-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu"
         }
+
 
         if formset.is_valid():
 
@@ -1213,14 +1257,26 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     user_obj = User.objects.get(
                         username=user_form_data.get('username'))
 
+                    account_exists = None
                     username = user_obj.username
-                    search_class_obj = ldap_search(username, 'username_only')
-                    accounts = search_class_obj.search_a_user(username, 'username_only')
-                    if resources[resource_name] in accounts:
-                        added_users.append(username)
-                    else:
-                        denied_users.append(username)
-                        continue
+                    if resource_name == 'Priority Boost':
+                        if allocation_obj.system == "Carbonate":
+                            account_exists = self.ldap_check_user(search_class_obj, username, resources['Carbonate DL'])
+                        elif allocation_obj.system == "BigRed3":
+                            account_exists = self.ldap_check_user(search_class_obj, username, resources['Big Red 3'])
+                    elif resource_name == 'Carbonate DL':
+                        account_exists = self.ldap_check_user(search_class_obj, username, resources[resource_name])
+                    elif resource_name == 'Carbonate GPU':
+                        account_exists = self.ldap_check_user(search_class_obj, username, resources[resource_name])
+                    elif resource_name == 'Carbonate Precision Health Initiative (PHI) Nodes':
+                        account_exists = self.ldap_check_user(search_class_obj, username, resources['Carbonate DL'])
+
+                    if account_exists is not None:
+                        if account_exists:
+                            added_users.append(username)
+                        else:
+                            denied_users.append(username)
+                            continue
 
                     if allocation_obj.allocationuser_set.filter(user=user_obj).exists():
                         allocation_user_obj = allocation_obj.allocationuser_set.get(
