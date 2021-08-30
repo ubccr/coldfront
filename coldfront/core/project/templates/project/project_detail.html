@@ -157,6 +157,10 @@ Project Detail
             <td>{{allocation.end_date|date:"Y-m-d"}}</td>
             <td>
               <a href="{% url 'allocation-detail' allocation.pk %}"><i class="far fa-folder-open"></i></a>
+            </td>
+            {% comment %}
+            <td>
+              <a href="{% url 'allocation-detail' allocation.pk %}"><i class="far fa-folder-open"></i></a>
               {% if is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
                 <a href="{% url 'allocation-renew' allocation.pk %}">
                 <span class="badge badge-warning"><i class="fas fa-redo-alt"></i>
@@ -165,6 +169,7 @@ Project Detail
                 </a>
               {% endif %}
             </td>
+            {% endcomment %}
           </tr>
           {% endfor %}
         </tbody>
