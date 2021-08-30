@@ -128,7 +128,7 @@ class ResourceAttribute(TimeStampedModel):
     def clean(self):
 
         expected_value_type = self.resource_attribute_type.attribute_type.name.strip()
-        if expected_value_type == "Int" and not self.value.isdigit():
+        if expected_value_type == "Int" and not self.value.isdigit() and self.value is not "":
             raise ValidationError(
                 'Invalid Value "%s". Value must be an integer.' % (self.value)
             )
@@ -148,7 +148,7 @@ class ResourceAttribute(TimeStampedModel):
             raise ValidationError(
                 'Invalid Value "%s". Allowed inputs are "True" or "False".'
             )
-        elif expected_value_type == "Date" and self.value is not None:
+        elif expected_value_type == "Date" and not self.value == "":
             try:
                 datetime.strptime(self.value.strip(), "%m/%d/%Y")
             except ValueError:
