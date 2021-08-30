@@ -79,8 +79,7 @@ class UserRegistrationForm(UserCreationForm):
         super().__init__(*args, **kwargs)
 
     def clean_email(self):
-        cleaned_data = super().clean()
-        email = cleaned_data['email'].lower()
+        email = self.cleaned_data['email'].lower()
         if (User.objects.filter(username=email).exists() or
                 User.objects.filter(email=email).exists() or
                 EmailAddress.objects.filter(email=email).exists()):
@@ -95,15 +94,21 @@ class UserRegistrationForm(UserCreationForm):
             raise forms.ValidationError(mark_safe(message))
         return email
 
-    def clean_middle_name(self):
-        cleaned_data = super().clean()
-        self.middle_name = cleaned_data.pop('middle_name', '')
-        return cleaned_data
-
     def clean_phone_number(self):
-        cleaned_data = super().clean()
-        self.phone_number = cleaned_data.pop('phone_number', '')
-        return cleaned_data
+        self.phone_number = self.cleaned_data['phone_number']
+        return self.phone_number
+
+    def clean_first_name(self):
+        self.first_name = self.cleaned_data['first_name'].title()
+        return self.first_name
+
+    def clean_middle_name(self):
+        self.middle_name = self.cleaned_data['middle_name'].title()
+        return self.middle_name
+
+    def clean_last_name(self):
+        self.last_name = self.cleaned_data['last_name'].title()
+        return self.last_name
 
     def save(self, commit=True):
         model = super().save(commit=False)
@@ -112,8 +117,8 @@ class UserRegistrationForm(UserCreationForm):
         if commit:
             model.save()
         model.refresh_from_db()
-        model.userprofile.middle_name = self.middle_name
         model.userprofile.phone_number = self.phone_number
+        model.userprofile.middle_name = self.middle_name
         model.userprofile.save()
         return model
 
@@ -146,7 +151,7 @@ class UserLoginForm(AuthenticationForm):
     def clean_username(self):
         cleaned_data = super().clean()
         return cleaned_data.get('username').lower()
-
+ 
     def confirm_login_allowed(self, user):
         if not user.is_active:
             send_account_activation_email(user)
@@ -163,6 +168,18 @@ class UserProfileUpdateForm(forms.Form):
     phone_number = PhoneNumberField(
         help_text='The number must be in E.164 format (e.g. +12125552368).',
         label='Phone Number', required=False)
+
+    def clean_phone_number(self):
+        return self.cleaned_data['phone_number']
+
+    def clean_first_name(self):
+        return self.cleaned_data['first_name'].title()
+
+    def clean_middle_name(self):
+        return self.cleaned_data['middle_name'].title()
+
+    def clean_last_name(self):
+        return self.cleaned_data['last_name'].title()
 
 
 class UserAccessAgreementForm(forms.Form):
