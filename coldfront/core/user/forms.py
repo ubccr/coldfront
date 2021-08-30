@@ -46,8 +46,6 @@ class UserSearchListForm(forms.Form):
 
 class UserRegistrationForm(UserCreationForm):
 
-    cleaned_data = {}
-
     email = forms.EmailField(
         label='Email Address', widget=forms.EmailInput(),
         help_text=(
@@ -79,10 +77,6 @@ class UserRegistrationForm(UserCreationForm):
     def __init__(self, *args, **kwargs):
         self.middle_name = ''
         super().__init__(*args, **kwargs)
-
-    def clean(self):
-        self.cleaned_data = super().clean()
-        return self.cleaned_data
 
     def clean_email(self):
         email = self.cleaned_data['email'].lower()
@@ -176,24 +170,16 @@ class UserProfileUpdateForm(forms.Form):
         label='Phone Number', required=False)
 
     def clean_phone_number(self):
-        cleaned_data = super().clean()
-        phone_number = cleaned_data.pop('phone_number', '')
-        return phone_number
+        return self.cleaned_data['phone_number']
 
     def clean_first_name(self):
-        cleaned_data = super().clean()
-        name = self.cleaned_data.pop('first_name', '')
-        return name.title()
+        return self.cleaned_data['first_name'].title()
 
     def clean_middle_name(self):
-        cleaned_data = super().clean()
-        name = cleaned_data.pop('middle_name', '')
-        return name.title()
+        return self.cleaned_data['middle_name'].title()
 
     def clean_last_name(self):
-        cleaned_data = super().clean()
-        name = self.cleaned_data.pop('last_name', '')
-        return name.title()
+        return self.cleaned_data['last_name'].title()
 
 
 class UserAccessAgreementForm(forms.Form):
