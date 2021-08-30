@@ -35,6 +35,7 @@ from django.http import HttpRequest
 
 from django.urls import reverse
 from urllib.parse import urljoin
+import iso8601
 import logging
 
 
@@ -651,18 +652,28 @@ def savio_request_state_status(savio_request):
             other['timestamp']):
         return ProjectAllocationRequestStatusChoice.objects.get(name='Denied')
 
-    # For MOU projects, retrieve the signed status of the Memorandum of
+    ica = SavioProjectAllocationRequest.ICA
+    mou = SavioProjectAllocationRequest.MOU
+
+    # For ICA projects, retrieve whether or not both allocation dates are set.
+    if savio_request.allocation_type == ica:
+        allocation_dates = state['allocation_dates']
+        allocation_dates_not_set = allocation_dates['status'] == 'Pending'
+    else:
+        allocation_dates_not_set = False
+
+    # For ICA and MOU projects, retrieve the signed status of the Memorandum of
     # Understanding.
-    if savio_request.allocation_type == SavioProjectAllocationRequest.MOU:
-        memorandum_not_signed = (
-            state['memorandum_signed']['status'] == 'Pending')
+    if savio_request.allocation_type in (ica, mou):
+        memorandum_signed = state['memorandum_signed']
+        memorandum_not_signed = memorandum_signed['status'] == 'Pending'
     else:
         memorandum_not_signed = False
 
-    # PI eligibility or readiness are not yet determined, or, in the case of
-    # MOU projects, the Memorandum of Understanding has not been signed yet.
+    # One or more steps is pending.
     if (eligibility['status'] == 'Pending' or
             readiness['status'] == 'Pending' or
+            allocation_dates_not_set or
             memorandum_not_signed):
         return ProjectAllocationRequestStatusChoice.objects.get(
             name='Under Review')
@@ -852,7 +863,7 @@ class ProjectApprovalRunner(object):
         pi.userprofile.is_pi = True
         pi.userprofile.save()
 
-    def update_user_allocations(self):
+    def update_existing_user_allocations(self, value):
         """Perform user-allocation-related handling. This should be
         implemented by subclasses."""
         raise NotImplementedError('This method is not implemented.')
@@ -877,15 +888,17 @@ class SavioProjectApprovalRunner(ProjectApprovalRunner):
         allocation.status = AllocationStatusChoice.objects.get(name='Active')
         # If this is a new Project, set its Allocation's start and end dates.
         if not pool:
-            allocation.start_date = utc_now_offset_aware()
-            # Only set the end date when applicable.
-            types_with_end_dates = (
-                SavioProjectAllocationRequest.FCA,
-                SavioProjectAllocationRequest.PCA
-            )
-            if allocation_type in types_with_end_dates:
-                allocation.end_date = \
-                    next_allocation_start_datetime() - timedelta(seconds=1)
+            if allocation_type == SavioProjectAllocationRequest.ICA:
+                dates = self.request_obj.state['allocation_dates']['dates']
+                allocation.start_date = iso8601.parse_date(dates['start'])
+                allocation.end_date = iso8601.parse_date(dates['end'])
+            else:
+                allocation.start_date = utc_now_offset_aware()
+                # Only set the end date for FCAs and PCAs.
+                if (allocation_type == SavioProjectAllocationRequest.FCA or
+                        allocation_type == SavioProjectAllocationRequest.PCA):
+                    allocation.end_date = \
+                        next_allocation_start_datetime() - timedelta(seconds=1)
         allocation.save()
 
         # Set the allocation's allocation type.
@@ -940,7 +953,6 @@ class SavioProjectApprovalRunner(ProjectApprovalRunner):
                 date_time=date_time,
                 allocation=Decimal(value))
 
-
     @staticmethod
     def __validate_num_service_units(num_service_units):
         """Raise exceptions if the given number of service units does
@@ -983,6 +995,10 @@ class VectorProjectApprovalRunner(ProjectApprovalRunner):
         allocation.start_date = utc_now_offset_aware()
         allocation.save()
         return allocation
+
+    def update_existing_user_allocations(self, value):
+        """Perform user-allocation-related handling."""
+        pass
 
     def __add_user_to_savio_project(self):
         user_obj = self.request_obj.requester

@@ -52,7 +52,7 @@
     <p class="card-text text-justify">
       <strong>Allocation Type: </strong>
       {{ savio_request.allocation_type }}
-      {% if savio_request.allocation_type == "MOU" %}
+      {% if savio_request.allocation_type in 'ICA,MOU' %}
         <button id="view-extra-fields" class="btn btn-info" role="button">
           Details
         </button>
