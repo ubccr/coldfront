@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
+from django.utils.module_loading import import_string
 
 
 class AttributeType(TimeStampedModel):
@@ -69,6 +70,17 @@ class Resource(TimeStampedModel):
     linked_resources = models.ManyToManyField('self', blank=True)
     history = HistoricalRecords()
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.resources = {
+            'Carbonate DL': 'CN=iu-entlmt-app-rt-carbonate-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu',
+            'Carbonate GPU': 'CN=iu-entlmt-app-rt-carbonate-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu',
+            'Carbonate Precision Health Initiative (PHI) Nodes': 'CN=iu-entlmt-app-rt-carbonate-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu',
+            'Big Red 3': 'CN=iu-entlmt-app-rt-bigred3-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu'
+        }
+        ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
+        self.search_class_obj = ldap_search()
+
     def get_missing_resource_attributes(self, required=False):
         """
         if required == True, get only the required missing attributes;
@@ -110,7 +122,22 @@ class Resource(TimeStampedModel):
         if ondemand:
             return ondemand.value
         return None
-            
+
+    def check_user_account_exists(self, username, resource_account=None):
+        if self.name not in self.resources and resource_account is None:
+            return True
+
+        if resource_account is not None:
+            resource_acc = resource_account
+        else:
+            resource_acc = self.resources[self.name]
+
+        attributes = self.search_class_obj.search_a_user(username, ['memberOf'])
+        if attributes['memberOf'] is not None and resource_acc in attributes['memberOf']:
+            return True
+
+        return False
+
     def __str__(self):
         return '%s (%s)' % (self.name, self.resource_type.name)
 
