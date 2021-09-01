@@ -20,7 +20,8 @@ ARG IFXURLS_COMMIT=549af42dbe83d07b12dd37055a5ec6368d4b649
 ARG NANITES_CLIENT_COMMIT=e4099cb6c9edadf2f722e8c26c413caf7e2c1c51
 ARG IFXUSER_COMMIT=ad9758fcd82627e4fb27b2fd533e9bbeef07681c
 ARG FIINE_CLIENT_COMMIT=e79f569aa22b43876945bfb75cf169b11a555138
-ARG IFXBILLING_COMMIT=3cd0f94632e0c9c3279873b509ea02b6c3511164
+ARG IFXVALIDCODE_COMMIT=4dd332c5a8e13d904a90da014094406a81b617e6
+ARG IFXBILLING_COMMIT=2ed1dadfa0349f7aae05cac114ca75dcdf831003
 
 RUN --mount=type=ssh pip install --upgrade pip && \
     pip install gunicorn && \
@@ -30,6 +31,7 @@ RUN --mount=type=ssh pip install --upgrade pip && \
     pip install git+ssh://git@github.com/harvardinformatics/nanites.client.git@${NANITES_CLIENT_COMMIT} && \
     pip install git+ssh://git@github.com/harvardinformatics/ifxuser.git@${IFXUSER_COMMIT} && \
     pip install git+ssh://git@gitlab-int.rc.fas.harvard.edu/informatics/fiine.client.git@${FIINE_CLIENT_COMMIT} && \
+    pip install git+ssh://git@gitlab-int.rc.fas.harvard.edu/informatics/ifxvalidcode.git@${IFXVALIDCODE_COMMIT} && \
     pip install git+ssh://git@gitlab-int.rc.fas.harvard.edu/informatics/ifxbilling.git@${IFXBILLING_COMMIT} && \
     pip install ldap3 django_auth_ldap && \
     pip install -r requirements.txt
