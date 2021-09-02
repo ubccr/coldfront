@@ -22,6 +22,7 @@ from django.utils.html import format_html, mark_safe
 from django.views import View
 from django.views.generic import DetailView, ListView, TemplateView
 from django.views.generic.edit import CreateView, FormView, UpdateView
+from django.utils.module_loading import import_string
 
 from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationAddUserForm,
@@ -925,17 +926,16 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 error = True
         elif resource_obj.name == 'Geode-Projects':
             if (
-                storage_space is None 
-                or unit == '' 
+                storage_space is None
+                or unit == ''
                 or (not use_indefinitely and end_date is None)
-                or start_date is None 
-                or primary_contact == '' 
-                or secondary_contact == '' 
-                or department_full_name == '' 
+                or start_date is None
+                or primary_contact == ''
+                or secondary_contact == ''
+                or department_full_name == ''
                 or department_short_name == ''
                 or fiscal_officer == ''
                 or account_number == ''
-                or sub_account_number == ''
                 or it_pros == ''
                 or devices_ip_addresses == ''
                 or data_management_plan == ''
@@ -964,7 +964,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     'Start date must be earlier than end date.'
                     )
                 )
-                return self.form_invalid(form)  
+                return self.form_invalid(form)
             elif not len(account_number) == 9:
                 form.add_error(None, format_html(
                     'Account number must have a format of 00-000-00.'
@@ -1023,6 +1023,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         denied_users = []
         if resource_obj.name == "Geode-Projects":
+            ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
+            search_class_obj = ldap_search()
             for username in [primary_contact, secondary_contact, fiscal_officer] + it_pros.split(','):
                 attributes = search_class_obj.search_a_user(username, ['memberOf'])
                 if attributes['memberOf'] is None:
