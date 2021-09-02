@@ -1,6 +1,7 @@
 from django import forms
 from django.forms.widgets import RadioSelect
 from django.shortcuts import get_object_or_404
+from django.utils.module_loading import import_string
 
 from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationAttributeType,
@@ -81,6 +82,12 @@ class AllocationForm(forms.Form):
         self.fields['end_date'].help_text = 'Format: mm/dd/yyyy'
         self.fields['storage_space'].help_text = 'Amount must be greater than or equal to 200GB.'
         self.fields['account_number'].help_text = 'Format: 00-000-00'
+
+        ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
+        search_class_obj = ldap_search()
+        attributes = search_class_obj.search_a_user(request_user.username, ['department', 'division'])
+        self.fields['department_full_name'].initial = attributes['department'][0]
+        self.fields['department_short_name'].initial = attributes['division'][0]
 
 
 class AllocationUpdateForm(forms.Form):
