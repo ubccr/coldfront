@@ -11,8 +11,6 @@ MIDDLEWARE += [
     'author.middlewares.AuthorDefaultBackendMiddleware',
 ]
 
-NANITE2USER_CLASS = 'coldfront.plugins.ifx.nanites.Nanite2ColdfrontUser'
-
 IFX_APP = {
     'name': 'coldfront',
     'token': os.environ.get('COLDFRONT_IFX_APP_TOKEN', 'aslkdfj'),
