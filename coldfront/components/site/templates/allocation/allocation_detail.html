@@ -80,6 +80,20 @@ Allocation Detail
               <th scope="row" class="text-nowrap">System:</th>
               <td>{{ allocation.system }}</td>
             </tr>
+            {% if allocation.is_grand_challenge %}
+              <tr>
+                <th scope="row" class="text-nowrap">Grand Challenge Program:</th>
+                {% if allocation.grand_challenge_program == "healthinitiative" %}
+                  <td>Precision Health Initiative</td>
+                {% endif %}
+                {% if allocation.grand_challenge_program == "envchange" %}
+                  <td>Prepared for Environmental Change</td>
+                {% endif %}
+                {% if allocation.grand_challenge_program == "addiction" %}
+                  <td>Responding to the Addiction Crisis</td>
+                {% endif %}
+              </tr>
+            {% endif %}
           {% endif %}
           {% if allocation.get_resources_as_string == "Carbonate Precision Health Initiative (PHI) Nodes" %}
             <tr>

@@ -48,7 +48,18 @@ class Allocation(TimeStampedModel):
     applications_list = models.CharField(max_length=150, blank=True, null=True)
     training_or_inference = models.CharField(max_length=9, choices=(('Training', 'Training'), ('Inference', 'Inference'), ('Both', 'Both')), blank=True, null=True)
     for_coursework = models.CharField(max_length=4, choices=(('No', 'No'), ('Yes', 'Yes')), blank=True, null=True)
-    system = models.CharField(max_length=9, choices=(('Carbonate', 'Carbonate'),('BigRed3', 'Big Red 3')), blank=True, null=True)
+    system = models.CharField(max_length=9, choices=(('Carbonate', 'Carbonate'), ('BigRed3', 'Big Red 3')), blank=True, null=True)
+    is_grand_challenge = models.BooleanField(blank=True, null=True)
+    grand_challenge_program = models.CharField(
+        max_length=100,
+        choices=(
+            ('healthinitiative', 'Precision Health Initiative'),
+            ('envchange', 'Prepared for Environmental Change'),
+            ('addiction', 'Responding to the Addiction Crisis')
+        ),
+        blank=True,
+        null=True
+    )
     start_date = models.DateField(blank=True, null=True)
     end_date = models.DateField(blank=True, null=True)
     use_indefinitely = models.BooleanField(blank=True, null=True)

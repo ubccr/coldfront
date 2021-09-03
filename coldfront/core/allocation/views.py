@@ -876,6 +876,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         training_or_inference = form_data.get('training_or_inference')
         for_coursework = form_data.get('for_coursework')
         system = form_data.get('system')
+        is_grand_challenge = form_data.get('is_grand_challenge')
+        grand_challenge_program = form_data.get('grand_challenge_program')
         start_date = form_data.get('start_date')
         end_date = form_data.get('end_date')
         use_indefinitely = form_data.get('use_indefinitely')
@@ -904,9 +906,11 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         # Check if the required values exist based on what resource was selected.
         error = False
         if resource_obj.name == 'Priority Boost':
-            if system == '' or end_date == None:
+            if system == '' or (end_date is None and not is_grand_challenge):
                 error = True
-            elif end_date <= date.today():
+            elif is_grand_challenge and grand_challenge_program == '':
+                error = True
+            elif end_date is not None and end_date <= date.today():
                 form.add_error(None, format_html(
                     'Please select a date later than today.'
                     )
@@ -1054,6 +1058,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             training_or_inference=training_or_inference,
             for_coursework=for_coursework,
             system=system,
+            is_grand_challenge=is_grand_challenge,
+            grand_challenge_program=grand_challenge_program,
             start_date=start_date,
             end_date=end_date,
             use_indefinitely=use_indefinitely,

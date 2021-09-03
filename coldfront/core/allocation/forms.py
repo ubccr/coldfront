@@ -30,6 +30,8 @@ class AllocationForm(forms.Form):
     training_or_inference = forms.ChoiceField(choices=(('', ''), ('Training', 'Training'), ('Inference', 'Inference'), ('Both', 'Both')), required=False)
     for_coursework = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False, widget=forms.RadioSelect)
     system = forms.ChoiceField(choices=(('Carbonate', 'Carbonate'), ('BigRed3', 'Big Red 3')), required=False, widget=forms.RadioSelect)
+    is_grand_challenge = forms.BooleanField(required=False)
+    grand_challenge_program = forms.ChoiceField(choices=(('', ''), ('healthinitiative', 'Precision Health Initiative'), ('envchange', 'Prepared for Environmental Change'), ('addiction', 'Responding to the Addiction Crisis')), required=False)
     start_date = forms.DateField(widget=forms.TextInput(attrs={'class':'datepicker'}), required=False)
     end_date = forms.DateField(widget=forms.TextInput(attrs={'class':'datepicker'}), required=False)
     use_indefinitely = forms.BooleanField(required=False)

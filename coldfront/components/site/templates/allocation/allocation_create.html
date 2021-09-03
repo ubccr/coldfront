@@ -208,6 +208,66 @@ Request New Allocation
       $("input[name^='users']").prop('checked', $(this).prop('checked'));
     });
 
+    // Set up grand challenge checkbox and options for the priority boost form.
+    // Save the value since it will be deleted when we change checkbox the label.
+    var is_grand_challenge = $('#id_is_grand_challenge').is(':checked');
+    $('label[for="id_is_grand_challenge"]').html(
+      '<input id="id_is_grand_challenge"\
+        class="checkboxinput form-check-input"\
+        type="checkbox" name="is_grand_challenge"\
+        >\n\
+        My project is part of an IU Grand Challenge program.'
+    );
+    $('label[for="id_grand_challenge_program"]').html(
+      '<strong>Select your Grand Challenge program*</strong>'
+    )
+    $('#div_id_grand_challenge_program label').before(
+      '<p id="id_grand_challenge_info">Grand Challenge projects on Big Red 3 are eligible to receive an indefinite priority boost, no end date is required.</p>'
+    )
+    $('#id_is_grand_challenge').prop('checked', is_grand_challenge)
+
+    if ($('input[type=radio][name=system]:checked').val() === 'BigRed3') {
+      $('#div_id_is_grand_challenge').show();
+      if (is_grand_challenge) {
+        $('#div_id_grand_challenge_program').show();
+        $('#div_id_end_date').hide();
+        $('#id_end_date').val('')
+        $('#id_is_grand_challenge').prop('checked', true)
+      } else {
+        $('#div_id_grand_challenge_program').hide();
+      }
+    }
+    else {
+      $('#div_id_is_grand_challenge').hide();
+      $('#div_id_grand_challenge_program').hide();
+    }
+
+    $('input[type=radio][name=system]').change(function (e) {
+      if (e.target.value === 'BigRed3') {
+        if ($('#id_is_grand_challenge').is(':checked')) {
+          $('#div_id_grand_challenge_program').show();
+          $('#div_id_end_date').hide();
+          $('#id_end_date').val('')
+        }
+        $('#div_id_is_grand_challenge').show();
+      } else {
+        $('#div_id_is_grand_challenge').hide();
+        $('#div_id_grand_challenge_program').hide();
+        $('#div_id_end_date').show();
+      }
+    })
+    
+    $('#id_is_grand_challenge').change(function (e) {
+      if (e.target.checked) {
+        $('#div_id_grand_challenge_program').show();
+        $('#div_id_end_date').hide();
+        $('#id_end_date').val('')
+      } else {
+        $('#div_id_grand_challenge_program').hide();
+        $('#div_id_end_date').show();
+      }
+    })
+    
     $("input[name^='users']").click(function (ele) {
       var id = $(this).attr('id');
       if (id != "selectAll") {
