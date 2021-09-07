@@ -234,6 +234,9 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                 end_date = datetime.datetime.now(
                 ) + relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)
 
+            if allocation_obj.use_indefinitely:
+                end_date = None
+
             allocation_obj.end_date = end_date
 
             old_status = allocation_obj.status.name
@@ -591,7 +594,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             if resource.resourceattribute_set.filter(resource_attribute_type__name='leverage_multiple_gpus').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='leverage_multiple_gpus').value
-                resources_form_leverage_multiple_gpus[resource.id] = value         
+                resources_form_leverage_multiple_gpus[resource.id] = value
             if resource.resourceattribute_set.filter(resource_attribute_type__name='leverage_multiple_gpus_label').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='leverage_multiple_gpus_label').value
@@ -601,7 +604,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             if resource.resourceattribute_set.filter(resource_attribute_type__name='applications_list').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='applications_list').value
-                resources_form_applications_list[resource.id] = value         
+                resources_form_applications_list[resource.id] = value
             if resource.resourceattribute_set.filter(resource_attribute_type__name='applications_list_label').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='applications_list_label').value
@@ -611,7 +614,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             if resource.resourceattribute_set.filter(resource_attribute_type__name='dl_workflow').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='dl_workflow').value
-                resources_form_dl_workflow[resource.id] = value         
+                resources_form_dl_workflow[resource.id] = value
             if resource.resourceattribute_set.filter(resource_attribute_type__name='dl_workflow_label').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='dl_workflow_label').value
@@ -621,7 +624,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             if resource.resourceattribute_set.filter(resource_attribute_type__name='training_or_inference').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='training_or_inference').value
-                resources_form_training_or_inference[resource.id] = value         
+                resources_form_training_or_inference[resource.id] = value
             if resource.resourceattribute_set.filter(resource_attribute_type__name='training_or_inference_label').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='training_or_inference_label').value
@@ -631,7 +634,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             if resource.resourceattribute_set.filter(resource_attribute_type__name='for_coursework').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='for_coursework').value
-                resources_form_for_coursework[resource.id] = value         
+                resources_form_for_coursework[resource.id] = value
             if resource.resourceattribute_set.filter(resource_attribute_type__name='for_coursework_label').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='for_coursework_label').value
@@ -701,17 +704,17 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             if resource.resourceattribute_set.filter(resource_attribute_type__name='primary_contact').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='primary_contact').value
-                resources_form_primary_contact[resource.id] = value         
+                resources_form_primary_contact[resource.id] = value
             if resource.resourceattribute_set.filter(resource_attribute_type__name='primary_contact_label').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='primary_contact_label').value
                 resources_form_primary_contact_label[resource.id] = mark_safe(
                     '<strong>{}*</strong>'.format(value))
-            
+
             if resource.resourceattribute_set.filter(resource_attribute_type__name='secondary_contact').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='secondary_contact').value
-                resources_form_secondary_contact[resource.id] = value         
+                resources_form_secondary_contact[resource.id] = value
             if resource.resourceattribute_set.filter(resource_attribute_type__name='secondary_contact_label').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='secondary_contact_label').value
@@ -721,7 +724,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             if resource.resourceattribute_set.filter(resource_attribute_type__name='department_full_name').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='department_full_name').value
-                resources_form_department_full_name[resource.id] = value         
+                resources_form_department_full_name[resource.id] = value
             if resource.resourceattribute_set.filter(resource_attribute_type__name='department_full_name_label').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='department_full_name_label').value
@@ -731,7 +734,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             if resource.resourceattribute_set.filter(resource_attribute_type__name='department_short_name').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='department_short_name').value
-                resources_form_department_short_name[resource.id] = value         
+                resources_form_department_short_name[resource.id] = value
             if resource.resourceattribute_set.filter(resource_attribute_type__name='department_short_name_label').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='department_short_name_label').value
@@ -741,7 +744,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             if resource.resourceattribute_set.filter(resource_attribute_type__name='fiscal_officer').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='fiscal_officer').value
-                resources_form_fiscal_officer[resource.id] = value         
+                resources_form_fiscal_officer[resource.id] = value
             if resource.resourceattribute_set.filter(resource_attribute_type__name='fiscal_officer_label').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='fiscal_officer_label').value
@@ -751,7 +754,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             if resource.resourceattribute_set.filter(resource_attribute_type__name='account_number').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='account_number').value
-                resources_form_account_number[resource.id] = value         
+                resources_form_account_number[resource.id] = value
             if resource.resourceattribute_set.filter(resource_attribute_type__name='account_number_label').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='account_number_label').value
@@ -761,7 +764,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             if resource.resourceattribute_set.filter(resource_attribute_type__name='sub_account_number').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='sub_account_number').value
-                resources_form_sub_account_number[resource.id] = value         
+                resources_form_sub_account_number[resource.id] = value
             if resource.resourceattribute_set.filter(resource_attribute_type__name='sub_account_number_label').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='sub_account_number_label').value
@@ -771,7 +774,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             if resource.resourceattribute_set.filter(resource_attribute_type__name='it_pros').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='it_pros').value
-                resources_form_it_pros[resource.id] = value         
+                resources_form_it_pros[resource.id] = value
             if resource.resourceattribute_set.filter(resource_attribute_type__name='it_pros_label').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='it_pros_label').value
@@ -781,7 +784,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             if resource.resourceattribute_set.filter(resource_attribute_type__name='devices_ip_addresses').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='devices_ip_addresses').value
-                resources_form_devices_ip_addresses[resource.id] = value         
+                resources_form_devices_ip_addresses[resource.id] = value
             if resource.resourceattribute_set.filter(resource_attribute_type__name='devices_ip_addresses_label').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='devices_ip_addresses_label').value
@@ -791,7 +794,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             if resource.resourceattribute_set.filter(resource_attribute_type__name='data_management_plan').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='data_management_plan').value
-                resources_form_data_management_plan[resource.id] = value         
+                resources_form_data_management_plan[resource.id] = value
             if resource.resourceattribute_set.filter(resource_attribute_type__name='data_management_plan_label').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='data_management_plan_label').value
@@ -906,6 +909,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         # Check if the required values exist based on what resource was selected.
         error = False
         if resource_obj.name == 'Priority Boost':
+            use_indefinitely = is_grand_challenge
             if system == '' or (end_date is None and not is_grand_challenge):
                 error = True
             elif is_grand_challenge and grand_challenge_program == '':
@@ -926,7 +930,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             if phi_association == '':
                 error = True
         elif resource_obj.name == 'cBioPortal':
-            if phi_association == '' or access_level == '' or confirm_understanding == False:
+            if phi_association == '' or access_level == '' or confirm_understanding is False:
                 error = True
         elif resource_obj.name == 'Geode-Projects':
             if (
@@ -944,7 +948,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 or devices_ip_addresses == ''
                 or data_management_plan == ''
             ):
-                error= True
+                error = True
             elif (storage_space <= 0 and unit == 'TB') or (storage_space < 200 and unit == 'GB'):
                 form.add_error(None, format_html(
                     'Please enter a storage amount greater than or equal to 200GB.'
@@ -1011,7 +1015,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 elif system == "BigRed3":
                     exists = resource_obj.check_user_account_exists(username, 'CN=iu-entlmt-app-rt-bigred3-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu')
                     resource_name = 'Big Red 3'
-                
+
                 if not exists:
                     denied_users.append(username)
             else:
@@ -1542,6 +1546,9 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
         start_date = datetime.datetime.now()
         end_date = datetime.datetime.now(
         ) + relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)
+
+        if allocation_obj.use_indefinitely:
+            end_date = None
 
         allocation_obj.status = allocation_status_active_obj
         allocation_obj.start_date = start_date

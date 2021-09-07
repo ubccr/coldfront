@@ -20,23 +20,23 @@ class AllocationForm(forms.Form):
     justification = forms.CharField(widget=forms.Textarea)
     quantity = forms.IntegerField(required=False)
     storage_space = forms.IntegerField(required=False)
-    leverage_multiple_gpus = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False, widget=forms.RadioSelect)
-    dl_workflow = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False, widget=forms.RadioSelect)
+    leverage_multiple_gpus = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False, widget=RadioSelect)
+    dl_workflow = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False, widget=RadioSelect)
     applications_list = forms.CharField(max_length=150, required=False)
     # Leave an empty value as a choice so the form picks it as the value to check if the user has
     # already picked a choice (relevent if the form errors after submission due to missing required
     # values, prevents what the user chose from being reset. We want to check against an empty
     # string).
     training_or_inference = forms.ChoiceField(choices=(('', ''), ('Training', 'Training'), ('Inference', 'Inference'), ('Both', 'Both')), required=False)
-    for_coursework = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False, widget=forms.RadioSelect)
-    system = forms.ChoiceField(choices=(('Carbonate', 'Carbonate'), ('BigRed3', 'Big Red 3')), required=False, widget=forms.RadioSelect)
+    for_coursework = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False, widget=RadioSelect)
+    system = forms.ChoiceField(choices=(('Carbonate', 'Carbonate'), ('BigRed3', 'Big Red 3')), required=False, widget=RadioSelect)
     is_grand_challenge = forms.BooleanField(required=False)
     grand_challenge_program = forms.ChoiceField(choices=(('', ''), ('healthinitiative', 'Precision Health Initiative'), ('envchange', 'Prepared for Environmental Change'), ('addiction', 'Responding to the Addiction Crisis')), required=False)
     start_date = forms.DateField(widget=forms.TextInput(attrs={'class':'datepicker'}), required=False)
     end_date = forms.DateField(widget=forms.TextInput(attrs={'class':'datepicker'}), required=False)
     use_indefinitely = forms.BooleanField(required=False)
-    phi_association = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False, widget=forms.RadioSelect)
-    access_level = forms.ChoiceField(choices=(('Masked', 'Masked'), ('Unmasked', 'Unmasked')), required=False, widget=forms.RadioSelect)
+    phi_association = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False, widget=RadioSelect)
+    access_level = forms.ChoiceField(choices=(('Masked', 'Masked'), ('Unmasked', 'Unmasked')), required=False, widget=RadioSelect)
     unit = forms.CharField(max_length=10, required=False)
     confirm_understanding = forms.BooleanField(required=False)
     primary_contact = forms.CharField(max_length=20, required=False)
@@ -84,6 +84,8 @@ class AllocationForm(forms.Form):
         self.fields['end_date'].help_text = 'Format: mm/dd/yyyy'
         self.fields['storage_space'].help_text = 'Amount must be greater than or equal to 200GB.'
         self.fields['account_number'].help_text = 'Format: 00-000-00'
+        self.fields['applications_list'].help_text = 'Format: app1,app2,app3,etc'
+        self.fields['it_pros'].help_text = 'Format: name1,name2,name3,etc'
 
         ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
         search_class_obj = ldap_search()
@@ -112,7 +114,7 @@ class AllocationUpdateForm(forms.Form):
         start_date = cleaned_data.get("start_date")
         end_date = cleaned_data.get("end_date")
 
-        if start_date and end_date < start_date:
+        if start_date and end_date and end_date < start_date:
             raise forms.ValidationError(
                 'End date cannot be less than start date'
             )

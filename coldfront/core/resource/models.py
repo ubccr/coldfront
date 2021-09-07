@@ -78,8 +78,6 @@ class Resource(TimeStampedModel):
             'Carbonate Precision Health Initiative (PHI) Nodes': 'CN=iu-entlmt-app-rt-carbonate-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu',
             'Big Red 3': 'CN=iu-entlmt-app-rt-bigred3-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu'
         }
-        ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
-        self.search_class_obj = ldap_search()
 
     def get_missing_resource_attributes(self, required=False):
         """
@@ -124,6 +122,8 @@ class Resource(TimeStampedModel):
         return None
 
     def check_user_account_exists(self, username, resource_account=None):
+        ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
+        search_class_obj = ldap_search()
         if self.name not in self.resources and resource_account is None:
             return True
 
@@ -132,7 +132,7 @@ class Resource(TimeStampedModel):
         else:
             resource_acc = self.resources[self.name]
 
-        attributes = self.search_class_obj.search_a_user(username, ['memberOf'])
+        attributes = search_class_obj.search_a_user(username, ['memberOf'])
         if attributes['memberOf'] is not None and resource_acc in attributes['memberOf']:
             return True
 
@@ -155,7 +155,7 @@ class ResourceAttribute(TimeStampedModel):
     def clean(self):
 
         expected_value_type = self.resource_attribute_type.attribute_type.name.strip()
-        if expected_value_type == "Int" and not self.value.isdigit() and self.value is not "":
+        if expected_value_type == "Int" and not self.value.isdigit() and self.value != "":
             raise ValidationError(
                 'Invalid Value "%s". Value must be an integer.' % (self.value)
             )
