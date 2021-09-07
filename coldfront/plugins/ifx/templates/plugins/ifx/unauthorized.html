@@ -11,23 +11,53 @@ Unauthorized usage
 
 {% block content %}
 <div>
-    <table id="unauthorized" style="width: 100%" cellpadding="5px">
-        <thead>
-            <tr>
-                <td>User</td>
-                <td>Affiliation</td>
-                <td>Service</td>
-                <td>Description</td>
-            </tr>
-        </thead>
-        <tbody>
-        </tbody>
-    </table>
+    <div style="margin: 2em;">
+        <form method="post">
+            {% csrf_token %}
+            Year    <select name="year">
+                    {% for y in years %}
+                        {% if y == year %}
+                            <option value="{{y}}" selected>{{y}}</option>
+                        {% else %}
+                            <option value="{{y}}">{{y}}</option>
+                        {% endif %}
+                    {% endfor %}
+                    </select>
+            Month   <select name="month">
+                    {% for m in months %}
+                        {% if month == forloop.counter %}
+                            <option value="{{forloop.counter}}" selected>{{m}}</option>
+                        {% else %}
+                            <option value="{{forloop.counter}}">{{m}}</option>
+                        {% endif %}
+                    {% endfor %}
+                    </select>
+            <input type="submit"></input>
+        </form>
+    </div>
+    <div style="margin: 2em;">
+        <table id="unauthorized" style="width: 100%" cellpadding="5px">
+            <thead>
+                <tr>
+                    <td>User</td>
+                    <td>Affiliation</td>
+                    <td>Service</td>
+                    <td>Description</td>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <script>
     $(document).ready(function(){
-        $("#unauthorized").DataTable({
+        $("input[type='submit']").click((ev) => {
+            ev.preventDefault()
+            unauthorizedTable.ajax.reload()
+        })
+        var unauthorizedTable = $("#unauthorized").DataTable({
             order: [
                 [1, 'asc']
             ],
@@ -39,7 +69,12 @@ Unauthorized usage
             ],
             ajax: {
                 url: '/ifx/api/unauthorized/',
+                type: 'GET',
                 dataSrc: '',
+                data: function (d) {
+                    d.year = $("select[name='year']").find(':selected').val()
+                    d.month = $("select[name='month']").find(':selected').val()
+                }
             }
         })
     })
