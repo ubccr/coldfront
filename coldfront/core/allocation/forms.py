@@ -3,7 +3,7 @@ from django.forms.widgets import RadioSelect
 from django.shortcuts import get_object_or_404
 from django.utils.module_loading import import_string
 
-from coldfront.core.allocation.models import (Allocation, AllocationAccount,
+from coldfront.core.allocation.models import (AllocationAccount,
                                               AllocationAttributeType,
                                               AllocationStatusChoice)
 from coldfront.core.allocation.utils import get_user_resources

@@ -1,9 +1,7 @@
 import datetime
-import importlib
 import logging
 from ast import literal_eval
 
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
