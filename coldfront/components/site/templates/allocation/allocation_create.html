@@ -115,7 +115,7 @@ Request New Allocation
   $(document).ready(function () {
     // By default we will have the use_indefinitely div placed just after the end_date label on the form.
     // Save the value since it will be deleted when we change the label.
-    var use_indefinitely = $('input[type=checkbox][name=use_indefinitely]:checked').val();
+    var use_indefinitely = $('#id_use_indefinitely').is(':checked');
     $('#div_id_end_date label').after( function () {
       var label = $('label[for="id_use_indefinitely"]');
       // Changing the label removes the <input> so we need to include that in our change.
@@ -144,7 +144,7 @@ Request New Allocation
       }
     });
 
-    $('input[type=checkbox][name=use_indefinitely]').val([use_indefinitely]);
+    $('#id_use_indefinitely').prop('checked', use_indefinitely);
     if (use_indefinitely) {
       $('#id_end_date').prop('disabled', true);
       $('#id_end_date').val('')
