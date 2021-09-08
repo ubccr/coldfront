@@ -1,4 +1,4 @@
-from coldfront.api.statistics.utils import set_user_project_allocation_value
+from coldfront.api.statistics.utils import set_project_user_allocation_value
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
@@ -947,7 +947,7 @@ class SavioProjectApprovalRunner(ProjectApprovalRunner):
         date_time = utc_now_offset_aware()
         for project_user in project.projectuser_set.all():
             user = project_user.user
-            set_user_project_allocation_value(user, project, value)
+            set_project_user_allocation_value(user, project, value)
             ProjectUserTransaction.objects.create(
                 project_user=project_user,
                 date_time=date_time,
