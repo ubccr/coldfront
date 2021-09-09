@@ -6,7 +6,7 @@ from django.utils.module_loading import import_string
 from coldfront.core.allocation.models import (AllocationAccount,
                                               AllocationAttributeType,
                                               AllocationStatusChoice)
-from coldfront.core.allocation.utils import get_user_resources
+from coldfront.core.allocation.utils import get_user_resources, compute_prorated_amount
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource, ResourceType
 from coldfront.core.utils.common import import_from_settings
@@ -38,17 +38,19 @@ class AllocationForm(forms.Form):
     phi_association = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False, widget=RadioSelect)
     access_level = forms.ChoiceField(choices=(('Masked', 'Masked'), ('Unmasked', 'Unmasked')), required=False, widget=RadioSelect)
     unit = forms.CharField(max_length=10, required=False)
-    confirm_understanding = forms.BooleanField(required=False)
     primary_contact = forms.CharField(max_length=20, required=False)
     secondary_contact = forms.CharField(max_length=20, required=False)
     department_full_name = forms.CharField(max_length=30, required=False)
     department_short_name = forms.CharField(max_length=15, required=False)
     fiscal_officer = forms.CharField(max_length=20, required=False)
+    project_directory_name = forms.CharField(max_length=10, required=False)
     account_number = forms.CharField(max_length=9, required=False)
     sub_account_number = forms.CharField(max_length=20, required=False)
     it_pros = forms.CharField(max_length=100, required=False)
     devices_ip_addresses = forms.CharField(max_length=200, required=False)
     data_management_plan = forms.CharField(widget=forms.Textarea, required=False)
+    total_cost = forms.IntegerField(disabled=True, required=False)
+    confirm_understanding = forms.BooleanField(required=False)
 
     users = forms.MultipleChoiceField(
         widget=forms.CheckboxSelectMultiple, required=False)
@@ -92,6 +94,7 @@ class AllocationForm(forms.Form):
         attributes = search_class_obj.search_a_user(request_user.username, ['department', 'division'])
         self.fields['department_full_name'].initial = attributes['department'][0]
         self.fields['department_short_name'].initial = attributes['division'][0]
+        self.fields['total_cost'].initial = compute_prorated_amount()
 
 
 class AllocationUpdateForm(forms.Form):

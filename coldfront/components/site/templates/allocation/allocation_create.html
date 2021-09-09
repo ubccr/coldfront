@@ -110,6 +110,9 @@ Request New Allocation
   var resources_form_devices_ip_addresses_label = {{ resources_form_devices_ip_addresses_label | safe }}
   var resources_form_data_management_plan = {{ resources_form_data_management_plan | safe }}
   var resources_form_data_management_plan_label = {{ resources_form_data_management_plan_label | safe }}
+  var resources_form_project_directory_name = {{ resources_form_project_directory_name | safe }}
+  var resources_form_project_directory_name_label = {{ resources_form_project_directory_name_label | safe }}
+  var resources_form_total_cost_label = {{ resources_form_total_cost_label | safe }}
 
 
   $(document).ready(function () {
@@ -200,6 +203,12 @@ Request New Allocation
       affiliated with a Grand Challenge, you will receive this boost indefinitely. Otherwise, we \
       can assist you in receiving a short-term priority boost up to your required deadline.</p>'
     );
+
+    $('#div_id_sub_account_number').after(
+      '<p id="additional_info_4">This account and sub account will be billed the total cost at \
+      the next monthly billing cycle. By filling in this account number you verify you are \
+      authorized to use funds from this account for this purpose.</p>'
+    )
 
     $('<br><input id="selectAll" class="check" type="checkbox"> <strong>Select All Users</strong>').insertAfter($("#div_id_users > label"))
     $("#id_resource").trigger('change');
@@ -346,6 +355,12 @@ Request New Allocation
       $('#additional_info_3').show();
     } else {
       $('#additional_info_3').hide();
+    }
+
+    if (resource_id === '8') { // RStudio Connect
+      $('#additional_info_4').show();
+    } else {
+      $('#additional_info_4').hide();
     }
 
     if (resources_form_label_texts[resource_id]) {
@@ -572,6 +587,17 @@ Request New Allocation
       $('#div_id_fiscal_officer').hide();
     }
 
+    if (resources_form_project_directory_name_label[resource_id]) {
+      var label = $('label[for="id_project_directory_name"]');
+      label.html(resources_form_project_directory_name_label[resource_id]);
+      if ($('#id_project_directory_name').val().length < 1) {
+        $('#id_project_directory_name').val(resources_form_project_directory_name[resource_id]);
+      }
+      $('#div_id_project_directory_name').show();
+    } else {
+      $('#div_id_project_directory_name').hide();
+    }
+
     if (resources_form_account_number_label[resource_id]) {
       var label = $('label[for="id_account_number"]');
       label.html(resources_form_account_number_label[resource_id]);
@@ -592,6 +618,14 @@ Request New Allocation
       $('#div_id_sub_account_number').show();
     } else {
       $('#div_id_sub_account_number').hide();
+    }
+
+    if (resources_form_total_cost_label[resource_id]) {
+      var label = $('label[for="id_total_cost"]');
+      label.html(resources_form_total_cost_label[resource_id]);
+      $('#div_id_total_cost').show();
+    } else {
+      $('#div_id_total_cost').hide();
     }
 
     if (resources_form_it_pros_label[resource_id]) {

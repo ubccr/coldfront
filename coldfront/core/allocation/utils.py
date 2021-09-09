@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from django.db.models import Q
 
 from coldfront.core.allocation.models import (AllocationUser,
@@ -54,3 +55,16 @@ def get_user_resources(user_obj):
 
 def test_allocation_function(allocation_pk):
     print('test_allocation_function', allocation_pk)
+
+
+def compute_prorated_amount():
+    current_date = datetime.now()
+    expire_date = datetime(current_date.year, 7, 1)
+    if expire_date < current_date:
+        expire_date = expire_date.replace(year=expire_date.year + 1)
+
+    difference = abs(expire_date - current_date)
+    # Take into account leap years.
+    one_year = expire_date - expire_date.replace(year=expire_date.year - 1)
+    cost_per_day = 5000 / one_year.days
+    return round(cost_per_day * difference.days + cost_per_day)

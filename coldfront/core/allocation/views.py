@@ -1,5 +1,6 @@
 import datetime
 import logging
+import csv
 from datetime import date
 
 from dateutil.relativedelta import relativedelta
@@ -12,6 +13,7 @@ from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.forms import formset_factory
 from django.http import HttpResponseRedirect, JsonResponse
+from django.http.response import HttpResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse, reverse_lazy
 from django.utils.html import format_html, mark_safe
@@ -41,6 +43,7 @@ from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user)
 from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
                                              get_user_resources)
+from coldfront.core.utils.common import Echo
 from coldfront.core.project.models import (Project, ProjectUser,
                                            ProjectUserStatusChoice)
 from coldfront.core.resource.models import Resource
@@ -558,6 +561,10 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         resources_form_devices_ip_addresses_label = {}
         resources_form_data_management_plan = {}
         resources_form_data_management_plan_label = {}
+        resources_form_project_directory_name = {}
+        resources_form_project_directory_name_label = {}
+        resources_form_total_cost = {}
+        resources_form_total_cost_label = {}
         resources_with_eula = {}
 
         for resource in user_resources:
@@ -797,6 +804,22 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 resources_form_data_management_plan_label[resource.id] = mark_safe(
                     '<strong>{}*</strong>'.format(value))
 
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='project_directory_name').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='project_directory_name').value
+                resources_form_project_directory_name[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='project_directory_name_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='project_directory_name_label').value
+                resources_form_project_directory_name_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='total_cost_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='total_cost_label').value
+                resources_form_total_cost_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
             if resource.resourceattribute_set.filter(resource_attribute_type__name='eula').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='eula').value
@@ -849,6 +872,10 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         context['resources_form_devices_ip_addresses_label'] = resources_form_devices_ip_addresses_label
         context['resources_form_data_management_plan'] = resources_form_data_management_plan
         context['resources_form_data_management_plan_label'] = resources_form_data_management_plan_label
+        context['resources_form_project_directory_name'] = resources_form_project_directory_name
+        context['resources_form_project_directory_name_label'] = resources_form_project_directory_name_label
+        context['resources_form_total_cost'] = resources_form_total_cost
+        context['resources_form_total_cost_label'] = resources_form_total_cost_label
         context['resources_with_eula'] = resources_with_eula
         context['resources_with_accounts'] = list(Resource.objects.filter(
             name__in=list(ALLOCATION_ACCOUNT_MAPPING.keys())).values_list('id', flat=True))
@@ -894,6 +921,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         it_pros = form_data.get('it_pros')
         devices_ip_addresses = form_data.get('devices_ip_addresses')
         data_management_plan = form_data.get('data_management_plan')
+        project_directory_name = form_data.get('project_directory_name')
+        prorated_amount = form_data.get('prorated_amount')
         allocation_account = form_data.get('allocation_account', None)
         # A resource is selected that requires an account name selection but user has no account names
         if ALLOCATION_ACCOUNT_ENABLED and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING and AllocationAttributeType.objects.filter(
@@ -1076,6 +1105,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             it_pros=it_pros,
             devices_ip_addresses=devices_ip_addresses,
             data_management_plan=data_management_plan,
+            project_directory_name=project_directory_name,
+            prorated_amount=prorated_amount,
             status=allocation_status_obj
         )
         allocation_obj.resources.add(resource_obj)
@@ -2081,3 +2112,72 @@ class AllocationAccountListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
 
     def get_queryset(self):
         return AllocationAccount.objects.filter(user=self.request.user)
+
+
+class AllocationDownloadInvoiceView(LoginRequiredMixin, UserPassesTestMixin, View):
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('allocation.can_manage_invoice'):
+            return True
+
+        messages.error(self.request, 'You do not have permission to download invoices.')
+
+    def get(self, request):
+        header = [
+            'Name',
+            'Account*',
+            'Object*',
+            'Sub-Acct',
+            'Product',
+            'Quantity',
+            'Unit cost',
+            'Amount*',
+            'Invoice',
+            'Line Description',
+            'Income Account',
+            'Income Sub-acct',
+            'Income Object Code',
+            'Income sub-object code',
+            'Project',
+            'Org Ref ID'
+        ]
+
+        invoices = Allocation.objects.prefetch_related('project', 'status').filter(
+            Q(status__name__in=['Payment Pending', ])
+        ).order_by('-created')
+
+        rows = []
+        for invoice in invoices:
+            row = [
+                ' '.join((invoice.project.pi.first_name, invoice.project.pi.last_name)),
+                invoice.account_number,
+                '4616',
+                invoice.sub_account_number,
+                '',
+                1,
+                '',
+                invoice.total_cost,
+                '',
+                'RStudio Connect FY 22',
+                '63-101-08',
+                'SMSAL',
+                1500,
+                '',
+                '',
+                ''
+            ]
+
+            rows.append(row)
+        rows.insert(0, header)
+
+        pseudo_buffer = Echo()
+        writer = csv.writer(pseudo_buffer)
+        response = StreamingHttpResponse(
+            (writer.writerow(row) for row in rows),
+            content_type='text/csv'
+        )
+        response['Content-Disposition'] = 'attachment; filename="invoices.csv"'
+        return response

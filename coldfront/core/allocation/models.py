@@ -74,6 +74,8 @@ class Allocation(TimeStampedModel):
     it_pros = models.CharField(max_length=100, blank=True, null=True)
     devices_ip_addresses = models.CharField(max_length=200, blank=True, null=True)
     data_management_plan = models.TextField(blank=True, null=True)
+    project_directory_name = models.CharField(max_length=10, blank=True, null=True)
+    total_cost = models.IntegerField(blank=True, null=True)
     justification = models.TextField()
     description = models.CharField(max_length=512, blank=True, null=True)
     is_locked = models.BooleanField(default=False)
