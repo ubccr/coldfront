@@ -209,24 +209,24 @@ class Command(BaseCommand):
                             user_obj = get_user_model().objects.get(username = json_user)
                         except get_user_model().DoesNotExist:
                             print('Cannot find user: ' +json_user)
-                            fullname = user_json_dict[json_user]['name']
-                            fullname_lst = fullname.split()
-                            if (len(fullname_lst) > 1):
-                                first_name = fullname_lst[0]
-                                last_name = fullname_lst[1]
-                            else:
-                                first_name = fullname_lst[0]
-                                last_name = "" # no last_name
-                            user_obj = get_user_model().objects.create(
-                                username = json_user,
-                                first_name = first_name,
-                                last_name = last_name,
-                                email = "Not_Active@fas.edu",
-                                is_active = False,
-                                is_staff = False,
-                                is_superuser = False,
-                            )
-                            get_user_model().objects.get(username=json_user).save()
+                            # fullname = user_json_dict[json_user]['name']
+                            # fullname_lst = fullname.split()
+                            # if (len(fullname_lst) > 1):
+                            #     first_name = fullname_lst[0]
+                            #     last_name = fullname_lst[1]
+                            # else:
+                            #     first_name = fullname_lst[0]
+                            #     last_name = "" # no last_name
+                            # user_obj = get_user_model().objects.create(
+                            #     username = json_user,
+                            #     first_name = first_name,
+                            #     last_name = last_name,
+                            #     email = "Not_Active@fas.edu",
+                            #     is_active = False,
+                            #     is_staff = False,
+                            #     is_superuser = False,
+                            # )
+                            # get_user_model().objects.get(username=json_user).save()
 
                             # raise Exception(f'Cannot find user {json_user}')
 
