@@ -141,6 +141,7 @@ Password for all users is also `test1234`.
         - project
         - publication
         - resource
+        - statistics
         - allocation
         - user
         - utils
@@ -153,36 +154,11 @@ Password for all users is also `test1234`.
         - slurm
         - system_monitor
 
+## Accessibility
 
+The service should be accessible to people with disabilities.
 
-## <a name="demos"></a>ColdFront Demonstration
-
-### Adding a Project
-![Adding Project](coldfront/docs/source/user_guide/images/adding_project.gif "Adding a project")
-
-### Adding Users
-![Adding Users](coldfront/docs/source/user_guide/images/adding_users.gif "Adding Users")
-
-### Requesting an Allocation
-![Requesting an Allocation](coldfront/docs/source/user_guide/images/requesting_allocation.gif "Requesting an Allocation")
-
-### Adding a Grant
-![Adding a Grant](coldfront/docs/source/user_guide/images/adding_grant.gif "Adding a Grant")
-
-### Adding Publications
-![Adding Publications](coldfront/docs/source/user_guide/images/adding_publications.gif "Adding Publications")
-
-### Adding a User to an Allocation
-![Adding a User to Allocation](coldfront/docs/source/user_guide/images/adding_user_to_allocation.gif "Adding a User to an Allocation")
-
-### Managing an Allocation as an Admin
-![Managing an Allocation as and Admin](coldfront/docs/source/user_guide/images/managing_allocation.gif "Managing an Allocation as an Admin")
-
-### Adding a Resource
-![Adding a Resource](coldfront/docs/source/user_guide/images/adding_resource.gif "Adding a Resource")
-
-### Generate Slurm Association Data 
-![Generate Slurm Association Data](coldfront/docs/source/user_guide/images/slurm_dump.gif "Generate Slurm Association Data")
+In practice, when contributing to the code, ensure that changes do not cause accessibility issues to be flagged by the [tota11y](https://khan.github.io/tota11y/) tool. This will be considered during the code review process.
 
 ## License
 
