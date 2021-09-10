@@ -38,5 +38,8 @@ DATABASES = {
     },
 }
 
+LOG_PATH = '{{ log_path }}/{{ portal_log_file }}'
+API_LOG_PATH = '{{ log_path }}/{{ api_log_file }}'
+
 # A list of admin email addresses to CC when certain requests are approved.
 REQUEST_APPROVAL_CC_LIST = {{ request_approval_cc_list }}
