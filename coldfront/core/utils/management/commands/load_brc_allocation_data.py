@@ -71,8 +71,8 @@ class Command(BaseCommand):
         """Return a mapping from project name to allocation amount,
         retrieved from the spreadsheet. For FCA, Partner, and ICA
         projects, allocations are set to the values stored in the
-        spreadsheet. For Condo and MOU projects, allocations are set to
-        None.
+        spreadsheet. For Condo and Recharge (MOU) projects, allocations
+        are set to None.
 
         Parameters:
             - None

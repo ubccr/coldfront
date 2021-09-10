@@ -53,7 +53,7 @@ Savio Project Request Detail
                       They must also set the start and end dates of the
                       allocation.
                     {% endif %}
-                    {% if savio_request.allocation_type in 'ICA,MOU' %}
+                    {% if savio_request.allocation_type in 'ICA,RECHARGE' %}
                       They must also confirm that the Memorandum of
                       Understanding has been signed.
                     {% endif %}
@@ -206,7 +206,7 @@ Savio Project Request Detail
                   </tr>
                 {% endwith %}
               {% endif %}
-              {% if savio_request.allocation_type in 'ICA,MOU' %}
+              {% if savio_request.allocation_type in 'ICA,RECHARGE' %}
                 {% with memorandum_signed=savio_request.state.memorandum_signed %}
                   <tr>
                     <td>Confirm that the Memorandum of Understanding has been signed.</td>
@@ -271,7 +271,7 @@ Savio Project Request Detail
                         {% endif %}
                       {% endwith %}
                     {% endwith %}
-                  {% elif savio_request.allocation_type == 'MOU' %}
+                  {% elif savio_request.allocation_type == 'RECHARGE' %}
                     {% with memorandum_signed=savio_request.state.memorandum_signed %}
                       {% if eligibility.status == 'Approved' and readiness.status == 'Approved' and memorandum_signed.status == 'Complete' %}
                         <a href="{% url 'savio-project-request-review-setup' savio_request.pk %}" class="btn btn-primary">
