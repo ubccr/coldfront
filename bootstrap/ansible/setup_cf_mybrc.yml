@@ -113,6 +113,16 @@
       vars:
         ansible_python_interpreter: '{{ git_prefix}}/venv/bin/python3'
 
+    - name: Copy CF MyBRC local_settings sample file
+      ansible.builtin.copy:
+        src: {{ git_prefix }}/{{ reponame }}/coldfront/config/local_settings.py.sample
+        dest: {{ git_prefix }}/{{ reponame }}/coldfront/config/local_settings.py
+
+    - name: Copy CF MyBRC local_strings sample file
+      ansible.builtin.copy:
+        src: {{ git_prefix }}/{{ reponame }}/coldfront/config/local_strings.py.sample
+        dest: {{ git_prefix }}/{{ reponame }}/coldfront/config/local_strings.py
+
     - name: Create the CF MyBRC Django app settings module
       template: src={{ git_prefix }}/{{ reponame }}/bootstrap/ansible/cf_mybrc_settings_template.tmpl
                 dest={{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/config/{{ deployment }}_settings.py
