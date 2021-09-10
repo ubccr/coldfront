@@ -85,6 +85,7 @@ class Command(BaseCommand):
                 except Project.DoesNotExist:
                     # raise Exception(f'Cannot find project {lab_name}')
                     print("Project not found")
+                    continue
 
                 data = {} # initialize an empty dictionary
                 lab_data = file_path + "/" + f
@@ -108,22 +109,23 @@ class Command(BaseCommand):
                 # else: # found project
                 allocations = Allocation.objects.filter(project = filtered_query, resources__name=resource_name, status__name='Active')
                 if(allocations.count() == 0):
-                    print("create allocation")
+                    print("creating allocation" + lab_name)
                     project_obj = Project.objects.get(title = lab_name)
-                    start_date = datetime.datetime.now()
-                    end_date = datetime.datetime.now() + relativedelta(days=365)
-                        # import allocations
-                    allocation_obj, _ = Allocation.objects.get_or_create(
-                        project=project_obj,
-                        status=AllocationStatusChoice.objects.get(name='Active'),
-                        start_date=start_date,
-                        end_date=end_date,
-                        justification='Allocation Information for ' + lab_name
-                    )
-                    allocation_obj.resources.add(
-                        Resource.objects.get(name=resource_name))
-                    allocation_obj.save()
-                    allocations = Allocation.objects.filter(project = filtered_query,resources__name=resource_name, status__name='Active')
+                    if (project_obj != ""):
+                        start_date = datetime.datetime.now()
+                        end_date = datetime.datetime.now() + relativedelta(days=365)
+                            # import allocations
+                        allocation_obj, _ = Allocation.objects.get_or_create(
+                            project=project_obj,
+                            status=AllocationStatusChoice.objects.get(name='Active'),
+                            start_date=start_date,
+                            end_date=end_date,
+                            justification='Allocation Information for ' + lab_name
+                        )
+                        allocation_obj.resources.add(
+                            Resource.objects.get(name=resource_name))
+                        allocation_obj.save()
+                        allocations = Allocation.objects.filter(project = filtered_query,resources__name=resource_name, status__name='Active')
                 
                 lab_data = data[0]
                 data = data[1:] # skip the usage information
