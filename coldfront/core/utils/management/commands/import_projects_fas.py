@@ -1,18 +1,21 @@
-import datetime
+
 import os
+import csv
+import datetime
 
 from django.conf import settings
 from django.contrib.auth.models import Group
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
+from django.utils import timezone
 
-from csv import reader
 
 from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.project.models import (Project, ProjectStatusChoice,
                                             ProjectUser, ProjectUserRoleChoice,
                                             ProjectUserStatusChoice)
 from coldfront.core.user.models import (UserProfile)
+from coldfront.config.env import ENV
 
 base_dir = settings.BASE_DIR
 
@@ -20,23 +23,28 @@ base_dir = settings.BASE_DIR
 class Command(BaseCommand):
 
     def handle(self, *args, **options):
-        print('Adding projects ...')
-        delimiter = ','
+        LOCALDATA_ROOT = ENV.str('LOCALDATA_ROOT', default=base_dir)
+        file_path = os.path.join(LOCALDATA_ROOT, 'local_data/labs')
+        pi_list_file= os.path.join(LOCALDATA_ROOT, 'local_data/pimap.csv')
+        
+        pi_dict = {}
 
-        lab_pi_name_list = ['zhuang_lab,xzhuang', 'moorcroft_lab,prm', 'kuang_lab,kuang', 'kovac_lab,jmkovac',
-        'holman_lab,mholman', 'giribet_lab,ggiribet', 'edwards_lab,sedwards', 'denolle_lab,mdenolle',
-        'wofsy_lab,steven_wofsy', 'arguelles_delgado_lab,carguelles','balazs_lab,abalazs','barak_lab,bbarak','beam_lab,abeam',
-        'berger_lab,berger','bhi,aloeb','brownfield_lab,dbrownfield']
+        with open(pi_list_file, mode='r') as pimap:
+            reader = csv.reader(pimap)
+            pi_dict = {rows[0]:rows[1] for rows in reader}
 
-        for lab_pi_name in lab_pi_name_list:
-            lab_pi_list = lab_pi_name.split(",")
-            pi_name = lab_pi_list[1]
-            lab_name = lab_pi_list[0]
+        
+        lab_list = os.listdir(file_path)
+        for lab in lab_list:
+            lab_temp = lab.split(".")
+            lab_name = lab_temp[0].split("-")
+            pi_username= pi_dict.get(lab_name[1])
+            title = lab_name[1].strip()
+            description = "Allocations for " + title
 
-
-            file_name = lab_name + '.csv'
-            file_path = os.path.join(base_dir, 'local_data/labs', file_name)
-
+            print("Loading Project data for : " + title)
+                      
+            
             project_status_choices = {}
             project_status_choices['Active'] = ProjectStatusChoice.objects.get(name='Active')
             project_status_choices['Archived'] = ProjectStatusChoice.objects.get(name='Archived')
@@ -58,103 +66,81 @@ class Command(BaseCommand):
 
             for choice in ['Active', 'Pending Remove', 'Denied', 'Removed', ]:
                 ProjectUserStatusChoice.objects.get_or_create(name=choice)
+            
+            created = datetime.datetime.now(tz=timezone.utc) 
+            modified = datetime.datetime.now(tz=timezone.utc) 
 
-            user_info = ""
-            with open (file_path, 'r') as read_obj:
-                csv_reader = reader(read_obj) # opt out the first line
-                first_line = read_obj.readline()  # skip firstline
-                pi_potential_name = ""
-                for row in csv_reader:
-                    user = row[0]
-                    if (row[3] == 'FACULTY'):
-                        pi_potential_name = row[3]
-                        user_info = user_info + user + ',PI' + ',PI' + ',ACT;'
-
-                    else:
-                        user_info = user_info + user + ',U' + ',U' + ',ACT;'
-
-
-            with open (file_path, 'r') as read_obj:
-                csv_reader = reader(read_obj) # opt out the first line
-                first_line = read_obj.readline()
-
-                created = "2021-04-01 10:00:00" # feeding dummy data for now
-                modified = "2021-04-30 10:00:00" # feeding dummy data for now
-                title = lab_name
-                pi_username = lab_name.split("_")
-                pi_username = pi_username[0] # put in username
-                pi_username = pi_potential_name
-                pi_username = pi_name
-                description = "Storage allocation for " + lab_name
-                field_of_science = "Other"
-                project_status = "New"
-
-
-                created = datetime.datetime.strptime(created.split('.')[0], '%Y-%m-%d %H:%M:%S')
-                modified = datetime.datetime.strptime(modified.split('.')[0], '%Y-%m-%d %H:%M:%S')
-                # find pi object in the file
-                try:
-                    pi_user_obj = get_user_model().objects.get(username=pi_username)
-                    filtered_query = Project.objects.filter(title = lab_name)
-                    print("line97:",filtered_query)
-                    print("line98:",type(filtered_query))
-                    if (filtered_query.exists()):
-                        print("line 100: querySet exists, don't create a new querySet. Should only updating it")
-                    else:
-                        print("create new querySet")
-                        pi_user_obj.is_pi = True
-                        pi_user_obj.save()
-                        # find the project
-                        field_of_science_obj = FieldOfScience.objects.get(description=field_of_science)
-                        project_obj = Project.objects.create(
-                            created=created,
-                            modified=modified,
-                            title=title.strip(),
-                            pi=pi_user_obj,
-                            description=description.strip(),
-                            field_of_science=field_of_science_obj,
-                            status=project_status_choices[project_status]
-                        )
-
-                        for project_user in user_info.split(';'):
-                            if (project_user != ""): # if excel file read in line is not empty
-                                username, role, enable_email, project_user_status = project_user.split(',')
-                                if enable_email == 'True':
-                                    enable_email = True
-                                else:
-                                    enable_email = False
-                                print(username, role, enable_email, project_user_status)
-                                try:
-                                    user_obj = get_user_model().objects.get(username=username)
-
-                                except get_user_model().DoesNotExist:
-                                    print("couldn't add user", username)
-                                    continue
-
+            user_dict = []
+            csv_file =file_path+'/'+lab 
+            with open(csv_file, 'r') as read_obj:
+                reader = csv.DictReader(read_obj)
+                for row in reader:
+                    user_dict.append(row) 
+                    
+            
+            try:
+                filtered_query = Project.objects.filter(title = title)
+                if not filtered_query.exists():
+                    print("Creating new project:" + title)
+                    for row in user_dict: 
+                        user = row['samaccountname']
+                        if (user == pi_username):
+                            field_of_science=row['department']
+                            try:
+                                pi_user_obj = get_user_model().objects.get(username=user)
+                                pi_user_obj.is_pi = True
+                                pi_user_obj.save()
+                                project_status = "New"
+                                try: 
+                                    field_of_science_obj = FieldOfScience.objects.get(description=field_of_science)
+                                except:
+                                    print(field_of_science)
+                                    field_of_science_obj = FieldOfScience(
+                                    is_selectable='True',
+                                    description=field_of_science,
+                                    )
+                                    field_of_science_obj.save()
+                    
+                                project_obj = Project.objects.create(
+                                    created=created,
+                                    modified=modified,
+                                    title=title,
+                                    pi=pi_user_obj,
+                                    description=description.strip(),
+                                    field_of_science=field_of_science_obj,
+                                    status=project_status_choices[project_status]
+                                )           
+                            except get_user_model().DoesNotExist:
+                                print("PI User missing: ", user)
+                                continue
+                project_obj = Project.objects.get(title = title)
+                if (project_obj != ""):
+                    for project_user in user_dict:
+                        if (project_user != ""):
+                            username = project_user['samaccountname']
+                            enable_email = False
+                            if (username == pi_username):
+                                role = 'PI'
+                                enable_email = True
+                            else:
+                                role = 'U'
+                            project_user_status = 'ACT'
+                            try:
+                                user_obj = get_user_model().objects.get(username=username)
+                            except get_user_model().DoesNotExist:
+                                print("couldn't add user", username)
+                                continue
+                            if not project_obj.projectuser_set.filter(user=user_obj).exists():
                                 project_user_obj = ProjectUser.objects.create(
-                                    user=user_obj,
-                                    project=project_obj,
-                                    role=project_user_role_choices[role],
-                                    status=project_user_status_choices[project_user_status],
-                                    enable_notifications=enable_email
-                                )
-                        # when import a project, we can import the user to project as well
-                        if not project_obj.projectuser_set.filter(user=pi_user_obj).exists():
-                            project_user_obj = ProjectUser.objects.create(
-                                user=pi_user_obj,
+                                user=user_obj,
                                 project=project_obj,
-                                role=project_user_role_choices['PI'],
-                                status=project_user_status_choices['ACT'],
-                                enable_notifications=True
-                            )
-                        elif project_obj.projectuser_set.filter(user=pi_user_obj).exists():
-                            project_user_obj = ProjectUser.objects.get(project=project_obj, user=pi_user_obj)
-                            project_user_obj.status=project_user_status_choices['ACT']
-                            project_user_obj.save()
-                except Exception as e:
-                    print(f'Error {e}')
-
-
-
-            print('Finished adding projects')
-
+                                role=project_user_role_choices[role],
+                                status=project_user_status_choices[project_user_status],
+                                enable_notifications=enable_email
+                                )
+                            elif project_obj.projectuser_set.filter(user=user_obj).exists():
+                                project_user_obj = ProjectUser.objects.get(project=project_obj, user=user_obj)
+                                project_user_obj.status=project_user_status_choices['ACT']
+                                project_user_obj.save() 
+            except Exception as e:
+                print(f'Error {e}')
