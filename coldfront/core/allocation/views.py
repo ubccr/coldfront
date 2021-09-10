@@ -519,6 +519,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         resources_form_label_texts = {}
         resources_form_storage_space = {}
         resources_form_storage_space_label = {}
+        resources_form_storage_space_with_unit = {}
+        resources_form_storage_space_with_unit_label = {}
         resources_form_leverage_multiple_gpus = {}
         resources_form_leverage_multiple_gpus_label = {}
         resources_form_dl_workflow = {}
@@ -565,6 +567,20 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         resources_form_project_directory_name_label = {}
         resources_form_total_cost = {}
         resources_form_total_cost_label = {}
+        resources_form_first_name = {}
+        resources_form_first_name_label = {}
+        resources_form_last_name = {}
+        resources_form_last_name_label = {}
+        resources_form_campus_affiliation = {}
+        resources_form_campus_affiliation_label = {}
+        resources_form_email = {}
+        resources_form_email_label = {}
+        resources_form_url = {}
+        resources_form_url_label = {}
+        resources_form_faculty_email = {}
+        resources_form_faculty_email_label = {}
+        resources_form_store_ephi = {}
+        resources_form_store_ephi_label = {}
         resources_with_eula = {}
 
         for resource in user_resources:
@@ -592,6 +608,19 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='storage_space_label').value
                 resources_form_storage_space_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='storage_space_with_unit').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='storage_space_with_unit').value
+                if value == '':
+                    resources_form_storage_space_with_unit[resource.id] = 0
+                else:
+                    resources_form_storage_space_with_unit[resource.id] = int(value)
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='storage_space_with_unit_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='storage_space_with_unit_label').value
+                resources_form_storage_space_with_unit_label[resource.id] = mark_safe(
                     '<strong>{}*</strong>'.format(value))
 
             if resource.resourceattribute_set.filter(resource_attribute_type__name='leverage_multiple_gpus').exists():
@@ -814,6 +843,76 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 resources_form_project_directory_name_label[resource.id] = mark_safe(
                     '<strong>{}*</strong>'.format(value))
 
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='first_name').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='first_name').value
+                resources_form_first_name[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='first_name_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='first_name_label').value
+                resources_form_first_name_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='last_name').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='last_name').value
+                resources_form_last_name[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='last_name_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='last_name_label').value
+                resources_form_last_name_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='campus_affiliation').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='campus_affiliation').value
+                resources_form_campus_affiliation[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='campus_affiliation_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='campus_affiliation_label').value
+                resources_form_campus_affiliation_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='email').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='email').value
+                resources_form_email[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='email_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='email_label').value
+                resources_form_email_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='url').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='url').value
+                resources_form_url[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='url_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='url_label').value
+                resources_form_url_label[resource.id] = mark_safe(
+                    '<strong>{}</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='faculty_email').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='faculty_email').value
+                resources_form_faculty_email[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='faculty_email_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='faculty_email_label').value
+                resources_form_faculty_email_label[resource.id] = mark_safe(
+                    '<strong>{}</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='store_ephi').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='store_ephi').value
+                resources_form_store_ephi[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='store_ephi_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='store_ephi_label').value
+                resources_form_store_ephi_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
             if resource.resourceattribute_set.filter(resource_attribute_type__name='total_cost_label').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='total_cost_label').value
@@ -830,6 +929,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         context['resources_form_label_texts'] = resources_form_label_texts
         context['resources_form_storage_space'] = resources_form_storage_space
         context['resources_form_storage_space_label'] = resources_form_storage_space_label
+        context['resources_form_storage_space_with_unit'] = resources_form_storage_space_with_unit
+        context['resources_form_storage_space_with_unit_label'] = resources_form_storage_space_with_unit_label
         context['resources_form_leverage_multiple_gpus_label'] = resources_form_leverage_multiple_gpus_label
         context['resources_form_leverage_multiple_gpus'] = resources_form_leverage_multiple_gpus
         context['resources_form_dl_workflow_label'] = resources_form_dl_workflow_label
@@ -876,6 +977,20 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         context['resources_form_project_directory_name_label'] = resources_form_project_directory_name_label
         context['resources_form_total_cost'] = resources_form_total_cost
         context['resources_form_total_cost_label'] = resources_form_total_cost_label
+        context['resources_form_first_name'] = resources_form_first_name
+        context['resources_form_first_name_label'] = resources_form_first_name_label
+        context['resources_form_last_name'] = resources_form_last_name
+        context['resources_form_last_name_label'] = resources_form_last_name_label
+        context['resources_form_campus_affiliation'] = resources_form_campus_affiliation
+        context['resources_form_campus_affiliation_label'] = resources_form_campus_affiliation_label
+        context['resources_form_email'] = resources_form_email
+        context['resources_form_email_label'] = resources_form_email_label
+        context['resources_form_url'] = resources_form_url
+        context['resources_form_url_label'] = resources_form_url_label
+        context['resources_form_faculty_email'] = resources_form_faculty_email
+        context['resources_form_faculty_email_label'] = resources_form_faculty_email_label
+        context['resources_form_store_ephi'] = resources_form_store_ephi
+        context['resources_form_store_ephi_label'] = resources_form_store_ephi_label
         context['resources_with_eula'] = resources_with_eula
         context['resources_with_accounts'] = list(Resource.objects.filter(
             name__in=list(ALLOCATION_ACCOUNT_MAPPING.keys())).values_list('id', flat=True))
@@ -896,6 +1011,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         justification = form_data.get('justification')
         quantity = form_data.get('quantity', 1)
         storage_space = form_data.get('storage_space')
+        storage_space_with_unit = form_data.get('storage_space_with_unit')
         leverage_multiple_gpus = form_data.get('leverage_multiple_gpus')
         dl_workflow = form_data.get('dl_workflow')
         applications_list = form_data.get('applications_list')
@@ -922,7 +1038,14 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         devices_ip_addresses = form_data.get('devices_ip_addresses')
         data_management_plan = form_data.get('data_management_plan')
         project_directory_name = form_data.get('project_directory_name')
-        prorated_amount = form_data.get('prorated_amount')
+        total_cost = form_data.get('total_cost')
+        first_name = form_data.get('first_name')
+        last_name = form_data.get('last_name')
+        campus_affiliation = form_data.get('campus_affiliation')
+        email = form_data.get('email')
+        url = form_data.get('url')
+        faculty_email = form_data.get('faculty_email')
+        store_ephi = form_data.get('store_ephi')
         allocation_account = form_data.get('allocation_account', None)
         # A resource is selected that requires an account name selection but user has no account names
         if ALLOCATION_ACCOUNT_ENABLED and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING and AllocationAttributeType.objects.filter(
@@ -959,7 +1082,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 error = True
         elif resource_obj.name == 'Geode-Projects':
             if (
-                storage_space is None
+                storage_space_with_unit is None
                 or unit == ''
                 or (not use_indefinitely and end_date is None)
                 or start_date is None
@@ -974,7 +1097,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 or data_management_plan == ''
             ):
                 error = True
-            elif (storage_space <= 0 and unit == 'TB') or (storage_space < 200 and unit == 'GB'):
+            elif (storage_space_with_unit <= 0 and unit == 'TB') or (storage_space_with_unit < 200 and unit == 'GB'):
                 form.add_error(None, format_html(
                     'Please enter a storage amount greater than or equal to 200GB.'
                     )
@@ -1011,7 +1134,26 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 )
                 return self.form_invalid(form)
 
-            storage_space = str(storage_space) + unit
+            storage_space_with_unit = str(storage_space_with_unit) + unit
+        elif resource_obj.name == 'Slate Project':
+            if (
+                first_name == '' or
+                last_name == '' or
+                campus_affiliation == '' or
+                email == '' or
+                project_directory_name == '' or
+                start_date is None or
+                store_ephi == ''
+            ):
+                error = True
+            elif storage_space <= 0:
+                form.add_error(None, format_html(
+                    'Storage space must be greater than 0.'
+                    )
+                )
+                return self.form_invalid(form)
+            elif storage_space > 15 and account_number == '':
+                error = True
 
         if error:
             form.add_error(None, format_html(
@@ -1081,6 +1223,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             justification=justification,
             quantity=quantity,
             storage_space=storage_space,
+            storage_space_with_unit=storage_space_with_unit,
             leverage_multiple_gpus=leverage_multiple_gpus,
             dl_workflow=dl_workflow,
             applications_list=applications_list,
@@ -1106,7 +1249,14 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             devices_ip_addresses=devices_ip_addresses,
             data_management_plan=data_management_plan,
             project_directory_name=project_directory_name,
-            prorated_amount=prorated_amount,
+            total_cost=total_cost,
+            first_name=first_name,
+            last_name=last_name,
+            campus_affiliation=campus_affiliation,
+            email=email,
+            url=url,
+            faculty_email=faculty_email,
+            store_ephi=store_ephi,
             status=allocation_status_obj
         )
         allocation_obj.resources.add(resource_obj)

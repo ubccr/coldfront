@@ -68,6 +68,8 @@ Request New Allocation
   var resources_with_eula = {{ resources_with_eula | safe }};
   var resources_form_storage_space = {{ resources_form_storage_space | safe }};
   var resources_form_storage_space_label = {{ resources_form_storage_space_label | safe }};
+  var resources_form_storage_space_with_unit = {{ resources_form_storage_space_with_unit | safe }};
+  var resources_form_storage_space_with_unit_label = {{ resources_form_storage_space_with_unit_label | safe }};
   var resources_form_leverage_multiple_gpus_label = {{ resources_form_leverage_multiple_gpus_label | safe }};
   var resources_form_leverage_multiple_gpus = {{ resources_form_leverage_multiple_gpus | safe }};
   var resources_form_dl_workflow_label = {{ resources_form_dl_workflow_label | safe }};
@@ -113,6 +115,20 @@ Request New Allocation
   var resources_form_project_directory_name = {{ resources_form_project_directory_name | safe }}
   var resources_form_project_directory_name_label = {{ resources_form_project_directory_name_label | safe }}
   var resources_form_total_cost_label = {{ resources_form_total_cost_label | safe }}
+  var resources_form_first_name = {{ resources_form_first_name | safe }}
+  var resources_form_first_name_label = {{ resources_form_first_name_label | safe }}
+  var resources_form_last_name = {{ resources_form_last_name | safe }}
+  var resources_form_last_name_label = {{ resources_form_last_name_label | safe }}
+  var resources_form_campus_affiliation = {{ resources_form_campus_affiliation | safe }}
+  var resources_form_campus_affiliation_label = {{ resources_form_campus_affiliation_label | safe }}
+  var resources_form_email = {{ resources_form_email | safe }}
+  var resources_form_email_label = {{ resources_form_email_label | safe }}
+  var resources_form_url = {{ resources_form_url | safe }}
+  var resources_form_url_label = {{ resources_form_url_label | safe }}
+  var resources_form_faculty_email = {{ resources_form_faculty_email | safe }}
+  var resources_form_faculty_email_label = {{ resources_form_faculty_email_label | safe }}
+  var resources_form_store_ephi = {{ resources_form_store_ephi | safe }}
+  var resources_form_store_ephi_label = {{ resources_form_store_ephi_label | safe }}
 
 
   $(document).ready(function () {
@@ -153,11 +169,11 @@ Request New Allocation
       $('#id_end_date').val('')
     }
 
-    // We want to set up some custom HTML for unit so it will be placed inline with storage_space.
+    // We want to set up some custom HTML for unit so it will be placed inline with storage_space_with_unit.
     // Save the value of unit so it is not lost after we recreate its HTML.
     var unit = $('#id_unit').val();
     $('#div_id_unit').remove()
-    $('#id_storage_space')
+    $('#id_storage_space_with_unit')
       .wrap('<div class="input-group">')
       .after(
         '<div id="div_id_unit">\
@@ -210,12 +226,49 @@ Request New Allocation
       authorized to use funds from this account for this purpose.</p>'
     )
 
+    $('#div_id_store_ephi').append(
+      '<p id="id_ephi_info">If you use the Slate-Project file system for storing electronic protected health \
+      information (ePHI), please note that <strong>you and/or the Principal Investigator (PI) \
+      are responsible for the privacy and security of data and for compliance with applicable \
+      federal and state laws/regulations and institutional policies.</strong> \
+      IU\'s HIPPA policies include the appropriate Institutional Review Board (IRB) approvals and \
+      a Data Management Plan. Be advised that, while we provide technical and physical controls \
+      against the unauthorized release of data in accordance with HIPAA, responsibility for \
+      administrative controls (including granting access and terminating access, providing \
+      training, creating user polices, etc.) rests with you and/or the PI. \
+      We strongly recommend that you review <a href="https://kb.iu.edu/d/ayzb" target="_blank">At \
+      IU, how do I get help securely processing, storing, and sharing HIPAA-regulated data?</a> \
+      for guidance on securely processing, storing, and sharing ePHI or HIPAA data. If you have \
+      further questions, please contact us.</p>'
+    )
+
     $('<br><input id="selectAll" class="check" type="checkbox"> <strong>Select All Users</strong>').insertAfter($("#div_id_users > label"))
     $("#id_resource").trigger('change');
 
     $("#selectAll").click(function () {
       $("input[name^='users']").prop('checked', $(this).prop('checked'));
     });
+
+    if ($('input[type=radio][name=store_ephi]:checked').val() === 'Yes') {
+      $('#id_ephi_info').show();
+    } else {
+      $('#id_ephi_info').hide();
+    }
+    $('input[type=radio][name=store_ephi]').change(function (e) {
+      if (e.target.value === "Yes") {
+        $('#id_ephi_info').show();
+      } else {
+        $('#id_ephi_info').hide();
+      }
+    })
+
+    $('#id_storage_space').change(function (e) {
+      if (e.target.value > 15) {
+        $('#div_id_account_number').show()
+      } else {
+        $('#div_id_account_number').hide()
+      }
+    })
 
     // Set up grand challenge checkbox and options for the priority boost form.
     // Save the value since it will be deleted when we change checkbox the label.
@@ -383,6 +436,17 @@ Request New Allocation
       $('#div_id_storage_space').show();
     } else {
       $('#div_id_storage_space').hide();
+    }
+
+    if (resources_form_storage_space_with_unit_label[resource_id]) {
+      var label = $('label[for="id_storage_space_with_unit"]');
+      label.html(resources_form_storage_space_with_unit_label[resource_id])
+      if ($('#id_storage_space_with_unit').val() === '') {
+        $('#id_storage_space_with_unit').val(resources_form_storage_space_with_unit[resource_id]) 
+      }
+      $('#div_id_storage_space_with_unit').show();
+    } else {
+      $('#div_id_storage_space_with_unit').hide();
     }
     
     if (resources_form_leverage_multiple_gpus_label[resource_id]) {
@@ -605,6 +669,11 @@ Request New Allocation
         $('#id_account_number').val(resources_form_account_number[resource_id]);
       }
       $('#div_id_account_number').show();
+      if (resource_id === '9') { // Slate Project
+        if ($('#id_storage_space').val() <= 15) {
+          $('#div_id_account_number').hide();
+        }
+      }
     } else {
       $('#div_id_account_number').hide();
     }
@@ -659,6 +728,83 @@ Request New Allocation
       $('#div_id_data_management_plan').show();
     } else {
       $('#div_id_data_management_plan').hide();
+    }
+
+    if (resources_form_first_name_label[resource_id]) {
+      var label = $('label[for="id_first_name"]');
+      label.html(resources_form_first_name_label[resource_id]);
+      if ($('#id_first_name').val().length < 1) {
+        $('#id_first_name').val(resources_form_first_name[resource_id]);
+      }
+      $('#div_id_first_name').show();
+    } else {
+      $('#div_id_first_name').hide();
+    }
+
+    if (resources_form_last_name_label[resource_id]) {
+      var label = $('label[for="id_last_name"]');
+      label.html(resources_form_last_name_label[resource_id]);
+      if ($('#id_last_name').val().length < 1) {
+        $('#id_last_name').val(resources_form_last_name[resource_id]);
+      }
+      $('#div_id_last_name').show();
+    } else {
+      $('#div_id_last_name').hide();
+    }
+
+    if (resources_form_campus_affiliation_label[resource_id]) {
+      var label = $('label[for="id_campus_affiliation"]');
+      label.html(resources_form_campus_affiliation_label[resource_id]);
+      if ($('#id_campus_affiliation').val().length < 1) {
+        $('#id_campus_affiliation').val(resources_form_campus_affiliation[resource_id]);
+      }
+      $('#div_id_campus_affiliation').show();
+    } else {
+      $('#div_id_campus_affiliation').hide();
+    }
+
+    if (resources_form_email_label[resource_id]) {
+      var label = $('label[for="id_email"]');
+      label.html(resources_form_email_label[resource_id]);
+      if ($('#id_email').val().length < 1) {
+        $('#id_email').val(resources_form_email[resource_id]);
+      }
+      $('#div_id_email').show();
+    } else {
+      $('#div_id_email').hide();
+    }
+
+    if (resources_form_url_label[resource_id]) {
+      var label = $('label[for="id_url"]');
+      label.html(resources_form_url_label[resource_id]);
+      if ($('#id_url').val().length < 1) {
+        $('#id_url').val(resources_form_url[resource_id]);
+      }
+      $('#div_id_url').show();
+    } else {
+      $('#div_id_url').hide();
+    }
+
+    if (resources_form_faculty_email_label[resource_id]) {
+      var label = $('label[for="id_faculty_email"]');
+      label.html(resources_form_faculty_email_label[resource_id]);
+      if ($('#id_faculty_email').val().length < 1) {
+        $('#id_faculty_email').val(resources_form_faculty_email[resource_id]);
+      }
+      $('#div_id_faculty_email').show();
+    } else {
+      $('#div_id_faculty_email').hide();
+    }
+
+    if (resources_form_store_ephi_label[resource_id]) {
+      var label = $('label[for="id_store_ephi_0"]');
+      label.html(resources_form_store_ephi_label[resource_id]);
+      if ($('input[type=radio][name=store_ephi]:checked').val() === undefined){
+        $('input[type=radio][name=store_ephi]').val([resources_form_store_ephi[resource_id]]);
+      }
+      $('#div_id_store_ephi').show();
+    } else {
+      $('#div_id_store_ephi').hide();
     }
     
     if (resources_with_accounts.includes(parseInt(resource_id))) {
