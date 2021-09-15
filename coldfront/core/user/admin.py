@@ -29,7 +29,7 @@ class EmailAddressAdmin(admin.ModelAdmin):
     search_fields = ('user', 'email', )
     fields = ('email', 'user', 'is_primary', 'is_verified', )
     actions = ('make_primary', )
-    readonly_fields = ('is_primary', )
+    readonly_fields = ('is_primary', 'is_verified', )
 
     # custom logic for delete button in emailaddress admin form
     def delete_model(self, request, obj):
