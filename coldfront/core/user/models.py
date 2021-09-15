@@ -56,25 +56,27 @@ class EmailAddress(models.Model):
     def save(self, *args, **kwargs):
         self.email = self.email.lower()
 
+        # no old_primary_val if saving a new model. defaults to true for the logic
         if self.new_email_flag or self.new_email_flag is None:
             old_primary_val = True
         else:
-            # old primary val: if unsetting primary status, no error should pop
+            # fetching the previous is_primary value of the emailaddress
             old_primary_val = EmailAddress.objects.get(pk=self.pk).is_primary
 
-        # checks if another primary email exists
+        # checks if another primary email exists for the user
         primary_emails_exist = EmailAddress.objects.filter(user=self.user).filter(is_primary=True).exists()
 
-        # also checks if new is_primary is True. should mean that changing is_verified works
+        # if changing is_primary from False -> True and other primary emails exist, raise error
         if self.is_primary and not old_primary_val and primary_emails_exist:
             raise ValidationError('User already has a primary email address. Manually unset the primary '
                                   'email before setting a new primary email.')
-        elif self.is_primary and not old_primary_val:
-            # Set the User's email field if updating is_primary = True
-
+        # else if changing is_primary from False -> True and no other primary emails exist
+        elif self.is_primary and not old_primary_val and not primary_emails_exist:
+            # raise error if selected email is not verified
             if not self.is_verified:
                 raise ValidationError('Only verified emails may be set to primary.')
 
+            # change user email
             self.user.email = self.email
             self.user.save()
 

@@ -751,7 +751,7 @@ class UpdatePrimaryEmailAddressView(LoginRequiredMixin, FormView):
         user = self.request.user
         old = user.email.lower()
 
-        # first set all is_primary to False
+        # first set all is_primary to False as insurance that no conflicting email states exist
         primary_emails = EmailAddress.objects.filter(user=user).filter(is_primary=True).exclude(email=old)
         for email in primary_emails:
             email.is_primary = False
@@ -790,9 +790,7 @@ class UpdatePrimaryEmailAddressView(LoginRequiredMixin, FormView):
 
             message = f'{new_primary.email} is your new primary email address.'
             messages.success(self.request, message)
-            # # Set the User's email field.
-            # user.email = new_primary.email
-            # user.save()
+
         return super().form_valid(form)
 
     def get_form_kwargs(self):
