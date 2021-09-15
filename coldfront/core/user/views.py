@@ -610,7 +610,7 @@ class EmailAddressAddView(LoginRequiredMixin, FormView):
         try:
             email_address = EmailAddress.objects.create(
                 user=self.request.user, email=email, is_verified=False,
-                is_primary=False)
+                is_primary=False, new_email_flag=True)
         except IntegrityError:
             self.logger.error(
                 f'EmailAddress {email} unexpectedly already exists.')
@@ -750,16 +750,26 @@ class UpdatePrimaryEmailAddressView(LoginRequiredMixin, FormView):
         # Set the old primary address as no longer primary.
         user = self.request.user
         old = user.email.lower()
+
+        # first set all is_primary to False
+        primary_emails = EmailAddress.objects.filter(user=user).filter(is_primary=True).exclude(email=old)
+        for email in primary_emails:
+            email.is_primary = False
+            email.save()
+        print('hesre')
+        # create old primary email if it does not exist as an EmailAddress
         old_primary, created = EmailAddress.objects.get_or_create(
-            user=user, email=old)
+            user=user, email=old, is_verified=True)
+        print(created)
         if created:
             message = (
                 f'Created EmailAddress {old_primary.pk} for User '
                 f'{user.pk}\'s old primary address {old}, which unexpectedly '
                 f'did not exist.')
             logger.warning(message)
-        old_primary.is_primary = False
+        old_primary.is_primary = True # changed to True in case verification fails, dont want the user to have no primary
         old_primary.save()
+
         # Set the new primary address as primary.
         form_data = form.cleaned_data
         new_primary = form_data['email_address']
@@ -772,13 +782,17 @@ class UpdatePrimaryEmailAddressView(LoginRequiredMixin, FormView):
                 'Unexpected server error. Please contact an administrator.')
             messages.error(self.request, message)
         else:
+            old_primary.is_primary = False # set old_primary to False after insuring user has verified email as replacement
+            old_primary.save()
+
             new_primary.is_primary = True
             new_primary.save()
+
             message = f'{new_primary.email} is your new primary email address.'
             messages.success(self.request, message)
-            # Set the User's email field.
-            user.email = new_primary.email
-            user.save()
+            # # Set the User's email field.
+            # user.email = new_primary.email
+            # user.save()
         return super().form_valid(form)
 
     def get_form_kwargs(self):
