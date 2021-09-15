@@ -756,11 +756,11 @@ class UpdatePrimaryEmailAddressView(LoginRequiredMixin, FormView):
         for email in primary_emails:
             email.is_primary = False
             email.save()
-        print('hesre')
+
         # create old primary email if it does not exist as an EmailAddress
         old_primary, created = EmailAddress.objects.get_or_create(
             user=user, email=old, is_verified=True)
-        print(created)
+
         if created:
             message = (
                 f'Created EmailAddress {old_primary.pk} for User '
