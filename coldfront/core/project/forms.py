@@ -700,7 +700,7 @@ class SavioProjectSurveyForm(forms.Form):
             'allocated up to 30 GB of not-backed-up shared filesystem space '
             'on request. Users needing more storage can choose to join the '
             'Condo Storage service by purchasing 42TB at the cost of $6539. '
-            'More details about this program are available <a href="https://docs-research-it.berkeley.edu/services/high-performance-computing/condos/condo-storage-service/">here</a>. '
+            'More details about this program are available <a href="https://docs-research-it.berkeley.edu/services/high-performance-computing/condos/condo-storage-service/"><span class="accessibility-link-text">Data Storage program details</span>here</a>. '
             'Please indicate if you need additional space and how much.'),
         label='Data Storage Space',
         required=False)

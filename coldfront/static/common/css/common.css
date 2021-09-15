@@ -139,3 +139,53 @@ body > main > div > div.card.border-primary > div.card-body > form > div.alert.a
 	position:relative;
 	top:1px;
 }
+
+
+/* Accessibility Modifications
+Note: A better solution in the long run is to import bootstrap's SCSS
+templates, customize the "primary", "success", etc. colors, and re-compile the
+CSS files.
+*/
+
+a {
+     color: #0000ff
+}
+
+.accessibility-link-text {
+    /* Source: https://usability.yale.edu/web-accessibility/articles/links */
+    clip: rect(1px 1px 1px 1px); /* IE 6/7 */
+    clip: rect(1px, 1px, 1px, 1px);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+}
+
+.active {
+    background-color: #0c2d4d !important;
+}
+
+.badge-success {
+    background-color: #006400 !important;
+}
+
+.bg-primary {
+    background-color: #0c2d4d !important;
+}
+
+.btn-success {
+    background-color: #006400 !important;
+}
+
+.btn-primary {
+    background-color: #0c2d4d !important;
+}
+
+.pagination a {
+    color: #0000ff
+}
+
+.text-success {
+    color: #006400 !important;
+}

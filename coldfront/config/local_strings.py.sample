@@ -22,5 +22,11 @@ request an account through a university faculty member.
 '''
 """
 ACCOUNT_CREATION_TEXT = (
-    'If you already have a BRC cluster (e.g., Savio, Vector, ABC) account and this is the first time logging in to the portal, please set your portal password <a href="/user/password-reset/">here</a>. If you do not have an account on any of the BRC clusters and you want your first cluster account setup, please register to the portal <a href="/user/register/">here</a>.')
-
+    'If you already have a BRC cluster (e.g., Savio, Vector, ABC) account and '
+    'this is the first time logging in to the portal, please set your portal '
+    'password <a href="/user/password-reset/">'
+    '<span class="accessibility-link-text">Set Password</span>here</a>. If '
+    'you do not have an account on any of the BRC clusters and you want your '
+    'first cluster account setup, please register to the portal '
+    '<a href="/user/register/"><span class="accessibility-link-text">Register'
+    '</span>here</a>.')

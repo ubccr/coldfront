@@ -15,9 +15,17 @@ Savio Project {{ request_filter|title }} Requests %}
 
 <p>
   {% if request_filter == 'completed' %}
-    View completed requests for new Savio projects. You may also view pending requests <a href="{% url 'savio-project-pending-request-list' %}">here</a>.
+    View completed requests for new Savio projects. You may also view pending
+    requests
+    <a href="{% url 'savio-project-pending-request-list' %}">
+      <span class="accessibility-link-text">Pending Requests</span>
+      here</a>.
   {% else %}
-    View pending requests for new Savio projects. You may also view completed requests <a href="{% url 'savio-project-completed-request-list' %}">here</a>.
+    View pending requests for new Savio projects. You may also view completed
+    requests
+    <a href="{% url 'savio-project-completed-request-list' %}">
+      <span class="accessibility-link-text">Completed Requests</span>
+      here</a>.
   {% endif %}
 </p>
 
@@ -41,6 +49,7 @@ Savio Project {{ request_filter|title }} Requests %}
       <tr>
         <td>
           <a href="{% url 'savio-project-request-detail' savio_project_request.pk %}">
+            <span class="accessibility-link-text">Project {{ savio_project_request.pk }}</span>
             {{ savio_project_request.pk }}
           </a>
         </td>
