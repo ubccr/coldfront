@@ -9,45 +9,68 @@ Project List
 
 {% block content %}
 <h1>Join a Project</h1><hr>
-<b>Pending Join Requests</b>
-<hr>
-  {% if user.userprofile.access_agreement_signed_date is None %}
-    <p>First review and sign the cluster user agreement. Only then you can join a cluster project and gain access to the cluster.</p>
-  {% elif not join_requests %}
-    <div class="alert alert-info" role="alert">
-      <i class="fa fa-info-circle" aria-hidden="true"></i>
-        No pending requests.
-    </div>
-  {% else %}
-    <table class="table">
-      <thead>
-        <tr>
-          <th scope="col" class="text-nowrap">ID</th>
-          <th scope="col" class="text-nowrap">Name</th>
-          <th scope="col" class="text-nowrap">PIs</th>
-          <th scope="col">Title</th>
-          <th scope="col">Cluster</th>
-          <th scope="col" class="text-nowrap">Auto-Approval Time</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for project in join_requests %}
-          <tr>
-            <td><a href="{% url 'project-detail' project.id %}">{{ project.id }}</a></td>
-            <td>{{ project.name }}</td>
-            <td>{% for pi in project.pis %}{{ pi.username }}<br>{% endfor %}</td>
-            <td style="text-align: justify; text-justify: inter-word;">{{ project.title }}</td>
-            <td>{{ project.cluster_name }}</td>
 
-            <td>
-                <span class="badge badge-success">
-                  {{project.auto_approval_time}}
-                </span>
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+
+<b>Requests Pending Manager Approval</b>
+<hr>
+<p>
+  Below is a list of join requests that await approval by project managers.
+  If managers take no action by the Auto-Approval Time, the request will
+  automatically be approved.
+</p>
+<p>
+  Once a request is approved, a separate request for cluster access under
+  the project will automatically be created, to be processed by cluster
+  administrators. The statuses of those requests may be viewed on the
+  <a href="{% url 'home' %}">home page</a> or on the project's detail page.
+</p>
+{% if not join_requests %}
+  <hr>
+  <div class="alert alert-info" role="alert">
+    <i class="fa fa-info-circle" aria-hidden="true"></i>
+      No requests await approval by project managers.
+  </div>
+{% else %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col" class="text-nowrap">ID</th>
+        <th scope="col" class="text-nowrap">Name</th>
+        <th scope="col" class="text-nowrap">PIs</th>
+        <th scope="col">Title</th>
+        <th scope="col">Cluster</th>
+        <th scope="col" class="text-nowrap">
+          Auto-Approval Time
+          <i
+            class="fas fa-question-circle"
+            aria-hidden="true"
+            data-toggle="tooltip"
+            data-placement="top"
+            title="
+              Project managers may configure how long to wait before
+              automatically approving a request.">
+          </i>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for project in join_requests %}
+        <tr>
+          <td><a href="{% url 'project-detail' project.id %}">{{ project.id }}</a></td>
+          <td>{{ project.name }}</td>
+          <td>{% for pi in project.pis %}{{ pi.username }}<br>{% endfor %}</td>
+          <td style="text-align: justify; text-justify: inter-word;">{{ project.title }}</td>
+          <td>{{ project.cluster_name }}</td>
+
+          <td>
+              <span class="badge badge-success">
+                {{project.auto_approval_time}}
+              </span>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 {% endif %}
 
 <br>
@@ -240,4 +263,11 @@ $("#expand_button").click(function() {
 
 });
 </script>
+
+<script>
+  $(function () {
+    $('[data-toggle="tooltip"]').tooltip()
+  })
+</script>
+
 {% endblock %}
