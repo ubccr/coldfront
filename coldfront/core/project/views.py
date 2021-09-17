@@ -1580,14 +1580,14 @@ class ProjectJoinListView(ProjectListView, UserPassesTestMixin):
     template_name = 'project/project_join_list.html'
 
     def test_func(self):
-        if self.request.user.is_superuser:
-            return True
-
-        if self.request.user.userprofile.access_agreement_signed_date is not None:
-            return True
-
-        messages.error(
-            self.request, 'You must sign the User Access Agreement before you can join a project.')
+        user = self.request.user
+        if user.userprofile.access_agreement_signed_date is None:
+            message = (
+                'You must sign the User Access Agreement before you can join '
+                'a project.')
+            messages.error(self.request, message)
+            return False
+        return True
 
     def get_queryset(self):
 
