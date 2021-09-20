@@ -57,6 +57,7 @@ class ProjectAddUserForm(forms.Form):
         queryset=ProjectUserRoleChoice.objects.all().filter(~Q(name='Principal Investigator')),
         empty_label=None)
     selected = forms.BooleanField(initial=False, required=False)
+    user_access_agreement = forms.CharField(max_length=16, required=False, disabled=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

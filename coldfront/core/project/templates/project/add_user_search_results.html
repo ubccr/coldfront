@@ -38,7 +38,9 @@
           <th scope="col">First Name</th>
           <th scope="col">Last Name</th>
           <th scope="col">Email</th>
+          <th scope="col">User Access Agreement</th>
           <th scope="col">Role</th>
+
         </tr>
       </thead>
       <tbody>
@@ -52,13 +54,16 @@
             <td>{{ form.first_name.value }}</td>
             <td>{{ form.last_name.value }}</td>
             <td>{{ form.email.value }}</td>
+              <td><span class="badge badge-success">{{ form.user_access_agreement.value }}</span></td>
             <td>{{ form.role }}</td>
+
           {% else %}
             <td><div class="text-muted">{{ form.counter }}</div></td>
             <td><div class="text-muted">{{ form.username.value }}</div></td>
             <td><div class="text-muted">{{ form.first_name.value }}</div></td>
             <td><div class="text-muted">{{ form.last_name.value }}</div></td>
             <td><div class="text-muted">{{ form.email.value }}</div></td>
+              <td><div><span class="badge badge-danger">{{ form.user_access_agreement.value }}</span></div></td>
 
             {% comment %} NOTE: cannot remove this, so hide it {% endcomment %}
             <td><div class="d-none">{{ form.role }}</div></td>

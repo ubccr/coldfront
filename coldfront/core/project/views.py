@@ -766,8 +766,15 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
 
         matches = context.get('matches')
         for match in matches:
+
+            # add data for access agreements
             match.update(
-                {'role': ProjectUserRoleChoice.objects.get(name='User')})
+                {'role': ProjectUserRoleChoice.objects.get(name='User'),
+                 'user_access_agreement':
+                     'Signed' if User.objects.get(username=match['username']).
+                                       userprofile.access_agreement_signed_date
+                                 is not None else 'Unsigned'
+                 })
 
         if matches:
             formset = formset_factory(ProjectAddUserForm, max_num=len(matches))
@@ -776,10 +783,8 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
             # cache User objects
             match_users = User.objects.filter(username__in=[form._username for form in formset])
             for form in formset:
-
                 # disable user matches with unsigned signed user agreement
-                if not match_users.get(username=form._username)\
-                        .userprofile.access_agreement_signed_date is not None:
+                if not match_users.get(username=form._username).userprofile.access_agreement_signed_date is not None:
                     form.fields.pop('selected')
 
             context['formset'] = formset
@@ -851,7 +856,12 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         matches = context.get('matches')
         for match in matches:
             match.update(
-                {'role': ProjectUserRoleChoice.objects.get(name='User')})
+                {'role': ProjectUserRoleChoice.objects.get(name='User'),
+                 'user_access_agreement':
+                     'Signed' if User.objects.get(username=match['username']).
+                                     userprofile.access_agreement_signed_date
+                                 is not None else 'Unsigned'
+                 })
 
         formset = formset_factory(ProjectAddUserForm, max_num=len(matches))
         formset = formset(request.POST, initial=matches, prefix='userform')
@@ -869,8 +879,15 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             allocation_form_data = allocation_form.cleaned_data['allocation']
             if '__select_all__' in allocation_form_data:
                 allocation_form_data.remove('__select_all__')
+
+            unsigned_users = []
             for form in formset:
                 user_form_data = form.cleaned_data
+
+                # recording users with unsigned user access agreements
+                if user_form_data['user_access_agreement'] == 'Unsigned':
+                    unsigned_users.append(user_form_data['username'])
+
                 if user_form_data['selected']:
                     added_users_count += 1
 
@@ -949,6 +966,21 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                     f'Requested cluster access under project for '
                     f'{cluster_access_requests_count} users.')
                 messages.success(request, message)
+
+            # checking if there were any users with unsigned user access agreements in the form
+            elif unsigned_users:
+                unsigned_users_string = ", ".join(unsigned_users)
+
+                # changing grammar for one vs multiple users
+                if len(unsigned_users) == 1:
+                    message = f'User [{unsigned_users_string}] does not have ' \
+                              f'a signed User Access Agreement and was ' \
+                              f'therefore not added to the project.'
+                else:
+                    message = f'Users [{unsigned_users_string}] do not have ' \
+                              f'a signed User Access Agreement and were ' \
+                              f'therefore not added to the project.'
+                messages.error(request, message)
             else:
                 messages.info(request, 'No users selected to add.')
 
