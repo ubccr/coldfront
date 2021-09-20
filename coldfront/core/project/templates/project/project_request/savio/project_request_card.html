@@ -1,9 +1,9 @@
 <div class="card mb-3">
   <div class="card-header">
-    <h4>
+    <h2>
       <i class="fas fa-info-circle" aria-hidden="true"></i>
       Request Information
-    </h4>
+    </h2>
   </div>
   <div class="card-body">
     <p class="card-text text-justify">
@@ -52,7 +52,7 @@
     <p class="card-text text-justify">
       <strong>Allocation Type: </strong>
       {{ savio_request.allocation_type }}
-      {% if savio_request.allocation_type in 'ICA,MOU' %}
+      {% if savio_request.allocation_type in 'ICA,RECHARGE' %}
         <button id="view-extra-fields" class="btn btn-info" role="button">
           Details
         </button>
@@ -78,7 +78,7 @@
     </p>
     <p class="card-text text-justify">
       <strong>Survey Responses: </strong>
-      <button id="view-survey" class="btn btn-info" role="button">View</button>
+      <button id="view-survey" class="btn btn-primary" role="button">View</button>
     </p>
   </div>
 </div>

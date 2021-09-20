@@ -319,7 +319,7 @@ class SavioProjectNewPIForm(forms.Form):
 
 
 class SavioProjectExtraFieldsForm(forms.Form):
-    """A placeholder for extra fields for non-ICA/MOU projects."""
+    """A placeholder for extra fields for non-ICA/Recharge projects."""
 
     def __init__(self, *args, **kwargs):
         disable_fields = kwargs.pop('disable_fields', False)
@@ -454,7 +454,7 @@ class SavioProjectICAExtraFieldsForm(SavioProjectExtraFieldsForm):
         )
 
 
-class SavioProjectMOUExtraFieldsForm(SavioProjectExtraFieldsForm):
+class SavioProjectRechargeExtraFieldsForm(SavioProjectExtraFieldsForm):
 
     num_service_units = forms.IntegerField(
         help_text=(
@@ -624,7 +624,7 @@ class SavioProjectDetailsForm(forms.Form):
             name = f'fc_{name}'
         elif self.allocation_type == SavioProjectAllocationRequest.ICA:
             name = f'ic_{name}'
-        elif self.allocation_type == SavioProjectAllocationRequest.MOU:
+        elif self.allocation_type == SavioProjectAllocationRequest.RECHARGE:
             name = f'ac_{name}'
         elif self.allocation_type == SavioProjectAllocationRequest.PCA:
             name = f'pc_{name}'
@@ -700,7 +700,7 @@ class SavioProjectSurveyForm(forms.Form):
             'allocated up to 30 GB of not-backed-up shared filesystem space '
             'on request. Users needing more storage can choose to join the '
             'Condo Storage service by purchasing 42TB at the cost of $6539. '
-            'More details about this program are available <a href="https://docs-research-it.berkeley.edu/services/high-performance-computing/condos/condo-storage-service/">here</a>. '
+            'More details about this program are available <a href="https://docs-research-it.berkeley.edu/services/high-performance-computing/condos/condo-storage-service/"><span class="accessibility-link-text">Data Storage program details</span>here</a>. '
             'Please indicate if you need additional space and how much.'),
         label='Data Storage Space',
         required=False)

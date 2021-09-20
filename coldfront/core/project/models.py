@@ -361,9 +361,9 @@ def savio_project_request_ica_state_schema():
     return schema
 
 
-def savio_project_request_mou_state_schema():
+def savio_project_request_recharge_state_schema():
     """Return the schema for the SavioProjectAllocationRequest.state
-    field for Memorandum of Understanding (MOU) projects."""
+    field for Recharge projects."""
     schema = savio_project_request_state_schema()
     schema['memorandum_signed'] = {
         'status': 'Pending',
@@ -372,10 +372,10 @@ def savio_project_request_mou_state_schema():
     return schema
 
 
-def savio_project_request_mou_extra_fields_schema():
+def savio_project_request_recharge_extra_fields_schema():
     """Return the schema for the
-    SavioProjectAllocationRequest.extra_fields field for Memorandum of
-    Understanding (MOU) projects."""
+    SavioProjectAllocationRequest.extra_fields field for Recharge
+    projects."""
     return {
         'num_service_units': '',
         'campus_chartstring': '',
@@ -414,13 +414,13 @@ class SavioProjectAllocationRequest(TimeStampedModel):
     CO = 'CO'
     ICA = 'ICA'
     PCA = 'PCA'
-    MOU = 'MOU'
+    RECHARGE = 'RECHARGE'
     ALLOCATION_TYPE_CHOICES = (
         (FCA, 'Faculty Compute Allowance (FCA)'),
         (CO, 'Condo Allocation'),
         (ICA, 'Instructional Compute Allowance (ICA)'),
         (PCA, 'Partner Compute Allowance (PCA)'),
-        (MOU, 'Memorandum of Understanding (MOU)'),
+        (RECHARGE, 'Recharge Allocation'),
     )
     allocation_type = models.CharField(
         max_length=16, choices=ALLOCATION_TYPE_CHOICES)

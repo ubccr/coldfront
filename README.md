@@ -1,6 +1,13 @@
-# ColdFront - Resource Allocation System
+# myBRC User Portal
 
 [![Documentation Status](https://readthedocs.org/projects/coldfront/badge/?version=latest)](https://coldfront.readthedocs.io/en/latest/?badge=latest)
+
+The myBRC User Portal is an access management system for Berkeley Research
+Computing. It enables users to create or join projects, gain access to the
+clusters managed by BRC, view the statuses of their requests and access, view
+their allocation quotas and usages, and update personal information. It enables
+administrators to handle these requests and manage users and projects. The
+portal is built on top of ColdFront.
 
 ColdFront is an open source resource allocation system designed to provide a
 central portal for administration, reporting, and measuring scientific impact
@@ -8,37 +15,6 @@ of HPC resources. ColdFront was created to help HPC centers manage access to a
 diverse set of resources across large groups of users and provide a rich set of
 extensible meta data for comprehensive reporting. ColdFront is written in
 Python and released under the GPLv3 license.
-
-## Features
-
-- Allocation based system for managing access to resources
-- Collect Project, Grant, and Publication data from users
-- Define custom attributes on resources and allocations
-- Email notifications for expiring/renewing access to resources
-- Integration with 3rd party systems for automation and access control
-- Center director approval system and annual project reviews
-
-## Plug-in Documentation
- - [Slurm](coldfront/plugins/slurm)
- - [FreeIPA](coldfront/plugins/freeipa)
- - [LDAP](coldfront/plugins/ldap_user_search)
- - [Mokey/Hydra OpenID Connect](coldfront/plugins/mokey_oidc)
- - [iQuota (Isilon)](coldfront/plugins/iquota)
- - [XDMoD](coldfront/plugins/xdmod)
- - [System Monitor](coldfront/plugins/system_monitor) (example of ways to integrate your own plug-ins)
-
-## Contact Information
-If you would like a live demo followed by QA, please contact us at ccr-coldfront-admin-list@listserv.buffalo.edu. You can also contact us for general inquiries and installation troubleshooting. 
-
-If you would like to join our mailing list to receive news and updates, please send an email to listserv@listserv.buffalo.edu with no subject, and the following command in the body of the message:
-
-subscribe ccr-open-coldfront-list@listserv.buffalo.edu first_name last_name
-
-
-## Installation Demo
-![Installation](coldfront/docs/source/user_guide/images/installation.gif "Installation")
-
-[Click here for more demos](#demos)
 
 ## Quick Install
 
@@ -131,6 +107,14 @@ You can log in as another PI using username `sfoster` with password `test1234`.
 
 Password for all users is also `test1234`.
 
+### Additional myBRC Setup Steps
+
+10. Run a command to create database objects needed for accounting.
+
+```
+python manage.py add_brc_accounting_defaults
+```
+
 ## Directory structure
 
 - coldfront
@@ -141,6 +125,7 @@ Password for all users is also `test1234`.
         - project
         - publication
         - resource
+        - statistics
         - allocation
         - user
         - utils
@@ -153,36 +138,41 @@ Password for all users is also `test1234`.
         - slurm
         - system_monitor
 
+## Accessibility
 
+The service should be accessible to people with disabilities.
 
-## <a name="demos"></a>ColdFront Demonstration
+In practice, when contributing to the code, ensure that changes do not cause
+accessibility issues to be flagged by the
+[tota11y](https://khan.github.io/tota11y/) tool. This will be considered
+during the code review process.
 
-### Adding a Project
-![Adding Project](coldfront/docs/source/user_guide/images/adding_project.gif "Adding a project")
+## Deployments
 
-### Adding Users
-![Adding Users](coldfront/docs/source/user_guide/images/adding_users.gif "Adding Users")
+Deployments and configuration management are handled by Ansible, located in
+the `bootstrap/ansible` directory.
 
-### Requesting an Allocation
-![Requesting an Allocation](coldfront/docs/source/user_guide/images/requesting_allocation.gif "Requesting an Allocation")
+In particular, the Ansible playbook installs, enables, and configures
+PostgreSQL, creates log files, installs Pip requirements, copies ColdFront
+settings files, runs initial setup, migrates the database, collects static
+files, creates WSGI files for Apache, and restarts Apache.
 
-### Adding a Grant
-![Adding a Grant](coldfront/docs/source/user_guide/images/adding_grant.gif "Adding a Grant")
+Note that there are some additional server setup steps that are not currently
+captured in the Ansible playbook.
 
-### Adding Publications
-![Adding Publications](coldfront/docs/source/user_guide/images/adding_publications.gif "Adding Publications")
+1. Create `main.yml`.
 
-### Adding a User to an Allocation
-![Adding a User to Allocation](coldfront/docs/source/user_guide/images/adding_user_to_allocation.gif "Adding a User to an Allocation")
+```
+cp bootstrap/ansible/main.copyme main.yml
+```
 
-### Managing an Allocation as an Admin
-![Managing an Allocation as and Admin](coldfront/docs/source/user_guide/images/managing_allocation.gif "Managing an Allocation as an Admin")
+2. Modify `main.yml` depending on the current deployment.
 
-### Adding a Resource
-![Adding a Resource](coldfront/docs/source/user_guide/images/adding_resource.gif "Adding a Resource")
+3. Run the Ansible playbook as the `djangooperator` user defined in `main.yml`.
 
-### Generate Slurm Association Data 
-![Generate Slurm Association Data](coldfront/docs/source/user_guide/images/slurm_dump.gif "Generate Slurm Association Data")
+```
+ansible-playbook bootstrap/ansible/setup_cf_mybrc.yml
+```
 
 ## License
 

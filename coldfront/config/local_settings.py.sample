@@ -16,7 +16,7 @@ SECRET_KEY = 'vtri&lztlbinerr4+yg1yzm23ez@+ub6=4*63z1%d!)fg(g4x$' # REPLACE
 DEBUG = True
 DEVELOP = True
 
-if DEBUG is False and SECRET_KEY is 'vtri&lztlbinerr4+yg1yzm23ez@+ub6=4*63z1%d!)fg(g4x$':
+if DEBUG is False and SECRET_KEY == 'vtri&lztlbinerr4+yg1yzm23ez@+ub6=4*63z1%d!)fg(g4x$':
     from django.core.exceptions import ImproperlyConfigured
     raise ImproperlyConfigured("The SECRET_KEY setting is using the preset value. Please update it!")
 
@@ -34,7 +34,7 @@ SESSION_COOKIE_SECURE = False
 SITE_ID = 1
 
 # The username of the user to set as the PI for all Vector projects.
-VECTOR_PI_USERNAME = "channsoden@berkeley.edu"
+VECTOR_PI_USERNAME = "hannsode"
 
 # The name of the Savio project to which all Vector users are given access to.
 SAVIO_PROJECT_FOR_VECTOR_USERS = "co_rosalind"
@@ -375,21 +375,15 @@ EXTRA_AUTHENTICATION_BACKENDS += [
 EMAIL_VERIFICATION_TIMEOUT = 24 * 60 * 60
 
 #------------------------------------------------------------------------------
-# Portal settings
-#------------------------------------------------------------------------------
-
-# The resource being provided, which must be either "Savio" or "Lawrencium".
-RESOURCE = "Savio"
-
-# The portal being served, which must be either "BRC" or "SCG".
-PORTAL = "BRC"
-
-#------------------------------------------------------------------------------
 # Data import settings
 #------------------------------------------------------------------------------
 
 # The credentials needed to read from Google Sheets.
 GOOGLE_OAUTH2_KEY_FILE = "/tmp/credentials.json"
+
+#------------------------------------------------------------------------------
+# Deployment-specific settings
+#------------------------------------------------------------------------------
 
 # If we are running on Production, we hope to see prod_settings.py we will
 # first try to apply it and exit. If prod_settings is not present, then we
@@ -403,16 +397,16 @@ GOOGLE_OAUTH2_KEY_FILE = "/tmp/credentials.json"
 
 try:
     from .prod_settings import *
-    print("DJANGO loading prod_settings\n")
 except ImportError:
-    print("DJANGO prod_settings NOT found, looking for staging_settings\n")
     try:
         from .staging_settings import *
-        print("DJANGO loading staging_settings\n")
     except ImportError:
-        print("DJANGO staging_settings NOT found, looking for dev_settings\n")
         try:
             from .dev_settings import *
-            print("DJANGO loading dev_settings\n")
         except ImportError:
-            print("DJANGO dev_settings NOT found, Using default settings\n")
+            pass
+
+# Update logging settings based on potentially-updated variables.
+
+LOGGING['handlers']['file']['filename'] = LOG_PATH
+LOGGING['handlers']['api_file']['filename'] = API_LOG_PATH

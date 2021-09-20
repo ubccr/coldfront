@@ -58,8 +58,14 @@
       <tr>
         <th scope="col" class="text-nowrap">
           ID
-          <a href="?order_by=id&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-          <a href="?order_by=id&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+          <a href="?order_by=id&direction=asc&{{filter_parameters}}">
+            <span class="accessibility-link-text">Sort by Ascending ID</span>
+            <i class="fas fa-sort-up"></i>
+          </a>
+          <a href="?order_by=id&direction=des&{{filter_parameters}}">
+            <span class="accessibility-link-text">Sort by Descending ID</span>
+            <i class="fas fa-sort-down"></i>
+          </a>
         </th>
         <th scope="col" class="text-nowrap">
           Name
@@ -71,20 +77,37 @@
         <th scope="col">Cluster</th>
 <!--        <th scope="col" class="text-nowrap">-->
 <!--          UCB Campus Division or Department-->
-<!--          <a href="?order_by=field_of_science&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>-->
-<!--          <a href="?order_by=field_of_science&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>-->
+<!--          <a href="?order_by=field_of_science&direction=asc&{{filter_parameters}}">-->
+<!--            <span class="accessibility-link-text">Sort by Ascending Department</span>-->
+<!--            <i class="fas fa-sort-up"></i>-->
+<!--          </a>-->
+<!--          <a href="?order_by=field_of_science&direction=des&{{filter_parameters}}">-->
+<!--            <span class="accessibility-link-text">Sort by Descending Department</span>-->
+<!--            <i class="fas fa-sort-down"></i>-->
+<!--          </a>-->
 <!--        </th>-->
         <th scope="col" class="text-nowrap">
           Status
-          <a href="?order_by=status&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-          <a href="?order_by=status&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+          <a href="?order_by=status&direction=asc&{{filter_parameters}}">
+            <span class="accessibility-link-text">Sort by Ascending Status</span>
+            <i class="fas fa-sort-up"></i>
+          </a>
+          <a href="?order_by=status&direction=des&{{filter_parameters}}">
+            <span class="accessibility-link-text">Sort by Descending Status</span>
+            <i class="fas fa-sort-down"></i>
+          </a>
         </th>
       </tr>
     </thead>
     <tbody>
       {% for project in project_list %}
       <tr>
-        <td><a href="/project/{{project.id}}/">{{ project.id }}</a></td>
+        <td>
+          <a href="/project/{{project.id}}/">
+            <span class="accessibility-link-text">Project {{ project.id }}</span>
+            {{ project.id }}
+          </a>
+        </td>
         <td>{{ project.name }}</td>
         <td>
           {% for pi in project.pis %}

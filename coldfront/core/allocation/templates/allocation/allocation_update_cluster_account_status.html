@@ -21,10 +21,10 @@ Update Cluster Account Request Status
 
 <div class="card mb-3">
   <div class="card-header">
-    <h4>
+    <h2>
       <i class="fas fa-info-circle" aria-hidden="true"></i>
       Request Information
-    </h4>
+    </h2>
   </div>
   <div class="card-body">
     {% with user=cluster_account.allocation_user.user %}
@@ -43,7 +43,10 @@ Update Cluster Account Request Status
     {% with allocation=cluster_account.allocation %}
       <p class="card-text text-justify">
         <strong>Allocation:</strong>
-        <a href="{% url 'allocation-detail' allocation.pk %}">{{ allocation.pk }}</a>
+        <a href="{% url 'allocation-detail' allocation.pk %}">
+          <span class="accessibility-link-text">Allocation {{ allocation.pk }}</span>
+          {{ allocation.pk }}
+        </a>
       </p>
     {% endwith %}
   </div>
@@ -51,10 +54,10 @@ Update Cluster Account Request Status
 
 <div class="card mb-3">
   <div class="card-header">
-    <h4>
+    <h2>
       <i class="fas fa-user-check" aria-hidden="true"></i>
       Update
-    </h4>
+    </h2>
   </div>
   <div class="card-body">
     <p class="card-text text-justify">

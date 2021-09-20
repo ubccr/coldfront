@@ -9,48 +9,72 @@ Project List
 
 {% block content %}
 <h1>Join a Project</h1><hr>
-<h5>Pending Join Requests</h5>
-  {% if user.userprofile.access_agreement_signed_date is None %}
-    <p>First review and sign the cluster user agreement. Only then you can join a cluster project and gain access to the cluster.</p>
-  {% elif not join_requests %}
-    <div class="alert alert-info" role="alert">
-      <i class="fa fa-info-circle" aria-hidden="true"></i>
-        No pending requests.
-    </div>
-  {% else %}
-    <table class="table">
-      <thead>
-        <tr>
-          <th scope="col" class="text-nowrap">ID</th>
-          <th scope="col" class="text-nowrap">Name</th>
-          <th scope="col" class="text-nowrap">PIs</th>
-          <th scope="col">Title</th>
-          <th scope="col">Cluster</th>
-          <th scope="col" class="text-nowrap">Auto-Approval Time</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for project in join_requests %}
-          <tr>
-            <td><a href="{% url 'project-detail' project.id %}">{{ project.id }}</a></td>
-            <td>{{ project.name }}</td>
-            <td>{% for pi in project.pis %}{{ pi.username }}<br>{% endfor %}</td>
-            <td style="text-align: justify; text-justify: inter-word;">{{ project.title }}</td>
-            <td>{{ project.cluster_name }}</td>
 
-            <td>
-                <span class="badge badge-success">
-                  {{project.auto_approval_time}}
-                </span>
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+
+<b>Requests Pending Manager Approval</b>
+<hr>
+<p>
+  Below is a list of join requests that await approval by project managers.
+  If managers take no action by the Auto-Approval Time, the request will
+  automatically be approved.
+</p>
+<p>
+  Once a request is approved, a separate request for cluster access under
+  the project will automatically be created, to be processed by cluster
+  administrators. The statuses of those requests may be viewed on the
+  <a href="{% url 'home' %}">home page</a> or on the project's detail page.
+</p>
+{% if not join_requests %}
+  <hr>
+  <div class="alert alert-info" role="alert">
+    <i class="fa fa-info-circle" aria-hidden="true"></i>
+      No requests await approval by project managers.
+  </div>
+{% else %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col" class="text-nowrap">ID</th>
+        <th scope="col" class="text-nowrap">Name</th>
+        <th scope="col" class="text-nowrap">PIs</th>
+        <th scope="col">Title</th>
+        <th scope="col">Cluster</th>
+        <th scope="col" class="text-nowrap">
+          Auto-Approval Time
+          <i
+            class="fas fa-question-circle"
+            aria-hidden="true"
+            data-toggle="tooltip"
+            data-placement="top"
+            title="
+              Project managers may configure how long to wait before
+              automatically approving a request.">
+          </i>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for project in join_requests %}
+        <tr>
+          <td><a href="{% url 'project-detail' project.id %}">{{ project.id }}</a></td>
+          <td>{{ project.name }}</td>
+          <td>{% for pi in project.pis %}{{ pi.username }}<br>{% endfor %}</td>
+          <td style="text-align: justify; text-justify: inter-word;">{{ project.title }}</td>
+          <td>{{ project.cluster_name }}</td>
+
+          <td>
+              <span class="badge badge-success">
+                {{project.auto_approval_time}}
+              </span>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 {% endif %}
 
 <br>
-<h5>Make a New Request</h5>
+<b>Make a New Request</b>
 <hr>
 
 {% if expand_accordion == "show" or project_list or user.is_superuser%}
@@ -82,8 +106,14 @@ Project List
       <tr>
         <th scope="col" class="text-nowrap">
           ID
-          <a href="?order_by=id&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-          <a href="?order_by=id&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+          <a href="?order_by=id&direction=asc&{{filter_parameters}}">
+            <span class="accessibility-link-text">Sort by Ascending ID</span>
+            <i class="fas fa-sort-up"></i>
+          </a>
+          <a href="?order_by=id&direction=des&{{filter_parameters}}">
+            <span class="accessibility-link-text">Sort by Descending ID</span>
+            <i class="fas fa-sort-down"></i>
+          </a>
         </th>
         <th scope="col" class="text-nowrap">
           Name
@@ -95,13 +125,25 @@ Project List
         <th scope="col">Cluster</th>
 <!--        <th scope="col" class="text-nowrap">-->
 <!--          UCB Campus Division or Department-->
-<!--          <a href="?order_by=field_of_science&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>-->
-<!--          <a href="?order_by=field_of_science&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>-->
+<!--          <a href="?order_by=field_of_science&direction=asc&{{filter_parameters}}">-->
+<!--            <span class="accessibility-link-text">Sort by Ascending Field of Science</span>-->
+<!--            <i class="fas fa-sort-up"></i>-->
+<!--          </a>-->
+<!--          <a href="?order_by=field_of_science&direction=des&{{filter_parameters}}">-->
+<!--            <span class="accessibility-link-text">Sort by Descending Field of Science</span>-->
+<!--            <i class="fas fa-sort-down"></i>-->
+<!--          </a>-->
 <!--        </th>-->
         <th scope="col" class="text-nowrap">
           Status
-          <a href="?order_by=status&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-          <a href="?order_by=status&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+          <a href="?order_by=status&direction=asc&{{filter_parameters}}">
+            <span class="accessibility-link-text">Sort by Ascending Status</span>
+            <i class="fas fa-sort-up"></i>
+          </a>
+          <a href="?order_by=status&direction=des&{{filter_parameters}}">
+            <span class="accessibility-link-text">Sort by Descending Status</span>
+            <i class="fas fa-sort-down"></i>
+          </a>
         </th>
         <th scope="col" class="text-nowrap">
           Join
@@ -111,7 +153,12 @@ Project List
     <tbody>
       {% for project in project_list %}
       <tr>
-        <td><a href="/project/{{project.id}}/">{{ project.id }}</a></td>
+        <td>
+          <a href="/project/{{project.id}}/">
+            <span class="accessibility-link-text">Project {{ project.id }}</span>
+            {{ project.id }}
+          </a>
+        </td>
         <td>{{ project.name }}</td>
         <td>
           {% for pi in project.pis %}
@@ -135,7 +182,7 @@ Project List
                     {% csrf_token %}
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title">Join Project <b>{{ project.name }}</b></h5>
+                            <p class="modal-title">Join Project <b>{{ project.name }}</b></p>
                             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                 <span aria-hidden="true">&times;</span>
                             </button>
@@ -216,4 +263,11 @@ $("#expand_button").click(function() {
 
 });
 </script>
+
+<script>
+  $(function () {
+    $('[data-toggle="tooltip"]').tooltip()
+  })
+</script>
+
 {% endblock %}
