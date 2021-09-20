@@ -284,3 +284,29 @@ LOCAL_SETTINGS_EXPORT += [
 # ]
 
 # XDMOD_API_URL = 'http://localhost'
+
+#------------------------------------------------------------------------------
+# ORCID Import settings
+#------------------------------------------------------------------------------
+# Sets constants for orc_api (ORCID API)
+# These are required for ORCID importing to work
+# Default values are for test
+
+# The Client ID in ORCID developer tools
+# Example is APP-HLD5WRQGSNL1YEIM
+# (example for ORCID sandbox only, will not work for regular ORCID accounts)
+ORCID_INST_KEY="APP-HLD5WRQGSNL1YEIM"
+
+# The Client Secret in ORCID developer tools
+# Example is ecd2d7f8-4baf-427f-87b6-57a52c0e58df
+ORCID_INST_SECRET="ecd2d7f8-4baf-427f-87b6-57a52c0e58df"
+
+# Should match one of Redirect URIs in ORCID dev tools
+# Default to ColdFront's local website
+ORCID_REDIRECT = "http://localhost:8000/"
+
+# If true, then configure ColdFront to use ORCID sandbox instead of
+# the regular production ORCID. Note that the ORCID app (see ORCID_INST_KEY)
+# must be a sandbox ORCID app if this is true and it must be a production
+# ORCID app if this is false.
+ORCID_USE_SANDBOX = True

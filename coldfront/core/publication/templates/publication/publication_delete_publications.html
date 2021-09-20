@@ -56,7 +56,9 @@ Delete Publications from Project
 {% endif %}
 
 <script>
-
+$("#selectAll").click(function() {
+  $("input[name^='publicationform-']").prop('checked', $(this).prop('checked'));
+});
 
 $("input[name^='publicationform-']").click(function (ele) {
     var id = $(this).attr('id');

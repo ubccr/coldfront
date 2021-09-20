@@ -26,7 +26,7 @@
               <td>
                 <strong>Title: </strong>{{ form.title.value }} <br>
                 <strong>Author: </strong>{{ form.author.value }} <br> 
-                <strong>Year: </strong>{{ form.year.value }} <br>
+                <strong>Year: </strong><span class="date_disp">{{ form.year.value }}</span> <br>
                 <strong>Journal: </strong>{{ form.journal.value }}
               </td>
               <td class="text-nowrap">{{ form.unique_id.value }}</td>
@@ -37,7 +37,7 @@
       </div>
       {{ formset.management_form }}
        <div>
-        <button type="submit" class="btn btn-primary"><i class="fas fa-user-minus" aria-hidden="true"></i> Add Selected Publications to Project</button>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-plus" aria-hidden="true"></i> Add Selected Publications to Project</button>
         <a class="btn btn-secondary" href="{% url 'project-detail' project_pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a>
         <input id="search_ids" type="hidden" name="search_ids" value="{{search_ids}}">
         <input id="pubs" type="hidden" name="pubs" value="{{pubs}}">
@@ -49,12 +49,31 @@
 {% else %} 
   <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a> 
   <div class="alert alert-info">
+    <!--Potencial mistyping: Should this be "No publications to add?"-->
     No users to remove!
   </div>
 {% endif %}
 
 
 <script>
+$(document).ready(function()
+  {
+    var missing_date_re = new RegExp("9999");
+
+    $(".date_disp").each(function()
+    {
+      if (missing_date_re.test($(this).text()))
+      {
+        $(this).attr("title", "Missing year!");
+        $(this).attr("style", "color:red;")
+      }
+    });
+
+    console.log($(".date_disp").text())
+  }
+);
+  
+
 $("#selectAll").click(function() {
   $("input[name^='pubform-']").prop('checked', $(this).prop('checked'));
 });

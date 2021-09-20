@@ -24,6 +24,14 @@ class GrantStatusChoice(TimeStampedModel):
         ordering = ('name',)
 
 
+class GrantSource(TimeStampedModel):
+    name = models.CharField(max_length=255, unique=True)
+    url = models.URLField(null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+
 class Grant(TimeStampedModel):
     """ Grant model """
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
@@ -52,7 +60,7 @@ class Grant(TimeStampedModel):
     grant_start = models.DateField('Grant Start Date')
     grant_end = models.DateField('Grant End Date')
     percent_credit = models.FloatField(validators=[MaxValueValidator(100)])
-    direct_funding = models.FloatField()
+    direct_funding = models.FloatField()        # May want to add currency also?
     total_amount_awarded = models.FloatField()
     status = models.ForeignKey(GrantStatusChoice, on_delete=models.CASCADE)
     history = HistoricalRecords()
