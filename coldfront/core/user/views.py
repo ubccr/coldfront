@@ -610,7 +610,7 @@ class EmailAddressAddView(LoginRequiredMixin, FormView):
         try:
             email_address = EmailAddress.objects.create(
                 user=self.request.user, email=email, is_verified=False,
-                is_primary=False, new_email_flag=True)
+                is_primary=False)
         except IntegrityError:
             self.logger.error(
                 f'EmailAddress {email} unexpectedly already exists.')
@@ -752,7 +752,7 @@ class UpdatePrimaryEmailAddressView(LoginRequiredMixin, FormView):
         old = user.email.lower()
 
         # first set all is_primary to False as insurance that no conflicting email states exist
-        primary_emails = EmailAddress.objects.filter(user=user).filter(is_primary=True).exclude(email=old)
+        primary_emails = EmailAddress.objects.filter(user=user, is_primary=True).exclude(email=old)
         for email in primary_emails:
             email.is_primary = False
             email.save()
