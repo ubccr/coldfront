@@ -33,7 +33,6 @@ class UserProfile(models.Model):
 
 class EmailAddress(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    new_email_flag = models.BooleanField(blank=True, null=True)
 
     email = models.EmailField(
         'email address',
@@ -56,12 +55,12 @@ class EmailAddress(models.Model):
     def save(self, *args, **kwargs):
         self.email = self.email.lower()
 
-        # no old_primary_val if saving a new model. defaults to true for the logic
-        if self.new_email_flag or self.new_email_flag is None:
-            old_primary_val = True
-        else:
-            # fetching the previous is_primary value of the emailaddress
+        # fetch old primary val
+        if EmailAddress.objects.filter(pk=self.pk).exists():
             old_primary_val = EmailAddress.objects.get(pk=self.pk).is_primary
+        else:
+            # if the email address did not exist, default old primary to False
+            old_primary_val = False
 
         # checks if another primary email exists for the user
         primary_emails_exist = EmailAddress.objects.filter(user=self.user).filter(is_primary=True).exists()
