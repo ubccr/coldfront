@@ -958,17 +958,8 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                             self.logger.error(message)
                             self.logger.exception(e)
 
-            if added_users_count != 0:
-                messages.success(
-                    request, 'Added {} users to project.'.format(added_users_count))
-
-                message = (
-                    f'Requested cluster access under project for '
-                    f'{cluster_access_requests_count} users.')
-                messages.success(request, message)
-
             # checking if there were any users with unsigned user access agreements in the form
-            elif unsigned_users:
+            if unsigned_users:
                 unsigned_users_string = ", ".join(unsigned_users)
 
                 # changing grammar for one vs multiple users
@@ -981,6 +972,16 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                               f'a signed User Access Agreement and were ' \
                               f'therefore not added to the project.'
                 messages.error(request, message)
+
+            if added_users_count != 0:
+                messages.success(
+                    request, 'Added {} users to project.'.format(added_users_count))
+
+                message = (
+                    f'Requested cluster access under project for '
+                    f'{cluster_access_requests_count} users.')
+                messages.success(request, message)
+
             else:
                 messages.info(request, 'No users selected to add.')
 
