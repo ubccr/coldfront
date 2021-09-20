@@ -25,7 +25,6 @@ def home(request):
     context = {}
     if request.user.is_authenticated:
         template_name = 'portal/authorized_home.html'
-
         project_list = Project.objects.filter(
             (Q(status__name__in=['New', 'Active', ]) &
              Q(projectuser__user=request.user) &
@@ -35,7 +34,6 @@ def home(request):
 
         cluster_access_attributes = AllocationUserAttribute.objects.filter(allocation_attribute_type__name='Cluster Account Status',
                                                                        allocation_user__user=request.user)
-
         access_states = {}
         for attribute in cluster_access_attributes:
             project = attribute.allocation.project
@@ -43,11 +41,18 @@ def home(request):
             access_states[project] = status
 
         abc_projects, savio_projects, vector_projects = set(), set(), set()
+
         for project in project_list:
             project.display_status = access_states.get(project, None)
 
             if project.display_status is not None and 'Active' in project.display_status:
                 context['cluster_username'] = request.user.username
+
+            # crashed on login if part of a project and the name was None
+            if project.name is None:
+                project.name = 'temp_test'
+                project.save()
+                print('saved project w new name')
 
             if project.name == 'abc':
                 abc_projects.add(project.name)
