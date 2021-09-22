@@ -884,7 +884,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             added_users = []
             for form in formset:
                 user_form_data = form.cleaned_data
-                print(user_form_data['username'])
+
                 # recording users with unsigned user access agreements
                 if user_form_data['user_access_agreement'] == 'Unsigned':
                     unsigned_users.append(user_form_data['username'])
