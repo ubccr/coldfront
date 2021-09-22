@@ -881,15 +881,18 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                 allocation_form_data.remove('__select_all__')
 
             unsigned_users = []
+            added_users = []
             for form in formset:
                 user_form_data = form.cleaned_data
-
+                print(user_form_data['username'])
                 # recording users with unsigned user access agreements
                 if user_form_data['user_access_agreement'] == 'Unsigned':
                     unsigned_users.append(user_form_data['username'])
+                    continue
 
                 if user_form_data['selected']:
                     added_users_count += 1
+                    added_users.append(user_form_data['username'])
 
                     # Will create local copy of user if not already present in local database
                     user_obj, _ = User.objects.get_or_create(
@@ -974,8 +977,9 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                 messages.error(request, message)
 
             if added_users_count != 0:
+                added_users_string = ", ".join(added_users)
                 messages.success(
-                    request, 'Added {} users to project.'.format(added_users_count))
+                    request, 'Added [{}] to project.'.format(added_users_string))
 
                 message = (
                     f'Requested cluster access under project for '
