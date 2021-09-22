@@ -45,7 +45,7 @@ class EmailAddressAdmin(admin.ModelAdmin):
     def make_primary(self, request, queryset):
 
         if queryset.count() > 1:
-            raise ValidationError('Admins are only able to set one primary'
+            raise ValidationError('Admins are only able to set one primary '
                                   'email address at a time.')
 
         # (a) unset the current primary, (b) set the selected one
