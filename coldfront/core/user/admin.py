@@ -43,6 +43,11 @@ class EmailAddressAdmin(admin.ModelAdmin):
     # causing conflicting states
     @admin.action(description='Make selected primary email')
     def make_primary(self, request, queryset):
+
+        if queryset.count() > 1:
+            raise ValidationError('Admins are only able to set one primary'
+                                  'email address at a time.')
+
         # (a) unset the current primary, (b) set the selected one
         # as primary, and (c) update user.email
         for emailaddress in queryset:
