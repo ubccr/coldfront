@@ -2264,7 +2264,7 @@ class AllocationAccountListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
         return AllocationAccount.objects.filter(user=self.request.user)
 
 
-class AllocationDownloadInvoiceView(LoginRequiredMixin, UserPassesTestMixin, View):
+class AllocationInvoiceExportView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
         """ UserPassesTestMixin Tests"""
         if self.request.user.is_superuser:
@@ -2276,52 +2276,71 @@ class AllocationDownloadInvoiceView(LoginRequiredMixin, UserPassesTestMixin, Vie
         messages.error(self.request, 'You do not have permission to download invoices.')
 
     def get(self, request):
-        header = [
-            'Name',
-            'Account*',
-            'Object*',
-            'Sub-Acct',
-            'Product',
-            'Quantity',
-            'Unit cost',
-            'Amount*',
-            'Invoice',
-            'Line Description',
-            'Income Account',
-            'Income Sub-acct',
-            'Income Object Code',
-            'Income sub-object code',
-            'Project',
-            'Org Ref ID'
-        ]
+        file_name = request.GET["file_name"]
+        resource = request.GET["resource"]
 
         invoices = Allocation.objects.prefetch_related('project', 'status').filter(
-            Q(status__name__in=['Payment Pending', ])
+            Q(status__name__in=['Payment Pending', ]) &
+            Q(resources__name=resource)
         ).order_by('-created')
 
         rows = []
-        for invoice in invoices:
-            row = [
-                ' '.join((invoice.project.pi.first_name, invoice.project.pi.last_name)),
-                invoice.account_number,
-                '4616',
-                invoice.sub_account_number,
-                '',
-                1,
-                '',
-                invoice.total_cost,
-                '',
-                'RStudio Connect FY 22',
-                '63-101-08',
-                'SMSAL',
-                1500,
-                '',
-                '',
-                ''
+        if resource == "RStudio Connect":
+            header = [
+                'Name',
+                'Account*',
+                'Object*',
+                'Sub-Acct',
+                'Product',
+                'Quantity',
+                'Unit cost',
+                'Amount*',
+                'Invoice',
+                'Line Description',
+                'Income Account',
+                'Income Sub-acct',
+                'Income Object Code',
+                'Income sub-object code',
+                'Project',
+                'Org Ref ID'
             ]
 
-            rows.append(row)
-        rows.insert(0, header)
+            for invoice in invoices:
+                row = [
+                    ' '.join((invoice.project.pi.first_name, invoice.project.pi.last_name)),
+                    invoice.account_number,
+                    '4616',
+                    invoice.sub_account_number,
+                    '',
+                    1,
+                    '',
+                    invoice.total_cost,
+                    '',
+                    'RStudio Connect FY 22',
+                    '63-101-08',
+                    'SMSAL',
+                    1500,
+                    '',
+                    '',
+                    ''
+                ]
+
+                rows.append(row)
+            rows.insert(0, header)
+        elif resource == "Slate Project":
+            header = [
+                'Name',
+                'Acount*'
+            ] 
+
+            for invoice in invoices:
+                row = [
+                    ' '.join((invoice.project.pi.first_name, invoice.project.pi.last_name)),
+                    invoice.account_number
+                ]
+
+                rows.append(row)
+            rows.insert(0, header)
 
         pseudo_buffer = Echo()
         writer = csv.writer(pseudo_buffer)
@@ -2329,5 +2348,5 @@ class AllocationDownloadInvoiceView(LoginRequiredMixin, UserPassesTestMixin, Vie
             (writer.writerow(row) for row in rows),
             content_type='text/csv'
         )
-        response['Content-Disposition'] = 'attachment; filename="invoices.csv"'
+        response['Content-Disposition'] = f'attachment; filename="{file_name}.csv"'
         return response

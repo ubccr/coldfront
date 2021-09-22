@@ -38,6 +38,6 @@ urlpatterns = [
          name='add-allocation-account'),
     path('allocation-account-list/', allocation_views.AllocationAccountListView.as_view(),
          name='allocation-account-list'),
-    path('invoice-download/', allocation_views.AllocationDownloadInvoiceView.as_view(),
-         name='invoice-download')
+    path('invoice-export/', allocation_views.AllocationInvoiceExportView.as_view(),
+         name='invoice-export')
 ]

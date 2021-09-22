@@ -9,9 +9,48 @@ Allocation Invoice List
 
 
 {% block content %}
-<h2>Allocations that require payment</h2>
-<div>
-  <a class="btn btn-success float-right" href="{% url 'invoice-download' %}" role="button"><i class="fas fa-download" aria-hidden="true"></i> Export to CSV</a>
+<h2 class="d-inline">Allocations that require payment</h2>
+<button type="button" class="btn btn-success float-right" data-toggle="modal" data-target="#id_export_csv">
+  Export to CSV
+</button>
+
+<div class="modal fade" id="id_export_csv" tabindex="-1" role="dialog" aria-labelledby="id_export_csv_label" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="id_export_csv_label">Export to CSV</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="id_export_form">
+          <div class="form-group form-inline">
+            <label class="col-form-label" for="id_file_name">File Name:</label>
+            <div>
+              <input class="form-control" id="id_file_name" type="text" name="file_name" value="export"/>
+            </div>
+            <div>
+              <p>.csv</p> 
+            </div>
+          </div>
+          <div class="form-group form-inline">
+            <label class="col-form-label" for="id_resource">Resource:</label>
+            <div>
+              <select id="id_resource" class="form-control select" name="resource">
+                <option value="RStudio Connect">RStudio Connect</option>
+                <option value="Slate Project">Slate Project</option>
+              </select>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button id="id_export_button" type="submit" class="btn btn-success float-right"><i class="fas fa-download" aria-hidden="true"></i>Export</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 {% if allocation_list %}
@@ -42,4 +81,36 @@ Allocation Invoice List
     No allocations requiring payment!
   </div>
 {% endif %}
+
+<script>
+  function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie != '') {
+      var cookies = document.cookie.split(';');
+      for (var i = 0; i < cookies.length; i++) {
+        var cookie = jQuery.trim(cookies[i]);
+        // Does this cookie string begin with the name we want?
+        if (cookie.substring(0, name.length + 1) == (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  $(document).ready(function () {
+    $('#id_export_button').click(function (e) {
+      e.preventDefault();
+      $(function () {
+        file_name = $('#id_file_name').val();
+        resource = $('#id_resource').val();
+        window.location = "/allocation/invoice-download?file_name="
+        + encodeURIComponent(file_name)
+        + "&resource="
+        + encodeURIComponent(resource)
+      })
+    })
+  })
+</script>
 {% endblock %}
