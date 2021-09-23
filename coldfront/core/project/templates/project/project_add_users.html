@@ -29,7 +29,9 @@ Add Users to Project
 <div class="col" id="search_results" >
     <div class="card border-light">
       <div class="card-body">
-        <p>You may only add users who have signed the access agreement (no check box will appear below for those who have not signed). In addition, users who have requests to join this project appear <a href="{% url 'project-review-join-requests' project.pk %}">here</a>.</p>
+          <div class="alert alert-warning" role="alert">
+              You may only add users who have signed the access agreement (no check box will appear below for those who have not signed). In addition, users who have requests to join this project appear <a href="{% url 'project-review-join-requests' project.pk %}">here</a>.
+          </div>
         <div id="search_results_inner"></div>
       </div>
     </div>
