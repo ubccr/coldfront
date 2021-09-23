@@ -1166,6 +1166,17 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         usernames.append(project_obj.pi.username)
         usernames = list(set(usernames))
 
+        # If a resource has a user limit make sure it's not surpassed.
+        total_users = len(usernames)
+        user_limit = resource_obj.get_attribute("user_limit")
+        if user_limit is not None:
+            if total_users > int(user_limit):
+                form.add_error(None, format_html(
+                    'Too many users are being added (total users: {}). The user limit for this resource is {}.'.format(total_users, user_limit)
+                ))
+                return self.form_invalid(form)
+
+
         users = [User.objects.get(username=username) for username in usernames]
         if project_obj.pi not in users:
             users.append(project_obj.pi)
@@ -1369,6 +1380,22 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         return users_to_add
 
+    def get_list_of_users_to_add(self, formset):
+        users = []
+        for form in formset:
+            user_form_data = form.cleaned_data
+            if user_form_data['selected']:
+                users.append(user_form_data.get('username'))
+
+        return users
+
+    def get_total_users_in_allocation_if_added(self, allocation_obj, formset):
+        total_users = len(list(allocation_obj.allocationuser_set.exclude(
+            status__name__in=['Removed']).values_list('user__username', flat=True)))
+        total_users += len(self.get_list_of_users_to_add(formset))
+
+        return total_users
+
     def get(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
@@ -1390,6 +1417,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         allocation_obj = get_object_or_404(Allocation, pk=pk)
 
         users_to_add = self.get_users_to_add(allocation_obj)
+        allocation_user_limit = allocation_obj.get_parent_resource.get_attribute("user_limit")
 
         formset = formset_factory(
             AllocationAddUserForm, max_num=len(users_to_add))
@@ -1399,6 +1427,15 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         added_users = []
         denied_users = []
         if formset.is_valid():
+            if allocation_user_limit is not None:
+                # The users_to_add variable is not an actual list of users to add. The users listed
+                # are the remaining users in the project that are not in the allocation. We have to
+                # cycle through the formset and increment the total user count for each user that
+                # has been selected in the list.
+                total_users = self.get_total_users_in_allocation_if_added(allocation_obj, formset)
+                if total_users > int(allocation_user_limit):
+                    messages.error(request, "Only {} users are allowed on this resource. Users were not added. (Total users counted: {})".format(allocation_user_limit, total_users))
+                    return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
             allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(
                 name='Active')
@@ -1474,7 +1511,7 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
                 request, 'You cannot modify this allocation because it is locked! Contact support for details.')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
-        if allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', ]:
+        if allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', 'Paid', 'Payment Pending', 'Payment Requested']:
             messages.error(request, 'You cannot remove users from a allocation with status {}.'.format(
                 allocation_obj.status.name))
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))

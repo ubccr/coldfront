@@ -309,7 +309,7 @@ Allocation Detail
     <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Users in Allocation</h3>
     <span class="badge badge-secondary">{{allocation_users.count}}</span>
     <div class="float-right">
-      {% if allocation.project.status.name != 'Archived' and is_allowed_to_update_project and allocation.status.name in 'Active,New,Renewal Requested' %}
+      {% if allocation.project.status.name != 'Archived' and is_allowed_to_update_project and allocation.status.name in 'Active,New,Renewal Requested, Paid, Payment Pending, Payment Requested' %}
         <a class="btn btn-success" href="{% url 'allocation-add-users' allocation.pk %}" role="button">
           <i class="fas fa-user-plus" aria-hidden="true"></i> Add Users
         </a>
