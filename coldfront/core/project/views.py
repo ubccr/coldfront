@@ -258,7 +258,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
         if project_search_form.is_valid():
             data = project_search_form.cleaned_data
             if data.get('show_all_projects') and (self.request.user.is_superuser or self.request.user.has_perm('project.can_view_all_projects')):
-                projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
+                projects = Project.objects.prefjtch_related('field_of_science', 'status',).filter(
                     status__name__in=['New', 'Active', ]
                 ).annotate(
                     cluster_name=Case(
@@ -2403,32 +2403,42 @@ def show_pooled_project_selection_form_condition(wizard):
 class SavioProjectRequestListView(LoginRequiredMixin, TemplateView):
     template_name = 'project/project_request/savio/project_request_list.html'
     login_url = '/'
-
     # Show completed requests if True; else, show pending requests.
     completed = False
+
+    model = SavioProjectAllocationRequest
+
+    def get_queryset(self):
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            if direction == 'asc':
+                direction = ''
+            else:
+                direction = '-'
+            order_by = direction + order_by
+        else:
+            order_by = 'id'
+        return SavioProjectAllocationRequest.objects.order_by(order_by)            
 
     def get_context_data(self, **kwargs):
         """Include either pending or completed requests. If the user is
         a superuser, show all such requests. Otherwise, show only those
         for which the user is a requester or PI."""
-        context = super().get_context_data(**kwargs)
 
         args, kwargs = [], {}
-
-        user = self.request.user
-        if not user.is_superuser:
-            args.append(Q(requester=user) | Q(pi=user))
-
+        context = super().get_context_data(**kwargs)
         if self.completed:
             status__name__in = ['Approved - Complete', 'Denied']
+            direction = self.request.GET.get('direction')
         else:
             status__name__in = ['Under Review', 'Approved - Processing']
-        kwargs['status__name__in'] = status__name__in
-
+            kwargs['status__name__in'] = status__name__in
+            context['savio_project_request_list'] = \
+            SavioProjectAllocationRequest.objects.filter(*args, **kwargs)
+        context['savio_project_request_list'] = self.get_queryset()
         context['request_filter'] = (
             'completed' if self.completed else 'pending')
-        context['savio_project_request_list'] = \
-            SavioProjectAllocationRequest.objects.filter(*args, **kwargs)
         return context
 
 
@@ -3226,6 +3236,18 @@ class VectorProjectRequestListView(LoginRequiredMixin, TemplateView):
 
     # Show completed requests if True; else, show pending requests.
     completed = False
+    def get_queryset(self):
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            if direction == 'asc':
+                direction = ''
+            else:
+                direction = '-'
+            order_by = direction + order_by
+        else:
+            order_by = 'id'
+        return VectorProjectAllocationRequest.objects.order_by(order_by)
 
     def get_context_data(self, **kwargs):
         """Include either pending or completed requests. If the user is
@@ -3247,8 +3269,7 @@ class VectorProjectRequestListView(LoginRequiredMixin, TemplateView):
 
         context['request_filter'] = (
             'completed' if self.completed else 'pending')
-        context['vector_project_request_list'] = \
-            VectorProjectAllocationRequest.objects.filter(*args, **kwargs)
+        context['vector_project_request_list'] = self.get_queryset()
         return context
 
 
