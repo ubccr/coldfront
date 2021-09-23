@@ -48,12 +48,6 @@ def home(request):
             if project.display_status is not None and 'Active' in project.display_status:
                 context['cluster_username'] = request.user.username
 
-            # crashed on login if part of a project and the name was None
-            if project.name is None:
-                project.name = 'temp_test'
-                project.save()
-                print('saved project w new name')
-
             if project.name == 'abc':
                 abc_projects.add(project.name)
             elif project.name.startswith('vector_'):
