@@ -15,6 +15,7 @@ from simple_history.models import HistoricalRecords
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import import_from_settings
+import coldfront.core.attribute_expansion as attribute_expansion
 
 logger = logging.getLogger(__name__)
 
@@ -134,11 +135,38 @@ class Allocation(TimeStampedModel):
         else:
             return self.resources.filter(is_allocatable=True).first()
 
-    def get_attribute(self, name):
+    def get_attribute(self, name, expand=True, typed=True,
+        extra_allocations=[]):
+        """Return the value of the first attribute found with specified name
+
+        This will return the value of the first attribute found for this
+        allocation with the specified name.
+
+        If expand is True (the default), we will return the expanded_value()
+        method of the attribute, which will expand attributes/parameters in
+        the attribute value for attributes with a base type of 'Attribute
+        Expanded Text'.  If the attribute is not of that type, or expand is
+        false, returns the value attribute/data member (i.e. the raw, unexpanded
+        value).
+
+        Extra_allocations is a list of Allocations which, if expand is True,
+        will have their attributes available for referencing.
+
+        If typed is True (the default), we will attempt to convert the value
+        returned to the appropriate python type (int/float/str) based on the
+        base AttributeType name.
+        """
         attr = self.allocationattribute_set.filter(
             allocation_attribute_type__name=name).first()
         if attr:
-            return attr.value
+            if expand:
+                return attr.expanded_value(
+                    extra_allocations=extra_allocations, typed=typed)
+            else:
+                if typed:
+                    return attr.typed_value()
+                else:
+                    return attr.value
         return None
 
     def set_usage(self, name, value):
@@ -159,10 +187,33 @@ class Allocation(TimeStampedModel):
         usage.value = value
         usage.save()
 
-    def get_attribute_list(self, name):
+    def get_attribute_list(self, name, expand=True, typed=True,
+        extra_allocations=[]):
+        """Return a list of values of the attributes found with specified name
+
+        This will return a list consisting of the values of the all attributes
+        found for this allocation with the specified name.
+
+        If expand is True (the default), we will return the result of the
+        expanded_value() method for each attribute, which will expand 
+        attributes/parameters in the attribute value for attributes with a base 
+        type of 'Attribute Expanded Text'.  If the attribute is not of that 
+        type, or expand is false, returns the value attribute/data member (i.e. 
+        the raw, unexpanded value).
+
+        Extra_allocations is a list of Allocations which, if expand is True,
+        will have their attributes available for referencing.
+        """
         attr = self.allocationattribute_set.filter(
             allocation_attribute_type__name=name).all()
-        return [a.value for a in attr]
+        if expand:
+            return [a.expanded_value(typed=typed,
+                extra_allocations=extra_allocations) for a in attr]
+        else:
+            if typed:
+                return [a.typed_value() for a in attr]
+            else:
+                return [a.value for a in attr]
 
     def __str__(self):
         return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
@@ -255,6 +306,80 @@ class AllocationAttribute(TimeStampedModel):
     def __str__(self):
         return '%s' % (self.allocation_attribute_type.name)
 
+    def typed_value(self):
+        """Returns the value of the attribute, with proper type.
+
+        For attributes with Int or Float types, we return the value of
+        the attribute coerced into an Int or Float.  If the coercion
+        fails, we log a warning and return the string.
+
+        For all other attribute types, we return the value as a string.
+
+        This is needed when computing values for expanded_value()
+        """
+        raw_value = self.value
+        atype_name = self.allocation_attribute_type.attribute_type.name
+        return attribute_expansion.convert_type(
+            value=raw_value, type_name=atype_name)
+                
+    
+    def expanded_value(self, extra_allocations=[], typed=True):
+        """Returns the value of the attribute, after attribute expansion.
+
+        For attributes with attribute type of  'Attribute Expanded Text' we
+        look for an attribute with same name suffixed with '_attriblist' (this
+        should be either an AllocationAttribute of the Allocation associated
+        with this attribute  or a ResourceAttribute of a Resource of the 
+        Allocation associated with this AllocationAttribute).  
+        If the attriblist attribute is found, we use
+        it to generate a dictionary to use to expand the attribute value,
+        and the expanded value is returned.  
+        If extra_allocations is given, it should be a list of Allocations and
+        the attriblist can reference attributes for allocations in the
+        extra_allocations list (as well as in the Allocation associated with
+        this AllocationAttribute or Resources associated with that allocation)
+
+        If typed is True (the default), we use typed to convert the returned
+        value to the expected (int, float, str) python data type according to
+        the AttributeType of the AllocationAttributeType (unrecognized values
+        not converted, so will return str).
+
+        If the expansion fails, or if no attriblist attribute is found, or if
+        the attribute type is not 'Attribute Expanded Text', we just return
+        the raw value.
+        """
+        raw_value = self.value
+        if typed:
+            # Try to convert to python type as per AttributeType
+            raw_value = self.typed_value()
+
+        if not attribute_expansion.is_expandable_type(
+            self.allocation_attribute_type.attribute_type):
+            # We are not an expandable type, return raw_value
+            return raw_value
+
+        allocs = [ self.allocation ] + extra_allocations
+        resources = alloc.resources
+        attrib_name = self.allocation_attribute_type.name
+
+        attriblist = attribute_expansion.get_attriblist_str(
+            attribute_name = attrib_name,
+            resources = resources,
+            allocations = allocs)
+
+        if not attriblist:
+            # We do not have an attriblist, return raw_value
+            return raw_value
+
+        expanded = attribute_expansion.expand_attribute(
+            raw_value = raw_value,
+            attribute_name = attrib_name,
+            attriblist_string = attriblist,
+            resources = resources,
+            allocations = allocations)
+        return expanded
+
+            
 
 class AllocationAttributeUsage(TimeStampedModel):
     """ AllocationAttributeUsage. """
