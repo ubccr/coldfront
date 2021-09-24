@@ -21,6 +21,6 @@ db.json
 coldfront/core/user/coldfront.log
 coldfront.log
 coldfront.env
-.env
 __pycache__
 VERSION
+environment.yml
