@@ -258,7 +258,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
         if project_search_form.is_valid():
             data = project_search_form.cleaned_data
             if data.get('show_all_projects') and (self.request.user.is_superuser or self.request.user.has_perm('project.can_view_all_projects')):
-                projects = Project.objects.prefjtch_related('field_of_science', 'status',).filter(
+                projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
                     status__name__in=['New', 'Active', ]
                 ).annotate(
                     cluster_name=Case(
@@ -2406,8 +2406,6 @@ class SavioProjectRequestListView(LoginRequiredMixin, TemplateView):
     # Show completed requests if True; else, show pending requests.
     completed = False
 
-    model = SavioProjectAllocationRequest
-
     def get_queryset(self):
         order_by = self.request.GET.get('order_by')
         if order_by:
@@ -2419,6 +2417,7 @@ class SavioProjectRequestListView(LoginRequiredMixin, TemplateView):
             order_by = direction + order_by
         else:
             order_by = 'id'
+
         return SavioProjectAllocationRequest.objects.order_by(order_by)            
 
     def get_context_data(self, **kwargs):
@@ -2430,15 +2429,16 @@ class SavioProjectRequestListView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         if self.completed:
             status__name__in = ['Approved - Complete', 'Denied']
-            direction = self.request.GET.get('direction')
+            kwargs['status__name__in'] = status__name__in
+            request_list = self.get_queryset()
+            context['savio_project_request_list'] = request_list.filter(*args, **kwargs)
         else:
             status__name__in = ['Under Review', 'Approved - Processing']
             kwargs['status__name__in'] = status__name__in
-            context['savio_project_request_list'] = \
-            SavioProjectAllocationRequest.objects.filter(*args, **kwargs)
-        context['savio_project_request_list'] = self.get_queryset()
-        context['request_filter'] = (
-            'completed' if self.completed else 'pending')
+            request_list = self.get_queryset()
+            context['savio_project_request_list'] = request_list.filter(*args, **kwargs)
+        context['request_filter'] = ('completed' if self.completed else 'pending')
+
         return context
 
 
@@ -3263,13 +3263,16 @@ class VectorProjectRequestListView(LoginRequiredMixin, TemplateView):
 
         if self.completed:
             status__name__in = ['Approved - Complete', 'Denied']
+            kwargs['status__name__in'] = status__name__in
+            request_list = self.get_queryset()
+            context['vector_project_request_list'] = request_list.filter(*args, **kwargs)
         else:
             status__name__in = ['Under Review', 'Approved - Processing']
-        kwargs['status__name__in'] = status__name__in
+            kwargs['status__name__in'] = status__name__in
+            request_list = self.get_queryset()
+            context['vector_project_request_list'] = request_list.filter(*args, **kwargs)
+        context['request_filter'] = ('completed' if self.completed else 'pending')
 
-        context['request_filter'] = (
-            'completed' if self.completed else 'pending')
-        context['vector_project_request_list'] = self.get_queryset()
         return context
 
 
