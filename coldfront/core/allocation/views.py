@@ -1097,11 +1097,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 elif license_term == 'current_and_next_year':
                     total_cost += prorated_cost
 
-        print(resource_obj.name)
         if resource_obj.name == 'RStudio Connect':
             end_date = self.calculate_end_date(6, 30, license_term)
-
-        print(end_date)
 
         # A resource is selected that requires an account name selection but user has no account names
         if ALLOCATION_ACCOUNT_ENABLED and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING and AllocationAttributeType.objects.filter(

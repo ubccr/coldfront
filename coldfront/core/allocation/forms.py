@@ -127,7 +127,6 @@ class AllocationForm(forms.Form):
         )
         self.fields['department_full_name'].initial = attributes['department'][0]
         self.fields['department_short_name'].initial = attributes['division'][0]
-        #self.fields['total_cost'].initial = compute_prorated_amount() #FIXME
         full_name = attributes['displayName'][0].split(', ')
         self.fields['first_name'].initial = full_name[1]
         self.fields['last_name'].initial = full_name[0]
