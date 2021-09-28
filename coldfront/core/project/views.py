@@ -2427,16 +2427,17 @@ class SavioProjectRequestListView(LoginRequiredMixin, TemplateView):
 
         args, kwargs = [], {}
         context = super().get_context_data(**kwargs)
+        request_list = self.get_queryset()
+        user = self.request.user
+        if not user.is_superuser:
+            args.append(Q(requester=user) | Q(pi=user))
         if self.completed:
             status__name__in = ['Approved - Complete', 'Denied']
             kwargs['status__name__in'] = status__name__in
-            request_list = self.get_queryset()
-            context['savio_project_request_list'] = request_list.filter(*args, **kwargs)
         else:
             status__name__in = ['Under Review', 'Approved - Processing']
             kwargs['status__name__in'] = status__name__in
-            request_list = self.get_queryset()
-            context['savio_project_request_list'] = request_list.filter(*args, **kwargs)
+        context['savio_project_request_list'] = request_list.filter(*args, **kwargs)
         context['request_filter'] = ('completed' if self.completed else 'pending')
 
         return context
@@ -3236,6 +3237,7 @@ class VectorProjectRequestListView(LoginRequiredMixin, TemplateView):
 
     # Show completed requests if True; else, show pending requests.
     completed = False
+
     def get_queryset(self):
         order_by = self.request.GET.get('order_by')
         if order_by:
@@ -3258,19 +3260,16 @@ class VectorProjectRequestListView(LoginRequiredMixin, TemplateView):
         args, kwargs = [], {}
 
         user = self.request.user
+        request_list = self.get_queryset()
         if not user.is_superuser:
             args.append(Q(requester=user) | Q(pi=user))
-
         if self.completed:
             status__name__in = ['Approved - Complete', 'Denied']
             kwargs['status__name__in'] = status__name__in
-            request_list = self.get_queryset()
-            context['vector_project_request_list'] = request_list.filter(*args, **kwargs)
         else:
             status__name__in = ['Under Review', 'Approved - Processing']
             kwargs['status__name__in'] = status__name__in
-            request_list = self.get_queryset()
-            context['vector_project_request_list'] = request_list.filter(*args, **kwargs)
+        context['vector_project_request_list'] = request_list.filter(*args, **kwargs)
         context['request_filter'] = ('completed' if self.completed else 'pending')
 
         return context
