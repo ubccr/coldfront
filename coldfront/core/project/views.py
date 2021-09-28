@@ -2418,27 +2418,29 @@ class SavioProjectRequestListView(LoginRequiredMixin, TemplateView):
         else:
             order_by = 'id'
 
-        return SavioProjectAllocationRequest.objects.order_by(order_by)            
+        return SavioProjectAllocationRequest.objects.order_by(order_by)
 
     def get_context_data(self, **kwargs):
         """Include either pending or completed requests. If the user is
         a superuser, show all such requests. Otherwise, show only those
         for which the user is a requester or PI."""
+        context = super().get_context_data(**kwargs)
 
         args, kwargs = [], {}
-        context = super().get_context_data(**kwargs)
+
         request_list = self.get_queryset()
         user = self.request.user
         if not user.is_superuser:
             args.append(Q(requester=user) | Q(pi=user))
         if self.completed:
             status__name__in = ['Approved - Complete', 'Denied']
-            kwargs['status__name__in'] = status__name__in
         else:
             status__name__in = ['Under Review', 'Approved - Processing']
-            kwargs['status__name__in'] = status__name__in
-        context['savio_project_request_list'] = request_list.filter(*args, **kwargs)
-        context['request_filter'] = ('completed' if self.completed else 'pending')
+        kwargs['status__name__in'] = status__name__in
+        context['savio_project_request_list'] = request_list.filter(
+            *args, **kwargs)
+        context['request_filter'] = (
+            'completed' if self.completed else 'pending')
 
         return context
 
@@ -3234,7 +3236,6 @@ class VectorProjectRequestView(LoginRequiredMixin, UserPassesTestMixin,
 class VectorProjectRequestListView(LoginRequiredMixin, TemplateView):
     template_name = 'project/project_request/vector/project_request_list.html'
     login_url = '/'
-
     # Show completed requests if True; else, show pending requests.
     completed = False
 
@@ -3265,12 +3266,13 @@ class VectorProjectRequestListView(LoginRequiredMixin, TemplateView):
             args.append(Q(requester=user) | Q(pi=user))
         if self.completed:
             status__name__in = ['Approved - Complete', 'Denied']
-            kwargs['status__name__in'] = status__name__in
         else:
             status__name__in = ['Under Review', 'Approved - Processing']
-            kwargs['status__name__in'] = status__name__in
-        context['vector_project_request_list'] = request_list.filter(*args, **kwargs)
-        context['request_filter'] = ('completed' if self.completed else 'pending')
+        kwargs['status__name__in'] = status__name__in
+        context['vector_project_request_list'] = request_list.filter(
+            *args, **kwargs)
+        context['request_filter'] = (
+            'completed' if self.completed else 'pending')
 
         return context
 
