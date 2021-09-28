@@ -165,6 +165,20 @@ Allocation Detail
               <td>{{ allocation.use_indefinitely }}</td>
             </tr>
           {% endif %}
+          {% if allocation.get_resources_as_string == "RStudio Connect"%}
+            <tr>
+              <th scope="row" class="text-nowrap">Project Directory Name:</th>
+              <td>{{ allocation.project_directory_name }}</td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">Account Number:</th>
+              <td>{{ allocation.account_number }}</td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">Sub-Account Number</th>
+              <td>{{ allocation.sub_account_number }}</td>
+            </tr>
+          {% endif %}
           <tr>
             <th scope="row" class="text-nowrap">Justification:</th>
             <td>{{ allocation.justification }}</td>

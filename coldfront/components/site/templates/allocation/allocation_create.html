@@ -114,7 +114,10 @@ Request New Allocation
   var resources_form_data_management_plan_label = {{ resources_form_data_management_plan_label | safe }}
   var resources_form_project_directory_name = {{ resources_form_project_directory_name | safe }}
   var resources_form_project_directory_name_label = {{ resources_form_project_directory_name_label | safe }}
-  var resources_form_total_cost_label = {{ resources_form_total_cost_label | safe }}
+  var resources_form_cost = {{ resources_form_cost | safe }}
+  var resources_form_cost_label = {{ resources_form_cost_label | safe }}
+  var resources_form_prorated_cost = {{ resources_form_prorated_cost | safe }}
+  var resources_form_prorated_cost_label = {{ resources_form_prorated_cost_label | safe }}
   var resources_form_first_name = {{ resources_form_first_name | safe }}
   var resources_form_first_name_label = {{ resources_form_first_name_label | safe }}
   var resources_form_last_name = {{ resources_form_last_name | safe }}
@@ -242,13 +245,6 @@ Request New Allocation
       further questions, please contact us.</p>'
     )
 
-    $('<br><input id="selectAll" class="check" type="checkbox"> <strong>Select All Users</strong>').insertAfter($("#div_id_users > label"))
-    $("#id_resource").trigger('change');
-
-    $("#selectAll").click(function () {
-      $("input[name^='users']").prop('checked', $(this).prop('checked'));
-    });
-
     if ($('input[type=radio][name=store_ephi]:checked').val() === 'Yes') {
       $('#id_ephi_info').show();
     } else {
@@ -329,6 +325,24 @@ Request New Allocation
         $('#div_id_end_date').show();
       }
     })
+
+    // Set up total cost based on if prorated cost is needed.
+    $('#div_id_total_cost').hide();
+    $('#id_license_term').change(function (e) {
+      handleLicenseTermSelection($('#id_license_term option:selected').val());
+    })
+
+    label = $('label[for="id_license_term"]')
+    label.html('<strong>License Term*</strong>')
+    label = $('label[for="id_total_cost"]')
+    label.html('<strong>Total Cost*</strong>')
+
+    $('<br><input id="selectAll" class="check" type="checkbox"> <strong>Select All Users</strong>').insertAfter($("#div_id_users > label"))
+    $("#id_resource").trigger('change');
+
+    $("#selectAll").click(function () {
+      $("input[name^='users']").prop('checked', $(this).prop('checked'));
+    });
     
     $("input[name^='users']").click(function (ele) {
       var id = $(this).attr('id');
@@ -337,6 +351,20 @@ Request New Allocation
       }
     });
   });
+
+  function checkDate(end_month, end_day) {
+    let [month, date, year] = new Date().toLocaleDateString("en-US").split("/");
+    var licenseEndDate = new Date(year, end_month, end_day);
+    var currentDate = new Date(year, month - 1, date);
+    var thresholdDate = new Date(year, 4, 1);
+
+    if (currentDate > licenseEndDate) {
+      licenseEndDate.setFullYear(licenseEndDate.getFullYear() + 1);
+      thresholdDate.setFullYear(thresholdDate.getFullYear() + 1);
+    }
+
+    return currentDate > thresholdDate;
+  }
 
   function getCookie(name) {
     var cookieValue = null;
@@ -388,6 +416,19 @@ Request New Allocation
     });
   });
 
+  function handleLicenseTermSelection(optionSelected) {
+    var prorated_cost = parseInt($('#id_prorated_cost').val());
+    if (optionSelected === "current") {
+        $('#id_total_cost').val(prorated_cost);
+        $('#div_id_cost').hide();
+        $('#div_id_total_cost').hide()
+      } else if (optionSelected === "current_and_next_year") {
+        $('#id_total_cost').val(prorated_cost + parseInt($('#id_cost').val()));
+        $('#div_id_cost').show();
+        $('#div_id_total_cost').show();
+      }
+  }
+
   $("#id_resource").change(function () {
     var resource_id = $("#id_resource option:selected").val();
 
@@ -412,8 +453,15 @@ Request New Allocation
 
     if (resource_id === '8') { // RStudio Connect
       $('#additional_info_4').show();
+      if (checkDate(5, 10)) {
+        $('#div_id_license_term').show();
+      } else {
+        $('#div_id_license_term').hide();
+      }
     } else {
       $('#additional_info_4').hide();
+      $('#div_id_license_term').hide();
+      $('#div_id_total_cost').hide();
     }
 
     if (resources_form_label_texts[resource_id]) {
@@ -689,12 +737,29 @@ Request New Allocation
       $('#div_id_sub_account_number').hide();
     }
 
-    if (resources_form_total_cost_label[resource_id]) {
-      var label = $('label[for="id_total_cost"]');
-      label.html(resources_form_total_cost_label[resource_id]);
-      $('#div_id_total_cost').show();
+    if (resources_form_cost_label[resource_id]) {
+      var label = $('label[for="id_cost"]');
+      label.html(resources_form_cost_label[resource_id]);
+      $('#id_cost').val(resources_form_cost[resource_id]);
+      $('#id_total_cost').val(resources_form_cost[resource_id]);
+      $('#div_id_cost').show();
     } else {
-      $('#div_id_total_cost').hide();
+      $('#div_id_cost').hide();
+    }
+
+    // If a resource has a prorated cost then we need to hide the actual cost.
+    if (resources_form_prorated_cost_label[resource_id]) {
+      var label = $('label[for="id_prorated_cost"]');
+      label.html(resources_form_prorated_cost_label[resource_id]);
+      $('#id_prorated_cost').val(resources_form_prorated_cost[resource_id]);
+      $('#id_total_cost').val(resources_form_prorated_cost[resource_id]);
+      $('#div_id_prorated_cost').show();
+      $('#div_id_cost').hide();
+      if (resource_id === '8') {
+        handleLicenseTermSelection($('#id_license_term option:selected').val());
+      }
+    } else {
+      $('#div_id_prorated_cost').hide();
     }
 
     if (resources_form_it_pros_label[resource_id]) {

@@ -67,6 +67,7 @@ class AllocationForm(forms.Form):
     fiscal_officer = forms.CharField(max_length=20, required=False)
     account_number = forms.CharField(max_length=9, required=False)
     sub_account_number = forms.CharField(max_length=20, required=False)
+    license_term = forms.ChoiceField(choices=(('current','Current license'), ('current_and_next_year','Current license + next annual license')), required=False)
     faculty_email = forms.CharField(max_length=40, required=False)
     store_ephi = forms.ChoiceField(
         choices=(('No', 'No'), ('Yes', 'Yes')),
@@ -76,6 +77,8 @@ class AllocationForm(forms.Form):
     it_pros = forms.CharField(max_length=100, required=False)
     devices_ip_addresses = forms.CharField(max_length=200, required=False)
     data_management_plan = forms.CharField(widget=forms.Textarea, required=False)
+    prorated_cost = forms.IntegerField(disabled=True, required=False)
+    cost = forms.IntegerField(disabled=True, required=False)
     total_cost = forms.IntegerField(disabled=True, required=False)
     confirm_understanding = forms.BooleanField(required=False)
 
@@ -124,7 +127,7 @@ class AllocationForm(forms.Form):
         )
         self.fields['department_full_name'].initial = attributes['department'][0]
         self.fields['department_short_name'].initial = attributes['division'][0]
-        self.fields['total_cost'].initial = compute_prorated_amount()
+        #self.fields['total_cost'].initial = compute_prorated_amount() #FIXME
         full_name = attributes['displayName'][0].split(', ')
         self.fields['first_name'].initial = full_name[1]
         self.fields['last_name'].initial = full_name[0]

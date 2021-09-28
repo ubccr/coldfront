@@ -41,7 +41,8 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationUserStatusChoice)
 from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user)
-from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
+from coldfront.core.allocation.utils import (compute_prorated_amount,
+                                             generate_guauge_data_from_usage,
                                              get_user_resources)
 from coldfront.core.utils.common import Echo
 from coldfront.core.project.models import (Project, ProjectUser,
@@ -565,8 +566,10 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         resources_form_data_management_plan_label = {}
         resources_form_project_directory_name = {}
         resources_form_project_directory_name_label = {}
-        resources_form_total_cost = {}
-        resources_form_total_cost_label = {}
+        resources_form_cost = {}
+        resources_form_cost_label = {}
+        resources_form_prorated_cost = {}
+        resources_form_prorated_cost_label = {}
         resources_form_first_name = {}
         resources_form_first_name_label = {}
         resources_form_last_name = {}
@@ -913,11 +916,31 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 resources_form_store_ephi_label[resource.id] = mark_safe(
                     '<strong>{}*</strong>'.format(value))
 
-            if resource.resourceattribute_set.filter(resource_attribute_type__name='total_cost_label').exists():
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='cost').exists():
                 value = resource.resourceattribute_set.get(
-                    resource_attribute_type__name='total_cost_label').value
-                resources_form_total_cost_label[resource.id] = mark_safe(
+                    resource_attribute_type__name='cost').value
+                resources_form_cost[resource.id] = int(value)
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='cost_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='cost_label').value
+                resources_form_cost_label[resource.id] = mark_safe(
                     '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='prorated').exists():
+                if resource.resourceattribute_set.get(resource_attribute_type__name='prorated'):
+                    if resource.resourceattribute_set.filter(resource_attribute_type__name='prorated_cost_label').exists():
+                        value = resource.resourceattribute_set.get(
+                            resource_attribute_type__name='prorated_cost_label').value
+                        resources_form_prorated_cost_label[resource.id] = mark_safe(
+                            '<strong>{}*</strong>'.format(value))
+
+                    if resource.resourceattribute_set.filter(resource_attribute_type__name='cost').exists():
+                        resources_form_prorated_cost[resource.id] = compute_prorated_amount(
+                            int(resource.resourceattribute_set.get(
+                                resource_attribute_type__name='cost').value
+                        ))
+                    else:
+                        resources_form_prorated_cost[resource.id] = 0
 
             if resource.resourceattribute_set.filter(resource_attribute_type__name='eula').exists():
                 value = resource.resourceattribute_set.get(
@@ -975,8 +998,10 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         context['resources_form_data_management_plan_label'] = resources_form_data_management_plan_label
         context['resources_form_project_directory_name'] = resources_form_project_directory_name
         context['resources_form_project_directory_name_label'] = resources_form_project_directory_name_label
-        context['resources_form_total_cost'] = resources_form_total_cost
-        context['resources_form_total_cost_label'] = resources_form_total_cost_label
+        context['resources_form_cost'] = resources_form_cost
+        context['resources_form_cost_label'] = resources_form_cost_label
+        context['resources_form_prorated_cost'] = resources_form_prorated_cost
+        context['resources_form_prorated_cost_label'] = resources_form_prorated_cost_label
         context['resources_form_first_name'] = resources_form_first_name
         context['resources_form_first_name_label'] = resources_form_first_name_label
         context['resources_form_last_name'] = resources_form_last_name
@@ -1002,6 +1027,17 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         if form_class is None:
             form_class = self.get_form_class()
         return form_class(self.request.user, self.kwargs.get('project_pk'), **self.get_form_kwargs())
+
+    def calculate_end_date(self, month, day, license_term):
+        current_date = datetime.date.today()
+        license_end_date = datetime.date(current_date.year, month, day)
+        if current_date > license_end_date:
+            license_end_date = license_end_date.replace(year=license_end_date.year + 1)
+
+        if license_term == 'current_and_next_year':
+            license_end_date = license_end_date.replace(year=license_end_date.year + 1)
+
+        return license_end_date
 
     def form_valid(self, form):
         form_data = form.cleaned_data
@@ -1038,7 +1074,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         devices_ip_addresses = form_data.get('devices_ip_addresses')
         data_management_plan = form_data.get('data_management_plan')
         project_directory_name = form_data.get('project_directory_name')
-        total_cost = form_data.get('total_cost')
         first_name = form_data.get('first_name')
         last_name = form_data.get('last_name')
         campus_affiliation = form_data.get('campus_affiliation')
@@ -1047,6 +1082,27 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         faculty_email = form_data.get('faculty_email')
         store_ephi = form_data.get('store_ephi')
         allocation_account = form_data.get('allocation_account', None)
+        license_term = form_data.get('license_term', None)
+
+        total_cost = None
+        cost = resource_obj.get_attribute('cost')
+        prorated_cost_label = resource_obj.get_attribute('prorated_cost_label')
+        if cost is not None:
+            cost = int(cost)
+            total_cost = cost
+            if prorated_cost_label is not None:
+                prorated_cost = compute_prorated_amount(cost)
+                if license_term == 'current':
+                    total_cost = prorated_cost
+                elif license_term == 'current_and_next_year':
+                    total_cost += prorated_cost
+
+        print(resource_obj.name)
+        if resource_obj.name == 'RStudio Connect':
+            end_date = self.calculate_end_date(6, 30, license_term)
+
+        print(end_date)
+
         # A resource is selected that requires an account name selection but user has no account names
         if ALLOCATION_ACCOUNT_ENABLED and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING and AllocationAttributeType.objects.filter(
                 name=ALLOCATION_ACCOUNT_MAPPING[resource_obj.name]).exists() and not allocation_account:
@@ -1135,6 +1191,9 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 return self.form_invalid(form)
 
             storage_space_with_unit = str(storage_space_with_unit) + unit
+        elif resource_obj.name == 'RStudio Connect':
+            if project_directory_name == '' or account_number == '' or not confirm_understanding:
+                error = True
         elif resource_obj.name == 'Slate Project':
             if (
                 first_name == '' or
