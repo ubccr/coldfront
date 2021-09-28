@@ -685,10 +685,6 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                                                       allocation_user_pk=allocation_user_obj.pk)
 
             warning_message = ''
-            for username, surpass_user_limit_list in surpass_user_limit.items():
-                if surpass_user_limit_list:
-                    warning_message += 'User {} was not added to allocation(s) {} due to '
-
             for username, no_account_list in no_accounts.items():
                 if no_account_list:
                     warning_message += 'User {} was not added to allocation(s) {} due do not having an account on those resources. '.format(username, ', '.join(no_account_list))
