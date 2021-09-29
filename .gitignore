@@ -24,3 +24,4 @@ coldfront.env
 __pycache__
 VERSION
 environment.yml
+.env

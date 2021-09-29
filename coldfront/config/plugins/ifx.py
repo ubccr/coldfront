@@ -30,4 +30,3 @@ AUTHOR_IGNORE_MODELS = [
     'ifxbilling.BillingRecord',
     'ifxbilling.Transaction',
 ]
-
