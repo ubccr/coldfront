@@ -1716,6 +1716,22 @@ class AllocationClusterAccountRequestListView(LoginRequiredMixin,
     template_name = 'allocation/allocation_cluster_account_request_list.html'
     login_url = '/'
 
+    def get_queryset(self):
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            if direction == 'asc':
+                direction = ''
+            else:
+                direction = '-'
+            order_by = direction + order_by
+        else:
+            order_by = 'id'
+        cluster_account_status = AllocationAttributeType.objects.get(name='Cluster Account Status')
+        cluster_account_list = AllocationUserAttribute.objects.filter(allocation_attribute_type=cluster_account_status, value__in=['Pending - Add', 'Processing'])
+        
+        return cluster_account_list.order_by(order_by)
+
     def test_func(self):
         """UserPassesTestMixin tests."""
         if self.request.user.is_superuser:
@@ -1729,12 +1745,7 @@ class AllocationClusterAccountRequestListView(LoginRequiredMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        cluster_account_status = AllocationAttributeType.objects.get(
-            name='Cluster Account Status')
-        cluster_account_list = AllocationUserAttribute.objects.filter(
-            allocation_attribute_type=cluster_account_status,
-            value__in=['Pending - Add', 'Processing'])
-        context['cluster_account_list'] = cluster_account_list
+        context['cluster_account_list'] = self.get_queryset()
         return context
 
 
