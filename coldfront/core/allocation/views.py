@@ -1727,8 +1727,11 @@ class AllocationClusterAccountRequestListView(LoginRequiredMixin,
             order_by = direction + order_by
         else:
             order_by = 'id'
-        cluster_account_status = AllocationAttributeType.objects.get(name='Cluster Account Status')
-        cluster_account_list = AllocationUserAttribute.objects.filter(allocation_attribute_type=cluster_account_status, value__in=['Pending - Add', 'Processing'])
+        cluster_account_status = AllocationAttributeType.objects.get(
+            name='Cluster Account Status')
+        cluster_account_list = AllocationUserAttribute.objects.filter(
+            allocation_attribute_type=cluster_account_status, 
+            value__in=['Pending - Add', 'Processing'])
         
         return cluster_account_list.order_by(order_by)
 
