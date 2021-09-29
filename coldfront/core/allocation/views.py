@@ -2372,6 +2372,9 @@ class AllocationInvoiceExportView(LoginRequiredMixin, UserPassesTestMixin, View)
         file_name = request.GET["file_name"]
         resource = request.GET["resource"]
 
+        if file_name[-4:] != ".csv":
+            file_name += ".csv"
+
         invoices = Allocation.objects.prefetch_related('project', 'status').filter(
             Q(status__name__in=['Payment Pending', ]) &
             Q(resources__name=resource)
@@ -2441,5 +2444,5 @@ class AllocationInvoiceExportView(LoginRequiredMixin, UserPassesTestMixin, View)
             (writer.writerow(row) for row in rows),
             content_type='text/csv'
         )
-        response['Content-Disposition'] = f'attachment; filename="{file_name}.csv"'
+        response['Content-Disposition'] = f'attachment; filename="{file_name}"'
         return response
