@@ -43,10 +43,10 @@ from coldfront.core.project.views import SavioProjectReviewReadinessView
 from coldfront.core.project.views import SavioProjectReviewSetupView
 from coldfront.core.project.views import show_details_form_condition
 from coldfront.core.project.views import show_ica_extra_fields_form_condition
-from coldfront.core.project.views import show_mou_extra_fields_form_condition
 from coldfront.core.project.views import show_new_pi_form_condition
 from coldfront.core.project.views import show_pool_allocations_form_condition
 from coldfront.core.project.views import show_pooled_project_selection_form_condition
+from coldfront.core.project.views import show_recharge_extra_fields_form_condition
 from coldfront.core.project.views import VectorProjectRequestDetailView
 from coldfront.core.project.views import VectorProjectRequestListView
 from coldfront.core.project.views import VectorProjectRequestView
@@ -69,7 +69,7 @@ urlpatterns += [
          condition_dict={
              '2': show_new_pi_form_condition,
              '3': show_ica_extra_fields_form_condition,
-             '4': show_mou_extra_fields_form_condition,
+             '4': show_recharge_extra_fields_form_condition,
              '5': show_pool_allocations_form_condition,
              '6': show_pooled_project_selection_form_condition,
              '7': show_details_form_condition,

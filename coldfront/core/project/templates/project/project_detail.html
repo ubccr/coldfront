@@ -37,13 +37,13 @@ Project Detail
 {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
   <div class="card mb-3 bg-light">
     <div class="card-header">
-      <h4 class="d-inline"><i class="fas fa-cubes"></i></a> <a name="manage-project">Manage Project</a></h4>
+      <h2 class="d-inline"><i class="fas fa-cubes"></i></a> <a name="manage-project">Manage Project</a></h2>
       <div class="float-right">
           {% if project.status.name in 'Active, New' %}
-            <a class="btn btn-info" href="{% url 'project-update' project.pk %}" role="button"><i class="far fa-edit" aria-hidden="true"></i> Update Project Information</a>
+            <a class="btn btn-primary" href="{% url 'project-update' project.pk %}" role="button"><i class="far fa-edit" aria-hidden="true"></i> Update Project Information</a>
 
             {% if is_allowed_to_archive_project %}
-                <a class="btn btn-info" href="{% url 'project-archive' project.id %}" role="button"><i class="fas fa-file-archive" aria-hidden="true"></i> Archive Project</a>
+                <a class="btn btn-primary" href="{% url 'project-archive' project.id %}" role="button"><i class="fas fa-file-archive" aria-hidden="true"></i> Archive Project</a>
             {% endif %}
           {% endif %}
       </div>
@@ -69,12 +69,14 @@ Project Detail
 <!-- Start Project Heading -->
 <div class="card mb-3">
   <div class="card-body">
-    <h4 class="card-title">
-      Principal Investigators:
-      {% comment %}
-        <a href=""><i class="far fa-envelope"></i></a>
-      {% endcomment %}
-    </h4>
+    <p class="card-title">
+      <b>
+        Principal Investigators:
+        {% comment %}
+          <a href=""><i class="far fa-envelope"></i></a>
+        {% endcomment %}
+      </b>
+    </p>
     <ul class="list-group">
       {% for pi in project.pis %}
         <li class="list-group-item">
@@ -110,6 +112,7 @@ Project Detail
       {% endif %}
       {% if is_allowed_to_update_project %}
         <a href="{% url 'project-update' project.pk %}">
+          <span class="accessibility-link-text">Update Project settings</span>
           <i class="fas fa-edit" aria-hidden="true"></i>
         </a>
       {% endif %}
@@ -123,7 +126,11 @@ Project Detail
 <!-- Start Project Allocations -->
 <div class="card mb-3">
   <div class="card-header">
-  <h4 class="d-inline"><i class="fas fa-server"></i> Allocations </h4> <span class="badge badge-secondary">{{allocations.count}}</span>
+  <h2 class="d-inline">
+    <i class="fas fa-server"></i>
+    Allocations
+    <span class="badge badge-secondary">{{allocations.count}}</span>
+  </h2>
   </div>
   <div class="card-body">
     {% if allocations %}
@@ -156,7 +163,10 @@ Project Detail
             <td>{{allocation.start_date|date:"Y-m-d"}}</td>
             <td>{{allocation.end_date|date:"Y-m-d"}}</td>
             <td>
-              <a href="{% url 'allocation-detail' allocation.pk %}"><i class="far fa-folder-open"></i></a>
+              <a href="{% url 'allocation-detail' allocation.pk %}">
+                <span class="accessibility-link-text">{{ allocation.get_parent_resource.name }} details</span>
+                <i class="far fa-folder-open"></i>
+              </a>
             </td>
             {% comment %}
             <td>
@@ -186,7 +196,11 @@ Project Detail
 <!-- Start Project Users -->
 <div class="card mb-3">
   <div class="card-header">
-  <h4 class="d-inline"><i class="fas fa-users"></i> <a name="users">Users</a></h4> <span class="badge badge-secondary">{{project_users.count}}</span>
+  <h2 class="d-inline">
+    <i class="fas fa-users"></i>
+    <a name="users">Users</a>
+    <span class="badge badge-secondary">{{project_users.count}}</span>
+  </h2>
     <div class="float-right">
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
         {% comment %}
@@ -205,7 +219,13 @@ Project Detail
           <tr>
             <th>Name</th>
             <th>Email</th>
-            <th>Role <a href="#" data-toggle="popover" title="Role" data-trigger="hover" data-content="Manager role grants user access to add/remove users, and allocations to the project."><i class="fas fa-info-circle"></i></a></th>
+            <th>
+              Role
+              <a href="#" data-toggle="popover" title="Role" data-trigger="hover" data-content="Manager role grants user access to add/remove users, and allocations to the project.">
+                <span class="accessibility-link-text">Role Help Text</span>
+                <i class="fas fa-info-circle"></i>
+              </a>
+            </th>
             <th>Cluster Username</th>
             <th>Project Access on Cluster</th>
 
@@ -260,7 +280,10 @@ Project Detail
             </td>
             {% if is_allowed_to_update_project %}
               <td>
-                  <a href="{% url 'project-user-detail' project.pk user.id %}"><i class="fas fa-user-edit"></i></a>
+                  <a href="{% url 'project-user-detail' project.pk user.id %}">
+                    <span class="accessibility-link-text">{{ user.user.first_name }} {{ user.user.last_name }} Actions</span>
+                    <i class="fas fa-user-edit"></i>
+                  </a>
               </td>
             {% endif %}
           </tr>
@@ -277,7 +300,11 @@ Project Detail
 <!-- Start Admin Messages -->
 <div class="card mb-3">
   <div class="card-header">
-  <h4 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Messages from System Administrators </h4> <span class="badge badge-secondary">{{project.projectusermessage_set.count}}</span>
+  <h2 class="d-inline">
+    <i class="fas fa-users" aria-hidden="true"></i>
+    Messages from System Administrators
+    <span class="badge badge-secondary">{{project.projectusermessage_set.count}}</span>
+  </h2>
   </div>
   <div class="card-body">
     {% if project.projectusermessage_set.all %}

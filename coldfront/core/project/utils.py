@@ -653,7 +653,7 @@ def savio_request_state_status(savio_request):
         return ProjectAllocationRequestStatusChoice.objects.get(name='Denied')
 
     ica = SavioProjectAllocationRequest.ICA
-    mou = SavioProjectAllocationRequest.MOU
+    recharge = SavioProjectAllocationRequest.RECHARGE
 
     # For ICA projects, retrieve whether or not both allocation dates are set.
     if savio_request.allocation_type == ica:
@@ -662,9 +662,9 @@ def savio_request_state_status(savio_request):
     else:
         allocation_dates_not_set = False
 
-    # For ICA and MOU projects, retrieve the signed status of the Memorandum of
-    # Understanding.
-    if savio_request.allocation_type in (ica, mou):
+    # For ICA and Recharge projects, retrieve the signed status of the
+    # Memorandum of Understanding.
+    if savio_request.allocation_type in (ica, recharge):
         memorandum_signed = state['memorandum_signed']
         memorandum_not_signed = memorandum_signed['status'] == 'Pending'
     else:

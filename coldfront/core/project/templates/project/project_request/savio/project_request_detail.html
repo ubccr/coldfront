@@ -31,10 +31,10 @@ Savio Project Request Detail
 
 <div class="card mb-3">
   <div class="card-header">
-    <h4>
+    <h2>
       <i class="fas fa-question-circle" aria-hidden="true"></i>
       Request Status
-    </h4>
+    </h2>
   </div>
   <div class="card-body">
     <div class="table-responsive">
@@ -53,7 +53,7 @@ Savio Project Request Detail
                       They must also set the start and end dates of the
                       allocation.
                     {% endif %}
-                    {% if savio_request.allocation_type in 'ICA,MOU' %}
+                    {% if savio_request.allocation_type in 'ICA,RECHARGE' %}
                       They must also confirm that the Memorandum of
                       Understanding has been signed.
                     {% endif %}
@@ -94,10 +94,10 @@ Savio Project Request Detail
 {% if is_allowed_to_manage_request and savio_request.status.name not in 'Denied,Approved - Complete' %}
   <div class="card mb-3">
     <div class="card-header">
-      <h4>
+      <h2>
         <i class="fas fa-check-circle" aria-hidden="true"></i>
         System Administrator Checklist
-      </h4>
+      </h2>
     </div>
     <div class="card-body">
       <p>This section, which is only visible for system administrators, activates this request. Please review the given information and complete the checklist in the following order before final approval. You may also deny the request for some other reason.</p>
@@ -206,7 +206,7 @@ Savio Project Request Detail
                   </tr>
                 {% endwith %}
               {% endif %}
-              {% if savio_request.allocation_type in 'ICA,MOU' %}
+              {% if savio_request.allocation_type in 'ICA,RECHARGE' %}
                 {% with memorandum_signed=savio_request.state.memorandum_signed %}
                   <tr>
                     <td>Confirm that the Memorandum of Understanding has been signed.</td>
@@ -271,7 +271,7 @@ Savio Project Request Detail
                         {% endif %}
                       {% endwith %}
                     {% endwith %}
-                  {% elif savio_request.allocation_type == 'MOU' %}
+                  {% elif savio_request.allocation_type == 'RECHARGE' %}
                     {% with memorandum_signed=savio_request.state.memorandum_signed %}
                       {% if eligibility.status == 'Approved' and readiness.status == 'Approved' and memorandum_signed.status == 'Complete' %}
                         <a href="{% url 'savio-project-request-review-setup' savio_request.pk %}" class="btn btn-primary">
@@ -304,14 +304,14 @@ Savio Project Request Detail
       {% if is_checklist_complete %}
         <form action="{% url 'savio-project-request-detail' savio_request.pk %}" method="post">
           {% csrf_token %}
-          <button type="submit" class="btn btn-success">Submit</button>
+          <button type="submit" class="btn btn-primary">Submit</button>
           <a href="{% url 'savio-project-pending-request-list' %}" class="btn btn-secondary">Cancel</a>
           <a href="{% url 'savio-project-request-review-deny' savio_request.pk %}" class="btn btn-danger" style="float: right;">
             Deny For Other Reason
           </a>
         </form>
       {% else %}
-        <button type="button" class="btn btn-success" disabled>Submit</button>
+        <button type="button" class="btn btn-primary" disabled>Submit</button>
         <a href="{% url 'savio-project-pending-request-list' %}" class="btn btn-secondary">Cancel</a>
         <a href="{% url 'savio-project-request-review-deny' savio_request.pk %}" class="btn btn-danger" style="float: right;">
           Deny For Other Reason

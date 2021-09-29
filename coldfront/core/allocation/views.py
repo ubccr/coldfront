@@ -411,7 +411,7 @@ class AllocationListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
             # username
             if data.get('username'):
                 allocations = allocations.filter(
-                    Q(username__icontains=data.get('username')) &
+                    Q(allocationuser__user__username__icontains=data.get('username')) &
                     (Q(project__projectuser__role__name='Principal Investigator') |
                      Q(allocationuser__status__name='Active'))
                 )
