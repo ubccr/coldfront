@@ -27,7 +27,8 @@ class Command(BaseCommand):
             ('ServiceEnd', 'Date'),
             ('ServiceStart', 'Date'),
             ('slurm_cluster', 'Text'),
-            ('slurm_specs', 'Text'),
+            ('slurm_specs', 'Attribute Expanded Text'),
+            ('slurm_specs_attriblist', 'Text'),
             ('Status', 'Public/Private'),
         ):
             ResourceAttributeType.objects.get_or_create(
