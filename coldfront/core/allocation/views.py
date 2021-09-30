@@ -550,7 +550,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         project_obj = get_object_or_404(
             Project, pk=self.kwargs.get('project_pk'))
         resource_obj = form_data.get('resource')
-        justification = form_data.get('justification')
         quantity = form_data.get('quantity', 1)
         allocation_account = form_data.get('allocation_account', None)
         # A resource is selected that requires an account name selection but user has no account names
@@ -577,7 +576,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         allocation_obj = Allocation.objects.create(
             project=project_obj,
-            justification=justification,
             quantity=quantity,
             status=allocation_status_obj
         )

@@ -51,11 +51,11 @@ class AllocationUserNoteInline(admin.TabularInline):
 @admin.register(Allocation)
 class AllocationAdmin(SimpleHistoryAdmin):
     readonly_fields_change = (
-        'project', 'justification', 'created', 'modified',)
-    fields_change = ('project', 'resources', 'quantity', 'justification',
+        'project', 'created', 'modified',)
+    fields_change = ('project', 'resources', 'quantity',
                      'status', 'start_date', 'end_date', 'description', 'created', 'modified', 'is_locked')
     list_display = ('pk', 'project_title', 'project_pi', 'resource', 'quantity',
-                    'justification', 'start_date', 'end_date', 'status', 'created', 'modified', )
+                    'start_date', 'end_date', 'status', 'created', 'modified', )
     inlines = [AllocationUserInline,
                AllocationAttributeInline,
                AllocationAdminNoteInline,
