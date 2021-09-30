@@ -8,6 +8,7 @@
 import logging
 import math
 
+
 logger = logging.getLogger(__name__)
 
 #ALLOCATION_ATTRIBUTE_VIEW_LIST = import_from_settings(
@@ -71,7 +72,7 @@ def get_attribute_parameter_value(
     evaluating/dereferencing the argument portion of the statement.
 
     The following argument types are recognized:
-    :pname - expands to the value of a parameter named pname already
+    APDICT:pname - expands to the value of a parameter named pname already
         in the attribute_parameter_dict (or None if not present)
     RESOURCE:aname - expands to the value of the first attribute of type
         named aname found in the resources list of resources. 
@@ -79,7 +80,7 @@ def get_attribute_parameter_value(
     ALLOCATION:aname - expands to the value of the first attribute of type
         named aname found in the allocations list of allocations.
         NOTE: 'ALLOCATION:' is a literal.  Or None if not found.
-    keyname: expands to value of the parameter named keyname in
+    :keyname - expands to value of the parameter named keyname in
         attribute_parameter_dict, or if not found then will expand to the
         value of the first attribute of type named aname found in the
         allocations list, or then resources list.  Or None if all the
@@ -119,7 +120,7 @@ def get_attribute_parameter_value(
     # If argument if prefixed with any of the strings in attrib_sources,
     # strip the prefix and set attrib_source accordingly
     attrib_source = None
-    attrib_sources = [ ':', 'RESOURCE:', 'ALLOCATION:' ]
+    attrib_sources = [ ':APDICT', 'RESOURCE:', 'ALLOCATION:', ':' ]
     for asrc in attrib_sources:
         if argument.startswith(asrc):
             # Got a match
@@ -132,28 +133,29 @@ def get_attribute_parameter_value(
     # We do attribute_parameter_dict first, then allocations, then
     # resources to try to get value most specific to use case
     if ( attribute_parameter_dict is not None and 
-        (attrib_source is None or attrib_source == ':')):
+        (attrib_source == ':' or attrib_source == 'APDICT:')):
         if argument in attribute_parameter_dict:
             return attribute_parameter_dict[argument]
 
-    if attrib_source is None or attrib_source == 'ALLOCATION:':
+    if attrib_source == ':' or attrib_source == 'ALLOCATION:':
         for alloc in allocations:
             tmp = alloc.get_attribute(argument)
             if tmp is not None:
                 return tmp
 
-    if attrib_source is None or attrib_source == 'RESOURCE:':
+    if attrib_source == ':' or attrib_source == 'RESOURCE:':
         for res in resources:
             tmp = res.get_attribute(argument)
             if tmp is not None:
                 return tmp
 
-    # If reach here, argument is not a string literal, or a 
-    # parameter or attribute name, so try numeric constant
     if attrib_source is not None:
-        # If attrib_source was specified, cannot be numeric constant
+        # We were given an attribute or parameter name, but could not
+        # find it.  Just return None
         return None
 
+    # If reach here, argument is not a string literal, or a 
+    # parameter or attribute name, so try numeric constant
     try:
         value = int(argument)
         return value
@@ -440,7 +442,6 @@ def expand_attribute(raw_value, attribute_name, attriblist_string,
     # We wrap everything in a try block so we can return raw_value on error
     try:
         # Create the attribute parameter dictionary
-        import sys
         apdict = make_attribute_parameter_dictionary(
             attribute_parameter_string = attriblist_string,
             attribute_name = attribute_name,

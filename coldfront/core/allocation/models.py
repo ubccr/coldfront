@@ -359,7 +359,7 @@ class AllocationAttribute(TimeStampedModel):
             return raw_value
 
         allocs = [ self.allocation ] + extra_allocations
-        resources = alloc.resources
+        resources = list(self.allocation.resources.all())
         attrib_name = self.allocation_attribute_type.name
 
         attriblist = attribute_expansion.get_attriblist_str(
@@ -376,7 +376,7 @@ class AllocationAttribute(TimeStampedModel):
             attribute_name = attrib_name,
             attriblist_string = attriblist,
             resources = resources,
-            allocations = allocations)
+            allocations = allocs)
         return expanded
 
             

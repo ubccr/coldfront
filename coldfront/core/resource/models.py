@@ -7,7 +7,6 @@ from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 import coldfront.core.attribute_expansion as attribute_expansion
 
-
 class AttributeType(TimeStampedModel):
     name = models.CharField(max_length=128, unique=True)
 

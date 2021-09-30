@@ -604,14 +604,14 @@ class Command(BaseCommand):
 
         #slurm_specs_attrib_list for University Metered HPC
         attriblist_list = [ '#Set cpumin from Core Usage attribute',
-            'cpumin := Core Usage (Hours)',
+            'cpumin := :Core Usage (Hours)',
             '#Default to 1 SU',
             'cpumin |= 1',
             '#Convert to cpumin',
             'cpumin *= 60'
         ]
         ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='slurm_specs'), resource=Resource.objects.get(name='University Metered HPC'), 
+            name='slurm_specs_attriblist'), resource=Resource.objects.get(name='University Metered HPC'), 
             value="\n".join(attriblist_list))
 
         # call_command('loaddata', 'test_data.json')

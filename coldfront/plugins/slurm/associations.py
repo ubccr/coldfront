@@ -112,7 +112,14 @@ class SlurmCluster(SlurmBase):
 
         # Process allocations
         for allocation in resource.allocation_set.filter(status__name='Active'):
-            cluster.add_allocation(allocation, user_specs=user_specs)
+            alloc_specs = resource.get_attribute_list(
+                SLURM_SPECS_ATTRIBUTE_NAME,
+                extra_allocations=[allocation])
+            alloc_user_specs = resource.get_attribute_list(
+                SLURM_USER_SPECS_ATTRIBUTE_NAME,
+                extra_allocations=[allocation])
+            cluster.add_allocation(allocation, 
+                specs=alloc_specs, user_specs=alloc_user_specs)
 
         # Process child resources
         children = Resource.objects.filter(
