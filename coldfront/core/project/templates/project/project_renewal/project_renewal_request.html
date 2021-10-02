@@ -1,0 +1,38 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Renew Project {{ project.name }} Allocation
+{% endblock %}
+
+
+{% block content %}
+<script type='text/javascript' src="{% static 'selectize/selectize.min.js' %}"></script>
+<link rel='stylesheet' type='text/css' href="{% static 'selectize/selectize.bootstrap3.css' %}"/>
+
+<h1>Renew Project {{ project.name }} Allocation</h1>
+<hr>
+
+<p>
+  Principal Investigators must have their allocations renewed individually.
+  Select the PI below.
+</p>
+
+<form action="" method="post">
+  {% csrf_token %}
+  {{ form|crispy }}
+  <button type="submit" class="btn btn-primary">
+    Submit
+  </button>
+</form>
+
+<script>
+  $('select').selectize({
+    create: false,
+    sortField: 'text'
+  })
+</script>
+
+{% endblock %}

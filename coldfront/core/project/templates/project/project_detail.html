@@ -58,6 +58,15 @@ Project Detail
             &nbsp;<span class="badge badge-light">{{ num_join_requests }}</span>
           </a>
         {% endif %}
+        {% if current_period_allocation_renewable %}
+          <a
+              class="btn btn-success"
+              href="{% url 'project-renew' project.pk %}"
+              role="button">
+            <i class="fas fa-plus" aria-hidden="true"></i>
+            Renew Allowance
+          </a>
+        {% endif %}
       {% endif %}
     </div>
   </div>

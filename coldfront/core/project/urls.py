@@ -65,15 +65,17 @@ urlpatterns += [
                  'project/project_request/savio/project_request_landing.html')
          ),
          name='project-request-savio-landing'),
-    path('savio-project-request/', SavioProjectRequestWizard.as_view(
-         condition_dict={
-             '2': show_new_pi_form_condition,
-             '3': show_ica_extra_fields_form_condition,
-             '4': show_recharge_extra_fields_form_condition,
-             '5': show_pool_allocations_form_condition,
-             '6': show_pooled_project_selection_form_condition,
-             '7': show_details_form_condition,
-         }),
+    path('savio-project-request/',
+         SavioProjectRequestWizard.as_view(
+             condition_dict={
+                 '2': show_new_pi_form_condition,
+                 '3': show_ica_extra_fields_form_condition,
+                 '4': show_recharge_extra_fields_form_condition,
+                 '5': show_pool_allocations_form_condition,
+                 '6': show_pooled_project_selection_form_condition,
+                 '7': show_details_form_condition,
+             }
+         ),
          name='savio-project-request'),
     path('savio-project-pending-request-list/',
          SavioProjectRequestListView.as_view(completed=False),
@@ -126,4 +128,23 @@ urlpatterns += [
     path('vector-project-request/<int:pk>/setup',
          VectorProjectReviewSetupView.as_view(),
          name='vector-project-request-review-setup'),
+]
+
+
+from coldfront.core.project.views_.renewal_views import SavioProjectRenewalRequestView
+from coldfront.core.project.views_.renewal_views import PoolingMockUpTmpView
+
+
+urlpatterns += [
+    path('<int:pk>/renew',
+         SavioProjectRenewalRequestView.as_view(),
+         name='project-renew'),
+
+    # TODO: Rename this.
+    path('pooling-mock-up',
+         PoolingMockUpTmpView.as_view(
+             condition_dict=PoolingMockUpTmpView.condition_dict(),
+         ),
+         name='pooling-mock-up'),
+
 ]

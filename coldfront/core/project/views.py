@@ -229,6 +229,14 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['joins_auto_approved'] = (
             self.object.joins_auto_approval_delay == datetime.timedelta())
 
+        # TODO
+        # Can the allocation be further renewed for the current period?
+        context['current_period_allocation_renewable'] = (
+            True and self.object.name.startswith(('fc_', 'ic_', 'pc_')))
+        # TODO
+        # Can the allocation be renewed for the next period?
+        context['next_period_allocation_renewable'] = False
+
         return context
 
 
