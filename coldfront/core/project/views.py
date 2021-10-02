@@ -229,6 +229,9 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['joins_auto_approved'] = (
             self.object.joins_auto_approval_delay == datetime.timedelta())
 
+        context['join_request_delay_period'] = \
+            str(self.object.joins_auto_approval_delay).rsplit(':', 1)[0]
+
         return context
 
 
