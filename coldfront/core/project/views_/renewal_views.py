@@ -8,6 +8,7 @@ from coldfront.core.project.forms_.renewal_forms import SavioProjectRenewalReque
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserStatusChoice
+from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils_.renewal_utils import get_pi_current_active_fca_project
 from coldfront.core.project.utils_.renewal_utils import is_pooled
 
@@ -154,24 +155,25 @@ class PoolingMockUpTmpView(LoginRequiredMixin, UserPassesTestMixin,
         elif step == self.step_numbers_by_form_name['pooling_preference']:
             tmp = {}
             self.__set_data_from_previous_steps(step, tmp)
-            if 'current_project' in tmp:
-                current_project = tmp['current_project']
-                kwargs['currently_pooled'] = is_pooled(current_project)
-            else:
-                kwargs['currently_pooled'] = False
+            kwargs['currently_pooled'] = ('current_project' in tmp and
+                                          is_pooled(tmp['current_project']))
         elif step == self.step_numbers_by_form_name['project_selection']:
             tmp = {}
             self.__set_data_from_previous_steps(step, tmp)
             kwargs['pi_pk'] = tmp['PI'].user.pk
 
-            choices = ('pool', 'pool_with_different', 'unpool_renew_existing')
+            form_class = ProjectRenewalPoolingPreferenceForm
+            choices = (
+                form_class.UNPOOLED_TO_POOLED,
+                form_class.POOLED_TO_POOLED_DIFFERENT,
+            )
             kwargs['non_owned_projects'] = tmp['preference'] in choices
 
             if 'current_project' in tmp:
-                current_project = tmp['current_project']
-                kwargs['exclude_project_pk'] = current_project.pk
-            else:
-                pass
+                kwargs['exclude_project_pk'] = tmp['current_project'].pk
+        elif step == self.step_numbers_by_form_name['new_project_details']:
+            # TODO: Handle others.
+            kwargs['allocation_type'] = SavioProjectAllocationRequest.FCA
 
         return kwargs
 
@@ -199,7 +201,9 @@ class PoolingMockUpTmpView(LoginRequiredMixin, UserPassesTestMixin,
         step_name = 'pooling_preference'
         step = str(PoolingMockUpTmpView.step_numbers_by_form_name[step_name])
         cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
-        return cleaned_data.get('preference', None) == 'unpool_create_new'
+        form_class = ProjectRenewalPoolingPreferenceForm
+        return (cleaned_data.get('preference', None) ==
+                form_class.POOLED_TO_UNPOOLED_NEW)
 
     @staticmethod
     def show_project_selection_form_condition(wizard):
@@ -209,7 +213,12 @@ class PoolingMockUpTmpView(LoginRequiredMixin, UserPassesTestMixin,
         step_name = 'pooling_preference'
         step = str(PoolingMockUpTmpView.step_numbers_by_form_name[step_name])
         cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
-        preferences = ('pool', 'pool_with_different', 'unpool_renew_existing')
+        form_class = ProjectRenewalPoolingPreferenceForm
+        preferences = (
+            form_class.UNPOOLED_TO_POOLED,
+            form_class.POOLED_TO_POOLED_DIFFERENT,
+            form_class.POOLED_TO_UNPOOLED_OLD,
+        )
         return cleaned_data.get('preference', None) in preferences
 
     def __set_data_from_previous_steps(self, step, dictionary):
@@ -230,3 +239,31 @@ class PoolingMockUpTmpView(LoginRequiredMixin, UserPassesTestMixin,
                 str(pooling_preference_form_step))
             if data:
                 dictionary.update(data)
+
+                preference = data['preference']
+                form_class = ProjectRenewalPoolingPreferenceForm
+                dictionary['breadcrumb_pooling_preference'] = \
+                    form_class.SHORT_DESCRIPTIONS.get(preference, 'Unknown')
+
+                if (preference == form_class.UNPOOLED_TO_UNPOOLED or
+                        preference == form_class.POOLED_TO_POOLED_SAME):
+                    dictionary['requested_project'] = \
+                        dictionary['current_project']
+
+        project_selection_form_step = self.step_numbers_by_form_name[
+            'project_selection']
+        if step > project_selection_form_step:
+            data = self.get_cleaned_data_for_step(
+                str(project_selection_form_step))
+            if data:
+                dictionary.update(data)
+                dictionary['requested_project'] = data["project"].name
+
+        new_project_details_form_step = self.step_numbers_by_form_name[
+            'new_project_details']
+        if step > new_project_details_form_step:
+            data = self.get_cleaned_data_for_step(
+                str(new_project_details_form_step))
+            if data:
+                dictionary.update(data)
+                dictionary['requested_project'] = data["name"]

@@ -80,22 +80,40 @@ class ProjectRenewalPISelectionForm(forms.Form):
 
 class ProjectRenewalPoolingPreferenceForm(forms.Form):
 
+    UNPOOLED_TO_UNPOOLED = 'unpooled_to_unpooled'
+    UNPOOLED_TO_POOLED = 'unpooled_to_pooled'
+    POOLED_TO_POOLED_SAME = 'pooled_to_pooled_same'
+    POOLED_TO_POOLED_DIFFERENT = 'pooled_to_pooled_different'
+    POOLED_TO_UNPOOLED_OLD = 'pooled_to_unpooled_old'
+    POOLED_TO_UNPOOLED_NEW = 'pooled_to_unpooled_new'
+
+    SHORT_DESCRIPTIONS = {
+        UNPOOLED_TO_UNPOOLED: 'Stay Unpooled',
+        UNPOOLED_TO_POOLED: 'Start Pooling',
+        POOLED_TO_POOLED_SAME: 'Stay Pooled, Same Project',
+        POOLED_TO_POOLED_DIFFERENT: 'Pool with Different Project',
+        POOLED_TO_UNPOOLED_OLD: 'Unpool, Renew Existing Project',
+        POOLED_TO_UNPOOLED_NEW: 'Unpool, Create New Project',
+    }
+
     non_pooled_choices = [
-        ('renew_unpooled',
+        (UNPOOLED_TO_UNPOOLED,
             'Renew the PI\'s allocation under the same project.'),
-        ('pool', 'Pool the PI\'s allocation under a different project.'),
+        (UNPOOLED_TO_POOLED,
+            'Pool the PI\'s allocation under a different project.'),
     ]
 
     pooled_choices = [
-        ('pool_with_same',
+        (POOLED_TO_POOLED_SAME,
             'Continuing pooling the PI\'s allocation under the same project.'),
-        ('pool_with_different',
+        (POOLED_TO_POOLED_DIFFERENT,
             'Pool the PI\'s allocation under a different project.'),
-        ('unpool_renew_existing',
+        (POOLED_TO_UNPOOLED_OLD,
             ('Stop pooling the PI\'s allocation. Select another project owned '
              'by the PI to renew under.')),
-        ('unpool_create_new',
-            'Stop pooling the PI\'s allocation. Create a new project.'),
+        (POOLED_TO_UNPOOLED_NEW,
+            ('Stop pooling the PI\'s allocation. Create a new project to '
+             'renew under.')),
     ]
 
     preference = forms.ChoiceField(choices=[], widget=forms.RadioSelect())
@@ -153,8 +171,8 @@ class ProjectRenewalProjectSelectionForm(forms.Form):
 
 class ProjectRenewalReviewAndSubmitForm(forms.Form):
 
-    # TODO: Figure out what fields to display here.
-    # TODO: Disable all fields.
-    # TODO: Display the pro-rated allocation amount.
-
-    pass
+    confirmation = forms.BooleanField(
+        label=(
+            'I have reviewed my selections and understand the changes '
+            'described above. Submit my request.'),
+        required=True)

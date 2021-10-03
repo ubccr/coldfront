@@ -16,6 +16,12 @@ Project Renewal - Project Selection
 {% block content %}
 <h1>Select a Project</h1><hr>
 
+<ol class="breadcrumb">
+  <li>PI: {{ PI.user.username}}, Current Project: {{ current_project }}</li>
+  <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>
+  <li>Preference: {{ breadcrumb_pooling_preference }}</li>
+</ol>
+
 <p>
   Select the Project for which the PI's allocation should be renewed.
 </p>

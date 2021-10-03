@@ -19,32 +19,52 @@ Project Renewal - Review and Submit
 <ol class="breadcrumb">
   <li>PI: {{ PI.user.username}}, Current Project: {{ current_project }}</li>
   <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>
-  <!-- TODO: Move this to __set_data_from_previous_steps. -->
-  <li>
-    Preference:
-    {% if preference == 'renew_unpooled' %}
-      Stay Unpooled
-    {% elif preference == 'pool' %}
-      Start Pooling
-    {% elif preference == 'pool_with_same' %}
-      Stay Pooled
-    {% elif preference == 'pool_with_different' %}
-      Pool with Different Project
-    {% elif preference == 'unpool_renew_existing' %}
-      Unpool and Renew Existing Project
-    {% elif preference == 'unpool_create_new' %}
-      Unpool and Create New Project
-    {% else %}
-      Unknown
-    {% endif %}
-  </li>
+  <li>Preference: {{ breadcrumb_pooling_preference }}</li>
+  <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>
+  <li>Requested Project: {{ requested_project }}</li>
 </ol>
 
 <p>
   Review your selections and submit.
 </p>
 
-TODO
+<div class="table-responsive">
+  <table class="table table-sm">
+    <tbody>
+      <tr>
+        <th>Principal Investigator (PI)</th>
+        <td>Matthew Li (meli@lbl.gov)</td>
+      </tr>
+      <tr>
+        <th>PI's Current Project</th>
+        <td>{{ current_project }}</td>
+      </tr>
+      <tr>
+        <th>Updated Project Choice</th>
+        <td>{{ requested_project }}</td>
+      </tr>
+      <tr>
+        <th>Number of Service Units</th>
+        <td>TODO: XXX,XXX</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<p>
+  The following changes will occur if the request is approved:
+</p>
+<ol>
+  <li>TODO: Fill this in.</li>
+  <li>TODO: Fill this in.</li>
+  <li>
+    Requested Project {{ requested_project }} will be granted XXX,XXX (TODO)
+    service units. (Note that this number may be prorated based on when the
+    request is approved.)
+  </li>
+</ol>
+
 
 <form action="" method="post">
   {% csrf_token %}
