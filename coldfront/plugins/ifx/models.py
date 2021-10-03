@@ -24,6 +24,9 @@ class ProjectOrganization(models.Model):
     '''
     Map ifxuser Organizations to Projects
     '''
+    class Meta:
+        unique_together = ('organization', 'project')
+
     organization = models.ForeignKey(
         Organization,
         on_delete=models.PROTECT
