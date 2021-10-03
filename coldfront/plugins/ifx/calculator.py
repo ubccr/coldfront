@@ -156,3 +156,13 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
         billing_record.description = description
         billing_record.save()
         return billing_record
+
+    def getOrganizationForProductUsage(self, product_usage):
+        '''
+        Get the organization from the allocation -> project -> project_organization
+        '''
+        project_organization = product_usage.allocationuserproductusage_set.first().allocation_user.allocation.project.projectorganization_set.first()
+        if project_organization:
+            return project_organization.organization
+        else:
+            return None
