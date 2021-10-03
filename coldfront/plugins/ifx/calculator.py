@@ -120,9 +120,13 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
             from
                 product_usage pu inner join ifx_allocationuserproductusage aupu on pu.id = aupu.product_usage_id
                 inner join allocation_historicalallocationuser hau on hau.history_id = aupu.allocation_user_id
-                inner join allocation_allocation a on a.id=hau.allocation_id
+                inner join allocation_allocation a on a.id = hau.allocation_id
+                inner join user_account ua on ua.user_id = pu.product_user_id
+                inner join account acct on ua.account_id = acct.id
+                inner join ifx_projectorganization po on acct.organization_id = po.organization_id
             where
                 hau.allocation_id = %s
+                and po.project_id = a.project_id
                 and pu.year = %s
                 and pu.month = %s
             group by pu.product_user_id
@@ -152,3 +156,13 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
         billing_record.description = description
         billing_record.save()
         return billing_record
+
+    def getOrganizationForProductUsage(self, product_usage):
+        '''
+        Get the organization from the allocation -> project -> project_organization
+        '''
+        project_organization = product_usage.allocationuserproductusage_set.first().allocation_user.allocation.project.projectorganization_set.first()
+        if project_organization:
+            return project_organization.organization
+        else:
+            return None
