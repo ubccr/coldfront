@@ -24,3 +24,4 @@ coldfront.env
 .env
 __pycache__
 VERSION
+coldfront/fixtures*

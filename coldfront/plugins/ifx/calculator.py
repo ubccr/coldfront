@@ -122,8 +122,11 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
                 inner join allocation_historicalallocationuser hau on hau.history_id = aupu.allocation_user_id
                 inner join allocation_allocation a on a.id = hau.allocation_id
                 inner join user_account ua on ua.user_id = pu.product_user_id
+                inner join account acct on ua.account_id = acct.id
+                inner join ifx_projectorganization po on acct.organization_id = po.organization_id
             where
                 hau.allocation_id = %s
+                and po.project_id = a.project_id
                 and pu.year = %s
                 and pu.month = %s
             group by pu.product_user_id
