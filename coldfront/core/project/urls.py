@@ -41,6 +41,7 @@ from coldfront.core.project.views import SavioProjectReviewEligibilityView
 from coldfront.core.project.views import SavioProjectReviewMemorandumSignedView
 from coldfront.core.project.views import SavioProjectReviewReadinessView
 from coldfront.core.project.views import SavioProjectReviewSetupView
+from coldfront.core.project.views import SavioProjectUndenyRequestView
 from coldfront.core.project.views import show_details_form_condition
 from coldfront.core.project.views import show_ica_extra_fields_form_condition
 from coldfront.core.project.views import show_new_pi_form_condition
@@ -102,6 +103,9 @@ urlpatterns += [
     path('savio-project-request/<int:pk>/deny/',
          SavioProjectReviewDenyView.as_view(),
          name='savio-project-request-review-deny'),
+    path('savio-project-request/<int:pk>/undeny',
+         SavioProjectUndenyRequestView.as_view(),
+         name='savio-project-undeny-request'),
     path('project-request-vector-landing/',
          TemplateView.as_view(
              template_name=(
