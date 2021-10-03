@@ -53,6 +53,7 @@ from coldfront.core.project.views import VectorProjectRequestListView
 from coldfront.core.project.views import VectorProjectRequestView
 from coldfront.core.project.views import VectorProjectReviewEligibilityView
 from coldfront.core.project.views import VectorProjectReviewSetupView
+from coldfront.core.project.views import VectorProjectUndenyRequestView
 from django.views.generic import TemplateView
 
 
@@ -130,4 +131,7 @@ urlpatterns += [
     path('vector-project-request/<int:pk>/setup',
          VectorProjectReviewSetupView.as_view(),
          name='vector-project-request-review-setup'),
+    path('vector-project-request/<int:pk>/undeny',
+         VectorProjectUndenyRequestView.as_view(),
+         name='vector-project-undeny-request'),
 ]
