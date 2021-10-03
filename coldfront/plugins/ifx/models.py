@@ -9,14 +9,29 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from coldfront.core.allocation.models import AllocationUser, AllocationAttribute
+from coldfront.core.allocation.models import AllocationUser
 from coldfront.core.resource.models import Resource
+from coldfront.core.project.models import Project
 from ifxbilling.models import ProductUsage, Product
 from ifxbilling.fiine import createNewProduct
+from ifxuser.models import Organization
 from fiine.client import API as FiineAPI
 
 logger = logging.getLogger(__name__)
 
+
+class ProjectOrganization(models.Model):
+    '''
+    Map ifxuser Organizations to Projects
+    '''
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.PROTECT
+    )
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.PROTECT
+    )
 
 class AllocationUserProductUsage(models.Model):
     '''
