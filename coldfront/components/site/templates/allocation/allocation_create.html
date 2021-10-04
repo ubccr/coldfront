@@ -223,6 +223,12 @@ Request New Allocation
       can assist you in receiving a short-term priority boost up to your required deadline.</p>'
     );
 
+    $('#div_id_justification').after(
+      '<p id="id_rstudio_connect_info">The annual license expires on Thursday, June 30. The full \
+      term price is $5000 and is prorated accordingly from the time of purchase. There cannot be \
+      more than 10 users on a project.</p>'
+    )
+
     $('#div_id_sub_account_number').after(
       '<p id="additional_info_4">This account and sub account will be billed the total cost at \
       the next monthly billing cycle. By filling in this account number you verify you are \
@@ -452,6 +458,7 @@ Request New Allocation
     }
 
     if (resource_id === '8') { // RStudio Connect
+      $('#id_rstudio_connect_info').show();
       $('#additional_info_4').show();
       if (checkDate(5, 10)) {
         $('#div_id_license_term').show();
@@ -459,6 +466,7 @@ Request New Allocation
         $('#div_id_license_term').hide();
       }
     } else {
+      $('#id_rstudio_connect_info').hide();
       $('#additional_info_4').hide();
       $('#div_id_license_term').hide();
       $('#div_id_total_cost').hide();
