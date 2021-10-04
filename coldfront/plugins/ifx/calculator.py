@@ -132,6 +132,7 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
                 where
                     hau.allocation_id = %s
                     and po.project_id = a.project_id
+                    and ua.is_valid = 1
                     and pu.year = %s
                     and pu.month = %s
                 group by pu.product_user_id
@@ -148,6 +149,7 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
                 where
                     hau.allocation_id = %s
                     and po.project_id = a.project_id
+                    and ua.is_valid = 1
                     and pu.year = %s
                     and pu.month = %s
                 group by pu.product_user_id
