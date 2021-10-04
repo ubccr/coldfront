@@ -114,26 +114,49 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
         allocation = self.getAllocationFromProductUsage(product_usage)
         allocation_user_fractions = {}
 
+        # Sum the quantity of usage for users that have user_accounts or user_product_accounts
+        # with an organization that matches the project organization mapping
+        # The UNION combines the user_accounts and the user_product_accounts
         sql = '''
-            select
-                pu.product_user_id, sum(pu.quantity)
-            from
-                product_usage pu inner join ifx_allocationuserproductusage aupu on pu.id = aupu.product_usage_id
-                inner join allocation_historicalallocationuser hau on hau.history_id = aupu.allocation_user_id
-                inner join allocation_allocation a on a.id = hau.allocation_id
-                inner join user_account ua on ua.user_id = pu.product_user_id
-                inner join account acct on ua.account_id = acct.id
-                inner join ifx_projectorganization po on acct.organization_id = po.organization_id
-            where
-                hau.allocation_id = %s
-                and po.project_id = a.project_id
-                and pu.year = %s
-                and pu.month = %s
-            group by pu.product_user_id
+            select product_user_id, sum(quantity)
+            from (
+                select
+                    pu.product_user_id, sum(pu.quantity) as quantity
+                from
+                    product_usage pu inner join ifx_allocationuserproductusage aupu on pu.id = aupu.product_usage_id
+                    inner join allocation_historicalallocationuser hau on hau.history_id = aupu.allocation_user_id
+                    inner join allocation_allocation a on a.id = hau.allocation_id
+                    inner join user_account ua on ua.user_id = pu.product_user_id
+                    inner join account acct on ua.account_id = acct.id
+                    inner join ifx_projectorganization po on acct.organization_id = po.organization_id
+                where
+                    hau.allocation_id = %s
+                    and po.project_id = a.project_id
+                    and pu.year = %s
+                    and pu.month = %s
+                group by pu.product_user_id
+                union
+                select
+                    pu.product_user_id, sum(pu.quantity) as quantity
+                from
+                    product_usage pu inner join ifx_allocationuserproductusage aupu on pu.id = aupu.product_usage_id
+                    inner join allocation_historicalallocationuser hau on hau.history_id = aupu.allocation_user_id
+                    inner join allocation_allocation a on a.id = hau.allocation_id
+                    inner join user_product_account ua on ua.user_id = pu.product_user_id
+                    inner join account acct on ua.account_id = acct.id
+                    inner join ifx_projectorganization po on acct.organization_id = po.organization_id
+                where
+                    hau.allocation_id = %s
+                    and po.project_id = a.project_id
+                    and pu.year = %s
+                    and pu.month = %s
+                group by pu.product_user_id
+            ) t
+            group by product_user_id
         '''.replace('\n', ' ')
 
         cursor = connection.cursor()
-        cursor.execute(sql, [allocation.id, product_usage.year, product_usage.month])
+        cursor.execute(sql, [allocation.id, product_usage.year, product_usage.month, allocation.id, product_usage.year, product_usage.month])
         total = 0
         for row in cursor.fetchall():
             allocation_user_fractions[row[0]] = {
