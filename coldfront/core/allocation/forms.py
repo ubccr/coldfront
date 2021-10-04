@@ -15,6 +15,7 @@ ALLOCATION_ACCOUNT_ENABLED = import_from_settings(
 
 class AllocationForm(forms.Form):
     resource = forms.ModelChoiceField(queryset=None, empty_label=None)
+    justification = forms.CharField(widget=forms.Textarea)
     quantity = forms.IntegerField(required=True)
     users = forms.MultipleChoiceField(
         widget=forms.CheckboxSelectMultiple, required=False)
@@ -45,6 +46,8 @@ class AllocationForm(forms.Form):
             self.fields['allocation_account'].help_text = '<br/>Select account name to associate with resource. <a href="#Modal" id="modal_link">Click here to create an account name!</a>'
         else:
             self.fields['allocation_account'].widget = forms.HiddenInput()
+
+        self.fields['justification'].help_text = '<br/>Justification for requesting this allocation.'
 
 
 class AllocationUpdateForm(forms.Form):
