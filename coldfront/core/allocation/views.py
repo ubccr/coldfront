@@ -1,5 +1,6 @@
 import datetime
 import logging
+import urllib
 from datetime import date
 
 from dateutil.relativedelta import relativedelta
@@ -628,8 +629,17 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         return super().form_valid(form)
 
+    def reverse_with_params(self, path, **kwargs):
+        return path + '?' + urllib.parse.urlencode(kwargs)
+
     def get_success_url(self):
-        return reverse('project-detail', kwargs={'pk': self.kwargs.get('project_pk')})
+        return self.reverse_with_params(
+            reverse(
+                'project-detail',
+                kwargs={'pk': self.kwargs.get('project_pk')}
+            ),
+            allocation_submitted=True
+        )
 
 
 class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
