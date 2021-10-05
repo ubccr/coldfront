@@ -1,9 +1,7 @@
 import datetime
-import importlib
 import logging
 from ast import literal_eval
 
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -41,9 +39,41 @@ class Allocation(TimeStampedModel):
     resources = models.ManyToManyField(Resource)
     status = models.ForeignKey(
         AllocationStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
-    quantity = models.IntegerField(default=1)
+    quantity = models.IntegerField(blank=True, null=True)
+    storage_space = models.CharField(max_length=10, blank=True, null=True)
+    leverage_multiple_gpus = models.CharField(max_length=4, choices=(('No', 'No'), ('Yes', 'Yes')), blank=True, null=True)
+    dl_workflow = models.CharField(max_length=4, choices=(('No', 'No'), ('Yes', 'Yes')), blank=True, null=True)
+    applications_list = models.CharField(max_length=150, blank=True, null=True)
+    training_or_inference = models.CharField(max_length=9, choices=(('Training', 'Training'), ('Inference', 'Inference'), ('Both', 'Both')), blank=True, null=True)
+    for_coursework = models.CharField(max_length=4, choices=(('No', 'No'), ('Yes', 'Yes')), blank=True, null=True)
+    system = models.CharField(max_length=9, choices=(('Carbonate', 'Carbonate'), ('BigRed3', 'Big Red 3')), blank=True, null=True)
+    is_grand_challenge = models.BooleanField(blank=True, null=True)
+    grand_challenge_program = models.CharField(
+        max_length=100,
+        choices=(
+            ('healthinitiative', 'Precision Health Initiative'),
+            ('envchange', 'Prepared for Environmental Change'),
+            ('addiction', 'Responding to the Addiction Crisis')
+        ),
+        blank=True,
+        null=True
+    )
     start_date = models.DateField(blank=True, null=True)
     end_date = models.DateField(blank=True, null=True)
+    use_indefinitely = models.BooleanField(blank=True, null=True)
+    phi_association = models.CharField(max_length=4, choices=(('No', 'No'), ('Yes', 'Yes')), blank=True, null=True)
+    access_level = models.CharField(max_length=8, choices=(('Masked', 'Masked'), ('Unmasked', 'Unmasked')), blank=True, null=True)
+    confirm_understanding = models.BooleanField(blank=True, null=True)
+    primary_contact = models.CharField(max_length=20, blank=True, null=True)
+    secondary_contact = models.CharField(max_length=20, blank=True, null=True)
+    department_full_name = models.CharField(max_length=30, blank=True, null=True)
+    department_short_name = models.CharField(max_length=15, blank=True, null=True)
+    fiscal_officer = models.CharField(max_length=20, blank=True, null=True)
+    account_number = models.CharField(max_length=9, blank=True, null=True)
+    sub_account_number = models.CharField(max_length=20, blank=True, null=True)
+    it_pros = models.CharField(max_length=100, blank=True, null=True)
+    devices_ip_addresses = models.CharField(max_length=200, blank=True, null=True)
+    data_management_plan = models.TextField(blank=True, null=True)
     justification = models.TextField()
     description = models.CharField(max_length=512, blank=True, null=True)
     is_locked = models.BooleanField(default=False)
@@ -165,6 +195,18 @@ class Allocation(TimeStampedModel):
         attr = self.allocationattribute_set.filter(
             allocation_attribute_type__name=name).all()
         return [a.value for a in attr]
+
+    def check_user_account_exists_on_resource(self, username):
+        resource_account = None
+        if self.get_parent_resource.name == 'Priority Boost':
+            if self.system == 'Carbonate':
+                resource_account = 'CN=iu-entlmt-app-rt-carbonate-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu'
+            elif self.system == 'BigRed3':
+                resource_account = 'CN=iu-entlmt-app-rt-bigred3-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu'
+            else:
+                return False
+
+        return self.get_parent_resource.check_user_account_exists(username, resource_account)
 
     def __str__(self):
         return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)

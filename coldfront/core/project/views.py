@@ -1,24 +1,21 @@
 import datetime
-import pprint
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
-from coldfront.core.utils.common import import_from_settings
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.forms import formset_factory
-from django.http import (HttpResponse, HttpResponseForbidden,
-                         HttpResponseRedirect)
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
-from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
+from django.utils.html import format_html
 
 from coldfront.core.allocation.models import (Allocation,
                                               AllocationStatusChoice,
@@ -638,6 +635,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             allocation_form_data = allocation_form.cleaned_data['allocation']
             if '__select_all__' in allocation_form_data:
                 allocation_form_data.remove('__select_all__')
+            no_accounts = {}
             for form in formset:
                 user_form_data = form.cleaned_data
                 if user_form_data['selected']:
@@ -663,7 +661,14 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                         project_user_obj = ProjectUser.objects.create(
                             user=user_obj, project=project_obj, role=role_choice, status=project_user_active_status_choice)
 
+                    username = user_form_data.get('username')
+                    no_accounts[username] = []
                     for allocation in Allocation.objects.filter(pk__in=allocation_form_data):
+                        if not allocation.check_user_account_exists_on_resource(username):
+                            if allocation.get_parent_resource.name not in no_accounts[username]:
+                                no_accounts[username].append(allocation.get_parent_resource.name)
+                            continue
+
                         if allocation.allocationuser_set.filter(user=user_obj).exists():
                             allocation_user_obj = allocation.allocationuser_set.get(
                                 user=user_obj)
@@ -677,6 +682,16 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                         allocation_activate_user.send(sender=self.__class__,
                                                       allocation_user_pk=allocation_user_obj.pk)
 
+            warning_message = ''
+            print(no_accounts)
+            for username, no_account_list in no_accounts.items():
+                if no_account_list:
+                    warning_message += 'User {} was not added to allocation(s) {} due do not having an account on their resources. '.format(username, ', '.join(no_account_list))
+            if warning_message != '':
+                warning_message = format_html(warning_message + 'Please direct them to <a href="https://access.iu.edu/Accounts/Create">https://access.iu.edu/Accounts/Create</a> to create one.\n')
+                messages.warning(
+                    request, warning_message
+                )
             messages.success(
                 request, 'Added {} users to project.'.format(added_users_count))
         else:

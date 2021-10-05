@@ -4,24 +4,21 @@ from datetime import date
 
 from dateutil.relativedelta import relativedelta
 from django import forms
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
-from django.core.exceptions import ValidationError
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db import IntegrityError
 from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.forms import formset_factory
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, render
-from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
 from django.utils.html import format_html, mark_safe
 from django.views import View
-from django.views.generic import DetailView, ListView, TemplateView
+from django.views.generic import ListView, TemplateView
 from django.views.generic.edit import CreateView, FormView, UpdateView
+from django.utils.module_loading import import_string
 
 from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationAddUserForm,
@@ -232,6 +229,9 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             if not end_date:
                 end_date = datetime.datetime.now(
                 ) + relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)
+
+            if allocation_obj.use_indefinitely:
+                end_date = None
 
             allocation_obj.end_date = end_date
 
@@ -514,17 +514,289 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         user_resources = get_user_resources(self.request.user)
         resources_form_default_quantities = {}
         resources_form_label_texts = {}
+        resources_form_storage_space = {}
+        resources_form_storage_space_label = {}
+        resources_form_leverage_multiple_gpus = {}
+        resources_form_leverage_multiple_gpus_label = {}
+        resources_form_dl_workflow = {}
+        resources_form_dl_workflow_label = {}
+        resources_form_applications_list = {}
+        resources_form_applications_list_label = {}
+        resources_form_training_or_inference = {}
+        resources_form_training_or_inference_label = {}
+        resources_form_for_coursework = {}
+        resources_form_for_coursework_label = {}
+        resources_form_system = {}
+        resources_form_system_label = {}
+        resources_form_start_date = {}
+        resources_form_start_date_label = {}
+        resources_form_end_date = {}
+        resources_form_end_date_label = {}
+        resources_form_phi_association = {}
+        resources_form_phi_association_label = {}
+        resources_form_access_level = {}
+        resources_form_access_level_label = {}
+        resources_form_confirm_understanding = {}
+        resources_form_confirm_understanding_label = {}
+        resources_form_primary_contact = {}
+        resources_form_primary_contact_label = {}
+        resources_form_secondary_contact = {}
+        resources_form_secondary_contact_label = {}
+        resources_form_department_full_name = {}
+        resources_form_department_full_name_label = {}
+        resources_form_department_short_name = {}
+        resources_form_department_short_name_label = {}
+        resources_form_fiscal_officer = {}
+        resources_form_fiscal_officer_label = {}
+        resources_form_account_number = {}
+        resources_form_account_number_label = {}
+        resources_form_sub_account_number = {}
+        resources_form_sub_account_number_label = {}
+        resources_form_it_pros = {}
+        resources_form_it_pros_label = {}
+        resources_form_devices_ip_addresses = {}
+        resources_form_devices_ip_addresses_label = {}
+        resources_form_data_management_plan = {}
+        resources_form_data_management_plan_label = {}
         resources_with_eula = {}
+
         for resource in user_resources:
             if resource.resourceattribute_set.filter(resource_attribute_type__name='quantity_default_value').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='quantity_default_value').value
-                resources_form_default_quantities[resource.id] = int(value)
+                if value == "":
+                    resources_form_default_quantities[resource.id] = 0
+                else:
+                    resources_form_default_quantities[resource.id] = int(value)
             if resource.resourceattribute_set.filter(resource_attribute_type__name='quantity_label').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='quantity_label').value
                 resources_form_label_texts[resource.id] = mark_safe(
                     '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='storage_space').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='storage_space').value
+                if value == '':
+                    resources_form_storage_space[resource.id] = 0
+                else:
+                    resources_form_storage_space[resource.id] = int(value)
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='storage_space_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='storage_space_label').value
+                resources_form_storage_space_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='leverage_multiple_gpus').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='leverage_multiple_gpus').value
+                resources_form_leverage_multiple_gpus[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='leverage_multiple_gpus_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='leverage_multiple_gpus_label').value
+                resources_form_leverage_multiple_gpus_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='applications_list').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='applications_list').value
+                resources_form_applications_list[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='applications_list_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='applications_list_label').value
+                resources_form_applications_list_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='dl_workflow').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='dl_workflow').value
+                resources_form_dl_workflow[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='dl_workflow_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='dl_workflow_label').value
+                resources_form_dl_workflow_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='training_or_inference').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='training_or_inference').value
+                resources_form_training_or_inference[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='training_or_inference_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='training_or_inference_label').value
+                resources_form_training_or_inference_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='for_coursework').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='for_coursework').value
+                resources_form_for_coursework[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='for_coursework_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='for_coursework_label').value
+                resources_form_for_coursework_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='system').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='system').value
+                resources_form_system[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='system_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='system_label').value
+                resources_form_system_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='start_date').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='start_date').value
+                resources_form_start_date[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='start_date_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='start_date_label').value
+                resources_form_start_date_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='end_date').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='end_date').value
+                resources_form_end_date[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='end_date_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='end_date_label').value
+                resources_form_end_date_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='phi_association').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='phi_association').value
+                resources_form_phi_association[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='phi_association_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='phi_association_label').value
+                resources_form_phi_association_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='access_level').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='access_level').value
+                resources_form_access_level[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='access_level_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='access_level_label').value
+                resources_form_access_level_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='confirm_understanding').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='confirm_understanding').value
+                resources_form_confirm_understanding[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='confirm_understanding_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='confirm_understanding_label').value
+                resources_form_confirm_understanding_label[resource.id] = mark_safe(
+                    '{}'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='primary_contact').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='primary_contact').value
+                resources_form_primary_contact[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='primary_contact_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='primary_contact_label').value
+                resources_form_primary_contact_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='secondary_contact').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='secondary_contact').value
+                resources_form_secondary_contact[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='secondary_contact_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='secondary_contact_label').value
+                resources_form_secondary_contact_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='department_full_name').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='department_full_name').value
+                resources_form_department_full_name[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='department_full_name_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='department_full_name_label').value
+                resources_form_department_full_name_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='department_short_name').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='department_short_name').value
+                resources_form_department_short_name[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='department_short_name_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='department_short_name_label').value
+                resources_form_department_short_name_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='fiscal_officer').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='fiscal_officer').value
+                resources_form_fiscal_officer[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='fiscal_officer_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='fiscal_officer_label').value
+                resources_form_fiscal_officer_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='account_number').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='account_number').value
+                resources_form_account_number[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='account_number_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='account_number_label').value
+                resources_form_account_number_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='sub_account_number').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='sub_account_number').value
+                resources_form_sub_account_number[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='sub_account_number_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='sub_account_number_label').value
+                resources_form_sub_account_number_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='it_pros').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='it_pros').value
+                resources_form_it_pros[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='it_pros_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='it_pros_label').value
+                resources_form_it_pros_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='devices_ip_addresses').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='devices_ip_addresses').value
+                resources_form_devices_ip_addresses[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='devices_ip_addresses_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='devices_ip_addresses_label').value
+                resources_form_devices_ip_addresses_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='data_management_plan').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='data_management_plan').value
+                resources_form_data_management_plan[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='data_management_plan_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='data_management_plan_label').value
+                resources_form_data_management_plan_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
             if resource.resourceattribute_set.filter(resource_attribute_type__name='eula').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='eula').value
@@ -533,6 +805,50 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         context['AllocationAccountForm'] = AllocationAccountForm()
         context['resources_form_default_quantities'] = resources_form_default_quantities
         context['resources_form_label_texts'] = resources_form_label_texts
+        context['resources_form_storage_space'] = resources_form_storage_space
+        context['resources_form_storage_space_label'] = resources_form_storage_space_label
+        context['resources_form_leverage_multiple_gpus_label'] = resources_form_leverage_multiple_gpus_label
+        context['resources_form_leverage_multiple_gpus'] = resources_form_leverage_multiple_gpus
+        context['resources_form_dl_workflow_label'] = resources_form_dl_workflow_label
+        context['resources_form_dl_workflow'] = resources_form_dl_workflow
+        context['resources_form_applications_list_label'] = resources_form_applications_list_label
+        context['resources_form_applications_list'] = resources_form_applications_list
+        context['resources_form_training_or_inference_label'] = resources_form_training_or_inference_label
+        context['resources_form_training_or_inference'] = resources_form_training_or_inference
+        context['resources_form_for_coursework_label'] = resources_form_for_coursework_label
+        context['resources_form_for_coursework'] = resources_form_for_coursework
+        context['resources_form_system_label'] = resources_form_system_label
+        context['resources_form_system'] = resources_form_system
+        context['resources_form_start_date_label'] = resources_form_start_date_label
+        context['resources_form_start_date'] = resources_form_start_date
+        context['resources_form_end_date_label'] = resources_form_end_date_label
+        context['resources_form_end_date'] = resources_form_end_date
+        context['resources_form_phi_association_label'] = resources_form_phi_association_label
+        context['resources_form_phi_association'] = resources_form_phi_association
+        context['resources_form_access_level_label'] = resources_form_access_level_label
+        context['resources_form_access_level'] = resources_form_access_level
+        context['resources_form_confirm_understanding_label'] = resources_form_confirm_understanding_label
+        context['resources_form_confirm_understanding'] = resources_form_confirm_understanding
+        context['resources_form_primary_contact'] = resources_form_primary_contact
+        context['resources_form_primary_contact_label'] = resources_form_primary_contact_label
+        context['resources_form_secondary_contact'] = resources_form_secondary_contact
+        context['resources_form_secondary_contact_label'] = resources_form_secondary_contact_label
+        context['resources_form_department_full_name'] = resources_form_department_full_name
+        context['resources_form_department_full_name_label'] = resources_form_department_full_name_label
+        context['resources_form_department_short_name'] = resources_form_department_short_name
+        context['resources_form_department_short_name_label'] = resources_form_department_short_name_label
+        context['resources_form_fiscal_officer'] = resources_form_fiscal_officer
+        context['resources_form_fiscal_officer_label'] = resources_form_fiscal_officer_label
+        context['resources_form_account_number'] = resources_form_account_number
+        context['resources_form_account_number_label'] = resources_form_account_number_label
+        context['resources_form_sub_account_number'] = resources_form_sub_account_number
+        context['resources_form_sub_account_number_label'] = resources_form_sub_account_number_label
+        context['resources_form_it_pros'] = resources_form_it_pros
+        context['resources_form_it_pros_label'] = resources_form_it_pros_label
+        context['resources_form_devices_ip_addresses'] = resources_form_devices_ip_addresses
+        context['resources_form_devices_ip_addresses_label'] = resources_form_devices_ip_addresses_label
+        context['resources_form_data_management_plan'] = resources_form_data_management_plan
+        context['resources_form_data_management_plan_label'] = resources_form_data_management_plan_label
         context['resources_with_eula'] = resources_with_eula
         context['resources_with_accounts'] = list(Resource.objects.filter(
             name__in=list(ALLOCATION_ACCOUNT_MAPPING.keys())).values_list('id', flat=True))
@@ -552,12 +868,127 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         resource_obj = form_data.get('resource')
         justification = form_data.get('justification')
         quantity = form_data.get('quantity', 1)
+        storage_space = form_data.get('storage_space')
+        leverage_multiple_gpus = form_data.get('leverage_multiple_gpus')
+        dl_workflow = form_data.get('dl_workflow')
+        applications_list = form_data.get('applications_list')
+        training_or_inference = form_data.get('training_or_inference')
+        for_coursework = form_data.get('for_coursework')
+        system = form_data.get('system')
+        is_grand_challenge = form_data.get('is_grand_challenge')
+        grand_challenge_program = form_data.get('grand_challenge_program')
+        start_date = form_data.get('start_date')
+        end_date = form_data.get('end_date')
+        use_indefinitely = form_data.get('use_indefinitely')
+        phi_association = form_data.get('phi_association')
+        access_level = form_data.get('access_level')
+        confirm_understanding = form_data.get('confirm_understanding')
+        unit = form_data.get('unit')
+        primary_contact = form_data.get('primary_contact')
+        secondary_contact = form_data.get('secondary_contact')
+        department_full_name = form_data.get('department_full_name')
+        department_short_name = form_data.get('department_short_name')
+        fiscal_officer = form_data.get('fiscal_officer')
+        account_number = form_data.get('account_number')
+        sub_account_number = form_data.get('sub_account_number')
+        it_pros = form_data.get('it_pros')
+        devices_ip_addresses = form_data.get('devices_ip_addresses')
+        data_management_plan = form_data.get('data_management_plan')
         allocation_account = form_data.get('allocation_account', None)
         # A resource is selected that requires an account name selection but user has no account names
         if ALLOCATION_ACCOUNT_ENABLED and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING and AllocationAttributeType.objects.filter(
                 name=ALLOCATION_ACCOUNT_MAPPING[resource_obj.name]).exists() and not allocation_account:
             form.add_error(None, format_html(
                 'You need to create an account name. Create it by clicking the link under the "Allocation account" field.'))
+            return self.form_invalid(form)
+
+        # Check if the required values exist based on what resource was selected.
+        error = False
+        if resource_obj.name == 'Priority Boost':
+            use_indefinitely = is_grand_challenge
+            if system == '' or (end_date is None and not is_grand_challenge):
+                error = True
+            elif is_grand_challenge and grand_challenge_program == '':
+                error = True
+            elif end_date is not None and end_date <= date.today():
+                form.add_error(None, format_html(
+                    'Please select a date later than today.'
+                    )
+                )
+                return self.form_invalid(form)
+        elif resource_obj.name == 'Carbonate DL':
+            if leverage_multiple_gpus == '' or training_or_inference == '' or for_coursework == '':
+                error = True
+        elif resource_obj.name == 'Carbonate GPU':
+            if leverage_multiple_gpus == '' or dl_workflow == '' or for_coursework == '':
+                error = True
+        elif resource_obj.name == 'Carbonate Precision Health Initiative (PHI) Nodes':
+            if phi_association == '':
+                error = True
+        elif resource_obj.name == 'cBioPortal':
+            if phi_association == '' or access_level == '' or confirm_understanding is False:
+                error = True
+        elif resource_obj.name == 'Geode-Projects':
+            if (
+                storage_space is None
+                or unit == ''
+                or (not use_indefinitely and end_date is None)
+                or start_date is None
+                or primary_contact == ''
+                or secondary_contact == ''
+                or department_full_name == ''
+                or department_short_name == ''
+                or fiscal_officer == ''
+                or account_number == ''
+                or it_pros == ''
+                or devices_ip_addresses == ''
+                or data_management_plan == ''
+            ):
+                error = True
+            elif (storage_space <= 0 and unit == 'TB') or (storage_space < 200 and unit == 'GB'):
+                form.add_error(None, format_html(
+                    'Please enter a storage amount greater than or equal to 200GB.'
+                    )
+                )
+                return self.form_invalid(form)
+            elif start_date <= date.today():
+                form.add_error(None, format_html(
+                    'Please select a start date later than today.'
+                    )
+                )
+                return self.form_invalid(form)
+            elif not use_indefinitely and end_date <= date.today():
+                form.add_error(None, format_html(
+                    'Please select an end date later than today.'
+                    )
+                )
+                return self.form_invalid(form)
+            elif not use_indefinitely and start_date >= end_date:
+                form.add_error(None, format_html(
+                    'Start date must be earlier than end date.'
+                    )
+                )
+                return self.form_invalid(form)
+            elif not len(account_number) == 9:
+                form.add_error(None, format_html(
+                    'Account number must have a format of 00-000-00.'
+                    )
+                )
+                return self.form_invalid(form)
+            elif not account_number[2] == '-' or not account_number[6] == '-':
+                form.add_error(None, format_html(
+                    'Account number must have a format of 00-000-00.'
+                    )
+                )
+                return self.form_invalid(form)
+
+            storage_space = str(storage_space) + unit
+
+        if error:
+            form.add_error(None, format_html(
+                'Please fill out all the required fields.'
+                )
+            )
             return self.form_invalid(form)
 
         usernames = form_data.get('users')
@@ -567,6 +998,47 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         users = [User.objects.get(username=username) for username in usernames]
         if project_obj.pi not in users:
             users.append(project_obj.pi)
+
+        denied_users = []
+        resource_name = ''
+        for user in users:
+            username = user.username
+            exists = False
+            if resource_obj.name == 'Priority Boost':
+                if system == "Carbonate":
+                    exists = resource_obj.check_user_account_exists(username, 'CN=iu-entlmt-app-rt-carbonate-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu')
+                    resource_name = 'Carbonate'
+                elif system == "BigRed3":
+                    exists = resource_obj.check_user_account_exists(username, 'CN=iu-entlmt-app-rt-bigred3-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu')
+                    resource_name = 'Big Red 3'
+
+                if not exists:
+                    denied_users.append(username)
+            else:
+                if not resource_obj.check_user_account_exists(username):
+                    denied_users.append(username)
+                    resource_name = 'Carbonate'
+
+        if denied_users:
+            form.add_error(None, format_html(
+                'The following users do not have an account on {}: {}. They will need to create an account <a href="https://access.iu.edu/Accounts/Create">here</a>.'.format(resource_name, ', '.join(denied_users))
+            ))
+            return self.form_invalid(form)
+
+        denied_users = []
+        if resource_obj.name == "Geode-Projects":
+            ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
+            search_class_obj = ldap_search()
+            for username in [primary_contact, secondary_contact, fiscal_officer] + it_pros.split(','):
+                attributes = search_class_obj.search_a_user(username, ['memberOf'])
+                if attributes['memberOf'] is None:
+                    denied_users.append(username)
+
+        if denied_users:
+            form.add_error(None, format_html(
+                'The following usernames are not valid: {}'.format(', '.join(denied_users))
+            ))
+            return self.form_invalid(form)
 
         if INVOICE_ENABLED and resource_obj.requires_payment:
             allocation_status_obj = AllocationStatusChoice.objects.get(
@@ -579,6 +1051,31 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             project=project_obj,
             justification=justification,
             quantity=quantity,
+            storage_space=storage_space,
+            leverage_multiple_gpus=leverage_multiple_gpus,
+            dl_workflow=dl_workflow,
+            applications_list=applications_list,
+            training_or_inference=training_or_inference,
+            for_coursework=for_coursework,
+            system=system,
+            is_grand_challenge=is_grand_challenge,
+            grand_challenge_program=grand_challenge_program,
+            start_date=start_date,
+            end_date=end_date,
+            use_indefinitely=use_indefinitely,
+            phi_association=phi_association,
+            access_level=access_level,
+            confirm_understanding=confirm_understanding,
+            primary_contact=primary_contact,
+            secondary_contact=secondary_contact,
+            department_full_name=department_full_name,
+            department_short_name=department_short_name,
+            fiscal_officer=fiscal_officer,
+            account_number=account_number,
+            sub_account_number=sub_account_number,
+            it_pros=it_pros,
+            devices_ip_addresses=devices_ip_addresses,
+            data_management_plan=data_management_plan,
             status=allocation_status_obj
         )
         allocation_obj.resources.add(resource_obj)
@@ -718,8 +1215,8 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         formset = formset(request.POST, initial=users_to_add,
                           prefix='userform')
 
-        users_added_count = 0
-
+        added_users = []
+        denied_users = []
         if formset.is_valid():
 
             allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(
@@ -729,10 +1226,15 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                 user_form_data = form.cleaned_data
                 if user_form_data['selected']:
 
-                    users_added_count += 1
-
                     user_obj = User.objects.get(
                         username=user_form_data.get('username'))
+
+                    username = user_obj.username
+                    if allocation_obj.check_user_account_exists_on_resource(username):
+                        added_users.append(username)
+                    else:
+                        denied_users.append(username)
+                        continue
 
                     if allocation_obj.allocationuser_set.filter(user=user_obj).exists():
                         allocation_user_obj = allocation_obj.allocationuser_set.get(
@@ -745,8 +1247,16 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
                     allocation_activate_user.send(sender=self.__class__,
                                                   allocation_user_pk=allocation_user_obj.pk)
-            messages.success(
-                request, 'Added {} users to allocation.'.format(users_added_count))
+            if added_users:
+                messages.success(
+                    request,
+                    'Added user(s) {} to allocation.'.format(', '.join(added_users))
+                )
+            if denied_users:
+                messages.warning(
+                    request,
+                    'Did not add user(s) {} to allocation. An account is needed for this resource: https://access.iu.edu/Accounts/Create.'.format(', '.join(denied_users))
+                )
         else:
             for error in formset.errors:
                 messages.error(request, error)
@@ -1032,6 +1542,9 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
         start_date = datetime.datetime.now()
         end_date = datetime.datetime.now(
         ) + relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)
+
+        if allocation_obj.use_indefinitely:
+            end_date = None
 
         allocation_obj.status = allocation_status_active_obj
         allocation_obj.start_date = start_date
