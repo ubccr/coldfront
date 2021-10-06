@@ -1,3 +1,6 @@
+from coldfront.core.allocation.models import AllocationPeriod
+from coldfront.core.allocation.models import AllocationRenewalRequest
+from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
 from coldfront.core.project.forms import DisabledChoicesSelectWidget
 from coldfront.core.project.forms import PooledProjectChoiceField
 from coldfront.core.project.models import Project
@@ -63,8 +66,19 @@ class ProjectRenewalPISelectionForm(forms.Form):
         role = ProjectUserRoleChoice.objects.get(name='Principal Investigator')
         status = ProjectUserStatusChoice.objects.get(name='Active')
 
-        pi_project_users = ProjectUser.objects.filter(
-            project__pk__in=self.project_pks, role=role, status=status)
+        pi_project_users = ProjectUser.objects.prefetch_related('user').filter(
+            project__pk__in=self.project_pks, role=role, status=status
+        ).order_by('user__last_name', 'user__first_name')
+        users = list(pi_project_users.values_list('user', flat=True))
+
+        # TODO: Account for other periods.
+        allocation_period = AllocationPeriod.objects.get(name='AY21-22')
+        pis_with_non_denied_renewal_requests_this_period = set(list(
+            AllocationRenewalRequest.objects.filter(
+                pi__in=users,
+                allocation_period=allocation_period,
+                status__name__in=['Under Review', 'Approved', 'Complete']
+            ).values_list('pi', flat=True)))
 
         # Disable any PIs who are inactive or who have already renewed their
         # allocations during this allocation period.
@@ -72,7 +86,9 @@ class ProjectRenewalPISelectionForm(forms.Form):
         for project_user in pi_project_users:
             if project_user.status != status:
                 exclude_project_user_pks.add(project_user.pk)
-            # TODO
+            if (project_user.user.pk in
+                    pis_with_non_denied_renewal_requests_this_period):
+                exclude_project_user_pks.add(project_user.pk)
 
         self.fields['PI'].queryset = pi_project_users
         self.fields['PI'].widget.disabled_choices = exclude_project_user_pks
