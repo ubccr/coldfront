@@ -1,3 +1,8 @@
+from coldfront.core.allocation.models import Allocation
+from coldfront.core.allocation.models import AllocationPeriod
+from coldfront.core.allocation.models import AllocationRenewalRequest
+from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
+from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.project.forms import SavioProjectDetailsForm
 from coldfront.core.project.forms import SavioProjectSurveyForm
 from coldfront.core.project.forms_.renewal_forms import ProjectRenewalPISelectionForm
@@ -6,15 +11,19 @@ from coldfront.core.project.forms_.renewal_forms import ProjectRenewalProjectSel
 from coldfront.core.project.forms_.renewal_forms import ProjectRenewalReviewAndSubmitForm
 from coldfront.core.project.forms_.renewal_forms import SavioProjectRenewalRequestForm
 from coldfront.core.project.models import Project
+from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
+from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils_.renewal_utils import get_pi_current_active_fca_project
 from coldfront.core.project.utils_.renewal_utils import is_pooled
+from coldfront.core.resource.models import Resource
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.mixins import UserPassesTestMixin
+from django.db import IntegrityError
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.views.generic.edit import FormView
@@ -27,52 +36,10 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class SavioProjectRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
-                                     FormView):
-    form_class = SavioProjectRenewalRequestForm
-    template_name = 'project/project_renewal/project_renewal_request.html'
-    login_url = '/'
+class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
+                                   SessionWizardView):
 
-    # TODO
-
-    def test_func(self):
-        """UserPassesTestMixin tests."""
-        if self.request.user.is_superuser:
-            return True
-
-        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-
-        if project_obj.projectuser_set.filter(
-                user=self.request.user,
-                role__name__in=['Manager', 'Principal Investigator'],
-                status__name='Active').exists():
-            return True
-
-    def dispatch(self, request, *args, **kwargs):
-        pk = self.kwargs.get('pk')
-        self.project_obj = get_object_or_404(Project, pk=pk)
-        return super().dispatch(request, *args, **kwargs)
-
-    def form_valid(self, form):
-        form_data = form.cleaned_data
-        pass
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['project'] = self.project_obj
-        return context
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['project_pk'] = self.project_obj.pk
-        return kwargs
-
-
-# TODO: Rename this.
-class PoolingMockUpTmpView(LoginRequiredMixin, UserPassesTestMixin,
-                           SessionWizardView):
-
-    # TODO: May need to give allocation type as input: fc_, ic_, pc_.
+    # TODO: Add logging, sending messages to users, etc.
 
     FORMS = [
         ('pi_selection', ProjectRenewalPISelectionForm),
@@ -141,7 +108,6 @@ class PoolingMockUpTmpView(LoginRequiredMixin, UserPassesTestMixin,
     def get_form_kwargs(self, step):
         kwargs = {}
         step = int(step)
-        # TODO: Refine this.
         if step == self.step_numbers_by_form_name['pi_selection']:
             project_pks = []
             user = self.request.user
@@ -161,20 +127,16 @@ class PoolingMockUpTmpView(LoginRequiredMixin, UserPassesTestMixin,
             tmp = {}
             self.__set_data_from_previous_steps(step, tmp)
             kwargs['pi_pk'] = tmp['PI'].user.pk
-
             form_class = ProjectRenewalPoolingPreferenceForm
             choices = (
                 form_class.UNPOOLED_TO_POOLED,
                 form_class.POOLED_TO_POOLED_DIFFERENT,
             )
             kwargs['non_owned_projects'] = tmp['preference'] in choices
-
             if 'current_project' in tmp:
                 kwargs['exclude_project_pk'] = tmp['current_project'].pk
         elif step == self.step_numbers_by_form_name['new_project_details']:
-            # TODO: Handle others.
             kwargs['allocation_type'] = SavioProjectAllocationRequest.FCA
-
         return kwargs
 
     def get_template_names(self):
@@ -184,14 +146,64 @@ class PoolingMockUpTmpView(LoginRequiredMixin, UserPassesTestMixin,
         """Perform processing and store information in a request
         object."""
         redirect_url = '/'
+
+        # Retrieve form data; include empty dictionaries for skipped steps.
+        data = iter([form.cleaned_data for form in form_list])
+        form_data = [{} for _ in range(len(self.form_list))]
+        for step in sorted(form_dict.keys()):
+            form_data[int(step)] = next(data)
+
+        try:
+            tmp = {}
+            self.__set_data_from_previous_steps(len(self.FORMS), tmp)
+
+            form_class = ProjectRenewalPoolingPreferenceForm
+            if tmp['preference'] == form_class.POOLED_TO_UNPOOLED_NEW:
+                requested_project = self.__handle_create_new_project(form_data)
+                survey_data = self.__get_survey_data(form_data)
+                new_project_request = self.__handle_create_new_project_request(
+                    tmp['PI'], requested_project, survey_data)
+            else:
+                requested_project = tmp['requested_project']
+
+            request = self.__handle_create_new_renewal_request(
+                tmp['PI'], tmp['current_project'], requested_project)
+
+            # TODO
+            # Send a notification email to admins.
+            try:
+                pass
+            except Exception as e:
+                logger.error(f'Failed to send notification email. Details:\n')
+                logger.exception(e)
+            # Send a notification email to the PI if the requester differs.
+            if request.requester != request.pi:
+                try:
+                    pass
+                except Exception as e:
+                    logger.error(
+                        f'Failed to send notification email. Details:\n')
+                    logger.exception(e)
+            # TODO: May need to send email to new pooling PIs.
+        except Exception as e:
+            logger.exception(e)
+            message = f'Unexpected failure. Please contact an administrator.'
+            messages.error(self.request, message)
+        else:
+            message = (
+                'Thank you for your submission. It will be reviewed and '
+                'processed by administrators.')
+            messages.success(self.request, message)
+
         return HttpResponseRedirect(redirect_url)
 
     @staticmethod
     def condition_dict():
+        view = AllocationRenewalRequestView
         return {
-            '2': PoolingMockUpTmpView.show_project_selection_form_condition,
-            '3': PoolingMockUpTmpView.show_new_project_forms_condition,
-            '4': PoolingMockUpTmpView.show_new_project_forms_condition,
+            '2': view.show_project_selection_form_condition,
+            '3': view.show_new_project_forms_condition,
+            '4': view.show_new_project_forms_condition,
         }
 
     @staticmethod
@@ -199,7 +211,8 @@ class PoolingMockUpTmpView(LoginRequiredMixin, UserPassesTestMixin,
         """Only show the forms needed for a new Project if the pooling
         preference is to create one."""
         step_name = 'pooling_preference'
-        step = str(PoolingMockUpTmpView.step_numbers_by_form_name[step_name])
+        step = str(
+            AllocationRenewalRequestView.step_numbers_by_form_name[step_name])
         cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
         form_class = ProjectRenewalPoolingPreferenceForm
         return (cleaned_data.get('preference', None) ==
@@ -211,7 +224,8 @@ class PoolingMockUpTmpView(LoginRequiredMixin, UserPassesTestMixin,
         preference is to start pooling, to pool with a different
         Project, or to select a different Project owned by the PI."""
         step_name = 'pooling_preference'
-        step = str(PoolingMockUpTmpView.step_numbers_by_form_name[step_name])
+        step = str(
+            AllocationRenewalRequestView.step_numbers_by_form_name[step_name])
         cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
         form_class = ProjectRenewalPoolingPreferenceForm
         preferences = (
@@ -220,6 +234,70 @@ class PoolingMockUpTmpView(LoginRequiredMixin, UserPassesTestMixin,
             form_class.POOLED_TO_UNPOOLED_OLD,
         )
         return cleaned_data.get('preference', None) in preferences
+
+    def __get_survey_data(self, form_data):
+        """Return provided survey data."""
+        step_number = self.step_numbers_by_form_name['new_project_survey']
+        return form_data[step_number]
+
+    def __handle_create_new_project(self, form_data):
+        """Create a new project and an allocation to the Savio Compute
+        resource. This method should only be invoked if a new Project"""
+        step_number = self.step_numbers_by_form_name['new_project_details']
+        data = form_data[step_number]
+
+        # Create the new Project.
+        status = ProjectStatusChoice.objects.get(name='New')
+        try:
+            project = Project.objects.create(
+                name=data['name'],
+                status=status,
+                title=data['title'],
+                description=data['description'])
+        except IntegrityError as e:
+            logger.error(
+                f'Project {data["name"]} unexpectedly already exists.')
+            raise e
+
+        # Create an allocation to the "Savio Compute" resource.
+        status = AllocationStatusChoice.objects.get(name='New')
+        allocation = Allocation.objects.create(project=project, status=status)
+        resource = Resource.objects.get(name='Savio Compute')
+        allocation.resources.add(resource)
+        allocation.save()
+
+        return project
+
+    def __handle_create_new_project_request(self, pi, project, survey_data):
+        """Create a new SavioProjectAllocationRequest. This method
+        should only be invoked if a new Project is requested."""
+        request_kwargs = dict()
+        request_kwargs['requester'] = self.request.user
+        request_kwargs['allocation_type'] = SavioProjectAllocationRequest.FCA
+        request_kwargs['pi'] = pi
+        request_kwargs['project'] = project
+        request_kwargs['pool'] = False
+        request_kwargs['survey_answers'] = survey_data
+        request_kwargs['status'] = \
+            ProjectAllocationRequestStatusChoice.objects.get(
+                name='Under Review')
+        return SavioProjectAllocationRequest.objects.create(**request_kwargs)
+
+    def __handle_create_new_renewal_request(self, pi, pre_project,
+                                            post_project):
+        """Create a new AllocationRenewalRequest."""
+        # TODO: Fill in the correct name.
+        allocation_period = AllocationPeriod.objects.get(name='')
+        status = AllocationRenewalRequestStatusChoice.objects.get(
+            name='Under Review')
+        request_kwargs = dict()
+        request_kwargs['requester'] = self.request.user,
+        request_kwargs['pi'] = pi
+        request_kwargs['allocation_period'] = allocation_period
+        request_kwargs['status'] = status
+        request_kwargs['pre_project'] = pre_project
+        request_kwargs['post_project'] = post_project
+        return AllocationRenewalRequest.objects.create(**request_kwargs)
 
     def __set_data_from_previous_steps(self, step, dictionary):
         """Update the given dictionary with data from previous steps."""
@@ -257,7 +335,7 @@ class PoolingMockUpTmpView(LoginRequiredMixin, UserPassesTestMixin,
                 str(project_selection_form_step))
             if data:
                 dictionary.update(data)
-                dictionary['requested_project'] = data["project"].name
+                dictionary['requested_project'] = data['project'].name
 
         new_project_details_form_step = self.step_numbers_by_form_name[
             'new_project_details']
@@ -266,4 +344,48 @@ class PoolingMockUpTmpView(LoginRequiredMixin, UserPassesTestMixin,
                 str(new_project_details_form_step))
             if data:
                 dictionary.update(data)
-                dictionary['requested_project'] = data["name"]
+                dictionary['requested_project'] = data['name']
+
+
+# TODO: Rename this (e.g., SpecificProject); remove "Savio"
+class SavioAllocationRenewalRequestView(LoginRequiredMixin,
+                                        UserPassesTestMixin, FormView):
+    form_class = SavioProjectRenewalRequestForm
+    template_name = 'project/project_renewal/project_renewal_request.html'
+    login_url = '/'
+
+    project_obj = None
+
+    # TODO
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+
+        if project_obj.projectuser_set.filter(
+                user=self.request.user,
+                role__name__in=['Manager', 'Principal Investigator'],
+                status__name='Active').exists():
+            return True
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        self.project_obj = get_object_or_404(Project, pk=pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        form_data = form.cleaned_data
+        pass
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['project'] = self.project_obj
+        return context
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['project_pk'] = self.project_obj.pk
+        return kwargs

@@ -131,20 +131,28 @@ urlpatterns += [
 ]
 
 
-from coldfront.core.project.views_.renewal_views import SavioProjectRenewalRequestView
-from coldfront.core.project.views_.renewal_views import PoolingMockUpTmpView
+from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestDetailView
+from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestListView
+from coldfront.core.project.views_.renewal_views.request_views import AllocationRenewalRequestView
+from coldfront.core.project.views_.renewal_views.request_views import SavioAllocationRenewalRequestView
 
 
 urlpatterns += [
     path('<int:pk>/renew',
-         SavioProjectRenewalRequestView.as_view(),
+         SavioAllocationRenewalRequestView.as_view(),
          name='project-renew'),
-
-    # TODO: Rename this.
-    path('pooling-mock-up',
-         PoolingMockUpTmpView.as_view(
-             condition_dict=PoolingMockUpTmpView.condition_dict(),
+    path('renew-pi-allocation/',
+         AllocationRenewalRequestView.as_view(
+             condition_dict=AllocationRenewalRequestView.condition_dict(),
          ),
-         name='pooling-mock-up'),
-
+         name='renew-pi-allocation'),
+    path('pi-allocation-renewal-pending-request-list/',
+         AllocationRenewalRequestListView.as_view(completed=False),
+         name='pi-allocation-renewal-pending-request-list'),
+    path('pi-allocation-renewal-completed-request-list/',
+         AllocationRenewalRequestListView.as_view(completed=True),
+         name='pi-allocation-renewal-completed-request-list'),
+    path('pi-allocation-renewal-request-detail/<int:pk>/',
+         AllocationRenewalRequestDetailView.as_view(),
+         name='pi-allocation-renewal-request-detail')
 ]
