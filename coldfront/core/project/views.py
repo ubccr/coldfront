@@ -1958,7 +1958,9 @@ class ProjectAutoApproveJoinRequestsView(LoginRequiredMixin,
 
 
 # TODO: Once finalized, move these imports above.
-from coldfront.core.project.forms import ProjectAllocationReviewForm
+from coldfront.core.allocation.models import AllocationRenewalRequest
+from coldfront.core.project.forms import ReviewDenyForm
+from coldfront.core.project.forms import ReviewStatusForm
 from coldfront.core.project.forms import SavioProjectAllocationTypeForm
 from coldfront.core.project.forms import SavioProjectDetailsForm
 from coldfront.core.project.forms import SavioProjectExistingPIForm
@@ -1969,7 +1971,6 @@ from coldfront.core.project.forms import SavioProjectPoolAllocationsForm
 from coldfront.core.project.forms import SavioProjectPooledProjectSelectionForm
 from coldfront.core.project.forms import SavioProjectRechargeExtraFieldsForm
 from coldfront.core.project.forms import SavioProjectReviewAllocationDatesForm
-from coldfront.core.project.forms import SavioProjectReviewDenyForm
 from coldfront.core.project.forms import SavioProjectReviewMemorandumSignedForm
 from coldfront.core.project.forms import SavioProjectReviewSetupForm
 from coldfront.core.project.forms import SavioProjectSurveyForm
@@ -2630,8 +2631,17 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         return HttpResponseRedirect(self.redirect)
 
     def __get_service_units_to_allocate(self):
-        """Return the number of service units to allocate to the
-        project if it were to be approved now."""
+        """Return the number of service units to allocate to the project
+        if it were to be approved now.
+
+        If the request was created as part of an allocation renewal, it
+        may be associated with at most one AllocationRenewalRequest. If
+        so, service units will be allocated when the latter request is
+        approved."""
+        if AllocationRenewalRequest.objects.filter(
+                new_project_request=self.request_obj).exists():
+            return settings.ALLOCATION_MIN
+
         allocation_type = self.request_obj.allocation_type
         now = utc_now_offset_aware()
         if allocation_type == SavioProjectAllocationRequest.CO:
@@ -2680,7 +2690,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 class SavioProjectReviewEligibilityView(LoginRequiredMixin,
                                         UserPassesTestMixin,
                                         SavioProjectRequestMixin, FormView):
-    form_class = ProjectAllocationReviewForm
+    form_class = ReviewStatusForm
     template_name = (
         'project/project_request/savio/project_review_eligibility.html')
     login_url = '/'
@@ -2755,7 +2765,7 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
 
 class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
                                       SavioProjectRequestMixin, FormView):
-    form_class = ProjectAllocationReviewForm
+    form_class = ReviewStatusForm
     template_name = (
         'project/project_request/savio/project_review_readiness.html')
     login_url = '/'
@@ -3126,7 +3136,7 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
 
 class SavioProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
                                  SavioProjectRequestMixin, FormView):
-    form_class = SavioProjectReviewDenyForm
+    form_class = ReviewDenyForm
     template_name = (
         'project/project_request/savio/project_review_deny.html')
     login_url = '/'
@@ -3437,7 +3447,7 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
 class VectorProjectReviewEligibilityView(LoginRequiredMixin,
                                          UserPassesTestMixin, FormView):
-    form_class = ProjectAllocationReviewForm
+    form_class = ReviewStatusForm
     template_name = (
         'project/project_request/vector/project_review_eligibility.html')
     login_url = '/'

@@ -793,7 +793,7 @@ class SavioProjectSurveyForm(forms.Form):
                 self.fields[field].disabled = True
 
 
-class ProjectAllocationReviewForm(forms.Form):
+class ReviewStatusForm(forms.Form):
 
     status = forms.ChoiceField(
         choices=(
@@ -956,7 +956,7 @@ class SavioProjectReviewSetupForm(forms.Form):
         return final_name
 
 
-class SavioProjectReviewDenyForm(forms.Form):
+class ReviewDenyForm(forms.Form):
 
     justification = forms.CharField(
         help_text=(
