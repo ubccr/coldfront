@@ -27,60 +27,7 @@ Project Renewal Request Detail
 </h1>
 <hr>
 
-<div class="card mb-3">
-  <div class="card-header">
-    <h2>
-      <i class="fas fa-info-circle" aria-hidden="true"></i>
-      Request Information
-    </h2>
-  </div>
-  <div class="card-body">
-    <p class="card-text text-justify">
-      <strong>Request #: </strong>
-      {{ renewal_request.pk }}
-    </p>
-    <p class="card-text text-justify">
-      <strong>Date Requested/Last Modified: </strong>
-      {{ renewal_request.modified|date:"M. d, Y" }}
-    </p>
-    <p class="card-text text-justify">
-      <strong>Requester: </strong>
-      {% with requester=renewal_request.requester %}
-        {{ requester.first_name }} {{ requester.last_name }} ({{ requester.email }})
-      {% endwith %}
-    </p>
-    <p class="card-text text-justify">
-      <strong>PI: </strong>
-      {% with pi=renewal_request.pi %}
-        {{ pi.first_name }} {{ pi.last_name }} ({{ pi.email }})
-      {% endwith %}
-    </p>
-    <p class="card-text text-justify">
-      <strong>Current Project: </strong>
-      {% with pre_project=renewal_request.pre_project %}
-        {% if pre_project %}
-          {{ pre_project.name }}
-        {% else %}
-          N/A
-        {% endif %}
-      {% endwith %}
-    </p>
-    <p class="card-text text-justify">
-      <strong>Requested Project: </strong>
-      {% with post_project=renewal_request.post_project %}
-        {% if post_project %}
-          {{ post_project.name }}
-        {% else %}
-          N/A
-        {% endif %}
-      {% endwith %}
-    </p>
-    <p class="card-text text-justify">
-      <strong>Number of Service Units to Add (if approved now): </strong>
-      TODO
-    </p>
-  </div>
-</div>
+{% include 'project/project_renewal/request_card.html' with renewal_request=renewal_request %}
 
 <div class="card mb-3">
   <div class="card-header">
