@@ -5,11 +5,11 @@ from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoic
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.project.forms import SavioProjectDetailsForm
 from coldfront.core.project.forms import SavioProjectSurveyForm
-from coldfront.core.project.forms_.renewal_forms import ProjectRenewalPISelectionForm
-from coldfront.core.project.forms_.renewal_forms import ProjectRenewalPoolingPreferenceForm
-from coldfront.core.project.forms_.renewal_forms import ProjectRenewalProjectSelectionForm
-from coldfront.core.project.forms_.renewal_forms import ProjectRenewalReviewAndSubmitForm
-from coldfront.core.project.forms_.renewal_forms import SavioProjectRenewalRequestForm
+from coldfront.core.project.forms_.renewal_forms.request_forms import ProjectRenewalPISelectionForm
+from coldfront.core.project.forms_.renewal_forms.request_forms import ProjectRenewalPoolingPreferenceForm
+from coldfront.core.project.forms_.renewal_forms.request_forms import ProjectRenewalProjectSelectionForm
+from coldfront.core.project.forms_.renewal_forms.request_forms import ProjectRenewalReviewAndSubmitForm
+from coldfront.core.project.forms_.renewal_forms.request_forms import SavioProjectRenewalRequestForm
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.models import ProjectStatusChoice
@@ -157,17 +157,20 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
             tmp = {}
             self.__set_data_from_previous_steps(len(self.FORMS), tmp)
 
+            new_project_request = None
+
             form_class = ProjectRenewalPoolingPreferenceForm
             if tmp['preference'] == form_class.POOLED_TO_UNPOOLED_NEW:
                 requested_project = self.__handle_create_new_project(form_data)
                 survey_data = self.__get_survey_data(form_data)
                 new_project_request = self.__handle_create_new_project_request(
-                    tmp['PI'], requested_project, survey_data)
+                    tmp['PI'].user, requested_project, survey_data)
             else:
                 requested_project = tmp['requested_project']
 
             request = self.__handle_create_new_renewal_request(
-                tmp['PI'], tmp['current_project'], requested_project)
+                tmp['PI'].user, tmp['current_project'], requested_project,
+                new_project_request=new_project_request)
 
             # TODO
             # Send a notification email to admins.
@@ -284,19 +287,21 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
         return SavioProjectAllocationRequest.objects.create(**request_kwargs)
 
     def __handle_create_new_renewal_request(self, pi, pre_project,
-                                            post_project):
+                                            post_project,
+                                            new_project_request=None):
         """Create a new AllocationRenewalRequest."""
         # TODO: Fill in the correct name.
-        allocation_period = AllocationPeriod.objects.get(name='')
+        allocation_period = AllocationPeriod.objects.get(name='AY21-22')
         status = AllocationRenewalRequestStatusChoice.objects.get(
             name='Under Review')
         request_kwargs = dict()
-        request_kwargs['requester'] = self.request.user,
+        request_kwargs['requester'] = self.request.user
         request_kwargs['pi'] = pi
         request_kwargs['allocation_period'] = allocation_period
         request_kwargs['status'] = status
         request_kwargs['pre_project'] = pre_project
         request_kwargs['post_project'] = post_project
+        request_kwargs['new_project_request'] = new_project_request
         return AllocationRenewalRequest.objects.create(**request_kwargs)
 
     def __set_data_from_previous_steps(self, step, dictionary):
