@@ -3,6 +3,7 @@ from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
 from coldfront.core.allocation.models import AllocationStatusChoice
+from coldfront.core.allocation.utils import prorated_allocation_amount
 from coldfront.core.project.forms import SavioProjectDetailsForm
 from coldfront.core.project.forms import SavioProjectSurveyForm
 from coldfront.core.project.forms_.renewal_forms.request_forms import ProjectRenewalPISelectionForm
@@ -19,7 +20,9 @@ from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils_.renewal_utils import get_pi_current_active_fca_project
 from coldfront.core.project.utils_.renewal_utils import is_pooled
 from coldfront.core.resource.models import Resource
+from coldfront.core.utils.common import utc_now_offset_aware
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.mixins import UserPassesTestMixin
@@ -350,6 +353,10 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
             if data:
                 dictionary.update(data)
                 dictionary['requested_project'] = data['name']
+
+        # TODO: Account for other allocation types.
+        dictionary['allocation_amount'] = prorated_allocation_amount(
+            settings.FCA_DEFAULT_ALLOCATION, utc_now_offset_aware())
 
 
 # TODO: Rename this (e.g., SpecificProject); remove "Savio"
