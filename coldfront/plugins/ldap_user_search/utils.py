@@ -18,7 +18,7 @@ class LDAPUserSearch(UserSearch):
         self.LDAP_BIND_DN = import_from_settings('LDAP_USER_SEARCH_BIND_DN', None)
         self.LDAP_BIND_PASSWORD = import_from_settings('LDAP_USER_SEARCH_BIND_PASSWORD', None)
 
-        self.server = Server(self.LDAP_SERVER_URI, use_ssl=True, connect_timeout=1)
+        self.server = Server(self.LDAP_SERVER_URI, use_ssl=True, connect_timeout=5)
         self.conn = Connection(self.server, self.LDAP_BIND_DN, self.LDAP_BIND_PASSWORD, auto_bind=True)
 
     def parse_ldap_entry(self, entry):
@@ -35,7 +35,7 @@ class LDAPUserSearch(UserSearch):
         return user_dict
 
     def search_a_user(self, user_search_string=None, search_by='all_fields'):
-        size_limit = 50
+        size_limit = 20
         if user_search_string and search_by == 'all_fields':
             filter = ldap.filter.filter_format("(|(givenName=*%s*)(sn=*%s*)(cn=*%s*)(mail=*%s*))", [user_search_string] * 4)
         elif user_search_string and search_by == 'username_only':
