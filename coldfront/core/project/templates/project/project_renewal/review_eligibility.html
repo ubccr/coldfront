@@ -4,17 +4,32 @@
 
 
 {% block title %}
-Savio Project Request - Review Readiness
+Allocation Renewal Request - Review Eligibility
 {% endblock %}
 
 
 {% block content %}
-<h1>Review Readiness</h1>
+<h1>Review Eligibility</h1>
 <hr>
 
-<p>Please determine whether the request's project satisfies the readiness criteria, based on the provided survey responses. If not, the request will be denied immediately, and a notification email will be sent to the requester and PI.</p>
+<p>
+  Please determine whether the request's PI is eligible for a Savio allowance.
 
+  {% if savio_request.allocation_type == "FCA" or savio_request.allocation_type == "PCA" %}
+    <b>
+      As part of this, confirm that the PI does not already have an existing
+      {{ savio_request.allocation_type }}, possibly under a different email
+      address.
+    </b>
+  {% endif %}
+
+  If the PI is ineligible, the request will be denied immediately, and a
+  notification email will be sent to the requester and PI.
+</p>
+
+{% comment %}
 {% include 'project/project_request/savio/project_request_card.html' with savio_request=savio_request %}
+{% endcomment %}
 
 <div class="card mb-3">
   <div class="card-header">
@@ -28,14 +43,18 @@ Savio Project Request - Review Readiness
       {% csrf_token %}
       {{ form|crispy }}
       <input class="btn btn-primary" type="submit" value="Submit" />
-      <a href="{% url 'savio-project-request-detail' savio_request.pk %}" class="btn btn-secondary">
+      <a
+          href="{% url 'pi-allocation-renewal-request-detail' allowance_request.pk %}"
+          class="btn btn-secondary">
         Cancel
       </a>
     </form>
   </div>
 </div>
 
+{% comment %}
 {% include 'project/project_request/savio/project_request_extra_fields_modal.html' with extra_fields_form=extra_fields_form %}
 {% include 'project/project_request/savio/project_request_survey_modal.html' with survey_form=survey_form %}
+{% endcomment %}
 
 {% endblock %}

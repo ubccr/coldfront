@@ -132,6 +132,8 @@ urlpatterns += [
 
 
 from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestDetailView
+from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestReviewDenyView
+from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestReviewEligibilityView
 from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestListView
 from coldfront.core.project.views_.renewal_views.request_views import AllocationRenewalRequestView
 from coldfront.core.project.views_.renewal_views.request_views import SavioAllocationRenewalRequestView
@@ -154,5 +156,12 @@ urlpatterns += [
          name='pi-allocation-renewal-completed-request-list'),
     path('pi-allocation-renewal-request-detail/<int:pk>/',
          AllocationRenewalRequestDetailView.as_view(),
-         name='pi-allocation-renewal-request-detail')
+         name='pi-allocation-renewal-request-detail'),
+    path('pi-allocation-renewal-request/<int:pk>/eligibility/',
+         AllocationRenewalRequestReviewEligibilityView.as_view(),
+         name='pi-allocation-renewal-request-review-eligibility'),
+    path('pi-allocation-renewal-request/<int:pk>/deny/',
+         AllocationRenewalRequestReviewDenyView.as_view(),
+         name='pi-allocation-renewal-request-review-deny'),
+
 ]
