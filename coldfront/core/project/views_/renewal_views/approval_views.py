@@ -66,8 +66,43 @@ class AllocationRenewalRequestListView(LoginRequiredMixin, TemplateView):
         return context
 
 
+class AllocationRenewalRequestMixin(object):
+
+    request_obj = None
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        try:
+            context['allocation_amount'] = \
+                self.__get_service_units_to_allocate()
+        except Exception as e:
+            logger.exception(e)
+            messages.error(self.request, self.error_message)
+            context['allocation_amount'] = 'Failed to compute.'
+        return context
+
+    @staticmethod
+    def get_redirect_url(pk):
+        return reverse(
+            'pi-allocation-renewal-request-detail', kwargs={'pk': pk})
+
+    @staticmethod
+    def __get_service_units_to_allocate():
+        """Return the number of service units to allocate to the project
+        if it were to be approved now."""
+        now = utc_now_offset_aware()
+        return prorated_allocation_amount(settings.FCA_DEFAULT_ALLOCATION, now)
+
+    def set_request_obj(self, pk):
+        self.request_obj = get_object_or_404(
+            AllocationRenewalRequest.objects.prefetch_related(
+                'pi', 'post_project', 'pre_project', 'requester'), pk=pk)
+
+
 class AllocationRenewalRequestDetailView(LoginRequiredMixin,
-                                         UserPassesTestMixin, DetailView):
+                                         UserPassesTestMixin,
+                                         AllocationRenewalRequestMixin,
+                                         DetailView):
     model = AllocationRenewalRequest
     template_name = (
         'project/project_renewal/project_renewal_request_detail.html')
@@ -90,9 +125,7 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.request_obj = get_object_or_404(
-            AllocationRenewalRequest.objects.prefetch_related(
-                'pi', 'requester'), pk=pk)
+        self.set_request_obj(pk)
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -118,7 +151,7 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
             message = 'Please complete the checklist before final activation.'
             messages.error(request, message)
             pk = self.request_obj.pk
-            return HttpResponseRedirect(self.__redirect_url(pk))
+            return HttpResponseRedirect(self.get_redirect_url(pk))
         try:
             num_service_units = self.__get_service_units_to_allocate()
             # TODO
@@ -169,31 +202,19 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
             ])
         return checklist
 
-    @staticmethod
-    def __get_service_units_to_allocate():
-        """Return the number of service units to allocate to the project
-        if it were to be approved now."""
-        now = utc_now_offset_aware()
-        return prorated_allocation_amount(settings.FCA_DEFAULT_ALLOCATION, now)
-
     def __is_checklist_complete(self):
         """Return whether the request is ready for final submission."""
         # TODO
         return False
 
-    @staticmethod
-    def __redirect_url(pk):
-        return reverse('savio-project-request-detail', kwargs={'pk': pk})
-
 
 class AllocationRenewalRequestReviewEligibilityView(LoginRequiredMixin,
                                                     UserPassesTestMixin,
+                                                    AllocationRenewalRequestMixin,
                                                     FormView):
     form_class = ReviewStatusForm
     template_name = 'project/project_renewal/review_eligibility.html'
     login_url = '/'
-
-    request_obj = None
 
     def test_func(self):
         """UserPassesTestMixin tests."""
@@ -205,11 +226,8 @@ class AllocationRenewalRequestReviewEligibilityView(LoginRequiredMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.request_obj = get_object_or_404(
-            AllocationRenewalRequest.objects.prefetch_related(
-                'pi', 'post_project', 'pre_project', 'requester'), pk=pk)
-        response_redirect = HttpResponseRedirect(
-            reverse('pi-allocation-renewal-request-detail', kwargs={'pk': pk}))
+        self.set_request_obj(pk)
+        response_redirect = HttpResponseRedirect(self.get_redirect_url(pk))
         status_name = self.request_obj.status.name
         if status_name in ['Approved', 'Complete', 'Denied']:
             message = f'You cannot review a request with status {status_name}.'
@@ -251,12 +269,12 @@ class AllocationRenewalRequestReviewEligibilityView(LoginRequiredMixin,
 
 
 class AllocationRenewalRequestReviewDenyView(LoginRequiredMixin,
-                                             UserPassesTestMixin, FormView):
+                                             UserPassesTestMixin,
+                                             AllocationRenewalRequestMixin,
+                                             FormView):
     form_class = ReviewDenyForm
     template_name = 'project/project_renewal/review_deny.html'
     login_url = '/'
-
-    request_obj = None
 
     def test_func(self):
         """UserPassesTestMixin tests."""
@@ -268,11 +286,8 @@ class AllocationRenewalRequestReviewDenyView(LoginRequiredMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.request_obj = get_object_or_404(
-            AllocationRenewalRequest.objects.prefetch_related(
-                'pi', 'post_project', 'pre_project', 'requester'), pk=pk)
-        response_redirect = HttpResponseRedirect(
-            reverse('pi-allocation-renewal-request-detail', kwargs={'pk': pk}))
+        self.set_request_obj(pk)
+        response_redirect = HttpResponseRedirect(self.get_redirect_url(pk))
         status_name = self.request_obj.status.name
         if status_name in ['Complete', 'Denied']:
             message = f'You cannot review a request with status {status_name}.'
@@ -314,6 +329,4 @@ class AllocationRenewalRequestReviewDenyView(LoginRequiredMixin,
         return initial
 
     def get_success_url(self):
-        return reverse(
-            'pi-allocation-renewal-request-detail',
-            kwargs={'pk': self.kwargs.get('pk')})
+        return self.get_redirect_url(self.kwargs.get('pk'))
