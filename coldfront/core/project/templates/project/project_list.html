@@ -159,6 +159,7 @@ $(document).on('click', '#form_reset_button', function() {
 
 function resetForm($form) {
   $form.find('input:text, textarea').val('');
+    $("select").val('');
 };
 
 $("#expand_button").click(function() {
