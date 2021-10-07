@@ -34,12 +34,12 @@ Project Detail
 <h1 class="text-justify">{{ project.name }}</h1> <hr>
 </div>
 
-{% if project.status.name != 'Archived' %}
+{% if project.status.name != 'Archived' and is_allowed_to_update_project %}
   <div class="card mb-3 bg-light">
     <div class="card-header">
       <h2 class="d-inline"><i class="fas fa-cubes"></i></a> <a name="manage-project">Manage Project</a></h2>
       <div class="float-right">
-          {% if project.status.name in 'Active, New' and is_allowed_to_update_project %}
+          {% if project.status.name in 'Active, New' %}
             <a class="btn btn-primary" href="{% url 'project-update' project.pk %}" role="button"><i class="far fa-edit" aria-hidden="true"></i> Update Project Information</a>
 
             {% if is_allowed_to_archive_project %}
@@ -50,9 +50,7 @@ Project Detail
     </div>
     <div class="card-body">
       {% if project.status.name != 'Archived' %}
-          {% if is_allowed_to_update_project %}
         <a class="btn btn-success" href="{% url 'project-add-users-search' project.pk %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
-              {% endif %}
         {% if not joins_auto_approved %}
           <a class="btn btn-success" href="{% url 'project-review-join-requests' project.pk %}" role="button">
             <i class="fas fa-user-plus" aria-hidden="true"></i>
@@ -119,7 +117,6 @@ Project Detail
         </a>
       {% endif %}
     </p>
-      <p class="card-text text-justify"><strong>Join Request Delay Period: </strong>{{ join_request_delay_period }} hours</p>
   </div>
 </div>
 

@@ -17,11 +17,9 @@
         <table class="table table-sm table-hover">
           <thead>
             <tr>
-                {% if can_add_users %}
               <th>
                 <input type="checkbox" class="check" id="selectAll">
               </th>
-                    {% endif %}
               <th scope="col">#</th>
               <th scope="col">Username</th>
               <th scope="col">First Name</th>
@@ -35,9 +33,7 @@
           <tbody>
             {% for form in formset %}
             <tr>
-                {% if can_add_users %}
               <td>{{ form.selected }}</td>
-                {% endif %}
               <td>{{ forloop.counter }}</td>
               <td>{{ form.username.value }}</td>
               <td>{{ form.first_name.value }}</td>
@@ -53,7 +49,6 @@
       </div>
       {{ formset.management_form }}
        <div>
-           {% if can_add_users %}
          <button type="submit" value="approve" name="decision" class="btn btn-success">
            <i class="fas fa-user-check" aria-hidden="true"></i>
            Approve Selected Users
@@ -62,7 +57,6 @@
            <i class="fas fa-user-times" aria-hidden="true"></i>
            Deny Selected Users
          </button>
-               {% endif %}
          <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button">
            <i class="fas fa-long-arrow-left" aria-hidden="true"></i>
            Back to Project
