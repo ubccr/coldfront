@@ -22,7 +22,7 @@
       Allocation Requests</a>
     {% endif %}
     {% if perms.allocation.can_review_cluster_account_requests %}
-    <a id="navbar-cluster-requests" class="dropdown-item" href="{% url 'allocation-cluster-account-request-list' %}">
+    <a id="navbar-cluster-requests" class="dropdown-item" href="{% url 'allocation-cluster-account-request-list' %}?show_all_requests=on">
         Cluster Requests</a>
     {% endif %}
       {% if perms.project.view_savioprojectallocationrequest %}
