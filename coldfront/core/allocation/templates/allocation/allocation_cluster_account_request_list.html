@@ -15,8 +15,26 @@ Cluster Account Review New and Pending Requests
 <div class="table-responsive">
   <table class="table table-sm">
     <tbody>
-    {% if user.is_superuser %}
+    <tr>
+        <td>
+            {% if request_filter == 'completed' %}
+                Viewing COMPLETED requests for cluster access. You may also view pending
+                requests
+                <a href="{% url 'allocation-cluster-account-request-list' %}?show_all_requests=on">
+                    <span class="accessibility-link-text">Pending Requests</span>
+                    here</a>.
+            {% else %}
+                Viewing PENDING requests for cluster access. You may also view completed
+                requests
+                <a href="{% url 'allocation-cluster-account-request-list-completed' %}?show_all_requests=on">
+                    <span class="accessibility-link-text">Completed Requests</span>
+                    here</a>.
+            {% endif %}
+        </td>
+    </tr>
       <tr>
+      <p>
+      {% if user.is_superuser %}
         <td>
           Below is a list of cluster access requests that are either pending or
           being processed on the cluster. Requests are created when project
@@ -33,20 +51,51 @@ Cluster Account Review New and Pending Requests
             </button>
           </form>
         </td>
-      </tr>
-    {% else %}
-    <tr>
-        <td>
-            Below is a list of cluster access requests that are either pending or
-            being processed on the cluster. Requests are created when project
-            join requests that have completed their delay period are
-            automatically approved, which occurs periodically.
-        </td>
-    </tr>
+      {% else %}
+      <td>
+          Below is a list of cluster access requests that are either pending or
+          being processed on the cluster. Requests are created when project
+          join requests that have completed their delay period are
+          automatically approved, which occurs periodically.
+      </td>
     {% endif %}
+          </p>
+      </tr>
     </tbody>
   </table>
 </div>
+
+    {% if expand_accordion == "show" %}
+        <div class="mb-3" id="accordion">
+            <div class="card">
+                <div class="card-header">
+
+                    <a id="expand_button" role="button" class="card-link " data-toggle="collapse" href="#collapseOne">
+                        <i class="fas fa-filter" aria-hidden="true"></i> Search
+                        <i id="plus_minus" class="fas {{expand_accordion|get_icon}} float-right"></i>
+                    </a>
+                </div>
+                <div id="collapseOne" class="collapse {{expand_accordion}}" data-parent="#accordion">
+                    <div class="card-body">
+                        {% if request_filter == 'completed' %}
+                        <form id="filter_form" method="GET" action="{% url 'allocation-cluster-account-request-list-completed' %}" autocomplete="off">
+                            {{ cluster_search_form|crispy }}
+                            <input type="submit" class="btn btn-primary" value="Search">
+                            <button id="form_reset_button" type="button" class="btn btn-secondary">Reset</button>
+                        </form>
+                            {% else %}
+                            <form id="filter_form" method="GET" action="{% url 'allocation-cluster-account-request-list' %}" autocomplete="off">
+                                {{ cluster_search_form|crispy }}
+                                <input type="submit" class="btn btn-primary" value="Search">
+                                <button id="form_reset_button" type="button" class="btn btn-secondary">Reset</button>
+                            </form>
+                            {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr>
+    {% endif %}
 
 {% if cluster_account_list %}
 <div class="table-responsive">
@@ -84,7 +133,7 @@ Cluster Account Review New and Pending Requests
         <th scope="col">
           Status
         </th>
-      {% if user.is_superuser %}
+      {% if user.is_superuser and request_filter == 'pending' %}
         <th scope="col">
           Allocation Actions
         </th>
@@ -126,7 +175,7 @@ Cluster Account Review New and Pending Requests
             {% endif %}
           </span>
         </td>
-          {% if user.is_superuser %}
+          {% if user.is_superuser and request_filter == 'pending' %}
         <td class="text-nowrap">
           {% if cluster_account.value == "Pending - Add" %}
             <a href="{% url 'allocation-cluster-account-update-status' cluster_account.pk %}" class="btn btn-success mr-1">
@@ -177,6 +226,19 @@ Cluster Account Review New and Pending Requests
       {% endfor %}
     </tbody>
   </table>
+    {% if is_paginated %} Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        <ul class="pagination float-right mr-3">
+            {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{filter_parameters_with_order_by}}">Previous</a></li>
+            {% else %}
+                <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+            {% endif %} {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{filter_parameters_with_order_by}}">Next</a></li>
+        {% else %}
+            <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
+        {% endif %}
+        </ul>
+    {% endif %}
 </div>
 {% else %}
 <div class="alert alert-info">
@@ -188,6 +250,25 @@ Cluster Account Review New and Pending Requests
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-admin").addClass("active");
   $("#navbar-allocation-cluster-account-requests").addClass("active");
+</script>
+
+<script>
+    $(document).on('click', '#form_reset_button', function() {
+        resetForm($('#filter_form'));
+    });
+
+    function resetForm($form) {
+        $form.find('input:text, textarea').val('');
+        $("select").val('');
+    };
+
+    $("#expand_button").click(function() {
+
+        $('#collapseOne').collapse();
+        icon = $("#plus_minus");
+        icon.toggleClass("fa-plus fa-minus");
+
+    });
 </script>
 
 {% endblock %}

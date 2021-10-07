@@ -38,7 +38,8 @@ from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationRequestClusterAccountForm,
                                              AllocationReviewUserForm,
                                              AllocationSearchForm,
-                                             AllocationUpdateForm)
+                                             AllocationUpdateForm,
+                                             ClusterRequestSearchForm)
 from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationAttribute,
                                               AllocationAttributeType,
@@ -1710,9 +1711,12 @@ class AllocationRequestClusterAccountView(LoginRequiredMixin,
 
 class AllocationClusterAccountRequestListView(LoginRequiredMixin,
                                               UserPassesTestMixin,
-                                              TemplateView):
+                                              ListView):
     template_name = 'allocation/allocation_cluster_account_request_list.html'
     login_url = '/'
+    completed = False
+    paginate_by = 30
+    context_object_name = "cluster_request_list"
 
     def get_queryset(self):
         order_by = self.request.GET.get('order_by')
@@ -1724,13 +1728,36 @@ class AllocationClusterAccountRequestListView(LoginRequiredMixin,
                 direction = '-'
             order_by = direction + order_by
         else:
-            order_by = 'id'
+            order_by = '-modified'
         cluster_account_status = AllocationAttributeType.objects.get(
             name='Cluster Account Status')
-        cluster_account_list = AllocationUserAttribute.objects.filter(
-            allocation_attribute_type=cluster_account_status, 
-            value__in=['Pending - Add', 'Processing'])
-        
+
+        cluster_search_form = ClusterRequestSearchForm(self.request.GET)
+
+        if self.completed:
+            cluster_account_list = AllocationUserAttribute.objects.filter(
+                allocation_attribute_type=cluster_account_status,
+                value__in=['Denied', 'Active'])
+        else:
+            cluster_account_list = AllocationUserAttribute.objects.filter(
+                allocation_attribute_type=cluster_account_status,
+                value__in=['Pending - Add', 'Processing'])
+
+        if cluster_search_form.is_valid():
+            data = cluster_search_form.cleaned_data
+
+            if data.get('username'):
+                cluster_account_list = cluster_account_list.filter(allocation_user__user__username__icontains=data.get('username'))
+
+            if data.get('email'):
+                cluster_account_list = cluster_account_list.filter(allocation_user__user__email__icontains=data.get('email'))
+
+            if data.get('project_name'):
+                cluster_account_list = cluster_account_list.filter(allocation_user__allocation__project__name__icontains=data.get('project_name'))
+
+            if data.get('request_status'):
+                cluster_account_list = cluster_account_list.filter(value__icontains=data.get('request_status'))
+
         return cluster_account_list.order_by(order_by)
 
     def test_func(self):
@@ -1747,7 +1774,54 @@ class AllocationClusterAccountRequestListView(LoginRequiredMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['cluster_account_list'] = self.get_queryset()
+
+        cluster_search_form = ClusterRequestSearchForm(self.request.GET)
+        if cluster_search_form.is_valid():
+            context['cluster_search_form'] = cluster_search_form
+            data = cluster_search_form.cleaned_data
+            filter_parameters = ''
+            for key, value in data.items():
+                if value:
+                    if isinstance(value, list):
+                        for ele in value:
+                            filter_parameters += '{}={}&'.format(key, ele)
+                    else:
+                        filter_parameters += '{}={}&'.format(key, value)
+            context['cluster_search_form'] = cluster_search_form
+        else:
+            filter_parameters = None
+            context['cluster_search_form'] = ClusterRequestSearchForm()
+
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            filter_parameters_with_order_by = filter_parameters + \
+                                              'order_by=%s&direction=%s&' % (order_by, direction)
+        else:
+            filter_parameters_with_order_by = filter_parameters
+
+        context['expand_accordion'] = 'show'
+
+        context['filter_parameters'] = filter_parameters
+        context['filter_parameters_with_order_by'] = filter_parameters_with_order_by
+
+        context['request_filter'] = (
+            'completed' if self.completed else 'pending')
+        cluster_account_list = self.get_queryset()
+
+        paginator = Paginator(cluster_account_list, self.paginate_by)
+
+        page = self.request.GET.get('page')
+
+        try:
+            cluster_accounts = paginator.page(page)
+        except PageNotAnInteger:
+            cluster_accounts = paginator.page(1)
+        except EmptyPage:
+            cluster_accounts = paginator.page(paginator.num_pages)
+
+        context['cluster_account_list'] = cluster_accounts
+
         return context
 
 
