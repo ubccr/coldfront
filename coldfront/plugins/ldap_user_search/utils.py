@@ -21,6 +21,11 @@ class LDAPUserSearch(UserSearch):
         self.server = Server(self.LDAP_SERVER_URI, use_ssl=True, connect_timeout=5)
         self.conn = Connection(self.server, self.LDAP_BIND_DN, self.LDAP_BIND_PASSWORD, auto_bind=True)
 
+        if not self.conn.bind():
+            logger.error('LDAPUserSearch: Failed to bind to LDAP server: {}'.format(self.conn.result))
+        else:
+            logger.info('LDAPUserSearch: LDAP bind successful: %s', self.conn.extend.standard.who_am_i())
+
     def parse_ldap_entry(self, entry):
         entry_dict = json.loads(entry.entry_to_json()).get('attributes')
 
@@ -69,6 +74,11 @@ class LDAPSearch:
         self.server = Server(self.LDAP_SERVER_URI, use_ssl=True, connect_timeout=1)
         self.conn = Connection(self.server, self.LDAP_BIND_DN, self.LDAP_BIND_PASSWORD, auto_bind=True)
 
+        if not self.conn.bind():
+            logger.error('LDAPSearch: Failed to bind to LDAP server: {}'.format(self.conn.result))
+        else:
+            logger.info('LDAPSearch: LDAP bind successful: %s', self.conn.extend.standard.who_am_i())
+
     def search_a_user(self, user_search_string=None, search_attributes_list=None):
         assert type(search_attributes_list) is list, 'search_attributes_list should be a list'
 
@@ -85,4 +95,5 @@ class LDAPSearch:
             attributes = json.loads(self.conn.entries[0].entry_to_json()).get('attributes')
         else:
             attributes = dict.fromkeys(search_attributes_list, None)
+
         return attributes
