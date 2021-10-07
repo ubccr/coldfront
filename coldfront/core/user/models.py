@@ -79,7 +79,6 @@ class EmailAddress(models.Model):
             self.user.email = self.email
             self.user.save()
 
-        self.new_email_flag = False
         super().save(*args, **kwargs)
 
     def __str__(self):
