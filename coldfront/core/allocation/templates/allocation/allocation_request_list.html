@@ -25,7 +25,9 @@ Allocation Review New and Pending Requests
         <th scope="col" class="text-nowrap">Project Review Status</th>
         {% endif %}
         <th scope="col">Status</th>
-        <th scope="col">Allocation Actions</th>
+          {% if user.is_superuser %}
+            <th scope="col">Allocation Actions</th>
+          {% endif %}
       </tr>
     </thead>
     <tbody>
@@ -46,8 +48,10 @@ Allocation Review New and Pending Requests
         {% endif %}
         <td>{{allocation.status}}</td>
         <td class="text-nowrap">
-          <a href="{% url 'allocation-activate-request' allocation.pk %}" class="btn btn-success mr-1">Activate</a>
-          <a href="{% url 'allocation-deny-request' allocation.pk %}" class="btn btn-danger mr-1">Deny</a>
+            {% if user.is_superuser %}
+              <a href="{% url 'allocation-activate-request' allocation.pk %}" class="btn btn-success mr-1">Activate</a>
+              <a href="{% url 'allocation-deny-request' allocation.pk %}" class="btn btn-danger mr-1">Deny</a>
+            {% endif %}
         </td>
       </tr>
       {% endfor %}
