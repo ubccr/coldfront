@@ -55,4 +55,27 @@ Renew PI Allowance
   Back
 </a>
 
+<hr>
+
+<h1>Pending Requests</h1>
+
+<div class="row">
+  <div class="col-lg-12 mt-2">
+    <p>
+      You may view your
+      <a href="{% url 'pi-allocation-renewal-pending-request-list' %}">
+        pending
+      </a>
+      renewal requests.
+    </p>
+    <p>
+      You may also view your
+      <a href="{% url 'pi-allocation-renewal-completed-request-list' %}">
+        completed
+      </a>
+      renewal requests.
+    </p>
+  </div>
+</div>
+
 {% endblock %}
