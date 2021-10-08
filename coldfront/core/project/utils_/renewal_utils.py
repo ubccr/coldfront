@@ -10,6 +10,11 @@ from django.conf import settings
 from django.contrib.auth.models import User
 
 
+def get_current_allocation_period():
+    # TODO: Account for other periods.
+    return AllocationPeriod.objects.get(name='AY21-22')
+
+
 def get_pi_current_active_fca_project(pi_user):
     # TODO: This is flawed because PI "A" could be on a Project where a
     # TODO: different PI "B" has renewed, but "A" hasn't. The "Service Units"
@@ -55,14 +60,6 @@ def get_pi_current_active_fca_project(pi_user):
     return active_fca_projects[0]
 
 
-def is_pooled(project):
-    """Return whether or not the given Project is a pooled project.
-    In particular, an Project is pooled if it has more than one PI."""
-    pi_role = ProjectUserRoleChoice.objects.get(
-        name='Principal Investigator')
-    return project.projectuser_set.filter(role=pi_role).count() > 1
-
-
 def has_non_denied_renewal_request(pi, allocation_period):
     """Return whether or not the given PI User has a non-"Denied"
     AllocationRenewalRequest for the given AllocationPeriod."""
@@ -75,6 +72,24 @@ def has_non_denied_renewal_request(pi, allocation_period):
         pi=pi,
         allocation_period=allocation_period,
         status__name__in=['Under Review', 'Approved', 'Complete']).exists()
+
+
+def is_pooled(project):
+    """Return whether the given Project is a pooled project. In
+    particular, an Project is pooled if it has more than one PI."""
+    pi_role = ProjectUserRoleChoice.objects.get(
+        name='Principal Investigator')
+    return project.projectuser_set.filter(role=pi_role).count() > 1
+
+
+def is_any_project_pi_renewable(project, allocation_period):
+    """Return whether the Project has at least one PI who is eligible to
+    make an AllocationRenewalRequest during the given
+    AllocationPeriod."""
+    for pi in project.pis():
+        if not has_non_denied_renewal_request(pi, allocation_period):
+            return True
+    return False
 
 
 class AllocationRenewalApprovalRunner(object):

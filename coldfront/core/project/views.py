@@ -67,6 +67,8 @@ from coldfront.core.project.utils import (add_vector_user_to_designated_savio_pr
                                           send_project_request_pooling_email,
                                           VectorProjectApprovalRunner,
                                           vector_request_denial_reason)
+from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
+from coldfront.core.project.utils_.renewal_utils import is_any_project_pi_renewable
 # from coldfront.core.publication.models import Publication
 # from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.resource.models import Resource
@@ -229,13 +231,17 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['joins_auto_approved'] = (
             self.object.joins_auto_approval_delay == datetime.timedelta())
 
-        # TODO
-        # Can the allocation be further renewed for the current period?
-        context['current_period_allocation_renewable'] = (
-            True and self.object.name.startswith(('fc_', 'ic_', 'pc_')))
-        # TODO
-        # Can the allocation be renewed for the next period?
-        context['next_period_allocation_renewable'] = False
+        # Only display the "Renew Allowance" button for applicable allocation
+        # types.
+        context['renew_allowance_current_visible'] = \
+            self.object.name.startswith(('fc_', 'ic_', 'pc_'))
+        # Only allow the "Renew Allowance" button to be clickable if any PIs do
+        # not have pending/approved renewal requests.
+        context['renew_allowance_current_clickable'] = (
+            # Short-circuit if the button is not visible.
+            context['renew_allowance_current_visible'] and
+            is_any_project_pi_renewable(
+                self.object, get_current_allocation_period()))
 
         return context
 

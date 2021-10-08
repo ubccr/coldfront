@@ -1,5 +1,4 @@
 from coldfront.core.allocation.models import Allocation
-from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
 from coldfront.core.allocation.models import AllocationStatusChoice
@@ -17,6 +16,7 @@ from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils_.permissions_utils import is_user_manager_or_pi_of_project
+from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
 from coldfront.core.project.utils_.renewal_utils import get_pi_current_active_fca_project
 from coldfront.core.project.utils_.renewal_utils import has_non_denied_renewal_request
 from coldfront.core.project.utils_.renewal_utils import is_pooled
@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 class AllocationRenewalMixin(object):
 
     # TODO: Account for other periods.
-    allocation_period = AllocationPeriod.objects.get(name='AY21-22')
+    allocation_period = get_current_allocation_period()
 
     success_message = (
         'Thank you for your submission. It will be reviewed and processed by '
