@@ -3650,7 +3650,6 @@ class VectorProjectUndenyRequestView(LoginRequiredMixin, UserPassesTestMixin, Vi
     login_url = '/'
 
     def test_func(self):
-        print('jere')
         """UserPassesTestMixin tests."""
         if self.request.user.is_superuser:
             return True
