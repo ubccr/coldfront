@@ -18,6 +18,7 @@ from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils_.renewal_utils import get_pi_current_active_fca_project
+from coldfront.core.project.utils_.renewal_utils import has_non_denied_renewal_request
 from coldfront.core.project.utils_.renewal_utils import is_pooled
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -84,6 +85,9 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
         'review_and_submit': 5,
     }
 
+    # TODO: Account for other periods.
+    allocation_period = AllocationPeriod.objects.get(name='AY21-22')
+
     def test_func(self):
         """Allow superusers and users who are active Managers or
         Principal Investigators on at least one Project to access the
@@ -112,6 +116,7 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
         kwargs = {}
         step = int(step)
         if step == self.step_numbers_by_form_name['pi_selection']:
+            kwargs['allocation_period_pk'] = self.allocation_period.pk
             project_pks = []
             user = self.request.user
             role_names = ['Manager', 'Principal Investigator']
@@ -149,48 +154,40 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
         """Perform processing and store information in a request
         object."""
         redirect_url = '/'
-
-        # Retrieve form data; include empty dictionaries for skipped steps.
-        data = iter([form.cleaned_data for form in form_list])
-        form_data = [{} for _ in range(len(self.form_list))]
-        for step in sorted(form_dict.keys()):
-            form_data[int(step)] = next(data)
-
+        form_data = self.__get_form_data(form_list, form_dict)
         try:
             tmp = {}
             self.__set_data_from_previous_steps(len(self.FORMS), tmp)
+            pi = tmp['PI'].user
 
+            # If the PI already has a non-denied request for this period, raise
+            # an exception. Such PIs are not selectable in the 'pi_selection'
+            # step, but a request could have been created between selection and
+            # final submission.
+            if has_non_denied_renewal_request(pi, self.allocation_period):
+                raise Exception(
+                    f'PI {pi.username} already has a non-denied '
+                    f'AllocationRenewalRequest for AllocationPeriod '
+                    f'{self.allocation_period.name}.')
+
+            # If a new Project was requested, create it along with a
+            # SavioProjectAllocationRequest.
             new_project_request = None
-
             form_class = ProjectRenewalPoolingPreferenceForm
             if tmp['preference'] == form_class.POOLED_TO_UNPOOLED_NEW:
                 requested_project = self.__handle_create_new_project(form_data)
                 survey_data = self.__get_survey_data(form_data)
                 new_project_request = self.__handle_create_new_project_request(
-                    tmp['PI'].user, requested_project, survey_data)
+                    pi, requested_project, survey_data)
             else:
                 requested_project = tmp['requested_project']
 
             request = self.__handle_create_new_renewal_request(
-                tmp['PI'].user, tmp['current_project'], requested_project,
+                pi, tmp['current_project'], requested_project,
                 new_project_request=new_project_request)
 
-            # TODO
-            # Send a notification email to admins.
-            try:
-                pass
-            except Exception as e:
-                logger.error(f'Failed to send notification email. Details:\n')
-                logger.exception(e)
-            # Send a notification email to the PI if the requester differs.
-            if request.requester != request.pi:
-                try:
-                    pass
-                except Exception as e:
-                    logger.error(
-                        f'Failed to send notification email. Details:\n')
-                    logger.exception(e)
-            # TODO: May need to send email to new pooling PIs.
+            self.__send_emails(request)
+
         except Exception as e:
             logger.exception(e)
             message = f'Unexpected failure. Please contact an administrator.'
@@ -240,6 +237,15 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
             form_class.POOLED_TO_UNPOOLED_OLD,
         )
         return cleaned_data.get('preference', None) in preferences
+
+    def __get_form_data(self, form_list, form_dict):
+        """Return a dictionary containing form data for each step. If a
+        step was skipped, include an empty dictionary."""
+        data = iter([form.cleaned_data for form in form_list])
+        form_data = [{} for _ in range(len(self.form_list))]
+        for step in sorted(form_dict.keys()):
+            form_data[int(step)] = next(data)
+        return form_data
 
     def __get_survey_data(self, form_data):
         """Return provided survey data."""
@@ -293,19 +299,36 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
                                             post_project,
                                             new_project_request=None):
         """Create a new AllocationRenewalRequest."""
-        # TODO: Fill in the correct name.
-        allocation_period = AllocationPeriod.objects.get(name='AY21-22')
         status = AllocationRenewalRequestStatusChoice.objects.get(
             name='Under Review')
         request_kwargs = dict()
         request_kwargs['requester'] = self.request.user
         request_kwargs['pi'] = pi
-        request_kwargs['allocation_period'] = allocation_period
+        request_kwargs['allocation_period'] = self.allocation_period
         request_kwargs['status'] = status
         request_kwargs['pre_project'] = pre_project
         request_kwargs['post_project'] = post_project
         request_kwargs['new_project_request'] = new_project_request
         return AllocationRenewalRequest.objects.create(**request_kwargs)
+
+    @staticmethod
+    def __send_emails(request):
+        # TODO
+        # Send a notification email to admins.
+        try:
+            pass
+        except Exception as e:
+            logger.error(f'Failed to send notification email. Details:\n')
+            logger.exception(e)
+        # Send a notification email to the PI if the requester differs.
+        if request.requester != request.pi:
+            try:
+                pass
+            except Exception as e:
+                logger.error(
+                    f'Failed to send notification email. Details:\n')
+                logger.exception(e)
+        # TODO: May need to send email to new pooling PIs.
 
     def __set_data_from_previous_steps(self, step, dictionary):
         """Update the given dictionary with data from previous steps."""

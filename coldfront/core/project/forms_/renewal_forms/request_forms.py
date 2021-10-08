@@ -59,7 +59,7 @@ class ProjectRenewalPISelectionForm(forms.Form):
         widget=DisabledChoicesSelectWidget())
 
     def __init__(self, *args, **kwargs):
-        self.allocation_period_pk = kwargs.pop('allocation_period_pk', None)
+        self.allocation_period_pk = kwargs.pop('allocation_period_pk')
         self.project_pks = kwargs.pop('project_pks', None)
         super().__init__(*args, **kwargs)
 
@@ -71,8 +71,8 @@ class ProjectRenewalPISelectionForm(forms.Form):
         ).order_by('user__last_name', 'user__first_name')
         users = list(pi_project_users.values_list('user', flat=True))
 
-        # TODO: Account for other periods.
-        allocation_period = AllocationPeriod.objects.get(name='AY21-22')
+        allocation_period = AllocationPeriod.objects.get(
+            pk=self.allocation_period_pk)
         pis_with_non_denied_renewal_requests_this_period = set(list(
             AllocationRenewalRequest.objects.filter(
                 pi__in=users,
