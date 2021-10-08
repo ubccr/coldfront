@@ -3212,8 +3212,6 @@ class VectorProjectRequestView(LoginRequiredMixin, UserPassesTestMixin,
             project = self.__handle_create_new_project(form.cleaned_data)
             # Store form data in a request.
 
-            # changed to username, also changed VECTOR_PI_USERNAME to
-            # username instead of email
             pi = User.objects.get(username=settings.VECTOR_PI_USERNAME)
             status = ProjectAllocationRequestStatusChoice.objects.get(
                 name='Under Review')
