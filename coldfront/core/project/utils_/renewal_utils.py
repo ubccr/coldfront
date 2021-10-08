@@ -72,7 +72,7 @@ def has_non_denied_renewal_request(pi, allocation_period):
         raise TypeError(
             f'{allocation_period} is not an AllocationPeriod object.')
     return AllocationRenewalRequest.objects.filter(
-        user=pi,
+        pi=pi,
         allocation_period=allocation_period,
         status__name__in=['Under Review', 'Approved', 'Complete']).exists()
 

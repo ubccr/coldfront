@@ -135,13 +135,13 @@ from coldfront.core.project.views_.renewal_views.approval_views import Allocatio
 from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestReviewDenyView
 from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestReviewEligibilityView
 from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestListView
+from coldfront.core.project.views_.renewal_views.request_views import AllocationRenewalRequestUnderProjectView
 from coldfront.core.project.views_.renewal_views.request_views import AllocationRenewalRequestView
-from coldfront.core.project.views_.renewal_views.request_views import SavioAllocationRenewalRequestView
 
 
 urlpatterns += [
     path('<int:pk>/renew',
-         SavioAllocationRenewalRequestView.as_view(),
+         AllocationRenewalRequestUnderProjectView.as_view(),
          name='project-renew'),
     path('renew-pi-allocation/',
          AllocationRenewalRequestView.as_view(

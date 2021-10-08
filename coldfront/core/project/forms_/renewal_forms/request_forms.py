@@ -1,6 +1,5 @@
 from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
-from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
 from coldfront.core.project.forms import DisabledChoicesSelectWidget
 from coldfront.core.project.forms import PooledProjectChoiceField
 from coldfront.core.project.models import Project
@@ -18,38 +17,6 @@ class ProjectRenewalPIChoiceField(forms.ModelChoiceField):
         return f'{user.first_name} {user.last_name} ({user.email})'
 
 
-class SavioProjectRenewalRequestForm(forms.Form):
-
-    PI = ProjectRenewalPIChoiceField(
-        label='Principal Investigator',
-        queryset=ProjectUser.objects.none(),
-        required=True,
-        widget=DisabledChoicesSelectWidget())
-
-    def __init__(self, *args, **kwargs):
-        self.allocation_period_pk = kwargs.pop('allocation_period_pk', None)
-        self.project_pk = kwargs.pop('project_pk', None)
-        super().__init__(*args, **kwargs)
-
-        project = Project.objects.get(pk=self.project_pk)
-        role = ProjectUserRoleChoice.objects.get(
-            name='Principal Investigator')
-        status = ProjectUserStatusChoice.objects.get(name='Active')
-        pi_project_users = project.projectuser_set.filter(role=role)
-
-        # Disable any PIs who are inactive or who have already renewed their
-        # allocations during this allocation period.
-        exclude_project_user_pks = set()
-        for project_user in pi_project_users:
-            if project_user.status != status:
-                exclude_project_user_pks.add(project_user.pk)
-            # TODO
-
-        self.fields['PI'].queryset = pi_project_users
-        self.fields['PI'].widget.disabled_choices = exclude_project_user_pks
-
-
-# TODO: Combine this with the above if possible.
 class ProjectRenewalPISelectionForm(forms.Form):
 
     PI = ProjectRenewalPIChoiceField(

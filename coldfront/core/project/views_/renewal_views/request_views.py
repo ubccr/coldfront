@@ -10,13 +10,13 @@ from coldfront.core.project.forms_.renewal_forms.request_forms import ProjectRen
 from coldfront.core.project.forms_.renewal_forms.request_forms import ProjectRenewalPoolingPreferenceForm
 from coldfront.core.project.forms_.renewal_forms.request_forms import ProjectRenewalProjectSelectionForm
 from coldfront.core.project.forms_.renewal_forms.request_forms import ProjectRenewalReviewAndSubmitForm
-from coldfront.core.project.forms_.renewal_forms.request_forms import SavioProjectRenewalRequestForm
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
+from coldfront.core.project.utils_.permissions_utils import is_user_manager_or_pi_of_project
 from coldfront.core.project.utils_.renewal_utils import get_pi_current_active_fca_project
 from coldfront.core.project.utils_.renewal_utils import has_non_denied_renewal_request
 from coldfront.core.project.utils_.renewal_utils import is_pooled
@@ -30,6 +30,7 @@ from django.contrib.auth.mixins import UserPassesTestMixin
 from django.db import IntegrityError
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
+from django.urls import reverse
 from django.views.generic.edit import FormView
 
 from formtools.wizard.views import SessionWizardView
@@ -40,8 +41,54 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+class AllocationRenewalMixin(object):
+
+    # TODO: Account for other periods.
+    allocation_period = AllocationPeriod.objects.get(name='AY21-22')
+
+    success_message = (
+        'Thank you for your submission. It will be reviewed and processed by '
+        'administrators.')
+    error_message = 'Unexpected failure. Please contact an administrator.'
+
+    def create_allocation_renewal_request(self, pi, pre_project, post_project,
+                                          new_project_request=None):
+        """Create a new AllocationRenewalRequest."""
+        request_kwargs = dict()
+        request_kwargs['requester'] = self.request.user
+        request_kwargs['pi'] = pi
+        request_kwargs['allocation_period'] = self.allocation_period
+        request_kwargs['status'] = \
+            AllocationRenewalRequestStatusChoice.objects.get(
+                name='Under Review')
+        request_kwargs['pre_project'] = pre_project
+        request_kwargs['post_project'] = post_project
+        request_kwargs['new_project_request'] = new_project_request
+        return AllocationRenewalRequest.objects.create(**request_kwargs)
+
+    def send_emails(self, request_obj):
+        """Send emails to various recipients based on the given, newly-
+        created AllocationRenewalRequest."""
+        # TODO
+        # Send a notification email to admins.
+        try:
+            pass
+        except Exception as e:
+            logger.error(f'Failed to send notification email. Details:\n')
+            logger.exception(e)
+        # Send a notification email to the PI if the requester differs.
+        if request_obj.requester != request_obj.pi:
+            try:
+                pass
+            except Exception as e:
+                logger.error(
+                    f'Failed to send notification email. Details:\n')
+                logger.exception(e)
+        # TODO: May need to send email to new pooling PIs.
+
+
 class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
-                                   SessionWizardView):
+                                   AllocationRenewalMixin, SessionWizardView):
 
     # TODO: Add logging, sending messages to users, etc.
 
@@ -84,9 +131,6 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
         'new_project_survey': 4,
         'review_and_submit': 5,
     }
-
-    # TODO: Account for other periods.
-    allocation_period = AllocationPeriod.objects.get(name='AY21-22')
 
     def test_func(self):
         """Allow superusers and users who are active Managers or
@@ -182,21 +226,16 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
             else:
                 requested_project = tmp['requested_project']
 
-            request = self.__handle_create_new_renewal_request(
+            request = self.create_allocation_renewal_request(
                 pi, tmp['current_project'], requested_project,
                 new_project_request=new_project_request)
 
-            self.__send_emails(request)
-
+            self.send_emails(request)
         except Exception as e:
             logger.exception(e)
-            message = f'Unexpected failure. Please contact an administrator.'
-            messages.error(self.request, message)
+            messages.error(self.request, self.error_message)
         else:
-            message = (
-                'Thank you for your submission. It will be reviewed and '
-                'processed by administrators.')
-            messages.success(self.request, message)
+            messages.success(self.request, self.success_message)
 
         return HttpResponseRedirect(redirect_url)
 
@@ -295,41 +334,6 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
                 name='Under Review')
         return SavioProjectAllocationRequest.objects.create(**request_kwargs)
 
-    def __handle_create_new_renewal_request(self, pi, pre_project,
-                                            post_project,
-                                            new_project_request=None):
-        """Create a new AllocationRenewalRequest."""
-        status = AllocationRenewalRequestStatusChoice.objects.get(
-            name='Under Review')
-        request_kwargs = dict()
-        request_kwargs['requester'] = self.request.user
-        request_kwargs['pi'] = pi
-        request_kwargs['allocation_period'] = self.allocation_period
-        request_kwargs['status'] = status
-        request_kwargs['pre_project'] = pre_project
-        request_kwargs['post_project'] = post_project
-        request_kwargs['new_project_request'] = new_project_request
-        return AllocationRenewalRequest.objects.create(**request_kwargs)
-
-    @staticmethod
-    def __send_emails(request):
-        # TODO
-        # Send a notification email to admins.
-        try:
-            pass
-        except Exception as e:
-            logger.error(f'Failed to send notification email. Details:\n')
-            logger.exception(e)
-        # Send a notification email to the PI if the requester differs.
-        if request.requester != request.pi:
-            try:
-                pass
-            except Exception as e:
-                logger.error(
-                    f'Failed to send notification email. Details:\n')
-                logger.exception(e)
-        # TODO: May need to send email to new pooling PIs.
-
     def __set_data_from_previous_steps(self, step, dictionary):
         """Update the given dictionary with data from previous steps."""
         pi_selection_form_step = self.step_numbers_by_form_name['pi_selection']
@@ -382,29 +386,22 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
             settings.FCA_DEFAULT_ALLOCATION, utc_now_offset_aware())
 
 
-# TODO: Rename this (e.g., SpecificProject); remove "Savio"
-class SavioAllocationRenewalRequestView(LoginRequiredMixin,
-                                        UserPassesTestMixin, FormView):
-    form_class = SavioProjectRenewalRequestForm
+class AllocationRenewalRequestUnderProjectView(LoginRequiredMixin,
+                                               UserPassesTestMixin,
+                                               AllocationRenewalMixin,
+                                               FormView):
+
+    form_class = ProjectRenewalPISelectionForm
     template_name = 'project/project_renewal/project_renewal_request.html'
     login_url = '/'
 
     project_obj = None
 
-    # TODO
-
     def test_func(self):
         """UserPassesTestMixin tests."""
-        if self.request.user.is_superuser:
-            return True
-
-        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-
-        if project_obj.projectuser_set.filter(
-                user=self.request.user,
-                role__name__in=['Manager', 'Principal Investigator'],
-                status__name='Active').exists():
-            return True
+        user = self.request.user
+        return (user.is_superuser or
+                is_user_manager_or_pi_of_project(user, self.project_obj))
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
@@ -413,7 +410,25 @@ class SavioAllocationRenewalRequestView(LoginRequiredMixin,
 
     def form_valid(self, form):
         form_data = form.cleaned_data
-        pass
+        pi = form_data['PI'].user
+        try:
+            # If the PI already has a non-denied request for this period, raise
+            # an exception.
+            if has_non_denied_renewal_request(pi, self.allocation_period):
+                raise Exception(
+                    f'PI {pi.username} already has a non-denied '
+                    f'AllocationRenewalRequest for AllocationPeriod '
+                    f'{self.allocation_period.name}.')
+            request = self.create_allocation_renewal_request(
+                pi, self.project_obj, self.project_obj)
+            self.send_emails(request)
+        except Exception as e:
+            logger.exception(e)
+            messages.error(self.request, self.error_message)
+        else:
+            messages.success(self.request, self.success_message)
+        return HttpResponseRedirect(
+            reverse('project-detail', kwargs={'pk': self.project_obj.pk}))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -422,5 +437,6 @@ class SavioAllocationRenewalRequestView(LoginRequiredMixin,
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['project_pk'] = self.project_obj.pk
+        kwargs['allocation_period_pk'] = self.allocation_period.pk
+        kwargs['project_pks'] = [self.project_obj.pk]
         return kwargs
