@@ -143,6 +143,10 @@ urlpatterns += [
     path('<int:pk>/renew',
          AllocationRenewalRequestUnderProjectView.as_view(),
          name='project-renew'),
+    path('renew-pi-allocation-landing/',
+         TemplateView.as_view(
+             template_name='project/project_renewal/request_landing.html'),
+         name='renew-pi-allocation-landing'),
     path('renew-pi-allocation/',
          AllocationRenewalRequestView.as_view(
              condition_dict=AllocationRenewalRequestView.condition_dict(),
