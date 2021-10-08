@@ -139,6 +139,14 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
         user = self.request.user
         if self.request.user.is_superuser:
             return True
+        signed_date = (
+            self.request.user.userprofile.access_agreement_signed_date)
+        if signed_date is None:
+            message = (
+                'You must sign the User Access Agreement before you can '
+                'request to renew a PI\'s allocation.')
+            messages.error(self.request, message)
+            return False
         role_names = ['Manager', 'Principal Investigator']
         status = ProjectUserStatusChoice.objects.get(name='Active')
         has_access = ProjectUser.objects.filter(
@@ -400,8 +408,22 @@ class AllocationRenewalRequestUnderProjectView(LoginRequiredMixin,
     def test_func(self):
         """UserPassesTestMixin tests."""
         user = self.request.user
-        return (user.is_superuser or
-                is_user_manager_or_pi_of_project(user, self.project_obj))
+        if user.is_superuser:
+            return True
+        signed_date = (
+            self.request.user.userprofile.access_agreement_signed_date)
+        if signed_date is None:
+            message = (
+                'You must sign the User Access Agreement before you can '
+                'request to renew a PI\'s allocation.')
+            messages.error(self.request, message)
+            return False
+        if is_user_manager_or_pi_of_project(user, self.project_obj):
+            return True
+        message = (
+            'You must be an active Manager or Principal Investigator of the '
+            'Project.')
+        messages.error(self.request, message)
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
