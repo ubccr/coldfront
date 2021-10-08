@@ -1,10 +1,13 @@
 from coldfront.api.statistics.utils import get_accounting_allocation_objects
+from coldfront.core.allocation.models import AllocationPeriod
+from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from decimal import Decimal
 from django.conf import settings
+from django.contrib.auth.models import User
 
 
 def get_pi_current_active_fca_project(pi_user):
@@ -58,3 +61,26 @@ def is_pooled(project):
     pi_role = ProjectUserRoleChoice.objects.get(
         name='Principal Investigator')
     return project.projectuser_set.filter(role=pi_role).count() > 1
+
+
+def has_non_denied_renewal_request(pi, allocation_period):
+    """Return whether or not the given PI User has a non-"Denied"
+    AllocationRenewalRequest for the given AllocationPeriod."""
+    if not isinstance(pi, User):
+        raise TypeError(f'{pi} is not a User object.')
+    if not isinstance(allocation_period, AllocationPeriod):
+        raise TypeError(
+            f'{allocation_period} is not an AllocationPeriod object.')
+    return AllocationRenewalRequest.objects.filter(
+        user=pi,
+        allocation_period=allocation_period,
+        status__name__in=['Under Review', 'Approved', 'Complete']).exists()
+
+
+class AllocationRenewalApprovalRunner(object):
+    """An object that performs necessary database changes when an
+    AllocationRenewalRequest is approved and processed."""
+
+    def __init__(self, request_obj, num_service_units):
+        # TODO
+        pass
