@@ -3631,7 +3631,7 @@ class SavioProjectUndenyRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
             project_request.state['other']['justification'] = ''
             project_request.state['other']['timestamp'] = ''
 
-        project_request.status = ProjectAllocationRequestStatusChoice.objects.get(name="Under Review")
+        project_request.status = savio_request_state_status(project_request)
         project_request.save()
 
         message = (
@@ -3680,7 +3680,7 @@ class VectorProjectUndenyRequestView(LoginRequiredMixin, UserPassesTestMixin, Vi
         if project_request.state['eligibility']['status'] == 'Denied':
             project_request.state['eligibility']['status'] = 'Pending'
 
-        project_request.status = ProjectAllocationRequestStatusChoice.objects.get(name="Under Review")
+        project_request.status = vector_request_state_status(project_request)
         project_request.save()
 
         message = (
