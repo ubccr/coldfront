@@ -123,13 +123,13 @@ class AllocationForm(forms.Form):
         search_class_obj = ldap_search()
         attributes = search_class_obj.search_a_user(
             request_user.username,
-            ['department', 'division', 'ou', 'displayName', 'mail']
+            ['department', 'division', 'ou', 'givenName', 'sn', 'mail']
         )
+
         self.fields['department_full_name'].initial = attributes['department'][0]
         self.fields['department_short_name'].initial = attributes['division'][0]
-        full_name = attributes['displayName'][0].split(', ')
-        self.fields['first_name'].initial = full_name[1]
-        self.fields['last_name'].initial = full_name[0]
+        self.fields['first_name'].initial = attributes['givenName'][0]
+        self.fields['last_name'].initial = attributes['sn'][0]
         self.fields['campus_affiliation'].initial = attributes['ou'][0]
         self.fields['email'].initial = attributes['mail'][0]
 
