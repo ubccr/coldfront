@@ -711,6 +711,30 @@ def vector_request_state_status(vector_request):
         name='Approved - Processing')
 
 
+def validate_num_service_units(num_service_units):
+    """Raise exceptions if the given number of service units does
+    not conform to the expected constraints."""
+    if not isinstance(num_service_units, Decimal):
+        raise TypeError(
+            f'Number of service units {num_service_units} is not a Decimal.')
+    minimum, maximum = settings.ALLOCATION_MIN, settings.ALLOCATION_MAX
+    if not (minimum <= num_service_units <= maximum):
+        raise ValueError(
+            f'Number of service units {num_service_units} is not in the '
+            f'acceptable range [{minimum}, {maximum}].')
+    num_service_units_tuple = num_service_units.as_tuple()
+    max_digits = settings.DECIMAL_MAX_DIGITS
+    if len(num_service_units_tuple.digits) > max_digits:
+        raise ValueError(
+            f'Number of service units {num_service_units} has greater than '
+            f'{max_digits} digits.')
+    max_places = settings.DECIMAL_MAX_PLACES
+    if abs(num_service_units_tuple.exponent) > max_places:
+        raise ValueError(
+            f'Number of service units {num_service_units} has greater than '
+            f'{max_places} decimal places.')
+
+
 class ProjectApprovalRunner(object):
     """An object that performs necessary database changes when a new
     project request is approved and processed."""
@@ -874,7 +898,7 @@ class SavioProjectApprovalRunner(ProjectApprovalRunner):
     Savio project request is approved and processed."""
 
     def __init__(self, request_obj, num_service_units):
-        self.__validate_num_service_units(num_service_units)
+        validate_num_service_units(num_service_units)
         self.num_service_units = num_service_units
         super().__init__(request_obj)
 
@@ -923,7 +947,7 @@ class SavioProjectApprovalRunner(ProjectApprovalRunner):
             if pool:
                 existing_value = Decimal(allocation_attribute.value)
                 new_value = existing_value + self.num_service_units
-                self.__validate_num_service_units(new_value)
+                validate_num_service_units(new_value)
             else:
                 new_value = self.num_service_units
         allocation_attribute.value = str(new_value)
@@ -952,29 +976,6 @@ class SavioProjectApprovalRunner(ProjectApprovalRunner):
                 project_user=project_user,
                 date_time=date_time,
                 allocation=Decimal(value))
-
-    @staticmethod
-    def __validate_num_service_units(num_service_units):
-        """Raise exceptions if the given number of service units does
-        not conform to the expected constraints."""
-        if not isinstance(num_service_units, Decimal):
-            raise TypeError(
-                f'Number of service units {num_service_units} is not a '
-                f'Decimal.')
-        if not (settings.ALLOCATION_MIN <= num_service_units <=
-                settings.ALLOCATION_MAX):
-            raise ValueError(
-                f'Number of service units is not in the acceptable range '
-                f'[{settings.ALLOCATION_MIN}, {settings.ALLOCATION_MAX}].')
-        num_service_units_tuple = num_service_units.as_tuple()
-        if len(num_service_units_tuple.digits) > settings.DECIMAL_MAX_DIGITS:
-            raise ValueError(
-                f'Number of service units has greater than '
-                f'{settings.DECIMAL_MAX_DIGITS} digits.')
-        if abs(num_service_units_tuple.exponent) > settings.DECIMAL_MAX_PLACES:
-            raise ValueError(
-                f'Number of service units has greater than '
-                f'{settings.DECIMAL_MAX_PLACES} decimal places.')
 
 
 class VectorProjectApprovalRunner(ProjectApprovalRunner):
@@ -1040,6 +1041,13 @@ class ProjectDenialRunner(object):
         self.deny_request()
         self.send_email()
 
+    def deny_project(self):
+        """Set the Project's status to 'Denied'."""
+        project = self.request_obj.project
+        project.status = ProjectStatusChoice.objects.get(name='Denied')
+        project.save()
+        return project
+
     def deny_request(self):
         """Set the status of the request to 'Denied'."""
         self.request_obj.status = \
@@ -1053,13 +1061,6 @@ class ProjectDenialRunner(object):
         except Exception as e:
             logger.error('Failed to send notification email. Details:\n')
             logger.exception(e)
-
-    def deny_project(self):
-        """Set the Project's status to 'Denied'."""
-        project = self.request_obj.project
-        project.status = ProjectStatusChoice.objects.get(name='Denied')
-        project.save()
-        return project
 
 
 class ProjectClusterAccessRequestRunnerError(Exception):
