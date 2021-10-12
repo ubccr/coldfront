@@ -1,21 +1,21 @@
-import json
-import logging
 import os
 import re
-import requests
+import json
 import time
 import timeit
-
-from datetime import datetime
+import logging
+import requests
 from pathlib import Path
+from datetime import datetime
 
 # from tqdm import tqdm
 # from pynput import keyboard
-from django.contrib.auth import get_user_model
-from coldfront.core.allocation.models import Allocation, AllocationUser
-from coldfront.core.project.models import Project
-from coldfront.core.utils.common import import_from_settings
 
+from django_q.tasks import async_task
+from django.contrib.auth import get_user_model
+from coldfront.core.project.models import Project, ProjectUser
+from coldfront.core.utils.common import import_from_settings
+from coldfront.core.allocation.models import Allocation, AllocationUser
 
 logging.basicConfig(filename="sfc.log", format="%(asctime)s %(message)s", filemode="w")
 logger = logging.getLogger("sfc")
@@ -36,16 +36,14 @@ class StarFishServer:
         """Obtain a token through the auth endpoint.
         """
         logger.debug("get_auth_token")
-        # username = import_from_settings('SFUSER')
-        # password = import_from_settings('SFPASS')
-        username = os.environ.get('SFUSER')
-        password = os.environ.get('SFPASS')
+        username = import_from_settings('SFUSER')
+        password = import_from_settings('SFPASS')
         auth_url = self.api_url + "auth/"
         todo = {"username": username, "password": password}
         response = requests.post(auth_url, json=todo)
         # response.status_code
         response_json = response.json()
-        print(response_json)
+        logger.debug(response_json)
         token = response_json["token"]
         logger.debug(token)
         return token
@@ -203,6 +201,16 @@ class UsageStat:
 
 class ColdFrontDB:
 
+    def generate_user_project_list(self):
+        projusers = ProjectUser.objects.all().only("project_id", "user_id")
+        d = {}
+        for o in projusers:
+            p = self.return_projectname(o.project_id)
+            u = self.return_username(o.user_id)
+            d[p] = u
+        logger.debug(d)
+        return d
+
     def locate_uid(self, username):
         user = get_user_model().objects.get(username=username)
         return user.id
@@ -214,6 +222,14 @@ class ColdFrontDB:
     def locate_aaid(self, pid):
         allocation = Allocation.objects.get(project_id=pid)
         return allocation.id
+
+    def return_username(self, uid):
+        user = get_user_model().objects.get(id=uid)
+        return user.username
+
+    def return_projectname(self, pid):
+        project = Project.objects.get(id=pid)
+        return project.title
 
     def update_usage(self, userdict):
         # get ids needed to locate correct allocationuser entry
@@ -259,28 +275,19 @@ def generate_groupname_list():
     pass
 
 
-def collect_starfish_json(server, servername, volume, volumepath):
+def collect_starfish_json(server, servername, volume, volumepath, project_users):
     # generate user and group list, then narrow down to groups that
     # have subdirectories in their directory.
-    labs = server.get_vol_group_membership(volume)
-
-    usertable = server.get_vol_user_name_ids(volume)
-    dir_query = server.create_query(
-        "type=d", "groupname", f"{volume}:{volumepath}", sec=2
-    )
-    logger.info(f"dir_query.result:\s{dir_query.result}")
-    present_labs = [d["groupname"] for d in dir_query.result]
-    full_labs = [lab for lab in labs if lab["name"] in present_labs]
-    logger.info(f"present_labs:\s{present_labs}")
 
     # run user/group usage query
     usage_query_by_lab = []
     # t = tqdm(full_labs)
-    for lab in full_labs:
-        logger.debug(str(lab["name"]))
-        queryline = "type=f groupname={}".format(str(lab["name"]))
+    for p, u in project_users.items():
+        logger.debug("{}, {}".format(p, u))
+        lab_volpath = volumepath + "/{}".format(p)
+        queryline = "type=f groupname={}".format(p)
         usage_query = server.create_query(
-            queryline, "username, groupname", f"{volume}:{volumepath}", sec=2
+            queryline, "username, groupname", f"{volume}:{lab_volpath}", sec=2
         )
         result = usage_query.result
         logger.debug(result)
@@ -309,25 +316,22 @@ if __name__ == "__main__":
     datestr = datetime.today().strftime("%Y%m%d")
     filepath = f"sf_query_{servername}_{datestr}.json"
     # check if file exists; if not, create it.
+    coldfrontdb = ColdFrontDB()
     if Path(filepath).exists():
         pass
     else:
-        filecontents = collect_starfish_json(server, servername, volume, volumepath)
+        labs = coldfrontdb.generate_user_project_list()
+        filecontents = collect_starfish_json(server, servername, volume, volumepath, labs)
         with open(filepath, "w") as fp:
             json.dump(filecontents, fp, sort_keys=True, indent=4)
 
-    coldfrontdb = ColdFrontDB()
     with open(filepath, "r") as myfile:
         data = myfile.read()
     usage_stats = json.loads(data)
     usage_stats["contents"] = [i for l in usage_stats["contents"] for i in l]
     for statdict in usage_stats["contents"]:
-        if (
-            statdict["groupname"] != "bicepdata_group"
-            and statdict["username"] != "root"
-        ):
-            logger.debug(statdict)
-            try:
-                coldfrontdb.update_usage(statdict)
-            except Exception as e:
-                logger.debug("EXCEPTION FOR LAST ENTRY: {}".format(e))
+        logger.debug(statdict)
+        try:
+            coldfrontdb.update_usage(statdict)
+        except Exception as e:
+            logger.debug("EXCEPTION FOR LAST ENTRY: {}".format(e))

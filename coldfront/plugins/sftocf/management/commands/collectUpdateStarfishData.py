@@ -42,27 +42,24 @@ class Command(BaseCommand):
 
         datestr = datetime.today().strftime("%Y%m%d")
         filepath = f"sf_query_{servername}_{datestr}.json"
+        coldfrontdb = ColdFrontDB()
 
         if Path(filepath).exists():
             pass
         else:
-            filecontents = collect_starfish_json(server, servername, volume, volumepath)
+            labs = coldfrontdb.generate_user_project_list()
+            filecontents = collect_starfish_json(server, servername, volume, volumepath, labs)
             with open(filepath, "w") as fp:
                 json.dump(filecontents, fp, sort_keys=True, indent=4)
 
 
-        coldfrontdb = ColdFrontDB()
         with open(filepath, "r") as myfile:
             data = myfile.read()
         usage_stats = json.loads(data)
         usage_stats["contents"] = [i for l in usage_stats["contents"] for i in l]
         for statdict in usage_stats["contents"]:
-            if (
-                statdict["groupname"] != "bicepdata_group"
-                and statdict["username"] != "root"
-            ):
-                logger.debug(statdict)
-                try:
-                    coldfrontdb.update_usage(statdict)
-                except Exception as e:
-                    logger.debug("EXCEPTION FOR LAST ENTRY: {}".format(e))
+            logger.debug(statdict)
+            try:
+                coldfrontdb.update_usage(statdict)
+            except Exception as e:
+                logger.debug("EXCEPTION FOR ENTRY: {}".format(e))
