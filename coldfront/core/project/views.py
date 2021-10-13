@@ -401,6 +401,15 @@ class ProjectListView(LoginRequiredMixin, ListView):
         except EmptyPage:
             project_list = paginator.page(paginator.num_pages)
 
+        # The "Renew a PI's Allowance" button should only be visible to
+        # Managers and PIs.
+        role_names = ['Manager', 'Principal Investigator']
+        status = ProjectUserStatusChoice.objects.get(name='Active')
+        context['renew_allowance_current_visible'] = \
+            ProjectUser.objects.filter(
+                user=self.request.user, role__name__in=role_names,
+                status=status)
+
         return context
 
 
