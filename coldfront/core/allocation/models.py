@@ -40,7 +40,8 @@ class Allocation(TimeStampedModel):
     status = models.ForeignKey(
         AllocationStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
     quantity = models.IntegerField(blank=True, null=True)
-    storage_space = models.CharField(max_length=10, blank=True, null=True)
+    storage_space = models.IntegerField(blank=True, null=True)
+    storage_space_with_unit = models.CharField(max_length=10, blank=True, null=True)
     leverage_multiple_gpus = models.CharField(max_length=4, choices=(('No', 'No'), ('Yes', 'Yes')), blank=True, null=True)
     dl_workflow = models.CharField(max_length=4, choices=(('No', 'No'), ('Yes', 'Yes')), blank=True, null=True)
     applications_list = models.CharField(max_length=150, blank=True, null=True)
@@ -74,6 +75,36 @@ class Allocation(TimeStampedModel):
     it_pros = models.CharField(max_length=100, blank=True, null=True)
     devices_ip_addresses = models.CharField(max_length=200, blank=True, null=True)
     data_management_plan = models.TextField(blank=True, null=True)
+    project_directory_name = models.CharField(max_length=10, blank=True, null=True)
+    total_cost = models.IntegerField(blank=True, null=True)
+    first_name = models.CharField(max_length=40, blank=True, null=True)
+    last_name = models.CharField(max_length=40, blank=True, null=True)
+    campus_affiliation = models.CharField(
+        max_length=2,
+        choices=(
+            ('BL', 'IU Bloomington'),
+            ('IN', 'IUPUI (Indianapolis)'),
+            ('CO', 'IUPUC (Columbus)'),
+            ('EA', 'IU East (Richmond)'),
+            ('FW', 'IU Fort Wayne'),
+            ('CO', 'IU Kokomo'),
+            ('NW', 'IU Northwest (Gary)'),
+            ('SB', 'IU South Bend'),
+            ('SE', 'IU Southeast (New Albany)'),
+            ('OR', 'Other')
+        ),
+        blank=True,
+        null=True
+    )
+    email = models.CharField(max_length=40, blank=True, null=True)
+    url = models.CharField(max_length=50, blank=True, null=True)
+    faculty_email = models.CharField(max_length=40, blank=True, null=True)
+    store_ephi = models.CharField(
+        max_length=3,
+        choices=(('No', 'No'), ('Yes', 'Yes')),
+        blank=True,
+        null=True
+    )
     justification = models.TextField()
     description = models.CharField(max_length=512, blank=True, null=True)
     is_locked = models.BooleanField(default=False)
@@ -106,10 +137,10 @@ class Allocation(TimeStampedModel):
             if not self.start_date:
                 raise ValidationError('You have to set the start date.')
 
-            if not self.end_date:
+            if not self.end_date and not self.use_indefinitely:
                 raise ValidationError('You have to set the end date.')
 
-            if self.start_date > self.end_date:
+            if not self.use_indefinitely and self.start_date > self.end_date:
                 raise ValidationError(
                     'Start date cannot be greater than the end date.')
 

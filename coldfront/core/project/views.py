@@ -664,7 +664,9 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                     username = user_form_data.get('username')
                     no_accounts[username] = []
                     for allocation in Allocation.objects.filter(pk__in=allocation_form_data):
+                        # If the user does not have an account on the resource in the allocation then do not add them to it.
                         if not allocation.check_user_account_exists_on_resource(username):
+                            # Make sure there are no duplicates for a user if there's more than one instance of a resource.
                             if allocation.get_parent_resource.name not in no_accounts[username]:
                                 no_accounts[username].append(allocation.get_parent_resource.name)
                             continue
@@ -683,10 +685,9 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                                                       allocation_user_pk=allocation_user_obj.pk)
 
             warning_message = ''
-            print(no_accounts)
             for username, no_account_list in no_accounts.items():
                 if no_account_list:
-                    warning_message += 'User {} was not added to allocation(s) {} due do not having an account on their resources. '.format(username, ', '.join(no_account_list))
+                    warning_message += 'User {} was not added to allocation(s) {} due do not having an account on those resources. '.format(username, ', '.join(no_account_list))
             if warning_message != '':
                 warning_message = format_html(warning_message + 'Please direct them to <a href="https://access.iu.edu/Accounts/Create">https://access.iu.edu/Accounts/Create</a> to create one.\n')
                 messages.warning(

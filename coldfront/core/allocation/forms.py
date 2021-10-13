@@ -6,7 +6,7 @@ from django.utils.module_loading import import_string
 from coldfront.core.allocation.models import (AllocationAccount,
                                               AllocationAttributeType,
                                               AllocationStatusChoice)
-from coldfront.core.allocation.utils import get_user_resources
+from coldfront.core.allocation.utils import get_user_resources, compute_prorated_amount
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource, ResourceType
 from coldfront.core.utils.common import import_from_settings
@@ -18,8 +18,30 @@ ALLOCATION_ACCOUNT_ENABLED = import_from_settings(
 class AllocationForm(forms.Form):
     resource = forms.ModelChoiceField(queryset=None, empty_label=None)
     justification = forms.CharField(widget=forms.Textarea)
+    first_name = forms.CharField(max_length=40, required=False)
+    last_name = forms.CharField(max_length=40, required=False)
+    campus_affiliation = forms.ChoiceField(
+        choices=(
+            ('', ''),
+            ('BL', 'IU Bloomington'),
+            ('IN', 'IUPUI (Indianapolis)'),
+            ('CO', 'IUPUC (Columbus)'),
+            ('EA', 'IU East (Richmond)'),
+            ('FW', 'IU Fort Wayne'),
+            ('CO', 'IU Kokomo'),
+            ('NW', 'IU Northwest (Gary)'),
+            ('SB', 'IU South Bend'),
+            ('SE', 'IU Southeast (New Albany)'),
+            ('OR', 'Other')
+        ),
+        required=False
+    )
+    email = forms.CharField(max_length=40, required=False)
+    url = forms.CharField(max_length=50, required=False)
+    project_directory_name = forms.CharField(max_length=10, required=False)
     quantity = forms.IntegerField(required=False)
     storage_space = forms.IntegerField(required=False)
+    storage_space_with_unit = forms.IntegerField(required=False)
     leverage_multiple_gpus = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False, widget=RadioSelect)
     dl_workflow = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False, widget=RadioSelect)
     applications_list = forms.CharField(max_length=150, required=False)
@@ -38,7 +60,6 @@ class AllocationForm(forms.Form):
     phi_association = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False, widget=RadioSelect)
     access_level = forms.ChoiceField(choices=(('Masked', 'Masked'), ('Unmasked', 'Unmasked')), required=False, widget=RadioSelect)
     unit = forms.CharField(max_length=10, required=False)
-    confirm_understanding = forms.BooleanField(required=False)
     primary_contact = forms.CharField(max_length=20, required=False)
     secondary_contact = forms.CharField(max_length=20, required=False)
     department_full_name = forms.CharField(max_length=30, required=False)
@@ -46,9 +67,20 @@ class AllocationForm(forms.Form):
     fiscal_officer = forms.CharField(max_length=20, required=False)
     account_number = forms.CharField(max_length=9, required=False)
     sub_account_number = forms.CharField(max_length=20, required=False)
+    license_term = forms.ChoiceField(choices=(('current','Current license'), ('current_and_next_year','Current license + next annual license')), required=False)
+    faculty_email = forms.CharField(max_length=40, required=False)
+    store_ephi = forms.ChoiceField(
+        choices=(('No', 'No'), ('Yes', 'Yes')),
+        required=False,
+        widget=RadioSelect
+    )
     it_pros = forms.CharField(max_length=100, required=False)
     devices_ip_addresses = forms.CharField(max_length=200, required=False)
     data_management_plan = forms.CharField(widget=forms.Textarea, required=False)
+    prorated_cost = forms.IntegerField(disabled=True, required=False)
+    cost = forms.IntegerField(disabled=True, required=False)
+    total_cost = forms.IntegerField(disabled=True, required=False)
+    confirm_understanding = forms.BooleanField(required=False)
 
     users = forms.MultipleChoiceField(
         widget=forms.CheckboxSelectMultiple, required=False)
@@ -82,16 +114,24 @@ class AllocationForm(forms.Form):
         self.fields['justification'].help_text = '<br/>Justification for requesting this allocation.'
         self.fields['start_date'].help_text = 'Format: mm/dd/yyyy'
         self.fields['end_date'].help_text = 'Format: mm/dd/yyyy'
-        self.fields['storage_space'].help_text = 'Amount must be greater than or equal to 200GB.'
+        self.fields['storage_space_with_unit'].help_text = 'Amount must be greater than or equal to 200GB.'
         self.fields['account_number'].help_text = 'Format: 00-000-00'
         self.fields['applications_list'].help_text = 'Format: app1,app2,app3,etc'
         self.fields['it_pros'].help_text = 'Format: name1,name2,name3,etc'
 
         ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
         search_class_obj = ldap_search()
-        attributes = search_class_obj.search_a_user(request_user.username, ['department', 'division'])
+        attributes = search_class_obj.search_a_user(
+            request_user.username,
+            ['department', 'division', 'ou', 'givenName', 'sn', 'mail']
+        )
+
         self.fields['department_full_name'].initial = attributes['department'][0]
         self.fields['department_short_name'].initial = attributes['division'][0]
+        self.fields['first_name'].initial = attributes['givenName'][0]
+        self.fields['last_name'].initial = attributes['sn'][0]
+        self.fields['campus_affiliation'].initial = attributes['ou'][0]
+        self.fields['email'].initial = attributes['mail'][0]
 
 
 class AllocationUpdateForm(forms.Form):

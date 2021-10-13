@@ -1,5 +1,6 @@
 import datetime
 import logging
+import csv
 from datetime import date
 
 from dateutil.relativedelta import relativedelta
@@ -12,6 +13,7 @@ from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.forms import formset_factory
 from django.http import HttpResponseRedirect, JsonResponse
+from django.http.response import HttpResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse, reverse_lazy
 from django.utils.html import format_html, mark_safe
@@ -39,8 +41,10 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationUserStatusChoice)
 from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user)
-from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
+from coldfront.core.allocation.utils import (compute_prorated_amount,
+                                             generate_guauge_data_from_usage,
                                              get_user_resources)
+from coldfront.core.utils.common import Echo
 from coldfront.core.project.models import (Project, ProjectUser,
                                            ProjectUserStatusChoice)
 from coldfront.core.resource.models import Resource
@@ -516,6 +520,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         resources_form_label_texts = {}
         resources_form_storage_space = {}
         resources_form_storage_space_label = {}
+        resources_form_storage_space_with_unit = {}
+        resources_form_storage_space_with_unit_label = {}
         resources_form_leverage_multiple_gpus = {}
         resources_form_leverage_multiple_gpus_label = {}
         resources_form_dl_workflow = {}
@@ -558,6 +564,26 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         resources_form_devices_ip_addresses_label = {}
         resources_form_data_management_plan = {}
         resources_form_data_management_plan_label = {}
+        resources_form_project_directory_name = {}
+        resources_form_project_directory_name_label = {}
+        resources_form_cost = {}
+        resources_form_cost_label = {}
+        resources_form_prorated_cost = {}
+        resources_form_prorated_cost_label = {}
+        resources_form_first_name = {}
+        resources_form_first_name_label = {}
+        resources_form_last_name = {}
+        resources_form_last_name_label = {}
+        resources_form_campus_affiliation = {}
+        resources_form_campus_affiliation_label = {}
+        resources_form_email = {}
+        resources_form_email_label = {}
+        resources_form_url = {}
+        resources_form_url_label = {}
+        resources_form_faculty_email = {}
+        resources_form_faculty_email_label = {}
+        resources_form_store_ephi = {}
+        resources_form_store_ephi_label = {}
         resources_with_eula = {}
 
         for resource in user_resources:
@@ -585,6 +611,19 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='storage_space_label').value
                 resources_form_storage_space_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='storage_space_with_unit').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='storage_space_with_unit').value
+                if value == '':
+                    resources_form_storage_space_with_unit[resource.id] = 0
+                else:
+                    resources_form_storage_space_with_unit[resource.id] = int(value)
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='storage_space_with_unit_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='storage_space_with_unit_label').value
+                resources_form_storage_space_with_unit_label[resource.id] = mark_safe(
                     '<strong>{}*</strong>'.format(value))
 
             if resource.resourceattribute_set.filter(resource_attribute_type__name='leverage_multiple_gpus').exists():
@@ -797,6 +836,112 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 resources_form_data_management_plan_label[resource.id] = mark_safe(
                     '<strong>{}*</strong>'.format(value))
 
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='project_directory_name').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='project_directory_name').value
+                resources_form_project_directory_name[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='project_directory_name_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='project_directory_name_label').value
+                resources_form_project_directory_name_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='first_name').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='first_name').value
+                resources_form_first_name[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='first_name_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='first_name_label').value
+                resources_form_first_name_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='last_name').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='last_name').value
+                resources_form_last_name[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='last_name_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='last_name_label').value
+                resources_form_last_name_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='campus_affiliation').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='campus_affiliation').value
+                resources_form_campus_affiliation[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='campus_affiliation_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='campus_affiliation_label').value
+                resources_form_campus_affiliation_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='email').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='email').value
+                resources_form_email[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='email_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='email_label').value
+                resources_form_email_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='url').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='url').value
+                resources_form_url[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='url_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='url_label').value
+                resources_form_url_label[resource.id] = mark_safe(
+                    '<strong>{}</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='faculty_email').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='faculty_email').value
+                resources_form_faculty_email[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='faculty_email_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='faculty_email_label').value
+                resources_form_faculty_email_label[resource.id] = mark_safe(
+                    '<strong>{}</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='store_ephi').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='store_ephi').value
+                resources_form_store_ephi[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='store_ephi_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='store_ephi_label').value
+                resources_form_store_ephi_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='cost').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='cost').value
+                resources_form_cost[resource.id] = int(value)
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='cost_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='cost_label').value
+                resources_form_cost_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='prorated').exists():
+                if resource.resourceattribute_set.get(resource_attribute_type__name='prorated'):
+                    if resource.resourceattribute_set.filter(resource_attribute_type__name='prorated_cost_label').exists():
+                        value = resource.resourceattribute_set.get(
+                            resource_attribute_type__name='prorated_cost_label').value
+                        resources_form_prorated_cost_label[resource.id] = mark_safe(
+                            '<strong>{}*</strong>'.format(value))
+
+                    if resource.resourceattribute_set.filter(resource_attribute_type__name='cost').exists():
+                        resources_form_prorated_cost[resource.id] = compute_prorated_amount(
+                            int(resource.resourceattribute_set.get(
+                                resource_attribute_type__name='cost').value
+                        ))
+                    else:
+                        resources_form_prorated_cost[resource.id] = 0
+
             if resource.resourceattribute_set.filter(resource_attribute_type__name='eula').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='eula').value
@@ -807,6 +952,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         context['resources_form_label_texts'] = resources_form_label_texts
         context['resources_form_storage_space'] = resources_form_storage_space
         context['resources_form_storage_space_label'] = resources_form_storage_space_label
+        context['resources_form_storage_space_with_unit'] = resources_form_storage_space_with_unit
+        context['resources_form_storage_space_with_unit_label'] = resources_form_storage_space_with_unit_label
         context['resources_form_leverage_multiple_gpus_label'] = resources_form_leverage_multiple_gpus_label
         context['resources_form_leverage_multiple_gpus'] = resources_form_leverage_multiple_gpus
         context['resources_form_dl_workflow_label'] = resources_form_dl_workflow_label
@@ -849,6 +996,26 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         context['resources_form_devices_ip_addresses_label'] = resources_form_devices_ip_addresses_label
         context['resources_form_data_management_plan'] = resources_form_data_management_plan
         context['resources_form_data_management_plan_label'] = resources_form_data_management_plan_label
+        context['resources_form_project_directory_name'] = resources_form_project_directory_name
+        context['resources_form_project_directory_name_label'] = resources_form_project_directory_name_label
+        context['resources_form_cost'] = resources_form_cost
+        context['resources_form_cost_label'] = resources_form_cost_label
+        context['resources_form_prorated_cost'] = resources_form_prorated_cost
+        context['resources_form_prorated_cost_label'] = resources_form_prorated_cost_label
+        context['resources_form_first_name'] = resources_form_first_name
+        context['resources_form_first_name_label'] = resources_form_first_name_label
+        context['resources_form_last_name'] = resources_form_last_name
+        context['resources_form_last_name_label'] = resources_form_last_name_label
+        context['resources_form_campus_affiliation'] = resources_form_campus_affiliation
+        context['resources_form_campus_affiliation_label'] = resources_form_campus_affiliation_label
+        context['resources_form_email'] = resources_form_email
+        context['resources_form_email_label'] = resources_form_email_label
+        context['resources_form_url'] = resources_form_url
+        context['resources_form_url_label'] = resources_form_url_label
+        context['resources_form_faculty_email'] = resources_form_faculty_email
+        context['resources_form_faculty_email_label'] = resources_form_faculty_email_label
+        context['resources_form_store_ephi'] = resources_form_store_ephi
+        context['resources_form_store_ephi_label'] = resources_form_store_ephi_label
         context['resources_with_eula'] = resources_with_eula
         context['resources_with_accounts'] = list(Resource.objects.filter(
             name__in=list(ALLOCATION_ACCOUNT_MAPPING.keys())).values_list('id', flat=True))
@@ -861,6 +1028,17 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             form_class = self.get_form_class()
         return form_class(self.request.user, self.kwargs.get('project_pk'), **self.get_form_kwargs())
 
+    def calculate_end_date(self, month, day, license_term):
+        current_date = datetime.date.today()
+        license_end_date = datetime.date(current_date.year, month, day)
+        if current_date > license_end_date:
+            license_end_date = license_end_date.replace(year=license_end_date.year + 1)
+
+        if license_term == 'current_and_next_year':
+            license_end_date = license_end_date.replace(year=license_end_date.year + 1)
+
+        return license_end_date
+
     def form_valid(self, form):
         form_data = form.cleaned_data
         project_obj = get_object_or_404(
@@ -869,6 +1047,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         justification = form_data.get('justification')
         quantity = form_data.get('quantity', 1)
         storage_space = form_data.get('storage_space')
+        storage_space_with_unit = form_data.get('storage_space_with_unit')
         leverage_multiple_gpus = form_data.get('leverage_multiple_gpus')
         dl_workflow = form_data.get('dl_workflow')
         applications_list = form_data.get('applications_list')
@@ -894,7 +1073,33 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         it_pros = form_data.get('it_pros')
         devices_ip_addresses = form_data.get('devices_ip_addresses')
         data_management_plan = form_data.get('data_management_plan')
+        project_directory_name = form_data.get('project_directory_name')
+        first_name = form_data.get('first_name')
+        last_name = form_data.get('last_name')
+        campus_affiliation = form_data.get('campus_affiliation')
+        email = form_data.get('email')
+        url = form_data.get('url')
+        faculty_email = form_data.get('faculty_email')
+        store_ephi = form_data.get('store_ephi')
         allocation_account = form_data.get('allocation_account', None)
+        license_term = form_data.get('license_term', None)
+
+        total_cost = None
+        cost = resource_obj.get_attribute('cost')
+        prorated_cost_label = resource_obj.get_attribute('prorated_cost_label')
+        if cost is not None:
+            cost = int(cost)
+            total_cost = cost
+            if prorated_cost_label is not None:
+                prorated_cost = compute_prorated_amount(cost)
+                if license_term == 'current':
+                    total_cost = prorated_cost
+                elif license_term == 'current_and_next_year':
+                    total_cost += prorated_cost
+
+        if resource_obj.name == 'RStudio Connect':
+            end_date = self.calculate_end_date(6, 30, license_term)
+
         # A resource is selected that requires an account name selection but user has no account names
         if ALLOCATION_ACCOUNT_ENABLED and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING and AllocationAttributeType.objects.filter(
                 name=ALLOCATION_ACCOUNT_MAPPING[resource_obj.name]).exists() and not allocation_account:
@@ -930,7 +1135,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 error = True
         elif resource_obj.name == 'Geode-Projects':
             if (
-                storage_space is None
+                storage_space_with_unit is None
                 or unit == ''
                 or (not use_indefinitely and end_date is None)
                 or start_date is None
@@ -945,7 +1150,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 or data_management_plan == ''
             ):
                 error = True
-            elif (storage_space <= 0 and unit == 'TB') or (storage_space < 200 and unit == 'GB'):
+            elif (storage_space_with_unit <= 0 and unit == 'TB') or (storage_space_with_unit < 200 and unit == 'GB'):
                 form.add_error(None, format_html(
                     'Please enter a storage amount greater than or equal to 200GB.'
                     )
@@ -982,7 +1187,29 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 )
                 return self.form_invalid(form)
 
-            storage_space = str(storage_space) + unit
+            storage_space_with_unit = str(storage_space_with_unit) + unit
+        elif resource_obj.name == 'RStudio Connect':
+            if project_directory_name == '' or account_number == '' or not confirm_understanding:
+                error = True
+        elif resource_obj.name == 'Slate Project':
+            if (
+                first_name == '' or
+                last_name == '' or
+                campus_affiliation == '' or
+                email == '' or
+                project_directory_name == '' or
+                start_date is None or
+                store_ephi == ''
+            ):
+                error = True
+            elif storage_space <= 0:
+                form.add_error(None, format_html(
+                    'Storage space must be greater than 0.'
+                    )
+                )
+                return self.form_invalid(form)
+            elif storage_space > 15 and account_number == '':
+                error = True
 
         if error:
             form.add_error(None, format_html(
@@ -994,6 +1221,17 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         usernames = form_data.get('users')
         usernames.append(project_obj.pi.username)
         usernames = list(set(usernames))
+
+        # If a resource has a user limit make sure it's not surpassed.
+        total_users = len(usernames)
+        user_limit = resource_obj.get_attribute("user_limit")
+        if user_limit is not None:
+            if total_users > int(user_limit):
+                form.add_error(None, format_html(
+                    'Too many users are being added (total users: {}). The user limit for this resource is {}.'.format(total_users, user_limit)
+                ))
+                return self.form_invalid(form)
+
 
         users = [User.objects.get(username=username) for username in usernames]
         if project_obj.pi not in users:
@@ -1052,6 +1290,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             justification=justification,
             quantity=quantity,
             storage_space=storage_space,
+            storage_space_with_unit=storage_space_with_unit,
             leverage_multiple_gpus=leverage_multiple_gpus,
             dl_workflow=dl_workflow,
             applications_list=applications_list,
@@ -1076,6 +1315,15 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             it_pros=it_pros,
             devices_ip_addresses=devices_ip_addresses,
             data_management_plan=data_management_plan,
+            project_directory_name=project_directory_name,
+            total_cost=total_cost,
+            first_name=first_name,
+            last_name=last_name,
+            campus_affiliation=campus_affiliation,
+            email=email,
+            url=url,
+            faculty_email=faculty_email,
+            store_ephi=store_ephi,
             status=allocation_status_obj
         )
         allocation_obj.resources.add(resource_obj)
@@ -1188,6 +1436,22 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         return users_to_add
 
+    def get_list_of_users_to_add(self, formset):
+        users = []
+        for form in formset:
+            user_form_data = form.cleaned_data
+            if user_form_data['selected']:
+                users.append(user_form_data.get('username'))
+
+        return users
+
+    def get_total_users_in_allocation_if_added(self, allocation_obj, formset):
+        total_users = len(list(allocation_obj.allocationuser_set.exclude(
+            status__name__in=['Removed']).values_list('user__username', flat=True)))
+        total_users += len(self.get_list_of_users_to_add(formset))
+
+        return total_users
+
     def get(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
@@ -1209,6 +1473,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         allocation_obj = get_object_or_404(Allocation, pk=pk)
 
         users_to_add = self.get_users_to_add(allocation_obj)
+        allocation_user_limit = allocation_obj.get_parent_resource.get_attribute("user_limit")
 
         formset = formset_factory(
             AllocationAddUserForm, max_num=len(users_to_add))
@@ -1218,6 +1483,15 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         added_users = []
         denied_users = []
         if formset.is_valid():
+            if allocation_user_limit is not None:
+                # The users_to_add variable is not an actual list of users to add. The users listed
+                # are the remaining users in the project that are not in the allocation. We have to
+                # cycle through the formset and increment the total user count for each user that
+                # has been selected in the list.
+                total_users = self.get_total_users_in_allocation_if_added(allocation_obj, formset)
+                if total_users > int(allocation_user_limit):
+                    messages.error(request, "Only {} users are allowed on this resource. Users were not added. (Total users counted: {})".format(allocation_user_limit, total_users))
+                    return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
             allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(
                 name='Active')
@@ -1293,7 +1567,7 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
                 request, 'You cannot modify this allocation because it is locked! Contact support for details.')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
-        if allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', ]:
+        if allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', 'Paid', 'Payment Pending', 'Payment Requested']:
             messages.error(request, 'You cannot remove users from a allocation with status {}.'.format(
                 allocation_obj.status.name))
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
@@ -2081,3 +2355,94 @@ class AllocationAccountListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
 
     def get_queryset(self):
         return AllocationAccount.objects.filter(user=self.request.user)
+
+
+class AllocationInvoiceExportView(LoginRequiredMixin, UserPassesTestMixin, View):
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('allocation.can_manage_invoice'):
+            return True
+
+        messages.error(self.request, 'You do not have permission to download invoices.')
+
+    def get(self, request):
+        file_name = request.GET["file_name"]
+        resource = request.GET["resource"]
+
+        if file_name[-4:] != ".csv":
+            file_name += ".csv"
+
+        invoices = Allocation.objects.prefetch_related('project', 'status').filter(
+            Q(status__name__in=['Payment Pending', ]) &
+            Q(resources__name=resource)
+        ).order_by('-created')
+
+        rows = []
+        if resource == "RStudio Connect":
+            header = [
+                'Name',
+                'Account*',
+                'Object*',
+                'Sub-Acct',
+                'Product',
+                'Quantity',
+                'Unit cost',
+                'Amount*',
+                'Invoice',
+                'Line Description',
+                'Income Account',
+                'Income Sub-acct',
+                'Income Object Code',
+                'Income sub-object code',
+                'Project',
+                'Org Ref ID'
+            ]
+
+            for invoice in invoices:
+                row = [
+                    ' '.join((invoice.project.pi.first_name, invoice.project.pi.last_name)),
+                    invoice.account_number,
+                    '4616',
+                    invoice.sub_account_number,
+                    '',
+                    1,
+                    '',
+                    invoice.total_cost,
+                    '',
+                    'RStudio Connect FY 22',
+                    '63-101-08',
+                    'SMSAL',
+                    1500,
+                    '',
+                    '',
+                    ''
+                ]
+
+                rows.append(row)
+            rows.insert(0, header)
+        elif resource == "Slate Project":
+            header = [
+                'Name',
+                'Acount*'
+            ] 
+
+            for invoice in invoices:
+                row = [
+                    ' '.join((invoice.project.pi.first_name, invoice.project.pi.last_name)),
+                    invoice.account_number
+                ]
+
+                rows.append(row)
+            rows.insert(0, header)
+
+        pseudo_buffer = Echo()
+        writer = csv.writer(pseudo_buffer)
+        response = StreamingHttpResponse(
+            (writer.writerow(row) for row in rows),
+            content_type='text/csv'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{file_name}"'
+        return response

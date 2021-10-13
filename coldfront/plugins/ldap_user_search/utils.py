@@ -94,6 +94,6 @@ class LDAPSearch:
         if self.conn.entries:
             attributes = json.loads(self.conn.entries[0].entry_to_json()).get('attributes')
         else:
-            attributes = dict.fromkeys(search_attributes_list, None)
+            attributes = dict.fromkeys(search_attributes_list, [''])
 
         return attributes
