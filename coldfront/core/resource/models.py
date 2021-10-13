@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 
 from django.contrib.auth.models import Group, User
 from django.core.exceptions import ValidationError
@@ -7,6 +8,7 @@ from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 from django.utils.module_loading import import_string
 
+logger = logging.getLogger(__name__)
 
 class AttributeType(TimeStampedModel):
     name = models.CharField(max_length=128, unique=True)
@@ -72,11 +74,9 @@ class Resource(TimeStampedModel):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.resources = {
-            'Carbonate DL': 'CN=iu-entlmt-app-rt-carbonate-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu',
-            'Carbonate GPU': 'CN=iu-entlmt-app-rt-carbonate-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu',
-            'Carbonate Precision Health Initiative (PHI) Nodes': 'CN=iu-entlmt-app-rt-carbonate-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu',
-            'Big Red 3': 'CN=iu-entlmt-app-rt-bigred3-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu'
+        self.resource_accounts = {
+            'Carbonate': 'CN=iu-entlmt-app-rt-carbonate-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu',
+            'BigRed3': 'CN=iu-entlmt-app-rt-bigred3-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu',
         }
 
     def get_missing_resource_attributes(self, required=False):
@@ -121,17 +121,18 @@ class Resource(TimeStampedModel):
             return ondemand.value
         return None
 
-    def check_user_account_exists(self, username, resource_account=None):
-        ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
-        search_class_obj = ldap_search()
-        if self.name not in self.resources and resource_account is None:
+    def check_user_account_exists(self, username, resource):
+        resource_acc = self.resource_accounts.get(resource)
+
+        if resource_acc is None:
+            logger.warning(
+                "A resource account does not exist for {}. Skipping user {}'s account"
+                .format(resource, username)
+            )
             return True
 
-        if resource_account is not None:
-            resource_acc = resource_account
-        else:
-            resource_acc = self.resources[self.name]
-
+        ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
+        search_class_obj = ldap_search()
         attributes = search_class_obj.search_a_user(username, ['memberOf'])
         if attributes['memberOf'] is not None and resource_acc in attributes['memberOf']:
             return True
