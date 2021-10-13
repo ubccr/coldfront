@@ -184,7 +184,7 @@ class ResourceAttribute(TimeStampedModel):
                 )
 
     def __str__(self):
-        return '%s: %s (%s)' % (self.resource_attribute_type, self.value, self.resource)
+        return '%s (%s)' % (self.resource_attribute_type, self.resource_attribute_type.attribute_type.name)
 
     class Meta:
         unique_together = ('resource_attribute_type', 'resource')
