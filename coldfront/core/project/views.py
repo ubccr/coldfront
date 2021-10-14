@@ -3211,6 +3211,7 @@ class VectorProjectRequestView(LoginRequiredMixin, UserPassesTestMixin,
         try:
             project = self.__handle_create_new_project(form.cleaned_data)
             # Store form data in a request.
+
             pi = User.objects.get(username=settings.VECTOR_PI_USERNAME)
             status = ProjectAllocationRequestStatusChoice.objects.get(
                 name='Under Review')
@@ -3585,3 +3586,108 @@ class VectorProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
         return reverse(
             'vector-project-request-detail',
             kwargs={'pk': self.kwargs.get('pk')})
+
+
+class SavioProjectUndenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
+    login_url = '/'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+
+        message = (
+            'You do not have permission to undeny a project request.')
+        messages.error(self.request, message)
+
+    def dispatch(self, request, *args, **kwargs):
+        project_request = get_object_or_404(
+            SavioProjectAllocationRequest, pk=self.kwargs.get('pk'))
+
+        state_status = savio_request_state_status(project_request)
+        denied_status = ProjectAllocationRequestStatusChoice.objects.get(name='Denied')
+
+        if state_status != denied_status:
+            message = 'Savio project request has an unexpected status.'
+            messages.error(request, message)
+
+            return HttpResponseRedirect(
+                reverse('savio-project-request-detail',
+                        kwargs={'pk': self.kwargs.get('pk')}))
+
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        project_request = get_object_or_404(
+            SavioProjectAllocationRequest, pk=kwargs.get('pk'))
+        
+        if project_request.state['eligibility']['status'] == 'Denied':
+            project_request.state['eligibility']['status'] = 'Pending'
+
+        if project_request.state['readiness']['status'] == 'Denied':
+            project_request.state['readiness']['status'] = 'Pending'
+            
+        if project_request.state['other']['timestamp']:
+            project_request.state['other']['justification'] = ''
+            project_request.state['other']['timestamp'] = ''
+
+        project_request.status = savio_request_state_status(project_request)
+        project_request.save()
+
+        message = (
+            f'Project request {project_request.project.name} '
+            f'has been UNDENIED and will need to be reviewed again.')
+        messages.success(request, message)
+
+        return HttpResponseRedirect(
+            reverse('savio-project-request-detail',
+                    kwargs={'pk': kwargs.get('pk')}))
+
+
+class VectorProjectUndenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
+    login_url = '/'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+
+        message = (
+            'You do not have permission to undeny a project request.')
+        messages.error(self.request, message)
+
+    def dispatch(self, request, *args, **kwargs):
+        project_request = get_object_or_404(
+            VectorProjectAllocationRequest, pk=self.kwargs.get('pk'))
+
+        state_status = vector_request_state_status(project_request)
+        denied_status = ProjectAllocationRequestStatusChoice.objects.get(name='Denied')
+
+        if state_status != denied_status:
+            message = 'Vector project request has an unexpected status.'
+            messages.error(request, message)
+
+            return HttpResponseRedirect(
+                reverse('vector-project-request-detail',
+                        kwargs={'pk': self.kwargs.get('pk')}))
+
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        project_request = get_object_or_404(
+            VectorProjectAllocationRequest, pk=kwargs.get('pk'))
+
+        if project_request.state['eligibility']['status'] == 'Denied':
+            project_request.state['eligibility']['status'] = 'Pending'
+
+        project_request.status = vector_request_state_status(project_request)
+        project_request.save()
+
+        message = (
+            f'Project request {project_request.project.name} '
+            f'has been UNDENIED and will need to be reviewed again.')
+        messages.success(request, message)
+
+        return HttpResponseRedirect(
+            reverse('vector-project-request-detail',
+                    kwargs={'pk': kwargs.get('pk')}))
