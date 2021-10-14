@@ -16,6 +16,7 @@ from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
 from coldfront.core.project.models import Project
+from coldfront.core.project.models import ProjectUser
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import import_from_settings
 
@@ -389,3 +390,69 @@ def validate_allocation_attribute_value_type(expected_value_type, value):
             raise ValidationError(
                 ('Invalid Value "%s". Date must be in format '
                  'YYYY-MM-DD') % value)
+
+
+class AllocationPeriod(TimeStampedModel):
+    name = models.CharField(max_length=255, unique=True)
+    start_date = models.DateField()
+    end_date = models.DateField()
+
+    def __str__(self):
+        return self.name
+
+
+class AllocationRenewalRequestStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]
+
+
+def allocation_renewal_request_state_schema():
+    """Return the schema for the AllocationRenewalRequest.state
+    field."""
+    return {
+        'eligibility': {
+            'status': 'Pending',
+            'justification': '',
+            'timestamp': '',
+        },
+        'other': {
+            'justification': '',
+            'timestamp': '',
+        }
+    }
+
+
+class AllocationRenewalRequest(TimeStampedModel):
+    requester = models.ForeignKey(
+        User, on_delete=models.CASCADE,
+        related_name='allocation_renewal_requester')
+    pi = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='allocation_renewal_pi')
+    allocation_period = models.ForeignKey(
+        AllocationPeriod, on_delete=models.CASCADE)
+    status = models.ForeignKey(
+        AllocationRenewalRequestStatusChoice, on_delete=models.CASCADE)
+
+    pre_project = models.ForeignKey(
+        Project, on_delete=models.CASCADE,
+        related_name='allocation_renewal_pre_project')
+    post_project = models.ForeignKey(
+        Project, on_delete=models.CASCADE,
+        related_name='allocation_renewal_post_project')
+    # Use quotation marks to avoid a circular import.
+    new_project_request = models.OneToOneField(
+        'project.SavioProjectAllocationRequest',
+        null=True, blank=True, on_delete=models.CASCADE)
+
+    state = models.JSONField(default=allocation_renewal_request_state_schema)
+    extra_fields = models.JSONField(default=dict)
+
+    def __str__(self):
+        period = self.allocation_period.name
+        pi = self.pi.username
+        return f'Renewal Request ({period}, {pi})'
