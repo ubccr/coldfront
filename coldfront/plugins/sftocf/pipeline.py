@@ -203,20 +203,20 @@ class UsageStat:
 
 class ColdFrontDB:
 
-    def generate_user_project_list(self):
-        logger.debug("generate_user_project_list")
+    def generate_user_project_dict(self):
+        logger.debug("generate_user_project_dict")
         # projuser = ProjectUser.objects.get(project_id=)
         projusers = ProjectUser.objects.only("project_id", "user_id")
         logger.debug("projusers: {}".format(projusers))
         d = {}
         for o in projusers:
-            p = self.return_projectname(o.project_id)
+            p = self.return_pname(o.project_id)
             u = self.return_username(o.user_id)
             if p not in d.keys():
                 d[p] = [u]
             else:
                 d[p].append(u)
-        logger.debug("generate_user_project_list product: {}".format(d))
+        logger.debug("generate_user_project_dict product: {}".format(d))
         return d
 
     def generate_project_list(self):
@@ -224,6 +224,15 @@ class ColdFrontDB:
         projects = Project.objects.only("title")
         logger.debug("generate_project_list projects:{}".format(projects))
         return projects
+
+    def generate_project_resource_dict(self):
+        pr_entries = Allocation.objects.only("id", "project_id")
+        for a in pr_entries:
+            print("a.get_resources_as_string", a.get_resources_as_string)
+        pr_dict = {
+            self.return_pname(o.project_id):o.get_resources_as_string for o in pr_entries}
+        pr_dict = {p:r.split("/") for p, r in pr_dict.items()}
+        return pr_dict
 
 
     def locate_uid(self, username):
@@ -234,6 +243,10 @@ class ColdFrontDB:
         project = Project.objects.get(title=labname)
         return project.id
 
+    def return_pname(self, pid):
+        project = Project.objects.get(id=pid)
+        return project.title
+
     def locate_aaid(self, pid):
         allocation = Allocation.objects.get(project_id=pid)
         return allocation.id
@@ -241,10 +254,6 @@ class ColdFrontDB:
     def return_username(self, uid):
         user = get_user_model().objects.get(id=uid)
         return user.username
-
-    def return_projectname(self, pid):
-        project = Project.objects.get(id=pid)
-        return project.title
 
     def update_usage(self, userdict):
         # get ids needed to locate correct allocationuser entry
@@ -292,7 +301,7 @@ def save_as_json(file, contents):
 def read_json(filepath):
     logger.debug("read_json for {}".format(filepath))
     with open(filepath, "r") as myfile:
-        data = myfile.read()
+        data = json.loads(myfile.read())
     return data
 
 def confirm_dirpath_exists(dpath):
@@ -303,25 +312,27 @@ def confirm_dirpath_exists(dpath):
 
 
 def collect_starfish_usage(server, volume, volumepath, projects):
-
     usage_query_by_lab = []
     datestr = datetime.today().strftime("%Y%m%d")
-
-    for p in projects:
+    logger.debug("server.name: {}".format(server.name))
+    projects_reduced = {p:r for p,r in projects.items() if r[0] == volume}
+    print("projects:", projects,"\nprojects_reduced:", projects_reduced)
+    for p, r in projects_reduced.items():
         homepath = "./coldfront/plugins/sftocf/data/"
         filepath = f"{homepath}{p}_{server.name}_{datestr}.json"
+        logger.debug(f"{p}")
         if Path(filepath).exists():
-            data = read_json(filepath)
+            record = read_json(filepath)
+            data = record['contents']
         else:
-            logger.debug("{}".format(p))
             lab_volpath = volumepath# + "/{}".format(p)
 
             queryline = "type=f groupname={}".format(p)
             usage_query = server.create_query(
                 queryline, "username, groupname", f"{volume}:{lab_volpath}", sec=2
             )
-            logger.debug("usage_query.result:{}".format(usage_query.result))
             data = usage_query.result
+            logger.debug("usage_query.result:{}".format(data))
             if not data:
                 logger.warning("No starfish result for lab {}".format(p))
                 data = []
@@ -331,14 +342,15 @@ def collect_starfish_usage(server, volume, volumepath, projects):
             else:
                 data = usage_query.result
                 logger.debug(data)
-                filecontents = {
+                record = {
                     "server": server.name,
                     "volume": volume,
-                    "volumepath": volumepath,
+                    "path": lab_volpath,
                     "date": datestr,
                     "contents": data,
                 }
-                confirm_pathdir_exists(homepath)
-                save_as_json(filepath, filecontents)
+                confirm_dirpath_exists(homepath)
+                save_as_json(filepath, record)
         usage_query_by_lab.extend(data)
+    logger.debug("usage_query_by_lab:", usage_query_by_lab)
     return usage_query_by_lab

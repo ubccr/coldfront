@@ -37,11 +37,9 @@ class Command(BaseCommand):
         volumepath = volpath = kwargs['volpath']
         server = StarFishServer(servername)
         coldfrontdb = ColdFrontDB()
-        labs = coldfrontdb.generate_project_list()
-        usage_stats = collect_starfish_usage(server, volume, volumepath, labs)
-
+        labs_resources = coldfrontdb.generate_project_resource_dict()
+        usage_stats = collect_starfish_usage(server, volume, volumepath, labs_resources)
         for statdict in usage_stats:
-            print(statdict)
             try:
                 coldfrontdb.update_usage(statdict)
             except Exception as e:
