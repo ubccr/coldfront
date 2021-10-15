@@ -29,6 +29,8 @@ from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db.models import Q
+from django.urls import reverse
+from urllib.parse import urljoin
 import logging
 
 
@@ -177,6 +179,127 @@ def send_allocation_renewal_request_processing_email(request,
 
     send_email_template(
         subject, template_name, context, sender, receiver_list, cc=cc)
+
+
+def send_new_allocation_renewal_request_admin_notification_email(request):
+    """Send an email to admins notifying them of a new
+    AllocationRenewalRequest."""
+    email_enabled = import_from_settings('EMAIL_ENABLED', False)
+    if not email_enabled:
+        return
+
+    subject = 'New Allocation Renewal Request'
+    template_name = (
+        'email/project_renewal/admins_new_project_renewal_request.txt')
+
+    requester = request.requester
+    requester_str = (
+        f'{requester.first_name} {requester.last_name} ({requester.email})')
+
+    pi = request.pi
+    pi_str = f'{pi.first_name} {pi.last_name} ({pi.email})'
+
+    detail_view_name = 'pi-allocation-renewal-request-detail'
+    review_url = urljoin(
+        settings.CENTER_BASE_URL,
+        reverse(detail_view_name, kwargs={'pk': request.pk}))
+
+    context = {
+        'pi_str': pi_str,
+        'requester_str': requester_str,
+        'review_url': review_url,
+    }
+
+    sender = settings.EMAIL_SENDER
+    receiver_list = settings.EMAIL_ADMIN_LIST
+
+    send_email_template(subject, template_name, context, sender, receiver_list)
+
+
+def send_new_allocation_renewal_request_pi_notification_email(request):
+    """Send an email to the PI of the given request notifying them that
+    someone has made a new AllocationRenewalRequest under their name.
+
+    It is the caller's responsibility to ensure that the requester and
+    PI are different (so the PI does not get a notification for their
+    own request)."""
+    email_enabled = import_from_settings('EMAIL_ENABLED', False)
+    if not email_enabled:
+        return
+
+    subject = 'New Allocation Renewal Request under Your Name'
+    template_name = 'email/project_renewal/pi_new_project_renewal_request.txt'
+
+    requester = request.requester
+    requester_str = (
+        f'{requester.first_name} {requester.last_name} ({requester.email})')
+
+    pi = request.pi
+    pi_str = f'{pi.first_name} {pi.last_name}'
+
+    detail_view_name = 'pi-allocation-renewal-request-detail'
+    center_base_url = settings.CENTER_BASE_URL
+    review_url = urljoin(
+        center_base_url, reverse(detail_view_name, kwargs={'pk': request.pk}))
+    login_url = urljoin(center_base_url, reverse('login'))
+
+    context = {
+        'login_url': login_url,
+        'pi_str': pi_str,
+        'requested_project_name': request.post_project.name,
+        'requester_str': requester_str,
+        'review_url': review_url,
+    }
+
+    sender = settings.EMAIL_SENDER
+    receiver_list = [pi.email]
+
+    send_email_template(subject, template_name, context, sender, receiver_list)
+
+
+def send_new_allocation_renewal_request_pooling_notification_email(request):
+    """Send a notification email to the managers and PIs of the project
+    being requested to pool with stating that someone is attempting to
+    pool."""
+    email_enabled = import_from_settings('EMAIL_ENABLED', False)
+    if not email_enabled:
+        return
+
+    subject = (
+        f'New request to pool with your project {request.post_project.name}')
+    template_name = (
+        'email/project_renewal/'
+        'managers_new_pooled_project_renewal_request.txt')
+
+    requester = request.requester
+    requester_str = (
+        f'{requester.first_name} {requester.last_name} ({requester.email})')
+
+    pi = request.pi
+    pi_str = f'{pi.first_name} {pi.last_name} ({pi.email})'
+
+    context = {
+        'center_name': settings.CENTER_NAME,
+        'requested_project_name': request.post_project.name,
+        'requester_str': requester_str,
+        'pi_str': pi_str,
+        'support_email': settings.CENTER_HELP_EMAIL,
+        'signature': settings.EMAIL_SIGNATURE,
+    }
+
+    sender = settings.EMAIL_SENDER
+    pi_condition = Q(
+        role__name='Principal Investigator', status__name='Active',
+        enable_notifications=True)
+    manager_condition = Q(role__name='Manager', status__name='Active')
+    receiver_list = list(
+        request.post_project.projectuser_set.filter(
+            pi_condition | manager_condition
+        ).values_list(
+            'user__email', flat=True
+        ))
+
+    send_email_template(subject, template_name, context, sender, receiver_list)
 
 
 def allocation_renewal_request_denial_reason(request):

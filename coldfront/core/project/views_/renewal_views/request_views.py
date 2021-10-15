@@ -20,6 +20,9 @@ from coldfront.core.project.utils_.renewal_utils import get_current_allocation_p
 from coldfront.core.project.utils_.renewal_utils import get_pi_current_active_fca_project
 from coldfront.core.project.utils_.renewal_utils import has_non_denied_renewal_request
 from coldfront.core.project.utils_.renewal_utils import is_pooled
+from coldfront.core.project.utils_.renewal_utils import send_new_allocation_renewal_request_admin_notification_email
+from coldfront.core.project.utils_.renewal_utils import send_new_allocation_renewal_request_pi_notification_email
+from coldfront.core.project.utils_.renewal_utils import send_new_allocation_renewal_request_pooling_notification_email
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import utc_now_offset_aware
 
@@ -65,25 +68,37 @@ class AllocationRenewalMixin(object):
         request_kwargs['new_project_request'] = new_project_request
         return AllocationRenewalRequest.objects.create(**request_kwargs)
 
-    def send_emails(self, request_obj):
+    @staticmethod
+    def send_emails(request_obj):
         """Send emails to various recipients based on the given, newly-
         created AllocationRenewalRequest."""
-        # TODO
         # Send a notification email to admins.
         try:
-            pass
+            send_new_allocation_renewal_request_admin_notification_email(
+                request_obj)
         except Exception as e:
             logger.error(f'Failed to send notification email. Details:\n')
             logger.exception(e)
         # Send a notification email to the PI if the requester differs.
         if request_obj.requester != request_obj.pi:
             try:
-                pass
+                send_new_allocation_renewal_request_pi_notification_email(
+                    request_obj)
             except Exception as e:
                 logger.error(
                     f'Failed to send notification email. Details:\n')
                 logger.exception(e)
-        # TODO: May need to send email to new pooling PIs.
+        # If applicable, send a notification email to the managers and PIs of
+        # the project being requested to pool with.
+        if (request_obj.pi not in request_obj.post_project.pis() and
+                not request_obj.new_project_request):
+            try:
+                send_new_allocation_renewal_request_pooling_notification_email(
+                    request_obj)
+            except Exception as e:
+                logger.error(
+                    f'Failed to send notification email. Details:\n')
+                logger.exception(e)
 
 
 class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
