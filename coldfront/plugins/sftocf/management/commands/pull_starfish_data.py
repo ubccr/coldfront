@@ -31,34 +31,20 @@ class Command(BaseCommand):
         )
 
 
-
     def handle(self, *args, **kwargs):
         servername = server = kwargs['server']
         volume = volume = kwargs['volume']
         volumepath = volpath = kwargs['volpath']
 
         server = StarFishServer(servername)
-
-
-        datestr = datetime.today().strftime("%Y%m%d")
-        filepath = f"sf_query_{servername}_{datestr}.json"
         coldfrontdb = ColdFrontDB()
 
-        if Path(filepath).exists():
-            pass
-        else:
-            labs = coldfrontdb.generate_user_project_list()
-            filecontents = collect_starfish_json(server, servername, volume, volumepath, labs)
-            with open(filepath, "w") as fp:
-                json.dump(filecontents, fp, sort_keys=True, indent=4)
+        labs = coldfrontdb.generate_user_project_list()
 
+        usage_stats = collect_starfish_usage(server, volume, volumepath, labs)
 
-        with open(filepath, "r") as myfile:
-            data = myfile.read()
-        usage_stats = json.loads(data)
-        usage_stats["contents"] = [i for l in usage_stats["contents"] for i in l]
-        for statdict in usage_stats["contents"]:
-            logger.debug(statdict)
+        for statdict in usage_stats:
+            print(statdict)
             try:
                 coldfrontdb.update_usage(statdict)
             except Exception as e:

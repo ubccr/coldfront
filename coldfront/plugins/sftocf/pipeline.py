@@ -27,6 +27,7 @@ class StarFishServer:
     """
 
     def __init__(self, server):
+        self.name = server
         self.api_url = f"https://{server}.rc.fas.harvard.edu/api/"
         self.token = self.get_auth_token()
         self.headers = self.generate_headers()
@@ -66,6 +67,7 @@ class StarFishServer:
         stor_url = self.api_url + "storage/"
         response = return_get_json(stor_url, self.headers)
         volnames = [i["name"] for i in response["items"]]
+        logger.debug("volnames:{}".format(volnames))
         return volnames
 
     def get_subpaths(self, volpath):
@@ -202,13 +204,19 @@ class UsageStat:
 class ColdFrontDB:
 
     def generate_user_project_list(self):
-        projusers = ProjectUser.objects.all().only("project_id", "user_id")
+        logger.debug("generate_user_project_list")
+        # projuser = ProjectUser.objects.get(project_id=)
+        projusers = ProjectUser.objects.all()
+        logger.debug("projusers: {}".format(projusers))
         d = {}
         for o in projusers:
             p = self.return_projectname(o.project_id)
             u = self.return_username(o.user_id)
-            d[p] = u
-        logger.debug(d)
+            if p not in d.keys():
+                d[p] = [u]
+            else:
+                d[p].append(u)
+        logger.debug("generate_user_project_list product: {}".format(d))
         return d
 
     def locate_uid(self, username):
@@ -275,62 +283,68 @@ def generate_groupname_list():
     pass
 
 
-def collect_starfish_json(server, servername, volume, volumepath, project_users):
+def collect_starfish_usage(server, volume, volumepath, project_users):
     # generate user and group list, then narrow down to groups that
     # have subdirectories in their directory.
 
     # run user/group usage query
     usage_query_by_lab = []
     # t = tqdm(full_labs)
-    for p, u in project_users.items():
-        logger.debug("{}, {}".format(p, u))
-        lab_volpath = volumepath + "/{}".format(p)
-        queryline = "type=f groupname={}".format(p)
-        usage_query = server.create_query(
-            queryline, "username, groupname", f"{volume}:{lab_volpath}", sec=2
-        )
-        result = usage_query.result
-        logger.debug(result)
-        if not result:
-            pass
-        elif type(result) is dict and "error" in result:
-            pass
+    datestr = datetime.today().strftime("%Y%m%d")
+    for p, users in project_users.items():
+        filepath = f"./coldfront/plugins/sftocf/data/{p}_{server.name}_{datestr}.json"
+        if Path(filepath).exists():
+            #append file to usage_query_by_lab and delete all items with p from dict
+            data = read_json(filepath)
         else:
-            usage_query_by_lab.append(result)
-            # A test end
-    filecontents = {
-        "server": servername,
-        "volume": volume,
-        "volumepath": volumepath,
-        "contents": usage_query_by_lab,
-    }
-    return filecontents
+            logger.debug("{}, {}".format(p, users))
+            lab_volpath = volumepath# + "/{}".format(p)
+            data = []
+            for user in users:
 
+                queryline = "type=f groupname={} username={}".format(p, user)
+                usage_query = server.create_query(
+                    queryline, "username, groupname", f"{volume}:{lab_volpath}", sec=2
+                )
+                logger.debug("usage_query.result:{}".format(usage_query.result))
+                if not usage_query.result:
+                    logger.warning("No starfish result for lab {}, user {}".format(p, user))
+                elif type(data) is dict and "error" in result:
+                    logger.warning("Error in starfish result for lab {}, user {}:\n{}".format(p, user, data))
+                else:
+                    data.extend(usage_query.result)
+            logger.debug(data)
+            filecontents = {
+            "server": server.name,
+            "volume": volume,
+            "volumepath": volumepath,
+            "date": datestr,
+            "contents": data[0],
+            }
+            save_as_json(filepath, filecontents)
+        usage_query_by_lab.extend(data)
+    return usage_query_by_lab
+
+def save_as_json(file, contents):
+    with open(file, "w") as fp:
+        json.dump(contents, fp, sort_keys=True, indent=4)
+
+def read_json(filepath):
+    with open(filepath, "r") as myfile:
+        data = myfile.read()
+    return data
 
 if __name__ == "__main__":
     servername = "holysfdb01"
     volume = "holylfs04"
     volumepath = "HDD/C/LABS"
     server = StarFishServer(servername)
-    # define filepath
-    datestr = datetime.today().strftime("%Y%m%d")
-    filepath = f"sf_query_{servername}_{datestr}.json"
-    # check if file exists; if not, create it.
     coldfrontdb = ColdFrontDB()
-    if Path(filepath).exists():
-        pass
-    else:
-        labs = coldfrontdb.generate_user_project_list()
-        filecontents = collect_starfish_json(server, servername, volume, volumepath, labs)
-        with open(filepath, "w") as fp:
-            json.dump(filecontents, fp, sort_keys=True, indent=4)
+    labs = coldfrontdb.generate_user_project_list()
+    usage_stats = collect_starfish_usage(server, volume, volumepath, labs)
 
-    with open(filepath, "r") as myfile:
-        data = myfile.read()
-    usage_stats = json.loads(data)
-    usage_stats["contents"] = [i for l in usage_stats["contents"] for i in l]
-    for statdict in usage_stats["contents"]:
-        logger.debug(statdict)
+    for statdict in usage_stats:
+        print(statdict)
         try:
             coldfrontdb.update_usage(statdict)
         except Exception as e:
