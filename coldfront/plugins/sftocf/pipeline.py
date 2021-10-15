@@ -219,6 +219,13 @@ class ColdFrontDB:
         logger.debug("generate_user_project_list product: {}".format(d))
         return d
 
+    def generate_project_list(self):
+        logger.debug("generate_project_list")
+        projects = Project.objects.only("title")
+        logger.debug("generate_project_list projects:{}".format(projects))
+        return projects
+
+
     def locate_uid(self, username):
         user = get_user_model().objects.get(username=username)
         return user.id
@@ -278,12 +285,18 @@ def return_get_json(url, headers):
     response = requests.get(url, headers=headers)
     return response.json()
 
+def save_as_json(file, contents):
+    with open(file, "w") as fp:
+        json.dump(contents, fp, sort_keys=True, indent=4)
 
-def generate_groupname_list():
-    pass
+def read_json(filepath):
+    logger.debug("read_json for {}".format(filepath))
+    with open(filepath, "r") as myfile:
+        data = myfile.read()
+    return data
 
 
-def collect_starfish_usage(server, volume, volumepath, project_users):
+def collect_starfish_usage(server, volume, volumepath, projects):
     # generate user and group list, then narrow down to groups that
     # have subdirectories in their directory.
 
@@ -291,61 +304,37 @@ def collect_starfish_usage(server, volume, volumepath, project_users):
     usage_query_by_lab = []
     # t = tqdm(full_labs)
     datestr = datetime.today().strftime("%Y%m%d")
-    for p, users in project_users.items():
+    for p in projects:
         filepath = f"./coldfront/plugins/sftocf/data/{p}_{server.name}_{datestr}.json"
         if Path(filepath).exists():
             #append file to usage_query_by_lab and delete all items with p from dict
             data = read_json(filepath)
         else:
-            logger.debug("{}, {}".format(p, users))
+            logger.debug("{}".format(p))
             lab_volpath = volumepath# + "/{}".format(p)
-            data = []
-            for user in users:
 
-                queryline = "type=f groupname={} username={}".format(p, user)
-                usage_query = server.create_query(
-                    queryline, "username, groupname", f"{volume}:{lab_volpath}", sec=2
-                )
-                logger.debug("usage_query.result:{}".format(usage_query.result))
-                if not usage_query.result:
-                    logger.warning("No starfish result for lab {}, user {}".format(p, user))
-                elif type(data) is dict and "error" in result:
-                    logger.warning("Error in starfish result for lab {}, user {}:\n{}".format(p, user, data))
-                else:
-                    data.extend(usage_query.result)
-            logger.debug(data)
-            filecontents = {
-            "server": server.name,
-            "volume": volume,
-            "volumepath": volumepath,
-            "date": datestr,
-            "contents": data[0],
-            }
-            save_as_json(filepath, filecontents)
+            queryline = "type=f groupname={}".format(p)
+            usage_query = server.create_query(
+                queryline, "username, groupname", f"{volume}:{lab_volpath}", sec=2
+            )
+            logger.debug("usage_query.result:{}".format(usage_query.result))
+            data = usage_query.result
+            if not data:
+                logger.warning("No starfish result for lab {}".format(p))
+                data = []
+            elif type(data) is dict and "error" in data:
+                logger.warning("Error in starfish result for lab {}:\n{}".format(p, data))
+                data = []
+            else:
+                data = usage_query.result
+                logger.debug(data)
+                filecontents = {
+                "server": server.name,
+                "volume": volume,
+                "volumepath": volumepath,
+                "date": datestr,
+                "contents": data,
+                }
+                save_as_json(filepath, filecontents)
         usage_query_by_lab.extend(data)
     return usage_query_by_lab
-
-def save_as_json(file, contents):
-    with open(file, "w") as fp:
-        json.dump(contents, fp, sort_keys=True, indent=4)
-
-def read_json(filepath):
-    with open(filepath, "r") as myfile:
-        data = myfile.read()
-    return data
-
-if __name__ == "__main__":
-    servername = "holysfdb01"
-    volume = "holylfs04"
-    volumepath = "HDD/C/LABS"
-    server = StarFishServer(servername)
-    coldfrontdb = ColdFrontDB()
-    labs = coldfrontdb.generate_user_project_list()
-    usage_stats = collect_starfish_usage(server, volume, volumepath, labs)
-
-    for statdict in usage_stats:
-        print(statdict)
-        try:
-            coldfrontdb.update_usage(statdict)
-        except Exception as e:
-            logger.debug("EXCEPTION FOR LAST ENTRY: {}".format(e))
