@@ -172,7 +172,7 @@ def auto_approve_project_join_requests():
     return results
 
 
-def __project_detail_url(project):
+def project_detail_url(project):
     domain = import_from_settings('CENTER_BASE_URL')
     view = reverse('project-detail', kwargs={'pk': project.pk})
     return urljoin(domain, view)
@@ -234,7 +234,7 @@ def send_project_join_notification_email(project, project_user):
         context['delay'] = str(delay)
     else:
         template_name = 'email/new_project_join_request_no_delay.txt'
-        context['url'] = __project_detail_url(project)
+        context['url'] = project_detail_url(project)
 
     sender = settings.EMAIL_SENDER
 
@@ -448,7 +448,7 @@ def send_project_request_approval_email(request):
         template_name = (
             'email/project_request/new_project_request_approved.txt')
 
-    project_url = __project_detail_url(request.project)
+    project_url = project_detail_url(request.project)
     context = {
         'center_name': settings.CENTER_NAME,
         'project_name': request.project.name,

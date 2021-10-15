@@ -15,6 +15,7 @@ from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils import get_project_compute_allocation
+from coldfront.core.project.utils import project_detail_url
 from coldfront.core.project.utils import savio_request_denial_reason
 from coldfront.core.project.utils import validate_num_service_units
 from coldfront.core.statistics.models import ProjectTransaction
@@ -135,8 +136,8 @@ def send_allocation_renewal_request_denial_email(request):
         'reason_category': reason.category,
         'reason_justification': reason.justification,
         'requested_project_name': request.post_project.name,
-        'support_email': settings.CENTER_HELP_EMAIL,
         'signature': settings.EMAIL_SIGNATURE,
+        'support_email': settings.CENTER_HELP_EMAIL,
     }
 
     sender = settings.EMAIL_SENDER
@@ -147,20 +148,27 @@ def send_allocation_renewal_request_denial_email(request):
         subject, template_name, context, sender, receiver_list, cc=cc)
 
 
-def send_allocation_renewal_request_processing_email(request):
+def send_allocation_renewal_request_processing_email(request,
+                                                     num_service_units):
     """Send a notification email to the requester and PI associated with
     the given AllocationRenewalRequest stating that the request has been
-    processed."""
+    processed, and the given number of service units have been added."""
     email_enabled = import_from_settings('EMAIL_ENABLED', False)
     if not email_enabled:
         return
 
-    # TODO
     subject = f'{str(request)} Processed'
-    template_name = ''
+    template_name = (
+        'email/project_renewal/project_renewal_request_processed.txt')
 
     context = {
-
+        'center_name': settings.CENTER_NAME,
+        'num_service_units': str(num_service_units),
+        'pi_name': f'{request.pi.first_name} {request.pi.last_name}',
+        'requested_project_name': request.post_project.name,
+        'requested_project_url': project_detail_url(request.post_project),
+        'signature': settings.EMAIL_SIGNATURE,
+        'support_email': settings.CENTER_HELP_EMAIL,
     }
 
     sender = settings.EMAIL_SENDER
@@ -565,6 +573,7 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
             name='Approved')
         self.assert_request_status(expected_status)
         validate_num_service_units(num_service_units)
+        self.num_service_units = num_service_units
 
     def run(self):
         request = self.request_obj
@@ -675,7 +684,8 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         """Send a notification email to the request and PI."""
         request = self.request_obj
         try:
-            send_allocation_renewal_request_processing_email(request)
+            send_allocation_renewal_request_processing_email(
+                request, self.num_service_units)
         except Exception as e:
             logger.error('Failed to send notification email. Details:')
             logger.exception(e)
