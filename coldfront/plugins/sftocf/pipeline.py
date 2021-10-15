@@ -295,6 +295,12 @@ def read_json(filepath):
         data = myfile.read()
     return data
 
+def confirm_dirpath_exists(dpath):
+    isExist = os.path.exists(dpath)
+    if not isExist:
+      os.makedirs(path)
+      logger.debug(f"created new directory {dpath}")
+
 
 def collect_starfish_usage(server, volume, volumepath, projects):
 
@@ -302,7 +308,8 @@ def collect_starfish_usage(server, volume, volumepath, projects):
     datestr = datetime.today().strftime("%Y%m%d")
 
     for p in projects:
-        filepath = f"./coldfront/plugins/sftocf/data/{p}_{server.name}_{datestr}.json"
+        homepath = "./coldfront/plugins/sftocf/data/"
+        filepath = f"{homepath}{p}_{server.name}_{datestr}.json"
         if Path(filepath).exists():
             data = read_json(filepath)
         else:
@@ -325,12 +332,13 @@ def collect_starfish_usage(server, volume, volumepath, projects):
                 data = usage_query.result
                 logger.debug(data)
                 filecontents = {
-                "server": server.name,
-                "volume": volume,
-                "volumepath": volumepath,
-                "date": datestr,
-                "contents": data,
+                    "server": server.name,
+                    "volume": volume,
+                    "volumepath": volumepath,
+                    "date": datestr,
+                    "contents": data,
                 }
+                confirm_pathdir_exists(homepath)
                 save_as_json(filepath, filecontents)
         usage_query_by_lab.extend(data)
     return usage_query_by_lab
