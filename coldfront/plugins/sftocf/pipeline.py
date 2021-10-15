@@ -206,7 +206,7 @@ class ColdFrontDB:
     def generate_user_project_list(self):
         logger.debug("generate_user_project_list")
         # projuser = ProjectUser.objects.get(project_id=)
-        projusers = ProjectUser.objects.all()
+        projusers = ProjectUser.objects.only("project_id", "user_id")
         logger.debug("projusers: {}".format(projusers))
         d = {}
         for o in projusers:
