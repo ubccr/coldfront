@@ -109,4 +109,3 @@ class Directory2OrganizationAdmin(admin.ModelAdmin):
         'organization',
         'directory_string',
     )
-    search_fields = ['directory_string', 'organization']

@@ -149,22 +149,22 @@ organization_levels = [
 # is_selectable_for_project
 organizations = [
     # University level
-    ('UBUF', 'University', None, 'Univ of Buffalo', 'University of Buffalo',
+    ('UB', 'University', None, 'Univ of Buffalo', 'University of Buffalo',
         False, False),
     ('IND1', 'University', None, 'Industry1', 'Industrial Partner #1',
         True, True),
     ('IND2', 'University', None, 'Industry2', 'Industrial Partner #2',
         True, True),
-    # UBUF Colleges
-    ('AS', 'College', 'UBUF', 'Arts & Sciences', 'Arts and Sciences', 
+    # UB Colleges
+    ('AS', 'College', 'UB', 'Arts & Sciences', 'Arts and Sciences', 
         False, False),
-    ('CCR', 'College', 'UBUF', 'CCR', 'Center for Computational Research',
+    ('CCR', 'College', 'UB', 'CCR', 'Center for Computational Research',
         True, True),
-    ('ENGR', 'College', 'UBUF', 'Engineering', 
+    ('ENGR', 'College', 'UB', 'Engineering', 
         'School of Engineering and Applied Sciences', True, True),
-    ('MED', 'College', 'UBUF', 'Medicine', 
+    ('MED', 'College', 'UB', 'Medicine', 
         'School of Medicine and Biomedical Sciences', True, True),
-    # UBUF-AS Departments
+    # UB-AS Departments
     ('CHEM', 'Department', 'AS', 'Chemistry', 
         'Department of Chemistry', True, True),
     ('PHYS', 'Department', 'AS', 'Physics', 
@@ -235,7 +235,7 @@ class Command(BaseCommand):
             Organization.update_user_organizations(
                 user=user.userprofile,
                 organizations=orglist,
-                addParents=True)
+                addParents=False)
 
         for resource in resources:
 
@@ -276,7 +276,7 @@ class Command(BaseCommand):
         )
         org = Organization.objects.get(code='CHEM')
         Organization.update_project_organizations(
-            project=project_obj, organizations=[org], addParents=True)
+            project=project_obj, organizations=[org], addParents=False)
 
         univ_hpc = Resource.objects.get(name='University HPC')
         for scavanger in ('Chemistry-scavenger', 'Physics-scavenger', 'Industry-scavenger', ):
@@ -461,7 +461,7 @@ class Command(BaseCommand):
         )
         org = Organization.objects.get(code='PHYS')
         Organization.update_project_organizations(
-            project=project_obj, organizations=[org], addParents=True)
+            project=project_obj, organizations=[org], addParents=False)
 
         project_user_obj, _ = ProjectUser.objects.get_or_create(
             user=pi2,
