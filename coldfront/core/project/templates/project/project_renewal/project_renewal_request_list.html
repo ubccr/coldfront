@@ -102,7 +102,15 @@ Project Renewal {{ request_filter|title }} Requests %}
         </td>
         <td>{{ renewal_request.modified|date:"M. d, Y" }}</td>
         <td>{{ renewal_request.requester.email }}</td>
-        <td>{{ renewal_request.pre_project.name }}</td>
+        <td>
+          {% with pre_project=renewal_request.pre_project%}
+            {% if pre_project %}
+              {{ pre_project.name }}
+            {% else %}
+              N/A
+            {% endif %}
+          {% endwith %}
+        </td>
         <td>{{ renewal_request.post_project.name }}</td>
         <td>{{ renewal_request.pi.email }}</td>
         <td>

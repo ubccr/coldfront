@@ -502,7 +502,7 @@ class AllocationRenewalRunnerBase(object):
         pi = request.pi
         pre_project = request.pre_project
         post_project = request.post_project
-        is_pooled_pre = is_pooled(pre_project)
+        is_pooled_pre = pre_project and is_pooled(pre_project)
         is_pooled_post = is_pooled(post_project)
 
         def log_message():
@@ -510,8 +510,8 @@ class AllocationRenewalRunnerBase(object):
             post_str = 'non-pooling' if not is_pooled_post else 'pooling'
             return (
                 f'AllocationRenewalRequest {request.pk}: {pre_str} in '
-                f'pre-project {pre_project.name} to {post_str} in '
-                f'post-project {post_project.name}.')
+                f'pre-project {pre_project.name if pre_project else None} to '
+                f'{post_str} in post-project {post_project.name}.')
 
         if pre_project == post_project:
             if not is_pooled_pre:
@@ -750,10 +750,17 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
 
     def demote_pi_to_user_on_pre_project(self):
         """If the pre_project is pooled (i.e., it has more than one PI),
-        demote the PI from 'Principal Investigator' to 'User'."""
+        demote the PI from 'Principal Investigator' to 'User'.
+
+        If the pre_project is None, do nothing."""
         request = self.request_obj
         pi = request.pi
         pre_project = request.pre_project
+        if not pre_project:
+            logger.info(
+                f'AllocationRenewalRequest {request.pk} has no pre-Project. '
+                f'Skipping demotion.')
+            return
         if pre_project.pis().count() > 1:
             try:
                 pi_project_user = pre_project.projectuser_set.get(user=pi)
