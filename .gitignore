@@ -26,4 +26,4 @@ VERSION
 environment.yml
 .env
 sf_query_holysfdb01_20210930.json
-coldfront/plugins/sftocf/data/*
+coldfront/plugins/sftocf/data/*.json

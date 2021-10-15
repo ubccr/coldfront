@@ -297,17 +297,13 @@ def read_json(filepath):
 
 
 def collect_starfish_usage(server, volume, volumepath, projects):
-    # generate user and group list, then narrow down to groups that
-    # have subdirectories in their directory.
 
-    # run user/group usage query
     usage_query_by_lab = []
-    # t = tqdm(full_labs)
     datestr = datetime.today().strftime("%Y%m%d")
+
     for p in projects:
         filepath = f"./coldfront/plugins/sftocf/data/{p}_{server.name}_{datestr}.json"
         if Path(filepath).exists():
-            #append file to usage_query_by_lab and delete all items with p from dict
             data = read_json(filepath)
         else:
             logger.debug("{}".format(p))
