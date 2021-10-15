@@ -23,6 +23,7 @@ from coldfront.core.resource.models import (Resource, ResourceAttribute,
                                             ResourceAttributeType,
                                             ResourceType)
 from coldfront.core.user.models import UserProfile
+from coldfront.core.organization.models import OrganizationLevel, Organization
 
 base_dir = settings.BASE_DIR
 
@@ -135,10 +136,76 @@ resources = [
 
 ]
 
+# Organizations
+
+# name, level, parent_name
+organization_levels = [
+    ('University', 40, None),
+    ('College', 30, 'University'),
+    ('Department', 20, 'College'),
+]
+
+# code, orglevel name, parent_code, shortname, longname, is_selectable_for__user,
+# is_selectable_for_project
+organizations = [
+    # University level
+    ('UBUF', 'University', None, 'Univ of Buffalo', 'University of Buffalo',
+        False, False),
+    ('IND1', 'University', None, 'Industry1', 'Industrial Partner #1',
+        True, True),
+    ('IND2', 'University', None, 'Industry2', 'Industrial Partner #2',
+        True, True),
+    # UBUF Colleges
+    ('AS', 'College', 'UBUF', 'Arts & Sciences', 'Arts and Sciences', 
+        False, False),
+    ('CCR', 'College', 'UBUF', 'CCR', 'Center for Computational Research',
+        True, True),
+    ('ENGR', 'College', 'UBUF', 'Engineering', 
+        'School of Engineering and Applied Sciences', True, True),
+    ('MED', 'College', 'UBUF', 'Medicine', 
+        'School of Medicine and Biomedical Sciences', True, True),
+    # UBUF-AS Departments
+    ('CHEM', 'Department', 'AS', 'Chemistry', 
+        'Department of Chemistry', True, True),
+    ('PHYS', 'Department', 'AS', 'Physics', 
+        'Physics Department', True, True),
+]
+
+# username, [ list of org codes ]
+user_organizations = [
+    ('cgray', ['CHEM'] ),
+    ('sfoster', ['PHYS'] ),
+    ('csimmons', ['CCR']),
+]
 
 class Command(BaseCommand):
 
     def handle(self, *args, **options):
+
+        for orglevel in organization_levels:
+            name, level, pname = orglevel
+            parent = None
+            if pname is not None:
+                parent = OrganizationLevel.objects.get(name=pname)
+                OrganizationLevel.objects.get_or_create(
+                    name=name, level=level, parent=parent)
+
+        for organization in organizations:
+            code, olname, pcode, shortname, longname, sel_user, \
+                sel_proj = organization
+            parent = None
+            if pcode is not None:
+                parent = Organization.objects.get(code=pcode)
+            orglevel = OrganizationLevel.objects.get(name=olname)
+            Organization.objects.get_or_create(
+                code=code, 
+                organization_level = orglevel,
+                parent = parent,
+                shortname=shortname,
+                longname=longname,
+                is_selectable_for_user=sel_user,
+                is_selectable_for_project=sel_proj,
+            )
 
         for user in Users:
             first_name, last_name = user.split()
@@ -159,6 +226,16 @@ class Command(BaseCommand):
         for user in User.objects.all():
             user.set_password('test1234')
             user.save()
+
+        for rec in user_organizations:
+            username, orgcodes = rec
+            orglist = list(map(lambda x: Organization.objects.get(
+                code=x), orgcodes))
+            user = User.objects.get(username=username)
+            Organization.update_user_organizations(
+                user=user.userprofile,
+                organizations=orglist,
+                addParents=True)
 
         for resource in resources:
 
@@ -197,6 +274,9 @@ class Command(BaseCommand):
             status=ProjectStatusChoice.objects.get(name='Active'),
             force_review=True
         )
+        org = Organization.objects.get(code='CHEM')
+        Organization.update_project_organizations(
+            project=project_obj, organizations=[org], addParents=True)
 
         univ_hpc = Resource.objects.get(name='University HPC')
         for scavanger in ('Chemistry-scavenger', 'Physics-scavenger', 'Industry-scavenger', ):
@@ -379,6 +459,9 @@ class Command(BaseCommand):
             field_of_science=FieldOfScience.objects.get(description='Physics'),
             status=ProjectStatusChoice.objects.get(name='Active')
         )
+        org = Organization.objects.get(code='PHYS')
+        Organization.update_project_organizations(
+            project=project_obj, organizations=[org], addParents=True)
 
         project_user_obj, _ = ProjectUser.objects.get_or_create(
             user=pi2,

@@ -8,6 +8,8 @@ class UserProfileAdmin(admin.ModelAdmin):
     list_display = ('username', 'first_name', 'last_name', 'is_pi',)
     list_filter = ('is_pi',)
     search_fields = ['user__username', 'user__first_name', 'user__last_name']
+    filter_horizontal = ['organizations', ]
+
 
     def username(self, obj):
         return obj.user.username

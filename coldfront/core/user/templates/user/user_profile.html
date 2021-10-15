@@ -28,6 +28,28 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
             <th scope="row" nowrap>University Role(s):</th>
             <td>{{group_list}}</td>
           </tr>
+          {% if ORGANIZATION_USER_DISPLAY_MODE %}
+             {% for dept in organizations %}
+                {% if forloop.first %}
+          <tr>
+            <th scope="row" nowrap>{{ORGANIZATION_USER_DISPLAY_TITLE}}</th>
+	    <td>
+                {% else %}<br>
+                {% endif %}
+		{{ dept.semifullcode }}
+                {% if forloop.last %}
+	    </td>
+          </tr>
+		{% endif %}
+		{% empty %}
+                   {% if ORGANIZATION_USER_DISPLAY_MODE != 'not-empty' %}
+          <tr>
+            <th scope="row" nowrap>{{ORGANIZATION_USER_DISPLAY_TITLE}}</th>
+	    <td> None found. </td>
+          </tr>
+		   {% endif %}
+		{% endfor %}
+          {% endif %}
           <tr>
             <th scope="row">Email:</th>
             <td>{{viewed_user.email}}</td>

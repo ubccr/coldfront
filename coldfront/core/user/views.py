@@ -19,12 +19,17 @@ from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
+from coldfront.core.organization.models import Organization
 
 logger = logging.getLogger(__name__)
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 if EMAIL_ENABLED:
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings(
         'EMAIL_TICKET_SYSTEM_ADDRESS')
+ORGANIZATION_USER_DISPLAY_MODE = import_from_settings(
+    'ORGANIZATION_USER_DISPLAY_MODE', True)
+ORGANIZATION_USER_DISPLAY_TITLE = import_from_settings(
+    'ORGANIZATION_USER_DISPLAY_TITLE', 'Departments(s), etc.')
 
 
 @method_decorator(login_required, name='dispatch')
@@ -61,6 +66,10 @@ class UserProfile(TemplateView):
             [group.name for group in viewed_user.groups.all()])
         context['group_list'] = group_list
         context['viewed_user'] = viewed_user
+        context['ORGANIZATION_USER_DISPLAY_MODE'] = ORGANIZATION_USER_DISPLAY_MODE
+        context['ORGANIZATION_USER_DISPLAY_TITLE'] = ORGANIZATION_USER_DISPLAY_TITLE
+        context['organizations'] = Organization.objects.filter(
+            users=viewed_user.userprofile, is_selectable_for_user=True)
         return context
 
 

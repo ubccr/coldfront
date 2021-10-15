@@ -91,6 +91,16 @@ The following settings are ColdFront specific settings related to the core appli
 | ONDEMAND_URL                           | The URL to your Open OnDemand installation     |
 | LOGIN_FAIL_MESSAGE                     | Custom message when user fails to login. Here you can paint a custom link to your user account portal |
 | ENABLE_SU                              | Enable administrators to login as other users. Default True |
+| [ORGANIZATION_PROJECT_DISPLAY_MODE](manual/organizations/configuration.md#ORGANIZATION_PROJECT_DISPLAY_MODE)      | Should Organizations appear on Project pages [True(Default),False,'not-empty'] |
+| [ORGANIZATION_PI_CAN_EDIT_FOR_PROJECT](manual/organizations/configuration.md#ORGANIZATION_PI_CAN_EDIT_FOR_PROJECT)   | Boolean: Should PI be able to edit Organizations for their projects |
+| [ORGANIZATION_PROJECT_DISPLAY_TITLE](manual/organizations/configuration.md#ORGANIZATION_PROJECT_DISPLAY_TITLE)     | Title for Organization display on Project pages (Default 'Departments(s), etc.') |
+| [ORGANIZATION_USER_DISPLAY_MODE](manual/organizations/configuration.md#ORGANIZATION_USER_DISPLAY_MODE)      | Like ORGANIZATION_PROJECT_DISPLAY_MODE but for User pages |
+| [ORGANIZATION_USER_DISPLAY_TITLE](manual/organizations/configuration.md#ORGANIZATION_USER_DISPLAY_TITLE)     | Like ORGANIZATION_PROJECT_DISPLAY_TITLE but for User pages |
+| [ORGANIZATION_LDAP_AUTH_POPULATE_USER_ORGANIZATIONS](manual/organizations/configuration.md#ORGANIZATION_LDAP_AUTH_POPULATE_USER_ORGANIZATIONS) | Boolean. If True, autopopulate Organizations from LDAP when user logs in.  Ignored unless PLUGIN_LDAP_AUTH is True |
+| [ORGANIZATION_LDAP_USER_ATTRIBUTE](manual/organizations/configuration.md#ORGANIZATION_LDAP_USER_ATTRIBUTE) | LDAP attribute used for determining Organization membership for users |
+| [ORGANIZATION_LDAP_USER_ADD_PARENTS](manual/organizations/configuration.md#ORGANIZATION_LDAP_USER_ADD_PARENTS) | Boolean. If True, add parent Organizations when autopopulating on login |
+| [ORGANIZATION_LDAP_USER_CREATE_PLACEHOLDERS](manual/organizations/configuration.md#ORGANIZATION_LDAP_USER_CREATE_PLACEHOLDERS) | Boolean. If True, create placeholder Organizations when encounter an unrecognized Organization string from LDAP |
+| [ORGANIZATION_LDAP_USER_DELETE_MISSING](manual/organizations/configuration.md#ORGANIZATION_LDAP_USER_DELETE_MISSING) | Boolean. If True, remove Organizations for User if not present in LDAP |
 
 
 ### Database settings
@@ -108,7 +118,6 @@ DB_URL=mysql://user:password@127.0.0.1:3306/database
 DB_URL=psql://user:password@127.0.0.1:5432/database
 DB_URL=sqlite:////usr/share/coldfront/coldfront.db
 ```
-
 
 ### Email settings
 

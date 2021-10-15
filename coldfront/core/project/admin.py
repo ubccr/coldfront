@@ -88,7 +88,8 @@ class ProjectUserMessageInline(admin.TabularInline):
 
 @admin.register(Project)
 class ProjectAdmin(SimpleHistoryAdmin):
-    fields_change = ('title', 'pi', 'description', 'status', 'requires_review', 'force_review', 'created', 'modified', )
+    fields_change = ('title', 'pi', 'description', 'status', 'requires_review', 'force_review', 'created', 'modified',
+            'organizations')
     readonly_fields_change = ('created', 'modified', )
     list_display = ('pk', 'title', 'PI', 'created', 'modified', 'status')
     search_fields = ['pi__username', 'projectuser__user__username',
@@ -96,6 +97,7 @@ class ProjectAdmin(SimpleHistoryAdmin):
     list_filter = ('status', 'force_review')
     inlines = [ProjectUserInline, ProjectAdminCommentInline, ProjectUserMessageInline]
     raw_id_fields = ['pi', ]
+    filter_horizontal = ['organizations', ]
 
     def PI(self, obj):
         return '{} {} ({})'.format(obj.pi.first_name, obj.pi.last_name, obj.pi.username)
