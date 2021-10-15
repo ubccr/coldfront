@@ -43,7 +43,6 @@ logger = logging.getLogger(__name__)
 
 class AllocationRenewalMixin(object):
 
-    # TODO: Account for other periods.
     allocation_period = get_current_allocation_period()
 
     success_message = (
@@ -89,8 +88,6 @@ class AllocationRenewalMixin(object):
 
 class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
                                    AllocationRenewalMixin, SessionWizardView):
-
-    # TODO: Add logging, sending messages to users, etc.
 
     FORMS = [
         ('pi_selection', ProjectRenewalPISelectionForm),
@@ -389,7 +386,6 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
                 dictionary.update(data)
                 dictionary['requested_project'] = data['name']
 
-        # TODO: Account for other allocation types.
         dictionary['allocation_amount'] = prorated_allocation_amount(
             settings.FCA_DEFAULT_ALLOCATION, utc_now_offset_aware())
 

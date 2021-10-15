@@ -15,14 +15,19 @@ from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils import get_project_compute_allocation
+from coldfront.core.project.utils import savio_request_denial_reason
 from coldfront.core.project.utils import validate_num_service_units
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
+from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.utils.mail import send_email_template
+from collections import namedtuple
 from datetime import timedelta
 from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.db.models import Q
 import logging
 
 
@@ -30,7 +35,6 @@ logger = logging.getLogger(__name__)
 
 
 def get_current_allocation_period():
-    # TODO: Account for other periods.
     return AllocationPeriod.objects.get(name='AY21-22')
 
 
@@ -109,6 +113,163 @@ def is_any_project_pi_renewable(project, allocation_period):
         if not has_non_denied_renewal_request(pi, allocation_period):
             return True
     return False
+
+
+def send_allocation_renewal_request_denial_email(request):
+    """Send a notification email to the requester and PI associated with
+    the given AllocationRenewalRequest stating that the request has been
+    denied."""
+    email_enabled = import_from_settings('EMAIL_ENABLED', False)
+    if not email_enabled:
+        return
+
+    subject = f'{str(request)} Denied'
+    template_name = 'email/project_renewal/project_renewal_request_denied.txt'
+    reason = allocation_renewal_request_denial_reason(request)
+
+    context = {
+        'center_name': settings.CENTER_NAME,
+        'current_project_name': (
+            request.pre_project.name if request.pre_project else 'N/A'),
+        'pi_name': f'{request.pi.first_name} {request.pi.last_name}',
+        'reason_category': reason.category,
+        'reason_justification': reason.justification,
+        'requested_project_name': request.post_project.name,
+        'support_email': settings.CENTER_HELP_EMAIL,
+        'signature': settings.EMAIL_SIGNATURE,
+    }
+
+    sender = settings.EMAIL_SENDER
+    receiver_list = [request.requester.email, request.pi.email]
+    cc = settings.REQUEST_APPROVAL_CC_LIST
+
+    send_email_template(
+        subject, template_name, context, sender, receiver_list, cc=cc)
+
+
+def send_allocation_renewal_request_processing_email(request):
+    """Send a notification email to the requester and PI associated with
+    the given AllocationRenewalRequest stating that the request has been
+    processed."""
+    email_enabled = import_from_settings('EMAIL_ENABLED', False)
+    if not email_enabled:
+        return
+
+    # TODO
+    subject = f'{str(request)} Processed'
+    template_name = ''
+
+    context = {
+
+    }
+
+    sender = settings.EMAIL_SENDER
+    receiver_list = [request.requester.email, request.pi.email]
+    cc = settings.REQUEST_APPROVAL_CC_LIST
+
+    send_email_template(
+        subject, template_name, context, sender, receiver_list, cc=cc)
+
+
+def allocation_renewal_request_denial_reason(request):
+    """Return the reason why the given AllocationRenewalRequest was
+    denied, based on its 'state' field and/or an associated
+    SavioProjectAllocationRequest."""
+    if not isinstance(request, AllocationRenewalRequest):
+        raise TypeError(
+            f'Provided request has unexpected type {type(request)}.')
+
+    state = request.state
+    eligibility = state['eligibility']
+    other = state['other']
+
+    DenialReason = namedtuple(
+        'DenialReason' 'category justification timestamp')
+
+    new_project_request = request.new_project_request
+
+    if other['timestamp'] == 'Other':
+        category = 'Other'
+        justification = other['justification']
+        timestamp = other['timestamp']
+    elif eligibility['status'] == 'Denied':
+        category = 'PI Ineligible'
+        justification = eligibility['justification']
+        timestamp = eligibility['timestamp']
+    elif new_project_request and new_project_request.status.name == 'Denied':
+        reason = savio_request_denial_reason(new_project_request)
+        category = reason.category
+        justification = reason.justification
+        timestamp = reason.timestamp
+    else:
+        raise ValueError('Provided request has an unexpected state.')
+
+    return DenialReason(
+        category=category, justification=justification, timestamp=timestamp)
+
+
+def allocation_renewal_request_latest_update_timestamp(request):
+    """Return the latest timestamp stored in the given
+    AllocationRenewalRequest's 'state' field, or the empty string.
+
+    The expected values are ISO 8601 strings, or the empty string, so
+    taking the maximum should provide the correct output."""
+    if not isinstance(request, AllocationRenewalRequest):
+        raise TypeError(
+            f'Provided request has unexpected type {type(request)}.')
+
+    state = request.state
+    max_timestamp = ''
+    for field in state:
+        max_timestamp = max(max_timestamp, state[field].get('timestamp', ''))
+
+    new_project_request = request.new_project_request
+    if new_project_request:
+        request_updated = new_project_request.updated.isoformat()
+        max_timestamp = max(max_timestamp, request_updated)
+
+    return max_timestamp
+
+
+def allocation_renewal_request_state_status(request):
+    """Return an AllocationRenewalRequestStatusChoice, based on the
+    'state' field of the given AllocationRenewalRequest, and/or an
+    associated SavioProjectAllocationRequest."""
+    if not isinstance(request, AllocationRenewalRequest):
+        raise TypeError(
+            f'Provided request has unexpected type {type(request)}.')
+
+    state = request.state
+    eligibility = state['eligibility']
+    other = state['other']
+
+    under_review_status = AllocationRenewalRequestStatusChoice.objects.get(
+        name='Under Review')
+    denied_status = AllocationRenewalRequestStatusChoice.objects.get(
+        name='Denied')
+    approved_status = AllocationRenewalRequestStatusChoice.objects.get(
+        name='Approved')
+
+    # The request was denied for some other non-listed reason.
+    if other['timestamp']:
+        return denied_status
+
+    new_project_request = request.new_project_request
+    if new_project_request:
+        status_name = new_project_request.status.name
+        if status_name == 'Under Review':
+            return under_review_status
+        elif status_name in ('Approved - Processing', 'Approved - Complete'):
+            return approved_status
+        else:
+            return denied_status
+    else:
+        if eligibility['status'] == 'Pending':
+            return under_review_status
+        elif eligibility['status'] == 'Approved':
+            return approved_status
+        else:
+            return denied_status
 
 
 class AllocationRenewalRunnerBase(object):
@@ -212,29 +373,40 @@ class AllocationRenewalRunnerBase(object):
         post_project = request.post_project
         is_pooled_pre = is_pooled(pre_project)
         is_pooled_post = is_pooled(post_project)
+
+        def log_message():
+            pre_str = 'non-pooling' if not is_pooled_pre else 'pooling'
+            post_str = 'non-pooling' if not is_pooled_post else 'pooling'
+            return (
+                f'AllocationRenewalRequest {request.pk}: {pre_str} in '
+                f'pre-project {pre_project.name} to {post_str} in '
+                f'post-project {post_project.name}.')
+
         if pre_project == post_project:
             if not is_pooled_pre:
+                logger.info(log_message())
                 return self.handle_unpooled_to_unpooled()
             else:
+                logger.info(log_message())
                 return self.handle_pooled_to_pooled_same()
         else:
             if request.new_project_request:
+                logger.info(log_message())
                 return self.handle_pooled_to_unpooled_new()
             else:
                 if not is_pooled_pre:
                     if not is_pooled_post:
-                        message = (
-                            f'Ran into unexpected case: non-pooling in '
-                            f'pre-project {pre_project.name} to non-pooling '
-                            f'in post-project {post_project.name}.')
-                        logger.error(message)
+                        logger.error(log_message())
                         raise ValueError('Unexpected case.')
                     else:
+                        logger.info(log_message())
                         return self.handle_unpooled_to_pooled()
                 else:
                     if pi in post_project.pis():
+                        logger.info(log_message())
                         return self.handle_pooled_to_unpooled_old()
                     else:
+                        logger.info(log_message())
                         return self.handle_pooled_to_pooled_different()
 
     def handle_unpooled_to_unpooled(self):
@@ -271,12 +443,49 @@ class AllocationRenewalApprovalRunner(AllocationRenewalRunnerBase):
     """An object that performs necessary database changes when an
     AllocationRenewalRequest is approved."""
 
+    # TODO: This class will become relevant when there is a need to approve,
+    # TODO: but not yet process, a request. Namely, when support for requesting
+    # TODO: renewal for the next allocation period is added, requests may be
+    # TODO: approved days or weeks before the request is actually processed.
+
     def __init__(self, request_obj, num_service_units):
         super().__init__(request_obj)
         expected_status = AllocationRenewalRequestStatusChoice.objects.get(
             name='Under Review')
         self.assert_request_status(expected_status)
         validate_num_service_units(num_service_units)
+
+    def run(self):
+        pass
+
+    def handle_unpooled_to_unpooled(self):
+        """Handle the case when the preference is to stay unpooled."""
+        raise NotImplementedError('This method is not implemented.')
+
+    def handle_unpooled_to_pooled(self):
+        """Handle the case when the preference is to start pooling."""
+        raise NotImplementedError('This method is not implemented.')
+
+    def handle_pooled_to_pooled_same(self):
+        """Handle the case when the preference is to stay pooled with
+        the same project."""
+        raise NotImplementedError('This method is not implemented.')
+
+    def handle_pooled_to_pooled_different(self):
+        """Handle the case when the preference is to stop pooling with
+        the current project and start pooling with a different
+        project."""
+        raise NotImplementedError('This method is not implemented.')
+
+    def handle_pooled_to_unpooled_old(self):
+        """Handle the case when the preference is to stop pooling and
+        reuse another existing project owned by the PI."""
+        raise NotImplementedError('This method is not implemented.')
+
+    def handle_pooled_to_unpooled_new(self):
+        """Handle the case when the preference is to stop pooling and
+        create a new project."""
+        raise NotImplementedError('This method is not implemented.')
 
 
 class AllocationRenewalDenialRunner(AllocationRenewalRunnerBase):
@@ -290,17 +499,16 @@ class AllocationRenewalDenialRunner(AllocationRenewalRunnerBase):
         self.assert_request_status(expected_status)
 
     def run(self):
-        # Only update the Project if pooling is not involved.
-
+        self.handle_by_preference()
         self.deny_request()
         self.send_email()
 
-    # def deny_project(self):
-    #     """Set the Project's status to 'Denied'."""
-    #     project = self.request_obj.post_project
-    #     project.status = ProjectStatusChoice.objects.get(name='Denied')
-    #     project.save()
-    #     return project
+    def deny_post_project(self):
+        """Set the post_project's status to 'Denied'."""
+        project = self.request_obj.post_project
+        project.status = ProjectStatusChoice.objects.get(name='Denied')
+        project.save()
+        return project
 
     def deny_request(self):
         """Set the status of the request to 'Denied'."""
@@ -308,11 +516,40 @@ class AllocationRenewalDenialRunner(AllocationRenewalRunnerBase):
             AllocationRenewalRequestStatusChoice.objects.get(name='Denied')
         self.request_obj.save()
 
+    def handle_unpooled_to_unpooled(self):
+        """Handle the case when the preference is to stay unpooled."""
+        pass
+
+    def handle_unpooled_to_pooled(self):
+        """Handle the case when the preference is to start pooling."""
+        pass
+
+    def handle_pooled_to_pooled_same(self):
+        """Handle the case when the preference is to stay pooled with
+        the same project."""
+        pass
+
+    def handle_pooled_to_pooled_different(self):
+        """Handle the case when the preference is to stop pooling with
+        the current project and start pooling with a different
+        project."""
+        pass
+
+    def handle_pooled_to_unpooled_old(self):
+        """Handle the case when the preference is to stop pooling and
+        reuse another existing project owned by the PI."""
+        pass
+
+    def handle_pooled_to_unpooled_new(self):
+        """Handle the case when the preference is to stop pooling and
+        create a new project."""
+        self.deny_post_project()
+
     def send_email(self):
         """Send a notification email to the requester and PI."""
+        request = self.request_obj
         try:
-            # TODO
-            pass
+            send_allocation_renewal_request_denial_email(request)
         except Exception as e:
             logger.error('Failed to send notification email. Details:')
             logger.exception(e)
@@ -336,8 +573,10 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         self.upgrade_pi_user()
         post_project = self.activate_project(post_project)
 
-        # TODO
-        pool = False
+        # The post_project is pooled if it has a PI other than the current one.
+        role = ProjectUserRoleChoice.objects.get(name='Principal Investigator')
+        pool = post_project.projectuser_set.filter(
+            Q(role=role) & ~Q(user=self.request_obj.pi)).exists()
         allocation, new_value = self.update_allocation(pool)
         # In the pooling case, set the Service Units of the existing users to
         # the updated value.
@@ -357,8 +596,9 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
             self.create_cluster_access_request_for_requester(
                 requester_allocation_user)
 
+        self.handle_by_preference()
         self.complete_request()
-        # self.send_email
+        self.send_email()
 
         return post_project, allocation
 
@@ -370,61 +610,80 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         project.save()
         return project
 
-    def add_service_units_to_allocation(self):
-        pass
-
-    def add_service_units_to_allocation_users(self):
-        post_project = self.request_obj.post_project
-        date_time = utc_now_offset_aware()
-        for project_user in post_project.projectuser_set.all():
-            user = project_user.user
-        # TODO
-
     def complete_request(self):
         """Set the status of the request to 'Complete'."""
         self.request_obj.status = \
             AllocationRenewalRequestStatusChoice.objects.get(name='Complete')
         self.request_obj.save()
 
+    def demote_pi_to_user_on_pre_project(self):
+        """If the pre_project is pooled (i.e., it has more than one PI),
+        demote the PI from 'Principal Investigator' to 'User'."""
+        request = self.request_obj
+        pi = request.pi
+        pre_project = request.pre_project
+        if pre_project.pis().count() > 1:
+            try:
+                pi_project_user = pre_project.projectuser_set.get(user=pi)
+            except ProjectUser.DoesNotExist:
+                message = (
+                    f'No ProjectUser exists for PI {pi.username} of Project '
+                    f'{pre_project.name}, for which the PI has '
+                    f'AllocationRenewalRequest {request.pk} to stop pooling '
+                    f'under it.')
+                logger.error(message)
+            else:
+                pi_project_user.role = ProjectUserRoleChoice.objects.get(
+                    name='User')
+                pi_project_user.save()
+        else:
+            message = (
+                f'Project {pre_project.name} only has one PI. Skipping '
+                f'demotion.')
+            logger.error(message)
+
     def handle_unpooled_to_unpooled(self):
-        """
-        TODO
-        """
-        post_project = self.request_obj.post_project
-        self.activate_project(post_project)
-        # Set SUs
+        """Handle the case when the preference is to stay unpooled."""
+        pass
 
     def handle_unpooled_to_pooled(self):
         """Handle the case when the preference is to start pooling."""
-        # Add the requester as a Manager and PI as a Principal Investigator.
-        project = self.request_obj.post_project
+        pass
 
     def handle_pooled_to_pooled_same(self):
         """Handle the case when the preference is to stay pooled with
         the same project."""
-        raise NotImplementedError('This method is not implemented.')
+        pass
 
     def handle_pooled_to_pooled_different(self):
         """Handle the case when the preference is to stop pooling with
         the current project and start pooling with a different
         project."""
-        raise NotImplementedError('This method is not implemented.')
+        self.demote_pi_to_user_on_pre_project()
 
     def handle_pooled_to_unpooled_old(self):
         """Handle the case when the preference is to stop pooling and
         reuse another existing project owned by the PI."""
-        raise NotImplementedError('This method is not implemented.')
+        self.demote_pi_to_user_on_pre_project()
 
     def handle_pooled_to_unpooled_new(self):
         """Handle the case when the preference is to stop pooling and
         create a new project."""
-        raise NotImplementedError('This method is not implemented.')
+        self.demote_pi_to_user_on_pre_project()
+
+    def send_email(self):
+        """Send a notification email to the request and PI."""
+        request = self.request_obj
+        try:
+            send_allocation_renewal_request_processing_email(request)
+        except Exception as e:
+            logger.error('Failed to send notification email. Details:')
+            logger.exception(e)
 
     def update_allocation(self, pool):
         """Perform allocation-related handling, differing based on
         whether pooling is involved."""
         project = self.request_obj.post_project
-        # TODO: Support other types.
         allocation_type = SavioProjectAllocationRequest.FCA
 
         allocation = get_project_compute_allocation(project)

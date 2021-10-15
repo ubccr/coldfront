@@ -139,7 +139,6 @@ class ProjectRenewalProjectSelectionForm(forms.Form):
                 user__pk=self.pi_pk, role=role, status=status
             ).values_list('project__pk', flat=True))
 
-        # TODO: Handle other allocation types.
         _filter = {'name__startswith': 'fc_'}
         exclude = {'pk': self.exclude_project_pk}
         if self.non_owned_projects:

@@ -1,8 +1,14 @@
 from coldfront.core.allocation.models import AllocationRenewalRequest
+from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
 from coldfront.core.allocation.utils import prorated_allocation_amount
 from coldfront.core.project.forms import ReviewDenyForm
 from coldfront.core.project.forms import ReviewStatusForm
+from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.utils import project_allocation_request_latest_update_timestamp
+from coldfront.core.project.utils_.renewal_utils import AllocationRenewalDenialRunner
+from coldfront.core.project.utils_.renewal_utils import AllocationRenewalProcessingRunner
+from coldfront.core.project.utils_.renewal_utils import allocation_renewal_request_latest_update_timestamp
+from coldfront.core.project.utils_.renewal_utils import allocation_renewal_request_state_status
 from coldfront.core.utils.common import utc_now_offset_aware
 
 from django.conf import settings
@@ -130,20 +136,14 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
         is_superuser = self.request.user.is_superuser
-
-        # TODO: Use the actual timestamp.
-        from datetime import datetime
-        context['latest_update_timestamp'] = datetime.utcnow()
-
+        context['latest_update_timestamp'] = \
+            allocation_renewal_request_latest_update_timestamp(
+                self.request_obj)
         context['is_allowed_to_manage_request'] = is_superuser
-
         if is_superuser:
             context['checklist'] = self.__get_checklist()
-
         context['is_checklist_complete'] = self.__is_checklist_complete()
-
         return context
 
     def post(self, request, *args, **kwargs):
@@ -153,16 +153,25 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
             pk = self.request_obj.pk
             return HttpResponseRedirect(self.get_redirect_url(pk))
         try:
+            # TODO: The status can be set to 'Approved' because the checklist
+            # TODO: is complete. When processing can occur at an arbitrary time
+            # TODO: after approval, the status should be set to 'Approved'
+            # TODO: elsewhere, and not here.
+            self.request_obj.status = \
+                AllocationRenewalRequestStatusChoice.objects.get(
+                    name='Approved')
+            self.request_obj.save()
             num_service_units = self.__get_service_units_to_allocate()
-            # TODO
+            runner = AllocationRenewalProcessingRunner(
+                self.request_obj, num_service_units)
+            _, _ = runner.run()
         except Exception as e:
             logger.exception(e)
             messages.error(self.request, self.error_message)
         else:
-            # TODO
             message = (
-                'TODO'
-            )
+                f'PI {self.request_obj.pi.username}\'s allocation has been '
+                f'renewed.')
             messages.success(self.request, message)
 
         return HttpResponseRedirect(
@@ -204,8 +213,17 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
 
     def __is_checklist_complete(self):
         """Return whether the request is ready for final submission."""
-        # TODO
-        return False
+        new_project_request = self.request_obj.new_project_request
+        if new_project_request:
+            complete_status = ProjectAllocationRequestStatusChoice.objects.get(
+                name='Approved - Complete')
+            if new_project_request.status != complete_status:
+                return False
+        else:
+            eligibility = self.request_obj.state['eligibility']
+            if eligibility['status'] != 'Approved':
+                return False
+        return True
 
 
 class AllocationRenewalRequestReviewEligibilityView(LoginRequiredMixin,
@@ -251,12 +269,12 @@ class AllocationRenewalRequestReviewEligibilityView(LoginRequiredMixin,
             'justification': justification,
             'timestamp': timestamp,
         }
-        # TODO
-        self.request_obj.status = None
+        self.request_obj.status = allocation_renewal_request_state_status(
+            self.request_obj)
 
         if status == 'Denied':
-            # TODO
-            pass
+            runner = AllocationRenewalDenialRunner(self.request_obj)
+            runner.run()
 
         self.request_obj.save()
 
@@ -303,10 +321,11 @@ class AllocationRenewalRequestReviewDenyView(LoginRequiredMixin,
             'justification': justification,
             'timestamp': timestamp,
         }
-        # TODO
-        self.request_obj.status = None
+        self.request_obj.status = allocation_renewal_request_state_status(
+            self.request_obj)
 
-        # TODO
+        runner = AllocationRenewalDenialRunner(self.request_obj)
+        runner.run()
 
         self.request_obj.save()
 
