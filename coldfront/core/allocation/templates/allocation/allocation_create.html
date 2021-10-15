@@ -35,7 +35,7 @@ Request New Allocation
 
 <p class="text-justify">Tier 1: Enterprise - Isilon</p>
 <ul>
-  <li>Features:  Tiered performance, snapshot, DR copy, network attached to cluster (NFS), quota, SMB, Superna Eyeglass data management web access, Globus transfer access.</li>
+  <li>Features:  Tiered performance, snapshot, Disaster Recovery(DR) copy, network attached to cluster (NFS), quota, SMB, Superna Eyeglass data management web access, Globus transfer access.</li>
   <li>Mount point: <i>/n/pi_lab</i></li>
   <li>Quota: 1-1024 TB</li>
   <li>Cost: $250/TB/yr </li>
@@ -43,7 +43,7 @@ Request New Allocation
 
 <p class="text-justify">Tier 2: Lab Share - Ceph </p>
 <ul>
-  <li>Features: Regular performance, object store, DR copy, network attached to cluster (NFS), SMB, encrypted at rest.</li>
+  <li>Features: Regular performance, object store, Disaster Recovery(DR) copy, network attached to cluster (NFS), SMB, encrypted at rest.</li>
   <li>Mount point: <i>/n/pi_lab</i> </li>
   <li>Quota: 1-1024 TB</li>
   <li>Cost: $100/TB/yr </li>
@@ -52,9 +52,14 @@ Request New Allocation
 <p class="text-justify">Tier 3: Attic Storage - Tape </p>
 <ul>
   <li>Features: Low performance, S3 object store access, single copy, network attached to data transfer nodes, Globus transfer access.</li>
-  <li>Availability July 2021</li>
+  <li>Available in 20TB increments</li>
   <li>Cost: estimate $5/TB/yr</li>
-</ul>  
+</ul> 
+
+<p class="text-justify">Note:</p>
+<ul>
+  <li>Please try to provide details in justification like data need to be accessed or needs frequent transfer to or from Campus or Need for Samba connectivity etc. </li>
+</ul>
 
 <form method="post">
   {% csrf_token %}
