@@ -727,7 +727,8 @@ class ProjectApprovalRunner(object):
         allocation, new_value = self.update_allocation()
         # In the pooling case, set the Service Units of the existing users to
         # the updated value.
-        if self.request_obj.pool:
+        if (isinstance(self.request_obj, SavioProjectAllocationRequest) and
+                self.request_obj.pool):
             self.update_existing_user_allocations(new_value)
 
         self.create_project_users()
@@ -994,7 +995,7 @@ class VectorProjectApprovalRunner(ProjectApprovalRunner):
         allocation.status = AllocationStatusChoice.objects.get(name='Active')
         allocation.start_date = utc_now_offset_aware()
         allocation.save()
-        return allocation
+        return allocation, Decimal(settings.ALLOCATION_MIN)
 
     def update_existing_user_allocations(self, value):
         """Perform user-allocation-related handling."""

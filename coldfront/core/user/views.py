@@ -317,8 +317,7 @@ class UserSearchAll(LoginRequiredMixin, ListView):
     paginate_by = 25
 
     def test_func(self):
-        if self.request.user.is_superuser or self.request.user.is_staff:
-            return True
+        return self.request.user.is_superuser
 
     def get_queryset(self):
         order_by = self.request.GET.get('order_by')

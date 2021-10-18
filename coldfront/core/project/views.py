@@ -229,9 +229,6 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['joins_auto_approved'] = (
             self.object.joins_auto_approval_delay == datetime.timedelta())
 
-        context['join_request_delay_period'] = \
-            str(self.object.joins_auto_approval_delay).rsplit(':', 1)[0]
-
         return context
 
 
@@ -1765,9 +1762,6 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('project.can_view_all_projects'):
-            return True
-
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
 
         if project_obj.projectuser_set.filter(
@@ -1832,41 +1826,11 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
             context['formset'] = formset
 
         context['project'] = get_object_or_404(Project, pk=pk)
-
-        context['can_add_users'] = False
-        if self.request.user.is_superuser:
-            context['can_add_users'] = True
-
-        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-
-        if project_obj.projectuser_set.filter(
-                user=self.request.user,
-                role__name__in=['Manager', 'Principal Investigator'],
-                status__name='Active').exists():
-            context['can_add_users'] = True
-
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         project_obj = get_object_or_404(Project, pk=pk)
-
-        allowed_to_approve_users = False
-        if project_obj.projectuser_set.filter(
-                user=self.request.user,
-                role__name__in=['Manager', 'Principal Investigator'],
-                status__name='Active').exists():
-            allowed_to_approve_users = True
-
-        if self.request.user.is_superuser:
-            allowed_to_approve_users = True
-
-        if not allowed_to_approve_users:
-            message = 'Only admins may make POST requests'
-            messages.error(request, message)
-
-            return HttpResponseRedirect(
-                reverse('project-review-join-requests', kwargs={'pk': pk}))
 
         users_to_review = self.get_users_to_review(project_obj)
 
@@ -1958,7 +1922,7 @@ class ProjectAutoApproveJoinRequestsView(LoginRequiredMixin,
                                          UserPassesTestMixin, View):
 
     def test_func(self):
-        if self.request.user.is_superuser:
+        if self.request.user.is_superuser or self.request.user.is_staff:
             return True
         message = (
             'You do not have permission to automatically approve project '
@@ -2495,11 +2459,12 @@ class SavioProjectRequestListView(LoginRequiredMixin, TemplateView):
         a superuser, show all such requests. Otherwise, show only those
         for which the user is a requester or PI."""
         context = super().get_context_data(**kwargs)
+
         args, kwargs = [], {}
 
         request_list = self.get_queryset()
         user = self.request.user
-        if not (user.is_superuser or user.has_perm('project.view_savioprojectallocationrequest')):
+        if not user.is_superuser:
             args.append(Q(requester=user) | Q(pi=user))
         if self.completed:
             status__name__in = ['Approved - Complete', 'Denied']
@@ -2510,8 +2475,6 @@ class SavioProjectRequestListView(LoginRequiredMixin, TemplateView):
             *args, **kwargs)
         context['request_filter'] = (
             'completed' if self.completed else 'pending')
-        context['savio_project_request_list'] = \
-            SavioProjectAllocationRequest.objects.filter(*args, **kwargs)
 
         return context
 
@@ -2550,10 +2513,6 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         """UserPassesTestMixin tests."""
         if self.request.user.is_superuser:
             return True
-
-        if self.request.user.has_perm('project.view_savioprojectallocationrequest'):
-            return True
-
         if (self.request.user == self.request_obj.requester or
                 self.request.user == self.request_obj.pi):
             return True
@@ -2626,19 +2585,12 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         context['setup_status'] = self.__get_setup_status()
         context['is_checklist_complete'] = self.__is_checklist_complete()
 
-        context['is_allowed_to_manage_request'] = (self.request.user.is_superuser)
+        context['is_allowed_to_manage_request'] = (
+            self.request.user.is_superuser)
 
         return context
 
     def post(self, request, *args, **kwargs):
-        if not self.request.user.is_superuser:
-            message = 'Only admins may make POST requests'
-            messages.error(request, message)
-            pk = self.request_obj.pk
-
-            return HttpResponseRedirect(
-                reverse('savio-project-request-detail', kwargs={'pk': pk}))
-
         if not self.__is_checklist_complete():
             message = 'Please complete the checklist before final activation.'
             messages.error(request, message)
@@ -2652,7 +2604,6 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             project, allocation = runner.run()
         except Exception as e:
             self.logger.exception(e)
-            print('here2')
             messages.error(self.request, self.error_message)
         else:
             message = (
@@ -3247,10 +3198,6 @@ class VectorProjectRequestView(LoginRequiredMixin, UserPassesTestMixin,
     def test_func(self):
         if self.request.user.is_superuser:
             return True
-
-        if self.request.user.has_perms('project.view_vectorprojectallocationrequest'):
-            return True
-
         signed_date = (
             self.request.user.userprofile.access_agreement_signed_date)
         if signed_date is not None:
@@ -3264,6 +3211,7 @@ class VectorProjectRequestView(LoginRequiredMixin, UserPassesTestMixin,
         try:
             project = self.__handle_create_new_project(form.cleaned_data)
             # Store form data in a request.
+
             pi = User.objects.get(username=settings.VECTOR_PI_USERNAME)
             status = ProjectAllocationRequestStatusChoice.objects.get(
                 name='Under Review')
@@ -3348,9 +3296,8 @@ class VectorProjectRequestListView(LoginRequiredMixin, TemplateView):
         args, kwargs = [], {}
 
         user = self.request.user
-
         request_list = self.get_queryset()
-        if not (user.is_superuser or user.has_perm('project.view_vectorprojectallocationrequest')):
+        if not user.is_superuser:
             args.append(Q(requester=user) | Q(pi=user))
         if self.completed:
             status__name__in = ['Approved - Complete', 'Denied']
@@ -3383,10 +3330,6 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         """UserPassesTestMixin tests."""
         if self.request.user.is_superuser:
             return True
-
-        if self.request.user.has_perm('project.view_vectorprojectallocationrequest'):
-            return True
-
         if (self.request.user == self.request_obj.requester or
                 self.request.user == self.request_obj.pi):
             return True
@@ -3451,14 +3394,6 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         return context
 
     def post(self, request, *args, **kwargs):
-        if not self.request.user.is_superuser:
-            message = 'Only admins may make POST requests'
-            messages.error(request, message)
-            pk = self.request_obj.pk
-
-            return HttpResponseRedirect(
-                reverse('vector-project-request-detail', kwargs={'pk': pk}))
-
         if not self.__is_checklist_complete():
             message = 'Please complete the checklist before final activation.'
             messages.error(request, message)
@@ -3651,3 +3586,108 @@ class VectorProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
         return reverse(
             'vector-project-request-detail',
             kwargs={'pk': self.kwargs.get('pk')})
+
+
+class SavioProjectUndenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
+    login_url = '/'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+
+        message = (
+            'You do not have permission to undeny a project request.')
+        messages.error(self.request, message)
+
+    def dispatch(self, request, *args, **kwargs):
+        project_request = get_object_or_404(
+            SavioProjectAllocationRequest, pk=self.kwargs.get('pk'))
+
+        state_status = savio_request_state_status(project_request)
+        denied_status = ProjectAllocationRequestStatusChoice.objects.get(name='Denied')
+
+        if state_status != denied_status:
+            message = 'Savio project request has an unexpected status.'
+            messages.error(request, message)
+
+            return HttpResponseRedirect(
+                reverse('savio-project-request-detail',
+                        kwargs={'pk': self.kwargs.get('pk')}))
+
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        project_request = get_object_or_404(
+            SavioProjectAllocationRequest, pk=kwargs.get('pk'))
+        
+        if project_request.state['eligibility']['status'] == 'Denied':
+            project_request.state['eligibility']['status'] = 'Pending'
+
+        if project_request.state['readiness']['status'] == 'Denied':
+            project_request.state['readiness']['status'] = 'Pending'
+            
+        if project_request.state['other']['timestamp']:
+            project_request.state['other']['justification'] = ''
+            project_request.state['other']['timestamp'] = ''
+
+        project_request.status = savio_request_state_status(project_request)
+        project_request.save()
+
+        message = (
+            f'Project request {project_request.project.name} '
+            f'has been UNDENIED and will need to be reviewed again.')
+        messages.success(request, message)
+
+        return HttpResponseRedirect(
+            reverse('savio-project-request-detail',
+                    kwargs={'pk': kwargs.get('pk')}))
+
+
+class VectorProjectUndenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
+    login_url = '/'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+
+        message = (
+            'You do not have permission to undeny a project request.')
+        messages.error(self.request, message)
+
+    def dispatch(self, request, *args, **kwargs):
+        project_request = get_object_or_404(
+            VectorProjectAllocationRequest, pk=self.kwargs.get('pk'))
+
+        state_status = vector_request_state_status(project_request)
+        denied_status = ProjectAllocationRequestStatusChoice.objects.get(name='Denied')
+
+        if state_status != denied_status:
+            message = 'Vector project request has an unexpected status.'
+            messages.error(request, message)
+
+            return HttpResponseRedirect(
+                reverse('vector-project-request-detail',
+                        kwargs={'pk': self.kwargs.get('pk')}))
+
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        project_request = get_object_or_404(
+            VectorProjectAllocationRequest, pk=kwargs.get('pk'))
+
+        if project_request.state['eligibility']['status'] == 'Denied':
+            project_request.state['eligibility']['status'] = 'Pending'
+
+        project_request.status = vector_request_state_status(project_request)
+        project_request.save()
+
+        message = (
+            f'Project request {project_request.project.name} '
+            f'has been UNDENIED and will need to be reviewed again.')
+        messages.success(request, message)
+
+        return HttpResponseRedirect(
+            reverse('vector-project-request-detail',
+                    kwargs={'pk': kwargs.get('pk')}))
