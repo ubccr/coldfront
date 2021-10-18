@@ -26,7 +26,7 @@ class EmailAddressAdmin(admin.ModelAdmin):
     list_display = ('user', 'email', 'is_primary', 'is_verified', )
     ordering = ('user', '-is_primary', '-is_verified', 'email', )
     list_filter = ('is_primary', 'is_verified', )
-    search_fields = ('user', 'email', )
+    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'email']
     fields = ('email', 'user', 'is_primary', 'is_verified', )
     actions = ('make_primary', )
     readonly_fields = ('is_primary', 'is_verified', )
