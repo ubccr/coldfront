@@ -8,10 +8,12 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         new_group, created = Group.objects.get_or_create(name='staff_group')
 
+        if not created:
+            new_group.permissions.clear()
+
         perm_codename_lst = ['view_vectorprojectallocationrequest',
                              'view_savioprojectallocationrequest',
                              'can_review_cluster_account_requests',
-                             'can_review_allocation_requests',
                              'can_review_pending_project_reviews',
                              'can_view_all_allocations',
                              'can_view_all_projects',
