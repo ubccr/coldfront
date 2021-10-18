@@ -17,10 +17,6 @@
     {% if perms.project.can_review_pending_project_reviews %}
     <a id="navbar-project-reviews" class="dropdown-item" href="{% url 'project-review-list' %}">Project Reviews</a>
     {% endif %}
-    {% if perms.allocation.can_review_allocation_requests %}
-    <a id="navbar-allocation-requests" class="dropdown-item" href="{% url 'allocation-request-list' %}">
-      Allocation Requests</a>
-    {% endif %}
     {% if perms.allocation.can_review_cluster_account_requests %}
     <a id="navbar-cluster-requests" class="dropdown-item" href="{% url 'allocation-cluster-account-request-list' %}">
         Cluster Requests</a>
