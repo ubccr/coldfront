@@ -1042,9 +1042,6 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('allocation.can_review_allocation_requests'):
-            return True
-
         messages.error(
             self.request, 'You do not have permission to review allocation requests.')
 
