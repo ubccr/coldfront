@@ -1,5 +1,6 @@
 import datetime
 import pprint
+import urllib
 
 from django.conf import settings
 from django.contrib import messages
@@ -437,8 +438,16 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
         return super().form_valid(form)
 
+    def reverse_with_params(self, path, **kwargs):
+        return path + '?' + urllib.parse.urlencode(kwargs)
+
     def get_success_url(self):
-        return reverse('allocation-create', kwargs={'project_pk': self.object.pk})
+        return self.reverse_with_params(
+            reverse(
+                'project-add-users-search', kwargs={'pk': self.object.pk}
+            ),
+            after_project_creation='true'
+        )
 
 
 class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestMixin, UpdateView):
@@ -501,6 +510,10 @@ class ProjectAddUsersSearchView(LoginRequiredMixin, UserPassesTestMixin, Templat
         context = super().get_context_data(*args, **kwargs)
         context['user_search_form'] = UserSearchForm()
         context['project'] = Project.objects.get(pk=self.kwargs.get('pk'))
+        after_project_creation = self.request.GET.get('after_project_creation')
+        if after_project_creation is None:
+            after_project_creation = 'false'
+        context['after_project_creation'] = after_project_creation
         return context
 
 
@@ -534,6 +547,9 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         user_search_string = request.POST.get('q')
         search_by = request.POST.get('search_by')
         pk = self.kwargs.get('pk')
+        after_project_creation = request.POST.get('after_project_creation')
+        if after_project_creation is None:
+            after_project_creation = 'false'
 
         project_obj = get_object_or_404(Project, pk=pk)
 
@@ -544,6 +560,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
             user_search_string, search_by, users_to_exclude)
 
         context = cobmined_user_search_obj.search()
+        context['after_project_creation'] = after_project_creation
 
         matches = context.get('matches')
         for match in matches:
@@ -607,6 +624,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         user_search_string = request.POST.get('q')
         search_by = request.POST.get('search_by')
         pk = self.kwargs.get('pk')
+        after_project_creation = request.POST.get('after_project_creation')
 
         project_obj = get_object_or_404(Project, pk=pk)
 
@@ -687,6 +705,9 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             if not allocation_form.is_valid():
                 for error in allocation_form.errors:
                     messages.error(request, error)
+
+        if after_project_creation == 'true':
+            return HttpResponseRedirect(reverse('allocation-create', kwargs={'project_pk': pk}))
 
         return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': pk}))
 
