@@ -17,6 +17,7 @@ from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.models import VectorProjectAllocationRequest
+from coldfront.core.project.signals import new_project_request_denied
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.user.utils import account_activation_url
@@ -1039,7 +1040,14 @@ class ProjectDenialRunner(object):
                 not self.request_obj.pool):
             self.deny_project()
         self.deny_request()
+        self.deny_associated_renewal_request_if_existent()
         self.send_email()
+
+    def deny_associated_renewal_request_if_existent(self):
+        """Send a signal to deny any AllocationRenewalRequest that
+        references this request."""
+        kwargs = {'request_id': self.request_obj.pk}
+        new_project_request_denied.send(sender=None, **kwargs)
 
     def deny_project(self):
         """Set the Project's status to 'Denied'."""
