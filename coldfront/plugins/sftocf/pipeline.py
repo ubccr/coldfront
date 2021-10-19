@@ -352,5 +352,5 @@ def collect_starfish_usage(server, volume, volumepath, projects):
                 confirm_dirpath_exists(homepath)
                 save_as_json(filepath, record)
         usage_query_by_lab.extend(data)
-    logger.debug("usage_query_by_lab:", usage_query_by_lab)
+    logger.debug("usage_query_by_lab: {}".format(usage_query_by_lab))
     return usage_query_by_lab
