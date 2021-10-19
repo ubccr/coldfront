@@ -1040,8 +1040,8 @@ class ProjectDenialRunner(object):
                 not self.request_obj.pool):
             self.deny_project()
         self.deny_request()
-        self.deny_associated_renewal_request_if_existent()
         self.send_email()
+        self.deny_associated_renewal_request_if_existent()
 
     def deny_associated_renewal_request_if_existent(self):
         """Send a signal to deny any AllocationRenewalRequest that
