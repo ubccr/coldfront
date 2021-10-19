@@ -117,9 +117,9 @@ Project Renewal {{ request_filter|title }} Requests %}
           {% with status=renewal_request.status.name %}
             {% if status == 'Under Review' %}
               <span class="badge badge-warning">{{ status }}</span>
-            {% elif status == 'Approved - Processing' %}
+            {% elif status == 'Approved' %}
               <span class="badge badge-warning">{{ status }}</span>
-            {% elif status == 'Approved - Complete' %}
+            {% elif status == 'Complete' %}
               <span class="badge badge-success">{{ status }}</span>
             {% else %}
               <span class="badge badge-danger">{{ status }}</span>
