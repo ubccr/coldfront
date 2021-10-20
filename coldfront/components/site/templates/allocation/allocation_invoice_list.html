@@ -1,0 +1,118 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Allocation Invoice List
+{% endblock %}
+
+
+{% block content %}
+<h2 class="d-inline">Allocations that require payment</h2>
+<button type="button" class="btn btn-success float-right" data-toggle="modal" data-target="#id_export_csv">
+  Export to CSV
+</button>
+
+<div class="modal fade" id="id_export_csv" tabindex="-1" role="dialog" aria-labelledby="id_export_csv_label" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="id_export_csv_label">Export to CSV</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="id_export_form">
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <tr style="border-top: none;">
+                <th class="text-nowrap" style="border-top: none;" scope="row">File Name:</th>
+                <td style="border-top: none;">
+                  <input class="form-control" id="id_file_name" type="text" name="file_name" value="export"/>
+                </td>
+              </tr>
+              <tr>
+                <th class="text-nowrap" style="border-top: none;" scope="row">Resource:</th>
+                <td style="border-top: none;">
+                  <select id="id_resource" class="form-control select" name="resource">
+                    <option value="RStudio Connect">RStudio Connect</option>
+                    <option value="Slate Project">Slate Project</option>
+                  </select>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button id="id_export_button" type="submit" class="btn btn-success float-right"><i class="fas fa-download" aria-hidden="true"></i>Export</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if allocation_list %}
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th scope="col">ID</th>
+          <th scope="col">Resource</th>
+          <th scope="col">Status</th>
+          <th scope="col">PI</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for allocation in allocation_list %}
+          <tr>
+            <td><a target="_blank" href="{% url 'allocation-invoice-detail' allocation.pk %}">{{allocation.pk}}</td>
+            <td>{{allocation.get_resources_as_string}}</td>
+            <td>{{allocation.status}}</td>
+            <td>{{allocation.project.pi.username }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="alert alert-info">
+    No allocations requiring payment!
+  </div>
+{% endif %}
+
+<script>
+  function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie != '') {
+      var cookies = document.cookie.split(';');
+      for (var i = 0; i < cookies.length; i++) {
+        var cookie = jQuery.trim(cookies[i]);
+        // Does this cookie string begin with the name we want?
+        if (cookie.substring(0, name.length + 1) == (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  $(document).ready(function () {
+    $('#id_export_button').click(function (e) {
+      e.preventDefault();
+      $(function () {
+        file_name = $('#id_file_name').val();
+        resource = $('#id_resource').val();
+        export_url = "{% url 'invoice-export' %}"
+        window.location = export_url + "?file_name="
+        + encodeURIComponent(file_name)
+        + "&resource="
+        + encodeURIComponent(resource)
+      })
+    })
+  })
+</script>
+{% endblock %}
