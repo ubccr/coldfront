@@ -674,8 +674,9 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                             user=user_obj, project=project_obj, role=role_choice, status=project_user_active_status_choice)
 
                     # Notifications by default will be disabled for group accounts.
-                    if role_choice == 'Group':
+                    if role_choice.name == 'Group':
                         project_user_obj.enable_notifications = False
+                        project_user_obj.save()
 
                     username = user_form_data.get('username')
                     no_accounts[username] = []
