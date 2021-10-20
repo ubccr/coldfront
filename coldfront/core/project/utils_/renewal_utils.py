@@ -748,6 +748,47 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
             AllocationRenewalRequestStatusChoice.objects.get(name='Complete')
         self.request_obj.save()
 
+    def deactivate_pre_project(self):
+        """If the pre_project has not been renewed during this
+        AllocationPeriod, set its status to 'Inactive' and its
+        corresponding compute Allocation's status to 'Expired'.
+
+        If the pre_project is None, do nothing."""
+        request = self.request_obj
+        pre_project = request.pre_project
+        if not pre_project:
+            logger.info(
+                f'AllocationRenewalRequest {request.pk} has no pre-Project. '
+                f'Skipping deactivation.')
+            return
+        # TODO: Reconsider the use of this AllocationPeriod moving forward.
+        allocation_period = get_current_allocation_period()
+        complete_status = AllocationRenewalRequestStatusChoice.objects.get(
+            name='Complete')
+        completed_renewals = AllocationRenewalRequest.objects.filter(
+            allocation_period=allocation_period,
+            status=complete_status,
+            post_project=pre_project)
+        if not completed_renewals.exists():
+            pre_project.status = ProjectStatusChoice.objects.get(
+                name='Inactive')
+            pre_project.save()
+            allocation = get_project_compute_allocation(pre_project)
+            allocation.status = AllocationStatusChoice.objects.get(
+                name='Expired')
+            allocation.save()
+            message = (
+                f'Set Project {pre_project.name}\'s status to '
+                f'{pre_project.status.name} and Allocation {allocation.pk}\'s '
+                f'status to {allocation.status.name}.')
+            logger.info(message)
+        else:
+            message = (
+                f'Project {pre_project.name} has been renewed during '
+                f'AllocationPeriod {allocation_period.name}. Skipping '
+                f'deactivation.')
+            logger.info(message)
+
     def demote_pi_to_user_on_pre_project(self):
         """If the pre_project is pooled (i.e., it has more than one PI),
         demote the PI from 'Principal Investigator' to 'User'.
@@ -775,11 +816,15 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
                 pi_project_user.role = ProjectUserRoleChoice.objects.get(
                     name='User')
                 pi_project_user.save()
+                message = (
+                    f'Demoted {pi.username} from \'Principal Investigator\' '
+                    f'to \'User\' on Project {pre_project.name}.')
+                logger.info(message)
         else:
             message = (
                 f'Project {pre_project.name} only has one PI. Skipping '
                 f'demotion.')
-            logger.error(message)
+            logger.info(message)
 
     def handle_unpooled_to_unpooled(self):
         """Handle the case when the preference is to stay unpooled."""
@@ -787,13 +832,11 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
 
     def handle_unpooled_to_pooled(self):
         """Handle the case when the preference is to start pooling."""
-        # TODO: Deactivate the pre_project.
-        pass
+        self.deactivate_pre_project()
 
     def handle_pooled_to_pooled_same(self):
         """Handle the case when the preference is to stay pooled with
         the same project."""
-        # TODO: Deactivate the pre_project if this is the last PI.
         pass
 
     def handle_pooled_to_pooled_different(self):
@@ -801,16 +844,19 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         the current project and start pooling with a different
         project."""
         self.demote_pi_to_user_on_pre_project()
+        self.deactivate_pre_project()
 
     def handle_pooled_to_unpooled_old(self):
         """Handle the case when the preference is to stop pooling and
         reuse another existing project owned by the PI."""
         self.demote_pi_to_user_on_pre_project()
+        self.deactivate_pre_project()
 
     def handle_pooled_to_unpooled_new(self):
         """Handle the case when the preference is to stop pooling and
         create a new project."""
         self.demote_pi_to_user_on_pre_project()
+        self.deactivate_pre_project()
 
     def send_email(self):
         """Send a notification email to the request and PI."""
