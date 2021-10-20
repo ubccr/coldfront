@@ -166,6 +166,7 @@ class UserProjectsManagersView(ListView):
         ongoing_project_statuses = (
             'New',
             'Active',
+            'Inactive',
         )
 
         qs = ProjectUser.objects.filter(
