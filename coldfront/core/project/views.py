@@ -58,17 +58,17 @@ from coldfront.core.project.utils import (add_vector_user_to_designated_savio_pr
                                           ProjectClusterAccessRequestRunner,
                                           ProjectDenialRunner,
                                           SavioProjectApprovalRunner,
-                                          savio_request_denial_reason,
                                           send_added_to_project_notification_email,
                                           send_new_cluster_access_request_notification_email,
                                           send_project_join_notification_email,
                                           send_project_join_request_approval_email,
                                           send_project_join_request_denial_email,
                                           send_project_request_pooling_email,
-                                          VectorProjectApprovalRunner,
-                                          vector_request_denial_reason)
+                                          VectorProjectApprovalRunner)
 from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
 from coldfront.core.project.utils_.renewal_utils import is_any_project_pi_renewable
+from coldfront.core.project.utils_.request_utils import savio_request_denial_reason
+from coldfront.core.project.utils_.request_utils import vector_request_denial_reason
 # from coldfront.core.publication.models import Publication
 # from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.resource.models import Resource
@@ -273,7 +273,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
             data = project_search_form.cleaned_data
             if data.get('show_all_projects') and (self.request.user.is_superuser or self.request.user.has_perm('project.can_view_all_projects')):
                 projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
-                    status__name__in=['New', 'Active', ]
+                    status__name__in=['New', 'Active', 'Inactive', ]
                 ).annotate(
                     cluster_name=Case(
                         When(name='abc', then=Value('ABC')),
@@ -284,7 +284,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
                 ).order_by(order_by)
             else:
                 projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
-                    Q(status__name__in=['New', 'Active', ]) &
+                    Q(status__name__in=['New', 'Active', 'Inactive', ]) &
                     Q(projectuser__user=self.request.user) &
                     Q(projectuser__status__name='Active')
                 ).annotate(
@@ -334,7 +334,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
 
         else:
             projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
-                Q(status__name__in=['New', 'Active', ]) &
+                Q(status__name__in=['New', 'Active', 'Inactive', ]) &
                 Q(projectuser__user=self.request.user) &
                 Q(projectuser__status__name='Active')
             ).annotate(
@@ -1520,6 +1520,15 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         if self.request.user.userprofile.access_agreement_signed_date is None:
             messages.error(
                 self.request, 'You must sign the User Access Agreement before you can join a project.')
+            return False
+
+        inactive_project_status = ProjectStatusChoice.objects.get(
+            name='Inactive')
+        if project_obj.status == inactive_project_status:
+            message = (
+                f'Project {project_obj.name} is inactive, and may not be '
+                f'joined.')
+            messages.error(self.request, message)
             return False
 
         if project_users.exists():

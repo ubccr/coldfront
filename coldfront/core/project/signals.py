@@ -1,8 +1,9 @@
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.project.models import SavioProjectAllocationRequest
-from coldfront.core.project.utils_.renewal_utils import AllocationRenewalDenialRunner
 from django.dispatch import receiver
 from django.dispatch import Signal
+# Imported without 'from' to avoid a circular import.
+import coldfront.core.project.utils_.renewal_utils as renewal_utils
 import logging
 
 
@@ -46,7 +47,8 @@ def deny_associated_allocation_renewal_request(sender, **kwargs):
         return
 
     try:
-        runner = AllocationRenewalDenialRunner(renewal_request_obj)
+        runner = renewal_utils.AllocationRenewalDenialRunner(
+            renewal_request_obj)
         runner.run()
     except Exception as e:
         message = (

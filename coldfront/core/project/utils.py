@@ -5,6 +5,7 @@ from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.utils import get_or_create_active_allocation_user
+from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.allocation.utils import next_allocation_start_datetime
 from coldfront.core.allocation.utils import review_cluster_access_requests_url
 from coldfront.core.allocation.utils import set_allocation_user_attribute_value
@@ -18,11 +19,14 @@ from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.models import VectorProjectAllocationRequest
 from coldfront.core.project.signals import new_project_request_denied
+from coldfront.core.project.utils_.request_utils import savio_request_denial_reason
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.user.utils import account_activation_url
 from coldfront.core.utils.common import import_from_settings
+from coldfront.core.utils.common import project_detail_url
 from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.utils.common import validate_num_service_units
 from coldfront.core.utils.mail import send_email_template
 from collections import namedtuple
 from datetime import timedelta
@@ -62,24 +66,6 @@ def add_project_user_status_choices(apps, schema_editor):
 
     for choice in ['Active', 'Pending Remove', 'Denied', 'Removed', ]:
         ProjectUserStatusChoice.objects.get_or_create(name=choice)
-
-
-def get_project_compute_resource_name(project_obj):
-    """Return the name of the Compute Resource that corresponds to the
-    given Project."""
-    if project_obj.name == 'abc':
-        resource_name = 'ABC Compute'
-    elif project_obj.name.startswith('vector_'):
-        resource_name = 'Vector Compute'
-    else:
-        resource_name = 'Savio Compute'
-    return resource_name
-
-
-def get_project_compute_allocation(project_obj):
-    """Return the given Project's Allocation to a Compute Resource."""
-    resource_name = get_project_compute_resource_name(project_obj)
-    return project_obj.allocation_set.get(resources__name=resource_name)
 
 
 def auto_approve_project_join_requests():
@@ -171,12 +157,6 @@ def auto_approve_project_join_requests():
                 logger.exception(e)
 
     return results
-
-
-def project_detail_url(project):
-    domain = import_from_settings('CENTER_BASE_URL')
-    view = reverse('project-detail', kwargs={'pk': project.pk})
-    return urljoin(domain, view)
 
 
 def __review_project_join_requests_url(project):
@@ -568,72 +548,6 @@ def project_allocation_request_latest_update_timestamp(request):
     return max_timestamp
 
 
-def savio_request_denial_reason(savio_request):
-    """Return the reason why the given SavioProjectAllocationRequest was
-    denied, based on its 'state' field."""
-    if not isinstance(savio_request, SavioProjectAllocationRequest):
-        raise TypeError(
-            f'Provided request has unexpected type {type(savio_request)}.')
-    if savio_request.status.name != 'Denied':
-        raise ValueError(
-            f'Provided request has unexpected status '
-            f'{savio_request.status.name}.')
-
-    state = savio_request.state
-    eligibility = state['eligibility']
-    readiness = state['readiness']
-    other = state['other']
-
-    DenialReason = namedtuple(
-        'DenialReason', 'category justification timestamp')
-
-    if other['timestamp']:
-        category = 'Other'
-        justification = other['justification']
-        timestamp = other['timestamp']
-    elif eligibility['status'] == 'Denied':
-        category = 'PI Ineligible'
-        justification = eligibility['justification']
-        timestamp = eligibility['timestamp']
-    elif readiness['status'] == 'Denied':
-        category = 'Readiness Criteria Unsatisfied'
-        justification = readiness['justification']
-        timestamp = readiness['timestamp']
-    else:
-        raise ValueError('Provided request has an unexpected state.')
-
-    return DenialReason(
-        category=category, justification=justification, timestamp=timestamp)
-
-
-def vector_request_denial_reason(vector_request):
-    """Return the reason why the given VectorProjectAllocationRequest
-    was denied, based on its 'state' field."""
-    if not isinstance(vector_request, VectorProjectAllocationRequest):
-        raise TypeError(
-            f'Provided request has unexpected type {type(vector_request)}.')
-    if vector_request.status.name != 'Denied':
-        raise ValueError(
-            f'Provided request has unexpected status '
-            f'{vector_request.status.name}.')
-
-    state = vector_request.state
-    eligibility = state['eligibility']
-
-    DenialReason = namedtuple(
-        'DenialReason', 'category justification timestamp')
-
-    if eligibility['status'] == 'Denied':
-        category = 'Requester Ineligible'
-        justification = eligibility['justification']
-        timestamp = eligibility['timestamp']
-    else:
-        raise ValueError('Provided request has an unexpected state.')
-
-    return DenialReason(
-        category=category, justification=justification, timestamp=timestamp)
-
-
 def savio_request_state_status(savio_request):
     """Return a ProjectAllocationRequestStatusChoice, based on the
     'state' field of the given SavioProjectAllocationRequest."""
@@ -710,30 +624,6 @@ def vector_request_state_status(vector_request):
     # finally activated.
     return ProjectAllocationRequestStatusChoice.objects.get(
         name='Approved - Processing')
-
-
-def validate_num_service_units(num_service_units):
-    """Raise exceptions if the given number of service units does
-    not conform to the expected constraints."""
-    if not isinstance(num_service_units, Decimal):
-        raise TypeError(
-            f'Number of service units {num_service_units} is not a Decimal.')
-    minimum, maximum = settings.ALLOCATION_MIN, settings.ALLOCATION_MAX
-    if not (minimum <= num_service_units <= maximum):
-        raise ValueError(
-            f'Number of service units {num_service_units} is not in the '
-            f'acceptable range [{minimum}, {maximum}].')
-    num_service_units_tuple = num_service_units.as_tuple()
-    max_digits = settings.DECIMAL_MAX_DIGITS
-    if len(num_service_units_tuple.digits) > max_digits:
-        raise ValueError(
-            f'Number of service units {num_service_units} has greater than '
-            f'{max_digits} digits.')
-    max_places = settings.DECIMAL_MAX_PLACES
-    if abs(num_service_units_tuple.exponent) > max_places:
-        raise ValueError(
-            f'Number of service units {num_service_units} has greater than '
-            f'{max_places} decimal places.')
 
 
 class ProjectApprovalRunner(object):

@@ -7,6 +7,7 @@ from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.utils import get_or_create_active_allocation_user
+from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.allocation.utils import next_allocation_start_datetime
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectStatusChoice
@@ -14,14 +15,13 @@ from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
-from coldfront.core.project.utils import get_project_compute_allocation
-from coldfront.core.project.utils import project_detail_url
-from coldfront.core.project.utils import savio_request_denial_reason
-from coldfront.core.project.utils import validate_num_service_units
+from coldfront.core.project.utils_.request_utils import savio_request_denial_reason
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.utils.common import import_from_settings
+from coldfront.core.utils.common import project_detail_url
 from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.utils.common import validate_num_service_units
 from coldfront.core.utils.mail import send_email_template
 from collections import namedtuple
 from datetime import timedelta
@@ -787,11 +787,13 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
 
     def handle_unpooled_to_pooled(self):
         """Handle the case when the preference is to start pooling."""
+        # TODO: Deactivate the pre_project.
         pass
 
     def handle_pooled_to_pooled_same(self):
         """Handle the case when the preference is to stay pooled with
         the same project."""
+        # TODO: Deactivate the pre_project if this is the last PI.
         pass
 
     def handle_pooled_to_pooled_different(self):
