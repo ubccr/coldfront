@@ -16,6 +16,7 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 from django.utils.html import format_html
+from django.utils.module_loading import import_string
 
 from coldfront.core.allocation.models import (Allocation,
                                               AllocationStatusChoice,
@@ -548,10 +549,15 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
 
         context = cobmined_user_search_obj.search()
 
+        ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
+        search_class_obj = ldap_search()
         matches = context.get('matches')
         for match in matches:
-            match.update(
-                {'role': ProjectUserRoleChoice.objects.get(name='User')})
+            attributes = search_class_obj.search_a_user(match.get('username'), ['title'])
+            if attributes['title'][0] == 'group':
+                match.update({'role': ProjectUserRoleChoice.objects.get(name='Group')})
+            else:
+                match.update({'role': ProjectUserRoleChoice.objects.get(name='User')})
 
         if matches:
             formset = formset_factory(ProjectAddUserForm, max_num=len(matches))
@@ -666,6 +672,10 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                     else:
                         project_user_obj = ProjectUser.objects.create(
                             user=user_obj, project=project_obj, role=role_choice, status=project_user_active_status_choice)
+
+                    # Notifications by default will be disabled for group accounts.
+                    if role_choice == 'Group':
+                        project_user_obj.enable_notifications = False
 
                     username = user_form_data.get('username')
                     no_accounts[username] = []
