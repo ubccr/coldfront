@@ -78,6 +78,12 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
+        allocation_submitted = self.request.GET.get('allocation_submitted')
+        context['display_modal'] = 'false'
+        if allocation_submitted:
+            context['display_modal'] = 'true'
+
         # Can the user update the project?
         if self.request.user.is_superuser:
             context['is_allowed_to_update_project'] = True
