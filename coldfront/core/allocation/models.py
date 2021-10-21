@@ -1,9 +1,7 @@
 import datetime
-import importlib
 import logging
 from ast import literal_eval
 
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -41,9 +39,72 @@ class Allocation(TimeStampedModel):
     resources = models.ManyToManyField(Resource)
     status = models.ForeignKey(
         AllocationStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
-    quantity = models.IntegerField(default=1)
+    quantity = models.IntegerField(blank=True, null=True)
+    storage_space = models.IntegerField(blank=True, null=True)
+    storage_space_with_unit = models.CharField(max_length=10, blank=True, null=True)
+    leverage_multiple_gpus = models.CharField(max_length=4, choices=(('No', 'No'), ('Yes', 'Yes')), blank=True, null=True)
+    dl_workflow = models.CharField(max_length=4, choices=(('No', 'No'), ('Yes', 'Yes')), blank=True, null=True)
+    applications_list = models.CharField(max_length=150, blank=True, null=True)
+    training_or_inference = models.CharField(max_length=9, choices=(('Training', 'Training'), ('Inference', 'Inference'), ('Both', 'Both')), blank=True, null=True)
+    for_coursework = models.CharField(max_length=4, choices=(('No', 'No'), ('Yes', 'Yes')), blank=True, null=True)
+    system = models.CharField(max_length=9, choices=(('Carbonate', 'Carbonate'), ('BigRed3', 'Big Red 3')), blank=True, null=True)
+    is_grand_challenge = models.BooleanField(blank=True, null=True)
+    grand_challenge_program = models.CharField(
+        max_length=100,
+        choices=(
+            ('healthinitiative', 'Precision Health Initiative'),
+            ('envchange', 'Prepared for Environmental Change'),
+            ('addiction', 'Responding to the Addiction Crisis')
+        ),
+        blank=True,
+        null=True
+    )
     start_date = models.DateField(blank=True, null=True)
     end_date = models.DateField(blank=True, null=True)
+    use_indefinitely = models.BooleanField(blank=True, null=True)
+    phi_association = models.CharField(max_length=4, choices=(('No', 'No'), ('Yes', 'Yes')), blank=True, null=True)
+    access_level = models.CharField(max_length=8, choices=(('Masked', 'Masked'), ('Unmasked', 'Unmasked')), blank=True, null=True)
+    confirm_understanding = models.BooleanField(blank=True, null=True)
+    primary_contact = models.CharField(max_length=20, blank=True, null=True)
+    secondary_contact = models.CharField(max_length=20, blank=True, null=True)
+    department_full_name = models.CharField(max_length=30, blank=True, null=True)
+    department_short_name = models.CharField(max_length=15, blank=True, null=True)
+    fiscal_officer = models.CharField(max_length=20, blank=True, null=True)
+    account_number = models.CharField(max_length=9, blank=True, null=True)
+    sub_account_number = models.CharField(max_length=20, blank=True, null=True)
+    it_pros = models.CharField(max_length=100, blank=True, null=True)
+    devices_ip_addresses = models.CharField(max_length=200, blank=True, null=True)
+    data_management_plan = models.TextField(blank=True, null=True)
+    project_directory_name = models.CharField(max_length=10, blank=True, null=True)
+    total_cost = models.IntegerField(blank=True, null=True)
+    first_name = models.CharField(max_length=40, blank=True, null=True)
+    last_name = models.CharField(max_length=40, blank=True, null=True)
+    campus_affiliation = models.CharField(
+        max_length=2,
+        choices=(
+            ('BL', 'IU Bloomington'),
+            ('IN', 'IUPUI (Indianapolis)'),
+            ('CO', 'IUPUC (Columbus)'),
+            ('EA', 'IU East (Richmond)'),
+            ('FW', 'IU Fort Wayne'),
+            ('CO', 'IU Kokomo'),
+            ('NW', 'IU Northwest (Gary)'),
+            ('SB', 'IU South Bend'),
+            ('SE', 'IU Southeast (New Albany)'),
+            ('OR', 'Other')
+        ),
+        blank=True,
+        null=True
+    )
+    email = models.CharField(max_length=40, blank=True, null=True)
+    url = models.CharField(max_length=50, blank=True, null=True)
+    faculty_email = models.CharField(max_length=40, blank=True, null=True)
+    store_ephi = models.CharField(
+        max_length=3,
+        choices=(('No', 'No'), ('Yes', 'Yes')),
+        blank=True,
+        null=True
+    )
     justification = models.TextField()
     description = models.CharField(max_length=512, blank=True, null=True)
     is_locked = models.BooleanField(default=False)
@@ -76,10 +137,10 @@ class Allocation(TimeStampedModel):
             if not self.start_date:
                 raise ValidationError('You have to set the start date.')
 
-            if not self.end_date:
+            if not self.end_date and not self.use_indefinitely:
                 raise ValidationError('You have to set the end date.')
 
-            if self.start_date > self.end_date:
+            if not self.use_indefinitely and self.start_date > self.end_date:
                 raise ValidationError(
                     'Start date cannot be greater than the end date.')
 
@@ -165,6 +226,16 @@ class Allocation(TimeStampedModel):
         attr = self.allocationattribute_set.filter(
             allocation_attribute_type__name=name).all()
         return [a.value for a in attr]
+
+    def check_user_account_exists_on_resource(self, username):
+        resource = self.get_parent_resource.get_attribute('check_user_account')
+        if self.get_parent_resource.name == 'Priority Boost':
+            resource = self.system
+
+        if resource is None:
+            return True
+
+        return self.get_parent_resource.check_user_account_exists(username, resource)
 
     def __str__(self):
         return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)

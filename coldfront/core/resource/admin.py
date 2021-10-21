@@ -22,7 +22,7 @@ class ResourceTypeAdmin(admin.ModelAdmin):
 @admin.register(ResourceAttributeType)
 class ResourceAttributeTypeAdmin(SimpleHistoryAdmin):
     list_display = ('pk', 'name', 'attribute_type_name', 'is_required', 'is_unique_per_resource', 'is_value_unique', 'created', 'modified', )
-    search_fields = ('name', 'attribute_type__name', 'resource_type__name',)
+    search_fields = ('name', 'attribute_type__name',)
     list_filter = ('attribute_type__name', 'name', 'is_required', 'is_unique_per_resource', 'is_value_unique')
 
     def attribute_type_name(self, obj):

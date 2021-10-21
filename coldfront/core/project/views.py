@@ -6,20 +6,19 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
-from coldfront.core.utils.common import import_from_settings
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.forms import formset_factory
-from django.http import (HttpResponse, HttpResponseForbidden,
-                         HttpResponseRedirect)
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
-from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
+from django.utils.html import format_html
+from django.utils.module_loading import import_string
 
 from coldfront.core.allocation.models import (Allocation,
                                               AllocationStatusChoice,
@@ -82,6 +81,12 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
+        allocation_submitted = self.request.GET.get('allocation_submitted')
+        context['display_modal'] = 'false'
+        if allocation_submitted:
+            context['display_modal'] = 'true'
+
         # Can the user update the project?
         if self.request.user.is_superuser:
             context['is_allowed_to_update_project'] = True
@@ -562,10 +567,15 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         context = cobmined_user_search_obj.search()
         context['after_project_creation'] = after_project_creation
 
+        ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
+        search_class_obj = ldap_search()
         matches = context.get('matches')
         for match in matches:
-            match.update(
-                {'role': ProjectUserRoleChoice.objects.get(name='User')})
+            attributes = search_class_obj.search_a_user(match.get('username'), ['title'])
+            if attributes['title'][0] == 'group':
+                match.update({'role': ProjectUserRoleChoice.objects.get(name='Group')})
+            else:
+                match.update({'role': ProjectUserRoleChoice.objects.get(name='User')})
 
         if matches:
             formset = formset_factory(ProjectAddUserForm, max_num=len(matches))
@@ -656,6 +666,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             allocation_form_data = allocation_form.cleaned_data['allocation']
             if '__select_all__' in allocation_form_data:
                 allocation_form_data.remove('__select_all__')
+            no_accounts = {}
             for form in formset:
                 user_form_data = form.cleaned_data
                 if user_form_data['selected']:
@@ -681,7 +692,21 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                         project_user_obj = ProjectUser.objects.create(
                             user=user_obj, project=project_obj, role=role_choice, status=project_user_active_status_choice)
 
+                    # Notifications by default will be disabled for group accounts.
+                    if role_choice.name == 'Group':
+                        project_user_obj.enable_notifications = False
+                        project_user_obj.save()
+
+                    username = user_form_data.get('username')
+                    no_accounts[username] = []
                     for allocation in Allocation.objects.filter(pk__in=allocation_form_data):
+                        # If the user does not have an account on the resource in the allocation then do not add them to it.
+                        if not allocation.check_user_account_exists_on_resource(username):
+                            # Make sure there are no duplicates for a user if there's more than one instance of a resource.
+                            if allocation.get_parent_resource.name not in no_accounts[username]:
+                                no_accounts[username].append(allocation.get_parent_resource.name)
+                            continue
+
                         if allocation.allocationuser_set.filter(user=user_obj).exists():
                             allocation_user_obj = allocation.allocationuser_set.get(
                                 user=user_obj)
@@ -695,6 +720,15 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                         allocation_activate_user.send(sender=self.__class__,
                                                       allocation_user_pk=allocation_user_obj.pk)
 
+            warning_message = ''
+            for username, no_account_list in no_accounts.items():
+                if no_account_list:
+                    warning_message += 'User {} was not added to allocation(s) {} due do not having an account on those resources. '.format(username, ', '.join(no_account_list))
+            if warning_message != '':
+                warning_message = format_html(warning_message + 'Please direct them to <a href="https://access.iu.edu/Accounts/Create">https://access.iu.edu/Accounts/Create</a> to create one.\n')
+                messages.warning(
+                    request, warning_message
+                )
             messages.success(
                 request, 'Added {} users to project.'.format(added_users_count))
         else:

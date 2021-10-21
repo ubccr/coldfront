@@ -1,27 +1,27 @@
 import datetime
 import logging
+import urllib
+import csv
 from datetime import date
 
 from dateutil.relativedelta import relativedelta
 from django import forms
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
-from django.core.exceptions import ValidationError
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db import IntegrityError
 from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.forms import formset_factory
 from django.http import HttpResponseRedirect, JsonResponse
+from django.http.response import HttpResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, render
-from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
 from django.utils.html import format_html, mark_safe
 from django.views import View
-from django.views.generic import DetailView, ListView, TemplateView
+from django.views.generic import ListView, TemplateView
 from django.views.generic.edit import CreateView, FormView, UpdateView
+from django.utils.module_loading import import_string
 
 from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationAddUserForm,
@@ -42,8 +42,10 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationUserStatusChoice)
 from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user)
-from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
+from coldfront.core.allocation.utils import (compute_prorated_amount,
+                                             generate_guauge_data_from_usage,
                                              get_user_resources)
+from coldfront.core.utils.common import Echo
 from coldfront.core.project.models import (Project, ProjectUser,
                                            ProjectUserStatusChoice)
 from coldfront.core.resource.models import Resource
@@ -232,6 +234,9 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             if not end_date:
                 end_date = datetime.datetime.now(
                 ) + relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)
+
+            if allocation_obj.use_indefinitely:
+                end_date = None
 
             allocation_obj.end_date = end_date
 
@@ -514,17 +519,430 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         user_resources = get_user_resources(self.request.user)
         resources_form_default_quantities = {}
         resources_form_label_texts = {}
+        resources_form_storage_space = {}
+        resources_form_storage_space_label = {}
+        resources_form_storage_space_with_unit = {}
+        resources_form_storage_space_with_unit_label = {}
+        resources_form_leverage_multiple_gpus = {}
+        resources_form_leverage_multiple_gpus_label = {}
+        resources_form_dl_workflow = {}
+        resources_form_dl_workflow_label = {}
+        resources_form_applications_list = {}
+        resources_form_applications_list_label = {}
+        resources_form_training_or_inference = {}
+        resources_form_training_or_inference_label = {}
+        resources_form_for_coursework = {}
+        resources_form_for_coursework_label = {}
+        resources_form_system = {}
+        resources_form_system_label = {}
+        resources_form_start_date = {}
+        resources_form_start_date_label = {}
+        resources_form_end_date = {}
+        resources_form_end_date_label = {}
+        resources_form_phi_association = {}
+        resources_form_phi_association_label = {}
+        resources_form_access_level = {}
+        resources_form_access_level_label = {}
+        resources_form_confirm_understanding = {}
+        resources_form_confirm_understanding_label = {}
+        resources_form_primary_contact = {}
+        resources_form_primary_contact_label = {}
+        resources_form_secondary_contact = {}
+        resources_form_secondary_contact_label = {}
+        resources_form_department_full_name = {}
+        resources_form_department_full_name_label = {}
+        resources_form_department_short_name = {}
+        resources_form_department_short_name_label = {}
+        resources_form_fiscal_officer = {}
+        resources_form_fiscal_officer_label = {}
+        resources_form_account_number = {}
+        resources_form_account_number_label = {}
+        resources_form_sub_account_number = {}
+        resources_form_sub_account_number_label = {}
+        resources_form_it_pros = {}
+        resources_form_it_pros_label = {}
+        resources_form_devices_ip_addresses = {}
+        resources_form_devices_ip_addresses_label = {}
+        resources_form_data_management_plan = {}
+        resources_form_data_management_plan_label = {}
+        resources_form_project_directory_name = {}
+        resources_form_project_directory_name_label = {}
+        resources_form_cost = {}
+        resources_form_cost_label = {}
+        resources_form_prorated_cost = {}
+        resources_form_prorated_cost_label = {}
+        resources_form_first_name = {}
+        resources_form_first_name_label = {}
+        resources_form_last_name = {}
+        resources_form_last_name_label = {}
+        resources_form_campus_affiliation = {}
+        resources_form_campus_affiliation_label = {}
+        resources_form_email = {}
+        resources_form_email_label = {}
+        resources_form_url = {}
+        resources_form_url_label = {}
+        resources_form_faculty_email = {}
+        resources_form_faculty_email_label = {}
+        resources_form_store_ephi = {}
+        resources_form_store_ephi_label = {}
         resources_with_eula = {}
+
         for resource in user_resources:
             if resource.resourceattribute_set.filter(resource_attribute_type__name='quantity_default_value').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='quantity_default_value').value
-                resources_form_default_quantities[resource.id] = int(value)
+                if value == "":
+                    resources_form_default_quantities[resource.id] = 0
+                else:
+                    resources_form_default_quantities[resource.id] = int(value)
             if resource.resourceattribute_set.filter(resource_attribute_type__name='quantity_label').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='quantity_label').value
                 resources_form_label_texts[resource.id] = mark_safe(
                     '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='storage_space').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='storage_space').value
+                if value == '':
+                    resources_form_storage_space[resource.id] = 0
+                else:
+                    resources_form_storage_space[resource.id] = int(value)
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='storage_space_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='storage_space_label').value
+                resources_form_storage_space_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='storage_space_with_unit').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='storage_space_with_unit').value
+                if value == '':
+                    resources_form_storage_space_with_unit[resource.id] = 0
+                else:
+                    resources_form_storage_space_with_unit[resource.id] = int(value)
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='storage_space_with_unit_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='storage_space_with_unit_label').value
+                resources_form_storage_space_with_unit_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='leverage_multiple_gpus').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='leverage_multiple_gpus').value
+                resources_form_leverage_multiple_gpus[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='leverage_multiple_gpus_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='leverage_multiple_gpus_label').value
+                resources_form_leverage_multiple_gpus_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='applications_list').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='applications_list').value
+                resources_form_applications_list[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='applications_list_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='applications_list_label').value
+                resources_form_applications_list_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='dl_workflow').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='dl_workflow').value
+                resources_form_dl_workflow[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='dl_workflow_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='dl_workflow_label').value
+                resources_form_dl_workflow_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='training_or_inference').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='training_or_inference').value
+                resources_form_training_or_inference[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='training_or_inference_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='training_or_inference_label').value
+                resources_form_training_or_inference_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='for_coursework').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='for_coursework').value
+                resources_form_for_coursework[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='for_coursework_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='for_coursework_label').value
+                resources_form_for_coursework_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='system').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='system').value
+                resources_form_system[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='system_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='system_label').value
+                resources_form_system_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='start_date').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='start_date').value
+                resources_form_start_date[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='start_date_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='start_date_label').value
+                resources_form_start_date_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='end_date').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='end_date').value
+                resources_form_end_date[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='end_date_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='end_date_label').value
+                resources_form_end_date_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='phi_association').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='phi_association').value
+                resources_form_phi_association[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='phi_association_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='phi_association_label').value
+                resources_form_phi_association_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='access_level').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='access_level').value
+                resources_form_access_level[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='access_level_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='access_level_label').value
+                resources_form_access_level_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='confirm_understanding').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='confirm_understanding').value
+                resources_form_confirm_understanding[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='confirm_understanding_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='confirm_understanding_label').value
+                resources_form_confirm_understanding_label[resource.id] = mark_safe(
+                    '{}'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='primary_contact').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='primary_contact').value
+                resources_form_primary_contact[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='primary_contact_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='primary_contact_label').value
+                resources_form_primary_contact_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='secondary_contact').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='secondary_contact').value
+                resources_form_secondary_contact[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='secondary_contact_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='secondary_contact_label').value
+                resources_form_secondary_contact_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='department_full_name').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='department_full_name').value
+                resources_form_department_full_name[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='department_full_name_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='department_full_name_label').value
+                resources_form_department_full_name_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='department_short_name').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='department_short_name').value
+                resources_form_department_short_name[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='department_short_name_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='department_short_name_label').value
+                resources_form_department_short_name_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='fiscal_officer').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='fiscal_officer').value
+                resources_form_fiscal_officer[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='fiscal_officer_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='fiscal_officer_label').value
+                resources_form_fiscal_officer_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='account_number').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='account_number').value
+                resources_form_account_number[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='account_number_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='account_number_label').value
+                resources_form_account_number_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='sub_account_number').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='sub_account_number').value
+                resources_form_sub_account_number[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='sub_account_number_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='sub_account_number_label').value
+                resources_form_sub_account_number_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='it_pros').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='it_pros').value
+                resources_form_it_pros[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='it_pros_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='it_pros_label').value
+                resources_form_it_pros_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='devices_ip_addresses').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='devices_ip_addresses').value
+                resources_form_devices_ip_addresses[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='devices_ip_addresses_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='devices_ip_addresses_label').value
+                resources_form_devices_ip_addresses_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='data_management_plan').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='data_management_plan').value
+                resources_form_data_management_plan[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='data_management_plan_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='data_management_plan_label').value
+                resources_form_data_management_plan_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='project_directory_name').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='project_directory_name').value
+                resources_form_project_directory_name[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='project_directory_name_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='project_directory_name_label').value
+                resources_form_project_directory_name_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='first_name').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='first_name').value
+                resources_form_first_name[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='first_name_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='first_name_label').value
+                resources_form_first_name_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='last_name').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='last_name').value
+                resources_form_last_name[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='last_name_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='last_name_label').value
+                resources_form_last_name_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='campus_affiliation').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='campus_affiliation').value
+                resources_form_campus_affiliation[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='campus_affiliation_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='campus_affiliation_label').value
+                resources_form_campus_affiliation_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='email').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='email').value
+                resources_form_email[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='email_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='email_label').value
+                resources_form_email_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='url').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='url').value
+                resources_form_url[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='url_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='url_label').value
+                resources_form_url_label[resource.id] = mark_safe(
+                    '<strong>{}</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='faculty_email').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='faculty_email').value
+                resources_form_faculty_email[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='faculty_email_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='faculty_email_label').value
+                resources_form_faculty_email_label[resource.id] = mark_safe(
+                    '<strong>{}</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='store_ephi').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='store_ephi').value
+                resources_form_store_ephi[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='store_ephi_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='store_ephi_label').value
+                resources_form_store_ephi_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='cost').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='cost').value
+                resources_form_cost[resource.id] = int(value)
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='cost_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='cost_label').value
+                resources_form_cost_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='prorated').exists():
+                if resource.resourceattribute_set.get(resource_attribute_type__name='prorated'):
+                    if resource.resourceattribute_set.filter(resource_attribute_type__name='prorated_cost_label').exists():
+                        value = resource.resourceattribute_set.get(
+                            resource_attribute_type__name='prorated_cost_label').value
+                        resources_form_prorated_cost_label[resource.id] = mark_safe(
+                            '<strong>{}*</strong>'.format(value))
+
+                    if resource.resourceattribute_set.filter(resource_attribute_type__name='cost').exists():
+                        resources_form_prorated_cost[resource.id] = compute_prorated_amount(
+                            int(resource.resourceattribute_set.get(
+                                resource_attribute_type__name='cost').value
+                        ))
+                    else:
+                        resources_form_prorated_cost[resource.id] = 0
+
             if resource.resourceattribute_set.filter(resource_attribute_type__name='eula').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='eula').value
@@ -533,6 +951,72 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         context['AllocationAccountForm'] = AllocationAccountForm()
         context['resources_form_default_quantities'] = resources_form_default_quantities
         context['resources_form_label_texts'] = resources_form_label_texts
+        context['resources_form_storage_space'] = resources_form_storage_space
+        context['resources_form_storage_space_label'] = resources_form_storage_space_label
+        context['resources_form_storage_space_with_unit'] = resources_form_storage_space_with_unit
+        context['resources_form_storage_space_with_unit_label'] = resources_form_storage_space_with_unit_label
+        context['resources_form_leverage_multiple_gpus_label'] = resources_form_leverage_multiple_gpus_label
+        context['resources_form_leverage_multiple_gpus'] = resources_form_leverage_multiple_gpus
+        context['resources_form_dl_workflow_label'] = resources_form_dl_workflow_label
+        context['resources_form_dl_workflow'] = resources_form_dl_workflow
+        context['resources_form_applications_list_label'] = resources_form_applications_list_label
+        context['resources_form_applications_list'] = resources_form_applications_list
+        context['resources_form_training_or_inference_label'] = resources_form_training_or_inference_label
+        context['resources_form_training_or_inference'] = resources_form_training_or_inference
+        context['resources_form_for_coursework_label'] = resources_form_for_coursework_label
+        context['resources_form_for_coursework'] = resources_form_for_coursework
+        context['resources_form_system_label'] = resources_form_system_label
+        context['resources_form_system'] = resources_form_system
+        context['resources_form_start_date_label'] = resources_form_start_date_label
+        context['resources_form_start_date'] = resources_form_start_date
+        context['resources_form_end_date_label'] = resources_form_end_date_label
+        context['resources_form_end_date'] = resources_form_end_date
+        context['resources_form_phi_association_label'] = resources_form_phi_association_label
+        context['resources_form_phi_association'] = resources_form_phi_association
+        context['resources_form_access_level_label'] = resources_form_access_level_label
+        context['resources_form_access_level'] = resources_form_access_level
+        context['resources_form_confirm_understanding_label'] = resources_form_confirm_understanding_label
+        context['resources_form_confirm_understanding'] = resources_form_confirm_understanding
+        context['resources_form_primary_contact'] = resources_form_primary_contact
+        context['resources_form_primary_contact_label'] = resources_form_primary_contact_label
+        context['resources_form_secondary_contact'] = resources_form_secondary_contact
+        context['resources_form_secondary_contact_label'] = resources_form_secondary_contact_label
+        context['resources_form_department_full_name'] = resources_form_department_full_name
+        context['resources_form_department_full_name_label'] = resources_form_department_full_name_label
+        context['resources_form_department_short_name'] = resources_form_department_short_name
+        context['resources_form_department_short_name_label'] = resources_form_department_short_name_label
+        context['resources_form_fiscal_officer'] = resources_form_fiscal_officer
+        context['resources_form_fiscal_officer_label'] = resources_form_fiscal_officer_label
+        context['resources_form_account_number'] = resources_form_account_number
+        context['resources_form_account_number_label'] = resources_form_account_number_label
+        context['resources_form_sub_account_number'] = resources_form_sub_account_number
+        context['resources_form_sub_account_number_label'] = resources_form_sub_account_number_label
+        context['resources_form_it_pros'] = resources_form_it_pros
+        context['resources_form_it_pros_label'] = resources_form_it_pros_label
+        context['resources_form_devices_ip_addresses'] = resources_form_devices_ip_addresses
+        context['resources_form_devices_ip_addresses_label'] = resources_form_devices_ip_addresses_label
+        context['resources_form_data_management_plan'] = resources_form_data_management_plan
+        context['resources_form_data_management_plan_label'] = resources_form_data_management_plan_label
+        context['resources_form_project_directory_name'] = resources_form_project_directory_name
+        context['resources_form_project_directory_name_label'] = resources_form_project_directory_name_label
+        context['resources_form_cost'] = resources_form_cost
+        context['resources_form_cost_label'] = resources_form_cost_label
+        context['resources_form_prorated_cost'] = resources_form_prorated_cost
+        context['resources_form_prorated_cost_label'] = resources_form_prorated_cost_label
+        context['resources_form_first_name'] = resources_form_first_name
+        context['resources_form_first_name_label'] = resources_form_first_name_label
+        context['resources_form_last_name'] = resources_form_last_name
+        context['resources_form_last_name_label'] = resources_form_last_name_label
+        context['resources_form_campus_affiliation'] = resources_form_campus_affiliation
+        context['resources_form_campus_affiliation_label'] = resources_form_campus_affiliation_label
+        context['resources_form_email'] = resources_form_email
+        context['resources_form_email_label'] = resources_form_email_label
+        context['resources_form_url'] = resources_form_url
+        context['resources_form_url_label'] = resources_form_url_label
+        context['resources_form_faculty_email'] = resources_form_faculty_email
+        context['resources_form_faculty_email_label'] = resources_form_faculty_email_label
+        context['resources_form_store_ephi'] = resources_form_store_ephi
+        context['resources_form_store_ephi_label'] = resources_form_store_ephi_label
         context['resources_with_eula'] = resources_with_eula
         context['resources_with_accounts'] = list(Resource.objects.filter(
             name__in=list(ALLOCATION_ACCOUNT_MAPPING.keys())).values_list('id', flat=True))
@@ -545,6 +1029,17 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             form_class = self.get_form_class()
         return form_class(self.request.user, self.kwargs.get('project_pk'), **self.get_form_kwargs())
 
+    def calculate_end_date(self, month, day, license_term):
+        current_date = datetime.date.today()
+        license_end_date = datetime.date(current_date.year, month, day)
+        if current_date > license_end_date:
+            license_end_date = license_end_date.replace(year=license_end_date.year + 1)
+
+        if license_term == 'current_and_next_year':
+            license_end_date = license_end_date.replace(year=license_end_date.year + 1)
+
+        return license_end_date
+
     def form_valid(self, form):
         form_data = form.cleaned_data
         project_obj = get_object_or_404(
@@ -552,7 +1047,60 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         resource_obj = form_data.get('resource')
         justification = form_data.get('justification')
         quantity = form_data.get('quantity', 1)
+        storage_space = form_data.get('storage_space')
+        storage_space_with_unit = form_data.get('storage_space_with_unit')
+        leverage_multiple_gpus = form_data.get('leverage_multiple_gpus')
+        dl_workflow = form_data.get('dl_workflow')
+        applications_list = form_data.get('applications_list')
+        training_or_inference = form_data.get('training_or_inference')
+        for_coursework = form_data.get('for_coursework')
+        system = form_data.get('system')
+        is_grand_challenge = form_data.get('is_grand_challenge')
+        grand_challenge_program = form_data.get('grand_challenge_program')
+        start_date = form_data.get('start_date')
+        end_date = form_data.get('end_date')
+        use_indefinitely = form_data.get('use_indefinitely')
+        phi_association = form_data.get('phi_association')
+        access_level = form_data.get('access_level')
+        confirm_understanding = form_data.get('confirm_understanding')
+        unit = form_data.get('unit')
+        primary_contact = form_data.get('primary_contact')
+        secondary_contact = form_data.get('secondary_contact')
+        department_full_name = form_data.get('department_full_name')
+        department_short_name = form_data.get('department_short_name')
+        fiscal_officer = form_data.get('fiscal_officer')
+        account_number = form_data.get('account_number')
+        sub_account_number = form_data.get('sub_account_number')
+        it_pros = form_data.get('it_pros')
+        devices_ip_addresses = form_data.get('devices_ip_addresses')
+        data_management_plan = form_data.get('data_management_plan')
+        project_directory_name = form_data.get('project_directory_name')
+        first_name = form_data.get('first_name')
+        last_name = form_data.get('last_name')
+        campus_affiliation = form_data.get('campus_affiliation')
+        email = form_data.get('email')
+        url = form_data.get('url')
+        faculty_email = form_data.get('faculty_email')
+        store_ephi = form_data.get('store_ephi')
         allocation_account = form_data.get('allocation_account', None)
+        license_term = form_data.get('license_term', None)
+
+        total_cost = None
+        cost = resource_obj.get_attribute('cost')
+        prorated_cost_label = resource_obj.get_attribute('prorated_cost_label')
+        if cost is not None:
+            cost = int(cost)
+            total_cost = cost
+            if prorated_cost_label is not None:
+                prorated_cost = compute_prorated_amount(cost)
+                if license_term == 'current':
+                    total_cost = prorated_cost
+                elif license_term == 'current_and_next_year':
+                    total_cost += prorated_cost
+
+        if resource_obj.name == 'RStudio Connect':
+            end_date = self.calculate_end_date(6, 30, license_term)
+
         # A resource is selected that requires an account name selection but user has no account names
         if ALLOCATION_ACCOUNT_ENABLED and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING and AllocationAttributeType.objects.filter(
                 name=ALLOCATION_ACCOUNT_MAPPING[resource_obj.name]).exists() and not allocation_account:
@@ -560,13 +1108,171 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 'You need to create an account name. Create it by clicking the link under the "Allocation account" field.'))
             return self.form_invalid(form)
 
+        # Check if the required values exist based on what resource was selected.
+        error = False
+        if resource_obj.name == 'Priority Boost':
+            use_indefinitely = is_grand_challenge
+            if system == '' or (end_date is None and not is_grand_challenge):
+                error = True
+            elif is_grand_challenge and grand_challenge_program == '':
+                error = True
+            elif end_date is not None and end_date <= date.today():
+                form.add_error(None, format_html(
+                    'Please select a date later than today.'
+                    )
+                )
+                return self.form_invalid(form)
+        elif resource_obj.name == 'Carbonate DL':
+            if leverage_multiple_gpus == '' or training_or_inference == '' or for_coursework == '':
+                error = True
+        elif resource_obj.name == 'Carbonate GPU':
+            if leverage_multiple_gpus == '' or dl_workflow == '' or for_coursework == '':
+                error = True
+        elif resource_obj.name == 'Carbonate Precision Health Initiative (PHI) Nodes':
+            if phi_association == '':
+                error = True
+        elif resource_obj.name == 'cBioPortal':
+            if phi_association == '' or access_level == '' or confirm_understanding is False:
+                error = True
+        elif resource_obj.name == 'Geode-Projects':
+            if (
+                storage_space_with_unit is None
+                or unit == ''
+                or (not use_indefinitely and end_date is None)
+                or start_date is None
+                or primary_contact == ''
+                or secondary_contact == ''
+                or department_full_name == ''
+                or department_short_name == ''
+                or fiscal_officer == ''
+                or account_number == ''
+                or it_pros == ''
+                or devices_ip_addresses == ''
+                or data_management_plan == ''
+            ):
+                error = True
+            elif (storage_space_with_unit <= 0 and unit == 'TB') or (storage_space_with_unit < 200 and unit == 'GB'):
+                form.add_error(None, format_html(
+                    'Please enter a storage amount greater than or equal to 200GB.'
+                    )
+                )
+                return self.form_invalid(form)
+            elif start_date <= date.today():
+                form.add_error(None, format_html(
+                    'Please select a start date later than today.'
+                    )
+                )
+                return self.form_invalid(form)
+            elif not use_indefinitely and end_date <= date.today():
+                form.add_error(None, format_html(
+                    'Please select an end date later than today.'
+                    )
+                )
+                return self.form_invalid(form)
+            elif not use_indefinitely and start_date >= end_date:
+                form.add_error(None, format_html(
+                    'Start date must be earlier than end date.'
+                    )
+                )
+                return self.form_invalid(form)
+            elif not len(account_number) == 9:
+                form.add_error(None, format_html(
+                    'Account number must have a format of 00-000-00.'
+                    )
+                )
+                return self.form_invalid(form)
+            elif not account_number[2] == '-' or not account_number[6] == '-':
+                form.add_error(None, format_html(
+                    'Account number must have a format of 00-000-00.'
+                    )
+                )
+                return self.form_invalid(form)
+
+            storage_space_with_unit = str(storage_space_with_unit) + unit
+        elif resource_obj.name == 'RStudio Connect':
+            if project_directory_name == '' or account_number == '' or not confirm_understanding:
+                error = True
+        elif resource_obj.name == 'Slate Project':
+            if (
+                first_name == '' or
+                last_name == '' or
+                campus_affiliation == '' or
+                email == '' or
+                project_directory_name == '' or
+                start_date is None or
+                store_ephi == ''
+            ):
+                error = True
+            elif storage_space <= 0:
+                form.add_error(None, format_html(
+                    'Storage space must be greater than 0.'
+                    )
+                )
+                return self.form_invalid(form)
+            elif storage_space > 15 and account_number == '':
+                error = True
+
+        if error:
+            form.add_error(None, format_html(
+                'Please fill out all the required fields.'
+                )
+            )
+            return self.form_invalid(form)
+
         usernames = form_data.get('users')
         usernames.append(project_obj.pi.username)
         usernames = list(set(usernames))
 
+        # If a resource has a user limit make sure it's not surpassed.
+        total_users = len(usernames)
+        user_limit = resource_obj.get_attribute("user_limit")
+        if user_limit is not None:
+            if total_users > int(user_limit):
+                form.add_error(None, format_html(
+                    'Too many users are being added (total users: {}). The user limit for this resource is {}.'.format(total_users, user_limit)
+                ))
+                return self.form_invalid(form)
+
+
         users = [User.objects.get(username=username) for username in usernames]
         if project_obj.pi not in users:
             users.append(project_obj.pi)
+
+        denied_users = []
+        resource_name = ''
+        resource = resource_obj.get_attribute('check_user_account')
+        for user in users:
+            username = user.username
+            if resource_obj.name == 'Priority Boost':
+                if not resource_obj.check_user_account_exists(username, system):
+                    denied_users.append(username)
+                    resource_name = system
+            else:
+                if resource is not None:
+                    if not resource_obj.check_user_account_exists(username, resource):
+                        denied_users.append(username)
+                        resource_name = resource
+
+        if denied_users:
+            form.add_error(None, format_html(
+                'The following users do not have an account on {}: {}. They will need to create an account <a href="https://access.iu.edu/Accounts/Create">here</a>.'.format(resource_name, ', '.join(denied_users))
+            ))
+            return self.form_invalid(form)
+
+        denied_users = []
+        if resource_obj.name == "Geode-Projects":
+            ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
+            search_class_obj = ldap_search()
+            for username in [primary_contact, secondary_contact, fiscal_officer] + it_pros.split(','):
+                attributes = search_class_obj.search_a_user(username, ['memberOf'])
+                if attributes['memberOf'] is None:
+                    denied_users.append(username)
+
+        if denied_users:
+            form.add_error(None, format_html(
+                'The following usernames are not valid: {}'.format(', '.join(denied_users))
+            ))
+            return self.form_invalid(form)
 
         if INVOICE_ENABLED and resource_obj.requires_payment:
             allocation_status_obj = AllocationStatusChoice.objects.get(
@@ -579,6 +1285,41 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             project=project_obj,
             justification=justification,
             quantity=quantity,
+            storage_space=storage_space,
+            storage_space_with_unit=storage_space_with_unit,
+            leverage_multiple_gpus=leverage_multiple_gpus,
+            dl_workflow=dl_workflow,
+            applications_list=applications_list,
+            training_or_inference=training_or_inference,
+            for_coursework=for_coursework,
+            system=system,
+            is_grand_challenge=is_grand_challenge,
+            grand_challenge_program=grand_challenge_program,
+            start_date=start_date,
+            end_date=end_date,
+            use_indefinitely=use_indefinitely,
+            phi_association=phi_association,
+            access_level=access_level,
+            confirm_understanding=confirm_understanding,
+            primary_contact=primary_contact,
+            secondary_contact=secondary_contact,
+            department_full_name=department_full_name,
+            department_short_name=department_short_name,
+            fiscal_officer=fiscal_officer,
+            account_number=account_number,
+            sub_account_number=sub_account_number,
+            it_pros=it_pros,
+            devices_ip_addresses=devices_ip_addresses,
+            data_management_plan=data_management_plan,
+            project_directory_name=project_directory_name,
+            total_cost=total_cost,
+            first_name=first_name,
+            last_name=last_name,
+            campus_affiliation=campus_affiliation,
+            email=email,
+            url=url,
+            faculty_email=faculty_email,
+            store_ephi=store_ephi,
             status=allocation_status_obj
         )
         allocation_obj.resources.add(resource_obj)
@@ -628,8 +1369,17 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         return super().form_valid(form)
 
+    def reverse_with_params(self, path, **kwargs):
+        return path + '?' + urllib.parse.urlencode(kwargs)
+
     def get_success_url(self):
-        return reverse('project-detail', kwargs={'pk': self.kwargs.get('project_pk')})
+        return self.reverse_with_params(
+            reverse(
+                'project-detail',
+                kwargs={'pk': self.kwargs.get('project_pk')}
+            ),
+            allocation_submitted=True
+        )
 
 
 class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -691,6 +1441,22 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         return users_to_add
 
+    def get_list_of_users_to_add(self, formset):
+        users = []
+        for form in formset:
+            user_form_data = form.cleaned_data
+            if user_form_data['selected']:
+                users.append(user_form_data.get('username'))
+
+        return users
+
+    def get_total_users_in_allocation_if_added(self, allocation_obj, formset):
+        total_users = len(list(allocation_obj.allocationuser_set.exclude(
+            status__name__in=['Removed']).values_list('user__username', flat=True)))
+        total_users += len(self.get_list_of_users_to_add(formset))
+
+        return total_users
+
     def get(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
@@ -712,15 +1478,25 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         allocation_obj = get_object_or_404(Allocation, pk=pk)
 
         users_to_add = self.get_users_to_add(allocation_obj)
+        allocation_user_limit = allocation_obj.get_parent_resource.get_attribute("user_limit")
 
         formset = formset_factory(
             AllocationAddUserForm, max_num=len(users_to_add))
         formset = formset(request.POST, initial=users_to_add,
                           prefix='userform')
 
-        users_added_count = 0
-
+        added_users = []
+        denied_users = []
         if formset.is_valid():
+            if allocation_user_limit is not None:
+                # The users_to_add variable is not an actual list of users to add. The users listed
+                # are the remaining users in the project that are not in the allocation. We have to
+                # cycle through the formset and increment the total user count for each user that
+                # has been selected in the list.
+                total_users = self.get_total_users_in_allocation_if_added(allocation_obj, formset)
+                if total_users > int(allocation_user_limit):
+                    messages.error(request, "Only {} users are allowed on this resource. Users were not added. (Total users counted: {})".format(allocation_user_limit, total_users))
+                    return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
             allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(
                 name='Active')
@@ -729,10 +1505,15 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                 user_form_data = form.cleaned_data
                 if user_form_data['selected']:
 
-                    users_added_count += 1
-
                     user_obj = User.objects.get(
                         username=user_form_data.get('username'))
+
+                    username = user_obj.username
+                    if allocation_obj.check_user_account_exists_on_resource(username):
+                        added_users.append(username)
+                    else:
+                        denied_users.append(username)
+                        continue
 
                     if allocation_obj.allocationuser_set.filter(user=user_obj).exists():
                         allocation_user_obj = allocation_obj.allocationuser_set.get(
@@ -745,8 +1526,16 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
                     allocation_activate_user.send(sender=self.__class__,
                                                   allocation_user_pk=allocation_user_obj.pk)
-            messages.success(
-                request, 'Added {} users to allocation.'.format(users_added_count))
+            if added_users:
+                messages.success(
+                    request,
+                    'Added user(s) {} to allocation.'.format(', '.join(added_users))
+                )
+            if denied_users:
+                messages.warning(
+                    request,
+                    'Did not add user(s) {} to allocation. An account is needed for this resource: https://access.iu.edu/Accounts/Create.'.format(', '.join(denied_users))
+                )
         else:
             for error in formset.errors:
                 messages.error(request, error)
@@ -783,7 +1572,7 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
                 request, 'You cannot modify this allocation because it is locked! Contact support for details.')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
-        if allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', ]:
+        if allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', 'Paid', 'Payment Pending', 'Payment Requested']:
             messages.error(request, 'You cannot remove users from a allocation with status {}.'.format(
                 allocation_obj.status.name))
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
@@ -1032,6 +1821,9 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
         start_date = datetime.datetime.now()
         end_date = datetime.datetime.now(
         ) + relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)
+
+        if allocation_obj.use_indefinitely:
+            end_date = None
 
         allocation_obj.status = allocation_status_active_obj
         allocation_obj.start_date = start_date
@@ -1568,3 +2360,94 @@ class AllocationAccountListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
 
     def get_queryset(self):
         return AllocationAccount.objects.filter(user=self.request.user)
+
+
+class AllocationInvoiceExportView(LoginRequiredMixin, UserPassesTestMixin, View):
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('allocation.can_manage_invoice'):
+            return True
+
+        messages.error(self.request, 'You do not have permission to download invoices.')
+
+    def get(self, request):
+        file_name = request.GET["file_name"]
+        resource = request.GET["resource"]
+
+        if file_name[-4:] != ".csv":
+            file_name += ".csv"
+
+        invoices = Allocation.objects.prefetch_related('project', 'status').filter(
+            Q(status__name__in=['Payment Pending', ]) &
+            Q(resources__name=resource)
+        ).order_by('-created')
+
+        rows = []
+        if resource == "RStudio Connect":
+            header = [
+                'Name',
+                'Account*',
+                'Object*',
+                'Sub-Acct',
+                'Product',
+                'Quantity',
+                'Unit cost',
+                'Amount*',
+                'Invoice',
+                'Line Description',
+                'Income Account',
+                'Income Sub-acct',
+                'Income Object Code',
+                'Income sub-object code',
+                'Project',
+                'Org Ref ID'
+            ]
+
+            for invoice in invoices:
+                row = [
+                    ' '.join((invoice.project.pi.first_name, invoice.project.pi.last_name)),
+                    invoice.account_number,
+                    '4616',
+                    invoice.sub_account_number,
+                    '',
+                    1,
+                    '',
+                    invoice.total_cost,
+                    '',
+                    'RStudio Connect FY 22',
+                    '63-101-08',
+                    'SMSAL',
+                    1500,
+                    '',
+                    '',
+                    ''
+                ]
+
+                rows.append(row)
+            rows.insert(0, header)
+        elif resource == "Slate Project":
+            header = [
+                'Name',
+                'Acount*'
+            ] 
+
+            for invoice in invoices:
+                row = [
+                    ' '.join((invoice.project.pi.first_name, invoice.project.pi.last_name)),
+                    invoice.account_number
+                ]
+
+                rows.append(row)
+            rows.insert(0, header)
+
+        pseudo_buffer = Echo()
+        writer = csv.writer(pseudo_buffer)
+        response = StreamingHttpResponse(
+            (writer.writerow(row) for row in rows),
+            content_type='text/csv'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{file_name}"'
+        return response
