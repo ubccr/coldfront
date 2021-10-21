@@ -228,16 +228,14 @@ class Allocation(TimeStampedModel):
         return [a.value for a in attr]
 
     def check_user_account_exists_on_resource(self, username):
-        resource_account = None
+        resource = self.get_parent_resource.get_attribute('check_user_account')
         if self.get_parent_resource.name == 'Priority Boost':
-            if self.system == 'Carbonate':
-                resource_account = 'CN=iu-entlmt-app-rt-carbonate-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu'
-            elif self.system == 'BigRed3':
-                resource_account = 'CN=iu-entlmt-app-rt-bigred3-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu'
-            else:
-                return False
+            resource = self.system
 
-        return self.get_parent_resource.check_user_account_exists(username, resource_account)
+        if resource is None:
+            return True
+
+        return self.get_parent_resource.check_user_account_exists(username, resource)
 
     def __str__(self):
         return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)

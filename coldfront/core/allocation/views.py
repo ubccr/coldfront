@@ -1240,23 +1240,18 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         denied_users = []
         resource_name = ''
+        resource = resource_obj.get_attribute('check_user_account')
         for user in users:
             username = user.username
-            exists = False
             if resource_obj.name == 'Priority Boost':
-                if system == "Carbonate":
-                    exists = resource_obj.check_user_account_exists(username, 'CN=iu-entlmt-app-rt-carbonate-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu')
-                    resource_name = 'Carbonate'
-                elif system == "BigRed3":
-                    exists = resource_obj.check_user_account_exists(username, 'CN=iu-entlmt-app-rt-bigred3-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu')
-                    resource_name = 'Big Red 3'
-
-                if not exists:
+                if not resource_obj.check_user_account_exists(username, system):
                     denied_users.append(username)
+                    resource_name = system
             else:
-                if not resource_obj.check_user_account_exists(username):
-                    denied_users.append(username)
-                    resource_name = 'Carbonate'
+                if resource is not None:
+                    if not resource_obj.check_user_account_exists(username, resource):
+                        denied_users.append(username)
+                        resource_name = resource
 
         if denied_users:
             form.add_error(None, format_html(
