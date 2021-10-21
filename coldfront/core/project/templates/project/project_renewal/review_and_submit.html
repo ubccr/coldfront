@@ -56,17 +56,19 @@ Project Renewal - Review and Submit
   The following changes will occur if the request is approved:
 </p>
 <ol>
-  {% if current_project != requested_project %}
+  {% if preference in 'pooled_to_pooled_different,pooled_to_unpooled_old,pooled_to_unpooled_new' %}
     <li>
       If Current Project {{ current_project }} has not been renewed by the time
       the request is processed, it will be deactivated.
     </li>
   {% endif %}
-  <li>
-    If the PI is not the only PI on Current Project {{ current_project }} when
-    the request is processed, they will be demoted to a regular User on the
-    project.
-  </li>
+  {% if preference in 'unpooled_to_pooled,pooled_to_pooled_different,pooled_to_unpooled_old,pooled_to_unpooled_new' %}
+    <li>
+      If the PI is not the only PI on Current Project {{ current_project }} when
+      the request is processed, they will be demoted to a regular User on the
+      project.
+    </li>
+  {% endif %}
   <li>
     Requested Project {{ requested_project }} will be granted
     {{ allocation_amount }} service units. (Note that this number may be
