@@ -126,15 +126,20 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
                     product_usage pu inner join ifx_allocationuserproductusage aupu on pu.id = aupu.product_usage_id
                     inner join allocation_historicalallocationuser hau on hau.history_id = aupu.allocation_user_id
                     inner join allocation_allocation a on a.id = hau.allocation_id
-                    inner join user_account ua on ua.user_id = pu.product_user_id
-                    inner join account acct on ua.account_id = acct.id
-                    inner join ifx_projectorganization po on acct.organization_id = po.organization_id
                 where
                     hau.allocation_id = %s
-                    and po.project_id = a.project_id
-                    and ua.is_valid = 1
                     and pu.year = %s
                     and pu.month = %s
+                    and exists (
+                        select 1
+                        from
+                            user_account ua inner join account acct on ua.account_id = acct.id
+                            inner join ifx_projectorganization po on acct.organization_id = po.organization_id
+                        where
+                            po.project_id = a.project_id
+                            and ua.user_id = pu.product_user_id
+                            and ua.is_valid = 1
+                    )
                 group by pu.product_user_id
                 union
                 select
@@ -143,15 +148,20 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
                     product_usage pu inner join ifx_allocationuserproductusage aupu on pu.id = aupu.product_usage_id
                     inner join allocation_historicalallocationuser hau on hau.history_id = aupu.allocation_user_id
                     inner join allocation_allocation a on a.id = hau.allocation_id
-                    inner join user_product_account ua on ua.user_id = pu.product_user_id
-                    inner join account acct on ua.account_id = acct.id
-                    inner join ifx_projectorganization po on acct.organization_id = po.organization_id
                 where
                     hau.allocation_id = %s
-                    and po.project_id = a.project_id
-                    and ua.is_valid = 1
                     and pu.year = %s
                     and pu.month = %s
+                    and exists (
+                        select 1
+                        from
+                            user_product_account ua inner join account acct on ua.account_id = acct.id
+                            inner join ifx_projectorganization po on acct.organization_id = po.organization_id
+                        where
+                            po.project_id = a.project_id
+                            and ua.user_id = pu.product_user_id
+                            and ua.is_valid = 1
+                    )
                 group by pu.product_user_id
             ) t
             group by product_user_id
