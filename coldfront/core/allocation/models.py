@@ -452,6 +452,44 @@ class AllocationRenewalRequest(TimeStampedModel):
     state = models.JSONField(default=allocation_renewal_request_state_schema)
     extra_fields = models.JSONField(default=dict)
 
+    UNPOOLED_TO_UNPOOLED = 'unpooled_to_unpooled'
+    UNPOOLED_TO_POOLED = 'unpooled_to_pooled'
+    POOLED_TO_POOLED_SAME = 'pooled_to_pooled_same'
+    POOLED_TO_POOLED_DIFFERENT = 'pooled_to_pooled_different'
+    POOLED_TO_UNPOOLED_OLD = 'pooled_to_unpooled_old'
+    POOLED_TO_UNPOOLED_NEW = 'pooled_to_unpooled_new'
+
+    def get_pooling_preference_case(self):
+        """Return a string denoting the pooling preference based on the
+        contents of the request.
+
+        Raise a ValueError if the case is unexpected.
+        """
+        pi = self.pi
+        pre_project = self.pre_project
+        post_project = self.post_project
+        is_pooled_pre = pre_project and pre_project.is_pooled()
+        is_pooled_post = post_project.is_pooled()
+        if pre_project == post_project:
+            if not is_pooled_pre:
+                return self.UNPOOLED_TO_UNPOOLED
+            else:
+                return self.POOLED_TO_POOLED_SAME
+        else:
+            if self.new_project_request:
+                return self.POOLED_TO_UNPOOLED_NEW
+            else:
+                if not is_pooled_pre:
+                    if not is_pooled_post:
+                        raise ValueError('Unexpected case.')
+                    else:
+                        return self.UNPOOLED_TO_POOLED
+                else:
+                    if pi in post_project.pis():
+                        return self.POOLED_TO_UNPOOLED_OLD
+                    else:
+                        return self.POOLED_TO_POOLED_DIFFERENT
+
     def __str__(self):
         period = self.allocation_period.name
         pi = self.pi.username

@@ -63,12 +63,13 @@ class ProjectRenewalPISelectionForm(forms.Form):
 
 class ProjectRenewalPoolingPreferenceForm(forms.Form):
 
-    UNPOOLED_TO_UNPOOLED = 'unpooled_to_unpooled'
-    UNPOOLED_TO_POOLED = 'unpooled_to_pooled'
-    POOLED_TO_POOLED_SAME = 'pooled_to_pooled_same'
-    POOLED_TO_POOLED_DIFFERENT = 'pooled_to_pooled_different'
-    POOLED_TO_UNPOOLED_OLD = 'pooled_to_unpooled_old'
-    POOLED_TO_UNPOOLED_NEW = 'pooled_to_unpooled_new'
+    UNPOOLED_TO_UNPOOLED = AllocationRenewalRequest.UNPOOLED_TO_UNPOOLED
+    UNPOOLED_TO_POOLED = AllocationRenewalRequest.UNPOOLED_TO_POOLED
+    POOLED_TO_POOLED_SAME = AllocationRenewalRequest.POOLED_TO_POOLED_SAME
+    POOLED_TO_POOLED_DIFFERENT = \
+        AllocationRenewalRequest.POOLED_TO_POOLED_DIFFERENT
+    POOLED_TO_UNPOOLED_OLD = AllocationRenewalRequest.POOLED_TO_UNPOOLED_OLD
+    POOLED_TO_UNPOOLED_NEW = AllocationRenewalRequest.POOLED_TO_UNPOOLED_NEW
 
     SHORT_DESCRIPTIONS = {
         UNPOOLED_TO_UNPOOLED: 'Stay Unpooled',

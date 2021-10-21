@@ -100,14 +100,6 @@ def has_non_denied_renewal_request(pi, allocation_period):
         status__name__in=['Under Review', 'Approved', 'Complete']).exists()
 
 
-def is_pooled(project):
-    """Return whether the given Project is a pooled project. In
-    particular, a Project is pooled if it has more than one PI."""
-    pi_role = ProjectUserRoleChoice.objects.get(
-        name='Principal Investigator')
-    return project.projectuser_set.filter(role=pi_role).count() > 1
-
-
 def is_any_project_pi_renewable(project, allocation_period):
     """Return whether the Project has at least one PI who is eligible to
     make an AllocationRenewalRequest during the given
@@ -499,11 +491,10 @@ class AllocationRenewalRunnerBase(object):
 
     def handle_by_preference(self):
         request = self.request_obj
-        pi = request.pi
         pre_project = request.pre_project
         post_project = request.post_project
-        is_pooled_pre = pre_project and is_pooled(pre_project)
-        is_pooled_post = is_pooled(post_project)
+        is_pooled_pre = pre_project and pre_project.is_pooled()
+        is_pooled_post = post_project.is_pooled()
 
         def log_message():
             pre_str = 'non-pooling' if not is_pooled_pre else 'pooling'
@@ -513,32 +504,29 @@ class AllocationRenewalRunnerBase(object):
                 f'pre-project {pre_project.name if pre_project else None} to '
                 f'{post_str} in post-project {post_project.name}.')
 
-        if pre_project == post_project:
-            if not is_pooled_pre:
-                logger.info(log_message())
-                return self.handle_unpooled_to_unpooled()
-            else:
-                logger.info(log_message())
-                return self.handle_pooled_to_pooled_same()
-        else:
-            if request.new_project_request:
-                logger.info(log_message())
-                return self.handle_pooled_to_unpooled_new()
-            else:
-                if not is_pooled_pre:
-                    if not is_pooled_post:
-                        logger.error(log_message())
-                        raise ValueError('Unexpected case.')
-                    else:
-                        logger.info(log_message())
-                        return self.handle_unpooled_to_pooled()
-                else:
-                    if pi in post_project.pis():
-                        logger.info(log_message())
-                        return self.handle_pooled_to_unpooled_old()
-                    else:
-                        logger.info(log_message())
-                        return self.handle_pooled_to_pooled_different()
+        try:
+            preference_case = request.get_pooling_preference_case()
+        except ValueError as e:
+            logger.error(log_message())
+            raise e
+        if preference_case == request.UNPOOLED_TO_UNPOOLED:
+            logger.info(log_message())
+            self.handle_unpooled_to_unpooled()
+        elif preference_case == request.UNPOOLED_TO_POOLED:
+            logger.info(log_message())
+            self.handle_unpooled_to_pooled()
+        elif preference_case == request.POOLED_TO_POOLED_SAME:
+            logger.info(log_message())
+            self.handle_pooled_to_pooled_same()
+        elif preference_case == request.POOLED_TO_POOLED_DIFFERENT:
+            logger.info(log_message())
+            self.handle_pooled_to_pooled_different()
+        elif preference_case == request.POOLED_TO_UNPOOLED_OLD:
+            logger.info(log_message())
+            self.handle_pooled_to_unpooled_old()
+        elif preference_case == request.POOLED_TO_UNPOOLED_NEW:
+            logger.info(log_message())
+            self.handle_pooled_to_unpooled_new()
 
     def handle_unpooled_to_unpooled(self):
         """Handle the case when the preference is to stay unpooled."""

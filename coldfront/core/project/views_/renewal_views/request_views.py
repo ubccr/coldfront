@@ -19,7 +19,6 @@ from coldfront.core.project.utils_.permissions_utils import is_user_manager_or_p
 from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
 from coldfront.core.project.utils_.renewal_utils import get_pi_current_active_fca_project
 from coldfront.core.project.utils_.renewal_utils import has_non_denied_renewal_request
-from coldfront.core.project.utils_.renewal_utils import is_pooled
 from coldfront.core.project.utils_.renewal_utils import send_new_allocation_renewal_request_admin_notification_email
 from coldfront.core.project.utils_.renewal_utils import send_new_allocation_renewal_request_pi_notification_email
 from coldfront.core.project.utils_.renewal_utils import send_new_allocation_renewal_request_pooling_notification_email
@@ -194,7 +193,7 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
             tmp = {}
             self.__set_data_from_previous_steps(step, tmp)
             kwargs['currently_pooled'] = ('current_project' in tmp and
-                                          is_pooled(tmp['current_project']))
+                                          tmp['current_project'].is_pooled())
         elif step == self.step_numbers_by_form_name['project_selection']:
             tmp = {}
             self.__set_data_from_previous_steps(step, tmp)
