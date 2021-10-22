@@ -23,5 +23,7 @@ coldfront.log
 coldfront.env
 .env
 __pycache__
-VERSION
+environment.yml
+sf_query_holysfdb01_20210930.json
+coldfront/plugins/sftocf/data/*.json
 coldfront/fixtures*
