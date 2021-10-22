@@ -192,8 +192,10 @@ class ProjectUpdateForm(forms.ModelForm):
             'joins_auto_approval_delay')
 
 # TODO: Once finalized, move these imports above.
+from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import SavioProjectAllocationRequest
+from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
 from coldfront.core.utils.common import utc_now_offset_aware
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -271,8 +273,17 @@ class SavioProjectExistingPIForm(forms.Form):
                     allocation_type=SavioProjectAllocationRequest.FCA,
                     status=status
                 ).values_list('pi__pk', flat=True))
+            allocation_period = get_current_allocation_period()
+            pis_with_renewal_requests = set(
+                AllocationRenewalRequest.objects.filter(
+                    allocation_period=allocation_period,
+                    status__name__in=['Under Review', 'Approved', 'Complete']
+                ).values_list('pi__pk', flat=True))
             exclude_user_pks.update(
-                set.union(pis_with_existing_fcas, pis_with_pending_requests))
+                set.union(
+                    pis_with_existing_fcas,
+                    pis_with_pending_requests,
+                    pis_with_renewal_requests))
         elif self.allocation_type == 'PCA':
             pis_with_existing_pcas = set(ProjectUser.objects.filter(
                 role=pi_role,

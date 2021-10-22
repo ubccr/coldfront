@@ -10,6 +10,7 @@ from coldfront.core.allocation.utils import get_or_create_active_allocation_user
 from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.allocation.utils import next_allocation_start_datetime
 from coldfront.core.project.models import Project
+from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
@@ -42,16 +43,12 @@ def get_current_allocation_period():
 
 
 def get_pi_current_active_fca_project(pi_user):
-    # TODO: This is flawed because PI "A" could be on a Project where a
-    # TODO: different PI "B" has renewed, but "A" hasn't. The "Service Units"
-    # TODO: would be non-zero.
-    # TODO: Use AllocationRenewalRequest objects instead.
     """Given a User object representing a PI, return its current,
     active fc_ Project.
 
-    A Project is considered "active" if it has a non-zero allocation
-    of "Service Units". If there are zero or multiple such Projects,
-    raise an exception.
+    A Project is considered "active" if it has a completed
+    AllocationRenewalRequest for the current AllocationPeriod or if it
+    has a completed SavioProjectAllocationRequest during the period.
 
     Parameters:
         - pi_user: a User object.
@@ -60,30 +57,68 @@ def get_pi_current_active_fca_project(pi_user):
         - A Project object.
 
     Raises:
+        - AllocationRenewalRequest.MultipleObjectsReturned, if the PI
+          has more than one 'Complete' renewal request during the
+          current AllocationPeriod.
         - Project.DoesNotExist, if none are found.
         - Project.MultipleObjectsReturned, if multiple are found.
+        - SavioProjectAllocationRequest.MultipleObjectsReturned, if the
+          PI has more than one 'Approved - Complete' request.
         - Exception, if any other errors occur.
+
+    TODO: Once the first AllocationPeriod has ended, this will need to
+    TODO: be refined to filter on time.
     """
-    role = ProjectUserRoleChoice.objects.get(name='Principal Investigator')
-    status = ProjectUserStatusChoice.objects.get(name='Active')
-    project_users = ProjectUser.objects.select_related('project').filter(
-        project__name__startswith='fc_', role=role, status=status,
-        user=pi_user)
-    active_fca_projects = []
-    for project_user in project_users:
-        project = project_user.project
-        allocation_objects = get_accounting_allocation_objects(project)
-        num_service_units = Decimal(
-            allocation_objects.allocation_attribute.value)
-        if num_service_units > settings.ALLOCATION_MIN:
-            active_fca_projects.append(project)
-    n = len(active_fca_projects)
-    if n == 0:
-        raise Project.DoesNotExist('No active FCA Project found.')
-    elif n == 2:
-        raise Project.MultipleObjectsReturned(
-            'More than one active FCA Project found.')
-    return active_fca_projects[0]
+    project = None
+
+    # Check AllocationRenewalRequests.
+    allocation_period = get_current_allocation_period()
+    renewal_request_status = AllocationRenewalRequestStatusChoice.objects.get(
+        name='Complete')
+    renewal_requests = AllocationRenewalRequest.objects.filter(
+        allocation_period=allocation_period,
+        pi=pi_user,
+        status=renewal_request_status,
+        post_project__name__startswith='fc_')
+    if renewal_requests.exists():
+        if renewal_requests.count() > 1:
+            message = (
+                f'PI {pi_user.username} unexpectedly has more than one '
+                f'completed FCA AllocationRenewalRequest during '
+                f'AllocationPeriod {allocation_period.name}.')
+            logger.error(message)
+            raise AllocationRenewalRequest.MultipleObjectsReturned(message)
+        project = renewal_requests.first().post_project
+
+    # Check SavioProjectAllocationRequests.
+    project_request_status = ProjectAllocationRequestStatusChoice.objects.get(
+        name='Approved - Complete')
+    project_requests = SavioProjectAllocationRequest.objects.filter(
+        allocation_type=SavioProjectAllocationRequest.FCA,
+        pi=pi_user,
+        status=project_request_status)
+    if project_requests.exists():
+        if project_requests.count() > 1:
+            message = (
+                f'PI {pi_user.username} unexpectedly has more than one '
+                f'completed FCA SavioProjectAllocationRequest.')
+            logger.error(message)
+            raise SavioProjectAllocationRequest.MultipleObjectsReturned(
+                message)
+        # The PI should not have both a renewal request and a project request.
+        if project:
+            message = (
+                f'PI {pi_user.username} unexpectedly has both an FCA '
+                f'AllocationRenewalRequest and an FCA'
+                f'SavioProjectAllocationRequest.')
+            raise Exception(message)
+        project = project_requests.first().project
+
+    if not project:
+        message = f'PI {pi_user.username} has no active FCA Project.'
+        raise Project.DoesNotExist(message)
+
+    return project
 
 
 def has_non_denied_renewal_request(pi, allocation_period):
