@@ -17,10 +17,12 @@ WORKDIR /usr/src/app
 COPY requirements.txt ./
 
 ARG IFXURLS_COMMIT=549af42dbe83d07b12dd37055a5ec6368d4b649
-ARG NANITES_CLIENT_COMMIT=e4099cb6c9edadf2f722e8c26c413caf7e2c1c51
-ARG IFXUSER_COMMIT=ad9758fcd82627e4fb27b2fd533e9bbeef07681c
+ARG NANITES_CLIENT_COMMIT=8eebbe1536fc21f8c7baf362194a8dd90b4f0663
+ARG IFXMAIL_CLIENT_COMMIT=cc1a9f9cc6cdb951828b6b912bc830c0172785f1
+ARG IFXUSER_COMMIT=eecc611fa78f0c2ebf5f476ecff2cd5cabe80467
 ARG FIINE_CLIENT_COMMIT=e79f569aa22b43876945bfb75cf169b11a555138
-ARG IFXBILLING_COMMIT=0e880f38117f721f5c413d08120c615b7e450daf
+ARG IFXVALIDCODE_COMMIT=4dd332c5a8e13d904a90da014094406a81b617e6
+ARG IFXBILLING_COMMIT=8ff10d1f7d41221ddf5cf01809570aacb6986cb1
 
 RUN --mount=type=ssh pip install --upgrade pip && \
     pip install gunicorn && \
@@ -28,8 +30,10 @@ RUN --mount=type=ssh pip install --upgrade pip && \
     pip install django-author==1.0.2 && \
     pip install git+ssh://git@github.com/harvardinformatics/ifxurls.git@${IFXURLS_COMMIT} && \
     pip install git+ssh://git@github.com/harvardinformatics/nanites.client.git@${NANITES_CLIENT_COMMIT} && \
+    pip install git+ssh://git@github.com/harvardinformatics/ifxmail.client.git@${IFXMAIL_CLIENT_COMMIT} && \
     pip install git+ssh://git@github.com/harvardinformatics/ifxuser.git@${IFXUSER_COMMIT} && \
     pip install git+ssh://git@gitlab-int.rc.fas.harvard.edu/informatics/fiine.client.git@${FIINE_CLIENT_COMMIT} && \
+    pip install git+ssh://git@gitlab-int.rc.fas.harvard.edu/informatics/ifxvalidcode.git@${IFXVALIDCODE_COMMIT} && \
     pip install git+ssh://git@gitlab-int.rc.fas.harvard.edu/informatics/ifxbilling.git@${IFXBILLING_COMMIT} && \
     pip install ldap3 django_auth_ldap && \
     pip install -r requirements.txt

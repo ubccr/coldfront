@@ -28,9 +28,9 @@ We do not have information about your research. Please provide a detailed descri
         project_obj = get_object_or_404(Project, pk=project_pk)
         self.fields['resource'].queryset = get_user_resources(request_user)
         self.fields['quantity'].initial = 1
-        # user_query_set = project_obj.projectuser_set.select_related('user').filter(
-        #     status__name__in=['Active', ])
-        # user_query_set = user_query_set.exclude(user=project_obj.pi)
+        user_query_set = project_obj.projectuser_set.select_related('user').filter(
+            status__name__in=['Active', ])
+        user_query_set = user_query_set.exclude(user=project_obj.pi)
         # if user_query_set:
         #     self.fields['users'].choices = ((user.user.username, "%s %s (%s)" % (
         #         user.user.first_name, user.user.last_name, user.user.username)) for user in user_query_set)
@@ -38,7 +38,7 @@ We do not have information about your research. Please provide a detailed descri
         # else:
         #     self.fields['users'].widget = forms.HiddenInput()
 
-        self.fields['justification'].help_text = '<br/>Justification for requesting this allocation.'
+        self.fields['justification'].help_text = '<br/>Justification for requesting this allocation. Please provide details about the usecase or datacenter choices'
 
 
 class AllocationUpdateForm(forms.Form):

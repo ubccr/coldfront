@@ -1,0 +1,82 @@
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Unauthorized usage
+{% endblock %}
+
+
+{% block content %}
+<div>
+    <div style="margin: 2em;">
+        <form method="post">
+            {% csrf_token %}
+            Year    <select name="year">
+                    {% for y in years %}
+                        {% if y == year %}
+                            <option value="{{y}}" selected>{{y}}</option>
+                        {% else %}
+                            <option value="{{y}}">{{y}}</option>
+                        {% endif %}
+                    {% endfor %}
+                    </select>
+            Month   <select name="month">
+                    {% for m in months %}
+                        {% if month == forloop.counter %}
+                            <option value="{{forloop.counter}}" selected>{{m}}</option>
+                        {% else %}
+                            <option value="{{forloop.counter}}">{{m}}</option>
+                        {% endif %}
+                    {% endfor %}
+                    </select>
+            <input type="submit"></input>
+        </form>
+    </div>
+    <div style="margin: 2em;">
+        <table id="unauthorized" style="width: 100%" cellpadding="5px">
+            <thead>
+                <tr>
+                    <td>User</td>
+                    <td>Affiliation</td>
+                    <td>Service</td>
+                    <td>Description</td>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function(){
+        $("input[type='submit']").click((ev) => {
+            ev.preventDefault()
+            unauthorizedTable.ajax.reload()
+        })
+        var unauthorizedTable = $("#unauthorized").DataTable({
+            order: [
+                [1, 'asc']
+            ],
+            columns: [
+                {data: 'user.full_name', width: '200px'},
+                {data: function(item){ return item.user.primary_affiliation.replace(/\(.*/,'') }, width: '200px'},
+                {data: 'product.product_name'},
+                {data: 'description', width: '600px'}
+            ],
+            ajax: {
+                url: '/ifx/api/unauthorized/',
+                type: 'GET',
+                dataSrc: '',
+                data: function (d) {
+                    d.year = $("select[name='year']").find(':selected').val()
+                    d.month = $("select[name='month']").find(':selected').val()
+                }
+            }
+        })
+    })
+</script>
+{% endblock %}
