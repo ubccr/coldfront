@@ -47,8 +47,16 @@
       {% endwith %}
     </p>
     <p class="card-text text-justify">
-      <strong>Number of Service Units to Add (if approved now): </strong>
-      {{ allocation_amount }}
+      {% if renewal_request.status.name == 'Approved' %}
+        <strong>Number of Service Units Approved to be Added: </strong>
+        {{ renewal_request.num_service_units }}
+      {% elif renewal_request.status.name == 'Complete' %}
+        <strong>Number of Service Units Added: </strong>
+        {{ renewal_request.num_service_units }}
+      {% else %}
+        <strong>Number of Service Units to Add (if approved now): </strong>
+        {{ allocation_amount }}
+      {% endif %}
     </p>
   </div>
 </div>
