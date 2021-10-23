@@ -450,6 +450,14 @@ class AllocationRenewalRequest(TimeStampedModel):
         'project.SavioProjectAllocationRequest',
         null=True, blank=True, on_delete=models.CASCADE)
 
+    num_service_units = models.DecimalField(
+        max_digits=settings.DECIMAL_MAX_DIGITS,
+        decimal_places=settings.DECIMAL_MAX_PLACES,
+        default=settings.ALLOCATION_MIN,
+        validators=[
+            MinValueValidator(settings.ALLOCATION_MIN),
+            MaxValueValidator(settings.ALLOCATION_MAX),
+        ])
     request_time = models.DateTimeField(
         null=True, blank=True, default=timezone.now)
     approval_time = models.DateTimeField(null=True, blank=True)
