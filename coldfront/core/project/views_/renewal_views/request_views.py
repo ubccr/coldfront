@@ -218,8 +218,8 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
         """Perform processing and store information in a request
         object."""
         redirect_url = '/'
-        form_data = self.__get_form_data(form_list, form_dict)
         try:
+            form_data = self.__get_form_data(form_list, form_dict)
             tmp = {}
             self.__set_data_from_previous_steps(len(self.FORMS), tmp)
             pi = tmp['PI'].user

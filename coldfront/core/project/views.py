@@ -2144,14 +2144,13 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
         """Perform processing and store information in a request
         object."""
         redirect_url = '/'
-
-        # Retrieve form data; include empty dictionaries for skipped steps.
-        data = iter([form.cleaned_data for form in form_list])
-        form_data = [{} for _ in range(len(self.form_list))]
-        for step in sorted(form_dict.keys()):
-            form_data[int(step)] = next(data)
-
         try:
+            # Retrieve form data; include empty dictionaries for skipped steps.
+            data = iter([form.cleaned_data for form in form_list])
+            form_data = [{} for _ in range(len(self.form_list))]
+            for step in sorted(form_dict.keys()):
+                form_data[int(step)] = next(data)
+
             request_kwargs = {
                 'requester': self.request.user,
             }
