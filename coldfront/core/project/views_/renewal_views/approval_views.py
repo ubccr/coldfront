@@ -160,6 +160,7 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
             self.request_obj.status = \
                 AllocationRenewalRequestStatusChoice.objects.get(
                     name='Approved')
+            self.request_obj.approval_time = utc_now_offset_aware()
             self.request_obj.save()
             num_service_units = self.__get_service_units_to_allocate()
             runner = AllocationRenewalProcessingRunner(

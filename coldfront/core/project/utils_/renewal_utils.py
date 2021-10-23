@@ -752,7 +752,7 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
                 requester_allocation_user)
 
         self.handle_by_preference()
-        self.complete_request()
+        self.complete_request(new_value)
         self.send_email()
 
         return post_project, allocation
@@ -765,10 +765,13 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         project.save()
         return project
 
-    def complete_request(self):
-        """Set the status of the request to 'Complete'."""
+    def complete_request(self, num_service_units):
+        """Set the status of the request to 'Complete', set its number
+        of service units, and set its completion_time."""
         self.request_obj.status = \
             AllocationRenewalRequestStatusChoice.objects.get(name='Complete')
+        self.request_obj.num_service_units = num_service_units
+        self.request_obj.completion_time = utc_now_offset_aware()
         self.request_obj.save()
 
     def deactivate_pre_project(self):

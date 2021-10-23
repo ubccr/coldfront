@@ -65,6 +65,7 @@ class AllocationRenewalMixin(object):
         request_kwargs['pre_project'] = pre_project
         request_kwargs['post_project'] = post_project
         request_kwargs['new_project_request'] = new_project_request
+        request_kwargs['request_time'] = utc_now_offset_aware()
         return AllocationRenewalRequest.objects.create(**request_kwargs)
 
     @staticmethod
