@@ -8,6 +8,10 @@ from coldfront.core.project.utils_.renewal_utils import get_current_allocation_p
 from coldfront.core.project.utils_.renewal_utils import has_non_denied_renewal_request
 from coldfront.core.user.models import EmailAddress
 from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.utils.common import validate_num_service_units
+from dateutil import parser as date_parser
+from decimal import Decimal
+from decimal import InvalidOperation
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 import json
@@ -43,9 +47,9 @@ class Command(BaseCommand):
         allocation_period = get_current_allocation_period()
         valid, already_renewed, invalid = self.parse_input_file(
             file_path, allocation_period)
-        self.process_valid_pairs(valid, allocation_period, options['dry_run'])
+        self.process_valid_tuples(valid, allocation_period, options['dry_run'])
         self.process_already_renewed_pis(already_renewed, allocation_period)
-        self.process_invalid_pairs(invalid)
+        self.process_invalid_tuples(invalid)
 
     @staticmethod
     def existent_file(path):
@@ -60,21 +64,23 @@ class Command(BaseCommand):
     def parse_input_file(file_path, allocation_period):
         """Given a path to a JSON input file and an AllocationPeriod,
         partition the entries into three lists: (1) valid (PI User,
-        Project, Requester User) tuples, (2) Users that have already
-        renewed, and (3) invalid input tuples."""
+        Project, Requester User, Request timestamp (ISO 8601), number of
+        service units) tuples, (2) Users that have already renewed, and
+        (3) invalid input tuples."""
         with open(file_path, 'r') as f:
-            pairs = json.load(f)
+            tuples = json.load(f)
         pi_role = ProjectUserRoleChoice.objects.get(
             name='Principal Investigator')
         active_project_user_status = ProjectUserStatusChoice.objects.get(
             name='Active')
         valid, already_renewed, invalid = [], [], []
-        for pi_name, project_name, requester_email, _ in pairs:
+        for t in tuples:
+            pi_name, project_name, requester_email, request_ts, num_sus = t
             try:
                 project = Project.objects.prefetch_related(
                     'projectuser_set').get(name=project_name)
             except Project.DoesNotExist:
-                invalid.append((pi_name, project_name, requester_email))
+                invalid.append(t)
                 continue
             pi_name_parts = pi_name.split()
             first_name, last_name = pi_name_parts[0], pi_name_parts[-1]
@@ -82,14 +88,14 @@ class Command(BaseCommand):
                 pi_user = User.objects.get(
                     first_name=first_name, last_name=last_name)
             except (User.DoesNotExist, User.MultipleObjectsReturned):
-                invalid.append((pi_name, project_name, requester_email))
+                invalid.append(t)
                 continue
             try:
                 project.projectuser_set.get(
                     role=pi_role, status=active_project_user_status,
                     user=pi_user)
             except ProjectUser.DoesNotExist:
-                invalid.append((pi_name, project_name, requester_email))
+                invalid.append(t)
                 continue
             if has_non_denied_renewal_request(pi_user, allocation_period):
                 already_renewed.append(pi_user)
@@ -102,7 +108,21 @@ class Command(BaseCommand):
                 requester_user = pi_user
             else:
                 requester_user = email_address.user
-            valid.append((pi_user, project, requester_user))
+            # Validate the ISO 8601 timestamp.
+            try:
+                request_time = date_parser.isoparse(request_ts)
+            except ValueError:
+                invalid.append(t)
+                continue
+            # Validate the number of service units.
+            try:
+                num_sus = Decimal(num_sus)
+                validate_num_service_units(num_sus)
+            except (InvalidOperation, ValueError):
+                invalid.append(t)
+                continue
+            entry = (pi_user, project, requester_user, request_time, num_sus)
+            valid.append(entry)
         return valid, already_renewed, invalid
 
     def process_already_renewed_pis(self, already_renewed, allocation_period):
@@ -117,26 +137,24 @@ class Command(BaseCommand):
                 f'AllocationPeriod {allocation_period.name}. Skipping.')
             self.stdout.write(self.style.WARNING(message))
 
-    def process_invalid_pairs(self, invalid_pairs):
-        """Given a list of (pi_name, project_name, requester_user)
-        tuples, where the PI and/or the Project are not valid, write to
+    def process_invalid_tuples(self, invalid_tuples):
+        """Given a list of tuples, where some entry is invalid, write to
         stderr."""
-        for pi_name, project_name, requester_email in invalid_pairs:
-            message = (
-                f'Invalid tuple: ({pi_name}, {project_name}, '
-                f'{requester_email}). Skipping.')
+        for t in invalid_tuples:
+            message = f'Invalid tuple: {t}. Skipping.'
             self.stderr.write(self.style.ERROR(message))
 
-    def process_valid_pairs(self, valid, allocation_period, dry_run):
-        """Given a list of valid (PI User, Project, Requester User)
-        pairs, create an AllocationRenewalRequest under the given
+    def process_valid_tuples(self, valid, allocation_period, dry_run):
+        """Given a list of valid (PI User, Project, Requester User,
+        Request datetime, number of service units) tuples,
+        create an AllocationRenewalRequest under the given
         AllocationPeriod with status 'Complete', and write to stdout.
 
         If dry_run is True, write the triple to stdout without creating
         the request."""
         complete_renewal_status = \
             AllocationRenewalRequestStatusChoice.objects.get(name='Complete')
-        for pi_user, project, requester_user in valid:
+        for pi_user, project, requester_user, request_time, num_sus in valid:
             requester_str = (
                 f'{requester_user.first_name} {requester_user.last_name} '
                 f'({requester_user.email})')
@@ -147,7 +165,8 @@ class Command(BaseCommand):
                     f'Would create pre-completed AllocationRenewalRequest for '
                     f'PI {pi_str}, Project {project.name}, requester '
                     f'{requester_str}, and AllocationPeriod '
-                    f'{allocation_period.name}.')
+                    f'{allocation_period.name}, with request_time '
+                    f'{request_time} and {num_sus} service units.')
                 self.stdout.write(self.style.WARNING(message))
                 continue
             try:
@@ -174,6 +193,7 @@ class Command(BaseCommand):
                     f'Created pre-completed AllocationRenewalRequest '
                     f'{request.pk} for PI {pi_str}, Project {project.name}, '
                     f'requester {requester_str} and AllocationPeriod '
-                    f'{allocation_period.name}.')
+                    f'{allocation_period.name}, with request_time '
+                    f'{request_time} and {num_sus} service units.')
                 self.logger.info(message)
                 self.stdout.write(self.style.SUCCESS(message))
