@@ -176,7 +176,9 @@ class Command(BaseCommand):
                     allocation_period=allocation_period,
                     status=complete_renewal_status,
                     pre_project=project,
-                    post_project=project)
+                    post_project=project,
+                    num_service_units=num_sus,
+                    request_time=request_time)
                 request.state['eligibility']['status'] = 'Approved'
                 request.state['eligibility']['timestamp'] = \
                     utc_now_offset_aware().isoformat()
