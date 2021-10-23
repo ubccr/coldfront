@@ -10,6 +10,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.utils import timezone
 from django.utils.html import mark_safe
 from django.utils.module_loading import import_string
 from model_utils.models import TimeStampedModel
@@ -448,6 +449,11 @@ class AllocationRenewalRequest(TimeStampedModel):
     new_project_request = models.OneToOneField(
         'project.SavioProjectAllocationRequest',
         null=True, blank=True, on_delete=models.CASCADE)
+
+    request_time = models.DateTimeField(
+        null=True, blank=True, default=timezone.now)
+    approval_time = models.DateTimeField(null=True, blank=True)
+    completion_time = models.DateTimeField(null=True, blank=True)
 
     state = models.JSONField(default=allocation_renewal_request_state_schema)
     extra_fields = models.JSONField(default=dict)
