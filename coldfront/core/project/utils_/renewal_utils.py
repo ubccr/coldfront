@@ -753,7 +753,7 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
                 requester_allocation_user)
 
         self.handle_by_preference()
-        self.complete_request(new_value)
+        self.complete_request(self.num_service_units)
         self.send_email()
 
         return post_project, allocation

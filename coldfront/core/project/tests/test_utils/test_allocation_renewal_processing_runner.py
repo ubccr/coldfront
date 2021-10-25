@@ -377,18 +377,18 @@ class TestRunnerMixin(object):
         self.assertTrue(pi_user_profile.is_pi)
 
     # TODO
-    # def test_runner_sets_num_service_units(self):
-    #     """Test that the runner sets the provided number of service
-    #     units in the request."""
-    #     request = self.request_obj
-    #     self.assertEqual(request.num_service_units, Decimal('0.00'))
-    #
-    #     num_service_units = Decimal('1000.00')
-    #     runner = AllocationRenewalProcessingRunner(request, num_service_units)
-    #     runner.run()
-    #
-    #     request.refresh_from_db()
-    #     self.assertEqual(request.num_service_units, num_service_units)
+    def test_runner_sets_num_service_units(self):
+        """Test that the runner sets the provided number of service
+        units in the request."""
+        request = self.request_obj
+        self.assertEqual(request.num_service_units, Decimal('0.00'))
+
+        num_service_units = Decimal('1000.00')
+        runner = AllocationRenewalProcessingRunner(request, num_service_units)
+        runner.run()
+
+        request.refresh_from_db()
+        self.assertEqual(request.num_service_units, num_service_units)
 
     def test_runner_sets_status_and_completion_time(self):
         """Test that the runner sets the status of the request to
