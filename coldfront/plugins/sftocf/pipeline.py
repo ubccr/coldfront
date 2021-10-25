@@ -354,3 +354,10 @@ def collect_starfish_usage(server, volume, volumepath, projects):
         usage_query_by_lab.extend(data)
     logger.debug("usage_query_by_lab: {}".format(usage_query_by_lab))
     return usage_query_by_lab
+
+def pull_sf(servername, volume, volumepath):
+    server = StarFishServer(servername)
+    coldfrontdb = ColdFrontDB()
+    labs_resources = coldfrontdb.generate_project_resource_dict()
+    usage_stats = collect_starfish_usage(server, volume, volumepath, labs_resources)
+    return usage_stats

@@ -35,10 +35,7 @@ class Command(BaseCommand):
         servername = server = kwargs['server']
         volume = volume = kwargs['volume']
         volumepath = volpath = kwargs['volpath']
-        server = StarFishServer(servername)
-        coldfrontdb = ColdFrontDB()
-        labs_resources = coldfrontdb.generate_project_resource_dict()
-        usage_stats = collect_starfish_usage(server, volume, volumepath, labs_resources)
+        usage_stats = pull_sf(servername, volume, volumepath)
         for statdict in usage_stats:
             try:
                 coldfrontdb.update_usage(statdict)
