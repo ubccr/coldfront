@@ -45,12 +45,15 @@ logger = logging.getLogger(__name__)
 
 class AllocationRenewalMixin(object):
 
-    allocation_period = get_current_allocation_period()
+    allocation_period = None
 
     success_message = (
         'Thank you for your submission. It will be reviewed and processed by '
         'administrators.')
     error_message = 'Unexpected failure. Please contact an administrator.'
+
+    def __init__(self):
+        self.allocation_period = get_current_allocation_period()
 
     def create_allocation_renewal_request(self, pi, pre_project, post_project,
                                           new_project_request=None):

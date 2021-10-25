@@ -447,7 +447,8 @@ class AllocationRenewalRunnerBase(object):
                 expected_status, AllocationRenewalRequestStatusChoice):
             raise TypeError(
                 'Status is not an AllocationRenewalRequestStatusChoice.')
-        assert self.request_obj.status == expected_status
+        message = f'The request must have status \'{expected_status}\'.'
+        assert self.request_obj.status == expected_status, message
 
     def create_allocation_users(self, allocation):
         """Create active AllocationUsers for the requester and/or the
@@ -495,7 +496,7 @@ class AllocationRenewalRunnerBase(object):
         requester and/or the PI. If the requester is already has the
         'Principal Investigator' role, do not give it the 'Manager'
         role."""
-        project = self.request_obj.project
+        project = self.request_obj.post_project
         requester = self.request_obj.requester
         pi = self.request_obj.pi
         status = ProjectUserStatusChoice.objects.get(name='Active')
@@ -947,7 +948,7 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         In particular, update the Service Units for existing Users to
         the given value. The requester and/or PI will have their values
         set once their cluster account requests are approved."""
-        project = self.request_obj.project
+        project = self.request_obj.post_project
         date_time = utc_now_offset_aware()
         for project_user in project.projectuser_set.all():
             user = project_user.user
