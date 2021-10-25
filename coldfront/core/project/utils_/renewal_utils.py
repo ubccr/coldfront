@@ -733,7 +733,7 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         role = ProjectUserRoleChoice.objects.get(name='Principal Investigator')
         pool = post_project.projectuser_set.filter(
             Q(role=role) & ~Q(user=self.request_obj.pi)).exists()
-        allocation, new_value = self.update_allocation(pool)
+        allocation, new_value = self.update_allocation()
         # In the pooling case, set the Service Units of the existing users to
         # the updated value.
         if pool:
@@ -896,16 +896,18 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
             logger.exception(e)
 
     def update_allocation(self, pool):
-        """Perform allocation-related handling, differing based on
-        whether pooling is involved."""
+        """Perform allocation-related handling."""
         project = self.request_obj.post_project
         allocation_type = SavioProjectAllocationRequest.FCA
 
         allocation = get_project_compute_allocation(project)
+        current_status = allocation.status
         allocation.status = AllocationStatusChoice.objects.get(name='Active')
-        # If this is a new Project, set its Allocation's start and end dates.
-        if not pool:
+        # For the start and end dates, if the Project is not 'Active' or the
+        # date is not set, set it.
+        if current_status.name == 'Inactive' or not allocation.start_date:
             allocation.start_date = utc_now_offset_aware()
+        if current_status.name == 'Inactive' or not allocation.end_date:
             allocation.end_date = \
                 next_allocation_start_datetime() - timedelta(seconds=1)
         allocation.save()
@@ -918,19 +920,18 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
                 allocation_attribute_type=allocation_attribute_type,
                 allocation=allocation, defaults={'value': allocation_type})
 
-        # Set or increase the allocation's service units.
+        # Increase the allocation's service units.
         allocation_attribute_type = AllocationAttributeType.objects.get(
             name='Service Units')
         allocation_attribute, _ = \
             AllocationAttribute.objects.get_or_create(
                 allocation_attribute_type=allocation_attribute_type,
                 allocation=allocation)
-        if pool:
-            existing_value = Decimal(allocation_attribute.value)
-            new_value = existing_value + self.num_service_units
-            validate_num_service_units(new_value)
-        else:
-            new_value = self.num_service_units
+        existing_value = (
+            Decimal(allocation_attribute.value) if allocation_attribute.value
+            else settings.ALLOCATION_MIN)
+        new_value = existing_value + self.num_service_units
+        validate_num_service_units(new_value)
         allocation_attribute.value = str(new_value)
         allocation_attribute.save()
 
