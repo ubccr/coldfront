@@ -1,5 +1,7 @@
 from coldfront.api.statistics.utils import create_project_allocation
 from coldfront.core.allocation.models import Allocation
+from coldfront.core.allocation.models import AllocationAttribute
+from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
@@ -113,11 +115,26 @@ class TestRunnerMixin(object):
                 status=active_project_user_status)
 
         # Create a compute Allocation for each Project.
+        self.project_service_units = {}
         for i, project in enumerate(self.projects_and_pis.keys()):
-            create_project_allocation(project, Decimal(str(i * 1000)))
+            value = Decimal(str(i * 1000))
+            create_project_allocation(project, value)
+            self.project_service_units[project] = value
 
         # This should be set by the subclasses.
         self.request_obj = None
+
+    def assert_allocation_service_units_value(self, allocation, expected):
+        """Assert that the given Allocation has an AllocationAttribute
+        with type 'Service Units' and the given expected value."""
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Service Units')
+        kwargs = {
+            'allocation_attribute_type': allocation_attribute_type,
+        }
+        attributes = allocation.allocationattribute_set.filter(**kwargs)
+        self.assertEqual(attributes.count(), 1)
+        self.assertEqual(str(expected), attributes.first().value)
 
     def assert_pooling_preference_case(self, expected):
         """Assert that the pooling preference case of the request_obj is
@@ -307,8 +324,27 @@ class TestRunnerMixin(object):
                 else:
                     self.fail('An AssertionError should have been raised.')
 
+    def test_runner_activates_allocation(self):
+        """Test that runner sets the post_project's compute Allocation's
+        status to 'Active'."""
+        request = self.request_obj
+        project = request.post_project
+        allocation = get_project_compute_allocation(project)
+        # Set its status to 'New' before the runner is run.
+        allocation.status = AllocationStatusChoice.objects.get(name='New')
+        allocation.save()
+
+        num_service_units = Decimal('0.00')
+        runner = AllocationRenewalProcessingRunner(request, num_service_units)
+        runner.run()
+
+        allocation.refresh_from_db()
+        expected_allocation_status = AllocationStatusChoice.objects.get(
+            name='Active')
+        self.assertEqual(expected_allocation_status, allocation.status)
+
     def test_runner_activates_project(self):
-        """Test that the runner sets the post_project'status to
+        """Test that the runner sets the post_project's status to
         'Active'."""
         project = self.request_obj.post_project
         # Set its status to 'New' before the runner is run.
@@ -361,6 +397,35 @@ class TestRunnerMixin(object):
         expected_cc = ['admin0@email.com', 'admin1@email.com']
         self.assertEqual(expected_cc, sorted(email.cc))
 
+    def test_runner_sets_allocation_type(self):
+        """Test that the runner sets an AllocationAttribute with type
+        'Savio Allocation Type' on the post_project's compute
+        Allocation."""
+        request = self.request_obj
+        project = request.post_project
+        allocation = get_project_compute_allocation(project)
+        # Delete any that already exist.
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Savio Allocation Type')
+        kwargs = {
+            'allocation_attribute_type': allocation_attribute_type,
+        }
+        allocation.allocationattribute_set.filter(**kwargs).delete()
+
+        num_service_units = Decimal('1000.00')
+        runner = AllocationRenewalProcessingRunner(request, num_service_units)
+        runner.run()
+
+        allocation.refresh_from_db()
+        try:
+            allocation_attribute = allocation.allocationattribute_set.get(
+                **kwargs)
+        except AllocationAttribute.DoesNotExist:
+            self.fail('An AllocationAttribute should have been created.')
+        else:
+            self.assertEqual(
+                allocation_attribute.value, SavioProjectAllocationRequest.FCA)
+
     def test_runner_sets_is_pi_field_of_pi_user_profile(self):
         """Test that the User designated as the PI on the request has
         the is_pi field set to True in its UserProfile."""
@@ -376,8 +441,7 @@ class TestRunnerMixin(object):
         pi_user_profile.refresh_from_db()
         self.assertTrue(pi_user_profile.is_pi)
 
-    # TODO
-    def test_runner_sets_num_service_units(self):
+    def test_runner_sets_request_num_service_units(self):
         """Test that the runner sets the provided number of service
         units in the request."""
         request = self.request_obj
@@ -439,12 +503,34 @@ class TestRunnerMixin(object):
                 'The runner should have failed due to a nonexistent compute '
                 'Allocation.')
 
+    def test_runner_updates_allocation_service_units(self):
+        """Test that the runner updates the AllocationAttribute with
+        type 'Service Units' on the post_project's compute
+        Allocation."""
+        request = self.request_obj
+        project = request.post_project
+        allocation = get_project_compute_allocation(project)
+
+        expected_previous_value = self.project_service_units[project]
+        self.assert_allocation_service_units_value(
+            allocation, expected_previous_value)
+
+        num_service_units = Decimal('1000.00')
+        runner = AllocationRenewalProcessingRunner(request, num_service_units)
+        runner.run()
+
+        allocation.refresh_from_db()
+        expected_current_value = expected_previous_value + num_service_units
+        self.assert_allocation_service_units_value(
+            allocation, expected_current_value)
+
 
 class TestUnpooledToUnpooled(TestRunnerMixin, TestCase):
     """A class for testing the AllocationRenewalProcessingRunner in the
     'unpooled_to_unpooled' case."""
 
     def setUp(self):
+        """Set up test data."""
         super().setUp()
         self.request_obj = self.create_request(
             pi=self.pi0,
@@ -463,6 +549,7 @@ class TestUnpooledToPooled(TestRunnerMixin, TestCase):
     'unpooled_to_pooled' case."""
 
     def setUp(self):
+        """Set up test data."""
         super().setUp()
         self.request_obj = self.create_request(
             pi=self.pi0,
@@ -481,6 +568,7 @@ class TestPooledToPooledSame(TestRunnerMixin, TestCase):
     'pooled_to_pooled_same' case."""
 
     def setUp(self):
+        """Set up test data."""
         super().setUp()
         self.request_obj = self.create_request(
             pi=self.pi0,
@@ -499,6 +587,7 @@ class TestPooledToPooledDifferent(TestRunnerMixin, TestCase):
     'pooled_to_pooled_different' case."""
 
     def setUp(self):
+        """Set up test data."""
         super().setUp()
         self.request_obj = self.create_request(
             pi=self.pi0,
@@ -517,6 +606,7 @@ class TestPooledToUnpooledOld(TestRunnerMixin, TestCase):
     'pooled_to_unpooled_old' case."""
 
     def setUp(self):
+        """Set up test data."""
         super().setUp()
         self.request_obj = self.create_request(
             pi=self.pi0,
@@ -535,6 +625,7 @@ class TestPooledToUnpooledNew(TestRunnerMixin, TestCase):
     'pooled_to_unpooled_new' case."""
 
     def setUp(self):
+        """Set up test data."""
         super().setUp()
         new_project_request = \
             self.simulate_new_project_allocation_request_processing()
@@ -584,6 +675,9 @@ class TestPooledToUnpooledNew(TestRunnerMixin, TestCase):
         runner.run()
         # Clear the mail outbox.
         mail.outbox = []
+
+        # Store the number of service units set.
+        self.project_service_units[new_project] = num_service_units
 
         new_project_request.refresh_from_db()
         expected_status_name = 'Approved - Complete'
