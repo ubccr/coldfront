@@ -6,6 +6,8 @@ from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
 from coldfront.core.allocation.models import AllocationStatusChoice
+from coldfront.core.allocation.models import AllocationUser
+from coldfront.core.allocation.models import AllocationUserStatusChoice
 from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
@@ -14,6 +16,7 @@ from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
+from coldfront.core.project.utils import ProjectClusterAccessRequestRunner
 from coldfront.core.project.utils import SavioProjectApprovalRunner
 from coldfront.core.project.utils_.renewal_utils import AllocationRenewalProcessingRunner
 from coldfront.core.resource.models import Resource
@@ -116,10 +119,32 @@ class TestRunnerMixin(object):
 
         # Create a compute Allocation for each Project.
         self.project_service_units = {}
+        self.projects_and_allocations = {}
         for i, project in enumerate(self.projects_and_pis.keys()):
             value = Decimal(str(i * 1000))
-            create_project_allocation(project, value)
+            allocation = create_project_allocation(project, value).allocation
             self.project_service_units[project] = value
+            self.projects_and_allocations[project] = allocation
+
+        # Create AllocationUsers on the compute Allocation.
+        active_allocation_user_status = AllocationUserStatusChoice.objects.get(
+            name='Active')
+        for project, pi_users in self.projects_and_pis.items():
+            allocation = self.projects_and_allocations[project]
+            for pi_user in pi_users:
+                AllocationUser.objects.create(
+                    allocation=allocation,
+                    user=pi_user,
+                    status=active_allocation_user_status)
+            # For the requesters only, also create cluster access requests.
+            project_user_obj = ProjectUser.objects.get(
+                project=project, user=self.requester)
+            request_runner = ProjectClusterAccessRequestRunner(
+                project_user_obj)
+            runner_result = request_runner.run()
+            self.assertTrue(runner_result.success)
+        # Clear the mail outbox.
+        mail.outbox = []
 
         # This should be set by the subclasses.
         self.request_obj = None
@@ -358,6 +383,41 @@ class TestRunnerMixin(object):
 
         project.refresh_from_db()
         self.assertEqual(project.status.name, 'Active')
+
+    def test_runner_creates_and_updates_allocation_users(self):
+        """Test that the runner creates new AllocationUsers and updates
+        existing AllocationUsers on the post_project's compute
+        Allocation."""
+        request = self.request_obj
+        project = request.post_project
+        allocation = get_project_compute_allocation(project)
+
+        # Initially, the Allocation as many AllocationUsers as ProjectUsers,
+        # and there should be at least two.
+        queryset = allocation.allocationuser_set.all()
+        old_count = queryset.count()
+        self.assertEqual(old_count, project.projectuser_set.count())
+        self.assertGreaterEqual(old_count, 2)
+        # Delete one and update the other.
+        a, b = queryset[0], queryset[1]
+        a_user = a.user
+        a.delete()
+        b.status = AllocationUserStatusChoice.objects.get(name='Removed')
+        b.save()
+
+        num_service_units = Decimal('1000.00')
+        runner = AllocationRenewalProcessingRunner(
+            self.request_obj, num_service_units)
+        runner.run()
+
+        # The original count should be restored, and all should be 'Active'.
+        allocation.refresh_from_db()
+        queryset = allocation.allocationuser_set.all()
+        new_count = queryset.count()
+        self.assertEqual(old_count, new_count)
+        self.assertTrue(queryset.filter(user=a_user))
+        self.assertEqual(
+            queryset.filter(status__name='Active').count(), queryset.count())
 
     @override_settings(
         REQUEST_APPROVAL_CC_LIST=['admin0@email.com', 'admin1@email.com'])

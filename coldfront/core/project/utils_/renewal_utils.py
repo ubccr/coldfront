@@ -895,7 +895,7 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
             logger.error('Failed to send notification email. Details:')
             logger.exception(e)
 
-    def update_allocation(self, pool):
+    def update_allocation(self):
         """Perform allocation-related handling."""
         project = self.request_obj.post_project
         allocation_type = SavioProjectAllocationRequest.FCA
