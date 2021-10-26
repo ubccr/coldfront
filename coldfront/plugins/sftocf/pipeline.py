@@ -17,9 +17,20 @@ from coldfront.core.project.models import Project, ProjectUser
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.allocation.models import Allocation, AllocationUser
 
-logging.basicConfig(filename="sfc.log", format="%(asctime)s %(message)s", filemode="w")
-logger = logging.getLogger("sfc")
+logger = logging.getLogger(__name__)
+logger.propagate = False
 logger.setLevel(logging.DEBUG)
+filehandler = logging.FileHandler('coldfront/plugins/sftocf/sfc.log', 'w')
+logger.addHandler(filehandler)
+
+
+svp = {
+"holysfdb01": {
+    "holylfs04":"HDD/C/LABS",
+    'holylfs05':"",
+    'holystore01':"",
+    }
+}
 
 
 class StarFishServer:
@@ -202,6 +213,18 @@ class UsageStat:
 
 
 class ColdFrontDB:
+    server_volumes = {
+    "holysfdb01": {
+        "holylfs04",
+        'holylfs05',
+        'holystore01',
+        }
+    }
+    volume_path = {
+        "holylfs04":"HDD/C/LABS",
+        'holylfs05':"",
+        'holystore01':"",
+        }
 
     def generate_user_project_dict(self):
         logger.debug("generate_user_project_dict")
@@ -226,9 +249,12 @@ class ColdFrontDB:
         return projects
 
     def generate_project_resource_dict(self):
+        """
+        Return dict with keys as project names and values as a list where [0] is the volume and [1] is the tier.
+        """
         pr_entries = Allocation.objects.only("id", "project_id")
-        for a in pr_entries:
-            print("a.get_resources_as_string", a.get_resources_as_string)
+        # for a in pr_entries:
+        #     print("a.get_resources_as_string", a.get_resources_as_string)
         pr_dict = {
             self.return_pname(o.project_id):o.get_resources_as_string for o in pr_entries}
         pr_dict = {p:r.split("/") for p, r in pr_dict.items()}
@@ -316,7 +342,7 @@ def collect_starfish_usage(server, volume, volumepath, projects):
     datestr = datetime.today().strftime("%Y%m%d")
     logger.debug("server.name: {}".format(server.name))
     projects_reduced = {p:r for p,r in projects.items() if r[0] == volume}
-    print("projects:", projects,"\nprojects_reduced:", projects_reduced)
+    logger.debug(f"projects: {projects}\nprojects_reduced: {projects_reduced}")
     for p, r in projects_reduced.items():
         homepath = "./coldfront/plugins/sftocf/data/"
         filepath = f"{homepath}{p}_{server.name}_{datestr}.json"
@@ -355,9 +381,30 @@ def collect_starfish_usage(server, volume, volumepath, projects):
     logger.debug("usage_query_by_lab: {}".format(usage_query_by_lab))
     return usage_query_by_lab
 
-def pull_sf(servername, volume, volumepath):
-    server = StarFishServer(servername)
-    coldfrontdb = ColdFrontDB()
-    labs_resources = coldfrontdb.generate_project_resource_dict()
-    usage_stats = collect_starfish_usage(server, volume, volumepath, labs_resources)
+
+
+
+def generate_serv_vol_dict(vol_set):
+    search_svp = {}
+    for s, v in svp.items():
+        if any(vi in v.keys() for vi in vol_set):
+            search_svp[s] = {}
+            for vk, p in v.items():
+                if vk in vol_set:
+                    search_svp[s][vk] = p
+    return search_svp
+
+def pull_sf():
+    cfdb = ColdFrontDB()
+    labs_resources = cfdb.generate_project_resource_dict()
+    vol_set = {v[0] for v in labs_resources.values()}
+    logger.debug(f"vol_set: {vol_set}")
+    serv_vols = generate_serv_vol_dict(vol_set)
+    for s, v in serv_vols.items():
+        server = StarFishServer(s)
+        for vol, path in v.items():
+            logger.debug(f"volume: {vol}")
+            vol_labs_resources = {l:r for l, r in labs_resources.items() if r[0] == vol}
+            logger.debug(f"vol_labs_resources: {vol_labs_resources}")
+            usage_stats = collect_starfish_usage(server, vol, path, vol_labs_resources)
     return usage_stats
