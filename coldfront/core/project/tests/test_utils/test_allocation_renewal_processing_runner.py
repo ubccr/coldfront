@@ -28,6 +28,8 @@ from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import utc_now_offset_aware
+from datetime import date
+from datetime import timedelta
 from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -599,44 +601,6 @@ class TestRunnerMixin(object):
             self.assertEqual(transaction.project_user.project, project)
             self.assertEqual(transaction.allocation, new_allocation_value)
 
-    @override_settings(
-        REQUEST_APPROVAL_CC_LIST=['admin0@email.com', 'admin1@email.com'])
-    def test_runner_sends_emails(self):
-        """Test that the runner sends a notification email to the
-        requester and the PI, CC'ing a designated list of admins."""
-        request = self.request_obj
-        project = request.post_project
-        requester = request.requester
-        pi = request.pi
-
-        num_service_units = Decimal('1000.00')
-        runner = AllocationRenewalProcessingRunner(request, num_service_units)
-        runner.run()
-
-        self.assertEqual(len(mail.outbox), 1)
-        email = mail.outbox[0]
-
-        expected_subject = (
-            f'{settings.EMAIL_SUBJECT_PREFIX} {str(request)} Processed')
-        self.assertEqual(expected_subject, email.subject)
-
-        expected_body_snippets = [
-            (f'{num_service_units} service units have been added to the '
-             f'project {project.name}.'),
-            f'/project/{project.pk}/',
-        ]
-        for expected_body_snippet in expected_body_snippets:
-            self.assertIn(expected_body_snippet, email.body)
-
-        expected_from_email = settings.EMAIL_SENDER
-        self.assertEqual(expected_from_email, email.from_email)
-
-        expected_to = sorted([requester.email, pi.email])
-        self.assertEqual(expected_to, sorted(email.to))
-
-        expected_cc = ['admin0@email.com', 'admin1@email.com']
-        self.assertEqual(expected_cc, sorted(email.cc))
-
     def test_runner_not_resets_service_units_usages(self):
         """Test that the runner does not set AllocationAttributeUsage
         and AllocationUserAttributeUsage values for the 'Service Units'
@@ -691,6 +655,90 @@ class TestRunnerMixin(object):
         for usage in project_user_usages_cache:
             usage.refresh_from_db()
             self.assertEqual(value, usage.value)
+
+    @override_settings(
+        REQUEST_APPROVAL_CC_LIST=['admin0@email.com', 'admin1@email.com'])
+    def test_runner_sends_emails(self):
+        """Test that the runner sends a notification email to the
+        requester and the PI, CC'ing a designated list of admins."""
+        request = self.request_obj
+        project = request.post_project
+        requester = request.requester
+        pi = request.pi
+
+        num_service_units = Decimal('1000.00')
+        runner = AllocationRenewalProcessingRunner(request, num_service_units)
+        runner.run()
+
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+
+        expected_subject = (
+            f'{settings.EMAIL_SUBJECT_PREFIX} {str(request)} Processed')
+        self.assertEqual(expected_subject, email.subject)
+
+        expected_body_snippets = [
+            (f'{num_service_units} service units have been added to the '
+             f'project {project.name}.'),
+            f'/project/{project.pk}/',
+        ]
+        for expected_body_snippet in expected_body_snippets:
+            self.assertIn(expected_body_snippet, email.body)
+
+        expected_from_email = settings.EMAIL_SENDER
+        self.assertEqual(expected_from_email, email.from_email)
+
+        expected_to = sorted([requester.email, pi.email])
+        self.assertEqual(expected_to, sorted(email.to))
+
+        expected_cc = ['admin0@email.com', 'admin1@email.com']
+        self.assertEqual(expected_cc, sorted(email.cc))
+
+    def test_runner_sets_allocation_dates_if_allocation_inactive(self):
+        """Test that te runner sets the post_project's compute
+        Allocation's start_date and end_date if the Project's status is
+         not 'Active'."""
+        request = self.request_obj
+        project = request.post_project
+        allocation = get_project_compute_allocation(project)
+
+        # Deactivate the Project and nullify the dates.
+        project.status = ProjectStatusChoice.objects.get(name='Inactive')
+        project.save()
+        allocation.start_date = None
+        allocation.end_date = None
+        allocation.save()
+
+        num_service_units = Decimal('1000.00')
+        runner = AllocationRenewalProcessingRunner(request, num_service_units)
+        runner.run()
+
+        # Both dates should have been updated.
+        allocation.refresh_from_db()
+        self.assertIsNotNone(allocation.start_date)
+        self.assertIsNotNone(allocation.end_date)
+
+    def test_runner_sets_allocation_dates_if_not_set(self):
+        """Test that the runner sets the post_project's compute
+        Allocation's start_date and/or end_date if they are not set."""
+        request = self.request_obj
+        project = request.post_project
+        allocation = get_project_compute_allocation(project)
+
+        # Set the end_date, but not the start_date.
+        allocation.start_date = None
+        end_date = date.today() + timedelta(days=30)
+        allocation.end_date = end_date
+        allocation.save()
+
+        num_service_units = Decimal('1000.00')
+        runner = AllocationRenewalProcessingRunner(request, num_service_units)
+        runner.run()
+
+        # The start_date should have been updated, but not the end_date.
+        allocation.refresh_from_db()
+        self.assertEqual(date.today(), allocation.start_date)
+        self.assertEqual(end_date, allocation.end_date)
 
     def test_runner_sets_allocation_type(self):
         """Test that the runner sets an AllocationAttribute with type
