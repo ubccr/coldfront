@@ -21,6 +21,8 @@ from coldfront.core.project.utils import ProjectClusterAccessRequestRunner
 from coldfront.core.project.utils import SavioProjectApprovalRunner
 from coldfront.core.project.utils_.renewal_utils import AllocationRenewalProcessingRunner
 from coldfront.core.resource.models import Resource
+from coldfront.core.statistics.models import ProjectTransaction
+from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import utc_now_offset_aware
 from decimal import Decimal
@@ -538,6 +540,62 @@ class TestRunnerMixin(object):
             self.fail('The PI should have an AllocationUser.')
         self.assertEqual(a.status.name, 'Active')
         self.assertEqual(b.status.name, 'Active')
+
+    def test_runner_creates_project_transaction(self):
+        """Test that the runner creates a ProjectTransaction to record
+        the change in service units."""
+        request = self.request_obj
+        project = request.post_project
+
+        old_count = ProjectTransaction.objects.filter(project=project).count()
+        pre_time = utc_now_offset_aware()
+
+        num_service_units = Decimal('1000.00')
+        runner = AllocationRenewalProcessingRunner(request, num_service_units)
+        runner.run()
+
+        post_time = utc_now_offset_aware()
+        new_count = ProjectTransaction.objects.filter(project=project).count()
+        self.assertEqual(old_count + 1, new_count)
+
+        transaction = ProjectTransaction.objects.latest('date_time')
+        new_allocation_value = \
+            self.project_service_units[project] + num_service_units
+        self.assertTrue(pre_time <= transaction.date_time <= post_time)
+        self.assertEqual(transaction.project, project)
+        self.assertEqual(transaction.allocation, new_allocation_value)
+
+    def test_runner_creates_project_user_transactions(self):
+        """Test that the runner creates ProjectUserTransactions for all
+        ProjectUsers who were already on the Project to record the
+        change in service units."""
+        request = self.request_obj
+        project = request.post_project
+
+        queryset = ProjectUserTransaction.objects.filter(
+            project_user__project=project)
+        old_count = queryset.count()
+        num_project_users = ProjectUser.objects.filter(project=project).count()
+        pre_time = utc_now_offset_aware()
+
+        num_service_units = Decimal('1000.00')
+        runner = AllocationRenewalProcessingRunner(request, num_service_units)
+        runner.run()
+
+        post_time = utc_now_offset_aware()
+        queryset = ProjectUserTransaction.objects.filter(
+            project_user__project=project)
+        new_count = queryset.count()
+        self.assertEqual(old_count + num_project_users, new_count)
+
+        transactions = queryset.filter(
+            date_time__gt=pre_time, date_time__lt=post_time)
+        new_allocation_value = \
+            self.project_service_units[project] + num_service_units
+        for transaction in transactions:
+            self.assertTrue(pre_time <= transaction.date_time <= post_time)
+            self.assertEqual(transaction.project_user.project, project)
+            self.assertEqual(transaction.allocation, new_allocation_value)
 
     @override_settings(
         REQUEST_APPROVAL_CC_LIST=['admin0@email.com', 'admin1@email.com'])
