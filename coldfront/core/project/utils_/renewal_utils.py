@@ -727,9 +727,10 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         post_project = request.post_project
 
         self.upgrade_pi_user()
+        old_project_status = post_project.status
         post_project = self.activate_project(post_project)
 
-        allocation, new_value = self.update_allocation()
+        allocation, new_value = self.update_allocation(old_project_status)
         self.update_existing_user_allocations(new_value)
 
         self.create_project_users()
@@ -888,19 +889,20 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
             logger.error('Failed to send notification email. Details:')
             logger.exception(e)
 
-    def update_allocation(self):
-        """Perform allocation-related handling."""
+    def update_allocation(self, old_project_status):
+        """Perform allocation-related handling. Use the given
+        ProjectStatusChoice, which the post_project had prior to being
+        activated, to potentially set the start and end dates."""
         project = self.request_obj.post_project
         allocation_type = SavioProjectAllocationRequest.FCA
 
         allocation = get_project_compute_allocation(project)
-        current_status = allocation.status
         allocation.status = AllocationStatusChoice.objects.get(name='Active')
         # For the start and end dates, if the Project is not 'Active' or the
         # date is not set, set it.
-        if current_status.name == 'Inactive' or not allocation.start_date:
+        if old_project_status.name != 'Active' or not allocation.start_date:
             allocation.start_date = utc_now_offset_aware()
-        if current_status.name == 'Inactive' or not allocation.end_date:
+        if old_project_status.name != 'Active' or not allocation.end_date:
             allocation.end_date = \
                 next_allocation_start_datetime() - timedelta(seconds=1)
         allocation.save()
