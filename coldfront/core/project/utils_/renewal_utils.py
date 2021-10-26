@@ -729,15 +729,8 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         self.upgrade_pi_user()
         post_project = self.activate_project(post_project)
 
-        # The post_project is pooled if it has a PI other than the current one.
-        role = ProjectUserRoleChoice.objects.get(name='Principal Investigator')
-        pool = post_project.projectuser_set.filter(
-            Q(role=role) & ~Q(user=self.request_obj.pi)).exists()
         allocation, new_value = self.update_allocation()
-        # In the pooling case, set the Service Units of the existing users to
-        # the updated value.
-        if pool:
-            self.update_existing_user_allocations(new_value)
+        self.update_existing_user_allocations(new_value)
 
         self.create_project_users()
         requester_allocation_user, pi_allocation_user = \
