@@ -43,7 +43,7 @@ import sys
 
 
 class TestRunnerMixin(object):
-    """A base mixin for testing AllocationRenewalProcessingRunner."""
+    """A mixin for testing AllocationRenewalProcessingRunner."""
 
     def setUp(self):
         """Set up test data."""
@@ -897,6 +897,38 @@ class TestRunnerMixin(object):
             self.assertEqual(attribute.value, new_allocation_value)
 
 
+class TestPIDemotionMixin(object):
+    """A mixin for testing PI demotion to the 'User' role."""
+
+    def test_pre_project_pi_demoted_if_pooled(self):
+        """Test that the PI is demoted to the 'User' role on the
+        pre_project if it has at least one other PI."""
+        request = self.request_obj
+        pi = request.pi
+        project = request.pre_project
+
+        pi_role = ProjectUserRoleChoice.objects.get(
+            name='Principal Investigator')
+        user_role = ProjectUserRoleChoice.objects.get(name='User')
+
+        num_pis = project.pis().count()
+        self.assertGreater(num_pis, 1)
+        try:
+            pi_project_user = project.projectuser_set.get(user=pi)
+        except ProjectUser.DoesNotExist:
+            self.fail('The PI is not a member of the pre_project.')
+
+        self.assertEqual(pi_role, pi_project_user.role)
+
+        num_service_units = Decimal('1000.00')
+        runner = AllocationRenewalProcessingRunner(request, num_service_units)
+        runner.run()
+
+        self.assertEqual(project.pis().count(), num_pis - 1)
+        pi_project_user.refresh_from_db()
+        self.assertEqual(user_role, pi_project_user.role)
+
+
 class TestUnpooledToUnpooled(TestRunnerMixin, TestCase):
     """A class for testing the AllocationRenewalProcessingRunner in the
     'unpooled_to_unpooled' case."""
@@ -954,7 +986,8 @@ class TestPooledToPooledSame(TestRunnerMixin, TestCase):
             AllocationRenewalRequest.POOLED_TO_POOLED_SAME)
 
 
-class TestPooledToPooledDifferent(TestRunnerMixin, TestCase):
+class TestPooledToPooledDifferent(TestPIDemotionMixin, TestRunnerMixin,
+                                  TestCase):
     """A class for testing the AllocationRenewalProcessingRunner in the
     'pooled_to_pooled_different' case."""
 
@@ -973,7 +1006,7 @@ class TestPooledToPooledDifferent(TestRunnerMixin, TestCase):
             AllocationRenewalRequest.POOLED_TO_POOLED_DIFFERENT)
 
 
-class TestPooledToUnpooledOld(TestRunnerMixin, TestCase):
+class TestPooledToUnpooledOld(TestPIDemotionMixin, TestRunnerMixin, TestCase):
     """A class for testing the AllocationRenewalProcessingRunner in the
     'pooled_to_unpooled_old' case."""
 
@@ -992,7 +1025,7 @@ class TestPooledToUnpooledOld(TestRunnerMixin, TestCase):
             AllocationRenewalRequest.POOLED_TO_UNPOOLED_OLD)
 
 
-class TestPooledToUnpooledNew(TestRunnerMixin, TestCase):
+class TestPooledToUnpooledNew(TestPIDemotionMixin, TestRunnerMixin, TestCase):
     """A class for testing the AllocationRenewalProcessingRunner in the
     'pooled_to_unpooled_new' case."""
 
