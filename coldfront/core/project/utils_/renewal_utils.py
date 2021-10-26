@@ -342,11 +342,11 @@ def allocation_renewal_request_denial_reason(request):
     other = state['other']
 
     DenialReason = namedtuple(
-        'DenialReason' 'category justification timestamp')
+        'DenialReason', 'category justification timestamp')
 
     new_project_request = request.new_project_request
 
-    if other['timestamp'] == 'Other':
+    if other['timestamp']:
         category = 'Other'
         justification = other['justification']
         timestamp = other['timestamp']
