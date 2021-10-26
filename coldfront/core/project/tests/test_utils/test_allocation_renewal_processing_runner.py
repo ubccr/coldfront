@@ -1,13 +1,16 @@
 from coldfront.api.statistics.utils import create_project_allocation
+from coldfront.api.statistics.utils import create_user_project_allocation
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
+from coldfront.core.allocation.models import AllocationAttributeUsage
 from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.models import AllocationUser
 from coldfront.core.allocation.models import AllocationUserAttribute
+from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.allocation.models import AllocationUserStatusChoice
 from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.project.models import Project
@@ -571,7 +574,6 @@ class TestRunnerMixin(object):
         change in service units."""
         request = self.request_obj
         project = request.post_project
-
         queryset = ProjectUserTransaction.objects.filter(
             project_user__project=project)
         old_count = queryset.count()
@@ -634,6 +636,61 @@ class TestRunnerMixin(object):
 
         expected_cc = ['admin0@email.com', 'admin1@email.com']
         self.assertEqual(expected_cc, sorted(email.cc))
+
+    def test_runner_not_resets_service_units_usages(self):
+        """Test that the runner does not set AllocationAttributeUsage
+        and AllocationUserAttributeUsage values for the 'Service Units'
+        attribute to zero."""
+        request = self.request_obj
+        project = request.post_project
+        allocation = get_project_compute_allocation(project)
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Service Units')
+
+        # Set the Project's overall usage to a non-zero value.
+        value = Decimal('100.00')
+        project_usages = AllocationAttributeUsage.objects.filter(
+            allocation_attribute__allocation=allocation)
+        self.assertEqual(project_usages.count(), 1)
+        project_usage = project_usages.first()
+        self.assertEqual(
+            allocation_attribute_type,
+            project_usage.allocation_attribute.allocation_attribute_type)
+        project_usage.value = value
+        project_usage.save()
+
+        # Create AllocationUsers and set 'Service Units'.
+        project_users = project.projectuser_set.all()
+        self.assertTrue(project_users)
+        AllocationUser.objects.filter(allocation=allocation).delete()
+        for project_user in project_users:
+            create_user_project_allocation(
+                project_user.user, project,
+                self.project_service_units[project])
+
+        # Set each ProjectUser's usage to a non-zero value.
+        project_user_usages = AllocationUserAttributeUsage.objects.filter(
+            allocation_user_attribute__allocation=allocation)
+        self.assertGreater(project_user_usages.count(), 0)
+        project_user_usages_cache = []
+        for usage in project_user_usages:
+            self.assertEqual(
+                allocation_attribute_type,
+                usage.allocation_user_attribute.allocation_attribute_type)
+            usage.value = value
+            usage.save()
+            project_user_usages_cache.append(usage)
+
+        num_service_units = Decimal('1000.00')
+        runner = AllocationRenewalProcessingRunner(request, num_service_units)
+        runner.run()
+
+        # The values should not have changed.
+        project_usage.refresh_from_db()
+        self.assertEqual(value, project_usage.value)
+        for usage in project_user_usages_cache:
+            usage.refresh_from_db()
+            self.assertEqual(value, usage.value)
 
     def test_runner_sets_allocation_type(self):
         """Test that the runner sets an AllocationAttribute with type
@@ -761,6 +818,35 @@ class TestRunnerMixin(object):
         expected_current_value = expected_previous_value + num_service_units
         self.assert_allocation_service_units_value(
             allocation, expected_current_value)
+
+    def test_runner_updates_allocation_user_service_units(self):
+        """Test that the runner updates the AllocationUserAttributes
+        with type 'Service Units' on the AllocationUsers of the
+        post_project's compute Allocation."""
+        request = self.request_obj
+        project = request.post_project
+        allocation = get_project_compute_allocation(project)
+
+        # Create AllocationUsers and set 'Service Units'.
+        project_users = project.projectuser_set.all()
+        self.assertTrue(project_users)
+        attributes_cache = []
+        AllocationUser.objects.filter(allocation=allocation).delete()
+        value = self.project_service_units[project]
+        for project_user in project_users:
+            allocation_objects = create_user_project_allocation(
+                project_user.user, project, value)
+            attributes_cache.append(
+                allocation_objects.allocation_user_attribute)
+
+        num_service_units = Decimal('1000.00')
+        runner = AllocationRenewalProcessingRunner(request, num_service_units)
+        runner.run()
+
+        for attribute in attributes_cache:
+            attribute.refresh_from_db()
+            new_allocation_value = str(value + num_service_units)
+            self.assertEqual(attribute.value, new_allocation_value)
 
 
 class TestUnpooledToUnpooled(TestRunnerMixin, TestCase):
