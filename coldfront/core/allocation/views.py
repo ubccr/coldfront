@@ -1265,7 +1265,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             search_class_obj = ldap_search()
             for username in [primary_contact, secondary_contact, fiscal_officer] + it_pros.split(','):
                 attributes = search_class_obj.search_a_user(username, ['memberOf'])
-                if attributes['memberOf'] is None:
+                if attributes['memberOf'][0] == '':
                     denied_users.append(username)
 
         if denied_users:
