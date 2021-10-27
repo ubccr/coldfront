@@ -437,27 +437,29 @@ Request New Allocation
 
   $("#id_resource").change(function () {
     var resource_id = $("#id_resource option:selected").val();
+    var resource_text = $("#id_resource option:selected").text();
+    var resource_name = resource_text.slice(0, resource_text.indexOf('(') - 1)
 
-    if (resource_id === '2') { // Carbonate DL
+    if (resource_name === 'Carbonate DL') {
       $('#additional_info_1').show();
     } else {
       $('#additional_info_1').hide();
     }
 
 
-    if (resource_id === '3') { // Carbonate GPU
+    if (resource_name === 'Carbonate GPU') {
       $('#additional_info_2').show();
     } else {
       $('#additional_info_2').hide();
     }
 
-    if (resource_id === '4') { // Carbonate PHI
+    if (resource_name === 'Priority Boost') {
       $('#additional_info_3').show();
     } else {
       $('#additional_info_3').hide();
     }
 
-    if (resource_id === '8') { // RStudio Connect
+    if (resource_name === 'RStudio Connect') {
       $('#id_rstudio_connect_info').show();
       $('#additional_info_4').show();
       if (checkDate(5, 10)) {
@@ -592,7 +594,7 @@ Request New Allocation
       }
       $('#div_id_end_date').show();
 
-      if (resource_id === '7') { // Geode-Projects
+      if (resource_name === 'Geode-Projects') {
         $('#div_id_use_indefinitely').show()
         if ($('input[type=checkbox][name=use_indefinitely]:checked').val()) {
           $('#id_end_date').prop('disabled', true);
@@ -725,7 +727,7 @@ Request New Allocation
         $('#id_account_number').val(resources_form_account_number[resource_id]);
       }
       $('#div_id_account_number').show();
-      if (resource_id === '9') { // Slate Project
+      if (resource_name === 'Slate Project') {
         if ($('#id_storage_space').val() <= 15) {
           $('#div_id_account_number').hide();
         }
