@@ -50,7 +50,9 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice,
                                            ProjectAllocationRequestStatusChoice,
-                                           ProjectUserStatusChoice)
+                                           ProjectUserStatusChoice,
+                                           ProjectUserRemovalRequest,
+                                           ProjectUserRemovalRequestStatusChoice)
 from coldfront.core.project.utils import (add_vector_user_to_designated_savio_project,
                                           auto_approve_project_join_requests,
                                           get_project_compute_allocation,
@@ -88,6 +90,11 @@ if EMAIL_ENABLED:
     EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
         'EMAIL_DIRECTOR_EMAIL_ADDRESS')
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
+    EMAIL_OPT_OUT_INSTRUCTION_URL = import_from_settings(
+        'EMAIL_OPT_OUT_INSTRUCTION_URL')
+    EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
+    SUPPORT_EMAIL = import_from_settings('CENTER_HELP_EMAIL')
+    EMAIL_ADMIN_LIST = import_from_settings('EMAIL_ADMIN_LIST')
 
 
 class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
@@ -123,6 +130,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         # Can the user update the project?
         context['is_allowed_to_update_project'] = False
+        context['can_leave_project'] = False
 
         if self.request.user.is_superuser:
             context['is_allowed_to_update_project'] = True
@@ -133,6 +141,12 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             if project_user.role.name in ['Principal Investigator', 'Manager']:
                 context['username'] = project_user.user.username
                 context['is_allowed_to_update_project'] = True
+
+            if project_user.status.name == 'Active' and project_user.role.name == 'User':
+                context['can_leave_project'] = True
+
+            if project_user.role.name == 'Manager' and len(self.object.projectuser_set.filter(role__name='Manager')) > 1:
+                context['can_leave_project'] = True
 
         # Retrieve cluster access statuses.
         cluster_access_statuses = {}
@@ -1065,23 +1079,25 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         users_to_remove = self.get_users_to_remove(project_obj)
 
+        manager_queryset = project_obj.projectuser_set.filter(
+            role__name='Manager',
+            status__name='Active')
         formset = formset_factory(
             ProjectRemoveUserForm, max_num=len(users_to_remove))
         formset = formset(
             request.POST, initial=users_to_remove, prefix='userform')
 
-        remove_users_count = 0
+        users_requested_to_remove = []
+        users_requested_to_remove_error = []
 
         if formset.is_valid():
-            project_user_removed_status_choice = ProjectUserStatusChoice.objects.get(
-                name='Removed')
-            allocation_user_removed_status_choice = AllocationUserStatusChoice.objects.get(
-                name='Removed')
+            project_user_removal_status_pending_remove, created = \
+                ProjectUserRemovalRequestStatusChoice.objects.get_or_create(name='Pending')
+
             for form in formset:
                 user_form_data = form.cleaned_data
+                print('here', user_form_data)
                 if user_form_data['selected']:
-
-                    remove_users_count += 1
 
                     user_obj = User.objects.get(
                         username=user_form_data.get('username'))
@@ -1089,29 +1105,165 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     if project_obj.projectuser_set.filter(
                             user=user_obj,
                             role__name='Principal Investigator').exists():
+
+                        users_requested_to_remove_error.append(user_obj.username)
                         continue
 
-                    project_user_obj = project_obj.projectuser_set.get(
-                        user=user_obj)
-                    project_user_obj.status = project_user_removed_status_choice
-                    project_user_obj.save()
+                    if project_obj.projectuser_set.filter(
+                            user=user_obj,
+                            role__name='Manager').exists() and len(manager_queryset) == 1:
+                        users_requested_to_remove_error.append(user_obj.username)
+                        continue
 
-                    # get allocation to remove users from
-                    allocations_to_remove_user_from = project_obj.allocation_set.filter(
-                        status__name__in=['Active', 'New', 'Renewal Requested'])
-                    for allocation in allocations_to_remove_user_from:
-                        for allocation_user_obj in allocation.allocationuser_set.filter(user=user_obj, status__name__in=['Active', ]):
-                            allocation_user_obj.status = allocation_user_removed_status_choice
-                            allocation_user_obj.save()
+                    project_user_removal_request, created = ProjectUserRemovalRequest.objects.get_or_create(
+                        project_user=project_obj.projectuser_set.get(user=user_obj),
+                        requester=self.request.user,
+                    )
 
-                            allocation_remove_user.send(sender=self.__class__,
-                                                        allocation_user_pk=allocation_user_obj.pk)
+                    project_user_removal_request.status = project_user_removal_status_pending_remove
+                    project_user_removal_request.save()
 
-            messages.success(
-                request, 'Removed {} users from project.'.format(remove_users_count))
+                    users_requested_to_remove.append(user_obj)
+
+            if EMAIL_ENABLED:
+                for user_obj in users_requested_to_remove:
+                    # send email to user
+                    template_context = {
+                        'user_first_name': user_obj.first_name,
+                        'user_last_name': user_obj.last_name,
+                        'requester_first_name': self.request.user.first_name,
+                        'requester_last_name': self.request.user.last_name,
+                        'project_name': project_obj.name,
+                        'signature': EMAIL_SIGNATURE,
+                        'support_email': SUPPORT_EMAIL,
+                    }
+
+                    send_email_template(
+                        'Project Removal Request',
+                        'email/project_removal/project_removal.txt',
+                        template_context,
+                        EMAIL_SENDER,
+                        [user_obj.email]
+                    )
+
+                    # send email to admins
+                    template_context = {
+                        'user_first_name': user_obj.first_name,
+                        'user_last_name': user_obj.last_name,
+                        'project_name': project_obj.name,
+                    }
+
+                    send_email_template(
+                        'Project Removal Request',
+                        'email/project_removal/project_removal_admin.txt',
+                        template_context,
+                        EMAIL_SENDER,
+                        EMAIL_ADMIN_LIST
+                    )
+
+            if users_requested_to_remove:
+                messages.success(
+                    request, 'Requested removal of {} users from project.'.format([user_obj.username for user_obj in users_requested_to_remove]))
+            if users_requested_to_remove_error:
+                messages.error(request, 'Cannot remove {} users from project'.format(users_requested_to_remove_error))
         else:
             for error in formset.errors:
                 messages.error(request, error)
+
+        return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': pk}))
+
+
+class ProjectRemoveSelf(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+
+    def test_func(self):
+        if self.request.user.is_superuser:
+            return True
+
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+
+        if project_obj.projectuser_set.filter(
+                user=self.request.user,
+                role__name='User',
+                status__name='Active').exists():
+            return True
+
+        if project_obj.projectuser_set.filter(
+                user=self.request.user,
+                role__name='Manager',
+                status__name='Active').exists() and len(project_obj.projectuser_set.filter(role__name='Manager')) > 1:
+            return True
+
+    def post(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        project_obj = get_object_or_404(Project, pk=pk)
+
+        project_user_removal_status_pending_remove, created = \
+            ProjectUserRemovalRequestStatusChoice.objects.get_or_create(name='Pending')
+
+        project_user_removal_request, created = ProjectUserRemovalRequest.objects.get_or_create(
+            project_user=project_obj.projectuser_set.get(user=self.request.user),
+            requester=self.request.user,
+        )
+
+        project_user_removal_request.status = project_user_removal_status_pending_remove
+        project_user_removal_request.save()
+
+        if EMAIL_ENABLED:
+            # send email to user
+            template_context = {
+                'user_first_name': self.request.user.first_name,
+                'user_last_name': self.request.user.last_name,
+                'project_name': project_obj.name,
+                'signature': EMAIL_SIGNATURE,
+                'support_email': SUPPORT_EMAIL,
+            }
+
+            send_email_template(
+                'Project Removal Request',
+                'email/project_removal/project_removal_self_confirm.txt',
+                template_context,
+                EMAIL_SENDER,
+                [self.request.user.email]
+            )
+
+            # send emails to managers/pis
+            manager_pi_queryset = project_obj.projectuser_set.filter(
+                role__name__in=['Manager', 'Principal Investigator'],
+                status__name='Active')
+
+            for manager in manager_pi_queryset:
+                template_context = {
+                    'manager_first_name': manager.user.first_name,
+                    'manager_last_name': manager.user.last_name,
+                    'user_first_name': self.request.user.first_name,
+                    'user_last_name': self.request.user.last_name,
+                    'project_name': project_obj.name,
+                    'signature': EMAIL_SIGNATURE,
+                    'support_email': SUPPORT_EMAIL,
+                }
+
+                send_email_template(
+                    'Project Removal Request',
+                    'email/project_removal/project_removal_self.txt',
+                    template_context,
+                    EMAIL_SENDER,
+                    [manager.user.email]
+                )
+
+            # Send email to admins
+            template_context = {
+                'user_first_name': self.request.user.first_name,
+                'user_last_name': self.request.user.last_name,
+                'project_name': project_obj.name,
+            }
+
+            send_email_template(
+                'Project Removal Request',
+                'email/project_removal/project_removal_admin.txt',
+                template_context,
+                EMAIL_SENDER,
+                EMAIL_ADMIN_LIST
+            )
 
         return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': pk}))
 
@@ -3691,3 +3843,4 @@ class VectorProjectUndenyRequestView(LoginRequiredMixin, UserPassesTestMixin, Vi
         return HttpResponseRedirect(
             reverse('vector-project-request-detail',
                     kwargs={'pk': kwargs.get('pk')}))
+
