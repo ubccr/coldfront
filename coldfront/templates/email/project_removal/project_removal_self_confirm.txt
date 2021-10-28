@@ -1,0 +1,8 @@
+Dear {{ user_first_name }} {{ user_last_name }},
+
+This message is confirming that you have requested to remove yourself from {{ project_name }}. The request will be reviewed by administrators. You will receive a confirmation message after admins have removed you from the project.
+
+If you have any questions, please contact us at {{ support_email }}.
+
+Thank you,
+{{ signature }}
