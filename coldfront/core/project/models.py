@@ -483,3 +483,19 @@ class VectorProjectAllocationRequest(TimeStampedModel):
     class Meta:
         verbose_name = 'Vector Project Allocation Request'
         verbose_name_plural = 'Vector Project Allocation Requests'
+
+
+class ProjectUserRemovalRequestStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+
+    # one of "Pending", "Processing", "Complete"
+
+
+class ProjectUserRemovalRequest(TimeStampedModel):
+    project_user = models.ForeignKey(ProjectUser, on_delete=models.CASCADE)
+    requester = models.ForeignKey(User, on_delete=models.CASCADE)
+    request_time = models.DateTimeField(default=datetime.datetime.now(datetime.timezone.utc))
+    completion_time = models.DateTimeField(null=True)
+    status = models.ForeignKey(ProjectUserRemovalRequestStatusChoice, on_delete=models.CASCADE, null=True)
+
+
