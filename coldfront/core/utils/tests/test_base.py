@@ -1,4 +1,6 @@
+from django.contrib.auth.models import User
 from django.core.management import call_command
+from coldfront.core.utils.common import utc_now_offset_aware
 from django.test import Client
 from django.test import TestCase
 from io import StringIO
@@ -31,3 +33,23 @@ class TestBase(TestCase):
 
         # Create a test client.
         self.client = Client()
+
+    def create_test_user(self):
+        """Create a User with username 'test_user' and set this
+        instance's 'user' attribute to it."""
+        self.user = User.objects.create(
+            email='test_user@email.com',
+            first_name='Test',
+            last_name='User',
+            username='test_user')
+        self.user.set_password(self.password)
+        self.user.save()
+        return self.user
+
+    @staticmethod
+    def sign_user_access_agreement(user):
+        """Simulate the given User signing the access agreement at the
+        current time."""
+        user_profile = user.userprofile
+        user_profile.access_agreement_signed_date = utc_now_offset_aware()
+        user_profile.save()

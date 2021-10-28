@@ -1,8 +1,6 @@
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectStatusChoice
-from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
-from django.contrib.auth.models import User
 from django.urls import reverse
 
 
@@ -12,13 +10,8 @@ class TestProjectJoinView(TestBase):
     def setUp(self):
         """Set up test data."""
         super().setUp()
-        self.user = User.objects.create(
-            email='test_user@email.com',
-            first_name='Test',
-            last_name='User',
-            username='test_user')
-        self.user.set_password(self.password)
-        self.user.save()
+        self.create_test_user()
+        self.sign_user_access_agreement(self.user)
         self.client.login(username=self.user.username, password=self.password)
 
     @staticmethod
@@ -30,11 +23,6 @@ class TestProjectJoinView(TestBase):
     def test_inactive_projects_cannot_be_joined(self):
         """Test that Projects with the 'Inactive' status cannot be
         joined."""
-        # Simulate signing the user access agreement.
-        user_profile = self.user.userprofile
-        user_profile.access_agreement_signed_date = utc_now_offset_aware()
-        user_profile.save()
-
         name = 'inactive_project'
         inactive_status = ProjectStatusChoice.objects.get(name='Inactive')
         project = Project.objects.create(
