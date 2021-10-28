@@ -14,7 +14,7 @@ urlpatterns = [
     path('<int:pk>/add-users-search/', project_views.ProjectAddUsersSearchView.as_view(), name='project-add-users-search'),
     path('<int:pk>/add-users-search-results/', project_views.ProjectAddUsersSearchResultsView.as_view(), name='project-add-users-search-results'),
     path('<int:pk>/add-users/', project_views.ProjectAddUsersView.as_view(), name='project-add-users'),
-    # path('<int:pk>/remove-users/', project_views.ProjectRemoveUsersView.as_view(), name='project-remove-users'),
+    path('<int:pk>/remove-users/', project_views.ProjectRemoveUsersView.as_view(), name='project-remove-users'),
     path('<int:pk>/user-detail/<int:project_user_pk>', project_views.ProjectUserDetail.as_view(), name='project-user-detail'),
     path('<int:pk>/review/', project_views.ProjectReviewView.as_view(), name='project-review'),
     path('<int:pk>/join/', project_views.ProjectJoinView.as_view(), name='project-join'),
@@ -54,6 +54,7 @@ from coldfront.core.project.views import VectorProjectRequestView
 from coldfront.core.project.views import VectorProjectReviewEligibilityView
 from coldfront.core.project.views import VectorProjectReviewSetupView
 from coldfront.core.project.views import VectorProjectUndenyRequestView
+from coldfront.core.project.views import ProjectRemoveSelf
 from django.views.generic import TemplateView
 
 
@@ -134,4 +135,7 @@ urlpatterns += [
     path('vector-project-request/<int:pk>/undeny',
          VectorProjectUndenyRequestView.as_view(),
          name='vector-project-undeny-request'),
+    path('<int:pk>/remove-self',
+         ProjectRemoveSelf.as_view(),
+         name='project-remove-self')
 ]
