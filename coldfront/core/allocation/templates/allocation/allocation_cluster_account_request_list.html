@@ -18,26 +18,27 @@ Cluster Account Review New and Pending Requests
     <tr>
         <td>
             {% if request_filter == 'completed' %}
-                Viewing COMPLETED requests for cluster access. You may also view pending
+                Viewing completed requests for cluster access. You may also view pending
                 requests
                 <a href="{% url 'allocation-cluster-account-request-list' %}?show_all_requests=on">
                     <span class="accessibility-link-text">Pending Requests</span>
                     here</a>.
             {% else %}
-                Viewing PENDING requests for cluster access. You may also view completed
+                Viewing pending requests for cluster access. You may also view completed
                 requests
                 <a href="{% url 'allocation-cluster-account-request-list-completed' %}?show_all_requests=on">
                     <span class="accessibility-link-text">Completed Requests</span>
                     here</a>.
             {% endif %}
         </td>
+    <td>
+    </td>
     </tr>
+    {% if request_filter == 'pending' and user.is_superuser %}
       <tr>
       <p>
-      {% if user.is_superuser %}
         <td>
-          Below is a list of cluster access requests that are either pending or
-          being processed on the cluster. Requests are created when project
+          Requests are created when project
           join requests that have completed their delay period are
           automatically approved, which occurs periodically. You may manually
           perform this step using the Refresh button.
@@ -53,14 +54,13 @@ Cluster Account Review New and Pending Requests
         </td>
       {% else %}
       <td>
-          Below is a list of cluster access requests that are either pending or
-          being processed on the cluster. Requests are created when project
+          Requests are created when project
           join requests that have completed their delay period are
           automatically approved, which occurs periodically.
       </td>
-    {% endif %}
           </p>
       </tr>
+    {% endif %}
     </tbody>
   </table>
 </div>
@@ -137,6 +137,7 @@ Cluster Account Review New and Pending Requests
         <th scope="col">
           Allocation Actions
         </th>
+          {% endif %}
       </tr>
     </thead>
     <tbody>
@@ -166,13 +167,15 @@ Cluster Account Review New and Pending Requests
           </a>
         </td>
         <td>
-          <span class="badge badge-warning">
             {% if cluster_account.value == "Pending - Add" %}
-              Pending
-            {% else %}
-              {{ cluster_account.value }}
+                <span class="badge badge-warning"> Pending </span>
             {% endif %}
-          </span>
+            {% if cluster_account.value == "Active" %}
+                <span class="badge badge-success"> {{ cluster_account.value }} </span>
+            {% endif %}
+            {% if cluster_account.value == "Denied" %}
+                <span class="badge badge-danger"> {{ cluster_account.value }} </span>
+            {% endif %}
         </td>
           {% if user.is_superuser and request_filter == 'pending' %}
         <td class="text-nowrap">
@@ -220,6 +223,7 @@ Cluster Account Review New and Pending Requests
                 Deny
             </button>
         </td>
+      {% endif %}
       </tr>
       {% endfor %}
     </tbody>
