@@ -19,7 +19,7 @@
     {% endif %}
     {% if perms.allocation.can_review_cluster_account_requests %}
     <a id="navbar-cluster-requests" class="dropdown-item" href="{% url 'allocation-cluster-account-request-list' %}">
-        Cluster Requests</a>
+        Cluster Account Requests</a>
     {% endif %}
       {% if perms.project.view_savioprojectallocationrequest %}
       <a id="navbar-project-savio-project-requests" class="dropdown-item" href="{% url 'savio-project-pending-request-list' %}">
