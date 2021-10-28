@@ -3,7 +3,7 @@ from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):
-    help = "Create group for staff with all necessary permissions."
+    help = 'Create group for staff with all necessary permissions.'
 
     def handle(self, *args, **options):
         new_group, created = Group.objects.get_or_create(name='staff_group')
@@ -28,5 +28,5 @@ class Command(BaseCommand):
                                   'core/utils/management/commands/create_staff_group.py')
 
         # Send a joined list of permissions to a command-line output.
-        self.stdout.write("Created staff group and permissions.")
+        self.stdout.write('Created staff group and permissions.')
 
