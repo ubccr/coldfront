@@ -1862,7 +1862,7 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
             allowed_to_approve_users = True
 
         if not allowed_to_approve_users:
-            message = 'Only admins may make POST requests'
+            message = 'You do not have permission to view the this page.'
             messages.error(request, message)
 
             return HttpResponseRedirect(
@@ -2626,13 +2626,13 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         context['setup_status'] = self.__get_setup_status()
         context['is_checklist_complete'] = self.__is_checklist_complete()
 
-        context['is_allowed_to_manage_request'] = (self.request.user.is_superuser)
+        context['is_allowed_to_manage_request'] = self.request.user.is_superuser
 
         return context
 
     def post(self, request, *args, **kwargs):
         if not self.request.user.is_superuser:
-            message = 'Only admins may make POST requests'
+            message = 'You do not have permission to access this page.'
             messages.error(request, message)
             pk = self.request_obj.pk
 
@@ -2652,7 +2652,6 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             project, allocation = runner.run()
         except Exception as e:
             self.logger.exception(e)
-            print('here2')
             messages.error(self.request, self.error_message)
         else:
             message = (
@@ -3452,7 +3451,7 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
     def post(self, request, *args, **kwargs):
         if not self.request.user.is_superuser:
-            message = 'Only admins may make POST requests'
+            message = 'You do not have permission to view the this page.'
             messages.error(request, message)
             pk = self.request_obj.pk
 
