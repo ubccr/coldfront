@@ -45,6 +45,6 @@ WSGIPassAuthorization On
 <VirtualHost {{ host_ip }}:80>
 
     ServerName {{ hostname }}
-    Redirect "/" "{{ full_host_path }}"
+    Redirect permanent "/" "{{ full_host_path }}"
 
 </VirtualHost>
