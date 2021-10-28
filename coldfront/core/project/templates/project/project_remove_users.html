@@ -10,9 +10,6 @@
 {% if formset %}
 <div class="card border-light">
   <div class="card-body">
-
-    <form action="{% url 'project-remove-users' project.pk %}" method="post">
-      {% csrf_token %}
       <div class="table-responsive">
         <table class="table table-sm table-hover">
           <thead>
@@ -43,21 +40,54 @@
           </tbody>
         </table>
       </div>
-      {{ formset.management_form }}
        <div>
-        <button type="submit" class="btn btn-primary"><i class="fas fa-user-minus" aria-hidden="true"></i> Remove Selected Users From Project</button>
+
+           <button class="btn btn-danger mr-1" data-toggle="modal" data-target="#denial{{ user.pk }}Modal">
+               Remove Selected Users From Projecttttt
+           </button>
         <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a>
         <br>
       </div>
-    </form>
   </div>
 </div>
+    <div class="modal fade" id="denial{{ user.pk }}Modal" tabindex="-1" role="dialog" aria-labelledby="denial{{ user.pk }}ModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <form action="{% url 'project-remove-users' project.pk %}" method="post">
+                {% csrf_token %}
+            <div class="modal-content">
+                <div class="modal-header">
+                    <p class="modal-title">Leave Project</p>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <label>Are You Sure?</label>
+
+                    <br><b>User:</b> {{ user.email }}
+                    <br><b>Project:</b> {{ project.name }}
+                </div>
+                {{ formset.management_form }}
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button class="btn btn-danger mr-1" type="submit">
+                        Poggers
+                    </button>
+                </div>
+            </div>
+            </form>
+        </div>
+    </div>
 {% else %} 
   <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a> 
   <div class="alert alert-info">
     No users to remove!
   </div>
 {% endif %}
+
+
 <script>
 $("#selectAll").click(function() {
   $("input[name^='userform-']").prop('checked', $(this).prop('checked'));
