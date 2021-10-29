@@ -149,6 +149,26 @@ class AllocationSearchForm(forms.Form):
     show_all_allocations = forms.BooleanField(initial=False, required=False)
 
 
+class ClusterRequestSearchForm(forms.Form):
+    CLUSTER_REQUEST_STATUS_CHOICES = (
+        ('', '-----'),
+        ('active', 'Active'),
+        ('denied', 'Denied'),
+        ('pending', 'Pending'),
+    )
+
+    project_name = forms.CharField(label='Project Title',
+                              max_length=100, required=False)
+    username = forms.CharField(
+        label='Username', max_length=100, required=False)
+    email = forms.CharField(label='Email', max_length=100, required=False)
+    request_status = forms.ChoiceField(label='Request Status',
+                                       choices=CLUSTER_REQUEST_STATUS_CHOICES,
+                                       widget=forms.Select(),
+                                       required=False)
+    show_all_requests = forms.BooleanField(initial=True, required=False)
+
+
 class AllocationReviewUserForm(forms.Form):
     ALLOCATION_REVIEW_USER_CHOICES = (
         ('keep_in_allocation_and_project', 'Keep in allocation and project'),
