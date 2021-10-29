@@ -45,7 +45,7 @@ Vector Project Request Detail
             <td>
               {% with status=vector_request.status.name %}
                 {% if status == 'Under Review' %}
-                  <p>This request is currently under review. Administrators must determine if the requester is eligible for access.</p>
+                  <p>This request is currently under review. Administrators must determine if the PI is eligible for access.</p>
                 {% elif status == 'Approved - Processing' %}
                   <p>This request has been approved, and is currently being set up on the cluster.</p>
                 {% elif status == 'Approved - Complete' %}

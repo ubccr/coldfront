@@ -45,11 +45,19 @@ Project Renewal Request Detail
             <td>
               {% with status=renewal_request.status.name %}
                 {% if status == 'Under Review' %}
-                  <p>TODO</p>
+                  <p>
+                    This request is currently under review. Administrators must
+                    determine if the PI is eligible for access.
+                  </p>
                 {% elif status == 'Approved' %}
-                  <p>TODO</p>
+                  <p>
+                    This request has been approved, but has not been processed
+                    yet.
+                  </p>
                 {% elif status == 'Complete' %}
-                  <p>TODO</p>
+                  <p>
+                    This request has been fully processed.
+                  </p>
                 {% else %}
                   <p>
                     This request has been denied. Below are specific details:
