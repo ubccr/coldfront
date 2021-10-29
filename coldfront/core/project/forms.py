@@ -264,7 +264,7 @@ class SavioProjectExistingPIForm(forms.Form):
             pis_with_existing_fcas = set(ProjectUser.objects.filter(
                 role=pi_role,
                 project__name__startswith='fc_',
-                project__status__name__in=['New', 'Active']
+                project__status__name__in=['New', 'Active', 'Inactive']
             ).values_list('user__pk', flat=True))
             status = ProjectAllocationRequestStatusChoice.objects.get(
                 name='Under Review')
