@@ -371,7 +371,11 @@ class AllocationListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     def test_func(self):
         """Temporary block: Only allow superusers access."""
         # TODO: Remove this block when allocations should be displayed.
-        return self.request.user.is_superuser
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('allocation.can_view_all_allocations'):
+            return True
 
     def get_queryset(self):
 
@@ -1038,9 +1042,6 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('allocation.can_review_allocation_requests'):
-            return True
-
         messages.error(
             self.request, 'You do not have permission to review allocation requests.')
 
@@ -1060,9 +1061,6 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
         """ UserPassesTestMixin Tests"""
 
         if self.request.user.is_superuser:
-            return True
-
-        if self.request.user.has_perm('allocation.can_review_allocation_requests'):
             return True
 
         messages.error(
@@ -1128,9 +1126,6 @@ class AllocationDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
         """ UserPassesTestMixin Tests"""
 
         if self.request.user.is_superuser:
-            return True
-
-        if self.request.user.has_perm('allocation.can_review_allocation_requests'):
             return True
 
         messages.error(
@@ -1739,9 +1734,10 @@ class AllocationClusterAccountRequestListView(LoginRequiredMixin,
         """UserPassesTestMixin tests."""
         if self.request.user.is_superuser:
             return True
-        permission = 'allocation.can_review_cluster_account_requests'
-        if self.request.user.has_perm(permission):
+
+        if self.request.user.has_perm('allocation.can_review_cluster_account_requests'):
             return True
+
         message = (
             'You do not have permission to review cluster account requests.')
         messages.error(self.request, message)
@@ -1763,8 +1759,8 @@ class AllocationClusterAccountUpdateStatusView(LoginRequiredMixin,
         """UserPassesTestMixin tests."""
         if self.request.user.is_superuser:
             return True
-        permission = 'allocation.can_review_cluster_account_requests'
-        if self.request.user.has_perm(permission):
+
+        if self.request.user.has_perm('allocation.can_review_cluster_account_requests'):
             return True
         message = (
             'You do not have permission to modify a cluster access request.')
@@ -1827,9 +1823,7 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
         """UserPassesTestMixin tests."""
         if self.request.user.is_superuser:
             return True
-        permission = 'allocation.can_review_cluster_account_requests'
-        if self.request.user.has_perm(permission):
-            return True
+
         message = (
             'You do not have permission to activate a cluster access '
             'request.')
@@ -1970,9 +1964,7 @@ class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,
         """UserPassesTestMixin tests."""
         if self.request.user.is_superuser:
             return True
-        permission = 'allocation.can_review_cluster_account_requests'
-        if self.request.user.has_perm(permission):
-            return True
+
         message = (
             'You do not have permission to deny a cluster access request.')
         messages.error(self.request, message)

@@ -15,6 +15,7 @@ Cluster Account Review New and Pending Requests
 <div class="table-responsive">
   <table class="table table-sm">
     <tbody>
+    {% if user.is_superuser %}
       <tr>
         <td>
           Below is a list of cluster access requests that are either pending or
@@ -33,6 +34,16 @@ Cluster Account Review New and Pending Requests
           </form>
         </td>
       </tr>
+    {% else %}
+    <tr>
+        <td>
+            Below is a list of cluster access requests that are either pending or
+            being processed on the cluster. Requests are created when project
+            join requests that have completed their delay period are
+            automatically approved, which occurs periodically.
+        </td>
+    </tr>
+    {% endif %}
     </tbody>
   </table>
 </div>
@@ -73,15 +84,17 @@ Cluster Account Review New and Pending Requests
         <th scope="col">
           Status
         </th>
+      {% if user.is_superuser %}
         <th scope="col">
           Allocation Actions
         </th>
+      {% endif %}
       </tr>
     </thead>
     <tbody>
       {% for cluster_account in cluster_account_list %}
       <tr>
-        <td>{{ cluster_account.pk }}</a></td>
+        <td>{{ cluster_account.pk }}</td>
         <td>{{ cluster_account.modified|date:"M. d, Y" }}</td>
         <td>{{ cluster_account.allocation_user.user.email }}</td>
         <td>
@@ -113,6 +126,7 @@ Cluster Account Review New and Pending Requests
             {% endif %}
           </span>
         </td>
+          {% if user.is_superuser %}
         <td class="text-nowrap">
           {% if cluster_account.value == "Pending - Add" %}
             <a href="{% url 'allocation-cluster-account-update-status' cluster_account.pk %}" class="btn btn-success mr-1">
@@ -122,7 +136,7 @@ Cluster Account Review New and Pending Requests
             <a href="{% url 'allocation-cluster-account-activate-request' cluster_account.pk %}" class="btn btn-success mr-1">
               Activate
             </a>
-          {% endif %}
+            {% endif %}
             <div class="modal fade" id="denial{{ cluster_account.pk }}Modal" tabindex="-1" role="dialog" aria-labelledby="denial{{ cluster_account.pk }}ModalLabel" aria-hidden="true">
             <div class="modal-dialog" role="document">
                 <form action="{% url 'allocation-cluster-account-deny-request' cluster_account.pk %}" method="get" id="denial{{ cluster_account.pk }}Form">
@@ -158,6 +172,7 @@ Cluster Account Review New and Pending Requests
                 Deny
             </button>
         </td>
+      {% endif %}
       </tr>
       {% endfor %}
     </tbody>
