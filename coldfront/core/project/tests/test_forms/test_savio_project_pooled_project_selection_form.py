@@ -23,9 +23,9 @@ class TestSavioProjectPooledProjectSelectionForm(TestBase):
         Project.objects.create(
             name=inactive_name, title=inactive_name, status=inactive_status)
 
-        form = SavioProjectPooledProjectSelectionForm(allocation_type='fc_')
-        project_field = form.fields['project']
-        self.assertEqual(len(project_field.queryset), 1)
-        self.assertEqual(project_field.queryset[0], active_project)
+        form = SavioProjectPooledProjectSelectionForm(allocation_type='FCA')
+        project_field_choices = form.fields['project'].queryset
+        self.assertEqual(len(project_field_choices), 1)
+        self.assertEqual(project_field_choices[0], active_project)
 
     # TODO
