@@ -17,45 +17,138 @@ Cluster Account Review New and Pending Requests
     <tbody>
       <tr>
         <td>
-          Below is a list of cluster access requests that are either pending or
-          being processed on the cluster. Requests are created when project
-          join requests that have completed their delay period are
-          automatically approved, which occurs periodically. You may manually
-          perform this step using the Refresh button.
+          {% if request_filter == 'completed' %}
+            Viewing completed requests for cluster access. You may also view
+            pending requests
+            <a href="{% url 'allocation-cluster-account-request-list' %}?show_all_requests=on">
+              <span class="accessibility-link-text">
+                Pending Requests
+              </span>
+              here</a>.
+          {% else %}
+            Viewing pending requests for cluster access. You may also view
+            completed requests
+            <a href="{% url 'allocation-cluster-account-request-list-completed' %}?show_all_requests=on">
+              <span class="accessibility-link-text">
+                Completed Requests
+              </span>
+              here</a>.
+          {% endif %}
         </td>
         <td>
-          <form method="post" action="{% url 'project-auto-approve-join-requests' %}">
-            {% csrf_token %}
-            <button class="btn btn-primary mr-1" type="submit">
-              <i class="fas fa-sync" aria-hidden="true"></i>
-              Refresh
-            </button>
-          </form>
         </td>
       </tr>
+      {% if user.is_superuser and request_filter == 'pending' %}
+        <tr>
+          <p>
+            <td>
+              Requests are created when project join requests that have
+              completed their delay period are automatically approved, which
+              occurs periodically. You may manually perform this step using the
+              Refresh button.
+            </td>
+            <td>
+              <form method="post" action="{% url 'project-auto-approve-join-requests' %}">
+                {% csrf_token %}
+                <button class="btn btn-primary mr-1" type="submit">
+                  <i class="fas fa-sync" aria-hidden="true"></i>
+                  Refresh
+                </button>
+              </form>
+            </td>
+          </p>
+        </tr>
+      {% else %}
+        <tr>
+          <td>
+            Requests are created when project join requests that have completed
+            their delay period are automatically approved, which occurs
+            periodically.
+          </td>
+        </tr>
+      {% endif %}
     </tbody>
   </table>
 </div>
+
+{% if expand_accordion == "show" %}
+  <div class="mb-3" id="accordion">
+    <div class="card">
+      <div class="card-header">
+        <a id="expand_button" role="button" class="card-link " data-toggle="collapse" href="#collapseOne">
+          <i class="fas fa-filter" aria-hidden="true"></i> Search
+          <i id="plus_minus" class="fas {{expand_accordion|get_icon}} float-right"></i>
+        </a>
+      </div>
+      <div id="collapseOne" class="collapse {{expand_accordion}}" data-parent="#accordion">
+        <div class="card-body">
+          {% if request_filter == 'completed' %}
+            <form id="filter_form" method="GET" action="{% url 'allocation-cluster-account-request-list-completed' %}" autocomplete="off">
+              {{ cluster_search_form|crispy }}
+              <input type="submit" class="btn btn-primary" value="Search">
+              <button id="form_reset_button" type="button" class="btn btn-secondary">Reset</button>
+            </form>
+          {% else %}
+            <form id="filter_form" method="GET" action="{% url 'allocation-cluster-account-request-list' %}" autocomplete="off">
+              {{ cluster_search_form|crispy }}
+              <input type="submit" class="btn btn-primary" value="Search">
+              <button id="form_reset_button" type="button" class="btn btn-secondary">Reset</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <hr>
+{% endif %}
 
 {% if cluster_account_list %}
 <div class="table-responsive">
   <table class="table table-sm">
     <thead>
       <tr>
-        <th scope="col">#</th>
-        <th scope="col">Date Requested/<br>Last Modified</th>
-        <th scope="col">User Email</th>
-        <th scope="col">Cluster Username</th>
-        <th scope="col">Project</th>
-        <th scope="col">Allocation</th>
-        <th scope="col">Status</th>
-        <th scope="col">Allocation Actions</th>
+        <th scope="col">
+          #
+          <a href="?order_by=id&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+          <a href="?order_by=id&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+        </th>
+        <th scope="col">
+          Date Requested/<br>Last Modified
+          <a href="?order_by=created&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+          <a href="?order_by=created&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+        </th>    
+        <th scope="col">
+          User Email
+          <a href="?order_by=allocation_user__user__email&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+          <a href="?order_by=allocation_user__user__email&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+        </th>
+        <th scope="col">
+          Cluster Username
+          <a href="?order_by=allocation_user__user__username&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+          <a href="?order_by=allocation_user__user__username&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+        </th>
+        <th scope="col">
+          Project
+          <a href="?order_by=allocation__project__name&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+          <a href="?order_by=allocation__project__name=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+        </th>
+        <th scope="col">
+          Allocation
+        </th>
+        <th scope="col">
+          Status
+        </th>
+      {% if user.is_superuser and request_filter == 'pending' %}
+        <th scope="col">
+          Allocation Actions
+        </th>
+          {% endif %}
       </tr>
     </thead>
     <tbody>
       {% for cluster_account in cluster_account_list %}
       <tr>
-        <td>{{ cluster_account.pk }}</a></td>
+        <td>{{ cluster_account.pk }}</td>
         <td>{{ cluster_account.modified|date:"M. d, Y" }}</td>
         <td>{{ cluster_account.allocation_user.user.email }}</td>
         <td>
@@ -79,14 +172,19 @@ Cluster Account Review New and Pending Requests
           </a>
         </td>
         <td>
-          <span class="badge badge-warning">
-            {% if cluster_account.value == "Pending - Add" %}
-              Pending
-            {% else %}
-              {{ cluster_account.value }}
+          {% with status=cluster_account.value %}
+            {% if status == "Pending - Add" %}
+              <span class="badge badge-warning">Pending</span>
+            {% elif status == "Processing" %}
+              <span class="badge badge-warning">{{ status }}</span>
+            {% elif status == "Active" %}
+              <span class="badge badge-success">{{ status }}</span>
+            {% elif status == "Denied" %}
+              <span class="badge badge-danger">{{ status }}</span>
             {% endif %}
-          </span>
+          {% endwith %}
         </td>
+          {% if user.is_superuser and request_filter == 'pending' %}
         <td class="text-nowrap">
           {% if cluster_account.value == "Pending - Add" %}
             <a href="{% url 'allocation-cluster-account-update-status' cluster_account.pk %}" class="btn btn-success mr-1">
@@ -97,45 +195,59 @@ Cluster Account Review New and Pending Requests
               Activate
             </a>
           {% endif %}
-            <div class="modal fade" id="denial{{ cluster_account.pk }}Modal" tabindex="-1" role="dialog" aria-labelledby="denial{{ cluster_account.pk }}ModalLabel" aria-hidden="true">
+          <div class="modal fade" id="denial{{ cluster_account.pk }}Modal" tabindex="-1" role="dialog" aria-labelledby="denial{{ cluster_account.pk }}ModalLabel" aria-hidden="true">
             <div class="modal-dialog" role="document">
-                <form action="{% url 'allocation-cluster-account-deny-request' cluster_account.pk %}" method="get" id="denial{{ cluster_account.pk }}Form">
-                    {% csrf_token %}
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <p class="modal-title">Deny Request</p>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
+              <form action="{% url 'allocation-cluster-account-deny-request' cluster_account.pk %}" method="get" id="denial{{ cluster_account.pk }}Form">
+                {% csrf_token %}
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <p class="modal-title">Deny Request</p>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                  </div>
 
-                        <div class="modal-body">
-                            <label>Are You Sure?</label>
+                  <div class="modal-body">
+                    <label>Are You Sure?</label>
 
-                            <br><b>User:</b> {{ cluster_account.allocation_user.user.email }}
-                            <br><b>Project:</b> {{ cluster_account.allocation.project.name }}
-                            <br><b>Allocation:</b> {{ cluster_account.allocation.pk }}
-                        </div>
+                    <br><b>User:</b> {{ cluster_account.allocation_user.user.email }}
+                    <br><b>Project:</b> {{ cluster_account.allocation.project.name }}
+                    <br><b>Allocation:</b> {{ cluster_account.allocation.pk }}
+                  </div>
 
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                            <button class="btn btn-danger mr-1" type="submit">
-                                Yes, deny this request.
-                            </button>
-                        </div>
-                    </div>
-                </form>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button class="btn btn-danger mr-1" type="submit">
+                        Yes, deny this request.
+                    </button>
+                  </div>
+                </div>
+              </form>
             </div>
-            </div>
-
-            <button class="btn btn-danger mr-1" data-toggle="modal" data-target="#denial{{ cluster_account.pk }}Modal">
-                Deny
-            </button>
+          </div>
+          <button class="btn btn-danger mr-1" data-toggle="modal" data-target="#denial{{ cluster_account.pk }}Modal">
+            Deny
+          </button>
         </td>
+      {% endif %}
       </tr>
       {% endfor %}
     </tbody>
   </table>
+  {% if is_paginated %} Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    <ul class="pagination float-right mr-3">
+      {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{filter_parameters_with_order_by}}">Previous</a></li>
+      {% else %}
+        <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+      {% endif %}
+      {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{filter_parameters_with_order_by}}">Next</a></li>
+      {% else %}
+        <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
+      {% endif %}
+    </ul>
+  {% endif %}
 </div>
 {% else %}
 <div class="alert alert-info">
@@ -147,6 +259,25 @@ Cluster Account Review New and Pending Requests
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-admin").addClass("active");
   $("#navbar-allocation-cluster-account-requests").addClass("active");
+</script>
+
+<script>
+  $(document).on('click', '#form_reset_button', function() {
+    resetForm($('#filter_form'));
+  });
+
+  function resetForm($form) {
+    $form.find('input:text, textarea').val('');
+    $("select").val('');
+  };
+
+  $("#expand_button").click(function() {
+
+    $('#collapseOne').collapse();
+    icon = $("#plus_minus");
+    icon.toggleClass("fa-plus fa-minus");
+
+  });
 </script>
 
 {% endblock %}

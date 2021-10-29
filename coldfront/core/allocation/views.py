@@ -38,7 +38,8 @@ from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationRequestClusterAccountForm,
                                              AllocationReviewUserForm,
                                              AllocationSearchForm,
-                                             AllocationUpdateForm)
+                                             AllocationUpdateForm,
+                                             ClusterRequestSearchForm)
 from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationAttribute,
                                               AllocationAttributeType,
@@ -371,7 +372,11 @@ class AllocationListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     def test_func(self):
         """Temporary block: Only allow superusers access."""
         # TODO: Remove this block when allocations should be displayed.
-        return self.request.user.is_superuser
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('allocation.can_view_all_allocations'):
+            return True
 
     def get_queryset(self):
 
@@ -411,7 +416,7 @@ class AllocationListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
             # username
             if data.get('username'):
                 allocations = allocations.filter(
-                    Q(username__icontains=data.get('username')) &
+                    Q(allocationuser__user__username__icontains=data.get('username')) &
                     (Q(project__projectuser__role__name='Principal Investigator') |
                      Q(allocationuser__status__name='Active'))
                 )
@@ -1038,9 +1043,6 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('allocation.can_review_allocation_requests'):
-            return True
-
         messages.error(
             self.request, 'You do not have permission to review allocation requests.')
 
@@ -1060,9 +1062,6 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
         """ UserPassesTestMixin Tests"""
 
         if self.request.user.is_superuser:
-            return True
-
-        if self.request.user.has_perm('allocation.can_review_allocation_requests'):
             return True
 
         messages.error(
@@ -1128,9 +1127,6 @@ class AllocationDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
         """ UserPassesTestMixin Tests"""
 
         if self.request.user.is_superuser:
-            return True
-
-        if self.request.user.has_perm('allocation.can_review_allocation_requests'):
             return True
 
         messages.error(
@@ -1712,29 +1708,117 @@ class AllocationRequestClusterAccountView(LoginRequiredMixin,
 
 class AllocationClusterAccountRequestListView(LoginRequiredMixin,
                                               UserPassesTestMixin,
-                                              TemplateView):
+                                              ListView):
     template_name = 'allocation/allocation_cluster_account_request_list.html'
     login_url = '/'
+    completed = False
+    paginate_by = 30
+    context_object_name = "cluster_request_list"
+
+    def get_queryset(self):
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            if direction == 'asc':
+                direction = ''
+            else:
+                direction = '-'
+            order_by = direction + order_by
+        else:
+            order_by = '-modified'
+        cluster_account_status = AllocationAttributeType.objects.get(
+            name='Cluster Account Status')
+
+        cluster_search_form = ClusterRequestSearchForm(self.request.GET)
+
+        if self.completed:
+            cluster_account_list = AllocationUserAttribute.objects.filter(
+                allocation_attribute_type=cluster_account_status,
+                value__in=['Denied', 'Active'])
+        else:
+            cluster_account_list = AllocationUserAttribute.objects.filter(
+                allocation_attribute_type=cluster_account_status,
+                value__in=['Pending - Add', 'Processing'])
+
+        if cluster_search_form.is_valid():
+            data = cluster_search_form.cleaned_data
+
+            if data.get('username'):
+                cluster_account_list = cluster_account_list.filter(allocation_user__user__username__icontains=data.get('username'))
+
+            if data.get('email'):
+                cluster_account_list = cluster_account_list.filter(allocation_user__user__email__icontains=data.get('email'))
+
+            if data.get('project_name'):
+                cluster_account_list = cluster_account_list.filter(allocation_user__allocation__project__name__icontains=data.get('project_name'))
+
+            if data.get('request_status'):
+                cluster_account_list = cluster_account_list.filter(value__icontains=data.get('request_status'))
+
+        return cluster_account_list.order_by(order_by)
 
     def test_func(self):
         """UserPassesTestMixin tests."""
         if self.request.user.is_superuser:
             return True
-        permission = 'allocation.can_review_cluster_account_requests'
-        if self.request.user.has_perm(permission):
+
+        if self.request.user.has_perm('allocation.can_review_cluster_account_requests'):
             return True
+
         message = (
             'You do not have permission to review cluster account requests.')
         messages.error(self.request, message)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        cluster_account_status = AllocationAttributeType.objects.get(
-            name='Cluster Account Status')
-        cluster_account_list = AllocationUserAttribute.objects.filter(
-            allocation_attribute_type=cluster_account_status,
-            value__in=['Pending - Add', 'Processing'])
-        context['cluster_account_list'] = cluster_account_list
+
+        cluster_search_form = ClusterRequestSearchForm(self.request.GET)
+        if cluster_search_form.is_valid():
+            context['cluster_search_form'] = cluster_search_form
+            data = cluster_search_form.cleaned_data
+            filter_parameters = ''
+            for key, value in data.items():
+                if value:
+                    if isinstance(value, list):
+                        for ele in value:
+                            filter_parameters += '{}={}&'.format(key, ele)
+                    else:
+                        filter_parameters += '{}={}&'.format(key, value)
+            context['cluster_search_form'] = cluster_search_form
+        else:
+            filter_parameters = None
+            context['cluster_search_form'] = ClusterRequestSearchForm()
+
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            filter_parameters_with_order_by = filter_parameters + \
+                                              'order_by=%s&direction=%s&' % (order_by, direction)
+        else:
+            filter_parameters_with_order_by = filter_parameters
+
+        context['expand_accordion'] = 'show'
+
+        context['filter_parameters'] = filter_parameters
+        context['filter_parameters_with_order_by'] = filter_parameters_with_order_by
+
+        context['request_filter'] = (
+            'completed' if self.completed else 'pending')
+        cluster_account_list = self.get_queryset()
+
+        paginator = Paginator(cluster_account_list, self.paginate_by)
+
+        page = self.request.GET.get('page')
+
+        try:
+            cluster_accounts = paginator.page(page)
+        except PageNotAnInteger:
+            cluster_accounts = paginator.page(1)
+        except EmptyPage:
+            cluster_accounts = paginator.page(paginator.num_pages)
+
+        context['cluster_account_list'] = cluster_accounts
+
         return context
 
 
@@ -1749,8 +1833,8 @@ class AllocationClusterAccountUpdateStatusView(LoginRequiredMixin,
         """UserPassesTestMixin tests."""
         if self.request.user.is_superuser:
             return True
-        permission = 'allocation.can_review_cluster_account_requests'
-        if self.request.user.has_perm(permission):
+
+        if self.request.user.has_perm('allocation.can_review_cluster_account_requests'):
             return True
         message = (
             'You do not have permission to modify a cluster access request.')
@@ -1813,9 +1897,7 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
         """UserPassesTestMixin tests."""
         if self.request.user.is_superuser:
             return True
-        permission = 'allocation.can_review_cluster_account_requests'
-        if self.request.user.has_perm(permission):
-            return True
+
         message = (
             'You do not have permission to activate a cluster access '
             'request.')
@@ -1956,9 +2038,7 @@ class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,
         """UserPassesTestMixin tests."""
         if self.request.user.is_superuser:
             return True
-        permission = 'allocation.can_review_cluster_account_requests'
-        if self.request.user.has_perm(permission):
-            return True
+
         message = (
             'You do not have permission to deny a cluster access request.')
         messages.error(self.request, message)

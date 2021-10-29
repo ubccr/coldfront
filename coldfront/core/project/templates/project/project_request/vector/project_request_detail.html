@@ -64,6 +64,15 @@ Vector Project Request Detail
                     <strong>Timestamp:</strong>
                     {{ denial_reason.timestamp|iso8601_to_datetime }}
                   </p>
+                  {% if user.is_superuser %}
+                    <p>
+                        <strong>Undeny Request:</strong>
+                        <a href="{% url 'vector-project-undeny-request' vector_request.pk %}" class="btn btn-primary">
+                            Undeny
+                        </a>
+                    </p>
+                      {% endif %}
+
                   <p>If you have any questions or concerns, please contact us at {{ support_email }}.</p>
                 {% endif %}
               {% endwith %}
