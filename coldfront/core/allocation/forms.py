@@ -201,9 +201,9 @@ class AllocationForm(forms.Form):
         required_field_text = 'This field is required'
         for key, value in resources[resource_obj.name].items():
             resource_name = resource_obj.name
+
             # First check if the required field was filled in.
             if value is None or value == '' or value is False:
-
                 # Handle special cases for missing required fields here before continuing.
                 if resource_name == 'Geode-Projects':
                     if key == 'end_date' and resources[resource_name]['use_indefinitely']:
@@ -268,24 +268,12 @@ class AllocationForm(forms.Form):
 
             # Value checks for a specific resource's required fields should go here.
             if resource_name == 'Geode-Projects':
-                #use_indefinitely = resources[resource_name]['use_indefinitely']
-                end_date = resources[resource_name]['end_date']
                 if key == 'storage_space_with_unit':
                     unit = resources[resource_name]['unit']
                     if value <= 0 and unit == 'TB' or value < 200 and unit == 'GB':
                         raise_error = True
                         self.add_error(key, 'Please enter a storage amount greater than or equal to 200GB')
                         continue
-                #elif key == 'end_date':
-                #    if not use_indefinitely and value <= date.today():
-                #        raise_error = True
-                #        self.add_error(key, 'Please select an end date later than today')
-                #        continue
-                #elif key == 'start_date':
-                #    if end_date and value >= end_date:
-                #        raise_error = True
-                #        self.add_error(key, 'Start date must be earlier than end date')
-                #        continue
 
         if raise_error:
             raise ValidationError('Please correct the errors below')
