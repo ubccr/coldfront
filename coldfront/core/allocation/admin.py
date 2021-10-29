@@ -9,7 +9,10 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationAttribute,
                                               AllocationAttributeType,
                                               AllocationAttributeUsage,
+                                              AllocationChangeRequest,
+                                              AllocationAttributeChangeRequest,
                                               AllocationStatusChoice,
+                                              AllocationChangeStatusChoice,
                                               AllocationUser,
                                               AllocationUserNote,
                                               AllocationUserStatusChoice,
@@ -343,3 +346,19 @@ class AllocationAttributeUsageAdmin(SimpleHistoryAdmin):
 @admin.register(AllocationAccount)
 class AllocationAccountAdmin(SimpleHistoryAdmin):
     list_display = ('name', 'user', )
+
+
+@admin.register(AllocationChangeStatusChoice)
+class AllocationChangeStatusChoiceAdmin(admin.ModelAdmin):
+    list_display = ('name', )
+
+
+@admin.register(AllocationChangeRequest)
+class AllocationChangeRequestAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'allocation', 'status', 'end_date_extension', 'justification', 'notes', )
+
+
+@admin.register(AllocationAttributeChangeRequest)
+class AllocationChangeStatusChoiceAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'allocation_change_request', 'allocation_attribute', 'new_value', )
+

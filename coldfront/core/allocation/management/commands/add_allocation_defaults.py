@@ -3,6 +3,7 @@ from django.core.management.base import BaseCommand
 from coldfront.core.allocation.models import (AttributeType,
                                               AllocationAttributeType,
                                               AllocationStatusChoice,
+                                              AllocationChangeStatusChoice,
                                               AllocationUserStatusChoice)
 
 
@@ -19,6 +20,9 @@ class Command(BaseCommand):
                        'Payment Requested', 'Payment Declined',
                        'Renewal Requested', 'Revoked', 'Unpaid',):
             AllocationStatusChoice.objects.get_or_create(name=choice)
+
+        for choice in ('Pending', 'Approved', 'Denied',):
+            AllocationChangeStatusChoice.objects.get_or_create(name=choice)
 
         for choice in ('Active', 'Error', 'Removed', ):
             AllocationUserStatusChoice.objects.get_or_create(name=choice)
