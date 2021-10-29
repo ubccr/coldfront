@@ -96,9 +96,9 @@ class Allocation(TimeStampedModel):
         blank=True,
         null=True
     )
-    email = models.CharField(max_length=40, blank=True, null=True)
+    email = models.EmailField(max_length=40, blank=True, null=True)
     url = models.CharField(max_length=50, blank=True, null=True)
-    faculty_email = models.CharField(max_length=40, blank=True, null=True)
+    faculty_email = models.EmailField(max_length=40, blank=True, null=True)
     store_ephi = models.CharField(
         max_length=3,
         choices=(('No', 'No'), ('Yes', 'Yes')),

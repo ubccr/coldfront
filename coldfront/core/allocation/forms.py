@@ -38,7 +38,7 @@ class AllocationForm(forms.Form):
         ),
         required=False
     )
-    email = forms.CharField(max_length=40, required=False)
+    email = forms.EmailField(max_length=40, required=False)
     url = forms.CharField(max_length=50, required=False)
     project_directory_name = forms.CharField(max_length=10, required=False)
     quantity = forms.IntegerField(required=False)
@@ -70,7 +70,7 @@ class AllocationForm(forms.Form):
     account_number = forms.CharField(max_length=9, required=False)
     sub_account_number = forms.CharField(max_length=20, required=False)
     license_term = forms.ChoiceField(choices=(('current','Current license'), ('current_and_next_year','Current license + next annual license')), required=False)
-    faculty_email = forms.CharField(max_length=40, required=False)
+    faculty_email = forms.EmailField(max_length=40, required=False)
     store_ephi = forms.ChoiceField(
         choices=(('No', 'No'), ('Yes', 'Yes')),
         required=False,
