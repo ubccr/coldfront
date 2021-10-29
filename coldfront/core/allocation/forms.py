@@ -1,4 +1,6 @@
+from datetime import date
 from django import forms
+from django.core.exceptions import ValidationError
 from django.forms.widgets import RadioSelect
 from django.shortcuts import get_object_or_404
 from django.utils.module_loading import import_string
@@ -132,6 +134,161 @@ class AllocationForm(forms.Form):
         self.fields['last_name'].initial = attributes['sn'][0]
         self.fields['campus_affiliation'].initial = attributes['ou'][0]
         self.fields['email'].initial = attributes['mail'][0]
+
+    def clean(self):
+        cleaned_data = super().clean()
+        resource_obj = cleaned_data.get('resource')
+        resources = {
+            'Carbonate DL': {
+                'leverage_multiple_gpus': cleaned_data.get('leverage_multiple_gpus'),
+                'training_or_inference': cleaned_data.get('training_or_inference'),
+                'for_coursework': cleaned_data.get('for_coursework'),
+            },
+            'Carbonate GPU': {
+                'leverage_multiple_gpus': cleaned_data.get('leverage_multiple_gpus'),
+                'dl_workflow': cleaned_data.get('dl_workflow'),
+                'for_coursework': cleaned_data.get('for_coursework'),
+            },
+            'Carbonate PHI Nodes': {
+                'phi_association': cleaned_data.get('phi_association'),
+            },
+            'cBioPortal': {
+                'phi_association': cleaned_data.get('phi_association'),
+                'access_level': cleaned_data.get('access_level'),
+                'confirm_understanding': cleaned_data.get('confirm_understanding'),
+            },
+            'RStudio Connect': {
+                'project_directory_name': cleaned_data.get('project_directory_name'),
+                'account_number': cleaned_data.get('account_number'),
+                'confirm_understanding': cleaned_data.get('confirm_understanding'),
+            },
+            'Geode-Projects': {
+                'storage_space_with_unit': cleaned_data.get('storage_space_with_unit'),
+                'unit': cleaned_data.get('unit'),
+                'start_date': cleaned_data.get('start_date'),
+                'primary_contact': cleaned_data.get('primary_contact'),
+                'secondary_contact': cleaned_data.get('secondary_contact'),
+                'department_full_name': cleaned_data.get('department_full_name'),
+                'department_short_name': cleaned_data.get('department_short_name'),
+                'fiscal_officer': cleaned_data.get('fiscal_officer'),
+                'account_number': cleaned_data.get('account_number'),
+                'it_pros': cleaned_data.get('it_pros'),
+                'devices_ip_addresses': cleaned_data.get('devices_ip_addresses'),
+                'data_management_plan': cleaned_data.get('data_management_plan'),
+                'use_indefinitely': cleaned_data.get('use_indefinitely'),
+                'end_date': cleaned_data.get('end_date'),
+            },
+            'Slate Project': {
+                'first_name': cleaned_data.get('first_name'),
+                'last_name': cleaned_data.get('last_name'),
+                'campus_affiliation': cleaned_data.get('campus_affiliation'),
+                'email': cleaned_data.get('email'),
+                'project_directory_name': cleaned_data.get('project_directory_name'),
+                'start_date': cleaned_data.get('start_date'),
+                'store_ephi': cleaned_data.get('store_ephi'),
+                'storage_space': cleaned_data.get('storage_space'),
+                'account_number': cleaned_data.get('account_number'),
+            },
+            'Priority Boost': {
+              'is_grand_challenge': cleaned_data.get('is_grand_challenge'),
+              'system': cleaned_data.get('system'),
+              'grand_challenge_program': cleaned_data.get('grand_challenge_program'),
+              'end_date': cleaned_data.get('end_date'),
+            },
+        }
+
+        raise_error = False
+        required_field_text = 'This field is required'
+        for key, value in resources[resource_obj.name].items():
+            resource_name = resource_obj.name
+            # First check if the required field was filled in.
+            if value is None or value == '' or value is False:
+
+                # Handle special cases for missing required fields here before continuing.
+                if resource_name == 'Geode-Projects':
+                    if key == 'end_date' and resources[resource_name]['use_indefinitely']:
+                        continue
+                    elif key == 'unit' and not resources[resource_name]['storage_space_with_unit']:
+                        raise_error = True
+                        self.add_error(
+                            'storage_space_with_unit',
+                            'Storage space is missing its unit. Please use the drop down on the right to select it'
+                        )
+                        continue
+                    elif key == 'use_indefinitely':
+                        continue
+                elif resource_name == 'Slate Project':
+                    if key == 'account_number' and resources[resource_name]['storage_space'] <= 15:
+                        continue
+                elif resource_name == 'Priority Boost':
+                    system = resources[resource_name]['system']
+                    is_grand_challenge = resources[resource_name]['is_grand_challenge']
+                    if key == 'is_grand_challenge':
+                        continue
+                    elif key == 'end_date' and is_grand_challenge and system == 'BigRed3':
+                        continue
+                    elif key == 'grand_challenge_program' and (not is_grand_challenge or system == 'Carbonate'):
+                        continue
+
+                raise_error = True
+                self.add_error(key, required_field_text)
+                # If the value does not exist then no more value checking is needed.
+                continue
+
+            # General value checks for required fields should go here.
+            if key == 'start_date':
+                if value <= date.today():
+                    raise_error = True
+                    self.add_error(key, 'Please select a start date later than today')
+                    continue
+                end_date = resources[resource_name].get('end_date')
+                if end_date and value >= end_date:
+                    raise_error = True
+                    self.add_error(key, 'Start date must be earlier than end date')
+                    continue
+            elif key == 'account_number':
+                if not len(value) == 9:
+                    raise_error = True
+                    self.add_error(key, 'Account number must have a format of ##-###-##')
+                    continue
+                elif not value[2] == '-' or not value[6] == '-':
+                    raise_error = True
+                    self.add_error(key, 'Account number must have a format of ##-###-##')
+                    continue
+            elif key == 'storage_space':
+                if value <= 0:
+                    raise_error = True
+                    self.add_error(key, 'Storage space must be greater than 0')
+                    continue
+            elif key == 'end_date':
+                if value and value <= date.today():
+                    raise_error = True
+                    self.add_error(key, 'Please select an end date later than today')
+                    continue
+
+            # Value checks for a specific resource's required fields should go here.
+            if resource_name == 'Geode-Projects':
+                #use_indefinitely = resources[resource_name]['use_indefinitely']
+                end_date = resources[resource_name]['end_date']
+                if key == 'storage_space_with_unit':
+                    unit = resources[resource_name]['unit']
+                    if value <= 0 and unit == 'TB' or value < 200 and unit == 'GB':
+                        raise_error = True
+                        self.add_error(key, 'Please enter a storage amount greater than or equal to 200GB')
+                        continue
+                #elif key == 'end_date':
+                #    if not use_indefinitely and value <= date.today():
+                #        raise_error = True
+                #        self.add_error(key, 'Please select an end date later than today')
+                #        continue
+                #elif key == 'start_date':
+                #    if end_date and value >= end_date:
+                #        raise_error = True
+                #        self.add_error(key, 'Start date must be earlier than end date')
+                #        continue
+
+        if raise_error:
+            raise ValidationError('Please correct the errors below')
 
 
 class AllocationUpdateForm(forms.Form):
