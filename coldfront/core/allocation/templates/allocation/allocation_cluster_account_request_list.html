@@ -167,15 +167,17 @@ Cluster Account Review New and Pending Requests
           </a>
         </td>
         <td>
-            {% if cluster_account.value == "Pending - Add" %}
-                <span class="badge badge-warning"> Pending </span>
+          {% with status=cluster_account.value %}
+            {% if status == "Pending - Add" %}
+              <span class="badge badge-warning">Pending</span>
+            {% elif status == "Processing" %}
+              <span class="badge badge-warning">{{ status }}</span>
+            {% elif status == "Active" %}
+              <span class="badge badge-success">{{ status }}</span>
+            {% elif status == "Denied" %}
+              <span class="badge badge-danger">{{ status }}</span>
             {% endif %}
-            {% if cluster_account.value == "Active" %}
-                <span class="badge badge-success"> {{ cluster_account.value }} </span>
-            {% endif %}
-            {% if cluster_account.value == "Denied" %}
-                <span class="badge badge-danger"> {{ cluster_account.value }} </span>
-            {% endif %}
+          {% endwith %}
         </td>
           {% if user.is_superuser and request_filter == 'pending' %}
         <td class="text-nowrap">
