@@ -31,20 +31,5 @@
           Vector Project Requests
       </a>
     {% endif %}
-    {% if perms.allocation.can_review_cluster_account_requests %}
-    <a id="navbar-cluster-requests" class="dropdown-item" href="{% url 'allocation-cluster-account-request-list' %}?show_all_requests=on">
-        Cluster Account Requests</a>
-    {% endif %}
-      {% if perms.project.view_savioprojectallocationrequest %}
-      <a id="navbar-project-savio-project-requests" class="dropdown-item" href="{% url 'savio-project-pending-request-list' %}">
-          Savio Project Requests
-      </a>
-    {% endif %}
-    {% if perms.project.view_vectorprojectallocationrequest %}
-      <a id="navbar-project-vector-project-requests" class="dropdown-item" href="{% url 'vector-project-pending-request-list' %}">
-          Vector Project Requests
-      </a>
-    {% endif %}
-
   </div>
 </li>
