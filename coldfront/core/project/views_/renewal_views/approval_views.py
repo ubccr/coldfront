@@ -58,7 +58,8 @@ class AllocationRenewalRequestListView(LoginRequiredMixin, TemplateView):
 
         request_list = self.get_queryset()
         user = self.request.user
-        if not user.is_superuser:
+        permission = 'allocation.view_allocationrenewalrequest'
+        if not (user.is_superuser or user.has_perm(permission)):
             args.append(Q(requester=user) | Q(pi=user))
         if self.completed:
             status__name__in = ['Approved', 'Complete', 'Denied']
@@ -122,8 +123,13 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
         """UserPassesTestMixin tests."""
         if self.request.user.is_superuser:
             return True
+
+        permission = 'allocation.view_allocationrenewalrequest'
+        if self.request.user.has_perm(permission):
+            return True
+
         if (self.request.user == self.request_obj.requester or
-                self.request.user == self.request.pi):
+                self.request.user == self.request_obj.pi):
             return True
         message = 'You do not have permission to view the previous page.'
         messages.error(self.request, message)

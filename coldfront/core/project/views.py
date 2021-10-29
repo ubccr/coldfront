@@ -3391,7 +3391,8 @@ class VectorProjectRequestListView(LoginRequiredMixin, TemplateView):
         user = self.request.user
 
         request_list = self.get_queryset()
-        if not (user.is_superuser or user.has_perm('project.view_vectorprojectallocationrequest')):
+        permission = 'project.view_vectorprojectallocationrequest'
+        if not (user.is_superuser or user.has_perm(permission)):
             args.append(Q(requester=user) | Q(pi=user))
         if self.completed:
             status__name__in = ['Approved - Complete', 'Denied']
@@ -3425,7 +3426,8 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('project.view_vectorprojectallocationrequest'):
+        permission = 'project.view_vectorprojectallocationrequest'
+        if self.request.user.has_perm(permission):
             return True
 
         if (self.request.user == self.request_obj.requester or
