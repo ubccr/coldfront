@@ -147,7 +147,7 @@ After=syslog.target network.target mariadb.service
 User=coldfront
 Group=nginx
 WorkingDirectory=/srv/coldfront
-Environment="PATH=/srv/coldront/venv/bin"
+Environment="PATH=/srv/coldfront/venv/bin"
 ExecStart=/srv/coldfront/venv/bin/gunicorn --workers 3 --bind unix:coldfront.sock -m 007 coldfront.config.wsgi
 
 [Install]
