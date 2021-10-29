@@ -25,6 +25,7 @@ class TestBase(TestCase):
             # This command calls 'print', whose output must be suppressed.
             'import_field_of_science_data',
             'add_default_project_choices',
+            'create_staff_group',
         ]
         sys.stdout = open(os.devnull, 'w')
         for command in commands:
