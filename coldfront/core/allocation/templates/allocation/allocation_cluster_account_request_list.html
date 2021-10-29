@@ -15,26 +15,26 @@ Cluster Account Review New and Pending Requests
 <div class="table-responsive">
   <table class="table table-sm">
     <tbody>
-    <tr>
+      <tr>
         <td>
-            {% if request_filter == 'completed' %}
-                Viewing completed requests for cluster access. You may also view pending
-                requests
-                <a href="{% url 'allocation-cluster-account-request-list' %}?show_all_requests=on">
-                    <span class="accessibility-link-text">Pending Requests</span>
-                    here</a>.
-            {% else %}
-                Viewing pending requests for cluster access. You may also view completed
-                requests
-                <a href="{% url 'allocation-cluster-account-request-list-completed' %}?show_all_requests=on">
-                    <span class="accessibility-link-text">Completed Requests</span>
-                    here</a>.
-            {% endif %}
+          {% if request_filter == 'completed' %}
+            Viewing completed requests for cluster access. You may also view pending
+            requests
+            <a href="{% url 'allocation-cluster-account-request-list' %}?show_all_requests=on">
+                <span class="accessibility-link-text">Pending Requests</span>
+                here</a>.
+          {% else %}
+              Viewing pending requests for cluster access. You may also view completed
+              requests
+              <a href="{% url 'allocation-cluster-account-request-list-completed' %}?show_all_requests=on">
+                  <span class="accessibility-link-text">Completed Requests</span>
+                  here</a>.
+          {% endif %}
         </td>
-    <td>
-    </td>
-    </tr>
-    {% if request_filter == 'pending' and user.is_superuser %}
+      <td>
+      </td>
+      </tr>
+    {% if user.is_superuser and request_filter == 'pending' %}
       <tr>
       <p>
         <td>
@@ -52,14 +52,16 @@ Cluster Account Review New and Pending Requests
             </button>
           </form>
         </td>
-      {% else %}
-      <td>
-          Requests are created when project
-          join requests that have completed their delay period are
-          automatically approved, which occurs periodically.
-      </td>
           </p>
       </tr>
+    {% else %}
+    <tr>
+      <td>
+        Requests are created when project
+        join requests that have completed their delay period are
+        automatically approved, which occurs periodically.
+      </td>
+    </tr>
     {% endif %}
     </tbody>
   </table>
@@ -143,7 +145,7 @@ Cluster Account Review New and Pending Requests
     <tbody>
       {% for cluster_account in cluster_account_list %}
       <tr>
-        <td>{{ cluster_account.pk }}</a></td>
+        <td>{{ cluster_account.pk }}</td>
         <td>{{ cluster_account.modified|date:"M. d, Y" }}</td>
         <td>{{ cluster_account.allocation_user.user.email }}</td>
         <td>
@@ -189,7 +191,7 @@ Cluster Account Review New and Pending Requests
             <a href="{% url 'allocation-cluster-account-activate-request' cluster_account.pk %}" class="btn btn-success mr-1">
               Activate
             </a>
-          {% endif %}
+            {% endif %}
             <div class="modal fade" id="denial{{ cluster_account.pk }}Modal" tabindex="-1" role="dialog" aria-labelledby="denial{{ cluster_account.pk }}ModalLabel" aria-hidden="true">
             <div class="modal-dialog" role="document">
                 <form action="{% url 'allocation-cluster-account-deny-request' cluster_account.pk %}" method="get" id="denial{{ cluster_account.pk }}Form">
