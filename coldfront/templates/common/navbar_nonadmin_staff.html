@@ -31,5 +31,13 @@
           Vector Project Requests
       </a>
     {% endif %}
+    {% if perms.allocation.view_allocationrenewalrequest %}
+      <a
+          id="navbar-pi-allocation-renewal-requests"
+          class="dropdown-item"
+          href="{% url 'pi-allocation-renewal-pending-request-list' %}">
+        Project Renewal Requests
+      </a>
+    {% endif %}
   </div>
 </li>
