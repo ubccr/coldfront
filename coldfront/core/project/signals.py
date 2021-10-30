@@ -1,5 +1,6 @@
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.project.models import SavioProjectAllocationRequest
+from coldfront.core.project.utils_.request_utils import savio_request_denial_reason
 from django.dispatch import receiver
 from django.dispatch import Signal
 # Imported without 'from' to avoid a circular import.
@@ -45,6 +46,15 @@ def deny_associated_allocation_renewal_request(sender, **kwargs):
             f'reference SavioProjectAllocationRequest {request_id}.')
         logger.error(message)
         return
+
+    # Set the reason for the renewal request to be that of the new project
+    # request.
+    reason = savio_request_denial_reason(new_project_request_obj)
+    renewal_request_obj.state['other'] = {
+        'justification': reason.justification,
+        'timestamp': reason.timestamp,
+    }
+    renewal_request_obj.save()
 
     try:
         runner = renewal_utils.AllocationRenewalDenialRunner(

@@ -89,8 +89,12 @@ class TestProjectDenialRunner(TestBase):
         runner = ProjectDenialRunner(new_project_request)
         runner.run()
 
-        # The AllocationRenewalRequest should be denied.
+        # The AllocationRenewalRequest should be denied, with the same reason.
         allocation_renewal_request.refresh_from_db()
         self.assertEqual(allocation_renewal_request.status.name, 'Denied')
+        other = allocation_renewal_request.state['other']
+        for key in ('justification', 'timestamp'):
+            self.assertEqual(
+                other[key], new_project_request.state['other'][key])
 
     # TODO
