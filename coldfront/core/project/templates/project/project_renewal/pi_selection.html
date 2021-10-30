@@ -14,6 +14,9 @@ Project Renewal - PI Selection
 
 
 {% block content %}
+<script type='text/javascript' src="{% static 'selectize/selectize.min.js' %}"></script>
+<link rel='stylesheet' type='text/css' href="{% static 'selectize/selectize.bootstrap3.css' %}"/>
+
 <h1>Select a PI</h1><hr>
 
 <p>
@@ -65,5 +68,12 @@ Project Renewal - PI Selection
 <br>
 
 <p>Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
+
+<script>
+  $('select').selectize({
+    create: false,
+    sortField: 'text'
+  })
+</script>
 
 {% endblock %}

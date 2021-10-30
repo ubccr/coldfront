@@ -52,7 +52,8 @@ class AllocationRenewalMixin(object):
         'administrators.')
     error_message = 'Unexpected failure. Please contact an administrator.'
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.allocation_period = get_current_allocation_period()
 
     def create_allocation_renewal_request(self, pi, pre_project, post_project,
@@ -365,8 +366,30 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
             if data:
                 dictionary.update(data)
                 pi_user = data['PI'].user
-                dictionary['current_project'] = \
-                    get_pi_current_active_fca_project(pi_user)
+                try:
+                    current_project = get_pi_current_active_fca_project(
+                        pi_user)
+                except Project.DoesNotExist:
+                    # If the PI has no active FCA Project, fall back on one
+                    # shared by the requester and the PI.
+                    requester_projects = set(list(
+                        ProjectUser.objects.filter(
+                            project__name__startswith='fc_',
+                            user=self.request.user,
+                            role__name__in=[
+                                'Manager', 'Principal Investigator']
+                        ).values_list('project', flat=True)))
+                    pi_projects = set(list(
+                        ProjectUser.objects.filter(
+                            project__name__startswith='fc_',
+                            user=pi_user,
+                            role__name='Principal Investigator'
+                        ).values_list('project', flat=True)))
+                    intersection = set.intersection(
+                        requester_projects, pi_projects)
+                    project_pk = sorted(list(intersection))[0]
+                    current_project = Project.objects.get(pk=project_pk)
+                dictionary['current_project'] = current_project
 
         pooling_preference_form_step = self.step_numbers_by_form_name[
             'pooling_preference']
