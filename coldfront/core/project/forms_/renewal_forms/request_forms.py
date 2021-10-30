@@ -157,8 +157,11 @@ class ProjectRenewalProjectSelectionForm(forms.Form):
         _filter = {'name__startswith': 'fc_'}
         exclude = {'pk': self.exclude_project_pk}
         if self.non_owned_projects:
-            # Only include Projects where this user is not a PI.
-            exclude['pk__in'] = project_pks
+            # # Only include Projects where this user is not a PI.
+            # exclude['pk__in'] = project_pks
+            # A PI may wish to pool their allocation under a Project they are
+            # already a PI on. Allow this.
+            pass
         else:
             # Only include Projects where this user is a PI.
             _filter['pk__in'] = project_pks
