@@ -787,9 +787,17 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         self.request_obj.save()
 
     def deactivate_pre_project(self):
-        """If the pre_project has not been renewed during this
-        AllocationPeriod, set its status to 'Inactive' and its
-        corresponding compute Allocation's status to 'Expired'.
+        """Deactivate the request's pre_project, which involves setting
+        its status to 'Inactive and its corresponding compute
+        Allocation's status to 'Expired', unless either of the following
+        is true:
+            (a) The pre_project has been renewed during this
+                AllocationPeriod, or
+            (b) A different PI made an approved and complete request to
+                pool with the pre_project.
+
+        TODO: Once the first AllocationPeriod has ended, criterion (b)
+        TODO: will need to be refined to filter on time.
 
         If the pre_project is None, do nothing."""
         request = self.request_obj
@@ -799,33 +807,58 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
                 f'AllocationRenewalRequest {request.pk} has no pre-Project. '
                 f'Skipping deactivation.')
             return
+
+        # (a) If the pre_project has been renewed during this AllocationPeriod,
+        # do not deactivate it.
         # TODO: Reconsider the use of this AllocationPeriod moving forward.
         allocation_period = get_current_allocation_period()
-        complete_status = AllocationRenewalRequestStatusChoice.objects.get(
-            name='Complete')
+        complete_renewal_request_status = \
+            AllocationRenewalRequestStatusChoice.objects.get(name='Complete')
         completed_renewals = AllocationRenewalRequest.objects.filter(
             allocation_period=allocation_period,
-            status=complete_status,
+            status=complete_renewal_request_status,
             post_project=pre_project)
-        if not completed_renewals.exists():
-            pre_project.status = ProjectStatusChoice.objects.get(
-                name='Inactive')
-            pre_project.save()
-            allocation = get_project_compute_allocation(pre_project)
-            allocation.status = AllocationStatusChoice.objects.get(
-                name='Expired')
-            allocation.save()
-            message = (
-                f'Set Project {pre_project.name}\'s status to '
-                f'{pre_project.status.name} and Allocation {allocation.pk}\'s '
-                f'status to {allocation.status.name}.')
-            logger.info(message)
-        else:
+        if completed_renewals.exists():
             message = (
                 f'Project {pre_project.name} has been renewed during '
                 f'AllocationPeriod {allocation_period.name}. Skipping '
                 f'deactivation.')
             logger.info(message)
+            return
+
+        # (b) If a different PI made an 'Approved - Complete' request to pool
+        # with the pre_project, do not deactivate it.
+        # TODO: Once the first AllocationPeriod has ended, this will need to be
+        # TODO: refined to filter on time.
+        approved_complete_request_status = \
+            ProjectAllocationRequestStatusChoice.objects.get(
+                name='Approved - Complete')
+        approved_complete_pool_requests_from_other_pis = \
+            SavioProjectAllocationRequest.objects.filter(
+                Q(allocation_type=SavioProjectAllocationRequest.FCA) &
+                ~Q(pi=request.pi) &
+                Q(pool=True) &
+                Q(project=pre_project),
+                Q(status=approved_complete_request_status))
+        if approved_complete_pool_requests_from_other_pis.exists():
+            message = (
+                f'Project {pre_project.name} has been pooled with by a '
+                f'different PI. Skipping deactivation.')
+            logger.info(message)
+            return
+
+        pre_project.status = ProjectStatusChoice.objects.get(
+            name='Inactive')
+        pre_project.save()
+        allocation = get_project_compute_allocation(pre_project)
+        allocation.status = AllocationStatusChoice.objects.get(
+            name='Expired')
+        allocation.save()
+        message = (
+            f'Set Project {pre_project.name}\'s status to '
+            f'{pre_project.status.name} and Allocation {allocation.pk}\'s '
+            f'status to {allocation.status.name}.')
+        logger.info(message)
 
     def demote_pi_to_user_on_pre_project(self):
         """If the pre_project is pooled (i.e., it has more than one PI),

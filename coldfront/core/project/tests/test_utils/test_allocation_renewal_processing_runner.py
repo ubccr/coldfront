@@ -35,6 +35,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import mail
 from django.core.management import call_command
+from django.db.models import Q
 from django.test import override_settings
 from django.test import TestCase
 from io import StringIO
@@ -930,6 +931,115 @@ class TestPIDemotionMixin(object):
         self.assertEqual(user_role, pi_project_user.role)
 
 
+class TestPreProjectDeactivationMixin(object):
+    """A mixin for testing that the pre_project is deactivated under
+    certain conditions."""
+
+    def test_not_deactivated_if_complete_renewal_request_exists(self):
+        """Test that, if the pre_project has been successfully renewed
+        during this AllocationPeriod, it is not deactivated."""
+        request = self.request_obj
+        project = request.pre_project
+        allocation = get_project_compute_allocation(project)
+
+        self.assertEqual(project.status.name, 'Active')
+        self.assertEqual(allocation.status.name, 'Active')
+
+        num_service_units = Decimal('0.00')
+
+        # Add another PI on the Project, and have it make a separate,
+        # 'Complete' AllocationRenewalRequest on it.
+        pi_role = ProjectUserRoleChoice.objects.get(
+            name='Principal Investigator')
+        active_status = ProjectUserStatusChoice.objects.get(name='Active')
+        already_pi_pks = set(list(
+            ProjectUser.objects.filter(
+                project=project, role=pi_role).values_list('user', flat=True)))
+        pi_not_on_project = User.objects.filter(
+            Q(userprofile__is_pi=True) & ~Q(pk__in=already_pi_pks)).first()
+        ProjectUser.objects.create(
+            project=project,
+            user=pi_not_on_project,
+            role=pi_role,
+            status=active_status)
+        request_ = self.create_request(
+            pi=pi_not_on_project, pre_project=project, post_project=project)
+        runner = AllocationRenewalProcessingRunner(request_, num_service_units)
+        runner.run()
+
+        runner = AllocationRenewalProcessingRunner(request, num_service_units)
+        runner.run()
+
+        # The Project should not be deactivated because of the other request.
+        project.refresh_from_db()
+        allocation.refresh_from_db()
+        self.assertEqual(project.status.name, 'Active')
+        self.assertEqual(allocation.status.name, 'Active')
+
+    def test_not_deactivated_if_approved_complete_project_request_exists(self):
+        """Test that, if the pre_project has been successfully pooled
+        with by a different PI, it is not deactivated."""
+        request = self.request_obj
+        project = request.pre_project
+        allocation = get_project_compute_allocation(project)
+
+        self.assertEqual(project.status.name, 'Active')
+        self.assertEqual(allocation.status.name, 'Active')
+
+        num_service_units = Decimal('0.00')
+
+        # Add another PI to the Project via an 'Approved - Complete', pooling
+        # SavioProjectAllocationRequest.
+        pi_role = ProjectUserRoleChoice.objects.get(
+            name='Principal Investigator')
+        already_pi_pks = set(list(
+            ProjectUser.objects.filter(
+                project=project, role=pi_role).values_list('user', flat=True)))
+        pi_not_on_project = User.objects.filter(
+            Q(userprofile__is_pi=True) & ~Q(pk__in=already_pi_pks)).first()
+        under_review_request_status = \
+            ProjectAllocationRequestStatusChoice.objects.get(
+                name='Under Review')
+        new_project_request = SavioProjectAllocationRequest.objects.create(
+            requester=self.requester,
+            allocation_type=SavioProjectAllocationRequest.FCA,
+            pi=pi_not_on_project,
+            pool=True,
+            project=project,
+            survey_answers={},
+            status=under_review_request_status)
+        runner = SavioProjectApprovalRunner(
+            new_project_request, num_service_units)
+        runner.run()
+
+        runner = AllocationRenewalProcessingRunner(request, num_service_units)
+        runner.run()
+
+        # The Project should not be deactivated because of the other request.
+        project.refresh_from_db()
+        allocation.refresh_from_db()
+        self.assertEqual(project.status.name, 'Active')
+        self.assertEqual(allocation.status.name, 'Active')
+
+    def test_deactivated(self):
+        """Test that, otherwise, the pre_project is deactivated."""
+        request = self.request_obj
+        project = request.pre_project
+        allocation = get_project_compute_allocation(project)
+
+        self.assertEqual(project.status.name, 'Active')
+        self.assertEqual(allocation.status.name, 'Active')
+
+        num_service_units = Decimal('1000.00')
+        runner = AllocationRenewalProcessingRunner(request, num_service_units)
+        runner.run()
+
+        project.refresh_from_db()
+        allocation.refresh_from_db()
+        self.assertEqual(project.status.name, 'Inactive')
+        self.assertEqual(allocation.status.name, 'Expired')
+
+
 class TestUnpooledToUnpooled(TestRunnerMixin, TestCase):
     """A class for testing the AllocationRenewalProcessingRunner in the
     'unpooled_to_unpooled' case."""
@@ -949,7 +1059,8 @@ class TestUnpooledToUnpooled(TestRunnerMixin, TestCase):
             AllocationRenewalRequest.UNPOOLED_TO_UNPOOLED)
 
 
-class TestUnpooledToPooled(TestRunnerMixin, TestCase):
+class TestUnpooledToPooled(TestPreProjectDeactivationMixin, TestRunnerMixin,
+                           TestCase):
     """A class for testing the AllocationRenewalProcessingRunner in the
     'unpooled_to_pooled' case."""
 
@@ -987,7 +1098,8 @@ class TestPooledToPooledSame(TestRunnerMixin, TestCase):
             AllocationRenewalRequest.POOLED_TO_POOLED_SAME)
 
 
-class TestPooledToPooledDifferent(TestPIDemotionMixin, TestRunnerMixin,
+class TestPooledToPooledDifferent(TestPreProjectDeactivationMixin,
+                                  TestPIDemotionMixin, TestRunnerMixin,
                                   TestCase):
     """A class for testing the AllocationRenewalProcessingRunner in the
     'pooled_to_pooled_different' case."""
@@ -1007,7 +1119,8 @@ class TestPooledToPooledDifferent(TestPIDemotionMixin, TestRunnerMixin,
             AllocationRenewalRequest.POOLED_TO_POOLED_DIFFERENT)
 
 
-class TestPooledToUnpooledOld(TestPIDemotionMixin, TestRunnerMixin, TestCase):
+class TestPooledToUnpooledOld(TestPreProjectDeactivationMixin,
+                              TestPIDemotionMixin, TestRunnerMixin, TestCase):
     """A class for testing the AllocationRenewalProcessingRunner in the
     'pooled_to_unpooled_old' case."""
 
@@ -1026,7 +1139,8 @@ class TestPooledToUnpooledOld(TestPIDemotionMixin, TestRunnerMixin, TestCase):
             AllocationRenewalRequest.POOLED_TO_UNPOOLED_OLD)
 
 
-class TestPooledToUnpooledNew(TestPIDemotionMixin, TestRunnerMixin, TestCase):
+class TestPooledToUnpooledNew(TestPreProjectDeactivationMixin,
+                              TestPIDemotionMixin, TestRunnerMixin, TestCase):
     """A class for testing the AllocationRenewalProcessingRunner in the
     'pooled_to_unpooled_new' case."""
 
