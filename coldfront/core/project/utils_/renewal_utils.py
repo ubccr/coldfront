@@ -121,6 +121,22 @@ def get_pi_current_active_fca_project(pi_user):
     return project
 
 
+def has_non_denied_project_request(pi):
+    """Return whether or not the given PI User has a non-"Denied"
+    SavioProjectAllocationRequest.
+
+    TODO: Once the first AllocationPeriod has ended, this will need to
+    TODO: be refined to filter on time.
+    """
+    if not isinstance(pi, User):
+        raise TypeError(f'{pi} is not a User object.')
+    status_names = [
+        'Under Review', 'Approved - Processing', 'Approved - Complete']
+    return SavioProjectAllocationRequest.objects.filter(
+        pi=pi,
+        status__name__in=status_names).exists()
+
+
 def has_non_denied_renewal_request(pi, allocation_period):
     """Return whether or not the given PI User has a non-"Denied"
     AllocationRenewalRequest for the given AllocationPeriod."""
@@ -129,10 +145,11 @@ def has_non_denied_renewal_request(pi, allocation_period):
     if not isinstance(allocation_period, AllocationPeriod):
         raise TypeError(
             f'{allocation_period} is not an AllocationPeriod object.')
+    status_names = ['Under Review', 'Approved', 'Complete']
     return AllocationRenewalRequest.objects.filter(
         pi=pi,
         allocation_period=allocation_period,
-        status__name__in=['Under Review', 'Approved', 'Complete']).exists()
+        status__name__in=status_names).exists()
 
 
 def is_any_project_pi_renewable(project, allocation_period):

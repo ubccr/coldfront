@@ -6,6 +6,7 @@ from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
+from coldfront.core.project.models import SavioProjectAllocationRequest
 
 from django import forms
 
@@ -40,21 +41,34 @@ class ProjectRenewalPISelectionForm(forms.Form):
 
         allocation_period = AllocationPeriod.objects.get(
             pk=self.allocation_period_pk)
+        renewal_request_status_names = ['Under Review', 'Approved', 'Complete']
         pis_with_non_denied_renewal_requests_this_period = set(list(
             AllocationRenewalRequest.objects.filter(
                 pi__in=users,
                 allocation_period=allocation_period,
-                status__name__in=['Under Review', 'Approved', 'Complete']
+                status__name__in=renewal_request_status_names
             ).values_list('pi', flat=True)))
 
-        # Disable any PIs who are inactive or who have already renewed their
-        # allocations during this allocation period.
+        project_request_status_names = [
+            'Under Review', 'Approved - Processing', 'Approved - Complete']
+        pis_with_non_denied_project_requests = set(list(
+            SavioProjectAllocationRequest.objects.filter(
+                status__name__in=project_request_status_names
+            ).values_list('pi', flat=True)))
+
+        # Disable any PIs who:
+        #     (a) have non-denied AllocationRenewalRequests during this
+        #         AllocationPeriod, or
+        #     (b) have non-denied SavioProjectAllocationRequests.
+        #         TODO: Once the first AllocationPeriod has ended, this will
+        #         TODO: need to be refined to filter on time.
         exclude_project_user_pks = set()
         for project_user in pi_project_users:
-            if project_user.status != status:
-                exclude_project_user_pks.add(project_user.pk)
             if (project_user.user.pk in
                     pis_with_non_denied_renewal_requests_this_period):
+                exclude_project_user_pks.add(project_user.pk)
+            if (project_user.user.pk in
+                    pis_with_non_denied_project_requests):
                 exclude_project_user_pks.add(project_user.pk)
 
         self.fields['PI'].queryset = pi_project_users

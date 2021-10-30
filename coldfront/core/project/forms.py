@@ -254,30 +254,42 @@ class SavioProjectExistingPIForm(forms.Form):
 
         super().__init__(*args, **kwargs)
 
-        # PIs may only have one FCA, so only allow those without an active FCA
-        # to be selected. The same applies for PCA.
         queryset = User.objects.all()
         exclude_user_pks = set()
         pi_role = ProjectUserRoleChoice.objects.get(
             name='Principal Investigator')
+
+        ineligible_project_status_names = ['New', 'Active', 'Inactive']
+        ineligible_project_request_status_names = [
+            'Under Review', 'Approved - Processing', 'Approved - Complete']
+        ineligible_renewal_request_status_names = [
+            'Under Review', 'Approved', 'Complete']
+
         if self.allocation_type == 'FCA':
+
+            # PIs may only have one FCA, so disable any PIs who:
+            #     (a) have an existing 'New', 'Active', or 'Inactive' FCA,
+            #     (b) have non-denied AllocationRenewalRequests during this
+            #         AllocationPeriod, or
+            #     (c) have non-denied SavioProjectAllocationRequests.
+            #         TODO: Once the first AllocationPeriod has ended, this
+            #         TODO: will need to be refined to filter on time.
+
             pis_with_existing_fcas = set(ProjectUser.objects.filter(
                 role=pi_role,
                 project__name__startswith='fc_',
-                project__status__name__in=['New', 'Active', 'Inactive']
+                project__status__name__in=ineligible_project_status_names
             ).values_list('user__pk', flat=True))
-            status = ProjectAllocationRequestStatusChoice.objects.get(
-                name='Under Review')
             pis_with_pending_requests = set(
                 SavioProjectAllocationRequest.objects.filter(
                     allocation_type=SavioProjectAllocationRequest.FCA,
-                    status=status
+                    status__name__in=ineligible_project_request_status_names
                 ).values_list('pi__pk', flat=True))
             allocation_period = get_current_allocation_period()
             pis_with_renewal_requests = set(
                 AllocationRenewalRequest.objects.filter(
                     allocation_period=allocation_period,
-                    status__name__in=['Under Review', 'Approved', 'Complete']
+                    status__name__in=ineligible_renewal_request_status_names
                 ).values_list('pi__pk', flat=True))
             exclude_user_pks.update(
                 set.union(
@@ -285,17 +297,22 @@ class SavioProjectExistingPIForm(forms.Form):
                     pis_with_pending_requests,
                     pis_with_renewal_requests))
         elif self.allocation_type == 'PCA':
+
+            # PIs may only have one PCA, so disable any PIs who:
+            #    (a) have an existing 'New' or 'Active' PCA, or
+            #    (b) have non-denied SavioProjectAllocationRequests.
+            #        TODO: Once the first AllocationPeriod has ended, this
+            #        TODO: will need to be refined to filter on time.
+
             pis_with_existing_pcas = set(ProjectUser.objects.filter(
                 role=pi_role,
                 project__name__startswith='pc_',
-                project__status__name__in=['New', 'Active']
+                project__status__name__in=ineligible_project_status_names
             ).values_list('user__pk', flat=True))
-            status = ProjectAllocationRequestStatusChoice.objects.get(
-                name='Under Review')
             pis_with_pending_requests = set(
                 SavioProjectAllocationRequest.objects.filter(
                     allocation_type=SavioProjectAllocationRequest.PCA,
-                    status=status
+                    status__name__in=ineligible_project_request_status_names
                 ).values_list('pi__pk', flat=True))
             exclude_user_pks.update(
                 set.union(pis_with_existing_pcas, pis_with_pending_requests))

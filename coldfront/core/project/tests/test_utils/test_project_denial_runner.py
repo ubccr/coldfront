@@ -1,7 +1,5 @@
-from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
-from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.models import ProjectStatusChoice
@@ -11,7 +9,6 @@ from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils import ProjectDenialRunner
 from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
-from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 
@@ -55,14 +52,6 @@ class TestProjectDenialRunner(TestBase):
             status=new_project_status,
             title=new_project_name,
             description=f'Description of {new_project_name}.')
-
-        # Create a compute Allocation for the new Project.
-        new_allocation_status = AllocationStatusChoice.objects.get(name='New')
-        allocation = Allocation.objects.create(
-            project=new_project, status=new_allocation_status)
-        resource = Resource.objects.get(name='Savio Compute')
-        allocation.resources.add(resource)
-        allocation.save()
 
         # Create an 'Under Review' SavioProjectAllocationRequest for the new
         # Project.
