@@ -190,7 +190,9 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
             role_names = ['Manager', 'Principal Investigator']
             status = ProjectUserStatusChoice.objects.get(name='Active')
             project_users = user.projectuser_set.filter(
-                role__name__in=role_names, status=status)
+                project__name__startswith='fc_',
+                role__name__in=role_names,
+                status=status)
             for project_user in project_users:
                 project_pks.append(project_user.project.pk)
             kwargs['project_pks'] = project_pks

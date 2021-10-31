@@ -236,8 +236,10 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         # Only display the "Renew Allowance" button for applicable allocation
         # types.
+        # TODO: Display these for ic_ and pc_ when ready.
         context['renew_allowance_current_visible'] = \
-            self.object.name.startswith(('fc_', 'ic_', 'pc_'))
+            self.object.name.startswith('fc_')
+            # self.object.name.startswith(('fc_', 'ic_', 'pc_'))
         # Only allow the "Renew Allowance" button to be clickable if any PIs do
         # not have pending/approved renewal requests.
         context['renew_allowance_current_clickable'] = (
