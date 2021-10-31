@@ -46,7 +46,9 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationUser,
                                               AllocationUserNote,
                                               AllocationUserStatusChoice)
-from coldfront.core.allocation.signals import (allocation_activate_user,
+from coldfront.core.allocation.signals import (allocation_activate,
+                                               allocation_activate_user,
+                                               allocation_disable,
                                                allocation_remove_user)
 from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
                                              get_user_resources)
@@ -259,6 +261,14 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             if old_status != 'Active' and new_status == 'Active':
                 allocation_obj.start_date = start_date
                 allocation_obj.save()
+
+                allocation_activate.send(
+                    sender=self.__class__, allocation_pk=allocation_obj.pk)
+                allocation_users = allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error'])
+                for allocation_user in allocation_users:
+                    allocation_activate_user.send(
+                        sender=self.__class__, allocation_user_pk=allocation_user.pk)
+
                 if EMAIL_ENABLED:
                     template_context = {
                         'center_name': EMAIL_CENTER_NAME,
@@ -269,10 +279,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                     }
 
                     email_receiver_list = []
-
-                    for allocation_user in allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
-                        allocation_activate_user.send(
-                            sender=self.__class__, allocation_user_pk=allocation_user.pk)
+                    for allocation_user in allocation_users:
                         if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
                             email_receiver_list.append(
                                 allocation_user.user.email)
@@ -289,6 +296,14 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                 allocation_obj.start_date = None
                 allocation_obj.end_date = None
                 allocation_obj.save()
+
+                allocation_disable.send(
+                    sender=self.__class__, allocation_pk=allocation_obj.pk)
+                allocation_users = allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error'])
+                for allocation_user in allocation_users:
+                    allocation_remove_user.send(
+                        sender=self.__class__, allocation_user_pk=allocation_user.pk)
+
                 if EMAIL_ENABLED:
                     template_context = {
                         'center_name': EMAIL_CENTER_NAME,
@@ -297,13 +312,13 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                         'signature': EMAIL_SIGNATURE,
                         'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
                     }
+
                     email_receiver_list = []
-                    for allocation_user in allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
-                        allocation_remove_user.send(
-                            sender=self.__class__, allocation_user_pk=allocation_user.pk)
+                    for allocation_user in allocation_users:
                         if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
                             email_receiver_list.append(
                                 allocation_user.user.email)
+
                     send_email_template(
                         'Allocation Denied',
                         'email/allocation_denied.txt',
@@ -1059,6 +1074,13 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
         allocation_url = '{}{}'.format(domain_url, reverse(
             'allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
+        allocation_activate.send(
+            sender=self.__class__, allocation_pk=allocation_obj.pk)
+        allocation_users = allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error'])
+        for allocation_user in allocation_users:
+            allocation_activate_user.send(
+                sender=self.__class__, allocation_user_pk=allocation_user.pk)
+
         if EMAIL_ENABLED:
             template_context = {
                 'center_name': EMAIL_CENTER_NAME,
@@ -1069,10 +1091,7 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
             }
 
             email_receiver_list = []
-
-            for allocation_user in allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
-                allocation_activate_user.send(
-                    sender=self.__class__, allocation_user_pk=allocation_user.pk)
+            for allocation_user in allocation_users:
                 if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
                     email_receiver_list.append(allocation_user.user.email)
 
@@ -1125,6 +1144,13 @@ class AllocationDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
         allocation_url = '{}{}'.format(domain_url, reverse(
             'allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
+        allocation_disable.send(
+            sender=self.__class__, allocation_pk=allocation_obj.pk)
+        allocation_users = allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error'])
+        for allocation_user in allocation_users:
+            allocation_remove_user.send(
+                sender=self.__class__, allocation_user_pk=allocation_user.pk)
+
         if EMAIL_ENABLED:
             template_context = {
                 'center_name': EMAIL_CENTER_NAME,
@@ -1135,9 +1161,7 @@ class AllocationDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
             }
 
             email_receiver_list = []
-            for allocation_user in allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
-                allocation_remove_user.send(
-                            sender=self.__class__, allocation_user_pk=allocation_user.pk)
+            for allocation_user in allocation_users:
                 if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
                     email_receiver_list.append(allocation_user.user.email)
 
