@@ -805,7 +805,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='sub_account_number_label').value
                 resources_form_sub_account_number_label[resource.id] = mark_safe(
-                    '<strong>{}*</strong>'.format(value))
+                    '<strong>{}</strong>'.format(value))
 
             if resource.resourceattribute_set.filter(resource_attribute_type__name='it_pros').exists():
                 value = resource.resourceattribute_set.get(
