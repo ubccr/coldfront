@@ -19,6 +19,9 @@
     {% if perms.allocation.can_review_allocation_requests %}
     <a id="navbar-allocation-requests" class="dropdown-item" href="{% url 'allocation-request-list' %}">
       Allocation Requests</a>
+    <a id="navbar-project-removal-requests" class="dropdown-item" href="{% url 'project-removal-request-list' %}">
+        Project Removal Requests
+    </a>
     {% endif %}
 
   </div>
