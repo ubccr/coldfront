@@ -55,6 +55,7 @@ from coldfront.core.project.views import VectorProjectReviewEligibilityView
 from coldfront.core.project.views import VectorProjectReviewSetupView
 from coldfront.core.project.views import VectorProjectUndenyRequestView
 from coldfront.core.project.views import ProjectRemoveSelf
+from coldfront.core.project.views import ProjectRemovalRequestUpdateStatusView
 from django.views.generic import TemplateView
 
 
@@ -137,5 +138,17 @@ urlpatterns += [
          name='vector-project-undeny-request'),
     path('<int:pk>/remove-self',
          ProjectRemoveSelf.as_view(),
-         name='project-remove-self')
+         name='project-remove-self'),
+    path('project-removal-request-list',
+         project_views.ProjectRemovalRequestListView.as_view(completed=False),
+         name='project-removal-request-list'),
+    path('project-removal-request-list-completed',
+         project_views.ProjectRemovalRequestListView.as_view(completed=True),
+         name='project-removal-request-list-completed'),
+    path('project-removal-request/<int:pk>/update-status',
+         project_views.ProjectRemovalRequestUpdateStatusView.as_view(),
+         name='project-removal-request-update-status'),
+    path('project-removal-request/<int:pk>/complete-status',
+         project_views.ProjectRemovalRequestCompleteStatusView.as_view(),
+         name='project-removal-request-complete-status'),
 ]
