@@ -265,6 +265,11 @@ class AllocationForm(forms.Form):
                     raise_error = True
                     self.add_error(key, 'Please select an end date later than today')
                     continue
+            elif key == 'project_directory_name':
+                if not value.isalnum():
+                    raise_error = True
+                    self.add_error(key, 'Project directory name must be alphanumeric')
+                    continue
 
             # Value checks for a specific resource's required fields should go here.
             if resource_name == 'Geode-Projects':
