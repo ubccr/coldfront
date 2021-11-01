@@ -3,7 +3,7 @@ Jinja2==2.11.3
 jsmin==2.2.2
 Markdown==3.3.4
 MarkupSafe==1.1.1
-mkdocs==1.1.2
+mkdocs==1.2.3
 mkdocs-material==7.0.2
 mkdocs-minify-plugin==0.2.1
 mkdocs-awesome-pages-plugin==2.5.0
