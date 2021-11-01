@@ -1,0 +1,80 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+
+
+{% block title %}
+    Update Project Removal Request Status
+{% endblock %}
+
+
+{% block content %}
+    <h1>Update Project Removal Request Status</h1>
+
+    <p>
+        This form updates the status of a project removal request from processing to
+        completed. Please confirm that backend setup for the request has been
+        completed before proceeding.
+    </p>
+
+    <div class="card mb-3">
+        <div class="card-header">
+            <h2>
+                <i class="fas fa-info-circle" aria-hidden="true"></i>
+                Request Information
+            </h2>
+        </div>
+        <div class="card-body">
+            {% with user=project_removal_request.project_user.user %}
+                <p class="card-text text-justify">
+                    <strong>User:</strong>
+                    <a href="{% url 'user-profile' user.username %}">{{ user.first_name }} {{user.last_name }}</a>
+                    ({{ user.email }})
+                </p>
+            {% endwith %}
+            {% with requester=project_removal_request.requester %}
+                <p class="card-text text-justify">
+                    <strong>Requester:</strong>
+                    <a href="{% url 'user-profile' requester.username %}">{{ requester.first_name }} {{requester.last_name }}</a>
+                    ({{ requester.email }})
+                </p>
+            {% endwith %}
+            {% with project=project_removal_request.project_user.project %}
+                <p class="card-text text-justify">
+                    <strong>Project:</strong>
+                    <a href="{% url 'project-detail' project.pk %}">{{ project.name }}</a>
+                </p>
+            {% endwith %}
+            <p class="card-text text-justify">
+                <strong>Request time:</strong> {{ project_removal_request.request_time|date:"M. d, Y" }}
+            </p>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">
+            <h2>
+                <i class="fas fa-user-check" aria-hidden="true"></i>
+                Update
+            </h2>
+        </div>
+        <div class="card-body">
+            <p class="card-text text-justify">
+                Please change the status to "Complete" and type in the user's username to confirm.
+            </p>
+            <form method="post">
+                {% csrf_token %}
+                {{form|crispy}}
+                <input class="btn btn-success" type="submit" value="Update">
+                <a class="btn btn-secondary" href="{% url 'project-removal-request-list' %}" role="button">Cancel</a>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        $("#navbar-main > ul > li.active").removeClass("active");
+        $("#navbar-admin").addClass("active");
+    </script>
+
+{% endblock %}
