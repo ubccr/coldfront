@@ -190,12 +190,14 @@ class AllocationForm(forms.Form):
                 'account_number': cleaned_data.get('account_number'),
             },
             'Priority Boost': {
-              'is_grand_challenge': cleaned_data.get('is_grand_challenge'),
-              'system': cleaned_data.get('system'),
-              'grand_challenge_program': cleaned_data.get('grand_challenge_program'),
-              'end_date': cleaned_data.get('end_date'),
+                'is_grand_challenge': cleaned_data.get('is_grand_challenge'),
+                'system': cleaned_data.get('system'),
+                'grand_challenge_program': cleaned_data.get('grand_challenge_program'),
+                'end_date': cleaned_data.get('end_date'),
             },
         }
+        ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
+        search_class_obj = ldap_search()
 
         raise_error = False
         required_field_text = 'This field is required'
@@ -278,6 +280,25 @@ class AllocationForm(forms.Form):
                     if value <= 0 and unit == 'TB' or value < 200 and unit == 'GB':
                         raise_error = True
                         self.add_error(key, 'Please enter a storage amount greater than or equal to 200GB')
+                        continue
+                elif key in ['primary_contact', 'secondary_contact', 'fiscal_officer']:
+                    attributes = search_class_obj.search_a_user(value, ['memberOf'])
+                    if attributes['memberOf'][0] == '':
+                        raise_error = True
+                        self.add_error(key, 'This username is not valid')
+                        continue
+                elif key == 'it_pros':
+                    invalid_users = []
+                    for username in value.split(','):
+                        attributes = search_class_obj.search_a_user(username, ['memberOf'])
+                        if attributes['memberOf'][0] == '':
+                            invalid_users.append(username)
+
+                    if invalid_users:
+                        raise_error = True
+                        self.add_error(key, 'Username(s) {} are not valid'.format(
+                            ', '.join(invalid_users)
+                            ))
                         continue
 
         if raise_error:

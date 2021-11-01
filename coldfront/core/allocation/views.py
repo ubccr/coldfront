@@ -1148,21 +1148,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             ))
             return self.form_invalid(form)
 
-        denied_users = []
-        if resource_obj.name == "Geode-Projects":
-            ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
-            search_class_obj = ldap_search()
-            for username in [primary_contact, secondary_contact, fiscal_officer] + it_pros.split(','):
-                attributes = search_class_obj.search_a_user(username, ['memberOf'])
-                if attributes['memberOf'][0] == '':
-                    denied_users.append(username)
-
-        if denied_users:
-            form.add_error(None, format_html(
-                'The following usernames are not valid: {}'.format(', '.join(denied_users))
-            ))
-            return self.form_invalid(form)
-
         if INVOICE_ENABLED and resource_obj.requires_payment:
             allocation_status_obj = AllocationStatusChoice.objects.get(
                 name=INVOICE_DEFAULT_STATUS)
