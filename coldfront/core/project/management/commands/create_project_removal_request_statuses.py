@@ -12,9 +12,6 @@ class Command(BaseCommand):
     logger = logging.getLogger(__name__)
 
     def handle(self, *args, **options):
-        """Create AllocationPeriods with the data defined below. If the
-        start_date or end_date of a period with an existing name differs
-        from the existing one, update it."""
         for name in ['Pending', 'Processing', 'Complete']:
             try:
                 removal_request_status = ProjectUserRemovalRequestStatusChoice.objects.get(name=name)
