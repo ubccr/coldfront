@@ -1,0 +1,220 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+
+
+{% block title %}
+    Cluster Account Review New and Pending Requests
+{% endblock %}
+
+
+{% block content %}
+    <h1>Project Removal Requests</h1>
+
+    <div class="table-responsive">
+        <table class="table table-sm">
+            <tbody>
+            <tr>
+                <td>
+                    {% if request_filter == 'completed' %}
+                        Viewing completed project removal requests. You may also view
+                        pending requests
+                        <a href="{% url 'project-removal-request-list' %}?show_all_requests=on">
+              <span class="accessibility-link-text">
+                Pending Requests
+              </span>
+                            here</a>.
+                    {% else %}
+                        Viewing pending project removal requests. You may also view
+                        completed requests
+                        <a href="{% url 'project-removal-request-list-completed' %}?show_all_requests=on">
+              <span class="accessibility-link-text">
+                Completed Requests
+              </span>
+                            here</a>.
+                    {% endif %}
+                </td>
+                <td>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    {% if expand_accordion %}
+        <div class="mb-3" id="accordion">
+            <div class="card">
+                <div class="card-header">
+                    <a id="expand_button" role="button" class="card-link " data-toggle="collapse" href="#collapseOne">
+                        <i class="fas fa-filter" aria-hidden="true"></i> Search
+                        <i id="plus_minus" class="fas {{expand_accordion|get_icon}} float-right"></i>
+                    </a>
+                </div>
+                <div id="collapseOne" class="collapse {{expand_accordion}}" data-parent="#accordion">
+                    <div class="card-body">
+                        {% if request_filter == 'completed' %}
+                            <form id="filter_form" method="GET" action="{% url 'project-removal-request-list-completed' %}" autocomplete="off">
+                                {{ removal_request_search_form|crispy }}
+                                <input type="submit" class="btn btn-primary" value="Search">
+                                <button id="form_reset_button" type="button" class="btn btn-secondary">Reset</button>
+                            </form>
+                        {% else %}
+                            <form id="filter_form" method="GET" action="{% url 'project-removal-request-list' %}" autocomplete="off">
+                                {{ removal_request_search_form|crispy }}
+                                <input type="submit" class="btn btn-primary" value="Search">
+                                <button id="form_reset_button" type="button" class="btn btn-secondary">Reset</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if removal_request_list %}
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                <tr>
+                    <th scope="col">
+                        #
+                        <a href="?order_by=id&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+                        <a href="?order_by=id&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+                    </th>
+                    <th scope="col">
+                        {% if request_filter == 'pending' %}
+                            Date Requested/<br>Last Modified
+                        {% else %}
+                            Date Completed
+                        {% endif %}
+                        <a href="?order_by=created&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+                        <a href="?order_by=created&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+                    </th>
+                    <th scope="col">
+                        User Email
+                        <a href="?order_by=project_user__user__email&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+                        <a href="?order_by=project_user__user__email&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+                    </th>
+                    <th scope="col">
+                        User
+                        <a href="?order_by=project_user__user__username&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+                        <a href="?order_by=project_user__user__username&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+                    </th>
+                    <th scope="col">
+                        Requester
+                        <a href="?order_by=requester__username&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+                        <a href="?order_by=requester__username&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+                    </th>
+                    <th scope="col">
+                        Project
+                        <a href="?order_by=project_user__project__name&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+                        <a href="?order_by=project_user__project__name=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+                    </th>
+                    <th scope="col">
+                        Status
+                    </th>
+                    {% if user.is_superuser and request_filter == 'pending' %}
+                        <th scope="col">
+                            Actions
+                        </th>
+                    {% endif %}
+                </tr>
+                </thead>
+                <tbody>
+                {% for removal_request in removal_request_list %}
+                    <tr>
+                        <td>{{ removal_request.pk }}</td>
+                        <td>{{ removal_request.completion_time|date:"M. d, Y" }}</td>
+                        <td>{{ removal_request.project_user.user.email }}</td>
+                        <td>{{ removal_request.project_user.user.username }}</td>
+                        <td>{{ removal_request.requester.username }}</td>
+
+                        <td>
+                            <a href="{% url 'project-detail' removal_request.project_user.project.pk %}">
+                                {{ removal_request.project_user.project.name }}
+                            </a>
+                        </td>
+                        <td>
+                            {% with status=removal_request.status.name %}
+                                {% if status == "Pending" %}
+                                    <span class="badge badge-warning">{{ status }}</span>
+                                {% elif status == "Processing" %}
+                                    <span class="badge badge-warning">{{ status }}</span>
+                                {% elif status == "Complete" %}
+                                    <span class="badge badge-success">{{ status }}</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        {% if user.is_superuser and request_filter == 'pending' %}
+                            <td class="text-nowrap">
+                                {% if removal_request.status.name == "Pending" %}
+                                    <a href="{% url 'project-removal-request-update-status' removal_request.pk %}" class="btn btn-success mr-1">
+                                        Update
+                                    </a>
+                                {% elif  user.is_superuser and removal_request.status.name == "Processing" %}
+                                    <a href="{% url 'project-removal-request-complete-status' removal_request.pk %}" class="btn btn-success mr-1">
+                                        Update
+                                    </a>
+                                {% endif %}
+                            </td>
+                        {% endif %}
+
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% if is_paginated %} Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                <ul class="pagination float-right mr-3">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{filter_parameters_with_order_by}}">Previous</a></li>
+                    {% else %}
+                        <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+                    {% endif %}
+                    {% if page_obj.has_next %}
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{filter_parameters_with_order_by}}">Next</a></li>
+                    {% else %}
+                        <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
+                    {% endif %}
+                </ul>
+            {% endif %}
+        </div>
+    {% else %}
+        {% if request_filter == 'pending' %}
+        <div class="alert alert-info">
+            No new or pending project removal requests!
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            No completed project removal requests!
+        </div>
+        {% endif %}
+
+    {% endif %}
+
+    <script>
+        $("#navbar-main > ul > li.active").removeClass("active");
+        $("#navbar-admin").addClass("active");
+        $("#navbar-allocation-cluster-account-requests").addClass("active");
+    </script>
+
+    <script>
+        $(document).on('click', '#form_reset_button', function() {
+            resetForm($('#filter_form'));
+        });
+
+        function resetForm($form) {
+            $form.find('input:text, textarea').val('');
+            $("select").val('');
+        };
+
+        $("#expand_button").click(function() {
+
+            $('#collapseOne').collapse();
+            icon = $("#plus_minus");
+            icon.toggleClass("fa-plus fa-minus");
+
+        });
+    </script>
+
+{% endblock %}
