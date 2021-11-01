@@ -292,6 +292,21 @@ class AllocationRenewalRequestReviewEligibilityView(LoginRequiredMixin,
 
         return super().form_valid(form)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['renewal_request'] = self.request_obj
+        return context
+
+    def get_initial(self):
+        initial = super().get_initial()
+        eligibility = self.request_obj.state['eligibility']
+        initial['status'] = eligibility['status']
+        initial['justification'] = eligibility['justification']
+        return initial
+
+    def get_success_url(self):
+        return self.get_redirect_url(self.kwargs.get('pk'))
+
 
 class AllocationRenewalRequestReviewDenyView(LoginRequiredMixin,
                                              UserPassesTestMixin,

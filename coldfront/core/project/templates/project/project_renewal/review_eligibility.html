@@ -42,7 +42,7 @@ Allocation Renewal Request - Review Eligibility
       {{ form|crispy }}
       <input class="btn btn-primary" type="submit" value="Submit" />
       <a
-          href="{% url 'pi-allocation-renewal-request-detail' allowance_request.pk %}"
+          href="{% url 'pi-allocation-renewal-request-detail' renewal_request.pk %}"
           class="btn btn-secondary">
         Cancel
       </a>
