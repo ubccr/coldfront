@@ -1,31 +1,56 @@
-Dear {{ user.first_name }} {{ user.last_name }},
-
+Dear {{ user.first_name }} {{ user.last_name }},                                                                                                                                                                    
+ 
 Your request to join Project {{ project_name }} has been approved by its managers. A request to get access to the project on the cluster has been generated, and will be processed by admins.
-
-As you wait for your account to be processed and to get access to Savio, we strongly recommend, as we do with all new Savio users, that you see and familiarize yourself with our extensive Savio documentation here:
-
+ 
+As you wait for your account to be processed and to get access to Savio,, we strongly recommend that you see and familiarize yourself with our extensive Savio documentation here:
+ 
 https://docs-research-it.berkeley.edu/services/high-performance-computing/
-
+ 
 As you begin working on the Savio system, a lot of the questions that may come up are answered in the documentation.
-
+ 
 A good place to start (if you haven't already done so) would be to carefully read through our documentation on Getting An Account on Savio:
-
+ 
 https://docs-research-it.berkeley.edu/services/high-performance-computing/getting-account/
-
+ 
+and How To Get Help on Savio:
+ 
+https://docs-research-it.berkeley.edu/services/high-performance-computing/getting-help/
+ 
+https://docs-research-it.berkeley.edu/services/high-performance-computing/getting-help/good-help-requests/
+ 
 as well as Frequently Asked Questions:
-
+ 
 https://docs-research-it.berkeley.edu/services/high-performance-computing/getting-help/frequently-asked-questions
-
-Also, please take the time if at all possible to see the training materials at https://htmlpreview.github.io/?https://github.com/ucb-rit/savio-training-intro-spring-2021/blob/master/intro_slides.html from a recent Intro to Savio Training Workshop, as well as https://github.com/ucb-rit/savio-training-slurm-2020/blob/main/slurm.md from a recent Savio SLURM training workshop.
-
-    A partial set of videos covering some of that intro material in various trainings can also be found at
-    https://www.youtube.com/watch?v=Denj8NyUPVo&list=PLinUqTXTvciPNjqPxvScsXVLLh5MLCz4P
-
-    Also, our consultants have done a lot of user facing trainings in the past and many of those sessions are video/audio recorded and available for users to consume here as well:
-
+ 
+We update the Savio documentation on a regular basis, so we encourage users to check back and consult the documentation frequently and often for additions and new content.
+ 
+Moreover, if you have suggestions for content to be added/included in our Savio documentation, please let us know.
+ 
+We also encourage Savio users to communicate and work with other Savio users in their labs or elsewhere when troubleshooting and debugging issues come up, as some of you are collaborating on the same projects and using the same software and software libraries, using the same or similar scripts, sharing the same data, etc.
+ 
+Also, please take the time if at all possible to see the training materials at
+ 
+https://github.com/ucb-rit/savio-training-intro-fall-2021
+ 
+https://htmlpreview.github.io/?https://github.com/ucb-rit/savio-training-intro-fall-2021/blob/main/intro.html
+ 
+from a recent Intro to Savio Training Workshop, as well as
+ 
+https://github.com/ucb-rit/savio-training-slurm-2020/blob/main/slurm.md
+ 
+from a recent Savio SLURM training workshop.
+ 
+A partial set of videos covering some of that intro material in various trainings can also be found at
+ 
+https://www.youtube.com/watch?v=Denj8NyUPVo&list=PLinUqTXTvciPNjqPxvScsXVLLh5MLCz4P
+ 
+Also, our consultants have done a lot of user facing trainings in the past and many of those sessions are video/audio recorded and available for users to consume here as well:
+ 
 https://research-it.berkeley.edu/services/high-performance-computing/training-and-tutorials
-
-If you have any further questions, please contact us at {{ support_email }}.
-
+ 
+If you have any further questions, please contact us at
+brc-hpc-help@berkeley.edu.
+ 
 Thank you,
 {{ signature }}
+
