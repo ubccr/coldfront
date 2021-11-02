@@ -16,6 +16,7 @@ from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
+from coldfront.core.project.utils import project_allocation_request_latest_update_timestamp
 from coldfront.core.project.utils_.request_utils import savio_request_denial_reason
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
@@ -400,7 +401,8 @@ def allocation_renewal_request_latest_update_timestamp(request):
 
     new_project_request = request.new_project_request
     if new_project_request:
-        request_updated = new_project_request.updated.isoformat()
+        request_updated = project_allocation_request_latest_update_timestamp(
+            new_project_request)
         max_timestamp = max(max_timestamp, request_updated)
 
     return max_timestamp
