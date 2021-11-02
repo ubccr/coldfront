@@ -33,7 +33,11 @@ Project Renewal - Review and Submit
     <tbody>
       <tr>
         <th>Principal Investigator (PI)</th>
-        <td>Matthew Li (meli@lbl.gov)</td>
+        <td>
+          {% with pi=PI.user %}
+            {{ pi.first_name }} {{pi.last_name }} ({{ pi.email }})
+          {% endwith %}
+        </td>
       </tr>
       <tr>
         <th>PI's Current Project</th>
