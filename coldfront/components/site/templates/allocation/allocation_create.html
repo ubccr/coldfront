@@ -20,18 +20,14 @@ Request New Allocation
   provide the justification for how you intend to use the resource to further 
   the research goals of your project.</p>
 
-<form method="post">
-  {% csrf_token %}
-  {{form |crispy}}
+<form method="post" class="bootstrap">
+  {% crispy form %}
 
   <div id="eula-div" style="display: none;">
     <textarea style="display:none;min-width:100%" id="eula"  rows="15"></textarea>
     <br>
     <p class="font-weight-bold">By clicking submit you agree to the Terms and Conditions.</p>
   </div>
-
-  <input class="btn btn-primary" type="submit" value="Submit" />
-  <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button">Back to Project</a><br>
 </form>
 
 <!-- Large modal -->

@@ -8,10 +8,15 @@ from django.utils.module_loading import import_string
 from coldfront.core.allocation.models import (AllocationAccount,
                                               AllocationAttributeType,
                                               AllocationStatusChoice)
-from coldfront.core.allocation.utils import get_user_resources, compute_prorated_amount
+from coldfront.core.allocation.utils import get_user_resources
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource, ResourceType
 from coldfront.core.utils.common import import_from_settings
+
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Layout, Submit, HTML
+from crispy_forms.bootstrap import InlineRadios, FormActions
+
 
 ALLOCATION_ACCOUNT_ENABLED = import_from_settings(
     'ALLOCATION_ACCOUNT_ENABLED', False)
@@ -134,6 +139,59 @@ class AllocationForm(forms.Form):
         self.fields['last_name'].initial = attributes['sn'][0]
         self.fields['campus_affiliation'].initial = attributes['ou'][0]
         self.fields['email'].initial = attributes['mail'][0]
+
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            'resource',
+            'justification',
+            'first_name',
+            'last_name',
+            'campus_affiliation',
+            'email',
+            'url',
+            'project_directory_name',
+            'quantity',
+            'storage_space',
+            'storage_space_with_unit',
+            'leverage_multiple_gpus',
+            'dl_workflow',
+            'applications_list',
+            'training_or_inference',
+            'for_coursework',
+            'system',
+            'is_grand_challenge',
+            'grand_challenge_program',
+            'start_date',
+            'end_date',
+            'use_indefinitely',
+            'phi_association',
+            'access_level',
+            'unit',
+            'primary_contact',
+            'secondary_contact',
+            'department_full_name',
+            'department_short_name',
+            'fiscal_officer',
+            'account_number',
+            'sub_account_number',
+            'license_term',
+            'faculty_email',
+            'store_ephi',
+            'it_pros',
+            'devices_ip_addresses',
+            'data_management_plan' ,
+            'prorated_cost',
+            'cost',
+            'total_cost',
+            'confirm_understanding',
+            'users',
+            'allocation_account',
+            FormActions(
+                Submit('submit', 'Submit'),
+                HTML("""<a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}"
+                     role="button">Back to Project</a><br>"""),
+            )
+        )
 
     def clean(self):
         cleaned_data = super().clean()
