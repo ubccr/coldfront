@@ -515,7 +515,7 @@ Request New Allocation
     }
     
     if (resources_form_leverage_multiple_gpus_label[resource_id]) {
-      var label = $('label[for="id_leverage_multiple_gpus_0"]');
+      var label = $('label[for="id_leverage_multiple_gpus"]');
       label.html(resources_form_leverage_multiple_gpus_label[resource_id]);
       // Do not reset the value if the user has already entered one (relevent if the form errors
       // after submission because not all the required values were given).
@@ -528,7 +528,7 @@ Request New Allocation
     }
 
     if (resources_form_dl_workflow_label[resource_id]) {
-      var label = $('label[for="id_dl_workflow_0"]');
+      var label = $('label[for="id_dl_workflow"]');
       label.html(resources_form_dl_workflow_label[resource_id]);
       if ($('input[type=radio][name=dl_workflow]:checked').val() === undefined) {
         $('input[type=radio][name=dl_workflow]').val([resources_form_dl_workflow[resource_id]]);
@@ -561,7 +561,7 @@ Request New Allocation
     }
 
     if (resources_form_for_coursework_label[resource_id]) {
-      var label = $('label[for="id_for_coursework_0"]');
+      var label = $('label[for="id_for_coursework"]');
       label.html(resources_form_for_coursework_label[resource_id]);
       if ($('input[type=radio][name=for_coursework]:checked').val() === undefined) {
         $('input[type=radio][name=for_coursework]').val([resources_form_for_coursework[resource_id]]);
@@ -572,7 +572,7 @@ Request New Allocation
     }
     
     if (resources_form_system_label[resource_id]) {
-      var label = $('label[for="id_system_0"]');
+      var label = $('label[for="id_system"]');
       label.html(resources_form_system_label[resource_id]);
       if ($('input[type=radio][name=system]:checked').val() === undefined){
         $('input[type=radio][name=system]').val([resources_form_system[resource_id]]);
@@ -625,7 +625,7 @@ Request New Allocation
     }
 
     if (resources_form_phi_association_label[resource_id]) {
-      var label = $('label[for="id_phi_association_0"]');
+      var label = $('label[for="id_phi_association"]');
       label.html(resources_form_phi_association_label[resource_id]);
       if ($('input[type=radio][name=phi_association]:checked').val() === undefined){
         $('input[type=radio][name=phi_association]').val([resources_form_phi_association[resource_id]]);
@@ -636,7 +636,7 @@ Request New Allocation
     }
 
     if (resources_form_access_level_label[resource_id]) {
-      var label = $('label[for="id_access_level_0"]');
+      var label = $('label[for="id_access_level"]');
       label.html(resources_form_access_level_label[resource_id]);
       if ($('input[type=radio][name=access_level]:checked').val() === undefined){
         $('input[type=radio][name=access_level]').val([resources_form_access_level[resource_id]]);
@@ -887,7 +887,7 @@ Request New Allocation
     }
 
     if (resources_form_store_ephi_label[resource_id]) {
-      var label = $('label[for="id_store_ephi_0"]');
+      var label = $('label[for="id_store_ephi"]');
       label.html(resources_form_store_ephi_label[resource_id]);
       if ($('input[type=radio][name=store_ephi]:checked').val() === undefined){
         $('input[type=radio][name=store_ephi]').val([resources_form_store_ephi[resource_id]]);
