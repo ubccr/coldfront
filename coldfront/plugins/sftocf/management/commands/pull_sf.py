@@ -1,4 +1,4 @@
-from coldfront.plugins.sftocf.pipeline import pull_sf
+from coldfront.plugins.sftocf.pipeline import ColdFrontDB
 from django.core.management.base import BaseCommand, CommandError
 import logging
 
@@ -11,4 +11,5 @@ class Command(BaseCommand):
     '''
 
     def handle(self, *args, **kwargs):
-        pull_sf()
+        cfdb = ColdFrontDB()
+        cfdb.pull_sf()

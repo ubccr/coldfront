@@ -1,4 +1,4 @@
-from coldfront.plugins.sftocf.pipeline import *
+from coldfront.plugins.sftocf.pipeline import ColdFrontDB
 from django.core.management.base import BaseCommand, CommandError
 import logging
 
@@ -11,9 +11,6 @@ class Command(BaseCommand):
     '''
 
     def handle(self, *args, **kwargs):
-        usage_stats = pull_sf()
-        for statdict in usage_stats:
-            try:
-                coldfrontdb.update_usage(statdict)
-            except Exception as e:
-                logger.debug("EXCEPTION FOR ENTRY: {}".format(e))
+        cfdb = ColdFrontDB()
+        filepaths = cfdb.pull_sf()
+        cfdb.push_cf(filepaths)

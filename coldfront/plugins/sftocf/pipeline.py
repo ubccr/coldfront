@@ -213,18 +213,32 @@ class UsageStat:
 
 
 class ColdFrontDB:
-    server_volumes = {
-    "holysfdb01": {
-        "holylfs04",
-        'holylfs05',
-        'holystore01',
-        }
-    }
-    volume_path = {
-        "holylfs04":"HDD/C/LABS",
-        'holylfs05':"",
-        'holystore01':"",
-        }
+
+
+    def pull_sf(self):
+        labs_resources = self.generate_project_resource_dict()
+        vol_set = {v[0] for v in labs_resources.values()}
+        logger.debug(f"vol_set: {vol_set}")
+        serv_vols = generate_serv_vol_dict(vol_set)
+        for s, v in serv_vols.items():
+            server = StarFishServer(s)
+            for vol, path in v.items():
+                logger.debug(f"volume: {vol}")
+                vol_labs_resources = {l:r for l, r in labs_resources.items() if r[0] == vol}
+                logger.debug(f"vol_labs_resources: {vol_labs_resources}")
+                filepaths = collect_starfish_usage(server, vol, path, vol_labs_resources)
+        return filepaths
+
+    def push_cf(self, filepaths):
+        for f in filepaths:
+            content = read_json(f)
+            statdicts = content['contents']
+            for statdict in statdicts:
+                try:
+                    self.update_usage(statdict)
+                    os.remove(f)
+                except Exception as e:
+                    logger.debug("EXCEPTION FOR ENTRY: {}".format(e),  exc_info=True)
 
     def generate_user_project_dict(self):
         logger.debug("generate_user_project_dict")
@@ -234,9 +248,9 @@ class ColdFrontDB:
         d = {}
         for o in projusers:
             p = self.return_pname(o.project_id)
-            u = self.return_username(o.user_id)
+            u = get_user_model().objects.get(id=o.user_id)
             if p not in d.keys():
-                d[p] = [u]
+                d[p] = [u.username]
             else:
                 d[p].append(u)
         logger.debug("generate_user_project_dict product: {}".format(d))
@@ -260,35 +274,18 @@ class ColdFrontDB:
         pr_dict = {p:r.split("/") for p, r in pr_dict.items()}
         return pr_dict
 
-
-    def locate_uid(self, username):
-        user = get_user_model().objects.get(username=username)
-        return user.id
-
-    def locate_pid(self, labname):
-        project = Project.objects.get(title=labname)
-        return project.id
-
     def return_pname(self, pid):
         project = Project.objects.get(id=pid)
         return project.title
 
-    def locate_aaid(self, pid):
-        allocation = Allocation.objects.get(project_id=pid)
-        return allocation.id
-
-    def return_username(self, uid):
-        user = get_user_model().objects.get(id=uid)
-        return user.username
-
     def update_usage(self, userdict):
         # get ids needed to locate correct allocationuser entry
-        user_id = self.locate_uid(userdict["username"])
-        project_id = self.locate_pid(userdict["groupname"])
-        allocation_id = self.locate_aaid(project_id)
+        user = get_user_model().objects.get(username=userdict["username"])
+        project = Project.objects.get(title=userdict["groupname"])
+        allocation = Allocation.objects.get(project_id=project.id)
 
         allocationuser = AllocationUser.objects.get(
-            allocation_id=allocation_id, user_id=user_id
+            allocation_id=allocation.id, user_id=user.id
         )
         allocationuser.usage_bytes = userdict["size_sum"]
         usage, unit = split_num_string(userdict["size_sum_hum"])
@@ -338,7 +335,14 @@ def confirm_dirpath_exists(dpath):
 
 
 def collect_starfish_usage(server, volume, volumepath, projects):
-    usage_query_by_lab = []
+    """
+
+    Returns
+    -------
+    filepaths : list
+        list of filepath names
+    """
+    filepaths = []
     datestr = datetime.today().strftime("%Y%m%d")
     logger.debug("server.name: {}".format(server.name))
     projects_reduced = {p:r for p,r in projects.items() if r[0] == volume}
@@ -346,10 +350,9 @@ def collect_starfish_usage(server, volume, volumepath, projects):
     for p, r in projects_reduced.items():
         homepath = "./coldfront/plugins/sftocf/data/"
         filepath = f"{homepath}{p}_{server.name}_{datestr}.json"
-        logger.debug(f"{p}")
+        logger.debug(f"filepath 1: {filepath}")
         if Path(filepath).exists():
-            record = read_json(filepath)
-            data = record['contents']
+            filepaths.append(filepath)
         else:
             lab_volpath = volumepath# + "/{}".format(p)
 
@@ -361,10 +364,8 @@ def collect_starfish_usage(server, volume, volumepath, projects):
             logger.debug("usage_query.result:{}".format(data))
             if not data:
                 logger.warning("No starfish result for lab {}".format(p))
-                data = []
             elif type(data) is dict and "error" in data:
                 logger.warning("Error in starfish result for lab {}:\n{}".format(p, data))
-                data = []
             else:
                 data = usage_query.result
                 logger.debug(data)
@@ -377,11 +378,23 @@ def collect_starfish_usage(server, volume, volumepath, projects):
                 }
                 confirm_dirpath_exists(homepath)
                 save_as_json(filepath, record)
-        usage_query_by_lab.extend(data)
-    logger.debug("usage_query_by_lab: {}".format(usage_query_by_lab))
-    return usage_query_by_lab
+                filepaths.append(filepath)
+                logger.debug(f"here it is {filepath}")
+    return filepaths
 
 
+def clean_data_dir():
+    """Remove json from data folder that's more than a week old
+    """
+    files = os.listdir("./coldfront/plugins/sftocf/data/")
+    json_files = [f for f in files if ".json" in f]
+    print(json_files)
+    now = time.time()
+    for f in json_files:
+        fpath = f"./coldfront/plugins/sftocf/data/{f}"
+        created = os.stat(fpath).st_ctime
+        if created < now - 7 * 86400:
+            os.remove(fpath)
 
 
 def generate_serv_vol_dict(vol_set):
@@ -393,18 +406,3 @@ def generate_serv_vol_dict(vol_set):
                 if vk in vol_set:
                     search_svp[s][vk] = p
     return search_svp
-
-def pull_sf():
-    cfdb = ColdFrontDB()
-    labs_resources = cfdb.generate_project_resource_dict()
-    vol_set = {v[0] for v in labs_resources.values()}
-    logger.debug(f"vol_set: {vol_set}")
-    serv_vols = generate_serv_vol_dict(vol_set)
-    for s, v in serv_vols.items():
-        server = StarFishServer(s)
-        for vol, path in v.items():
-            logger.debug(f"volume: {vol}")
-            vol_labs_resources = {l:r for l, r in labs_resources.items() if r[0] == vol}
-            logger.debug(f"vol_labs_resources: {vol_labs_resources}")
-            usage_stats = collect_starfish_usage(server, vol, path, vol_labs_resources)
-    return usage_stats
