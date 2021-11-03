@@ -23,49 +23,76 @@ ALLOCATION_ACCOUNT_ENABLED = import_from_settings(
 
 
 class AllocationForm(forms.Form):
+    YES_NO_CHOICES = (
+        ('Yes', 'Yes'),
+        ('No', 'No')
+    )
+    # Leave an empty value as a choice so the form picks it as the value to check if the user has
+    # already picked a choice (relevent if the form errors after submission due to missing required
+    # values, prevents what the user chose from being reset. We want to check against an empty
+    # string).
+    CAMPUS_CHOICES = (
+        ('', ''),
+        ('BL', 'IU Bloomington'),
+        ('IN', 'IUPUI (Indianapolis)'),
+        ('CO', 'IUPUC (Columbus)'),
+        ('EA', 'IU East (Richmond)'),
+        ('FW', 'IU Fort Wayne'),
+        ('CO', 'IU Kokomo'),
+        ('NW', 'IU Northwest (Gary)'),
+        ('SB', 'IU South Bend'),
+        ('SE', 'IU Southeast (New Albany)'),
+        ('OR', 'Other')
+    )
+    TRAINING_INFERENCE_CHOICES = (
+        ('', ''),
+        ('Training', 'Training'),
+        ('Inference', 'Inference'),
+        ('Both', 'Both')
+    )
+    GRAND_CHALLENGE_CHOICES = (
+        ('', ''),
+        ('healthinitiative', 'Precision Health Initiative'),
+        ('envchange', 'Prepared for Environmental Change'),
+        ('addiction', 'Responding to the Addiction Crisis')
+    )
+    SYSTEM_CHOICES = (
+        ('Carbonate', 'Carbonate'),
+        ('BigRed3', 'Big Red 3')
+    )
+    ACCESS_LEVEL_CHOICES = (
+        ('Masked', 'Masked'),
+        ('Unmasked', 'Unmasked')
+    )
+    LICENSE_TERM_CHOICES = (
+        ('current', 'Current license'),
+        ('current_and_next_year', 'Current license + next annual license')
+    )
+
     resource = forms.ModelChoiceField(queryset=None, empty_label=None)
     justification = forms.CharField(widget=forms.Textarea)
     first_name = forms.CharField(max_length=40, required=False)
     last_name = forms.CharField(max_length=40, required=False)
-    campus_affiliation = forms.ChoiceField(
-        choices=(
-            ('', ''),
-            ('BL', 'IU Bloomington'),
-            ('IN', 'IUPUI (Indianapolis)'),
-            ('CO', 'IUPUC (Columbus)'),
-            ('EA', 'IU East (Richmond)'),
-            ('FW', 'IU Fort Wayne'),
-            ('CO', 'IU Kokomo'),
-            ('NW', 'IU Northwest (Gary)'),
-            ('SB', 'IU South Bend'),
-            ('SE', 'IU Southeast (New Albany)'),
-            ('OR', 'Other')
-        ),
-        required=False
-    )
+    campus_affiliation = forms.ChoiceField(choices=CAMPUS_CHOICES, required=False)
     email = forms.EmailField(max_length=40, required=False)
     url = forms.CharField(max_length=50, required=False)
     project_directory_name = forms.CharField(max_length=10, required=False)
     quantity = forms.IntegerField(required=False)
     storage_space = forms.IntegerField(required=False)
     storage_space_with_unit = forms.IntegerField(required=False)
-    leverage_multiple_gpus = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False, widget=RadioSelect)
-    dl_workflow = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False, widget=RadioSelect)
+    leverage_multiple_gpus = forms.ChoiceField(choices=YES_NO_CHOICES, required=False, widget=RadioSelect)
+    dl_workflow = forms.ChoiceField(choices=YES_NO_CHOICES, required=False, widget=RadioSelect)
     applications_list = forms.CharField(max_length=150, required=False)
-    # Leave an empty value as a choice so the form picks it as the value to check if the user has
-    # already picked a choice (relevent if the form errors after submission due to missing required
-    # values, prevents what the user chose from being reset. We want to check against an empty
-    # string).
-    training_or_inference = forms.ChoiceField(choices=(('', ''), ('Training', 'Training'), ('Inference', 'Inference'), ('Both', 'Both')), required=False)
-    for_coursework = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False, widget=RadioSelect)
-    system = forms.ChoiceField(choices=(('Carbonate', 'Carbonate'), ('BigRed3', 'Big Red 3')), required=False, widget=RadioSelect)
+    training_or_inference = forms.ChoiceField(choices=TRAINING_INFERENCE_CHOICES, required=False)
+    for_coursework = forms.ChoiceField(choices=YES_NO_CHOICES, required=False, widget=RadioSelect)
+    system = forms.ChoiceField(choices=SYSTEM_CHOICES, required=False, widget=RadioSelect)
     is_grand_challenge = forms.BooleanField(required=False)
-    grand_challenge_program = forms.ChoiceField(choices=(('', ''), ('healthinitiative', 'Precision Health Initiative'), ('envchange', 'Prepared for Environmental Change'), ('addiction', 'Responding to the Addiction Crisis')), required=False)
-    start_date = forms.DateField(widget=forms.TextInput(attrs={'class':'datepicker'}), required=False)
-    end_date = forms.DateField(widget=forms.TextInput(attrs={'class':'datepicker'}), required=False)
+    grand_challenge_program = forms.ChoiceField(choices=GRAND_CHALLENGE_CHOICES, required=False)
+    start_date = forms.DateField(widget=forms.TextInput(attrs={'class': 'datepicker'}), required=False)
+    end_date = forms.DateField(widget=forms.TextInput(attrs={'class': 'datepicker'}), required=False)
     use_indefinitely = forms.BooleanField(required=False)
-    phi_association = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False, widget=RadioSelect)
-    access_level = forms.ChoiceField(choices=(('Masked', 'Masked'), ('Unmasked', 'Unmasked')), required=False, widget=RadioSelect)
+    phi_association = forms.ChoiceField(choices=YES_NO_CHOICES, required=False, widget=RadioSelect)
+    access_level = forms.ChoiceField(choices=ACCESS_LEVEL_CHOICES, required=False, widget=RadioSelect)
     unit = forms.CharField(max_length=10, required=False)
     primary_contact = forms.CharField(max_length=20, required=False)
     secondary_contact = forms.CharField(max_length=20, required=False)
@@ -74,13 +101,9 @@ class AllocationForm(forms.Form):
     fiscal_officer = forms.CharField(max_length=20, required=False)
     account_number = forms.CharField(max_length=9, required=False)
     sub_account_number = forms.CharField(max_length=20, required=False)
-    license_term = forms.ChoiceField(choices=(('current','Current license'), ('current_and_next_year','Current license + next annual license')), required=False)
+    license_term = forms.ChoiceField(choices=LICENSE_TERM_CHOICES, required=False)
     faculty_email = forms.EmailField(max_length=40, required=False)
-    store_ephi = forms.ChoiceField(
-        choices=(('No', 'No'), ('Yes', 'Yes')),
-        required=False,
-        widget=RadioSelect
-    )
+    store_ephi = forms.ChoiceField(choices=YES_NO_CHOICES, required=False, widget=RadioSelect)
     it_pros = forms.CharField(max_length=100, required=False)
     devices_ip_addresses = forms.CharField(max_length=200, required=False)
     data_management_plan = forms.CharField(widget=forms.Textarea, required=False)
