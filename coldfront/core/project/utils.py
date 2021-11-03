@@ -1346,6 +1346,7 @@ class ProjectRemovalRequestRunner(object):
         flag = True
         removal_request = None
 
+        # check for active removal request for user
         if ProjectUserRemovalRequest.objects.filter(
                 project_user__user=self.user_obj,
                 status__in=[pending_status, processing_status]).exists():
@@ -1355,6 +1356,7 @@ class ProjectRemovalRequestRunner(object):
             self.error_messages.append(message)
             flag = False
 
+        # PIs cannot request to leave own project
         if self.proj_obj.projectuser_set.filter(
                 user=self.user_obj,
                 role__name='Principal Investigator').exists():
@@ -1363,6 +1365,7 @@ class ProjectRemovalRequestRunner(object):
             self.error_messages.append(message)
             flag = False
 
+        # Managers can only leave if there are multiple managers
         if self.proj_obj.projectuser_set.filter(
                 user=self.user_obj,
                 role__name='Manager').exists() \
