@@ -14,8 +14,8 @@ from coldfront.core.resource.models import Resource, ResourceType
 from coldfront.core.utils.common import import_from_settings
 
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Layout, Submit, HTML
-from crispy_forms.bootstrap import InlineRadios, FormActions
+from crispy_forms.layout import Field, Layout, Submit, HTML
+from crispy_forms.bootstrap import InlineRadios, FormActions, PrependedText
 
 
 ALLOCATION_ACCOUNT_ENABLED = import_from_settings(
@@ -159,7 +159,7 @@ class AllocationForm(forms.Form):
             'training_or_inference',
             InlineRadios('for_coursework'),
             InlineRadios('system'),
-            InlineRadios('is_grand_challenge'),
+            'is_grand_challenge',
             'grand_challenge_program',
             'start_date',
             'end_date',
@@ -172,17 +172,17 @@ class AllocationForm(forms.Form):
             'department_full_name',
             'department_short_name',
             'fiscal_officer',
-            'account_number',
+            Field('account_number', placeholder='00-000-00'),
             'sub_account_number',
             'license_term',
             'faculty_email',
             InlineRadios('store_ephi'),
             'it_pros',
             'devices_ip_addresses',
-            'data_management_plan' ,
-            'prorated_cost',
-            'cost',
-            'total_cost',
+            'data_management_plan',
+            PrependedText('prorated_cost', '$'),
+            PrependedText('cost', '$'),
+            PrependedText('total_cost', '$'),
             'confirm_understanding',
             'users',
             'allocation_account',

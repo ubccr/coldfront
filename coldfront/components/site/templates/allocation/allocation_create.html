@@ -131,6 +131,8 @@ Request New Allocation
 
 
   $(document).ready(function () {
+    moveRadioSelectErrors();
+
     // By default we will have the use_indefinitely div placed just after the end_date label on the form.
     // Save the value since it will be deleted when we change the label.
     var use_indefinitely = $('#id_use_indefinitely').is(':checked');
@@ -177,7 +179,6 @@ Request New Allocation
       .after(
         '<div id="div_id_unit">\
           <select id="id_unit" class="select form-control" name="unit">\
-            <option value="">Select</option>\
             <option value="GB">GB</option>\
             <option value="TB">TB</option>\
           </select>\
@@ -353,6 +354,27 @@ Request New Allocation
       }
     });
   });
+
+  function moveRadioSelectErrors() {
+    // Radio select validation errors need to be moved below their fields.
+    var radioSelectFields = [
+      'for_coursework',
+      'leverage_multiple_gpus',
+      'dl_workflow',
+      'store_ephi',
+      'system',
+      'phi_association',
+      'access_level',
+    ];
+    for (var i = 0; i < radioSelectFields.length; i++) {
+      var invalidRadioSelectField = $('#error_1_id_' + radioSelectFields[i]);
+      if (invalidRadioSelectField.length) {
+        $('#div_id_' + radioSelectFields[i]).append(
+          invalidRadioSelectField
+        )
+      }
+    }
+  }
 
   function checkDate(end_month, end_day) {
     let [month, date, year] = new Date().toLocaleDateString("en-US").split("/");
