@@ -1,6 +1,6 @@
 Dear {{ user_first_name }} {{ user_last_name }},
 
-{{ requester_first_name }} {{ requester_last_name }} of Project {{ project_name }} has requested to remove you from {{ project_name }}. The request will be reviewed by administrators. You will receive a confirmation message after admins have removed you from the project.
+{{ requester_first_name }} {{ requester_last_name }} of Project {{ project_name }} has requested to remove {{ remove_user_first_name }} {{ remove_user_last_name }} from {{ project_name }}. The request will be reviewed by administrators. You will receive a confirmation message after admins have removed {{ remove_user_first_name }} {{ remove_user_last_name }} from the project.
 
 If you have any questions, please contact us at {{ support_email }}.
 
