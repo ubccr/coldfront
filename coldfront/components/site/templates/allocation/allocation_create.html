@@ -20,18 +20,14 @@ Request New Allocation
   provide the justification for how you intend to use the resource to further 
   the research goals of your project.</p>
 
-<form method="post">
-  {% csrf_token %}
-  {{form |crispy}}
+<form method="post" class="bootstrap">
+  {% crispy form %}
 
   <div id="eula-div" style="display: none;">
     <textarea style="display:none;min-width:100%" id="eula"  rows="15"></textarea>
     <br>
     <p class="font-weight-bold">By clicking submit you agree to the Terms and Conditions.</p>
   </div>
-
-  <input class="btn btn-primary" type="submit" value="Submit" />
-  <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button">Back to Project</a><br>
 </form>
 
 <!-- Large modal -->
@@ -135,6 +131,8 @@ Request New Allocation
 
 
   $(document).ready(function () {
+    moveRadioSelectErrors();
+
     // By default we will have the use_indefinitely div placed just after the end_date label on the form.
     // Save the value since it will be deleted when we change the label.
     var use_indefinitely = $('#id_use_indefinitely').is(':checked');
@@ -181,7 +179,6 @@ Request New Allocation
       .after(
         '<div id="div_id_unit">\
           <select id="id_unit" class="select form-control" name="unit">\
-            <option value="">Select</option>\
             <option value="GB">GB</option>\
             <option value="TB">TB</option>\
           </select>\
@@ -358,6 +355,27 @@ Request New Allocation
     });
   });
 
+  function moveRadioSelectErrors() {
+    // Radio select validation errors need to be moved below their fields.
+    var radioSelectFields = [
+      'for_coursework',
+      'leverage_multiple_gpus',
+      'dl_workflow',
+      'store_ephi',
+      'system',
+      'phi_association',
+      'access_level',
+    ];
+    for (var i = 0; i < radioSelectFields.length; i++) {
+      var invalidRadioSelectField = $('#error_1_id_' + radioSelectFields[i]);
+      if (invalidRadioSelectField.length) {
+        $('#div_id_' + radioSelectFields[i]).append(
+          invalidRadioSelectField
+        )
+      }
+    }
+  }
+
   function checkDate(end_month, end_day) {
     let [month, date, year] = new Date().toLocaleDateString("en-US").split("/");
     var licenseEndDate = new Date(year, end_month, end_day);
@@ -519,7 +537,7 @@ Request New Allocation
     }
     
     if (resources_form_leverage_multiple_gpus_label[resource_id]) {
-      var label = $('label[for="id_leverage_multiple_gpus_0"]');
+      var label = $('label[for="id_leverage_multiple_gpus"]');
       label.html(resources_form_leverage_multiple_gpus_label[resource_id]);
       // Do not reset the value if the user has already entered one (relevent if the form errors
       // after submission because not all the required values were given).
@@ -532,7 +550,7 @@ Request New Allocation
     }
 
     if (resources_form_dl_workflow_label[resource_id]) {
-      var label = $('label[for="id_dl_workflow_0"]');
+      var label = $('label[for="id_dl_workflow"]');
       label.html(resources_form_dl_workflow_label[resource_id]);
       if ($('input[type=radio][name=dl_workflow]:checked').val() === undefined) {
         $('input[type=radio][name=dl_workflow]').val([resources_form_dl_workflow[resource_id]]);
@@ -565,7 +583,7 @@ Request New Allocation
     }
 
     if (resources_form_for_coursework_label[resource_id]) {
-      var label = $('label[for="id_for_coursework_0"]');
+      var label = $('label[for="id_for_coursework"]');
       label.html(resources_form_for_coursework_label[resource_id]);
       if ($('input[type=radio][name=for_coursework]:checked').val() === undefined) {
         $('input[type=radio][name=for_coursework]').val([resources_form_for_coursework[resource_id]]);
@@ -576,7 +594,7 @@ Request New Allocation
     }
     
     if (resources_form_system_label[resource_id]) {
-      var label = $('label[for="id_system_0"]');
+      var label = $('label[for="id_system"]');
       label.html(resources_form_system_label[resource_id]);
       if ($('input[type=radio][name=system]:checked').val() === undefined){
         $('input[type=radio][name=system]').val([resources_form_system[resource_id]]);
@@ -629,7 +647,7 @@ Request New Allocation
     }
 
     if (resources_form_phi_association_label[resource_id]) {
-      var label = $('label[for="id_phi_association_0"]');
+      var label = $('label[for="id_phi_association"]');
       label.html(resources_form_phi_association_label[resource_id]);
       if ($('input[type=radio][name=phi_association]:checked').val() === undefined){
         $('input[type=radio][name=phi_association]').val([resources_form_phi_association[resource_id]]);
@@ -640,7 +658,7 @@ Request New Allocation
     }
 
     if (resources_form_access_level_label[resource_id]) {
-      var label = $('label[for="id_access_level_0"]');
+      var label = $('label[for="id_access_level"]');
       label.html(resources_form_access_level_label[resource_id]);
       if ($('input[type=radio][name=access_level]:checked').val() === undefined){
         $('input[type=radio][name=access_level]').val([resources_form_access_level[resource_id]]);
@@ -891,7 +909,7 @@ Request New Allocation
     }
 
     if (resources_form_store_ephi_label[resource_id]) {
-      var label = $('label[for="id_store_ephi_0"]');
+      var label = $('label[for="id_store_ephi"]');
       label.html(resources_form_store_ephi_label[resource_id]);
       if ($('input[type=radio][name=store_ephi]:checked').val() === undefined){
         $('input[type=radio][name=store_ephi]').val([resources_form_store_ephi[resource_id]]);
