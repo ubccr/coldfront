@@ -1127,11 +1127,11 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     request_runner = ProjectRemovalRequestRunner(
                         self.request.user, user_obj, project_obj)
                     runner_result = request_runner.run()
-                    success_message, error_messages = request_runner.get_messages()
+                    success_messages, error_messages = request_runner.get_messages()
 
                     if runner_result:
                         request_runner.send_emails()
-                        for m in success_message:
+                        for m in success_messages:
                             messages.success(request, m)
                     else:
                         for m in error_messages:
@@ -1171,11 +1171,11 @@ class ProjectRemoveSelf(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         request_runner = ProjectRemovalRequestRunner(
             self.request.user, self.request.user, project_obj)
         runner_result = request_runner.run()
-        success_message, error_messages = request_runner.get_messages()
+        success_messages, error_messages = request_runner.get_messages()
 
         if runner_result:
             request_runner.send_emails()
-            for message in success_message:
+            for message in success_messages:
                 messages.success(request, message)
         else:
             for message in error_messages:

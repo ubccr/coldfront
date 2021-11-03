@@ -1338,7 +1338,7 @@ class ProjectRemovalRequestRunner(object):
         self.proj_obj = proj_obj
         # A list of messages to display to the user.
         self.error_messages = []
-        self.success_message = []
+        self.success_messages = []
 
     def run(self):
         pending_status = ProjectUserRemovalRequestStatusChoice.objects.get(name='Pending')
@@ -1391,15 +1391,15 @@ class ProjectRemovalRequestRunner(object):
             proj_user_obj.status = ProjectUserStatusChoice.objects.get(name='Pending - Remove')
             proj_user_obj.save()
 
-            message = f'Successfully created project removal request for' \
+            message = f'Successfully created project removal request for ' \
                       f'user {self.user_obj.username}.'
-            self.success_message.append(message)
+            self.success_messages.append(message)
 
         return removal_request
 
     def get_messages(self):
         """A getter for this instance's user_messages."""
-        return self.success_message, self.error_messages
+        return self.success_messages, self.error_messages
 
     def send_emails(self):
         email_enabled = import_from_settings('EMAIL_ENABLED', False)
