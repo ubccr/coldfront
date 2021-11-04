@@ -76,6 +76,15 @@ Project Renewal Request Detail
                     <strong>Timestamp:</strong>
                     {{ denial_reason.timestamp|iso8601_to_datetime }}
                   </p>
+                  {% if user.is_superuser %}
+                    <p>
+                      <form action="{% url 'pi-allocation-renewal-request-review-undeny' renewal_request.pk %}" method="post">
+                        {% csrf_token %}
+                        <strong>Un-deny Request:</strong>
+                        <input class="btn btn-primary" type="submit" value="Un-deny" />
+                      </form>
+                    </p>
+                  {% endif %}
                   <p>
                     If you have any questions or concerns, please contact us at
                     {{ support_email }}.

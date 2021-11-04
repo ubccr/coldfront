@@ -66,9 +66,9 @@ Vector Project Request Detail
                   </p>
                   {% if user.is_superuser %}
                     <p>
-                        <strong>Undeny Request:</strong>
+                        <strong>Un-deny Request:</strong>
                         <a href="{% url 'vector-project-undeny-request' vector_request.pk %}" class="btn btn-primary">
-                            Undeny
+                            Un-deny
                         </a>
                     </p>
                       {% endif %}

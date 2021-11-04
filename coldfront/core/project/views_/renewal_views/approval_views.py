@@ -21,6 +21,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.urls import reverse_lazy
+from django.views import View
 from django.views.generic import DetailView
 from django.views.generic import TemplateView
 from django.views.generic.edit import FormView
@@ -364,11 +365,22 @@ class AllocationRenewalRequestReviewDenyView(LoginRequiredMixin,
         pk = self.kwargs.get('pk')
         self.set_request_obj(pk)
         response_redirect = HttpResponseRedirect(self.get_redirect_url(pk))
+
         status_name = self.request_obj.status.name
         if status_name in ['Complete', 'Denied']:
             message = f'You cannot review a request with status {status_name}.'
             messages.error(request, message)
             return response_redirect
+
+        new_project_request = self.request_obj.new_project_request
+        if new_project_request:
+            if new_project_request.status != 'Denied':
+                message = (
+                    'Deny the associated Savio Project request first, which '
+                    'should automatically deny this request.')
+                messages.error(request, message)
+                return response_redirect
+
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -407,3 +419,78 @@ class AllocationRenewalRequestReviewDenyView(LoginRequiredMixin,
 
     def get_success_url(self):
         return self.get_redirect_url(self.kwargs.get('pk'))
+
+
+class AllocationRenewalRequestUndenyView(LoginRequiredMixin,
+                                         UserPassesTestMixin,
+                                         AllocationRenewalRequestMixin, View):
+    login_url = '/'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        message = 'You do not have permission to view the previous page.'
+        messages.error(self.request, message)
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        self.set_request_obj(pk)
+        response_redirect = HttpResponseRedirect(self.get_redirect_url(pk))
+
+        status_name = self.request_obj.status.name
+        if status_name != 'Denied':
+            message = (
+                f'You cannot un-deny a request with status \'{status_name}\'.')
+            messages.error(request, message)
+            return response_redirect
+
+        new_project_request = self.request_obj.new_project_request
+        if new_project_request:
+            if new_project_request.status.name == 'Complete':
+                message = (
+                    f'You cannot un-deny a request that has an associated new '
+                    f'project request with status \'Complete\'.')
+                messages.error(request, message)
+                return response_redirect
+
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        message = 'Unsupported method.'
+        messages.error(request, message)
+        return HttpResponseRedirect(self.get_redirect_url(self.request_obj.pk))
+
+    def post(self, request, *args, **kwargs):
+        request_obj = self.request_obj
+        response_redirect = HttpResponseRedirect(
+            self.get_redirect_url(request_obj.pk))
+
+        new_project_request = request_obj.new_project_request
+        if new_project_request:
+            if new_project_request.status == 'Denied':
+                message = (
+                    'Un-deny the associated Savio Project request before '
+                    'un-denying this request.')
+                messages.error(request, message)
+                return response_redirect
+
+        eligibility = request_obj.state['eligibility']
+        if eligibility['status'] == 'Denied':
+            eligibility['status'] = 'Pending'
+
+        other = request_obj.state['other']
+        if other['timestamp']:
+            other['justification'] = ''
+            other['timestamp'] = ''
+
+        request_obj.status = allocation_renewal_request_state_status(
+            request_obj)
+        request_obj.save()
+
+        message = (
+            f'Status for {request_obj.pk} has been set to '
+            f'{request_obj.status}.')
+        messages.success(request, message)
+
+        return HttpResponseRedirect(self.get_redirect_url(request_obj.pk))
