@@ -254,7 +254,7 @@ class AllocationRenewalRequestReviewEligibilityView(LoginRequiredMixin,
         self.set_request_obj(pk)
         response_redirect = HttpResponseRedirect(self.get_redirect_url(pk))
         status_name = self.request_obj.status.name
-        if status_name in ['Approved', 'Complete', 'Denied']:
+        if status_name in ['Complete', 'Denied']:
             message = f'You cannot review a request with status {status_name}.'
             messages.error(request, message)
             return response_redirect
@@ -278,12 +278,11 @@ class AllocationRenewalRequestReviewEligibilityView(LoginRequiredMixin,
         }
         self.request_obj.status = allocation_renewal_request_state_status(
             self.request_obj)
+        self.request_obj.save()
 
         if status == 'Denied':
             runner = AllocationRenewalDenialRunner(self.request_obj)
             runner.run()
-
-        self.request_obj.save()
 
         message = (
             f'Eligibility status for request {self.request_obj.pk} has been '

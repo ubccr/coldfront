@@ -17,7 +17,9 @@ Project Renewal Request Detail
     {% if status == 'Under Review' %}
       <span class="badge badge-warning" style="float: right;">{{ status }}</span>
     {% elif status == 'Approved' %}
-      <span class="badge badge-success" style="float: right;">{{ status }}</span>
+      <span class="badge badge-warning" style="float: right;">
+        {{ status }} - Incomplete
+      </span>
     {% elif status == 'Complete' %}
       <span class="badge badge-success" style="float: right;">{{ status }}</span>
     {% else %}
@@ -92,7 +94,7 @@ Project Renewal Request Detail
   </div>
 </div>
 
-{% if is_allowed_to_manage_request and renewal_request.status.name not in 'Denied,Approved,Complete' %}
+{% if is_allowed_to_manage_request and renewal_request.status.name not in 'Denied,Complete' %}
   <div class="card mb-3">
     <div class="card-header">
       <h2>

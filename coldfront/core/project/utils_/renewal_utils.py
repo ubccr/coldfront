@@ -459,6 +459,16 @@ class AllocationRenewalRunnerBase(object):
     def run(self):
         raise NotImplementedError('This method is not implemented.')
 
+    def assert_request_not_status(self, unexpected_status):
+        """Raise an assertion error if the request has the given
+        unexpected status."""
+        if not isinstance(
+                unexpected_status, AllocationRenewalRequestStatusChoice):
+            raise TypeError(
+                'Status is not an AllocationRenewalRequestStatusChoice.')
+        message = f'The request must not have status \'{unexpected_status}\'.'
+        assert self.request_obj.status != unexpected_status, message
+
     def assert_request_status(self, expected_status):
         """Raise an assertion error if the request does not have the
         given expected status."""
@@ -668,9 +678,9 @@ class AllocationRenewalDenialRunner(AllocationRenewalRunnerBase):
 
     def __init__(self, request_obj):
         super().__init__(request_obj)
-        expected_status = AllocationRenewalRequestStatusChoice.objects.get(
-            name='Under Review')
-        self.assert_request_status(expected_status)
+        unexpected_status = AllocationRenewalRequestStatusChoice.objects.get(
+            name='Complete')
+        self.assert_request_not_status(unexpected_status)
 
     def run(self):
         self.handle_by_preference()

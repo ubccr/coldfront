@@ -130,21 +130,21 @@ class TestRunnerMixin(object):
         }
         return AllocationRenewalRequest.objects.create(**kwargs)
 
-    def test_request_initial_under_review_status_enforced(self):
-        """Test that the provided AllocationRenewalRequest must be in
-        the 'Under Review' state, or an exception will be raised."""
+    def test_request_initial_not_complete_status_enforced(self):
+        """Test that the provided AllocationRenewalRequest must not be
+        in the 'Complete' state, or an exception will be raised."""
         statuses = AllocationRenewalRequestStatusChoice.objects.all()
         self.assertEqual(statuses.count(), 4)
         for status in statuses:
             self.request_obj.status = status
             self.request_obj.save()
-            if status.name == 'Under Review':
+            if status.name != 'Complete':
                 AllocationRenewalDenialRunner(self.request_obj)
             else:
                 try:
                     AllocationRenewalDenialRunner(self.request_obj)
                 except AssertionError as e:
-                    message = 'The request must have status \'Under Review\'.'
+                    message = 'The request must not have status \'Complete\'.'
                     self.assertEqual(str(e), message)
                     continue
                 else:
