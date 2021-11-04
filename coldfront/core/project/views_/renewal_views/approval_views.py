@@ -7,6 +7,7 @@ from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.utils import project_allocation_request_latest_update_timestamp
 from coldfront.core.project.utils_.renewal_utils import AllocationRenewalDenialRunner
 from coldfront.core.project.utils_.renewal_utils import AllocationRenewalProcessingRunner
+from coldfront.core.project.utils_.renewal_utils import allocation_renewal_request_denial_reason
 from coldfront.core.project.utils_.renewal_utils import allocation_renewal_request_latest_update_timestamp
 from coldfront.core.project.utils_.renewal_utils import allocation_renewal_request_state_status
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -24,6 +25,7 @@ from django.views.generic import DetailView
 from django.views.generic import TemplateView
 from django.views.generic.edit import FormView
 
+import iso8601
 import logging
 
 
@@ -62,9 +64,9 @@ class AllocationRenewalRequestListView(LoginRequiredMixin, TemplateView):
         if not (user.is_superuser or user.has_perm(permission)):
             args.append(Q(requester=user) | Q(pi=user))
         if self.completed:
-            status__name__in = ['Approved', 'Complete', 'Denied']
+            status__name__in = ['Complete', 'Denied']
         else:
-            status__name__in = ['Under Review']
+            status__name__in = ['Approved', 'Under Review']
         kwargs['status__name__in'] = status__name__in
         context['renewal_request_list'] = request_list.filter(*args, **kwargs)
         context['request_filter'] = (
@@ -143,9 +145,44 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         is_superuser = self.request.user.is_superuser
-        context['latest_update_timestamp'] = \
-            allocation_renewal_request_latest_update_timestamp(
-                self.request_obj)
+
+        try:
+            latest_update_timestamp = \
+                allocation_renewal_request_latest_update_timestamp(
+                    self.request_obj)
+            if not latest_update_timestamp:
+                latest_update_timestamp = 'No updates yet.'
+            else:
+                latest_update_timestamp = iso8601.parse_date(
+                    latest_update_timestamp)
+        except Exception as e:
+            self.logger.exception(e)
+            messages.error(self.request, self.error_message)
+            latest_update_timestamp = 'Failed to determine timestamp.'
+        context['latest_update_timestamp'] = latest_update_timestamp
+
+        if self.request_obj.status.name == 'Denied':
+            try:
+                denial_reason = allocation_renewal_request_denial_reason(
+                    self.request_obj)
+                category = denial_reason.category
+                justification = denial_reason.justification
+                timestamp = denial_reason.timestamp
+            except Exception as e:
+                self.logger.exception(e)
+                messages.error(self.request, self.error_message)
+                category = 'Unknown Category'
+                justification = (
+                    'Failed to determine denial reason. Please contact an '
+                    'administrator.')
+                timestamp = 'Unknown Timestamp'
+            context['denial_reason'] = {
+                'category': category,
+                'justification': justification,
+                'timestamp': timestamp,
+            }
+            context['support_email'] = settings.CENTER_HELP_EMAIL
+
         context['is_allowed_to_manage_request'] = is_superuser
         if is_superuser:
             context['checklist'] = self.__get_checklist()
