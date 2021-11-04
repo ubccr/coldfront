@@ -132,9 +132,9 @@ Project Renewal Request Detail
                       <span class="badge badge-danger">
                     {% endif %}
                       {{ status }}
-                        {% if latest_update_timestamp %}
-                          {{ latest_update_timestamp|iso8601_to_datetime }}
-                        {% endif %}
+                      {% if latest_update_timestamp %}
+                        {{ latest_update_timestamp|iso8601_to_datetime }}
+                      {% endif %}
                       </span>
                   {% endwith %}
                 </td>
