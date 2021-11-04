@@ -17,6 +17,7 @@ if ENV.bool('EMAIL_ENABLED', default=False):
 # ColdFront plugin settings
 plugin_configs = {
     'PLUGIN_SLURM': 'plugins/slurm.py',
+    'PLUGIN_UMDSLURM': 'plugins/umdslurm.py',
     'PLUGIN_IQUOTA': 'plugins/iquota.py',
     'PLUGIN_FREEIPA': 'plugins/freeipa.py',
     'PLUGIN_SYSMON': 'plugins/system_montior.py',
