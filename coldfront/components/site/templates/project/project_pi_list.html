@@ -1,0 +1,15 @@
+{% load crispy_forms_tags %}
+<div>
+  <p>Projects {{ pi_username }} is a PI in:</p>
+  {% if not pi_projects %}
+    <p class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i>{{ pi_username }} is not a PI in any projects.</p>
+  {% else %}
+    {% for project in pi_projects %}
+      <p>Title: {{ project.title }}</p>
+      <p>Description: {{ project.description }}</p>
+      <p >Principal Investigator: {{ project.pi.first_name }} {{ project.pi.last_name }} ({{ project.pi.username }})</p>
+        <a href="mailto:{{ project.pi.email }} "><i class="far fa-envelope" aria-hidden="true"></i><span class="sr-only">Email</span></a>
+      </p>
+    {% endfor %}
+  {% endif %}
+</div>

@@ -32,6 +32,7 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectRemoveUserForm,
                                           ProjectReviewEmailForm,
                                           ProjectReviewForm, ProjectSearchForm,
+                                          ProjectPISearchForm,
                                           ProjectUserUpdateForm)
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectReviewStatusChoice,
@@ -208,10 +209,23 @@ class ProjectListView(LoginRequiredMixin, ListView):
         return projects.distinct()
 
     def get_context_data(self, **kwargs):
-
         context = super().get_context_data(**kwargs)
         projects_count = self.get_queryset().count()
         context['projects_count'] = projects_count
+        max_projects = 2
+        user_title = self.request.user.userprofile.title
+        if user_title == 'Regular Hourly':
+            max_projects = 1
+
+        project_count = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
+            Q(pi__username=self.request.user.username) &
+            Q(projectuser__status__name='Active') &
+            Q(status__name__in=['New', 'Active', ])
+        ).distinct().count()
+        context['project_requests_remaining'] = max_projects - project_count
+
+        project_pi_search_form = ProjectPISearchForm()
+        context['project_pi_search_form'] = project_pi_search_form
 
         project_search_form = ProjectSearchForm(self.request.GET)
         if project_search_form.is_valid():
@@ -257,6 +271,23 @@ class ProjectListView(LoginRequiredMixin, ListView):
             project_list = paginator.page(paginator.num_pages)
 
         return context
+
+
+class ProjectPISearchView(LoginRequiredMixin, ListView):
+    model = Project
+    template_name = 'project/project_pi_list.html'
+
+    def post(self, request, *args, **kwargs):
+        pi_username = request.POST.get('pi_username')
+        context = {}
+        context["pi_username"] = pi_username
+        projects = Project.objects.prefetch_related('pi', 'status',).filter(
+            Q(pi__username=pi_username) &
+            Q(projectuser__status__name='Active') &
+            Q(status__name__in=['New', 'Active', ])
+        ).distinct()
+        context["pi_projects"] = projects
+        return render(request, self.template_name, context)
 
 
 class ProjectArchivedListView(LoginRequiredMixin, ListView):
