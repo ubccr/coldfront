@@ -29,7 +29,13 @@ svp = {
     "holylfs04":"HDD/C/LABS",
     'holylfs05':"",
     'holystore01':"",
-    }
+    },
+"holysfdb02": {
+    "boslfs02":"LABS",
+    "bos-isilon":"rc_labs",
+    "holy-isilon":"",
+    "holylfs02":"LABS",
+  }
 }
 
 
@@ -242,7 +248,6 @@ class ColdFrontDB:
 
     def generate_user_project_dict(self):
         logger.debug("generate_user_project_dict")
-        # projuser = ProjectUser.objects.get(project_id=)
         projusers = ProjectUser.objects.only("project_id", "user_id")
         logger.debug("projusers: {}".format(projusers))
         d = {}
@@ -291,8 +296,7 @@ class ColdFrontDB:
         usage, unit = split_num_string(userdict["size_sum_hum"])
         allocationuser.usage = usage
         allocationuser.unit = unit
-        # "modified" field is automatically updated, old record is
-        # automatically added to history
+        # automatically updates "modified" field & adds old record to history
         allocationuser.save()
 
 
@@ -355,7 +359,6 @@ def collect_starfish_usage(server, volume, volumepath, projects):
             filepaths.append(filepath)
         else:
             lab_volpath = volumepath# + "/{}".format(p)
-
             queryline = "type=f groupname={}".format(p)
             usage_query = server.create_query(
                 queryline, "username, groupname", f"{volume}:{lab_volpath}", sec=2
@@ -379,7 +382,6 @@ def collect_starfish_usage(server, volume, volumepath, projects):
                 confirm_dirpath_exists(homepath)
                 save_as_json(filepath, record)
                 filepaths.append(filepath)
-                logger.debug(f"here it is {filepath}")
     return filepaths
 
 
