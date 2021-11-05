@@ -28,7 +28,7 @@ Allocation Detail
 
 <div class="card mb-3">
   <div class="card-header">
-    {% if request.user.is_superuser or request.user.userprofile.is_pi or request.user.role.name == "Manager" %}
+    {% if allocation.is_changeable and request.user.is_superuser or request.user.userprofile.is_pi or request.user.role.name == "Manager" %}
     <div class="row">
       <div class="col">
         <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
