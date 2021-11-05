@@ -410,7 +410,22 @@ def allocation_renewal_request_latest_update_timestamp(request):
 def allocation_renewal_request_state_status(request):
     """Return an AllocationRenewalRequestStatusChoice, based on the
     'state' field of the given AllocationRenewalRequest, and/or an
-    associated SavioProjectAllocationRequest."""
+    associated SavioProjectAllocationRequest.
+
+    This method returns one of only two states: 'Denied' or 'Under
+    Review'. The other two possible states, 'Approved' and 'Complete',
+    should be set by some other process.
+        - 'Approved' should be set when the request is scheduled for
+           processing.
+        - 'Complete' should be set when the request is actually
+          processed.
+
+    # TODO: Currently, the request is set to 'Approved' and then
+    # TODO: immediately changed to 'Complete' when an administrator
+    # TODO: clicks the 'Submit' button. In the future, requests may not
+    # TODO: be processed immediately; instead, it will be handled by
+    # TODO: some other process (e.g., a cron job).
+    """
     if not isinstance(request, AllocationRenewalRequest):
         raise TypeError(
             f'Provided request has unexpected type {type(request)}.')
@@ -419,12 +434,8 @@ def allocation_renewal_request_state_status(request):
     eligibility = state['eligibility']
     other = state['other']
 
-    under_review_status = AllocationRenewalRequestStatusChoice.objects.get(
-        name='Under Review')
     denied_status = AllocationRenewalRequestStatusChoice.objects.get(
         name='Denied')
-    approved_status = AllocationRenewalRequestStatusChoice.objects.get(
-        name='Approved')
 
     # The request was denied for some other non-listed reason.
     if other['timestamp']:
@@ -432,20 +443,18 @@ def allocation_renewal_request_state_status(request):
 
     new_project_request = request.new_project_request
     if new_project_request:
+        # The request was for a new Project, which was denied.
         status_name = new_project_request.status.name
-        if status_name == 'Under Review':
-            return under_review_status
-        elif status_name in ('Approved - Processing', 'Approved - Complete'):
-            return approved_status
-        else:
+        if status_name == 'Denied':
             return denied_status
     else:
-        if eligibility['status'] == 'Pending':
-            return under_review_status
-        elif eligibility['status'] == 'Approved':
-            return approved_status
-        else:
+        # The PI was ineligible.
+        if eligibility['status'] == 'Denied':
             return denied_status
+
+    # The request has not been denied, so it is under review.
+    return AllocationRenewalRequestStatusChoice.objects.get(
+        name='Under Review')
 
 
 class AllocationRenewalRunnerBase(object):

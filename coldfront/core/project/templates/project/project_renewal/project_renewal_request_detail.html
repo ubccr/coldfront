@@ -133,9 +133,9 @@ Project Renewal Request Detail
                 <td>{{ item.0 }}</td>
                 <td>
                   {% with status=item.1 latest_update_timestamp=item.2 %}
-                    {% if status in 'Approved - Processing,Pending,Under Review' %}
+                    {% if status == 'Approved - Processing' or status == 'Pending' or status == 'Under Review' %}
                       <span class="badge badge-warning">
-                    {% elif status in 'Approved,Approved - Complete' %}
+                    {% elif status == 'Approved' or status == 'Approved - Complete' %}
                       <span class="badge badge-success">
                     {% else %}
                       <span class="badge badge-danger">
