@@ -54,7 +54,6 @@ from coldfront.core.project.models import (Project, ProjectReview,
 from coldfront.core.project.utils import (add_vector_user_to_designated_savio_project,
                                           auto_approve_project_join_requests,
                                           get_project_compute_allocation,
-                                          project_allocation_request_latest_update_timestamp,
                                           ProjectClusterAccessRequestRunner,
                                           ProjectDenialRunner,
                                           SavioProjectApprovalRunner,
@@ -67,6 +66,7 @@ from coldfront.core.project.utils import (add_vector_user_to_designated_savio_pr
                                           VectorProjectApprovalRunner)
 from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
 from coldfront.core.project.utils_.renewal_utils import is_any_project_pi_renewable
+from coldfront.core.project.utils_.request_utils import project_allocation_request_latest_update_timestamp
 from coldfront.core.project.utils_.request_utils import savio_request_denial_reason
 from coldfront.core.project.utils_.request_utils import vector_request_denial_reason
 # from coldfront.core.publication.models import Publication

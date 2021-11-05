@@ -33,11 +33,9 @@ from collections import namedtuple
 from datetime import timedelta
 from decimal import Decimal
 from django.conf import settings
-from django.contrib import messages
 from django.core.exceptions import MultipleObjectsReturned
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
-from django.http import HttpRequest
 
 from django.urls import reverse
 from urllib.parse import urljoin
@@ -530,23 +528,6 @@ def send_project_request_pooling_email(request):
         ))
 
     send_email_template(subject, template_name, context, sender, receiver_list)
-
-
-def project_allocation_request_latest_update_timestamp(request):
-    """Return the latest timestamp stored in the given Savio or Vector
-    ProjectAllocationRequest's 'state' field, or the empty string.
-
-    The expected values are ISO 8601 strings, or the empty string, so
-    taking the maximum should provide the correct output."""
-    types = (SavioProjectAllocationRequest, VectorProjectAllocationRequest)
-    if not isinstance(request, types):
-        raise TypeError(
-            f'Provided request has unexpected type {type(request)}.')
-    state = request.state
-    max_timestamp = ''
-    for field in state:
-        max_timestamp = max(max_timestamp, state[field].get('timestamp', ''))
-    return max_timestamp
 
 
 def savio_request_state_status(savio_request):

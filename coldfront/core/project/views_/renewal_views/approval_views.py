@@ -4,12 +4,12 @@ from coldfront.core.allocation.utils import prorated_allocation_amount
 from coldfront.core.project.forms import ReviewDenyForm
 from coldfront.core.project.forms import ReviewStatusForm
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
-from coldfront.core.project.utils import project_allocation_request_latest_update_timestamp
 from coldfront.core.project.utils_.renewal_utils import AllocationRenewalDenialRunner
 from coldfront.core.project.utils_.renewal_utils import AllocationRenewalProcessingRunner
 from coldfront.core.project.utils_.renewal_utils import allocation_renewal_request_denial_reason
 from coldfront.core.project.utils_.renewal_utils import allocation_renewal_request_latest_update_timestamp
 from coldfront.core.project.utils_.renewal_utils import allocation_renewal_request_state_status
+from coldfront.core.project.utils_.request_utils import project_allocation_request_latest_update_timestamp
 from coldfront.core.utils.common import utc_now_offset_aware
 
 from django.conf import settings

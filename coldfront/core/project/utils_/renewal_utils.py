@@ -1,4 +1,3 @@
-from coldfront.api.statistics.utils import get_accounting_allocation_objects
 from coldfront.api.statistics.utils import set_project_user_allocation_value
 from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
@@ -16,7 +15,7 @@ from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
-from coldfront.core.project.utils import project_allocation_request_latest_update_timestamp
+from coldfront.core.project.utils_.request_utils import project_allocation_request_latest_update_timestamp
 from coldfront.core.project.utils_.request_utils import savio_request_denial_reason
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction

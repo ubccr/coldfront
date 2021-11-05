@@ -3,6 +3,23 @@ from coldfront.core.project.models import VectorProjectAllocationRequest
 from collections import namedtuple
 
 
+def project_allocation_request_latest_update_timestamp(request):
+    """Return the latest timestamp stored in the given Savio or Vector
+    ProjectAllocationRequest's 'state' field, or the empty string.
+
+    The expected values are ISO 8601 strings, or the empty string, so
+    taking the maximum should provide the correct output."""
+    types = (SavioProjectAllocationRequest, VectorProjectAllocationRequest)
+    if not isinstance(request, types):
+        raise TypeError(
+            f'Provided request has unexpected type {type(request)}.')
+    state = request.state
+    max_timestamp = ''
+    for field in state:
+        max_timestamp = max(max_timestamp, state[field].get('timestamp', ''))
+    return max_timestamp
+
+
 def savio_request_denial_reason(savio_request):
     """Return the reason why the given SavioProjectAllocationRequest was
     denied, based on its 'state' field."""
