@@ -20,6 +20,7 @@ from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.models import VectorProjectAllocationRequest
 from coldfront.core.project.signals import new_project_request_denied
 from coldfront.core.project.utils_.request_utils import savio_request_denial_reason
+from coldfront.core.project.utils_.request_utils import vector_request_denial_reason
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.user.utils import account_activation_url
