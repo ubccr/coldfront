@@ -10,6 +10,7 @@ from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 from django.contrib.auth.models import Permission
 from django.contrib.auth.models import User
+from django.contrib.messages import get_messages
 from django.urls import reverse
 from http import HTTPStatus
 from unittest.mock import patch
@@ -58,6 +59,12 @@ class TestAllocationRenewalRequestDetailView(TestBase):
                 request_time=utc_now_offset_aware())
 
     @staticmethod
+    def get_message_strings(response):
+        """Return messages included in the given response as a list of
+        strings."""
+        return [str(m) for m in get_messages(response.wsgi_request)]
+
+    @staticmethod
     def pi_allocation_renewal_request_detail_url(pk):
         """Return the URL for the detail view for the
         AllocationRenewalRequest with the given primary key."""
@@ -84,8 +91,7 @@ class TestAllocationRenewalRequestDetailView(TestBase):
             status_code = HTTPStatus.OK if has_access else HTTPStatus.FORBIDDEN
             response = self.client.get(url)
             if expected_messages:
-                actual_messages = [
-                    str(m) for m in list(response.context['messages'])]
+                actual_messages = self.get_message_strings(response)
                 for message in expected_messages:
                     self.assertIn(message, actual_messages)
             self.assertEqual(response.status_code, status_code)
@@ -117,7 +123,7 @@ class TestAllocationRenewalRequestDetailView(TestBase):
         self.assertEqual(self.allocation_renewal_request.requester, self.user)
         assert_has_access(self.user)
 
-        # Users with the relevant permission should have access. (Re-fetch the
+        # Users with the permission to view should have access. (Re-fetch the
         # user to avoid permission caching.)
         self.allocation_renewal_request.pi = self.user
         self.allocation_renewal_request.save()
@@ -141,6 +147,39 @@ class TestAllocationRenewalRequestDetailView(TestBase):
             'You do not have permission to view the previous page.',
         ]
         assert_has_access(new_pi, has_access=False, expected_messages=messages)
+
+    def test_permissions_post(self):
+        """Test that the correct users have permissions to perform POST
+        requests."""
+        url = self.pi_allocation_renewal_request_detail_url(
+            self.allocation_renewal_request.pk)
+        data = {}
+
+        # Users, even those with the permission to view, or who are the
+        # requester or PI, should not have access.
+        self.assertEqual(self.allocation_renewal_request.pi, self.user)
+        self.assertEqual(self.allocation_renewal_request.requester, self.user)
+        permission = Permission.objects.get(
+            codename='view_allocationrenewalrequest')
+        self.user.user_permissions.add(permission)
+        self.user = User.objects.get(pk=self.user.pk)
+        self.assertTrue(
+            self.user.has_perm(f'allocation.{permission.codename}'))
+        response = self.client.post(url, data)
+        redirect_url = reverse(
+            'pi-allocation-renewal-request-detail',
+            kwargs={'pk': self.allocation_renewal_request.pk})
+        self.assertRedirects(response, redirect_url)
+        message = 'You do not have permission to POST to this page.'
+        self.assertEqual(message, self.get_message_strings(response)[0])
+
+        # Superusers should have access.
+        self.user.is_superuser = True
+        self.user.save()
+        response = self.client.post(url, data)
+        self.assertRedirects(response, redirect_url)
+        message = 'Please complete the checklist before final activation.'
+        self.assertEqual(message, self.get_message_strings(response)[0])
 
     @patch(
         'coldfront.core.project.utils_.renewal_utils.'
