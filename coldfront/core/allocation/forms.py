@@ -278,12 +278,16 @@ class AllocationForm(forms.Form):
                 'end_date': cleaned_data.get('end_date'),
             },
         }
+        resource = resources.get(resource_obj.name)
+        if resource is None:
+            return
+
         ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
         search_class_obj = ldap_search()
 
         raise_error = False
         required_field_text = 'This field is required'
-        for key, value in resources[resource_obj.name].items():
+        for key, value in resource.items():
             resource_name = resource_obj.name
 
             # First check if the required field was filled in.
