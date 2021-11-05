@@ -156,7 +156,7 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
                 latest_update_timestamp = iso8601.parse_date(
                     latest_update_timestamp)
         except Exception as e:
-            self.logger.exception(e)
+            logger.exception(e)
             messages.error(self.request, self.error_message)
             latest_update_timestamp = 'Failed to determine timestamp.'
         context['latest_update_timestamp'] = latest_update_timestamp
@@ -169,7 +169,7 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
                 justification = denial_reason.justification
                 timestamp = denial_reason.timestamp
             except Exception as e:
-                self.logger.exception(e)
+                logger.exception(e)
                 messages.error(self.request, self.error_message)
                 category = 'Unknown Category'
                 justification = (
@@ -370,14 +370,14 @@ class AllocationRenewalRequestReviewDenyView(LoginRequiredMixin,
         response_redirect = HttpResponseRedirect(self.get_redirect_url(pk))
 
         status_name = self.request_obj.status.name
-        if status_name in ['Complete', 'Denied']:
+        if status_name in ['Approved', 'Complete', 'Denied']:
             message = f'You cannot review a request with status {status_name}.'
             messages.error(request, message)
             return response_redirect
 
         new_project_request = self.request_obj.new_project_request
         if new_project_request:
-            if new_project_request.status != 'Denied':
+            if new_project_request.status.name != 'Denied':
                 message = (
                     'Deny the associated Savio Project request first, which '
                     'should automatically deny this request.')

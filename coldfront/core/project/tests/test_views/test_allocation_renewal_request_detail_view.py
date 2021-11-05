@@ -150,10 +150,11 @@ class TestAllocationRenewalRequestDetailView(TestBase):
         self.assertNotEqual(self.allocation_renewal_request.pi, new_pi)
         self.assertNotEqual(self.allocation_renewal_request.requester, new_pi)
         self.assertFalse(new_pi.has_perm(f'allocation.{permission.codename}'))
-        messages = [
+        expected_messages = [
             'You do not have permission to view the previous page.',
         ]
-        assert_has_access(new_pi, has_access=False, expected_messages=messages)
+        assert_has_access(
+            new_pi, has_access=False, expected_messages=expected_messages)
 
     def test_permissions_post(self):
         """Test that the correct users have permissions to perform POST
