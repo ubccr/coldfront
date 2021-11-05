@@ -1,4 +1,6 @@
+from datetime import date
 from django import forms
+from django.core.exceptions import ValidationError
 from django.forms.widgets import RadioSelect
 from django.shortcuts import get_object_or_404
 from django.utils.module_loading import import_string
@@ -6,59 +8,91 @@ from django.utils.module_loading import import_string
 from coldfront.core.allocation.models import (AllocationAccount,
                                               AllocationAttributeType,
                                               AllocationStatusChoice)
-from coldfront.core.allocation.utils import get_user_resources, compute_prorated_amount
+from coldfront.core.allocation.utils import get_user_resources
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource, ResourceType
 from coldfront.core.utils.common import import_from_settings
+
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Field, Layout, Submit, HTML
+from crispy_forms.bootstrap import InlineRadios, FormActions, PrependedText
+
 
 ALLOCATION_ACCOUNT_ENABLED = import_from_settings(
     'ALLOCATION_ACCOUNT_ENABLED', False)
 
 
 class AllocationForm(forms.Form):
+    YES_NO_CHOICES = (
+        ('Yes', 'Yes'),
+        ('No', 'No')
+    )
+    # Leave an empty value as a choice so the form picks it as the value to check if the user has
+    # already picked a choice (relevent if the form errors after submission due to missing required
+    # values, prevents what the user chose from being reset. We want to check against an empty
+    # string).
+    CAMPUS_CHOICES = (
+        ('', ''),
+        ('BL', 'IU Bloomington'),
+        ('IN', 'IUPUI (Indianapolis)'),
+        ('CO', 'IUPUC (Columbus)'),
+        ('EA', 'IU East (Richmond)'),
+        ('FW', 'IU Fort Wayne'),
+        ('CO', 'IU Kokomo'),
+        ('NW', 'IU Northwest (Gary)'),
+        ('SB', 'IU South Bend'),
+        ('SE', 'IU Southeast (New Albany)'),
+        ('OR', 'Other')
+    )
+    TRAINING_INFERENCE_CHOICES = (
+        ('', ''),
+        ('Training', 'Training'),
+        ('Inference', 'Inference'),
+        ('Both', 'Both')
+    )
+    GRAND_CHALLENGE_CHOICES = (
+        ('', ''),
+        ('healthinitiative', 'Precision Health Initiative'),
+        ('envchange', 'Prepared for Environmental Change'),
+        ('addiction', 'Responding to the Addiction Crisis')
+    )
+    SYSTEM_CHOICES = (
+        ('Carbonate', 'Carbonate'),
+        ('BigRed3', 'Big Red 3')
+    )
+    ACCESS_LEVEL_CHOICES = (
+        ('Masked', 'Masked'),
+        ('Unmasked', 'Unmasked')
+    )
+    LICENSE_TERM_CHOICES = (
+        ('current', 'Current license'),
+        ('current_and_next_year', 'Current license + next annual license')
+    )
+
     resource = forms.ModelChoiceField(queryset=None, empty_label=None)
     justification = forms.CharField(widget=forms.Textarea)
     first_name = forms.CharField(max_length=40, required=False)
     last_name = forms.CharField(max_length=40, required=False)
-    campus_affiliation = forms.ChoiceField(
-        choices=(
-            ('', ''),
-            ('BL', 'IU Bloomington'),
-            ('IN', 'IUPUI (Indianapolis)'),
-            ('CO', 'IUPUC (Columbus)'),
-            ('EA', 'IU East (Richmond)'),
-            ('FW', 'IU Fort Wayne'),
-            ('CO', 'IU Kokomo'),
-            ('NW', 'IU Northwest (Gary)'),
-            ('SB', 'IU South Bend'),
-            ('SE', 'IU Southeast (New Albany)'),
-            ('OR', 'Other')
-        ),
-        required=False
-    )
-    email = forms.CharField(max_length=40, required=False)
+    campus_affiliation = forms.ChoiceField(choices=CAMPUS_CHOICES, required=False)
+    email = forms.EmailField(max_length=40, required=False)
     url = forms.CharField(max_length=50, required=False)
     project_directory_name = forms.CharField(max_length=10, required=False)
     quantity = forms.IntegerField(required=False)
     storage_space = forms.IntegerField(required=False)
     storage_space_with_unit = forms.IntegerField(required=False)
-    leverage_multiple_gpus = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False, widget=RadioSelect)
-    dl_workflow = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False, widget=RadioSelect)
+    leverage_multiple_gpus = forms.ChoiceField(choices=YES_NO_CHOICES, required=False, widget=RadioSelect)
+    dl_workflow = forms.ChoiceField(choices=YES_NO_CHOICES, required=False, widget=RadioSelect)
     applications_list = forms.CharField(max_length=150, required=False)
-    # Leave an empty value as a choice so the form picks it as the value to check if the user has
-    # already picked a choice (relevent if the form errors after submission due to missing required
-    # values, prevents what the user chose from being reset. We want to check against an empty
-    # string).
-    training_or_inference = forms.ChoiceField(choices=(('', ''), ('Training', 'Training'), ('Inference', 'Inference'), ('Both', 'Both')), required=False)
-    for_coursework = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False, widget=RadioSelect)
-    system = forms.ChoiceField(choices=(('Carbonate', 'Carbonate'), ('BigRed3', 'Big Red 3')), required=False, widget=RadioSelect)
+    training_or_inference = forms.ChoiceField(choices=TRAINING_INFERENCE_CHOICES, required=False)
+    for_coursework = forms.ChoiceField(choices=YES_NO_CHOICES, required=False, widget=RadioSelect)
+    system = forms.ChoiceField(choices=SYSTEM_CHOICES, required=False, widget=RadioSelect)
     is_grand_challenge = forms.BooleanField(required=False)
-    grand_challenge_program = forms.ChoiceField(choices=(('', ''), ('healthinitiative', 'Precision Health Initiative'), ('envchange', 'Prepared for Environmental Change'), ('addiction', 'Responding to the Addiction Crisis')), required=False)
-    start_date = forms.DateField(widget=forms.TextInput(attrs={'class':'datepicker'}), required=False)
-    end_date = forms.DateField(widget=forms.TextInput(attrs={'class':'datepicker'}), required=False)
+    grand_challenge_program = forms.ChoiceField(choices=GRAND_CHALLENGE_CHOICES, required=False)
+    start_date = forms.DateField(widget=forms.TextInput(attrs={'class': 'datepicker'}), required=False)
+    end_date = forms.DateField(widget=forms.TextInput(attrs={'class': 'datepicker'}), required=False)
     use_indefinitely = forms.BooleanField(required=False)
-    phi_association = forms.ChoiceField(choices=(('No', 'No'), ('Yes', 'Yes')), required=False, widget=RadioSelect)
-    access_level = forms.ChoiceField(choices=(('Masked', 'Masked'), ('Unmasked', 'Unmasked')), required=False, widget=RadioSelect)
+    phi_association = forms.ChoiceField(choices=YES_NO_CHOICES, required=False, widget=RadioSelect)
+    access_level = forms.ChoiceField(choices=ACCESS_LEVEL_CHOICES, required=False, widget=RadioSelect)
     unit = forms.CharField(max_length=10, required=False)
     primary_contact = forms.CharField(max_length=20, required=False)
     secondary_contact = forms.CharField(max_length=20, required=False)
@@ -67,13 +101,9 @@ class AllocationForm(forms.Form):
     fiscal_officer = forms.CharField(max_length=20, required=False)
     account_number = forms.CharField(max_length=9, required=False)
     sub_account_number = forms.CharField(max_length=20, required=False)
-    license_term = forms.ChoiceField(choices=(('current','Current license'), ('current_and_next_year','Current license + next annual license')), required=False)
-    faculty_email = forms.CharField(max_length=40, required=False)
-    store_ephi = forms.ChoiceField(
-        choices=(('No', 'No'), ('Yes', 'Yes')),
-        required=False,
-        widget=RadioSelect
-    )
+    license_term = forms.ChoiceField(choices=LICENSE_TERM_CHOICES, required=False)
+    faculty_email = forms.EmailField(max_length=40, required=False)
+    store_ephi = forms.ChoiceField(choices=YES_NO_CHOICES, required=False, widget=RadioSelect)
     it_pros = forms.CharField(max_length=100, required=False)
     devices_ip_addresses = forms.CharField(max_length=200, required=False)
     data_management_plan = forms.CharField(widget=forms.Textarea, required=False)
@@ -118,6 +148,7 @@ class AllocationForm(forms.Form):
         self.fields['account_number'].help_text = 'Format: 00-000-00'
         self.fields['applications_list'].help_text = 'Format: app1,app2,app3,etc'
         self.fields['it_pros'].help_text = 'Format: name1,name2,name3,etc'
+        self.fields['project_directory_name'].help_text = 'Must be alphanumeric and not exceed 10 characters in length'
 
         ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
         search_class_obj = ldap_search()
@@ -132,6 +163,232 @@ class AllocationForm(forms.Form):
         self.fields['last_name'].initial = attributes['sn'][0]
         self.fields['campus_affiliation'].initial = attributes['ou'][0]
         self.fields['email'].initial = attributes['mail'][0]
+
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            'resource',
+            'justification',
+            'first_name',
+            'last_name',
+            'campus_affiliation',
+            'email',
+            'url',
+            'project_directory_name',
+            'quantity',
+            'storage_space',
+            'storage_space_with_unit',
+            InlineRadios('leverage_multiple_gpus'),
+            InlineRadios('dl_workflow'),
+            'applications_list',
+            'training_or_inference',
+            InlineRadios('for_coursework'),
+            InlineRadios('system'),
+            'is_grand_challenge',
+            'grand_challenge_program',
+            'start_date',
+            'end_date',
+            'use_indefinitely',
+            InlineRadios('phi_association'),
+            InlineRadios('access_level'),
+            'unit',
+            'primary_contact',
+            'secondary_contact',
+            'department_full_name',
+            'department_short_name',
+            'fiscal_officer',
+            Field('account_number', placeholder='00-000-00'),
+            'sub_account_number',
+            'license_term',
+            'faculty_email',
+            InlineRadios('store_ephi'),
+            'it_pros',
+            'devices_ip_addresses',
+            'data_management_plan',
+            PrependedText('prorated_cost', '$'),
+            PrependedText('cost', '$'),
+            PrependedText('total_cost', '$'),
+            'confirm_understanding',
+            'users',
+            'allocation_account',
+            FormActions(
+                Submit('submit', 'Submit'),
+                HTML("""<a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}"
+                     role="button">Back to Project</a><br>"""),
+            )
+        )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        resource_obj = cleaned_data.get('resource')
+        resources = {
+            'Carbonate DL': {
+                'leverage_multiple_gpus': cleaned_data.get('leverage_multiple_gpus'),
+                'training_or_inference': cleaned_data.get('training_or_inference'),
+                'for_coursework': cleaned_data.get('for_coursework'),
+            },
+            'Carbonate GPU': {
+                'leverage_multiple_gpus': cleaned_data.get('leverage_multiple_gpus'),
+                'dl_workflow': cleaned_data.get('dl_workflow'),
+                'for_coursework': cleaned_data.get('for_coursework'),
+            },
+            'Carbonate PHI Nodes': {
+                'phi_association': cleaned_data.get('phi_association'),
+            },
+            'cBioPortal': {
+                'phi_association': cleaned_data.get('phi_association'),
+                'access_level': cleaned_data.get('access_level'),
+                'confirm_understanding': cleaned_data.get('confirm_understanding'),
+            },
+            'RStudio Connect': {
+                'project_directory_name': cleaned_data.get('project_directory_name'),
+                'account_number': cleaned_data.get('account_number'),
+                'confirm_understanding': cleaned_data.get('confirm_understanding'),
+            },
+            'Geode-Projects': {
+                'storage_space_with_unit': cleaned_data.get('storage_space_with_unit'),
+                'unit': cleaned_data.get('unit'),
+                'start_date': cleaned_data.get('start_date'),
+                'primary_contact': cleaned_data.get('primary_contact'),
+                'secondary_contact': cleaned_data.get('secondary_contact'),
+                'department_full_name': cleaned_data.get('department_full_name'),
+                'department_short_name': cleaned_data.get('department_short_name'),
+                'fiscal_officer': cleaned_data.get('fiscal_officer'),
+                'account_number': cleaned_data.get('account_number'),
+                'it_pros': cleaned_data.get('it_pros'),
+                'devices_ip_addresses': cleaned_data.get('devices_ip_addresses'),
+                'data_management_plan': cleaned_data.get('data_management_plan'),
+                'use_indefinitely': cleaned_data.get('use_indefinitely'),
+                'end_date': cleaned_data.get('end_date'),
+            },
+            'Slate Project': {
+                'first_name': cleaned_data.get('first_name'),
+                'last_name': cleaned_data.get('last_name'),
+                'campus_affiliation': cleaned_data.get('campus_affiliation'),
+                'email': cleaned_data.get('email'),
+                'project_directory_name': cleaned_data.get('project_directory_name'),
+                'start_date': cleaned_data.get('start_date'),
+                'store_ephi': cleaned_data.get('store_ephi'),
+                'storage_space': cleaned_data.get('storage_space'),
+                'account_number': cleaned_data.get('account_number'),
+            },
+            'Priority Boost': {
+                'is_grand_challenge': cleaned_data.get('is_grand_challenge'),
+                'system': cleaned_data.get('system'),
+                'grand_challenge_program': cleaned_data.get('grand_challenge_program'),
+                'end_date': cleaned_data.get('end_date'),
+            },
+        }
+        resource = resources.get(resource_obj.name)
+        if resource is None:
+            return
+
+        ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
+        search_class_obj = ldap_search()
+
+        raise_error = False
+        required_field_text = 'This field is required'
+        for key, value in resource.items():
+            resource_name = resource_obj.name
+
+            # First check if the required field was filled in.
+            if value is None or value == '' or value is False:
+                # Handle special cases for missing required fields here before continuing.
+                if resource_name == 'Geode-Projects':
+                    if key == 'end_date' and resources[resource_name]['use_indefinitely']:
+                        continue
+                    elif key == 'unit' and not resources[resource_name]['storage_space_with_unit']:
+                        raise_error = True
+                        self.add_error(
+                            'storage_space_with_unit',
+                            'Storage space is missing its unit. Please use the drop down on the right to select it'
+                        )
+                        continue
+                    elif key == 'use_indefinitely':
+                        continue
+                elif resource_name == 'Slate Project':
+                    if key == 'account_number' and resources[resource_name]['storage_space'] <= 15:
+                        continue
+                elif resource_name == 'Priority Boost':
+                    system = resources[resource_name]['system']
+                    is_grand_challenge = resources[resource_name]['is_grand_challenge']
+                    if key == 'is_grand_challenge':
+                        continue
+                    elif key == 'end_date' and is_grand_challenge and system == 'BigRed3':
+                        continue
+                    elif key == 'grand_challenge_program' and (not is_grand_challenge or system == 'Carbonate'):
+                        continue
+
+                raise_error = True
+                self.add_error(key, required_field_text)
+                # If the value does not exist then no more value checking is needed.
+                continue
+
+            # General value checks for required fields should go here.
+            if key == 'start_date':
+                if value <= date.today():
+                    raise_error = True
+                    self.add_error(key, 'Please select a start date later than today')
+                    continue
+                end_date = resources[resource_name].get('end_date')
+                if end_date and value >= end_date:
+                    raise_error = True
+                    self.add_error(key, 'Start date must be earlier than end date')
+                    continue
+            elif key == 'account_number':
+                if not len(value) == 9:
+                    raise_error = True
+                    self.add_error(key, 'Account number must have a format of ##-###-##')
+                    continue
+                elif not value[2] == '-' or not value[6] == '-':
+                    raise_error = True
+                    self.add_error(key, 'Account number must have a format of ##-###-##')
+                    continue
+            elif key == 'storage_space':
+                if value <= 0:
+                    raise_error = True
+                    self.add_error(key, 'Storage space must be greater than 0')
+                    continue
+            elif key == 'end_date':
+                if value and value <= date.today():
+                    raise_error = True
+                    self.add_error(key, 'Please select an end date later than today')
+                    continue
+            elif key == 'project_directory_name':
+                if not value.isalnum():
+                    raise_error = True
+                    self.add_error(key, 'Project directory name must be alphanumeric')
+                    continue
+
+            # Value checks for a specific resource's required fields should go here.
+            if resource_name == 'Geode-Projects':
+                if key == 'storage_space_with_unit':
+                    unit = resources[resource_name]['unit']
+                    if value <= 0 and unit == 'TB' or value < 200 and unit == 'GB':
+                        raise_error = True
+                        self.add_error(key, 'Please enter a storage amount greater than or equal to 200GB')
+                        continue
+                elif key in ['primary_contact', 'secondary_contact', 'fiscal_officer']:
+                    attributes = search_class_obj.search_a_user(value, ['memberOf'])
+                    if attributes['memberOf'][0] == '':
+                        raise_error = True
+                        self.add_error(key, 'This username is not valid')
+                        continue
+                elif key == 'it_pros':
+                    invalid_users = []
+                    for username in value.split(','):
+                        attributes = search_class_obj.search_a_user(username, ['memberOf'])
+                        if attributes['memberOf'][0] == '':
+                            invalid_users.append(username)
+
+                    if invalid_users:
+                        raise_error = True
+                        self.add_error(key, 'Username(s) {} are not valid'.format(
+                            ', '.join(invalid_users)
+                            ))
+                        continue
+
+        if raise_error:
+            raise ValidationError('Please correct the errors below')
 
 
 class AllocationUpdateForm(forms.Form):

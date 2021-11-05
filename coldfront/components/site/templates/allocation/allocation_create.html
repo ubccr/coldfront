@@ -20,19 +20,32 @@ Request New Allocation
   provide the justification for how you intend to use the resource to further 
   the research goals of your project.</p>
 
-<form method="post">
-  {% csrf_token %}
-  {{form |crispy}}
+<form method="post" class="bootstrap">
+  {% crispy form %}
 
   <div id="eula-div" style="display: none;">
     <textarea style="display:none;min-width:100%" id="eula"  rows="15"></textarea>
     <br>
     <p class="font-weight-bold">By clicking submit you agree to the Terms and Conditions.</p>
   </div>
-
-  <input class="btn btn-primary" type="submit" value="Submit" />
-  <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button">Back to Project</a><br>
 </form>
+
+<!-- Medium modal -->
+<div id="id_resource_description_modal" class="modal fade bd-example-modal-md" tabindex="-1" role="dialog" aria-labelledby="id_resource_description_label" aria-hidden="true">
+  <div class="modal-dialog modal-md">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="id_resource_description_label">Resource Description</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p id="id_resource_description"></p>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Large modal -->
 <div id="Modal" class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
@@ -62,6 +75,7 @@ Request New Allocation
 </div>
 
 <script>
+  var resource_descriptions = {{ resource_descriptions | safe }};
   var resources_form_default_quantities = {{ resources_form_default_quantities | safe }};
   var resources_form_label_texts = {{ resources_form_label_texts | safe }};
   var resources_with_accounts = {{ resources_with_accounts | safe }};
@@ -135,6 +149,20 @@ Request New Allocation
 
 
   $(document).ready(function () {
+    moveRadioSelectErrors();
+
+    var resource_label = $('label[for="id_resource"]');
+    resource_label.html(
+      'Resource<span class="asteriskField">*</span>\
+      <a\
+      href="#"\
+      data-toggle="modal"\
+      data-target="#id_resource_description_modal"\
+      >\
+        <i class="fas fa-info-circle" aria-hidden="true"></i>\
+      </a>'
+    )
+
     // By default we will have the use_indefinitely div placed just after the end_date label on the form.
     // Save the value since it will be deleted when we change the label.
     var use_indefinitely = $('#id_use_indefinitely').is(':checked');
@@ -181,7 +209,6 @@ Request New Allocation
       .after(
         '<div id="div_id_unit">\
           <select id="id_unit" class="select form-control" name="unit">\
-            <option value="">Select</option>\
             <option value="GB">GB</option>\
             <option value="TB">TB</option>\
           </select>\
@@ -358,6 +385,27 @@ Request New Allocation
     });
   });
 
+  function moveRadioSelectErrors() {
+    // Radio select validation errors need to be moved below their fields.
+    var radioSelectFields = [
+      'for_coursework',
+      'leverage_multiple_gpus',
+      'dl_workflow',
+      'store_ephi',
+      'system',
+      'phi_association',
+      'access_level',
+    ];
+    for (var i = 0; i < radioSelectFields.length; i++) {
+      var invalidRadioSelectField = $('#error_1_id_' + radioSelectFields[i]);
+      if (invalidRadioSelectField.length) {
+        $('#div_id_' + radioSelectFields[i]).append(
+          invalidRadioSelectField
+        )
+      }
+    }
+  }
+
   function checkDate(end_month, end_day) {
     let [month, date, year] = new Date().toLocaleDateString("en-US").split("/");
     var licenseEndDate = new Date(year, end_month, end_day);
@@ -440,6 +488,9 @@ Request New Allocation
     var resource_text = $("#id_resource option:selected").text();
     var resource_name = resource_text.slice(0, resource_text.indexOf('(') - 1)
 
+    var description = $('#id_resource_description');
+    description.html(resource_descriptions[resource_id])
+
     if (resource_name === 'Carbonate DL') {
       $('#additional_info_1').show();
     } else {
@@ -455,8 +506,19 @@ Request New Allocation
 
     if (resource_name === 'Priority Boost') {
       $('#additional_info_3').show();
+      if ($('input[type=radio][name=system]:checked').val() === 'BigRed3') {
+        if ($('#id_is_grand_challenge').is(':checked')) {
+          $('#div_id_grand_challenge_program').show();
+          $('#div_id_end_date').hide();
+          $('#id_end_date').val('')
+        }
+        $('#div_id_is_grand_challenge').show();
+      }
+
     } else {
       $('#additional_info_3').hide();
+      $('#div_id_is_grand_challenge').hide();
+      $('#div_id_grand_challenge_program').hide();
     }
 
     if (resource_name === 'RStudio Connect') {
@@ -508,7 +570,7 @@ Request New Allocation
     }
     
     if (resources_form_leverage_multiple_gpus_label[resource_id]) {
-      var label = $('label[for="id_leverage_multiple_gpus_0"]');
+      var label = $('label[for="id_leverage_multiple_gpus"]');
       label.html(resources_form_leverage_multiple_gpus_label[resource_id]);
       // Do not reset the value if the user has already entered one (relevent if the form errors
       // after submission because not all the required values were given).
@@ -521,7 +583,7 @@ Request New Allocation
     }
 
     if (resources_form_dl_workflow_label[resource_id]) {
-      var label = $('label[for="id_dl_workflow_0"]');
+      var label = $('label[for="id_dl_workflow"]');
       label.html(resources_form_dl_workflow_label[resource_id]);
       if ($('input[type=radio][name=dl_workflow]:checked').val() === undefined) {
         $('input[type=radio][name=dl_workflow]').val([resources_form_dl_workflow[resource_id]]);
@@ -554,7 +616,7 @@ Request New Allocation
     }
 
     if (resources_form_for_coursework_label[resource_id]) {
-      var label = $('label[for="id_for_coursework_0"]');
+      var label = $('label[for="id_for_coursework"]');
       label.html(resources_form_for_coursework_label[resource_id]);
       if ($('input[type=radio][name=for_coursework]:checked').val() === undefined) {
         $('input[type=radio][name=for_coursework]').val([resources_form_for_coursework[resource_id]]);
@@ -565,7 +627,7 @@ Request New Allocation
     }
     
     if (resources_form_system_label[resource_id]) {
-      var label = $('label[for="id_system_0"]');
+      var label = $('label[for="id_system"]');
       label.html(resources_form_system_label[resource_id]);
       if ($('input[type=radio][name=system]:checked').val() === undefined){
         $('input[type=radio][name=system]').val([resources_form_system[resource_id]]);
@@ -605,12 +667,20 @@ Request New Allocation
         $('#id_end_date').prop('disabled', false);
         $('#div_id_end_date button').prop('disabled', false);
       }
+
+      if (resource_name === 'Priority Boost') {
+        if ($('input[type=radio][name=system]:checked').val() === 'BigRed3') {
+          if ($('#id_is_grand_challenge').is(':checked')) {
+            $('#div_id_end_date').hide();
+          }
+        }
+      }
     } else {
       $('#div_id_end_date').hide();
     }
 
     if (resources_form_phi_association_label[resource_id]) {
-      var label = $('label[for="id_phi_association_0"]');
+      var label = $('label[for="id_phi_association"]');
       label.html(resources_form_phi_association_label[resource_id]);
       if ($('input[type=radio][name=phi_association]:checked').val() === undefined){
         $('input[type=radio][name=phi_association]').val([resources_form_phi_association[resource_id]]);
@@ -621,7 +691,7 @@ Request New Allocation
     }
 
     if (resources_form_access_level_label[resource_id]) {
-      var label = $('label[for="id_access_level_0"]');
+      var label = $('label[for="id_access_level"]');
       label.html(resources_form_access_level_label[resource_id]);
       if ($('input[type=radio][name=access_level]:checked').val() === undefined){
         $('input[type=radio][name=access_level]').val([resources_form_access_level[resource_id]]);
@@ -872,7 +942,7 @@ Request New Allocation
     }
 
     if (resources_form_store_ephi_label[resource_id]) {
-      var label = $('label[for="id_store_ephi_0"]');
+      var label = $('label[for="id_store_ephi"]');
       label.html(resources_form_store_ephi_label[resource_id]);
       if ($('input[type=radio][name=store_ephi]:checked').val() === undefined){
         $('input[type=radio][name=store_ephi]').val([resources_form_store_ephi[resource_id]]);

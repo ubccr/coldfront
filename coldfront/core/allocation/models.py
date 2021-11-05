@@ -34,6 +34,45 @@ class AllocationStatusChoice(TimeStampedModel):
 
 
 class Allocation(TimeStampedModel):
+    YES_NO_CHOICES = (
+        ('No', 'No'),
+        ('Yes', 'Yes')
+    )
+    CAMPUS_CHOICES = (
+        ('BL', 'IU Bloomington'),
+        ('IN', 'IUPUI (Indianapolis)'),
+        ('CO', 'IUPUC (Columbus)'),
+        ('EA', 'IU East (Richmond)'),
+        ('FW', 'IU Fort Wayne'),
+        ('CO', 'IU Kokomo'),
+        ('NW', 'IU Northwest (Gary)'),
+        ('SB', 'IU South Bend'),
+        ('SE', 'IU Southeast (New Albany)'),
+        ('OR', 'Other')
+    )
+    TRAINING_INFERENCE_CHOICES = (
+        ('Training', 'Training'),
+        ('Inference', 'Inference'),
+        ('Both', 'Both')
+    )
+    GRAND_CHALLENGE_CHOICES = (
+        ('healthinitiative', 'Precision Health Initiative'),
+        ('envchange', 'Prepared for Environmental Change'),
+        ('addiction', 'Responding to the Addiction Crisis')
+    )
+    SYSTEM_CHOICES = (
+        ('Carbonate', 'Carbonate'),
+        ('BigRed3', 'Big Red 3')
+    )
+    ACCESS_LEVEL_CHOICES = (
+        ('Masked', 'Masked'),
+        ('Unmasked', 'Unmasked')
+    )
+    LICENSE_TERM_CHOICES = (
+        ('current', 'Current license'),
+        ('current_and_next_year', 'Current license + next annual license')
+    )
+
     """ Allocation to a system Resource. """
     project = models.ForeignKey(Project, on_delete=models.CASCADE,)
     resources = models.ManyToManyField(Resource)
@@ -42,28 +81,39 @@ class Allocation(TimeStampedModel):
     quantity = models.IntegerField(blank=True, null=True)
     storage_space = models.IntegerField(blank=True, null=True)
     storage_space_with_unit = models.CharField(max_length=10, blank=True, null=True)
-    leverage_multiple_gpus = models.CharField(max_length=4, choices=(('No', 'No'), ('Yes', 'Yes')), blank=True, null=True)
-    dl_workflow = models.CharField(max_length=4, choices=(('No', 'No'), ('Yes', 'Yes')), blank=True, null=True)
+    leverage_multiple_gpus = models.CharField(
+        max_length=4,
+        choices=YES_NO_CHOICES,
+        blank=True,
+        null=True
+    )
+    dl_workflow = models.CharField(max_length=4, choices=YES_NO_CHOICES, blank=True, null=True)
     applications_list = models.CharField(max_length=150, blank=True, null=True)
-    training_or_inference = models.CharField(max_length=9, choices=(('Training', 'Training'), ('Inference', 'Inference'), ('Both', 'Both')), blank=True, null=True)
-    for_coursework = models.CharField(max_length=4, choices=(('No', 'No'), ('Yes', 'Yes')), blank=True, null=True)
-    system = models.CharField(max_length=9, choices=(('Carbonate', 'Carbonate'), ('BigRed3', 'Big Red 3')), blank=True, null=True)
+    training_or_inference = models.CharField(
+        max_length=9,
+        choices=TRAINING_INFERENCE_CHOICES,
+        blank=True,
+        null=True
+    )
+    for_coursework = models.CharField(max_length=4, choices=YES_NO_CHOICES, blank=True, null=True)
+    system = models.CharField(max_length=9, choices=SYSTEM_CHOICES, blank=True, null=True)
     is_grand_challenge = models.BooleanField(blank=True, null=True)
     grand_challenge_program = models.CharField(
         max_length=100,
-        choices=(
-            ('healthinitiative', 'Precision Health Initiative'),
-            ('envchange', 'Prepared for Environmental Change'),
-            ('addiction', 'Responding to the Addiction Crisis')
-        ),
+        choices=GRAND_CHALLENGE_CHOICES,
         blank=True,
         null=True
     )
     start_date = models.DateField(blank=True, null=True)
     end_date = models.DateField(blank=True, null=True)
     use_indefinitely = models.BooleanField(blank=True, null=True)
-    phi_association = models.CharField(max_length=4, choices=(('No', 'No'), ('Yes', 'Yes')), blank=True, null=True)
-    access_level = models.CharField(max_length=8, choices=(('Masked', 'Masked'), ('Unmasked', 'Unmasked')), blank=True, null=True)
+    phi_association = models.CharField(max_length=4, choices=YES_NO_CHOICES, blank=True, null=True)
+    access_level = models.CharField(
+        max_length=8,
+        choices=ACCESS_LEVEL_CHOICES,
+        blank=True,
+        null=True
+    )
     confirm_understanding = models.BooleanField(blank=True, null=True)
     primary_contact = models.CharField(max_length=20, blank=True, null=True)
     secondary_contact = models.CharField(max_length=20, blank=True, null=True)
@@ -81,27 +131,16 @@ class Allocation(TimeStampedModel):
     last_name = models.CharField(max_length=40, blank=True, null=True)
     campus_affiliation = models.CharField(
         max_length=2,
-        choices=(
-            ('BL', 'IU Bloomington'),
-            ('IN', 'IUPUI (Indianapolis)'),
-            ('CO', 'IUPUC (Columbus)'),
-            ('EA', 'IU East (Richmond)'),
-            ('FW', 'IU Fort Wayne'),
-            ('CO', 'IU Kokomo'),
-            ('NW', 'IU Northwest (Gary)'),
-            ('SB', 'IU South Bend'),
-            ('SE', 'IU Southeast (New Albany)'),
-            ('OR', 'Other')
-        ),
+        choices=CAMPUS_CHOICES,
         blank=True,
         null=True
     )
-    email = models.CharField(max_length=40, blank=True, null=True)
+    email = models.EmailField(max_length=40, blank=True, null=True)
     url = models.CharField(max_length=50, blank=True, null=True)
-    faculty_email = models.CharField(max_length=40, blank=True, null=True)
+    faculty_email = models.EmailField(max_length=40, blank=True, null=True)
     store_ephi = models.CharField(
         max_length=3,
-        choices=(('No', 'No'), ('Yes', 'Yes')),
+        choices=YES_NO_CHOICES,
         blank=True,
         null=True
     )

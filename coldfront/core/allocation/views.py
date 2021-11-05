@@ -517,6 +517,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         context['project'] = project_obj
 
         user_resources = get_user_resources(self.request.user)
+        resource_descriptions = {}
         resources_form_default_quantities = {}
         resources_form_label_texts = {}
         resources_form_storage_space = {}
@@ -588,6 +589,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         resources_with_eula = {}
 
         for resource in user_resources:
+            resource_descriptions[resource.id] = resource.description
+
             if resource.resourceattribute_set.filter(resource_attribute_type__name='quantity_default_value').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='quantity_default_value').value
@@ -805,7 +808,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='sub_account_number_label').value
                 resources_form_sub_account_number_label[resource.id] = mark_safe(
-                    '<strong>{}*</strong>'.format(value))
+                    '<strong>{}</strong>'.format(value))
 
             if resource.resourceattribute_set.filter(resource_attribute_type__name='it_pros').exists():
                 value = resource.resourceattribute_set.get(
@@ -949,6 +952,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 resources_with_eula[resource.id] = value
 
         context['AllocationAccountForm'] = AllocationAccountForm()
+        context['resource_descriptions'] = resource_descriptions
         context['resources_form_default_quantities'] = resources_form_default_quantities
         context['resources_form_label_texts'] = resources_form_label_texts
         context['resources_form_storage_space'] = resources_form_storage_space
@@ -1100,123 +1104,14 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         if resource_obj.name == 'RStudio Connect':
             end_date = self.calculate_end_date(6, 30, license_term)
+        elif resource_obj.name == 'Geode-Projects':
+            storage_space_with_unit = str(storage_space_with_unit) + unit
 
         # A resource is selected that requires an account name selection but user has no account names
         if ALLOCATION_ACCOUNT_ENABLED and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING and AllocationAttributeType.objects.filter(
                 name=ALLOCATION_ACCOUNT_MAPPING[resource_obj.name]).exists() and not allocation_account:
             form.add_error(None, format_html(
                 'You need to create an account name. Create it by clicking the link under the "Allocation account" field.'))
-            return self.form_invalid(form)
-
-        # Check if the required values exist based on what resource was selected.
-        error = False
-        if resource_obj.name == 'Priority Boost':
-            use_indefinitely = is_grand_challenge
-            if system == '' or (end_date is None and not is_grand_challenge):
-                error = True
-            elif is_grand_challenge and grand_challenge_program == '':
-                error = True
-            elif end_date is not None and end_date <= date.today():
-                form.add_error(None, format_html(
-                    'Please select a date later than today.'
-                    )
-                )
-                return self.form_invalid(form)
-        elif resource_obj.name == 'Carbonate DL':
-            if leverage_multiple_gpus == '' or training_or_inference == '' or for_coursework == '':
-                error = True
-        elif resource_obj.name == 'Carbonate GPU':
-            if leverage_multiple_gpus == '' or dl_workflow == '' or for_coursework == '':
-                error = True
-        elif resource_obj.name == 'Carbonate PHI Nodes':
-            if phi_association == '':
-                error = True
-        elif resource_obj.name == 'cBioPortal':
-            if phi_association == '' or access_level == '' or confirm_understanding is False:
-                error = True
-        elif resource_obj.name == 'Geode-Projects':
-            if (
-                storage_space_with_unit is None
-                or unit == ''
-                or (not use_indefinitely and end_date is None)
-                or start_date is None
-                or primary_contact == ''
-                or secondary_contact == ''
-                or department_full_name == ''
-                or department_short_name == ''
-                or fiscal_officer == ''
-                or account_number == ''
-                or it_pros == ''
-                or devices_ip_addresses == ''
-                or data_management_plan == ''
-            ):
-                error = True
-            elif (storage_space_with_unit <= 0 and unit == 'TB') or (storage_space_with_unit < 200 and unit == 'GB'):
-                form.add_error(None, format_html(
-                    'Please enter a storage amount greater than or equal to 200GB.'
-                    )
-                )
-                return self.form_invalid(form)
-            elif start_date <= date.today():
-                form.add_error(None, format_html(
-                    'Please select a start date later than today.'
-                    )
-                )
-                return self.form_invalid(form)
-            elif not use_indefinitely and end_date <= date.today():
-                form.add_error(None, format_html(
-                    'Please select an end date later than today.'
-                    )
-                )
-                return self.form_invalid(form)
-            elif not use_indefinitely and start_date >= end_date:
-                form.add_error(None, format_html(
-                    'Start date must be earlier than end date.'
-                    )
-                )
-                return self.form_invalid(form)
-            elif not len(account_number) == 9:
-                form.add_error(None, format_html(
-                    'Account number must have a format of 00-000-00.'
-                    )
-                )
-                return self.form_invalid(form)
-            elif not account_number[2] == '-' or not account_number[6] == '-':
-                form.add_error(None, format_html(
-                    'Account number must have a format of 00-000-00.'
-                    )
-                )
-                return self.form_invalid(form)
-
-            storage_space_with_unit = str(storage_space_with_unit) + unit
-        elif resource_obj.name == 'RStudio Connect':
-            if project_directory_name == '' or account_number == '' or not confirm_understanding:
-                error = True
-        elif resource_obj.name == 'Slate Project':
-            if (
-                first_name == '' or
-                last_name == '' or
-                campus_affiliation == '' or
-                email == '' or
-                project_directory_name == '' or
-                start_date is None or
-                store_ephi == ''
-            ):
-                error = True
-            elif storage_space <= 0:
-                form.add_error(None, format_html(
-                    'Storage space must be greater than 0.'
-                    )
-                )
-                return self.form_invalid(form)
-            elif storage_space > 15 and account_number == '':
-                error = True
-
-        if error:
-            form.add_error(None, format_html(
-                'Please fill out all the required fields.'
-                )
-            )
             return self.form_invalid(form)
 
         usernames = form_data.get('users')
@@ -1235,8 +1130,15 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
 
         users = [User.objects.get(username=username) for username in usernames]
-        if project_obj.pi not in users:
-            users.append(project_obj.pi)
+        resource = resource_obj.get_attribute('check_user_account')
+        if resource and not resource_obj.check_user_account_exists(project_obj.pi.username, resource):
+            form.add_error(
+                None,
+                format_html('You do not have an account on {}. You will need to create one\
+                <a href="https://access.iu.edu/Accounts/Create">here</a> in order to submit a\
+                resource request for this resource.'.format(resource))
+            )
+            return self.form_invalid(form)
 
         denied_users = []
         resource_name = ''
@@ -1247,32 +1149,22 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 if not resource_obj.check_user_account_exists(username, system):
                     denied_users.append(username)
                     resource_name = system
+                    users.remove(user)
             else:
                 if resource is not None:
                     if not resource_obj.check_user_account_exists(username, resource):
                         denied_users.append(username)
                         resource_name = resource
+                        users.remove(user)
 
         if denied_users:
-            form.add_error(None, format_html(
-                'The following users do not have an account on {}: {}. They will need to create an account <a href="https://access.iu.edu/Accounts/Create">here</a>.'.format(resource_name, ', '.join(denied_users))
+            messages.warning(self.request, format_html(
+                'The following users do not have an account on {}: {}. They were not added to the\
+                resource. They will need to create an account\
+                <a href="https://access.iu.edu/Accounts/Create">here</a>.'.format(
+                    resource_name, ', '.join(denied_users)
+                )
             ))
-            return self.form_invalid(form)
-
-        denied_users = []
-        if resource_obj.name == "Geode-Projects":
-            ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
-            search_class_obj = ldap_search()
-            for username in [primary_contact, secondary_contact, fiscal_officer] + it_pros.split(','):
-                attributes = search_class_obj.search_a_user(username, ['memberOf'])
-                if attributes['memberOf'][0] == '':
-                    denied_users.append(username)
-
-        if denied_users:
-            form.add_error(None, format_html(
-                'The following usernames are not valid: {}'.format(', '.join(denied_users))
-            ))
-            return self.form_invalid(form)
 
         if INVOICE_ENABLED and resource_obj.requires_payment:
             allocation_status_obj = AllocationStatusChoice.objects.get(
