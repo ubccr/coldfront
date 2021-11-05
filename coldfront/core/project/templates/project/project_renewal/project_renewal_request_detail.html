@@ -76,6 +76,8 @@ Project Renewal Request Detail
                     <strong>Timestamp:</strong>
                     {{ denial_reason.timestamp|iso8601_to_datetime }}
                   </p>
+                  {% comment %}
+                  <!-- This is disabled because a PI may always make a new request. -->
                   {% if user.is_superuser %}
                     <p>
                       <form action="{% url 'pi-allocation-renewal-request-review-undeny' renewal_request.pk %}" method="post">
@@ -85,6 +87,7 @@ Project Renewal Request Detail
                       </form>
                     </p>
                   {% endif %}
+                  {% endcomment %}
                   <p>
                     If you have any questions or concerns, please contact us at
                     {{ support_email }}.

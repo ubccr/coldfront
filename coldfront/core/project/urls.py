@@ -143,7 +143,8 @@ from coldfront.core.project.views_.renewal_views.approval_views import Allocatio
 from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestDetailView
 from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestReviewDenyView
 from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestReviewEligibilityView
-from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestUndenyView
+# This is disabled because a PI may always make a new request.
+# from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestUndenyView
 from coldfront.core.project.views_.renewal_views.request_views import AllocationRenewalRequestUnderProjectView
 from coldfront.core.project.views_.renewal_views.request_views import AllocationRenewalRequestView
 
@@ -176,8 +177,9 @@ urlpatterns += [
     path('pi-allocation-renewal-request/<int:pk>/deny/',
          AllocationRenewalRequestReviewDenyView.as_view(),
          name='pi-allocation-renewal-request-review-deny'),
-    path('pi-allocation-renewal-request/<int:pk>/undeny/',
-         AllocationRenewalRequestUndenyView.as_view(),
-         name='pi-allocation-renewal-request-review-undeny'),
+    # This is disabled because a PI may always make a new request.
+    # path('pi-allocation-renewal-request/<int:pk>/undeny/',
+    #      AllocationRenewalRequestUndenyView.as_view(),
+    #      name='pi-allocation-renewal-request-review-undeny'),
 
 ]

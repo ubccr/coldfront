@@ -83,8 +83,7 @@ class AllocationRenewalRequestMixin(object):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         try:
-            context['allocation_amount'] = \
-                self.__get_service_units_to_allocate()
+            context['allocation_amount'] = self.get_service_units_to_allocate()
         except Exception as e:
             logger.exception(e)
             messages.error(self.request, self.error_message)
@@ -97,7 +96,7 @@ class AllocationRenewalRequestMixin(object):
             'pi-allocation-renewal-request-detail', kwargs={'pk': pk})
 
     @staticmethod
-    def __get_service_units_to_allocate():
+    def get_service_units_to_allocate():
         """Return the number of service units to allocate to the project
         if it were to be approved now."""
         now = utc_now_offset_aware()
@@ -206,7 +205,7 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
                     name='Approved')
             self.request_obj.approval_time = utc_now_offset_aware()
             self.request_obj.save()
-            num_service_units = self.__get_service_units_to_allocate()
+            num_service_units = self.get_service_units_to_allocate()
             runner = AllocationRenewalProcessingRunner(
                 self.request_obj, num_service_units)
             _, _ = runner.run()
@@ -421,76 +420,82 @@ class AllocationRenewalRequestReviewDenyView(LoginRequiredMixin,
         return self.get_redirect_url(self.kwargs.get('pk'))
 
 
-class AllocationRenewalRequestUndenyView(LoginRequiredMixin,
-                                         UserPassesTestMixin,
-                                         AllocationRenewalRequestMixin, View):
-    login_url = '/'
-
-    def test_func(self):
-        """UserPassesTestMixin tests."""
-        if self.request.user.is_superuser:
-            return True
-        message = 'You do not have permission to view the previous page.'
-        messages.error(self.request, message)
-
-    def dispatch(self, request, *args, **kwargs):
-        pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
-        response_redirect = HttpResponseRedirect(self.get_redirect_url(pk))
-
-        status_name = self.request_obj.status.name
-        if status_name != 'Denied':
-            message = (
-                f'You cannot un-deny a request with status \'{status_name}\'.')
-            messages.error(request, message)
-            return response_redirect
-
-        new_project_request = self.request_obj.new_project_request
-        if new_project_request:
-            if new_project_request.status.name == 'Complete':
-                message = (
-                    f'You cannot un-deny a request that has an associated new '
-                    f'project request with status \'Complete\'.')
-                messages.error(request, message)
-                return response_redirect
-
-        return super().dispatch(request, *args, **kwargs)
-
-    def get(self, request, *args, **kwargs):
-        message = 'Unsupported method.'
-        messages.error(request, message)
-        return HttpResponseRedirect(self.get_redirect_url(self.request_obj.pk))
-
-    def post(self, request, *args, **kwargs):
-        request_obj = self.request_obj
-        response_redirect = HttpResponseRedirect(
-            self.get_redirect_url(request_obj.pk))
-
-        new_project_request = request_obj.new_project_request
-        if new_project_request:
-            if new_project_request.status == 'Denied':
-                message = (
-                    'Un-deny the associated Savio Project request before '
-                    'un-denying this request.')
-                messages.error(request, message)
-                return response_redirect
-
-        eligibility = request_obj.state['eligibility']
-        if eligibility['status'] == 'Denied':
-            eligibility['status'] = 'Pending'
-
-        other = request_obj.state['other']
-        if other['timestamp']:
-            other['justification'] = ''
-            other['timestamp'] = ''
-
-        request_obj.status = allocation_renewal_request_state_status(
-            request_obj)
-        request_obj.save()
-
-        message = (
-            f'Status for {request_obj.pk} has been set to '
-            f'{request_obj.status}.')
-        messages.success(request, message)
-
-        return HttpResponseRedirect(self.get_redirect_url(request_obj.pk))
+# This is disabled because a PI may always make a new request.
+# In addition, checks need to be done to ensure that a request cannot be
+# un-denied if the PI has already renewed elsewhere.
+# class AllocationRenewalRequestUndenyView(LoginRequiredMixin,
+#                                          UserPassesTestMixin,
+#                                          AllocationRenewalRequestMixin,
+#                                          View):
+#     login_url = '/'
+#
+#     def test_func(self):
+#         """UserPassesTestMixin tests."""
+#         if self.request.user.is_superuser:
+#             return True
+#         message = 'You do not have permission to view the previous page.'
+#         messages.error(self.request, message)
+#
+#     def dispatch(self, request, *args, **kwargs):
+#         pk = self.kwargs.get('pk')
+#         self.set_request_obj(pk)
+#         response_redirect = HttpResponseRedirect(self.get_redirect_url(pk))
+#
+#         status_name = self.request_obj.status.name
+#         if status_name != 'Denied':
+#             message = (
+#                 f'You cannot un-deny a request with status '
+#                 f'\'{status_name}\'.')
+#             messages.error(request, message)
+#             return response_redirect
+#
+#         new_project_request = self.request_obj.new_project_request
+#         if new_project_request:
+#             if new_project_request.status.name == 'Complete':
+#                 message = (
+#                     f'You cannot un-deny a request that has an associated '
+#                     f'new project request with status \'Complete\'.')
+#                 messages.error(request, message)
+#                 return response_redirect
+#
+#         return super().dispatch(request, *args, **kwargs)
+#
+#     def get(self, request, *args, **kwargs):
+#         message = 'Unsupported method.'
+#         messages.error(request, message)
+#         return HttpResponseRedirect(
+#             self.get_redirect_url(self.request_obj.pk))
+#
+#     def post(self, request, *args, **kwargs):
+#         request_obj = self.request_obj
+#         response_redirect = HttpResponseRedirect(
+#             self.get_redirect_url(request_obj.pk))
+#
+#         new_project_request = request_obj.new_project_request
+#         if new_project_request:
+#             if new_project_request.status == 'Denied':
+#                 message = (
+#                     'Un-deny the associated Savio Project request before '
+#                     'un-denying this request.')
+#                 messages.error(request, message)
+#                 return response_redirect
+#
+#         eligibility = request_obj.state['eligibility']
+#         if eligibility['status'] == 'Denied':
+#             eligibility['status'] = 'Pending'
+#
+#         other = request_obj.state['other']
+#         if other['timestamp']:
+#             other['justification'] = ''
+#             other['timestamp'] = ''
+#
+#         request_obj.status = allocation_renewal_request_state_status(
+#             request_obj)
+#         request_obj.save()
+#
+#         message = (
+#             f'Status for {request_obj.pk} has been set to '
+#             f'{request_obj.status}.')
+#         messages.success(request, message)
+#
+#         return HttpResponseRedirect(self.get_redirect_url(request_obj.pk))

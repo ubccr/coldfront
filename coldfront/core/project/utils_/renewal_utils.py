@@ -293,6 +293,8 @@ def send_new_allocation_renewal_request_pi_notification_email(request):
         'requested_project_name': request.post_project.name,
         'requester_str': requester_str,
         'review_url': review_url,
+        'support_email': settings.CENTER_HELP_EMAIL,
+        'signature': settings.EMAIL_SIGNATURE,
     }
 
     sender = settings.EMAIL_SENDER
