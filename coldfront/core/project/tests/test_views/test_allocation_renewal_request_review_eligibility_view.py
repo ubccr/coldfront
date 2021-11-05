@@ -16,8 +16,9 @@ from http import HTTPStatus
 import iso8601
 
 
-class TestAllocationRenewalRequestReviewDenyView(TestBase):
-    """A class for testing AllocationRenewalRequestReviewDenyView."""
+class TestAllocationRenewalRequestReviewEligibilityView(TestBase):
+    """A class for testing
+    AllocationRenewalRequestReviewEligibilityView."""
 
     def setUp(self):
         """Set up test data."""
@@ -68,11 +69,12 @@ class TestAllocationRenewalRequestReviewDenyView(TestBase):
         return [str(m) for m in get_messages(response.wsgi_request)]
 
     @staticmethod
-    def pi_allocation_renewal_request_review_deny_url(pk):
+    def pi_allocation_renewal_request_review_eligibility_url(pk):
         """Return the URL for the view for denying the
         AllocationRenewalRequest with the given primary key."""
         return reverse(
-            'pi-allocation-renewal-request-review-deny', kwargs={'pk': pk})
+            'pi-allocation-renewal-request-review-eligibility',
+            kwargs={'pk': pk})
 
     def test_permissions_get(self):
         """Test that the correct users have permissions to perform GET
@@ -83,7 +85,7 @@ class TestAllocationRenewalRequestReviewDenyView(TestBase):
             the URL. Optionally assert that any messages were sent to
             the user."""
             self.client.login(username=user.username, password=self.password)
-            url = self.pi_allocation_renewal_request_review_deny_url(
+            url = self.pi_allocation_renewal_request_review_eligibility_url(
                 self.allocation_renewal_request.pk)
             status_code = HTTPStatus.OK if has_access else HTTPStatus.FORBIDDEN
             response = self.client.get(url)
@@ -110,7 +112,7 @@ class TestAllocationRenewalRequestReviewDenyView(TestBase):
     def test_permissions_post(self):
         """Test that the correct users have permissions to perform POST
         requests."""
-        url = self.pi_allocation_renewal_request_review_deny_url(
+        url = self.pi_allocation_renewal_request_review_eligibility_url(
             self.allocation_renewal_request.pk)
         data = {}
 
@@ -131,7 +133,7 @@ class TestAllocationRenewalRequestReviewDenyView(TestBase):
     def test_view_blocked_for_inapplicable_statuses(self):
         """Test that requests that are already 'Approved', 'Complete',
         or 'Denied' cannot be modified via the view."""
-        url = self.pi_allocation_renewal_request_review_deny_url(
+        url = self.pi_allocation_renewal_request_review_eligibility_url(
             self.allocation_renewal_request.pk)
         data = {}
 
@@ -157,11 +159,11 @@ class TestAllocationRenewalRequestReviewDenyView(TestBase):
             message = f'You cannot review a request with status {status_name}.'
             self.assertEqual(message, self.get_message_strings(response)[0])
 
-    def test_view_blocked_if_new_project_request_not_denied(self):
-        """Test that, if the request has an associated, non-denied
+    def test_view_blocked_if_new_project_request(self):
+        """Test that, if the request has an associated
         SavioProjectAllocationRequest for a new Project, the view is
         blocked."""
-        url = self.pi_allocation_renewal_request_review_deny_url(
+        url = self.pi_allocation_renewal_request_review_eligibility_url(
             self.allocation_renewal_request.pk)
         data = {}
 
@@ -197,27 +199,28 @@ class TestAllocationRenewalRequestReviewDenyView(TestBase):
         response = self.client.post(url, data)
         self.assertRedirects(response, redirect_url)
         message = (
-            'Deny the associated Savio Project request first, which should '
-            'automatically deny this request.')
+            'This request involves creating a new project. Eligibility '
+            'review must be handled in the associated project request.')
         self.assertEqual(message, self.get_message_strings(response)[0])
 
-        # Change its status to 'Denied'.
-        new_project_request.status = \
-            ProjectAllocationRequestStatusChoice.objects.get(name='Denied')
-        new_project_request.save()
+        # Remove the reference.
+        self.allocation_renewal_request.new_project_request = None
+        self.allocation_renewal_request.save()
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_post_updates_request_state_and_status(self):
         """Test that a POST request updates the request's 'state' and
         'status' fields."""
-        url = self.pi_allocation_renewal_request_review_deny_url(
+        url = self.pi_allocation_renewal_request_review_eligibility_url(
             self.allocation_renewal_request.pk)
         data = {
+            'status': 'Approved',
             'justification': (
                 'This is a test that a POST request updates the request.'),
         }
 
+        # Test setting the status to 'Approved'.
         pre_time = utc_now_offset_aware()
 
         redirect_url = reverse(
@@ -226,15 +229,40 @@ class TestAllocationRenewalRequestReviewDenyView(TestBase):
         response = self.client.post(url, data)
         self.assertRedirects(response, redirect_url)
         message = (
-            f'Status for {self.allocation_renewal_request.pk} has been set to '
-            f'Denied.')
+            f'Eligibility status for request '
+            f'{self.allocation_renewal_request.pk} has been set to '
+            f'Approved.')
         self.assertEqual(message, self.get_message_strings(response)[0])
 
         post_time = utc_now_offset_aware()
 
         self.allocation_renewal_request.refresh_from_db()
-        other = self.allocation_renewal_request.state['other']
-        self.assertEqual(other['justification'], data['justification'])
-        time = iso8601.parse_date(other['timestamp'])
+        eligibility = self.allocation_renewal_request.state['eligibility']
+        self.assertEqual(eligibility['status'], data['status'])
+        self.assertEqual(eligibility['justification'], data['justification'])
+        time = iso8601.parse_date(eligibility['timestamp'])
+        self.assertTrue(pre_time <= time <= post_time)
+        self.assertEqual(
+            self.allocation_renewal_request.status.name, 'Under Review')
+
+        # Test setting the status to 'Denied'.
+        data['status'] = 'Denied'
+
+        pre_time = utc_now_offset_aware()
+
+        response = self.client.post(url, data)
+        self.assertRedirects(response, redirect_url)
+        message = (
+            f'Eligibility status for request '
+            f'{self.allocation_renewal_request.pk} has been set to Denied.')
+        self.assertEqual(message, self.get_message_strings(response)[0])
+
+        post_time = utc_now_offset_aware()
+
+        self.allocation_renewal_request.refresh_from_db()
+        eligibility = self.allocation_renewal_request.state['eligibility']
+        self.assertEqual(eligibility['status'], data['status'])
+        self.assertEqual(eligibility['justification'], data['justification'])
+        time = iso8601.parse_date(eligibility['timestamp'])
         self.assertTrue(pre_time <= time <= post_time)
         self.assertEqual(self.allocation_renewal_request.status.name, 'Denied')

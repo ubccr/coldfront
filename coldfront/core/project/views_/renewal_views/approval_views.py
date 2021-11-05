@@ -295,14 +295,14 @@ class AllocationRenewalRequestReviewEligibilityView(LoginRequiredMixin,
         self.set_request_obj(pk)
         response_redirect = HttpResponseRedirect(self.get_redirect_url(pk))
         status_name = self.request_obj.status.name
-        if status_name in ['Complete', 'Denied']:
+        if status_name in ['Approved', 'Complete', 'Denied']:
             message = f'You cannot review a request with status {status_name}.'
             messages.error(request, message)
             return response_redirect
         if self.request_obj.new_project_request:
             message = (
-                f'This request involves creating a new project. Eligibility '
-                f'review must be handled in the associated project request.')
+                'This request involves creating a new project. Eligibility '
+                'review must be handled in the associated project request.')
             messages.error(request, message)
             return response_redirect
         return super().dispatch(request, *args, **kwargs)
