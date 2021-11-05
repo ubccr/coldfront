@@ -148,6 +148,7 @@ class AllocationForm(forms.Form):
         self.fields['account_number'].help_text = 'Format: 00-000-00'
         self.fields['applications_list'].help_text = 'Format: app1,app2,app3,etc'
         self.fields['it_pros'].help_text = 'Format: name1,name2,name3,etc'
+        self.fields['project_directory_name'].help_text = 'Must be alphanumeric and not exceed 10 characters in length'
 
         ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
         search_class_obj = ldap_search()
