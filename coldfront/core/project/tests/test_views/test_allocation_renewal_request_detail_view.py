@@ -1,10 +1,12 @@
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
 from coldfront.core.project.models import Project
+from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
+from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
@@ -63,6 +65,11 @@ class TestAllocationRenewalRequestDetailView(TestBase):
         """Return messages included in the given response as a list of
         strings."""
         return [str(m) for m in get_messages(response.wsgi_request)]
+
+    @staticmethod
+    def no_op(*args, **kwargs):
+        """Do nothing."""
+        pass
 
     @staticmethod
     def pi_allocation_renewal_request_detail_url(pk):
@@ -184,18 +191,120 @@ class TestAllocationRenewalRequestDetailView(TestBase):
     @patch(
         'coldfront.core.project.utils_.renewal_utils.'
         'AllocationRenewalProcessingRunner.run')
-    def test_post_sets_request_approval_time(self, mock_method):
-        """Test that a POST request sets the approval_time of the
-        renewal request before processing."""
+    def test_post_blocked_until_checklist_complete_existing_project(self,
+                                                                    mock_method):
+        """Test that, for a request whose post_project already exists, a
+        POST request raises an error until the PI's eligibility is
+        approved."""
+        # Patch the method for running the processing to do nothing.
+        mock_method.side_effect = self.no_op
+
+        url = self.pi_allocation_renewal_request_detail_url(
+            self.allocation_renewal_request.pk)
+        data = {}
+
         self.user.is_superuser = True
         self.user.save()
 
-        # Patch the method for running the processing to do nothing.
-        def mocked_method_side_effect(*args):
-            """Do nothing."""
-            pass
+        # The PI's eligibility has not been approved.
+        eligibility = self.allocation_renewal_request.state['eligibility']
+        self.assertNotEqual(eligibility['status'], 'Approved')
+        response = self.client.post(url, data)
+        redirect_url = reverse(
+            'pi-allocation-renewal-request-detail',
+            kwargs={'pk': self.allocation_renewal_request.pk})
+        self.assertRedirects(response, redirect_url)
+        message = 'Please complete the checklist before final activation.'
+        self.assertEqual(message, self.get_message_strings(response)[0])
 
-        mock_method.side_effect = mocked_method_side_effect
+        # Approve it.
+        eligibility['status'] = 'Approved'
+        self.allocation_renewal_request.save()
+        response = self.client.post(url, data)
+        redirect_url = reverse('pi-allocation-renewal-pending-request-list')
+        self.assertRedirects(response, redirect_url)
+        message = f'PI {self.user.username}\'s allocation has been renewed.'
+        self.assertEqual(message, self.get_message_strings(response)[0])
+
+    @patch(
+        'coldfront.core.project.utils_.renewal_utils.'
+        'AllocationRenewalProcessingRunner.run')
+    def test_post_blocked_until_checklist_complete_new_project(self,
+                                                               mock_method):
+        """Test that, for a request whose post_project does not already
+        exist, a POST request raises an error until the associated
+        request is approved and processed."""
+        # Patch the method for running the processing to do nothing.
+        mock_method.side_effect = self.no_op
+
+        url = self.pi_allocation_renewal_request_detail_url(
+            self.allocation_renewal_request.pk)
+        data = {}
+
+        self.user.is_superuser = True
+        self.user.save()
+
+        # Create a new Project.
+        new_project_name = 'fc_new_project'
+        new_project_status = ProjectStatusChoice.objects.get(name='New')
+        new_project = Project.objects.create(
+            name=new_project_name,
+            status=new_project_status,
+            title=new_project_name,
+            description=f'Description of {new_project_name}.')
+
+        # Create an 'Under Review' SavioProjectAllocationRequest for the new
+        # Project.
+        under_review_request_status = \
+            ProjectAllocationRequestStatusChoice.objects.get(
+                name='Under Review')
+        new_project_request = SavioProjectAllocationRequest.objects.create(
+            requester=self.user,
+            allocation_type=SavioProjectAllocationRequest.FCA,
+            pi=self.user,
+            project=new_project,
+            survey_answers={},
+            status=under_review_request_status)
+
+        # Update the renewal request so that it references the new objects.
+        self.allocation_renewal_request.post_project = new_project
+        self.allocation_renewal_request.new_project_request = \
+            new_project_request
+        self.allocation_renewal_request.save()
+
+        # The new project request is not 'Approved - Complete'.
+        status_name = new_project_request.status.name
+        self.assertNotEqual(status_name, 'Approved - Complete')
+        response = self.client.post(url, data)
+        redirect_url = reverse(
+            'pi-allocation-renewal-request-detail',
+            kwargs={'pk': self.allocation_renewal_request.pk})
+        self.assertRedirects(response, redirect_url)
+        message = 'Please complete the checklist before final activation.'
+        self.assertEqual(message, self.get_message_strings(response)[0])
+
+        # Approve and complete it.
+        new_project_request.status = \
+            ProjectAllocationRequestStatusChoice.objects.get(
+                name='Approved - Complete')
+        new_project_request.save()
+        response = self.client.post(url, data)
+        redirect_url = reverse('pi-allocation-renewal-pending-request-list')
+        self.assertRedirects(response, redirect_url)
+        message = f'PI {self.user.username}\'s allocation has been renewed.'
+        self.assertEqual(message, self.get_message_strings(response)[0])
+
+    @patch(
+        'coldfront.core.project.utils_.renewal_utils.'
+        'AllocationRenewalProcessingRunner.run')
+    def test_post_sets_request_approval_time(self, mock_method):
+        """Test that a POST request sets the approval_time of the
+        renewal request before processing."""
+        # Patch the method for running the processing to do nothing.
+        mock_method.side_effect = self.no_op
+
+        self.user.is_superuser = True
+        self.user.save()
 
         # Set the request's eligibility state.
         allocation_renewal_request = self.allocation_renewal_request

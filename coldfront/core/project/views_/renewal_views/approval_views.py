@@ -212,7 +212,7 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
             num_service_units = self.get_service_units_to_allocate()
             runner = AllocationRenewalProcessingRunner(
                 self.request_obj, num_service_units)
-            _, _ = runner.run()
+            runner.run()
         except Exception as e:
             logger.exception(e)
             messages.error(self.request, self.error_message)
