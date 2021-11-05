@@ -190,10 +190,14 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
         return context
 
     def post(self, request, *args, **kwargs):
+        pk = self.request_obj.pk
+        if not request.user.is_superuser:
+            message = 'You do not have permission to POST to this page.'
+            messages.error(request, message)
+            return HttpResponseRedirect(self.get_redirect_url(pk))
         if not self.__is_checklist_complete():
             message = 'Please complete the checklist before final activation.'
             messages.error(request, message)
-            pk = self.request_obj.pk
             return HttpResponseRedirect(self.get_redirect_url(pk))
         try:
             # TODO: The status can be set to 'Approved' because the checklist
