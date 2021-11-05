@@ -30,6 +30,23 @@ Request New Allocation
   </div>
 </form>
 
+<!-- Medium modal -->
+<div id="id_resource_description_modal" class="modal fade bd-example-modal-md" tabindex="-1" role="dialog" aria-labelledby="id_resource_description_label" aria-hidden="true">
+  <div class="modal-dialog modal-md">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="id_resource_description_label">Resource Description</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p id="id_resource_description"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Large modal -->
 <div id="Modal" class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
@@ -58,6 +75,7 @@ Request New Allocation
 </div>
 
 <script>
+  var resource_descriptions = {{ resource_descriptions | safe }};
   var resources_form_default_quantities = {{ resources_form_default_quantities | safe }};
   var resources_form_label_texts = {{ resources_form_label_texts | safe }};
   var resources_with_accounts = {{ resources_with_accounts | safe }};
@@ -457,6 +475,21 @@ Request New Allocation
     var resource_id = $("#id_resource option:selected").val();
     var resource_text = $("#id_resource option:selected").text();
     var resource_name = resource_text.slice(0, resource_text.indexOf('(') - 1)
+
+    var resource_label = $('label[for="id_resource"]');
+    resource_label.html(
+      'Resource\
+      <span class="asteriskField">*</span> \
+      <a \
+      href="#" \
+      data-toggle="modal" \
+      data-target="#id_resource_description_modal" \
+      >\
+        <i class="fas fa-info-circle" aria-hidden="true"></i>\
+      </a>'
+    )
+    var description = $('#id_resource_description');
+    description.html(resource_descriptions[resource_id])
 
     if (resource_name === 'Carbonate DL') {
       $('#additional_info_1').show();

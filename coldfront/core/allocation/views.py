@@ -517,6 +517,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         context['project'] = project_obj
 
         user_resources = get_user_resources(self.request.user)
+        resource_descriptions = {}
         resources_form_default_quantities = {}
         resources_form_label_texts = {}
         resources_form_storage_space = {}
@@ -588,6 +589,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         resources_with_eula = {}
 
         for resource in user_resources:
+            resource_descriptions[resource.id] = resource.description
+
             if resource.resourceattribute_set.filter(resource_attribute_type__name='quantity_default_value').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='quantity_default_value').value
@@ -949,6 +952,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 resources_with_eula[resource.id] = value
 
         context['AllocationAccountForm'] = AllocationAccountForm()
+        context['resource_descriptions'] = resource_descriptions
         context['resources_form_default_quantities'] = resources_form_default_quantities
         context['resources_form_label_texts'] = resources_form_label_texts
         context['resources_form_storage_space'] = resources_form_storage_space
