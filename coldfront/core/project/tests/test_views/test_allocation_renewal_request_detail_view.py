@@ -8,6 +8,8 @@ from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
+from django.contrib.auth.models import Permission
+from django.contrib.auth.models import User
 from django.urls import reverse
 from http import HTTPStatus
 from unittest.mock import patch
@@ -22,33 +24,6 @@ class TestAllocationRenewalRequestDetailView(TestBase):
         self.create_test_user()
         self.sign_user_access_agreement(self.user)
         self.client.login(username=self.user.username, password=self.password)
-
-    @staticmethod
-    def pi_allocation_renewal_request_detail_url(pk):
-        """Return the URL for the detail view for the
-        AllocationRenewalRequest with the given primary key."""
-        return reverse(
-            'pi-allocation-renewal-request-detail', kwargs={'pk': pk})
-
-    @staticmethod
-    def pi_allocation_renewal_request_list_url():
-        """Return the URL for the list view of
-        AllocationRenewalRequests."""
-        return reverse('pi-allocation-renewal-pending-request-list')
-
-    @patch(
-        'coldfront.core.project.utils_.renewal_utils.'
-        'AllocationRenewalProcessingRunner.run')
-    def test_post_sets_request_approval_time(self, mock_method):
-        """Test that a POST request sets the approval_time of the
-        renewal request before processing."""
-
-        # Patch the method for running the processing to do nothing.
-        def mocked_method_side_effect(*args):
-            """Do nothing."""
-            pass
-
-        mock_method.side_effect = mocked_method_side_effect
 
         # Create a Project for the user to renew.
         project_name = 'fc_project'
@@ -72,16 +47,119 @@ class TestAllocationRenewalRequestDetailView(TestBase):
         under_review_request_status = \
             AllocationRenewalRequestStatusChoice.objects.get(
                 name='Under Review')
-        allocation_renewal_request = AllocationRenewalRequest.objects.create(
-            requester=self.user,
-            pi=self.user,
-            allocation_period=allocation_period,
-            status=under_review_request_status,
-            pre_project=project,
-            post_project=project,
-            request_time=utc_now_offset_aware())
+        self.allocation_renewal_request = \
+            AllocationRenewalRequest.objects.create(
+                requester=self.user,
+                pi=self.user,
+                allocation_period=allocation_period,
+                status=under_review_request_status,
+                pre_project=project,
+                post_project=project,
+                request_time=utc_now_offset_aware())
+
+    @staticmethod
+    def pi_allocation_renewal_request_detail_url(pk):
+        """Return the URL for the detail view for the
+        AllocationRenewalRequest with the given primary key."""
+        return reverse(
+            'pi-allocation-renewal-request-detail', kwargs={'pk': pk})
+
+    @staticmethod
+    def pi_allocation_renewal_request_list_url():
+        """Return the URL for the list view of
+        AllocationRenewalRequests."""
+        return reverse('pi-allocation-renewal-pending-request-list')
+
+    def test_permissions_get(self):
+        """Test that the correct users have permissions to perform GET
+        requests."""
+
+        def assert_has_access(user, has_access=True, expected_messages=[]):
+            """Assert that the given user has or does not have access to
+            the URL. Optionally assert that any messages were sent to
+            the user."""
+            self.client.login(username=user.username, password=self.password)
+            url = self.pi_allocation_renewal_request_detail_url(
+                self.allocation_renewal_request.pk)
+            status_code = HTTPStatus.OK if has_access else HTTPStatus.FORBIDDEN
+            response = self.client.get(url)
+            if expected_messages:
+                actual_messages = [
+                    str(m) for m in list(response.context['messages'])]
+                for message in expected_messages:
+                    self.assertIn(message, actual_messages)
+            self.assertEqual(response.status_code, status_code)
+            self.client.logout()
+
+        # Superusers should have access.
+        self.user.is_superuser = True
+        self.user.save()
+        assert_has_access(self.user)
+        self.user.is_superuser = False
+        self.user.save()
+
+        # The request's PI should have access.
+        self.assertEqual(self.allocation_renewal_request.pi, self.user)
+        assert_has_access(self.user)
+
+        # The request's requester should have access. (Set a different PI so
+        # that the user is not also the PI.)
+        new_pi = User.objects.create(
+            email='test_pi@email.com',
+            first_name='Test',
+            last_name='PI',
+            username='test_pi')
+        new_pi.set_password(self.password)
+        new_pi.save()
+        self.allocation_renewal_request.pi = new_pi
+        self.allocation_renewal_request.save()
+        self.assertNotEqual(self.allocation_renewal_request.pi, self.user)
+        self.assertEqual(self.allocation_renewal_request.requester, self.user)
+        assert_has_access(self.user)
+
+        # Users with the relevant permission should have access. (Re-fetch the
+        # user to avoid permission caching.)
+        self.allocation_renewal_request.pi = self.user
+        self.allocation_renewal_request.save()
+        permission = Permission.objects.get(
+            codename='view_allocationrenewalrequest')
+        new_pi.user_permissions.add(permission)
+        new_pi = User.objects.get(pk=new_pi.pk)
+        self.assertNotEqual(self.allocation_renewal_request.pi, new_pi)
+        self.assertNotEqual(self.allocation_renewal_request.requester, new_pi)
+        self.assertTrue(new_pi.has_perm(f'allocation.{permission.codename}'))
+        assert_has_access(new_pi)
+
+        # Any other user should not have access. (Re-fetch the user to avoid
+        # permission caching.)
+        new_pi.user_permissions.remove(permission)
+        new_pi = User.objects.get(pk=new_pi.pk)
+        self.assertNotEqual(self.allocation_renewal_request.pi, new_pi)
+        self.assertNotEqual(self.allocation_renewal_request.requester, new_pi)
+        self.assertFalse(new_pi.has_perm(f'allocation.{permission.codename}'))
+        messages = [
+            'You do not have permission to view the previous page.',
+        ]
+        assert_has_access(new_pi, has_access=False, expected_messages=messages)
+
+    @patch(
+        'coldfront.core.project.utils_.renewal_utils.'
+        'AllocationRenewalProcessingRunner.run')
+    def test_post_sets_request_approval_time(self, mock_method):
+        """Test that a POST request sets the approval_time of the
+        renewal request before processing."""
+        self.user.is_superuser = True
+        self.user.save()
+
+        # Patch the method for running the processing to do nothing.
+        def mocked_method_side_effect(*args):
+            """Do nothing."""
+            pass
+
+        mock_method.side_effect = mocked_method_side_effect
 
         # Set the request's eligibility state.
+        allocation_renewal_request = self.allocation_renewal_request
         allocation_renewal_request.state['eligibility']['status'] = 'Approved'
         allocation_renewal_request.save()
 
