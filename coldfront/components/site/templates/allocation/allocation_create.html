@@ -151,6 +151,19 @@ Request New Allocation
   $(document).ready(function () {
     moveRadioSelectErrors();
 
+    var resource_label = $('label[for="id_resource"]');
+    resource_label.html(
+      'Resource\
+      <span class="asteriskField">*</span> \
+      <a \
+      href="#" \
+      data-toggle="modal" \
+      data-target="#id_resource_description_modal" \
+      >\
+        <i class="fas fa-info-circle" aria-hidden="true"></i>\
+      </a>'
+    )
+
     // By default we will have the use_indefinitely div placed just after the end_date label on the form.
     // Save the value since it will be deleted when we change the label.
     var use_indefinitely = $('#id_use_indefinitely').is(':checked');
@@ -476,18 +489,6 @@ Request New Allocation
     var resource_text = $("#id_resource option:selected").text();
     var resource_name = resource_text.slice(0, resource_text.indexOf('(') - 1)
 
-    var resource_label = $('label[for="id_resource"]');
-    resource_label.html(
-      'Resource\
-      <span class="asteriskField">*</span> \
-      <a \
-      href="#" \
-      data-toggle="modal" \
-      data-target="#id_resource_description_modal" \
-      >\
-        <i class="fas fa-info-circle" aria-hidden="true"></i>\
-      </a>'
-    )
     var description = $('#id_resource_description');
     description.html(resource_descriptions[resource_id])
 
