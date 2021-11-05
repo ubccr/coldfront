@@ -331,5 +331,3 @@ class TestAllocationRenewalRequestDetailView(TestBase):
         self.assertEqual(allocation_renewal_request.status.name, 'Approved')
         self.assertTrue(
             pre_time <= allocation_renewal_request.approval_time <= post_time)
-
-    # TODO
