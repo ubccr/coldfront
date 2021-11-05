@@ -1130,8 +1130,15 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
 
         users = [User.objects.get(username=username) for username in usernames]
-        if project_obj.pi not in users:
-            users.append(project_obj.pi)
+        resource = resource_obj.get_attribute('check_user_account')
+        if resource and not resource_obj.check_user_account_exists(project_obj.pi.username, resource):
+            form.add_error(
+                None,
+                format_html('You do not have an account on {}. You will need to create one\
+                <a href="https://access.iu.edu/Accounts/Create">here</a> in order to submit a\
+                resource request for this resource.'.format(resource))
+            )
+            return self.form_invalid(form)
 
         denied_users = []
         resource_name = ''
@@ -1142,17 +1149,22 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 if not resource_obj.check_user_account_exists(username, system):
                     denied_users.append(username)
                     resource_name = system
+                    users.remove(user)
             else:
                 if resource is not None:
                     if not resource_obj.check_user_account_exists(username, resource):
                         denied_users.append(username)
                         resource_name = resource
+                        users.remove(user)
 
         if denied_users:
-            form.add_error(None, format_html(
-                'The following users do not have an account on {}: {}. They will need to create an account <a href="https://access.iu.edu/Accounts/Create">here</a>.'.format(resource_name, ', '.join(denied_users))
+            messages.warning(self.request, format_html(
+                'The following users do not have an account on {}: {}. They were not added to the\
+                resource. They will need to create an account\
+                <a href="https://access.iu.edu/Accounts/Create">here</a>.'.format(
+                    resource_name, ', '.join(denied_users)
+                )
             ))
-            return self.form_invalid(form)
 
         if INVOICE_ENABLED and resource_obj.requires_payment:
             allocation_status_obj = AllocationStatusChoice.objects.get(
