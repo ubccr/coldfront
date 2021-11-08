@@ -2510,8 +2510,6 @@ class SavioProjectRequestListView(LoginRequiredMixin, TemplateView):
             *args, **kwargs)
         context['request_filter'] = (
             'completed' if self.completed else 'pending')
-        context['savio_project_request_list'] = \
-            SavioProjectAllocationRequest.objects.filter(*args, **kwargs)
 
         return context
 
