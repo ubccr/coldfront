@@ -1,6 +1,6 @@
 Dear {{ user.first_name }} {{ user.last_name }},
 
-Your request to join Project {{ project_name }} has been approved by its managers. A request to get access to the project on the cluster has been generated, and will be processed by admins.
+Your request to join Project {{ project_name }} has been approved by its managers. A request to get access to the project on the cluster has been generated, and will be processed by admins. Once access is set up, you will receive a message indicating that you can run jobs under this project.
 
 As you wait for your account to be processed and to get access to Savio, we strongly recommend that you see and familiarize yourself with our extensive Savio documentation here:
 
