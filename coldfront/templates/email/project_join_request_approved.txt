@@ -1,8 +1,8 @@
-Dear {{ user.first_name }} {{ user.last_name }},                                                                                                                                                                    
- 
+Dear {{ user.first_name }} {{ user.last_name }},
+                          
 Your request to join Project {{ project_name }} has been approved by its managers. A request to get access to the project on the cluster has been generated, and will be processed by admins.
  
-As you wait for your account to be processed and to get access to Savio,, we strongly recommend that you see and familiarize yourself with our extensive Savio documentation here:
+As you wait for your account to be processed and to get access to Savio, we strongly recommend that you see and familiarize yourself with our extensive Savio documentation here:
  
 https://docs-research-it.berkeley.edu/services/high-performance-computing/
  
@@ -48,9 +48,7 @@ Also, our consultants have done a lot of user facing trainings in the past and m
  
 https://research-it.berkeley.edu/services/high-performance-computing/training-and-tutorials
  
-If you have any further questions, please contact us at
-brc-hpc-help@berkeley.edu.
+If you have any further questions, please contact us at {{ support_email }}.
  
 Thank you,
 {{ signature }}
-
