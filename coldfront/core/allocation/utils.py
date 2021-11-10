@@ -20,6 +20,8 @@ def generate_guauge_data_from_usage(name, value, usage):
         percent = (usage/value)*100
     except ZeroDivisionError:
         percent = 100
+    except ValueError:
+        percent = 100
 
     if percent < 80:
         color = "#6da04b"
