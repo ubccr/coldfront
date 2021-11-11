@@ -62,6 +62,8 @@ ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
     'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
 ALLOCATION_DEFAULT_ALLOCATION_LENGTH = import_from_settings(
     'ALLOCATION_DEFAULT_ALLOCATION_LENGTH', 365)
+ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT = import_from_settings(
+    'ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT', True)
 
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 if EMAIL_ENABLED:
@@ -1060,6 +1062,7 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
         allocation_obj.status = allocation_status_active_obj
         allocation_obj.start_date = start_date
         allocation_obj.end_date = end_date
+        if ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT: allocation_obj.is_changeable = True
         allocation_obj.save()
 
         messages.success(request, 'Allocation to {} has been ACTIVATED for {} {} ({})'.format(

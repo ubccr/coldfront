@@ -12,6 +12,8 @@ from coldfront.core.utils.common import import_from_settings
 
 ALLOCATION_ACCOUNT_ENABLED = import_from_settings(
     'ALLOCATION_ACCOUNT_ENABLED', False)
+ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS = import_from_settings(
+    'ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS', [])
 
 
 class AllocationForm(forms.Form):
@@ -198,8 +200,11 @@ class AllocationAttributeChangeForm(forms.Form):
 
 class AllocationChangeForm(forms.Form):
     EXTENSION_CHOICES = [
-        (0, "----"), (30, "30 days"), (60, "60 days"), (90, "90 days")
+        (0, "----")
     ]
+    for choice in ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS:
+        EXTENSION_CHOICES.append((choice, "{} days".format(choice)))
+
     end_date_extension = forms.TypedChoiceField(
         label='Request End Date Extension',
         choices = EXTENSION_CHOICES,
