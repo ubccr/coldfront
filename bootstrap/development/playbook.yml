@@ -17,32 +17,38 @@
 
   tasks:
 
-    # TODO: Handle firewalld. It should only be accessible from the host.
-#    - name: Start firewalld service
-#      service:
-#        name: firewalld
-#        state: started
-#        enabled: yes
-#
-#    - name: Create firewalld zone named "mybrc_dev"
-#      ansible.posix.firewalld:
-#        zone: mybrc_dev
-#        state: present
-#        permanent: yes
-#
-#    - name: Permit ssh access in "mybrc_dev" zone
-#      ansible.posix.firewalld:
-#        zone: mybrc_dev
-#        service: http
-#        permanent: yes
-#        state: enabled
-#
-#    - name: Permit ssh access in "mybrc_dev" zone
-#      ansible.posix.firewalld:
-#        zone: mybrc_dev
-#        service: ssh
-#        permanent: yes
-#        state: enabled
+    - name: Start firewalld service
+      service:
+        name: firewalld
+        state: started
+        enabled: yes
+
+    - name: Create firewalld zone named "mybrc_dev"
+      ansible.posix.firewalld:
+        zone: mybrc_dev
+        state: present
+        permanent: yes
+
+    - name: Add IP addresses to "mybrc_dev" zone
+      ansible.posix.firewalld:
+        zone: mybrc_dev
+        source: 0.0.0.0/0
+        permanent: yes
+        state: enabled
+
+    - name: Permit ssh access in "mybrc_dev" zone
+      ansible.posix.firewalld:
+        zone: mybrc_dev
+        service: http
+        permanent: yes
+        state: enabled
+
+    - name: Permit ssh access in "mybrc_dev" zone
+      ansible.posix.firewalld:
+        zone: mybrc_dev
+        service: ssh
+        permanent: yes
+        state: enabled
 
     - name: Stop and disable NetworkManager service
       service:
@@ -186,7 +192,7 @@
         path: "{{ git_prefix }}/venv"
         state: directory
         mode: 0755
-        owner: "{{ djangoopperator }}"
+        owner: "{{ djangooperator }}"
         group: apache
 
     - name: Initialize Python virtual environment
@@ -230,7 +236,7 @@
       register: mod_wsgi_installed
 
     - name: Install the mod_wsgi module from Python 3.6 to Apache
-      command: /usr/local/bin/mod_wsgi-express install-module > /etc/httpd/conf.modules.d/02-wsgi.conf
+      shell: "{{ git_prefix }}/venv/bin/mod_wsgi-express install-module --modules-directory /etc/httpd/modules > /etc/httpd/conf.modules.d/02-wsgi.conf"
       when: not mod_wsgi_installed.stat.exists
 
     - name: Create a WSGI configuration file from a template if SSL is disabled
