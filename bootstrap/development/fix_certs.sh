@@ -5,7 +5,7 @@
 # Source: https://access.redhat.com/errata/RHBA-2021:3649
 
 # Upgrading to ca-certificates 2021.2.50-72 should fix the issue.
-yum update ca-certificates
+yum update -y -q ca-certificates
 update-ca-trust
 
 # If it doesn't, blacklist the certificate anyway.

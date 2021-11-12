@@ -8,10 +8,10 @@ Vagrant.configure("2") do |config|
 
   config.vm.provision "shell", inline: "/vagrant/coldfront_app/coldfront/bootstrap/development/update_curl.sh", privileged: true
   config.vm.provision "shell", inline: "/vagrant/coldfront_app/coldfront/bootstrap/development/fix_certs.sh", privileged: true
-  config.vm.provision "shell", inline: "ansible-galaxy collection install ansible.posix"
 
   # Run Ansible from the Vagrant VM
   config.vm.provision "ansible_local" do |ansible|
+    ansible.galaxy_role_file = "coldfront_app/coldfront/bootstrap/development/requirements.yml"
     ansible.playbook = "coldfront_app/coldfront/bootstrap/development/playbook.yml"
   end
 
