@@ -1,2 +1,3 @@
 ---
-- src: ansible.posix
+collections:
+  - name: ansible.posix

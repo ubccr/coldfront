@@ -13,42 +13,9 @@
    cwd: "{{ lookup('env','PWD') }}"
 
   vars_files:
-    - "{{ cwd }}/main.yml"
+    - "../../main.yml"
 
   tasks:
-
-    - name: Start firewalld service
-      service:
-        name: firewalld
-        state: started
-        enabled: yes
-
-    - name: Create firewalld zone named "mybrc_dev"
-      ansible.posix.firewalld:
-        zone: mybrc_dev
-        state: present
-        permanent: yes
-
-    - name: Add IP addresses to "mybrc_dev" zone
-      ansible.posix.firewalld:
-        zone: mybrc_dev
-        source: 0.0.0.0/0
-        permanent: yes
-        state: enabled
-
-    - name: Permit ssh access in "mybrc_dev" zone
-      ansible.posix.firewalld:
-        zone: mybrc_dev
-        service: http
-        permanent: yes
-        state: enabled
-
-    - name: Permit ssh access in "mybrc_dev" zone
-      ansible.posix.firewalld:
-        zone: mybrc_dev
-        service: ssh
-        permanent: yes
-        state: enabled
 
     - name: Stop and disable NetworkManager service
       service:
@@ -56,8 +23,9 @@
         state: stopped
         enabled: no
 
-    - name: Disable selinux
-      selinux:
+    - name: Disable SELinux
+      ansible.posix.selinux:
+        policy: targeted
         state: disabled
 
     # Install yum packages.
