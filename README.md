@@ -127,17 +127,21 @@ the one used in production.
    git clone https://github.com/ucb-rit/coldfront.git
    cd coldfront
    ```
-3. Checkout the desired branch (probably `develop`).
-4. Install vagrant-vbguest.
+3. Prevent Git from detecting changes to file permissions.
+   ```
+   git config core.fileMode false
+   ```
+4. Checkout the desired branch (probably `develop`).
+5. Install vagrant-vbguest.
    ```
    vagrant plugin install vagrant-vbguest
    ```
-5. Create a `main.yml` file in the top-level of the repository. This is a file
+6. Create a `main.yml` file in the top-level of the repository. This is a file
 of variables used by Ansible to configure the system.
    ```
    cp bootstrap/development/main.copyme main.yml
    ```
-6. Customize `main.yml`. In particular, fill in the below variables. Note
+7. Customize `main.yml`. In particular, fill in the below variables. Note
 that quotes should not be provided, except in the list variable.
    ```
    db_admin_passwd: password_here
@@ -145,7 +149,7 @@ that quotes should not be provided, except in the list variable.
    admin_email: you@email.com
    request_approval_cc_list: ["you@email.com"]
    ```
-7. Provision the VM. This should run the Ansible playbook. Expect this to take
+8. Provision the VM. This should run the Ansible playbook. Expect this to take
 a few minutes on the first run.
    ```
    vagrant up
@@ -199,9 +203,9 @@ Note that running the Ansible playbook will overwrite these.
   ```
   # Upon login, navigate to the ColdFront directory and source the virtual environment.
   cd /vagrant/coldfront_app/coldfront
-  source /vagrant/coldfront_app/venv
+  source /vagrant/coldfront_app/venv/bin/activate
   # Restart Apache with a keyword.
-  alias restart="sudo service httpd restart"
+  alias reload="sudo service httpd restart"
   ```
 
 #### Emails
