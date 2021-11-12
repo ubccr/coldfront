@@ -9,7 +9,7 @@ yum update -y -q ca-certificates
 update-ca-trust
 
 # If it doesn't, blacklist the certificate anyway.
-trust dump --filter "pkcs11:id=%c4%a7%b1%a4%7b%2c%71%fa%db%e1%4b%90%75%ff%c4%15%60%85%89%10" |
-	openssl x509 |
-	sudo tee /etc/pki/ca-trust/source/blacklist/DST-Root-CA-X3.pem
+# trust dump --filter "pkcs11:id=%c4%a7%b1%a4%7b%2c%71%fa%db%e1%4b%90%75%ff%c4%15%60%85%89%10" |
+#     openssl x509 |
+#    sudo tee /etc/pki/ca-trust/source/blacklist/DST-Root-CA-X3.pem
 sudo update-ca-trust extract
