@@ -29,14 +29,16 @@ class Command(BaseCommand):
         for rc_sister in NanitesAPI.getRcSisters():
             try:
                 project = Project.objects.get(title=rc_sister.rc)
-                organization = Organization.objects.get(ifxorg=rc_sister.harvard)
-                po, created = ProjectOrganization.objects.get_or_create(project=project, organization=organization)
-                successes += 1
+                # If they've already been set, don't add another one
+                if project.projectorganization_set.count() == 0:
+                    organization = Organization.objects.get(ifxorg=rc_sister.harvard)
+                    po, created = ProjectOrganization.objects.get_or_create(project=project, organization=organization)
+                    successes += 1
             except Project.DoesNotExist:
                 errors.append(f'Unable to find project {rc_sister.rc}')
             except Organization.DoesNotExist:
                 errors.append(f'Unable to find organization {rc_sister.harvard} to go with {rc_sister.rc}')
-        print(f'{successes} RC / Harvard mappings successfully processed')
+        print(f'{successes} RC / Harvard mappings successfully added')
         if (errors):
             print('Errors')
             print('\n'.join(errors))
