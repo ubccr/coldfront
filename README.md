@@ -145,7 +145,7 @@ that quotes should not be provided, except in the list variable.
    admin_email: you@email.com
    request_approval_cc_list: ["you@email.com"]
    ```
-7. Provision the VM. This should run the Ansible playbook. Except this to take
+7. Provision the VM. This should run the Ansible playbook. Expect this to take
 a few minutes on the first run.
    ```
    vagrant up
