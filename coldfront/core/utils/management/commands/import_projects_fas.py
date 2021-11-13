@@ -33,7 +33,12 @@ class Command(BaseCommand):
             reader = csv.reader(pimap)
             pi_dict = {rows[0]:rows[1] for rows in reader}
 
-        
+        # Missing users csv
+        userheader = ['GROUP', 'RC_USERNAME','ROLE']
+        missing_users = open('local_data/missing_users.csv', 'w')
+        writer = csv.writer(missing_users)
+        writer.writerow(userheader)
+ 
         lab_list = os.listdir(file_path)
         for lab in lab_list:
             lab_temp = lab.split(".")
@@ -76,8 +81,6 @@ class Command(BaseCommand):
                 reader = csv.DictReader(read_obj)
                 for row in reader:
                     user_dict.append(row) 
-                    
-            
             try:
                 filtered_query = Project.objects.filter(title = title)
                 if not filtered_query.exists():
@@ -112,6 +115,8 @@ class Command(BaseCommand):
                                 )           
                             except get_user_model().DoesNotExist:
                                 print("PI User missing: ", user)
+                                tocsv = [title, user,'PI']
+                                writer.writerow(tocsv) 
                                 continue
                 project_obj = Project.objects.get(title = title)
                 if (project_obj != ""):
@@ -129,6 +134,8 @@ class Command(BaseCommand):
                                 user_obj = get_user_model().objects.get(username=username)
                             except get_user_model().DoesNotExist:
                                 print("couldn't add user", username)
+                                tocsv = [title, username,'User']
+                                writer.writerow(tocsv) 
                                 continue
                             if not project_obj.projectuser_set.filter(user=user_obj).exists():
                                 project_user_obj = ProjectUser.objects.create(
@@ -144,3 +151,4 @@ class Command(BaseCommand):
                                 project_user_obj.save() 
             except Exception as e:
                 print(f'Error {e}')
+        missing_users.close()
