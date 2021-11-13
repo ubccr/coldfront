@@ -33,7 +33,7 @@ down-local:
 run: drf
 	docker-compose run $(DRFIMAGE) /bin/bash
 test: drf
-	docker-compose run $(DRFIMAGE) ./manage.py test -v 2; docker-compose down
+	docker run --rm -it -v `pwd`:/app $(DRFIMAGE) ./manage.py test -v 2
 docs:
 	docker-compose run $(DRFIMAGE) make html; docker-compose down
 
