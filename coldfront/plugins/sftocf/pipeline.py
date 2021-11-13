@@ -27,13 +27,13 @@ logger.addHandler(filehandler)
 svp = {
 "holysfdb01": {
     "holylfs04":"HDD/C/LABS",
-    'holylfs05':"",
-    'holystore01':"",
+    'holylfs05':"C/LABS",
+    'holystore01':"C/LABS",
     },
 "holysfdb02": {
     "boslfs02":"LABS",
     "bos-isilon":"rc_labs",
-    "holy-isilon":"",
+    "holy-isilon":"rc_labs",
     "holylfs02":"LABS",
   }
 }
