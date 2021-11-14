@@ -19,7 +19,7 @@ import sys
 
 
 class TestProjectRemovalViews(TestCase):
-    """A class for testing AllocationRenewalRequestReviewDenyView."""
+    """A class for testing Project Removal Views."""
 
     def setUp(self):
         """Set up test data."""
@@ -197,6 +197,7 @@ class TestProjectRemovalViews(TestCase):
         assert_has_access(self.manager2, True)
 
     def test_remove_self(self):
+        """Test that ProjectRemoveSelf POST performs the correct actions."""
         self.client.login(username=self.user1.username, password=self.password)
         url = reverse(
             'project-remove-self', kwargs={'pk': self.project1.pk})
@@ -205,10 +206,13 @@ class TestProjectRemovalViews(TestCase):
         response = self.client.post(url, {})
 
         self.assertRedirects(response, reverse('home'))
-        self.assertTrue(ProjectUserRemovalRequest.objects.filter(requester=self.user1).exists())
+        self.assertTrue(ProjectUserRemovalRequest.objects.filter(
+            requester=self.user1).exists())
 
-        removal_request = ProjectUserRemovalRequest.objects.filter(requester=self.user1).first()
-        self.assertTrue(pre_time <= removal_request.request_time <= utc_now_offset_aware())
+        removal_request = \
+            ProjectUserRemovalRequest.objects.filter(requester=self.user1).first()
+        self.assertTrue(pre_time <= removal_request.request_time <=
+                        utc_now_offset_aware())
 
         self.client.logout()
 
@@ -274,23 +278,27 @@ class TestProjectRemovalViews(TestCase):
         self.assertTrue(self.user1.is_superuser)
         assert_has_access(self.user1, True)
 
-        # users with permission view_projectuserremovalrequest should have access
-        permission = Permission.objects.filter(codename='view_projectuserremovalrequest').first()
+        # users with permission view_projectuserremovalrequest
+        # should have access
+        permission = Permission.objects.filter(
+            codename='view_projectuserremovalrequest').first()
         self.user2.user_permissions.add(permission)
         self.user2.save()
-        self.assertTrue(self.user2.has_perm('project.view_projectuserremovalrequest'))
+        self.assertTrue(self.user2.has_perm(
+            'project.view_projectuserremovalrequest'))
         assert_has_access(self.user2, True)
 
     def test_content_removal_request_list_view_pending(self):
         """
-        Testing permissions for ProjectRemovalRequestListView
+        Testing the content rendered on ProjectRemovalRequestListView
+        to different users
         """
-
         completed_removal_request = ProjectUserRemovalRequest.objects.create(
             project_user=self.project1.projectuser_set.get(user=self.manager1),
             requester=self.pi2,
             completion_time=datetime.datetime.now(datetime.timezone.utc),
-            status=ProjectUserRemovalRequestStatusChoice.objects.get(name='Complete')
+            status=ProjectUserRemovalRequestStatusChoice.objects.get(
+                name='Complete')
         )
 
         request_runner = ProjectRemovalRequestRunner(
@@ -311,12 +319,15 @@ class TestProjectRemovalViews(TestCase):
         self.assertContains(response, removal_request.requester.username)
         self.assertContains(response, 'Actions')
 
-        self.assertNotContains(response, completed_removal_request.project_user.user.username)
-        self.assertNotContains(response, completed_removal_request.requester.username)
+        self.assertNotContains(response,
+                               completed_removal_request.project_user.user.username)
+        self.assertNotContains(response,
+                               completed_removal_request.requester.username)
 
         self.client.logout()
 
-        # Staff with permission should have all of the above except actions button
+        # Staff with permission should have all of the above except
+        # actions button
         self.user3 = User.objects.create(
             email='user3@email.com',
             first_name='Normal',
@@ -324,10 +335,12 @@ class TestProjectRemovalViews(TestCase):
             username='user3')
         self.user3.set_password(self.password)
         self.user3.save()
-        permission = Permission.objects.filter(codename='view_projectuserremovalrequest').first()
+        permission = Permission.objects.filter(
+            codename='view_projectuserremovalrequest').first()
         self.user3.user_permissions.add(permission)
         self.user3.save()
-        self.assertTrue(self.user3.has_perm('project.view_projectuserremovalrequest'))
+        self.assertTrue(self.user3.has_perm(
+            'project.view_projectuserremovalrequest'))
 
         self.client.login(username=self.user3.username, password=self.password)
         url = reverse(
@@ -338,21 +351,24 @@ class TestProjectRemovalViews(TestCase):
         self.assertContains(response, removal_request.requester.username)
 
         self.assertNotContains(response, 'Actions')
-        self.assertNotContains(response, completed_removal_request.project_user.user.username)
-        self.assertNotContains(response, completed_removal_request.requester.username)
+        self.assertNotContains(response,
+                               completed_removal_request.project_user.user.username)
+        self.assertNotContains(response,
+                               completed_removal_request.requester.username)
 
         self.client.logout()
 
     def test_content_removal_request_list_view_completed(self):
         """
-        Testing permissions for ProjectRemovalRequestListView
+        Testing the content rendered on ProjectRemovalRequestListView
+        to different users
         """
-
         completed_removal_request = ProjectUserRemovalRequest.objects.create(
             project_user=self.project1.projectuser_set.get(user=self.manager1),
             requester=self.pi2,
             completion_time=datetime.datetime.now(datetime.timezone.utc),
-            status=ProjectUserRemovalRequestStatusChoice.objects.get(name='Complete')
+            status=ProjectUserRemovalRequestStatusChoice.objects.get(
+                name='Complete')
         )
 
         request_runner = ProjectRemovalRequestRunner(
@@ -369,12 +385,15 @@ class TestProjectRemovalViews(TestCase):
             'project-removal-request-list-completed')
         response = self.client.get(url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertNotContains(response, removal_request.project_user.user.username)
+        self.assertNotContains(response,
+                               removal_request.project_user.user.username)
         self.assertNotContains(response, removal_request.requester.username)
         self.assertNotContains(response, 'Actions')
 
-        self.assertContains(response, completed_removal_request.project_user.user.username)
-        self.assertContains(response, completed_removal_request.requester.username)
+        self.assertContains(response,
+                            completed_removal_request.project_user.user.username)
+        self.assertContains(response,
+                            completed_removal_request.requester.username)
 
         self.client.logout()
 
@@ -386,22 +405,27 @@ class TestProjectRemovalViews(TestCase):
             username='user3')
         self.user3.set_password(self.password)
         self.user3.save()
-        permission = Permission.objects.filter(codename='view_projectuserremovalrequest').first()
+        permission = Permission.objects.filter(
+            codename='view_projectuserremovalrequest').first()
         self.user3.user_permissions.add(permission)
         self.user3.save()
-        self.assertTrue(self.user3.has_perm('project.view_projectuserremovalrequest'))
+        self.assertTrue(self.user3.has_perm(
+            'project.view_projectuserremovalrequest'))
 
         self.client.login(username=self.user3.username, password=self.password)
         url = reverse(
             'project-removal-request-list-completed')
         response = self.client.get(url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertNotContains(response, removal_request.project_user.user.username)
+        self.assertNotContains(response,
+                               removal_request.project_user.user.username)
         self.assertNotContains(response, removal_request.requester.username)
         self.assertNotContains(response, 'Actions')
 
-        self.assertContains(response, completed_removal_request.project_user.user.username)
-        self.assertContains(response, completed_removal_request.requester.username)
+        self.assertContains(response,
+                            completed_removal_request.project_user.user.username)
+        self.assertContains(response,
+                            completed_removal_request.requester.username)
 
         self.client.logout()
 
@@ -415,7 +439,8 @@ class TestProjectRemovalViews(TestCase):
             the user."""
             self.client.login(username=user.username, password=self.password)
             url = reverse(
-                'project-removal-request-update-status', kwargs={'pk': removal_request.pk})
+                'project-removal-request-update-status',
+                kwargs={'pk': removal_request.pk})
             status_code = HTTPStatus.OK if has_access else HTTPStatus.FORBIDDEN
             response = self.client.get(url)
             self.assertEqual(response.status_code, status_code)
@@ -448,7 +473,8 @@ class TestProjectRemovalViews(TestCase):
             the user."""
             self.client.login(username=user.username, password=self.password)
             url = reverse(
-                'project-removal-request-complete-status', kwargs={'pk': removal_request.pk})
+                'project-removal-request-complete-status',
+                kwargs={'pk': removal_request.pk})
             status_code = HTTPStatus.OK if has_access else HTTPStatus.FORBIDDEN
             response = self.client.get(url)
             self.assertEqual(response.status_code, status_code)
@@ -458,7 +484,8 @@ class TestProjectRemovalViews(TestCase):
         request_runner = ProjectRemovalRequestRunner(
             self.pi1, self.user2, self.project1)
         removal_request = request_runner.run()
-        removal_request.status = ProjectUserRemovalRequestStatusChoice.objects.get(name='Processing')
+        removal_request.status = \
+            ProjectUserRemovalRequestStatusChoice.objects.get(name='Processing')
         removal_request.save()
 
         # Superusers should have access.
@@ -476,6 +503,7 @@ class TestProjectRemovalViews(TestCase):
     def test_removal_request_update_status_view(self):
         """
         Testing ProjectRemovalRequestUpdateStatusView POST request
+        performs the correct actions
         """
         request_runner = ProjectRemovalRequestRunner(
             self.pi1, self.user2, self.project1)
@@ -488,7 +516,8 @@ class TestProjectRemovalViews(TestCase):
 
         self.client.login(username=self.user1.username, password=self.password)
         url = reverse(
-            'project-removal-request-update-status', kwargs={'pk': removal_request.pk})
+            'project-removal-request-update-status',
+            kwargs={'pk': removal_request.pk})
         data = {'status': 'Processing'}
         response = self.client.post(url, data)
         self.assertRedirects(response, reverse('project-removal-request-list'))
@@ -499,11 +528,13 @@ class TestProjectRemovalViews(TestCase):
     def test_removal_request_complete_status_view(self):
         """
         Testing ProjectRemovalRequestCompleteStatusView POST request
+        performs the correct actions
         """
         request_runner = ProjectRemovalRequestRunner(
             self.pi1, self.user2, self.project1)
         removal_request = request_runner.run()
-        removal_request.status = ProjectUserRemovalRequestStatusChoice.objects.get(name='Processing')
+        removal_request.status = \
+            ProjectUserRemovalRequestStatusChoice.objects.get(name='Processing')
         removal_request.save()
 
         # Superusers should have access.
@@ -513,7 +544,8 @@ class TestProjectRemovalViews(TestCase):
 
         self.client.login(username=self.user1.username, password=self.password)
         url = reverse(
-            'project-removal-request-complete-status', kwargs={'pk': removal_request.pk})
+            'project-removal-request-complete-status',
+            kwargs={'pk': removal_request.pk})
         data = {'status': 'Complete'}
 
         pre_time = utc_now_offset_aware()
@@ -522,7 +554,8 @@ class TestProjectRemovalViews(TestCase):
 
         removal_request.refresh_from_db()
         self.assertEqual(removal_request.status.name, 'Complete')
-        self.assertTrue(pre_time <= removal_request.completion_time <= utc_now_offset_aware())
+        self.assertTrue(pre_time <= removal_request.completion_time <=
+                        utc_now_offset_aware())
 
         proj_user = self.project1.projectuser_set.get(user=self.user2)
         self.assertEqual(proj_user.status.name, 'Removed')
@@ -537,7 +570,8 @@ class TestProjectRemovalViews(TestCase):
         request_runner = ProjectRemovalRequestRunner(
             self.pi1, self.user2, self.project1)
         removal_request = request_runner.run()
-        removal_request.status = ProjectUserRemovalRequestStatusChoice.objects.get(name='Processing')
+        removal_request.status = \
+            ProjectUserRemovalRequestStatusChoice.objects.get(name='Processing')
         removal_request.save()
 
         # Superusers should have access.
@@ -547,7 +581,8 @@ class TestProjectRemovalViews(TestCase):
 
         self.client.login(username=self.user1.username, password=self.password)
         url = reverse(
-            'project-removal-request-complete-status', kwargs={'pk': removal_request.pk})
+            'project-removal-request-complete-status',
+            kwargs={'pk': removal_request.pk})
         data = {'status': 'Complete'}
         response = self.client.post(url, data)
         self.assertRedirects(response, reverse('project-removal-request-list'))

@@ -1,23 +1,21 @@
-from coldfront.api.statistics.utils import create_project_allocation
 from coldfront.core.project.models import *
 from coldfront.core.project.utils import ProjectRemovalRequestRunner
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.user.models import *
 from coldfront.core.allocation.models import *
 
-from django.test import override_settings, TestCase
+from django.test import TestCase
 from django.contrib.auth.models import User
 from django.core import mail
 from django.core.management import call_command
 
-from decimal import Decimal
 from io import StringIO
 import os
 import sys
 
 
 class TestRunnerMixin(TestCase):
-    """A mixin for testing AllocationRenewalProcessingRunner."""
+    """A mixin for testing ProjectRemovalRequestRunner."""
 
     def setUp(self):
         """Set up test data."""
@@ -122,7 +120,8 @@ class TestRunnerMixin(TestCase):
         """
 
         # Test project user status before removal
-        self.assertEqual(self.project1.projectuser_set.get(user=self.user1).status.name,
+        self.assertEqual(self.project1.projectuser_set.get(
+            user=self.user1).status.name,
                          'Active')
 
         request_runner = ProjectRemovalRequestRunner(
@@ -148,7 +147,8 @@ class TestRunnerMixin(TestCase):
         self.assertEqual(len(error_messages), 0)
 
         # Test project user status
-        self.assertEqual(self.project1.projectuser_set.get(user=self.user1).status.name,
+        self.assertEqual(self.project1.projectuser_set.get(
+            user=self.user1).status.name,
                          'Pending - Remove')
 
         # send email to admins, pis and managers for self removal
@@ -195,11 +195,12 @@ class TestRunnerMixin(TestCase):
 
     def test_normal_user_pi_removal_request(self):
         """
-        Testing when a single user self requests to be removed
+        Testing when a pi requests for a normal user to be removed
         """
 
         # Test project user status before removal
-        self.assertEqual(self.project1.projectuser_set.get(user=self.user1).status.name,
+        self.assertEqual(self.project1.projectuser_set.get(
+            user=self.user1).status.name,
                          'Active')
 
         request_runner = ProjectRemovalRequestRunner(
@@ -225,7 +226,8 @@ class TestRunnerMixin(TestCase):
         self.assertEqual(len(error_messages), 0)
 
         # Test project user status
-        self.assertEqual(self.project1.projectuser_set.get(user=self.user1).status.name,
+        self.assertEqual(self.project1.projectuser_set.get(
+            user=self.user1).status.name,
                          'Pending - Remove')
 
         # send email to admins, pis and managers for self removal
@@ -277,7 +279,8 @@ class TestRunnerMixin(TestCase):
         """
 
         # Test project user status before removal
-        self.assertEqual(self.project1.projectuser_set.get(user=self.pi1).status.name,
+        self.assertEqual(self.project1.projectuser_set.get(
+            user=self.pi1).status.name,
                          'Active')
 
         request_runner = ProjectRemovalRequestRunner(
@@ -305,7 +308,8 @@ class TestRunnerMixin(TestCase):
         """
 
         # Test project user status before removal
-        self.assertEqual(self.project1.projectuser_set.get(user=self.manager).status.name,
+        self.assertEqual(self.project1.projectuser_set.get(
+            user=self.manager).status.name,
                          'Active')
 
         request_runner = ProjectRemovalRequestRunner(
@@ -324,7 +328,8 @@ class TestRunnerMixin(TestCase):
         self.assertEqual(len(error_messages), 1)
 
         # test project user status after failed removal request
-        self.assertEqual(self.project1.projectuser_set.get(user=self.manager).status.name,
+        self.assertEqual(self.project1.projectuser_set.get(
+            user=self.manager).status.name,
                          'Active')
 
     def test_removal_request_given_completed_request(self):
@@ -342,7 +347,8 @@ class TestRunnerMixin(TestCase):
         )
 
         # Test project user status before removal
-        self.assertEqual(self.project1.projectuser_set.get(user=self.user1).status.name,
+        self.assertEqual(self.project1.projectuser_set.get(
+            user=self.user1).status.name,
                          'Active')
 
         request_runner = ProjectRemovalRequestRunner(
@@ -401,7 +407,8 @@ class TestRunnerMixin(TestCase):
                 role=manager_project_role,
                 status=active_project_user_status)
 
-        self.assertEqual(self.project1.projectuser_set.get(user=self.user1).status.name,
+        self.assertEqual(self.project1.projectuser_set.get(
+            user=self.user1).status.name,
                          'Active')
 
         request_runner = ProjectRemovalRequestRunner(
