@@ -117,7 +117,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         project_obj = self.get_object()
 
-        if project_obj.projectuser_set.filter(user=self.request.user, status__name='Active').exists():
+        if project_obj.projectuser_set.filter(user=self.request.user, status__name__in=['Active', 'Pending - Remove']).exists():
             return True
 
         messages.error(
@@ -278,7 +278,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
             data = project_search_form.cleaned_data
             if data.get('show_all_projects') and (self.request.user.is_superuser or self.request.user.has_perm('project.can_view_all_projects')):
                 projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
-                    status__name__in=['New', 'Active', ]
+                    status__name__in=['New', 'Active']
                 ).annotate(
                     cluster_name=Case(
                         When(name='abc', then=Value('ABC')),
@@ -291,7 +291,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
                 projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
                     Q(status__name__in=['New', 'Active', ]) &
                     Q(projectuser__user=self.request.user) &
-                    Q(projectuser__status__name='Active')
+                    Q(projectuser__status__name__in=['Active',  'Pending - Remove'])
                 ).annotate(
                     cluster_name=Case(
                         When(name='abc', then=Value('ABC')),
@@ -339,9 +339,9 @@ class ProjectListView(LoginRequiredMixin, ListView):
 
         else:
             projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
-                Q(status__name__in=['New', 'Active', ]) &
+                Q(status__name__in=['New', 'Active']) &
                 Q(projectuser__user=self.request.user) &
-                Q(projectuser__status__name='Active')
+                Q(projectuser__status__name__in=['Active', 'Pending - Remove'])
             ).annotate(
                 cluster_name=Case(
                     When(name='abc', then=Value('ABC')),
@@ -903,7 +903,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             added_users = []
             for form in formset:
                 user_form_data = form.cleaned_data
-
+                print(user_form_data)
                 # checking for users with pending/processing project removal requests.
                 username = user_form_data.get('username')
                 pending_status = ProjectUserRemovalRequestStatusChoice.objects.get(name='Pending')
@@ -1083,7 +1083,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             for ele in project_obj.projectuser_set.filter(
                 status__name='Pending - Remove').exclude(
                 role__name='Principal Investigator').order_by(
-                'user__username') if ele.user != self.request.user
+                'user__username')
         ]
 
         return users_to_remove, users_pending_removal
@@ -1181,7 +1181,7 @@ class ProjectRemoveSelf(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             for message in error_messages:
                 messages.error(request, message)
 
-        return HttpResponseRedirect(reverse('project'))
+        return HttpResponseRedirect(reverse('home'))
 
 
 class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -3828,7 +3828,7 @@ class ProjectRemovalRequestListView(LoginRequiredMixin,
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('project.can_viewprojectremovalrequests'):
+        if self.request.user.has_perm('project.view_projectuserremovalrequest'):
             return True
 
         message = (
@@ -3923,7 +3923,6 @@ class ProjectRemovalRequestUpdateStatusView(LoginRequiredMixin,
         project_removal_status_choice, _ =\
             ProjectUserRemovalRequestStatusChoice.objects.get_or_create(
                 name=status)
-
         self.project_removal_request_obj.status = project_removal_status_choice
         self.project_removal_request_obj.save()
 
