@@ -28,7 +28,7 @@ def home(request):
         project_list = Project.objects.filter(
             (Q(status__name__in=['New', 'Active', ]) &
              Q(projectuser__user=request.user) &
-             Q(projectuser__status__name__in=['Active', ]))
+             Q(projectuser__status__name__in=['Active', 'Pending - Remove']))
         ).distinct().order_by('-created')
 
 
