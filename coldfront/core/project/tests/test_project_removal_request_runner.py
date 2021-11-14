@@ -113,26 +113,6 @@ class TestRunnerMixin(TestCase):
                 role=user_project_role,
                 status=active_project_user_status)
 
-        # # Create a compute Allocation for each Project.
-        # self.project_service_units = {}
-        # self.projects_and_allocations = {}
-        #
-        # value = Decimal(str(1000))
-        # allocation = create_project_allocation(self.project1, value).allocation
-        # self.project_service_units[self.project1] = value
-        # self.projects_and_allocations[self.project1] = allocation
-        #
-        # # Create AllocationUsers on the compute Allocation.
-        # active_allocation_user_status = AllocationUserStatusChoice.objects.get(
-        #     name='Active')
-        #
-        # allocation = self.projects_and_allocations[self.project1]
-        # for pi_user in [self.pi1, self.pi2]:
-        #     AllocationUser.objects.create(
-        #         allocation=allocation,
-        #         user=pi_user,
-        #         status=active_allocation_user_status)
-
         # Clear the mail outbox.
         mail.outbox = []
 
@@ -171,7 +151,110 @@ class TestRunnerMixin(TestCase):
         self.assertEqual(self.project1.projectuser_set.get(user=self.user1).status.name,
                          'Pending - Remove')
 
+        # send email to admins, pis and managers for self removal
+        request_runner.send_emails()
+        manager_pi_queryset = self.project1.projectuser_set.filter(
+            role__name__in=['Manager', 'Principal Investigator'],
+            status__name='Active').exclude(user=removal_request.requester)
+
+        email_to_list = [proj_user.user.email for proj_user in manager_pi_queryset]
+        self.assertEqual(len(mail.outbox), len(manager_pi_queryset) + 1)
+
+        email_body = f'{self.user1.first_name} {self.user1.last_name} of ' \
+                     f'Project {self.project1.name} has requested to remove ' \
+                     f'{self.user1.first_name} {self.user1.last_name} ' \
+                     f'from {self.project1.name}'
+        email_body_admin = f'There is a new request to remove ' \
+                           f'{self.user1.first_name} {self.user1.last_name} ' \
+                           f'from {self.project1.name}.'
+
+        for email in mail.outbox:
+            if email.to[0] in settings.EMAIL_ADMIN_LIST:
+                self.assertIn(email_body_admin, email.body)
+            else:
+                self.assertIn(email_body, email.body)
+                self.assertIn(email.to[0], email_to_list)
+            self.assertEqual(settings.EMAIL_SENDER, email.from_email)
+
         # Test creating another project removal request after self removal request
+        request_runner = ProjectRemovalRequestRunner(
+            self.pi1, self.user1, self.project1)
+        removal_request = request_runner.run()
+        success_messages, error_messages = request_runner.get_messages()
+
+        # testing if a removal request was made
+        self.assertEqual(removal_request, None)
+
+        # check messages
+        test_message = f'Error requesting removal of user {self.user1.username}. ' \
+                       f'An active project removal request for user ' \
+                       f'{self.user1.username} already exists.'
+        self.assertEqual(error_messages[0], test_message)
+        self.assertEqual(len(success_messages), 0)
+        self.assertEqual(len(error_messages), 1)
+
+    def test_normal_user_pi_removal_request(self):
+        """
+        Testing when a single user self requests to be removed
+        """
+
+        # Test project user status before removal
+        self.assertEqual(self.project1.projectuser_set.get(user=self.user1).status.name,
+                         'Active')
+
+        request_runner = ProjectRemovalRequestRunner(
+            self.pi1, self.user1, self.project1)
+        removal_request = request_runner.run()
+        success_messages, error_messages = request_runner.get_messages()
+
+        # testing if a removal request was made
+        self.assertNotEqual(removal_request, None)
+
+        # testing removal request attributes
+        self.assertEqual(removal_request.project_user,
+                         self.project1.projectuser_set.get(user=self.user1))
+        self.assertEqual(removal_request.requester, self.pi1)
+        self.assertEqual(removal_request.completion_time, None)
+        self.assertEqual(removal_request.status.name, 'Pending')
+
+        # check messages
+        test_message = f'Successfully created project removal request for ' \
+                       f'user {self.user1.username}.'
+        self.assertEqual(success_messages[0], test_message)
+        self.assertEqual(len(success_messages), 1)
+        self.assertEqual(len(error_messages), 0)
+
+        # Test project user status
+        self.assertEqual(self.project1.projectuser_set.get(user=self.user1).status.name,
+                         'Pending - Remove')
+
+        # send email to admins, pis and managers for self removal
+        request_runner.send_emails()
+        manager_pi_queryset = self.project1.projectuser_set.filter(
+            role__name__in=['Manager', 'Principal Investigator'],
+            status__name='Active').exclude(user=removal_request.requester)
+
+        email_to_list = [proj_user.user.email for proj_user in manager_pi_queryset]\
+                        + [self.user1.email]
+        self.assertEqual(len(mail.outbox), len(manager_pi_queryset) + 2)
+
+        email_body = f'{self.pi1.first_name} {self.pi1.last_name} of ' \
+                     f'Project {self.project1.name} has requested to remove ' \
+                     f'{self.user1.first_name} {self.user1.last_name} ' \
+                     f'from {self.project1.name}'
+        email_body_admin = f'There is a new request to remove ' \
+                           f'{self.user1.first_name} {self.user1.last_name} ' \
+                           f'from {self.project1.name}.'
+
+        for email in mail.outbox:
+            if email.to[0] in settings.EMAIL_ADMIN_LIST:
+                self.assertIn(email_body_admin, email.body)
+            else:
+                self.assertIn(email_body, email.body)
+                self.assertIn(email.to[0], email_to_list)
+            self.assertEqual(settings.EMAIL_SENDER, email.from_email)
+
+        # Test creating another project removal request after pi removal request
         request_runner = ProjectRemovalRequestRunner(
             self.pi1, self.user1, self.project1)
         removal_request = request_runner.run()
@@ -287,3 +370,104 @@ class TestRunnerMixin(TestCase):
         # Test project user status
         self.assertEqual(self.project1.projectuser_set.get(user=self.user1).status.name,
                          'Pending - Remove')
+
+    def test_manager_removal_request_given_multiple_managers(self):
+        """
+        Testing when a PI requests a user to be removed given that the
+        user has a past completed removal request for the project
+        """
+
+        manager2 = User.objects.create(
+            email='manager2@email.com',
+            first_name='Manager2',
+            last_name='User',
+            username='manager2')
+
+        manager3 = User.objects.create(
+            email='manager2@email.com',
+            first_name='Manager3',
+            last_name='User',
+            username='manager3')
+
+        active_project_user_status = ProjectUserStatusChoice.objects.get(
+            name='Active')
+        manager_project_role = ProjectUserRoleChoice.objects.get(
+            name='Manager')
+
+        for manager in [manager2, manager3]:
+            ProjectUser.objects.create(
+                project=self.project1,
+                user=manager,
+                role=manager_project_role,
+                status=active_project_user_status)
+
+        self.assertEqual(self.project1.projectuser_set.get(user=self.user1).status.name,
+                         'Active')
+
+        request_runner = ProjectRemovalRequestRunner(
+            self.pi1, manager2, self.project1)
+        removal_request = request_runner.run()
+        success_messages, error_messages = request_runner.get_messages()
+
+        # testing if a removal request was made
+        self.assertNotEqual(removal_request, None)
+
+        # testing removal request attributes
+        self.assertEqual(removal_request.project_user,
+                         self.project1.projectuser_set.get(user=manager2))
+        self.assertEqual(removal_request.requester, self.pi1)
+        self.assertEqual(removal_request.completion_time, None)
+        self.assertEqual(removal_request.status.name, 'Pending')
+
+        # check messages
+        test_message = f'Successfully created project removal request for ' \
+                       f'user {manager2.username}.'
+        self.assertEqual(success_messages[0], test_message)
+        self.assertEqual(len(success_messages), 1)
+        self.assertEqual(len(error_messages), 0)
+
+        # Test project user status
+        self.assertEqual(self.project1.projectuser_set.get(user=manager2).status.name,
+                         'Pending - Remove')
+
+        # send email to admins, pis and managers for self removal
+        request_runner.send_emails()
+        manager_pi_queryset = self.project1.projectuser_set.filter(
+            role__name__in=['Manager', 'Principal Investigator'],
+            status__name='Active').exclude(user=removal_request.requester)
+
+        email_to_list = [proj_user.user.email for proj_user in manager_pi_queryset]
+        self.assertEqual(len(mail.outbox), len(manager_pi_queryset) + 2)
+
+        email_body = f'{self.pi1.first_name} {self.pi1.last_name} of ' \
+                     f'Project {self.project1.name} has requested to remove ' \
+                     f'{manager2.first_name} {manager2.last_name} ' \
+                     f'from {self.project1.name}'
+        email_body_admin = f'There is a new request to remove ' \
+                           f'{manager2.first_name} {manager2.last_name} ' \
+                           f'from {self.project1.name}.'
+
+        for email in mail.outbox:
+            if email.to[0] in settings.EMAIL_ADMIN_LIST:
+                self.assertIn(email_body_admin, email.body)
+            else:
+                self.assertIn(email_body, email.body)
+                self.assertIn(email.to[0], email_to_list)
+            self.assertEqual(settings.EMAIL_SENDER, email.from_email)
+
+        # Test creating another project removal request after pi removal request
+        request_runner = ProjectRemovalRequestRunner(
+            self.pi1, manager2, self.project1)
+        removal_request = request_runner.run()
+        success_messages, error_messages = request_runner.get_messages()
+
+        # testing if a removal request was made
+        self.assertEqual(removal_request, None)
+
+        # check messages
+        test_message = f'Error requesting removal of user {manager2.username}. ' \
+                       f'An active project removal request for user ' \
+                       f'{manager2.username} already exists.'
+        self.assertEqual(error_messages[0], test_message)
+        self.assertEqual(len(success_messages), 0)
+        self.assertEqual(len(error_messages), 1)
