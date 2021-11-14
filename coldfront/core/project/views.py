@@ -906,7 +906,6 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             added_users = []
             for form in formset:
                 user_form_data = form.cleaned_data
-                print(user_form_data)
                 # checking for users with pending/processing project removal requests.
                 username = user_form_data.get('username')
                 pending_status = ProjectUserRemovalRequestStatusChoice.objects.get(name='Pending')
