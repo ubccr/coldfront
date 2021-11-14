@@ -248,6 +248,9 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['joins_auto_approved'] = (
             self.object.joins_auto_approval_delay == datetime.timedelta())
 
+        context['join_request_delay_period'] = \
+            str(self.object.joins_auto_approval_delay).rsplit(':', 1)[0]
+
         return context
 
 
@@ -1830,6 +1833,9 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
         if self.request.user.is_superuser:
             return True
 
+        if self.request.user.has_perm('project.can_view_all_projects'):
+            return True
+
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
 
         if project_obj.projectuser_set.filter(
@@ -1894,11 +1900,41 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
             context['formset'] = formset
 
         context['project'] = get_object_or_404(Project, pk=pk)
+
+        context['can_add_users'] = False
+        if self.request.user.is_superuser:
+            context['can_add_users'] = True
+
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+
+        if project_obj.projectuser_set.filter(
+                user=self.request.user,
+                role__name__in=['Manager', 'Principal Investigator'],
+                status__name='Active').exists():
+            context['can_add_users'] = True
+
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         project_obj = get_object_or_404(Project, pk=pk)
+
+        allowed_to_approve_users = False
+        if project_obj.projectuser_set.filter(
+                user=self.request.user,
+                role__name__in=['Manager', 'Principal Investigator'],
+                status__name='Active').exists():
+            allowed_to_approve_users = True
+
+        if self.request.user.is_superuser:
+            allowed_to_approve_users = True
+
+        if not allowed_to_approve_users:
+            message = 'You do not have permission to view the this page.'
+            messages.error(request, message)
+
+            return HttpResponseRedirect(
+                reverse('project-review-join-requests', kwargs={'pk': pk}))
 
         users_to_review = self.get_users_to_review(project_obj)
 
@@ -1990,7 +2026,7 @@ class ProjectAutoApproveJoinRequestsView(LoginRequiredMixin,
                                          UserPassesTestMixin, View):
 
     def test_func(self):
-        if self.request.user.is_superuser or self.request.user.is_staff:
+        if self.request.user.is_superuser:
             return True
         message = (
             'You do not have permission to automatically approve project '
@@ -2527,12 +2563,11 @@ class SavioProjectRequestListView(LoginRequiredMixin, TemplateView):
         a superuser, show all such requests. Otherwise, show only those
         for which the user is a requester or PI."""
         context = super().get_context_data(**kwargs)
-
         args, kwargs = [], {}
 
         request_list = self.get_queryset()
         user = self.request.user
-        if not user.is_superuser:
+        if not (user.is_superuser or user.has_perm('project.view_savioprojectallocationrequest')):
             args.append(Q(requester=user) | Q(pi=user))
         if self.completed:
             status__name__in = ['Approved - Complete', 'Denied']
@@ -2581,6 +2616,10 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         """UserPassesTestMixin tests."""
         if self.request.user.is_superuser:
             return True
+
+        if self.request.user.has_perm('project.view_savioprojectallocationrequest'):
+            return True
+
         if (self.request.user == self.request_obj.requester or
                 self.request.user == self.request_obj.pi):
             return True
@@ -2653,12 +2692,19 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         context['setup_status'] = self.__get_setup_status()
         context['is_checklist_complete'] = self.__is_checklist_complete()
 
-        context['is_allowed_to_manage_request'] = (
-            self.request.user.is_superuser)
+        context['is_allowed_to_manage_request'] = self.request.user.is_superuser
 
         return context
 
     def post(self, request, *args, **kwargs):
+        if not self.request.user.is_superuser:
+            message = 'You do not have permission to access this page.'
+            messages.error(request, message)
+            pk = self.request_obj.pk
+
+            return HttpResponseRedirect(
+                reverse('savio-project-request-detail', kwargs={'pk': pk}))
+
         if not self.__is_checklist_complete():
             message = 'Please complete the checklist before final activation.'
             messages.error(request, message)
@@ -3266,6 +3312,10 @@ class VectorProjectRequestView(LoginRequiredMixin, UserPassesTestMixin,
     def test_func(self):
         if self.request.user.is_superuser:
             return True
+
+        if self.request.user.has_perms('project.view_vectorprojectallocationrequest'):
+            return True
+
         signed_date = (
             self.request.user.userprofile.access_agreement_signed_date)
         if signed_date is not None:
@@ -3364,8 +3414,9 @@ class VectorProjectRequestListView(LoginRequiredMixin, TemplateView):
         args, kwargs = [], {}
 
         user = self.request.user
+
         request_list = self.get_queryset()
-        if not user.is_superuser:
+        if not (user.is_superuser or user.has_perm('project.view_vectorprojectallocationrequest')):
             args.append(Q(requester=user) | Q(pi=user))
         if self.completed:
             status__name__in = ['Approved - Complete', 'Denied']
@@ -3398,6 +3449,10 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         """UserPassesTestMixin tests."""
         if self.request.user.is_superuser:
             return True
+
+        if self.request.user.has_perm('project.view_vectorprojectallocationrequest'):
+            return True
+
         if (self.request.user == self.request_obj.requester or
                 self.request.user == self.request_obj.pi):
             return True
@@ -3462,6 +3517,14 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         return context
 
     def post(self, request, *args, **kwargs):
+        if not self.request.user.is_superuser:
+            message = 'You do not have permission to view the this page.'
+            messages.error(request, message)
+            pk = self.request_obj.pk
+
+            return HttpResponseRedirect(
+                reverse('vector-project-request-detail', kwargs={'pk': pk}))
+
         if not self.__is_checklist_complete():
             message = 'Please complete the checklist before final activation.'
             messages.error(request, message)
@@ -4054,3 +4117,4 @@ class ProjectRemovalRequestCompleteStatusView(LoginRequiredMixin,
 
     def get_success_url(self):
         return reverse('project-removal-request-list')
+

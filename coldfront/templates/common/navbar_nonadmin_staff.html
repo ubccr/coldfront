@@ -7,6 +7,7 @@
   <div class="dropdown-menu">
     {# all staff can perform a user search #}
     <a id="navbar-user-search" class="dropdown-item" href="{% url 'user-search-home' %}">User Search</a>
+      <a id="navbar-user-list" class="dropdown-item" href="{% url 'user-search-all' %}">All Users</a>
     {% if perms.project.can_view_all_projects %}
     <a class="dropdown-item" href="{% url 'project-list' %}?show_all_projects=on">All Projects</a>
     {% endif %}
@@ -22,7 +23,19 @@
     <a id="navbar-project-removal-requests" class="dropdown-item" href="{% url 'project-removal-request-list' %}">
         Project Removal Requests
     </a>
+    {% if perms.allocation.can_review_cluster_account_requests %}
+    <a id="navbar-cluster-requests" class="dropdown-item" href="{% url 'allocation-cluster-account-request-list' %}">
+        Cluster Account Requests</a>
     {% endif %}
-
+      {% if perms.project.view_savioprojectallocationrequest %}
+      <a id="navbar-project-savio-project-requests" class="dropdown-item" href="{% url 'savio-project-pending-request-list' %}">
+          Savio Project Requests
+      </a>
+    {% endif %}
+    {% if perms.project.view_vectorprojectallocationrequest %}
+      <a id="navbar-project-vector-project-requests" class="dropdown-item" href="{% url 'vector-project-pending-request-list' %}">
+          Vector Project Requests
+      </a>
+    {% endif %}
   </div>
 </li>
