@@ -53,13 +53,11 @@ Project Detail
           {% if is_allowed_to_update_project %}
         <a class="btn btn-success" href="{% url 'project-add-users-search' project.pk %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
               {% endif %}
-        {% if not joins_auto_approved %}
           <a class="btn btn-success" href="{% url 'project-review-join-requests' project.pk %}" role="button">
             <i class="fas fa-user-plus" aria-hidden="true"></i>
             Review Join Requests
             &nbsp;<span class="badge badge-light">{{ num_join_requests }}</span>
           </a>
-        {% endif %}
       {% endif %}
     </div>
   </div>
@@ -106,12 +104,7 @@ Project Detail
     <p class="card-text text-justify"><strong>Created: </strong>{{ project.created|date:"M. d, Y" }}</p>
     <p class="card-text text-justify">
       <strong>Requests to Join: </strong>
-      User requests to join the project
-      {% if joins_auto_approved %}
-        are automatically approved.
-      {% else %}
-        are automatically approved after a delay.
-      {% endif %}
+      User requests to join the project must be approved by a PI.
       {% if is_allowed_to_update_project %}
         <a href="{% url 'project-update' project.pk %}">
           <span class="accessibility-link-text">Update Project settings</span>
@@ -119,7 +112,6 @@ Project Detail
         </a>
       {% endif %}
     </p>
-      <p class="card-text text-justify"><strong>Join Request Delay Period: </strong>{{ join_request_delay_period }} hours</p>
   </div>
 </div>
 
