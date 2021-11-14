@@ -497,9 +497,4 @@ class ProjectUserRemovalRequest(TimeStampedModel):
     completion_time = models.DateTimeField(null=True)
     status = models.ForeignKey(ProjectUserRemovalRequestStatusChoice, on_delete=models.CASCADE, null=True)
 
-    class Meta:
-        permissions = (
-            ("can_viewprojectremovalrequests", "Can view project removal requests"),
-        )
-
 
