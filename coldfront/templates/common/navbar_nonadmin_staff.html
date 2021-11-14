@@ -20,9 +20,12 @@
     {% if perms.allocation.can_review_allocation_requests %}
     <a id="navbar-allocation-requests" class="dropdown-item" href="{% url 'allocation-request-list' %}">
       Allocation Requests</a>
+    {% endif %}
+    {% if perms.project.view_projectuserremovalrequest %}
     <a id="navbar-project-removal-requests" class="dropdown-item" href="{% url 'project-removal-request-list' %}">
         Project Removal Requests
     </a>
+    {% endif %}
     {% if perms.allocation.can_review_cluster_account_requests %}
     <a id="navbar-cluster-requests" class="dropdown-item" href="{% url 'allocation-cluster-account-request-list' %}">
         Cluster Account Requests</a>
