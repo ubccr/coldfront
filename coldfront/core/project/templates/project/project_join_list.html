@@ -15,8 +15,6 @@ Project List
 <hr>
 <p>
   Below is a list of join requests that await approval by project managers.
-  If managers take no action by the Auto-Approval Time, the request will
-  automatically be approved.
 </p>
 <p>
   Once a request is approved, a separate request for cluster access under
@@ -39,18 +37,6 @@ Project List
         <th scope="col" class="text-nowrap">PIs</th>
         <th scope="col">Title</th>
         <th scope="col">Cluster</th>
-        <th scope="col" class="text-nowrap">
-          Auto-Approval Time
-          <i
-            class="fas fa-question-circle"
-            aria-hidden="true"
-            data-toggle="tooltip"
-            data-placement="top"
-            title="
-              Project managers may configure how long to wait before
-              automatically approving a request.">
-          </i>
-        </th>
       </tr>
     </thead>
     <tbody>
@@ -61,12 +47,6 @@ Project List
           <td>{% for pi in project.pis %}{{ pi.username }}<br>{% endfor %}</td>
           <td style="text-align: justify; text-justify: inter-word;">{{ project.title }}</td>
           <td>{{ project.cluster_name }}</td>
-
-          <td>
-              <span class="badge badge-success">
-                {{project.auto_approval_time}}
-              </span>
-          </td>
         </tr>
       {% endfor %}
     </tbody>
