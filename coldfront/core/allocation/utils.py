@@ -110,6 +110,24 @@ def get_allocation_user_cluster_access_status(allocation_obj, user_obj):
         value__in=['Pending - Add', 'Processing', 'Active'])
 
 
+def get_project_compute_resource_name(project_obj):
+    """Return the name of the Compute Resource that corresponds to the
+    given Project."""
+    if project_obj.name == 'abc':
+        resource_name = 'ABC Compute'
+    elif project_obj.name.startswith('vector_'):
+        resource_name = 'Vector Compute'
+    else:
+        resource_name = 'Savio Compute'
+    return resource_name
+
+
+def get_project_compute_allocation(project_obj):
+    """Return the given Project's Allocation to a Compute Resource."""
+    resource_name = get_project_compute_resource_name(project_obj)
+    return project_obj.allocation_set.get(resources__name=resource_name)
+
+
 def next_allocation_start_datetime():
     """Return a timezone-aware datetime object representing the start of
     the next allocation year.

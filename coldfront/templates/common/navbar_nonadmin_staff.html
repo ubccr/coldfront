@@ -1,11 +1,13 @@
 {% comment %}
-  intentionally keeping "navbar-admin" (rather than renaming to navbar-staff),
-  since existing templates use javascript to target it by ID
+    intentionally keeping "navbar-admin" (rather than renaming to navbar-staff),
+    since existing templates use javascript to target it by ID
 {% endcomment %}
 <li id="navbar-admin" class="nav-item dropdown">
     <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">Staff</a>
     <ul class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-    {# all staff can perform a user search #}
+    {% comment %}
+        all staff can perform a user search
+    {% endcomment %}
         <li><a class="dropdown-item" href="{% url 'allocation-list' %}?show_all_allocations=on">All Allocations</a></li>
         <li><a class="dropdown-item" href="{% url 'project-list' %}?show_all_projects=on">All Projects</a></li>
         <li><a id="navbar-user-list" class="dropdown-item" href="{% url 'user-search-all' %}">All Users</a></li>
@@ -17,6 +19,9 @@
             <ul class="dropdown-menu">
                 <li><a id="navbar-allocation-cluster-account-requests" class="dropdown-item" href="{% url 'allocation-cluster-account-request-list' %}?show_all_requests=on">
                     Cluster Account Requests
+                </a></li>
+                <li><a id="navbar-pi-allocation-renewal-requests" class="dropdown-item" href="{% url 'pi-allocation-renewal-pending-request-list' %}">
+                    Project Renewal Requests
                 </a></li>
                 <li><a id="navbar-project-savio-project-requests" class="dropdown-item" href="{% url 'savio-project-pending-request-list' %}">
                     Savio Project Requests

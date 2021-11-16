@@ -2,6 +2,7 @@ from django.core.management.base import BaseCommand
 
 from coldfront.core.allocation.models import (AttributeType,
                                               AllocationAttributeType,
+                                              AllocationRenewalRequestStatusChoice,
                                               AllocationStatusChoice,
                                               AllocationUserStatusChoice)
 
@@ -52,3 +53,13 @@ class Command(BaseCommand):
         # Make 'Cluster Account Status' unique.
         AllocationAttributeType.objects.filter(
             name='Cluster Account Status').update(is_unique=True)
+
+        choices = [
+            'Under Review',
+            'Approved',
+            'Denied',
+            'Complete',
+        ]
+        for choice in choices:
+            AllocationRenewalRequestStatusChoice.objects.get_or_create(
+                name=choice)

@@ -1,0 +1,10 @@
+Dear {{ center_name }} user,
+
+Your request to renew PI {{ pi_name }}'s allowance has been processed. {{ num_service_units }} service units have been added to the project {{ requested_project_name }}.
+
+You may manage your project at {{ requested_project_url }}.
+
+If you have any questions, contact us at {{ support_email }}.
+
+Thank you,
+{{ signature }}

@@ -14,7 +14,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # ProjectStatusChoice.objects.all().delete()
-        for choice in ['New', 'Active', 'Archived', 'Denied', ]:
+        for choice in ['New', 'Active', 'Archived', 'Denied', 'Inactive', ]:
             ProjectStatusChoice.objects.get_or_create(name=choice)
 
         # ProjectReviewStatusChoice.objects.all().delete()
