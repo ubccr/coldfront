@@ -1827,65 +1827,97 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         allocation_attributes_to_change = self.get_allocation_attributes_to_change(
             allocation_obj)
 
-        formset = formset_factory(self.formset_class, max_num=len(
-            allocation_attributes_to_change))
-        formset = formset(
-            request.POST, initial=allocation_attributes_to_change, prefix='attributeform')
+        if allocation_attributes_to_change: 
+            formset = formset_factory(self.formset_class, max_num=len(
+                allocation_attributes_to_change))
+            formset = formset(
+                request.POST, initial=allocation_attributes_to_change, prefix='attributeform')
 
-        if form.is_valid() and formset.is_valid():
-            form_data = form.cleaned_data
+            if form.is_valid() and formset.is_valid():
+                form_data = form.cleaned_data
 
-            if form_data.get('end_date_extension') != 0: change_requested = True
+                if form_data.get('end_date_extension') != 0: change_requested = True
 
-            for entry in formset:
-                formset_data = entry.cleaned_data
+                for entry in formset:
+                    formset_data = entry.cleaned_data
 
-                new_value = formset_data.get('new_value')
+                    new_value = formset_data.get('new_value')
+                    
+                    if new_value != "":
+                        change_requested = True
+
+                        allocation_attribute = AllocationAttribute.objects.get(pk=formset_data.get('pk'))
+                        attribute_changes_to_make.add((allocation_attribute, new_value))
+
+                if change_requested == True:
                 
-                if new_value != "":
-                    change_requested = True
+                    end_date_extension = form_data.get('end_date_extension')
+                    justification = form_data.get('justification')
 
-                    allocation_attribute = AllocationAttribute.objects.get(pk=formset_data.get('pk'))
-                    attribute_changes_to_make.add((allocation_attribute, new_value))
+                    change_request_status_obj = AllocationChangeStatusChoice.objects.get(
+                        name='Pending')
 
-            if change_requested == True:
-            
-                end_date_extension = form_data.get('end_date_extension')
-                justification = form_data.get('justification')
-
-                change_request_status_obj = AllocationChangeStatusChoice.objects.get(
-                    name='Pending')
-
-                allocation_change_request_obj = AllocationChangeRequest.objects.create(
-                    allocation=allocation_obj,
-                    end_date_extension=end_date_extension,
-                    justification=justification,
-                    status=change_request_status_obj
-                    )
-
-                for attribute in attribute_changes_to_make:
-                    attribute_change_request_obj = AllocationAttributeChangeRequest.objects.create(
-                        allocation_change_request=allocation_change_request_obj,
-                        allocation_attribute=attribute[0],
-                        new_value=attribute[1]
+                    allocation_change_request_obj = AllocationChangeRequest.objects.create(
+                        allocation=allocation_obj,
+                        end_date_extension=end_date_extension,
+                        justification=justification,
+                        status=change_request_status_obj
                         )
-                messages.success(
-                    request, 'Allocation change request successfully submitted.')
-                
-                return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
+                    for attribute in attribute_changes_to_make:
+                        attribute_change_request_obj = AllocationAttributeChangeRequest.objects.create(
+                            allocation_change_request=allocation_change_request_obj,
+                            allocation_attribute=attribute[0],
+                            new_value=attribute[1]
+                            )
+                    messages.success(
+                        request, 'Allocation change request successfully submitted.')
+                    
+                    return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
+
+                else:
+                    messages.error(request, 'You must request a change.')
+                    return HttpResponseRedirect(reverse('allocation-change', kwargs={'pk': pk}))
+            
             else:
-                messages.error(request, 'You must request a change.')
+                attribute_errors = ""
+                for error in form.errors:
+                    messages.error(request, error)
+                for error in formset.errors:
+                    if error: attribute_errors += error.get('__all__')
+                messages.error(request, attribute_errors)
                 return HttpResponseRedirect(reverse('allocation-change', kwargs={'pk': pk}))
-        
         else:
-            attribute_errors = ""
-            for error in form.errors:
-                messages.error(request, error)
-            for error in formset.errors:
-                if error: attribute_errors += error.get('__all__')
-            messages.error(request, attribute_errors)
-            return HttpResponseRedirect(reverse('allocation-change', kwargs={'pk': pk}))
+            if form.is_valid():
+                form_data = form.cleaned_data
+
+                if form_data.get('end_date_extension') != 0:
+                
+                    end_date_extension = form_data.get('end_date_extension')
+                    justification = form_data.get('justification')
+
+                    change_request_status_obj = AllocationChangeStatusChoice.objects.get(
+                        name='Pending')
+
+                    allocation_change_request_obj = AllocationChangeRequest.objects.create(
+                        allocation=allocation_obj,
+                        end_date_extension=end_date_extension,
+                        justification=justification,
+                        status=change_request_status_obj
+                        )
+                    messages.success(
+                        request, 'Allocation change request successfully submitted.')
+                    
+                    return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
+
+                else:
+                    messages.error(request, 'You must request a change.')
+                    return HttpResponseRedirect(reverse('allocation-change', kwargs={'pk': pk}))
+                    
+            else:
+                for error in form.errors:
+                    messages.error(request, error)
+                return HttpResponseRedirect(reverse('allocation-change', kwargs={'pk': pk}))
 
 
 class AllocationChangeActivateView(LoginRequiredMixin, UserPassesTestMixin, View):

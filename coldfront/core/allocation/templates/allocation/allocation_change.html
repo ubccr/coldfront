@@ -18,13 +18,13 @@ Request Allocation Change
   you must provide a justification.
 </p>
 
+<form action="{% url 'allocation-change' allocation.pk %}" method="post">
   <div class="card mb-3">
     <div class="card-header">
         <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>   
     </div>
 
     <div class="card-body">
-      <form action="{% url 'allocation-change' allocation.pk %}" method="post">
         {% csrf_token %}
         <div class="table-responsive">
           <table class="table table-bordered table-sm">
@@ -130,7 +130,7 @@ Request Allocation Change
       <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation.pk %}" role="button">Back to
         Allocation</a><br>
     </div>
-  </form>
+</form>
 
 <script>
 </script>
