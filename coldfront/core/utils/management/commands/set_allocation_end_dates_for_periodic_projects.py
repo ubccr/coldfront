@@ -1,5 +1,5 @@
+from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.project.models import Project
-from coldfront.core.project.utils import get_project_compute_allocation
 from datetime import datetime
 from django.core.management.base import BaseCommand
 from django.utils import timezone
