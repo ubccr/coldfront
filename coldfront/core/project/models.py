@@ -13,7 +13,18 @@ from coldfront.core.utils.common import import_from_settings
 
 PROJECT_ENABLE_PROJECT_REVIEW = import_from_settings('PROJECT_ENABLE_PROJECT_REVIEW', False)
 
+
 class ProjectStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ('name',)
+
+
+class ProjectTypeChoice(TimeStampedModel):
     name = models.CharField(max_length=64)
 
     def __str__(self):
@@ -42,6 +53,11 @@ We do not have information about your research. Please provide a detailed descri
     )
 
     field_of_science = models.ForeignKey(FieldOfScience, on_delete=models.CASCADE, default=FieldOfScience.DEFAULT_PK)
+    type = models.ForeignKey(
+        ProjectTypeChoice,
+        on_delete=models.CASCADE,
+        help_text="This cannot be changed once your project is submitted."
+    )
     private = models.BooleanField(
         default=False,
         help_text="A private project will not show up in the PI search results if someone searchs for you/your PI."
