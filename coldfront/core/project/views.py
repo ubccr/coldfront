@@ -1,6 +1,6 @@
 import datetime
-import pprint
 import urllib
+import logging
 
 from django.conf import settings
 from django.contrib import messages
@@ -10,7 +10,7 @@ from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.forms import formset_factory
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views import View
@@ -32,6 +32,7 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectRemoveUserForm,
                                           ProjectReviewEmailForm,
                                           ProjectReviewForm, ProjectSearchForm,
+                                          ProjectPISearchForm,
                                           ProjectUserUpdateForm)
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectReviewStatusChoice,
@@ -44,6 +45,8 @@ from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email, send_email_template
+
+logger = logging.getLogger(__name__)
 
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
@@ -208,10 +211,20 @@ class ProjectListView(LoginRequiredMixin, ListView):
         return projects.distinct()
 
     def get_context_data(self, **kwargs):
-
         context = super().get_context_data(**kwargs)
         projects_count = self.get_queryset().count()
         context['projects_count'] = projects_count
+
+        max_projects = self.request.user.userprofile.max_projects
+        project_count = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
+            Q(pi__username=self.request.user.username) &
+            Q(projectuser__status__name='Active') &
+            Q(status__name__in=['New', 'Active', ])
+        ).distinct().count()
+        context['project_requests_remaining'] = max(0, max_projects - project_count)
+
+        project_pi_search_form = ProjectPISearchForm()
+        context['project_pi_search_form'] = project_pi_search_form
 
         project_search_form = ProjectSearchForm(self.request.GET)
         if project_search_form.is_valid():
@@ -257,6 +270,25 @@ class ProjectListView(LoginRequiredMixin, ListView):
             project_list = paginator.page(paginator.num_pages)
 
         return context
+
+
+class ProjectPISearchView(LoginRequiredMixin, ListView):
+    model = Project
+    template_name = 'project/project_pi_list.html'
+
+    def post(self, request, *args, **kwargs):
+        pi_username = request.POST.get('pi_username')
+        context = {}
+        context["pi_username"] = pi_username
+        projects = Project.objects.prefetch_related('pi', 'status',).filter(
+            Q(pi__username=pi_username) &
+            Q(projectuser__status__name='Active') &
+            Q(status__name__in=['New', 'Active', ]) &
+            Q(private=False)
+        ).distinct()
+        context["pi_projects"] = projects
+        context['EMAIL_ENABLED'] = EMAIL_ENABLED
+        return render(request, self.template_name, context)
 
 
 class ProjectArchivedListView(LoginRequiredMixin, ListView):
@@ -417,14 +449,21 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
 class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Project
     template_name_suffix = '_create_form'
-    fields = ['title', 'description', 'field_of_science', ]
+    fields = ['title', 'description', 'field_of_science', 'private', ]
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
+        max_projects = self.request.user.userprofile.max_projects
+        project_count = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
+            Q(pi__username=self.request.user.username) &
+            Q(projectuser__status__name='Active') &
+            Q(status__name__in=['New', 'Active', ])
+        ).distinct().count()
+
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.userprofile.is_pi:
+        if self.request.user.userprofile.is_pi and max_projects - project_count > 0:
             return True
 
     def form_valid(self, form):
@@ -458,7 +497,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Project
     template_name_suffix = '_update_form'
-    fields = ['title', 'description', 'field_of_science', ]
+    fields = ['title', 'description', 'field_of_science', 'private', ]
     success_message = 'Project updated.'
 
     def test_func(self):
@@ -1149,3 +1188,52 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
     def get_success_url(self):
         return reverse('project-review-list')
+
+
+class ProjectRequestAccessEmailView(LoginRequiredMixin, UserPassesTestMixin, View):
+
+    def test_func(self):
+        return True
+
+    def post(self, request):
+        project_obj = get_object_or_404(Project, pk=request.POST.get('project_pk'))
+        if project_obj.private is True:
+            logger.warning(
+                "User {} attempted to request access to a private project (pk={})".format(
+                    request.user.username,
+                    project_obj.pk
+                )
+            )
+            return HttpResponseForbidden(reverse('project-list'))
+
+        domain_url = get_domain_url(self.request)
+        project_url = '{}{}'.format(domain_url, reverse('project-detail', kwargs={'pk': project_obj.pk}))
+        project_edit_url = '{}{}'.format(domain_url, reverse('project-update', kwargs={'pk': project_obj.pk}))
+
+        if EMAIL_ENABLED:
+            send_email_template(
+                'Add User to Project Request',
+                'email/project_add_user_request.txt',
+                {
+                    'user': request.user,
+                    'project_title': project_obj.title,
+                    'project_edit_url': project_edit_url,
+                    'project_url': project_url,
+                    'help_email': 'radl@iu.edu'
+                },
+                EMAIL_SENDER,
+                [project_obj.pi.email]
+            )
+            logger.info(
+                'User {} sent an email to {} requesting access to their project'.format(
+                    request.user.username,
+                    project_obj.pi.email
+                )
+            )
+        else:
+            logger.warning(
+                'Email has not been enabled'
+            )
+            return HttpResponseForbidden(reverse('project-list'))
+
+        return HttpResponseRedirect(reverse('project-list'))

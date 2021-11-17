@@ -1,0 +1,53 @@
+{% load crispy_forms_tags %}
+
+<div>
+  {% if not pi_projects and pi_username != '' %}
+    <p class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i>{{ pi_username }} is not a PI in any projects.</p>
+  {% elif pi_projects %}
+  <ul class="list-group list-group-flush">
+    {% for project in pi_projects %}
+      <li class="list-group-item">
+        <p><strong>Title:</strong> {{ project.title }}</p>
+        <p><strong>Description:</strong> {{ project.description }}</p>
+        <p>
+          <strong>Principal Investigator:</strong> {{ project.pi.first_name }} {{ project.pi.last_name }} ({{ project.pi.username }})
+        </p>
+        {% if EMAIL_ENABLED %}
+          <button id="{{project.pk}}" class="btn btn-primary" name="request_access">
+            <i class="far fa-envelope" aria-hidden="true"></i> Request Access
+          </button>
+          <p id="warning_{{project.pk}}" class="invalid invalid-feedback" style="display: none;">Failed to send email.</p>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>
+
+<script>
+  $('[name="request_access"]').on('click', function(event) {
+    var pk = event.target.id;
+    $('#' + pk).text('Sending...');
+    $('#' + pk).prop('disabled', true);
+    $('#' + pk).blur()
+    $.ajax({
+      url: '{% url "project-send-access-request" %}',
+      type: 'POST',
+      data: {
+        project_pk: pk,
+        csrfmiddlewaretoken: "{{ csrf_token }}"
+      },
+      success : function () {
+        $('#' + pk).text('Sent!');
+        $('#warning_' + event.target.id).hide();
+      },
+      error : function() {
+        $('#' + pk).text(
+          'Resend'
+        );
+        $('#warning_' + event.target.id).show();
+        $('#' + pk).prop('disabled', false);
+      }
+    })
+  })
+</script>

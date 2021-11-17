@@ -20,5 +20,8 @@ urlpatterns = [
     path('project-review-complete/<int:project_review_pk>/', project_views.ProjectReviewCompleteView.as_view(),
          name='project-review-complete'),
     path('project-review/<int:pk>/email', project_views.ProjectReivewEmailView.as_view(), name='project-review-email'),
+    path('project-pi-list/', project_views.ProjectPISearchView.as_view(), name='project-pi-list'),
+    path('project-send-access-request/', project_views.ProjectRequestAccessEmailView.as_view(),
+         name='project-send-access-request')
 
 ]

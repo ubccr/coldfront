@@ -14,6 +14,11 @@ EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
     'EMAIL_DIRECTOR_EMAIL_ADDRESS', '')
 
 
+class ProjectPISearchForm(forms.Form):
+    PI_USERNAME = 'PI Username'
+    pi_username = forms.CharField(label=PI_USERNAME, max_length=100, required=False)
+
+
 class ProjectSearchForm(forms.Form):
     """ Search form for the Project list page.
     """

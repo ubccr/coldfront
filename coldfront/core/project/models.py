@@ -42,6 +42,10 @@ We do not have information about your research. Please provide a detailed descri
     )
 
     field_of_science = models.ForeignKey(FieldOfScience, on_delete=models.CASCADE, default=FieldOfScience.DEFAULT_PK)
+    private = models.BooleanField(
+        default=False,
+        help_text="A private project will not show up in the PI search results if someone searchs for you/your PI."
+    )
     status = models.ForeignKey(ProjectStatusChoice, on_delete=models.CASCADE)
     force_review = models.BooleanField(default=False)
     requires_review = models.BooleanField(default=True)
