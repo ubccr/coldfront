@@ -325,6 +325,13 @@ class AllocationChangeRequest(TimeStampedModel):
     notes = models.CharField(max_length=512, blank=True, null=True)
     history = HistoricalRecords()
 
+    @property
+    def get_parent_resource(self):
+        if self.allocation.resources.count() == 1:
+            return self.allocation.resources.first()
+        else:
+            return self.allocation.resources.filter(is_allocatable=True).first()
+
     def __str__(self):
         return "%s (%s)" % (self.get_parent_resource.name, self.allocation.project.pi)
 
