@@ -135,6 +135,17 @@ Allocation Detail
               <td><i class="fas fa-lock-open" aria-hidden="true"></i></td>
             {% endif %}
           </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Is Changeable</th>
+            <td>
+            {% if request.user.is_superuser %}
+              {{ form.is_changeable }}
+            {% else %}
+              <input type="checkbox" {% if allocation.is_changeable %} checked {% endif %} disabled>
+            {% endif %}
+            </td>
+          </tr>
+          
         </table>
       </div>
       {% if request.user.is_superuser %}

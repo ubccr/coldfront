@@ -204,7 +204,8 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             'status': allocation_obj.status,
             'end_date': allocation_obj.end_date,
             'start_date': allocation_obj.start_date,
-            'description': allocation_obj.description
+            'description': allocation_obj.description,
+            'is_changeable': allocation_obj.is_changeable,
         }
 
         form = AllocationUpdateForm(initial=initial_data)
@@ -227,7 +228,8 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             'status': allocation_obj.status,
             'end_date': allocation_obj.end_date,
             'start_date': allocation_obj.start_date,
-            'description': allocation_obj.description
+            'description': allocation_obj.description,
+            'is_changeable': allocation_obj.is_changeable,
         }
         form = AllocationUpdateForm(request.POST, initial=initial_data)
 
@@ -236,6 +238,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             end_date = form_data.get('end_date')
             start_date = form_data.get('start_date')
             description = form_data.get('description')
+            is_changeable = form_data.get('is_changeable')
 
             allocation_obj.description = description
             allocation_obj.save()
@@ -252,6 +255,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             new_status = form_data.get('status').name
 
             allocation_obj.status = form_data.get('status')
+            allocation_obj.is_changeable = is_changeable
             allocation_obj.save()
 
             if EMAIL_ENABLED:

@@ -67,6 +67,7 @@ class AllocationUpdateForm(forms.Form):
     description = forms.CharField(max_length=512,
                                   label='Description',
                                   required=False)
+    is_changeable = forms.BooleanField(required=False)
 
     def clean(self):
         cleaned_data = super().clean()
