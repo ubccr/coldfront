@@ -18,7 +18,7 @@ IFX_APP = {
 
 class FACILITY():
     NAME = 'Research Computing Storage'
-    OBJECT_CODE = '6803'
+    OBJECT_CODE = '8250'
 
 class GROUPS():
     ADMIN_GROUP_NAME = 'rc_admin'
