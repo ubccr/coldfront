@@ -114,7 +114,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             allocations = Allocation.objects.prefetch_related(
                 'resources').filter(project=self.object).order_by('-end_date')
         else:
-            if self.object.status.name in ['Active', 'New', ]:
+            if self.object.status.name in ['Active', 'New', 'Waiting For Admin Approval', ]:
                 allocations = Allocation.objects.filter(
                     Q(project=self.object) &
                     Q(project__projectuser__user=self.request.user) &
@@ -174,11 +174,32 @@ class ProjectListView(LoginRequiredMixin, ListView):
         if project_search_form.is_valid():
             data = project_search_form.cleaned_data
             if data.get('show_all_projects') and (self.request.user.is_superuser or self.request.user.has_perm('project.can_view_all_projects')):
-                projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
-                    status__name__in=['New', 'Active', ]).order_by(order_by)
+                projects = Project.objects.prefetch_related(
+                    'pi',
+                    'field_of_science',
+                    'status',
+                ).filter(
+                    status__name__in=[
+                        'New',
+                        'Active',
+                        'Waiting For Admin Approval',
+                        'Denied',
+                    ]
+                ).order_by(order_by)
             else:
-                projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
-                    Q(status__name__in=['New', 'Active', ]) &
+                projects = Project.objects.prefetch_related(
+                    'pi',
+                    'field_of_science',
+                    'status',
+                ).filter(
+                    Q(
+                        status__name__in=[
+                            'New',
+                            'Active',
+                            'Waiting For Admin Approval',
+                            'Denied',
+                        ]
+                    ) &
                     Q(projectuser__user=self.request.user) &
                     Q(projectuser__status__name='Active')
                 ).order_by(order_by)
@@ -203,7 +224,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
 
         else:
             projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
-                Q(status__name__in=['New', 'Active', ]) &
+                Q(status__name__in=['New', 'Active', 'Waiting For Admin Approval', 'Denied', ]) &
                 Q(projectuser__user=self.request.user) &
                 Q(projectuser__status__name='Active')
             ).order_by(order_by)
@@ -469,7 +490,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     def form_valid(self, form):
         project_obj = form.save(commit=False)
         form.instance.pi = self.request.user
-        form.instance.status = ProjectStatusChoice.objects.get(name='New')
+        form.instance.status = ProjectStatusChoice.objects.get(name='Waiting For Admin Approval')
         project_obj.save()
         self.object = project_obj
 
@@ -515,8 +536,8 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name not in ['Active', 'New', ]:
-            messages.error(request, 'You cannot update an archived project.')
+        if project_obj.status.name in ['Archived', 'Denied', ]:
+            messages.error(request, 'You cannot update a(n) {} project.'.format(project_obj.status.name))
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
@@ -543,9 +564,9 @@ class ProjectAddUsersSearchView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name not in ['Active', 'New', ]:
+        if project_obj.status.name in ['Archived', 'Denied', ]:
             messages.error(
-                request, 'You cannot add users to an archived project.')
+                request, 'You cannot add users to a(n) {} project.'.format(project_obj.status.name))
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
@@ -580,9 +601,9 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name not in ['Active', 'New', ]:
+        if project_obj.status.name in ['Archived', 'Denied', ]:
             messages.error(
-                request, 'You cannot add users to an archived project.')
+                request, 'You cannot add users to a(n) {} project.'.format(project_obj.status.name))
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
@@ -662,9 +683,9 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name not in ['Active', 'New', ]:
+        if project_obj.status.name in ['Archived', 'Denied', ]:
             messages.error(
-                request, 'You cannot add users to an archived project.')
+                request, 'You cannot add users to a(n) {} project.'.format(project_obj.status.name))
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
@@ -803,9 +824,9 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name not in ['Active', 'New', ]:
+        if project_obj.status.name in ['Archived', 'Denied', ]:
             messages.error(
-                request, 'You cannot remove users from an archived project.')
+                request, 'You cannot remove users from a(n) {} project.'.format(project_obj.status.name))
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
@@ -933,9 +954,9 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         project_user_pk = self.kwargs.get('project_user_pk')
 
-        if project_obj.status.name not in ['Active', 'New', ]:
+        if project_obj.status.name in ['Archived', 'Denied', ]:
             messages.error(
-                request, 'You cannot update a user in an archived project.')
+                request, 'You cannot update a user in a(n) {} project.'.format(project_obj.status.name))
             return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_user_pk}))
 
         if project_obj.projectuser_set.filter(id=project_user_pk).exists():
@@ -1073,15 +1094,9 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
 
-class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
-
-    model = ProjectReview
+class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'project/project_review_list.html'
-    prefetch_related = ['project', ]
-    context_object_name = 'project_review_list'
-
-    def get_queryset(self):
-        return ProjectReview.objects.filter(status__name='Pending')
+    login_url = '/'
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -1094,6 +1109,75 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
         messages.error(
             self.request, 'You do not have permission to review pending project reviews.')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['project_review_list'] = ProjectReview.objects.filter(status__name='Pending')
+        context['project_request_list'] = Project.objects.filter(
+            status__name="Waiting For Admin Approval"
+        )
+        return context
+
+
+class ProjectActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
+    login_url = '/'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('project.can_review_pending_project_reviews'):
+            return True
+
+        messages.error(
+            self.request, 'You do not have permission to activate project requests.')
+
+    def get(self, request, pk):
+        project_obj = get_object_or_404(Project, pk=pk)
+        project_status_obj = ProjectStatusChoice.objects.get(name="Active")
+        project_obj.status = project_status_obj
+        project_obj.save()
+
+        return HttpResponseRedirect(reverse('project-review-list'))
+
+
+class ProjectDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
+    login_url = '/'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('project.can_review_pending_project_reviews'):
+            return True
+
+        messages.error(
+            self.request, 'You do not have permission to deny project requests.')
+
+    def get(self, request, pk):
+        project_obj = get_object_or_404(Project, pk=pk)
+        project_status_obj = ProjectStatusChoice.objects.get(name="Denied")
+        project_obj.status = project_status_obj
+
+        free_allocation_obj_list = project_obj.allocation_set.filter(status__name__in=['Active', 'New', 'Renewal Requested'])
+        allocation_status_obj = AllocationStatusChoice.objects.get(name="Denied")
+        for allocation in free_allocation_obj_list:
+            allocation.status = allocation_status_obj
+            allocation.save()
+
+        paid_allocation_obj_list = project_obj.allocation_set.filter(status__name__in=['Payment Requested', 'Payment Pending', 'Paid'])
+        allocation_status_obj = AllocationStatusChoice.objects.get(name="Payment Declined")
+        for allocation in paid_allocation_obj_list:
+            allocation.status = allocation_status_obj
+            allocation.save()
+
+        project_obj.save()
+
+        return HttpResponseRedirect(reverse('project-review-list'))
 
 
 class ProjectReviewCompleteView(LoginRequiredMixin, UserPassesTestMixin, View):

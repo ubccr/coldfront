@@ -1,4 +1,5 @@
 {% extends "common/base.html" %}
+{% load common_tags %}
 {% load crispy_forms_tags %}
 {% load humanize %}
 {% load static %}
@@ -19,9 +20,9 @@ Project Detail
 <div id="alert_div">
 </div>
 
-{% if project.status.name == 'Archived' %}
+{% if project.status.name in 'Archived, Denied' %}
   <div class="alert alert-warning" role="alert">
-    This is an archived project!  You cannot make any changes.
+    This is a(n) {{project.status.name}} project! You cannot make any changes.
   </div>
 {% endif %}
 
@@ -30,7 +31,7 @@ Project Detail
   <hr>
 </div>
 
-{% if project.status.name != 'Archived' and is_allowed_to_update_project %}
+{% if project.status.name in 'Archived, Denied' and is_allowed_to_update_project %}
   <div class="card mb-3 bg-light">
     <div class="card-header">
       <h3 class="d-inline" id="manage-project"><i class="fas fa-cubes" aria-hidden="true"></i> Manage Project</h3>
@@ -42,7 +43,7 @@ Project Detail
       </div>
     </div>
     <div class="card-body">
-      {% if project.status.name != 'Archived' %}
+      {% if not project.status.name in 'Archived, Denied' %}
         <a class="btn btn-success" href="{% url 'project-add-users-search' project.pk %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
         {% if project.type.name != 'Class' %}
           <a class="btn btn-success" href="{% url 'grant-create' project.id %}" role="button"><i class="fas fa-trophy" aria-hidden="true"></i> Add Grant</a>
@@ -113,7 +114,7 @@ Project Detail
   <div class="card-header">
     <h3 class="d-inline" id="users"><i class="fas fa-users" aria-hidden="true"></i> Users</h3> <span class="badge badge-secondary">{{project_users.count}}</span>
     <div class="float-right">
-      {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
+      {% if not project.status.name in 'Archived, Denied' and is_allowed_to_update_project %}
         <a class="btn btn-primary" href="{{mailto}}" role="button"><i class="far fa-envelope" aria-hidden="true"></i> Email Project Users</a>
         <a class="btn btn-success" href="{% url 'project-add-users-search' project.id %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
         <a class="btn btn-danger" href="{% url 'project-remove-users' project.id %}" role="button"><i class="fas fa-user-times" aria-hidden="true"></i> Remove Users</a>
@@ -190,7 +191,7 @@ Project Detail
   <div class="card-header">
     <h3 class="d-inline"><i class="fas fa-server" aria-hidden="true"></i> Allocations</h3> <span class="badge badge-secondary">{{allocations.count}}</span>
     <div class="float-right">
-      {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
+      {% if not project.status.name in 'Archived, Denied' and is_allowed_to_update_project %}
         <a class="btn btn-success" href="{% url 'allocation-create' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Request Resource Allocation</a>
       {% endif %}
     </div>
@@ -257,7 +258,7 @@ Project Detail
         {% if project.latest_grant.modified %}
           <span class="badge badge-info">Last Updated: {{project.latest_grant.modified|date:"M. d, Y"}}</span>
         {% endif %}
-        {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
+        {% if not project.status.name in 'Archived, Denied' and is_allowed_to_update_project %}
           <a class="btn btn-success" href="{% url 'grant-create' project.id %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add Grant</a>
           {% if grants %}
             <a class="btn btn-danger" href="{% url 'grant-delete-grants' project.pk %}" role="button"><i class="fas fa-minus" aria-hidden="true"></i> Delete Grants</a>
@@ -311,7 +312,7 @@ Project Detail
         {% if project.latest_publication.created %}
           <span class="badge badge-info">Last Updated: {{project.latest_publication.created|date:"M. d, Y"}}</span>
         {% endif %}
-        {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
+        {% if not project.status.name in 'Archived, Denied' and is_allowed_to_update_project %}
           <a class="btn btn-success" href="{% url 'publication-search' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add Publication</a>
           {% if publications %}
           <a class="btn btn-success" href="{% url 'publication-export-publications' project.pk %}" role="button"><i class="fas fa-file-export" aria-hidden="true"></i> Export Publications</a>
@@ -360,7 +361,7 @@ Project Detail
     <div class="card-header">
       <h3 class="d-inline" id="research_outputs"><i class="far fa-newspaper" aria-hidden="true"></i> Research Outputs</h3> <span class="badge badge-secondary">{{ research_outputs.count}}</span>
       <div class="float-right">
-        {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
+        {% if not project.status.name in 'Archived, Denied' and is_allowed_to_update_project %}
           <a class="btn btn-success" href="{% url 'add-research-output' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add Research Output</a>
           {% if research_outputs %}
             <a class="btn btn-danger" href="{% url 'research-output-delete-research-outputs' project.pk %}" role="button"><i class="fas fa-minus" aria-hidden="true"></i> Delete Research Outputs</a>

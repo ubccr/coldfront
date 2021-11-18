@@ -15,7 +15,7 @@
       <a class="dropdown-item" href="{% url 'allocation-list' %}?show_all_allocations=on">All Allocations</a>
     {% endif %}
     {% if perms.project.can_review_pending_project_reviews %}
-      <a id="navbar-project-reviews" class="dropdown-item" href="{% url 'project-review-list' %}">Project Reviews</a>
+      <a id="navbar-project-reviews" class="dropdown-item" href="{% url 'project-review-list' %}">Project Reviews/Requests</a>
     {% endif %}
     {% if perms.allocation.can_review_allocation_requests %}
       <a id="navbar-allocation-requests" class="dropdown-item" href="{% url 'allocation-request-list' %}">

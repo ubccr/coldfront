@@ -14,7 +14,7 @@ from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.forms import formset_factory
 from django.http import HttpResponseRedirect, JsonResponse
-from django.http.response import HttpResponse, StreamingHttpResponse
+from django.http.response import StreamingHttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse, reverse_lazy
 from django.utils.html import format_html, mark_safe
@@ -222,9 +222,14 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         if form.is_valid():
             form_data = form.cleaned_data
+            status = form.cleaned_data.get('status')
             end_date = form_data.get('end_date')
             start_date = form_data.get('start_date')
             description = form_data.get('description')
+
+            if initial_data.get('status') != status and allocation_obj.project.status.name != "Active":
+                messages.error(request, 'Project must be approved first before you can update this allocation\'s status!')
+                return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
             allocation_obj.description = description
             allocation_obj.save()
@@ -503,9 +508,9 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 request, 'You cannot request a new allocation because you have to review your project first.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
-        if project_obj.status.name not in ['Active', 'New', ]:
+        if project_obj.status.name in ['Archived', 'Denied', ]:
             messages.error(
-                request, 'You cannot request a new allocation to an archived project.')
+                request, 'You cannot request a new allocation to an {} project.'.format(project_obj.status.name))
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
         return super().dispatch(request, *args, **kwargs)
@@ -2174,7 +2179,13 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
 
         if form.is_valid():
             form_data = form.cleaned_data
-            allocation_obj.status = form_data.get('status')
+            status = form_data.get('status')
+
+            if initial_data.get('status') != status and allocation_obj.project.status.name != "Active":
+                messages.error(request, 'Project must be approved first before you can update this allocation\'s status!')
+                return HttpResponseRedirect(reverse('allocation-invoice-detail', kwargs={'pk': pk}))
+
+            allocation_obj.status = status
             allocation_obj.save()
             messages.success(request, 'Allocation updated!')
         else:

@@ -8,7 +8,8 @@ from coldfront.core.project.models import (Project, ProjectAdminComment,
                                            ProjectUser, ProjectUserMessage,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice,
-                                           ProjectTypeChoice)
+                                           ProjectTypeChoice,
+                                           ProjectReviewStatusChoice)
 
 
 @admin.register(ProjectStatusChoice)
@@ -143,4 +144,9 @@ class ProjectReviewAdmin(SimpleHistoryAdmin):
 
 @admin.register(ProjectTypeChoice)
 class ProjectTypeChoiceAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+
+
+@admin.register(ProjectReviewStatusChoice)
+class ProjectReviewStatusChoiceAdmin(admin.ModelAdmin):
     list_display = ('name',)

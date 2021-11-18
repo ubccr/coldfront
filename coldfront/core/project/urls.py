@@ -22,6 +22,9 @@ urlpatterns = [
     path('project-review/<int:pk>/email', project_views.ProjectReivewEmailView.as_view(), name='project-review-email'),
     path('project-pi-list/', project_views.ProjectPISearchView.as_view(), name='project-pi-list'),
     path('project-send-access-request/', project_views.ProjectRequestAccessEmailView.as_view(),
-         name='project-send-access-request')
-
+         name='project-send-access-request'),
+    path('<int:pk>/project-activate-request/', project_views.ProjectActivateRequestView.as_view(),
+         name="project-activate-request"),
+    path('<int:pk>/project-deny-request/', project_views.ProjectDenyRequestView.as_view(),
+         name="project-deny-request")
 ]
