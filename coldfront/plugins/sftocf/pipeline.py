@@ -8,14 +8,17 @@ import requests
 from pathlib import Path
 from datetime import datetime
 
-# from tqdm import tqdm
-# from pynput import keyboard
-
+from django.utils import timezone
 from django_q.tasks import async_task
+from ifxuser.models import IfxUser, Organization
 from django.contrib.auth import get_user_model
-from coldfront.core.project.models import Project, ProjectUser
+from dateutil.relativedelta import relativedelta
+from ifxbilling.models import Account, BillingRecord, ProductUsage
+
+from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import import_from_settings
-from coldfront.core.allocation.models import Allocation, AllocationUser
+from coldfront.core.project.models import Project, ProjectUser
+from coldfront.core.allocation.models import Allocation, AllocationUser, AllocationUserStatusChoice
 
 logger = logging.getLogger(__name__)
 logger.propagate = False
@@ -40,7 +43,7 @@ svp = {
 
 
 class StarFishServer:
-    """
+    """Class for interacting with StarFish API.
     """
 
     def __init__(self, server):
@@ -61,9 +64,8 @@ class StarFishServer:
         response = requests.post(auth_url, json=todo)
         # response.status_code
         response_json = response.json()
-        logger.debug(response_json)
         token = response_json["token"]
-        logger.debug(token)
+        logger.debug(f"response_json: {responsejson}\ntoken: {token}")
         return token
 
     def generate_headers(self):
@@ -180,11 +182,7 @@ class StarFishQuery:
     # 4. return query results
     def return_results_once_prepared(self, sec=3):
         logger.debug("return_results_once_prepared")
-        # add a means of triggering query deletion
         while True:
-            # delete_query = False
-            # with keyboard.Listener(on_press=self.on_press) as listener:
-            # while delete_query == False:
             query_check_url = self.api_url + "async/query/" + self.query_id
             response = return_get_json(query_check_url, self.headers)
             if response["is_done"] == True:
@@ -192,14 +190,7 @@ class StarFishQuery:
                 return result
             else:
                 time.sleep(sec)
-                # listener.join()
 
-    # def on_press(self, key):
-    #     print (key)
-    #     if key == keyboard.Key.end:
-    #         print ('end pressed')
-    #         delete_query = True
-    #         return False
 
     def return_query_result(self):
         logger.debug("return_query_result")
@@ -236,63 +227,78 @@ class ColdFrontDB:
         else:
             lr = labs_resources
         vol_set = {v[0] for v in lr.values()}
-        # if volume:
-        #     vol_set = {}
         logger.debug(f"vol_set: {vol_set}")
         serv_vols = generate_serv_vol_dict(vol_set)
-        logger.debug(f"vol_set: {vol_set}")
         for s, v in serv_vols.items():
             server = StarFishServer(s)
             for vol, path in v.items():
-                logger.debug(f"volume: {vol}")
                 vol_labs_resources = {l:r for l, r in lr.items() if r[0] == vol}
                 logger.debug(f"vol_labs_resources: {vol_labs_resources}")
                 filepaths = collect_starfish_usage(server, vol, path, vol_labs_resources)
         return filepaths
 
-    def push_cf(self, filepaths):
+    def push_cf(self, filepaths, clean):
         for f in filepaths:
             content = read_json(f)
             statdicts = content['contents']
+            errors = False
             for statdict in statdicts:
                 try:
-                    self.update_usage(statdict)
-                    os.remove(f)
+                    server_tier = content['server'] + "/" + content['tier']
+                    self.update_usage(statdict, server_tier)
                 except Exception as e:
                     logger.debug("EXCEPTION FOR ENTRY: {}".format(e),  exc_info=True)
+                    errors = True
+            if not errors and clean == True:
+                    os.remove(f)
 
     def generate_project_resource_dict(self):
         """
         Return dict with keys as project names and values as a list where [0] is the volume and [1] is the tier.
         """
         pr_entries = Allocation.objects.only("id", "project_id")
-        # for a in pr_entries:
-        #     print("a.get_resources_as_string", a.get_resources_as_string)
         pr_dict = {
             return_pname(o.project_id):o.get_resources_as_string for o in pr_entries}
         pr_dict = {p:r.split("/") for p, r in pr_dict.items()}
         logger.debug(f"project_resource_dict:\n{pr_dict}")
         return pr_dict
 
-    def update_usage(self, userdict):
+    def update_usage(self, userdict, server_tier):
         # get ids needed to locate correct allocationuser entry
         # user = LabUser(userdict["username"], userdict["groupname"])
-        user = get_user_model().objects.get(username=userdict["username"])
+        try:
+            user = get_user_model().objects.get(username=userdict["username"])
+        except IfxUser.DoesNotExist:
+            filepath = './coldfront/plugins/sftocf/data/missing_ifxusers.csv'
+            datestr = datetime.today().strftime("%Y%m%d")
+            pattern = "{},{}".format(userdict["username"], datestr)
+            write_update_file_line(filepath, pattern)
+            raise
         project = Project.objects.get(title=userdict["groupname"])
-        allocation = Allocation.objects.filter(project_id=project.id)
-        a_id = [int(a.id) for a in allocation]
-        logger.debug(f"EXCEPT a_id:{a_id}")
+        try:
+            allocation = Allocation.objects.get(project_id=project.id)
+        except Allocation.MultipleObjectsReturned:
+            logger.debug(f"Too many allocations for project id {project.id}")
+            allocation = Allocation.objects.get(
+                project_id=project.id, justification__icontains=f"Allocation Information")
+            logger.debug(f"EXCEPT a_id:{allocation.id}")
         try:
             allocationuser = AllocationUser.objects.get(
-                allocation_id__in=a_id, user_id=user.id
+                allocation_id=allocation.id, user_id=user.id
             )
         except AllocationUser.DoesNotExist:
             filepath = './coldfront/plugins/sftocf/data/missing_allocationusers.csv'
-            aid = "|".join([str(id) for id in a_id])
-            datestr = datetime.today().strftime("%Y%m%d")
-            pattern = f"{aid},{user.id},{user.username},{project.id},{project.title},{datestr}"
-            write_update_file_line(filepath, pattern)
-            raise AllocationUser.DoesNotExist
+            logger.info("creating allocation user:")
+            allocationuser_obj, _ = AllocationUser.objects.create(
+                allocation=allocation,
+                created=timezone.now(),
+                status=AllocationUserStatusChoice.objects.get(name='Active'),
+                user=user
+            )
+            allocationuser = AllocationUser.objects.get(
+                allocation_id=allocation.id, user_id=user.id
+            )
+
         allocationuser.usage_bytes = userdict["size_sum"]
         usage, unit = split_num_string(userdict["size_sum_hum"])
         allocationuser.usage = usage
@@ -305,8 +311,7 @@ def write_update_file_line(filepath, pattern):
     with open(filepath, 'r+') as f:
         if not any(pattern == line.rstrip('\r\n') for line in f):
             f.write(pattern + '\n')
-            print("writing line...")
-            f.write(newline)
+            # f.write(newline)
 
 def return_pname(pid):
     project = Project.objects.get(id=pid)
@@ -317,23 +322,11 @@ def split_num_string(x):
     s = x.replace(n, "")
     return n, s
 
-
-def generate_volpath_strings(volpathdict):
-    logger.debug("generate_volpath_strings")
-    string_list = []
-    for v, p in volpathdict.items():
-        p = [f"{v}:{n}" for n in p if ".txt" not in n]
-        string_list.extend(p)
-    vpstring = "/".join(string_list)
-    logger.debug(vpstring)
-    return vpstring
-
-
 def return_get_json(url, headers):
     response = requests.get(url, headers=headers)
     return response.json()
 
-def save_as_json(file, contents):
+def save_json(file, contents):
     with open(file, "w") as fp:
         json.dump(contents, fp, sort_keys=True, indent=4)
 
@@ -360,7 +353,6 @@ def collect_starfish_usage(server, volume, volumepath, projects):
     """
     filepaths = []
     datestr = datetime.today().strftime("%Y%m%d")
-    logger.debug("server.name: {}".format(server.name))
     projects_reduced = {p:r for p,r in projects.items() if r[0] == volume}
     logger.debug(f"projects: {projects}\nprojects_reduced: {projects_reduced}")
     for p, r in projects_reduced.items():
@@ -388,18 +380,33 @@ def collect_starfish_usage(server, volume, volumepath, projects):
                     "server": server.name,
                     "volume": volume,
                     "path": lab_volpath,
+                    "tier": r[1],
                     "date": datestr,
                     "contents": data,
                 }
                 confirm_dirpath_exists(homepath)
-                save_as_json(filepath, record)
+                save_json(filepath, record)
                 filepaths.append(filepath)
     return filepaths
 
-# def collect_costperuser():
+def collect_costperuser(ifx_uid, lab_name):
+    # to get to BillingRecord from ifx_uid:
+    # ifx_uid => ProductUsage.product_user_id
+    prod_uses = ProductUsage.objects.filter(product_user_id=ifx_uid)
+    pu_ids = [pu.id for pu in prod_uses]
+    # ProductUsage.id => BillingRecord.product_usage_id
+
+    # to get to BillingRecord from lab_name:
+    # lab_name => nanites_organization.code
+    nanites_lab = Organization.objects.get(code=lab_name)
+    # nanites_organization.id => Account.organization_id
+    account = Account.objects.get(organization_id=nanites_lab.id)
+    # Account.id => BillingRecord.account_id
+    bill = BillingRecord.objects.get(author_id=ifx_uid, account_id=lab.id)
 #     # get from billing record
-#     author_id = ifx_user_id
-#     account_id => account[lab_name]
+#     author_id = ifx_uid
+#     account_id => lab_name
+#
 #     product_usage_id links to product_usage table, containing
 #
 #
