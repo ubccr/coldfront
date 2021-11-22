@@ -1219,6 +1219,37 @@ class ProjectActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
         project_obj.status = project_status_obj
         project_obj.save()
 
+        messages.success(request, 'Project request for {} has been APPROVED'.format(
+            project_obj.title))
+
+        if EMAIL_ENABLED:
+            domain_url = get_domain_url(self.request)
+            project_url = '{}{}'.format(domain_url, reverse(
+                'project-detail', kwargs={'pk': project_obj.pk}
+            ))
+
+            template_context = {
+                'project_title': project_obj.title,
+                'project_url': project_url,
+                'signature': EMAIL_SIGNATURE,
+                'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
+                'center_name': EMAIL_CENTER_NAME,
+                'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
+            }
+
+            email_receiver_list = []
+            for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Error']):
+                if project_obj.projectuser_set.get(user=project_user.user).enable_notifications:
+                    email_receiver_list.append(project_user.user.email)
+
+            send_email_template(
+                'Your Project Request Was Approved',
+                'email/project_request_approved.txt',
+                template_context,
+                EMAIL_SENDER,
+                email_receiver_list
+            )
+
         return HttpResponseRedirect(reverse('project-review-list'))
 
 
@@ -1255,6 +1286,36 @@ class ProjectDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
             allocation.save()
 
         project_obj.save()
+
+        messages.success(request, 'Project request for {} has been DENIED'.format(
+            project_obj.title))
+
+        if EMAIL_ENABLED:
+            domain_url = get_domain_url(self.request)
+            project_url = '{}{}'.format(domain_url, reverse(
+                'project-detail', kwargs={'pk': project_obj.pk}
+            ))
+
+            template_context = {
+                'project_title': project_obj.title,
+                'project_url': project_url,
+                'signature': EMAIL_SIGNATURE,
+                'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
+                'center_name': EMAIL_CENTER_NAME
+            }
+
+            email_receiver_list = []
+            for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Error']):
+                if project_obj.projectuser_set.get(user=project_user.user).enable_notifications:
+                    email_receiver_list.append(project_user.user.email)
+
+            send_email_template(
+                'Your Project Request Was Denied',
+                'email/project_request_denied.txt',
+                template_context,
+                EMAIL_SENDER,
+                email_receiver_list
+            )
 
         return HttpResponseRedirect(reverse('project-review-list'))
 
