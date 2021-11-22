@@ -31,12 +31,12 @@ Project Detail
   <hr>
 </div>
 
-{% if project.status.name in 'Archived, Denied' and is_allowed_to_update_project %}
+{% if not project.status.name in 'Archived, Denied' and is_allowed_to_update_project %}
   <div class="card mb-3 bg-light">
     <div class="card-header">
       <h3 class="d-inline" id="manage-project"><i class="fas fa-cubes" aria-hidden="true"></i> Manage Project</h3>
       <div class="float-right">
-        {% if project.status.name in 'Active, New' %}
+        {% if not project.status.name in 'Archived, Denied' %}
           <a class="btn btn-info" href="{% url 'project-update' project.pk %}" role="button"><i class="far fa-edit" aria-hidden="true"></i> Update Project Information</a>
           <a class="btn btn-info" href="{% url 'project-archive' project.id %}" role="button"><i class="fas fa-file-archive" aria-hidden="true"></i> Archive Project</a>
         {% endif %}
@@ -99,9 +99,6 @@ Project Detail
     <p class="card-text text-justify"><strong>Field of Science: </strong>{{ project.field_of_science }}</p>
     <p class="card-text text-justify"><strong>Project Type: </strong>{{ project.type }}</p>
     <p class="card-text text-justify"><strong>Project Status: </strong>{{ project.status }}
-        {% if project.last_project_review and  project.last_project_review.status.name == 'Pending'%}
-          <span class="badge badge-pill badge-info">project review pending</span>
-        {% endif %}
     </p>
     <p class="card-text text-justify"><strong>Created: </strong>{{ project.created|date:"M. d, Y" }}</p>
   </div>
@@ -191,8 +188,11 @@ Project Detail
   <div class="card-header">
     <h3 class="d-inline"><i class="fas fa-server" aria-hidden="true"></i> Allocations</h3> <span class="badge badge-secondary">{{allocations.count}}</span>
     <div class="float-right">
-      {% if not project.status.name in 'Archived, Denied' and is_allowed_to_update_project %}
+      {% if not project.status.name in 'Archived, Denied, Review Pending' and is_allowed_to_update_project %}
         <a class="btn btn-success" href="{% url 'allocation-create' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Request Resource Allocation</a>
+      {% endif %}
+      {% if project.status.name == 'Review Pending' %}
+        <p class="alert alert-warning">You can not request a new allocation during a project review.</p>
       {% endif %}
     </div>
   </div>

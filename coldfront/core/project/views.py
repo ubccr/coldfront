@@ -33,7 +33,8 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectReviewEmailForm,
                                           ProjectReviewForm, ProjectSearchForm,
                                           ProjectPISearchForm,
-                                          ProjectUserUpdateForm)
+                                          ProjectUserUpdateForm,
+                                          ProjectReviewAllocationForm)
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectReviewStatusChoice,
                                            ProjectStatusChoice, ProjectUser,
@@ -183,6 +184,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
                         'New',
                         'Active',
                         'Waiting For Admin Approval',
+                        'Review Pending',
                         'Denied',
                     ]
                 ).order_by(order_by)
@@ -197,6 +199,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
                             'New',
                             'Active',
                             'Waiting For Admin Approval',
+                            'Review Pending',
                             'Denied',
                         ]
                     ) &
@@ -224,7 +227,15 @@ class ProjectListView(LoginRequiredMixin, ListView):
 
         else:
             projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
-                Q(status__name__in=['New', 'Active', 'Waiting For Admin Approval', 'Denied', ]) &
+                Q(
+                    status__name__in=[
+                        'New',
+                        'Active',
+                        'Waiting For Admin Approval',
+                        'Review Pending',
+                        'Denied',
+                    ]
+                ) &
                 Q(projectuser__user=self.request.user) &
                 Q(projectuser__status__name='Active')
             ).order_by(order_by)
@@ -1045,6 +1056,33 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         return super().dispatch(request, *args, **kwargs)
 
+    def get_allocation_data(self, project_obj):
+        allocations = project_obj.allocation_set.filter(
+            status__name__in=['Active', ]
+        )
+        initial_data = []
+        if allocations:
+            for allocation in allocations:
+                data = {
+                    'pk': allocation.pk,
+                    'resource': allocation.get_resources_as_string,
+                    'users': ', '.join(
+                        [
+                            '{} {}'.format(
+                                ele.user.first_name, ele.user.last_name
+                            ) for ele in allocation.allocationuser_set.filter(
+                                status__name='Active'
+                            ).order_by('user__last_name')
+                        ]
+                    ),
+                    'status': allocation.status,
+                    'expires_on': allocation.end_date,
+                    'renew': False
+                }
+                initial_data.append(data)
+
+        return initial_data
+
     def get(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         project_review_form = ProjectReviewForm(project_obj.pk)
@@ -1055,6 +1093,13 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context['project_users'] = ', '.join(['{} {}'.format(ele.user.first_name, ele.user.last_name)
                                               for ele in project_obj.projectuser_set.filter(status__name='Active').order_by('user__last_name')])
 
+        context['formset'] = []
+        allocation_data = self.get_allocation_data(project_obj)
+        if allocation_data:
+            formset = formset_factory(ProjectReviewAllocationForm, max_num=len(allocation_data))
+            formset = formset(initial=allocation_data, prefix='allocationform')
+            context['formset'] = formset
+
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
@@ -1063,15 +1108,44 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         project_review_status_choice = ProjectReviewStatusChoice.objects.get(
             name='Pending')
+        project_status_choice = ProjectStatusChoice.objects.get(name="Review Pending")
 
+        allocation_renewals = []
         if project_review_form.is_valid():
+            allocation_data = self.get_allocation_data(project_obj)
+            if allocation_data:
+                formset = formset_factory(ProjectReviewAllocationForm, max_num=len(allocation_data))
+                formset = formset(request.POST, initial=allocation_data, prefix='allocationform')
+
+                if formset.is_valid():
+                    allocation_status_choice = AllocationStatusChoice.objects.get(name="Renewal Requested")
+                    for form in formset:
+                        data = form.cleaned_data
+                        if data.get('renew'):
+                            allocation_renewals.append(str(data.get('pk')))
+                            allocation = Allocation.objects.get(pk=data.get('pk'))
+                            allocation.status = allocation_status_choice
+                            allocation.save()
+                else:
+                    logger.error(
+                        'There was an error submitting allocation renewals for PI {}'.format(
+                            project_obj.pi.username
+                        )
+                    )
+                    messages.error(
+                        request, 'There was an error submitting your allocation renewals.'
+                    )
+                    return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+
             form_data = project_review_form.cleaned_data
             project_review_obj = ProjectReview.objects.create(
                 project=project_obj,
                 reason_for_not_updating_project=form_data.get('reason'),
+                allocation_renewals=','.join(allocation_renewals),
                 status=project_review_status_choice)
 
             project_obj.force_review = False
+            project_obj.status = project_status_choice
             project_obj.save()
 
             domain_url = get_domain_url(self.request)
@@ -1086,11 +1160,11 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     [EMAIL_DIRECTOR_EMAIL_ADDRESS, ]
                 )
 
-            messages.success(request, 'Project reviewed successfully.')
+            messages.success(request, 'Project review submitted.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             messages.error(
-                request, 'There was an error in processing  your project review.')
+                request, 'There was an error in processing your project review.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
 
@@ -1180,7 +1254,97 @@ class ProjectDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
         return HttpResponseRedirect(reverse('project-review-list'))
 
 
+class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
+    def test_func(self):
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('project.can_review_pending_project_reviews'):
+            return True
+
+        messages.error(
+            self.request, 'You do not have permission to approve a project review.')
+
+    def get(self, request, pk):
+        project_review_obj = get_object_or_404(ProjectReview, pk=pk)
+        project_review_status_obj = ProjectReviewStatusChoice.objects.get(name="Approved")
+        project_obj = project_review_obj.project
+        project_status_obj = ProjectStatusChoice.objects.get(name="Active")
+
+        project_review_obj.status = project_review_status_obj
+        project_obj.status = project_status_obj
+
+        if project_review_obj.allocation_renewals:
+            allocation_status_choice = AllocationStatusChoice.objects.get(name="Active")
+            for allocation_pk in project_review_obj.allocation_renewals.split(','):
+                allocation = Allocation.objects.get(pk=int(allocation_pk))
+                allocation.start_date = datetime.datetime.today()
+                allocation.end_date = datetime.datetime.today() + datetime.timedelta(days=365)
+                allocation.status = allocation_status_choice
+                allocation.save()
+
+        project_review_obj.save()
+        project_obj.save()
+
+        return HttpResponseRedirect(reverse('project-review-list'))
+
+
+class ProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
+    def test_func(self):
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('project.can_review_pending_project_reviews'):
+            return True
+
+        messages.error(
+            self.request, 'You do not have permission to deny a project review.')
+
+    def get(self, request, pk):
+        project_review_obj = get_object_or_404(ProjectReview, pk=pk)
+        project_review_status_obj = ProjectReviewStatusChoice.objects.get(name="Denied")
+        project_obj = project_review_obj.project
+        project_status_obj = ProjectStatusChoice.objects.get(name="Denied")
+
+        project_review_obj.status = project_review_status_obj
+        project_obj.status = project_status_obj
+
+        if project_review_obj.allocation_renewals:
+            allocation_status_choice = AllocationStatusChoice.objects.get(name="Active")
+            for allocation_pk in project_review_obj.allocation_renewals.split(','):
+                allocation = Allocation.objects.get(pk=int(allocation_pk))
+                allocation.status = allocation_status_choice
+                allocation.save()
+
+        project_review_obj.save()
+        project_obj.save()
+
+        return HttpResponseRedirect(reverse('project-review-list'))
+
+
+class ProjectReviewInfoView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'project/project_review_info.html'
+
+    def test_func(self):
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('project.can_review_pending_project_reviews'):
+            return True
+
+        messages.error(
+            self.request, 'You do not have permission to deny a project review.')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        pk = self.kwargs.get('pk')
+        context['project_review'] = get_object_or_404(ProjectReview, pk=pk)
+
+        return context
+
+
 class ProjectReviewCompleteView(LoginRequiredMixin, UserPassesTestMixin, View):
+    """Current not in use."""
     login_url = "/"
 
     def test_func(self):
@@ -1213,6 +1377,7 @@ class ProjectReviewCompleteView(LoginRequiredMixin, UserPassesTestMixin, View):
 
 
 class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+    """Current not in use."""
     form_class = ProjectReviewEmailForm
     template_name = 'project/project_review_email.html'
     login_url = "/"

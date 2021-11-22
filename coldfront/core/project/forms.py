@@ -128,3 +128,15 @@ class ProjectReviewEmailForm(forms.Form):
             project_review_obj.project.pi.first_name, project_review_obj.project.pi.last_name, EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL)
         self.fields['cc'].initial = ', '.join(
             [EMAIL_DIRECTOR_EMAIL_ADDRESS] + EMAIL_ADMIN_LIST)
+
+
+class ProjectReviewAllocationForm(forms.Form):
+    pk = forms.IntegerField(disabled=True)
+    resource = forms.CharField(max_length=100, disabled=True)
+    users = forms.CharField(max_length=1000, disabled=True, required=False)
+    status = forms.CharField(max_length=50, disabled=True)
+    expires_on = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        disabled=True
+    )
+    renew = forms.BooleanField(initial=False, required=False)

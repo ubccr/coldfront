@@ -172,6 +172,7 @@ class ProjectReview(TimeStampedModel):
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     status = models.ForeignKey(ProjectReviewStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
     reason_for_not_updating_project = models.TextField(blank=True, null=True)
+    allocation_renewals = models.TextField(blank=True, null=True)
     history = HistoricalRecords()
 
 

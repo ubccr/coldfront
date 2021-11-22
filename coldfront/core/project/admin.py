@@ -134,7 +134,7 @@ class ProjectAdmin(SimpleHistoryAdmin):
 
 @admin.register(ProjectReview)
 class ProjectReviewAdmin(SimpleHistoryAdmin):
-    list_display = ('pk', 'project', 'PI', 'reason_for_not_updating_project', 'created', 'status')
+    list_display = ('pk', 'project', 'PI', 'allocation_renewals', 'reason_for_not_updating_project', 'created', 'status')
     search_fields = ['project__pi__username', 'project__pi__first_name', 'project__pi__last_name',]
     list_filter = ('status', )
 
