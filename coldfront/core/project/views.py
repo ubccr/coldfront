@@ -1344,7 +1344,7 @@ class ProjectReviewInfoView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
 
 
 class ProjectReviewCompleteView(LoginRequiredMixin, UserPassesTestMixin, View):
-    """Current not in use."""
+    """Currently not in use."""
     login_url = "/"
 
     def test_func(self):
@@ -1377,7 +1377,7 @@ class ProjectReviewCompleteView(LoginRequiredMixin, UserPassesTestMixin, View):
 
 
 class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
-    """Current not in use."""
+    """Currently not in use."""
     form_class = ProjectReviewEmailForm
     template_name = 'project/project_review_email.html'
     login_url = "/"

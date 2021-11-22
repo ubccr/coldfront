@@ -113,6 +113,7 @@ class ProjectReviewForm(forms.Form):
 
 
 class ProjectReviewEmailForm(forms.Form):
+    """Currently not in use."""
     cc = forms.CharField(
         required=False
     )
