@@ -59,6 +59,11 @@ if EMAIL_ENABLED:
     EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
         'EMAIL_DIRECTOR_EMAIL_ADDRESS')
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
+    EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
+    EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
+    EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
+    EMAIL_OPT_OUT_INSTRUCTION_URL = import_from_settings(
+        'EMAIL_OPT_OUT_INSTRUCTION_URL')
 
 
 class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
@@ -1286,6 +1291,46 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
         project_review_obj.save()
         project_obj.save()
 
+        messages.success(request, 'Project review for {} has been APPROVED'.format(
+            project_review_obj.project.title)
+        )
+
+        if EMAIL_ENABLED:
+            domain_url = get_domain_url(self.request)
+            project_url = '{}{}'.format(domain_url, reverse(
+                'project-detail', kwargs={'pk': project_review_obj.project.pk}
+            ))
+            renewed_allocation_urls = []
+            if project_review_obj.allocation_renewals:
+                for allocation_pk in project_review_obj.allocation_renewals.split(','):
+                    allocation_url = '{}{}'.format(domain_url, reverse(
+                        'allocation-detail', kwargs={'pk': allocation_pk}
+                    ))
+                    renewed_allocation_urls.append(allocation_url)
+
+            template_context = {
+                'project_title': project_review_obj.project.title,
+                'project_url': project_url,
+                'signature': EMAIL_SIGNATURE,
+                'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
+                'center_name': EMAIL_CENTER_NAME,
+                'renewed_allocation_urls': renewed_allocation_urls,
+                'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
+            }
+
+            email_receiver_list = []
+            for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Error']):
+                if project_obj.projectuser_set.get(user=project_user.user).enable_notifications:
+                    email_receiver_list.append(project_user.user.email)
+
+            send_email_template(
+                'Your Project Review Was Approved',
+                'email/project_review_approved.txt',
+                template_context,
+                EMAIL_SENDER,
+                email_receiver_list
+            )
+
         return HttpResponseRedirect(reverse('project-review-list'))
 
 
@@ -1318,6 +1363,45 @@ class ProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         project_review_obj.save()
         project_obj.save()
+
+        messages.success(request, 'Project review for {} has been DENIED'.format(
+            project_review_obj.project.title)
+        )
+
+        if EMAIL_ENABLED:
+            domain_url = get_domain_url(self.request)
+            project_url = '{}{}'.format(domain_url, reverse(
+                'project-detail', kwargs={'pk': project_review_obj.project.pk}
+            ))
+            not_renewed_allocation_urls = []
+            if project_review_obj.allocation_renewals:
+                for allocation_pk in project_review_obj.allocation_renewals.split(','):
+                    allocation_url = '{}{}'.format(domain_url, reverse(
+                        'allocation-detail', kwargs={'pk': allocation_pk}
+                    ))
+                    not_renewed_allocation_urls.append(allocation_url)
+
+            template_context = {
+                'project_title': project_review_obj.project.title,
+                'project_url': project_url,
+                'signature': EMAIL_SIGNATURE,
+                'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
+                'center_name': EMAIL_CENTER_NAME,
+                'not_renewed_allocation_urls': not_renewed_allocation_urls
+            }
+
+            email_receiver_list = []
+            for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Error']):
+                if project_obj.projectuser_set.get(user=project_user.user).enable_notifications:
+                    email_receiver_list.append(project_user.user.email)
+
+            send_email_template(
+                'Your Project Review Was Denied',
+                'email/project_review_denied.txt',
+                template_context,
+                EMAIL_SENDER,
+                email_receiver_list
+            )
 
         return HttpResponseRedirect(reverse('project-review-list'))
 
