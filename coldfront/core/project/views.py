@@ -1583,6 +1583,19 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 messages.warning(self.request, message)
                 return False
 
+            pending_status = ProjectUserRemovalRequestStatusChoice.objects.get(name='Pending')
+            processing_status = ProjectUserRemovalRequestStatusChoice.objects.get(name='Processing')
+
+            if ProjectUserRemovalRequest.objects. \
+                    filter(project_user=project_users.first(),
+                           status__in=[pending_status, processing_status]).exists():
+                message = (
+                    f'You cannot join Project {project_obj.name} because you '
+                    f'have a pending removal request for '
+                    f'{project_obj.name}.')
+                messages.error(self.request, message)
+                return False
+
         # If the user is the requester or PI on a pending request for the
         # Project, do not allow the join request.
         if project_obj.name.startswith('vector_'):
