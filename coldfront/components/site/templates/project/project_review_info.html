@@ -24,6 +24,10 @@ Test title
           <td>{{ project_review.created|date:"M. d, Y" }}</td>
         </tr>
         <tr>
+        <tr>
+          <th scope="row" class="text-nowrap">Expires On:</th>
+          <td>{{ project_review.project.end_date|date:"M. d, Y" }} (in {{ project_review.project.expires_in }} day{{ project_review.project.expires_in|pluralize }})</td>
+        </tr>
           <th scope="row" class="text-nowrap">PI:</th>
           <td>{{ project_review.project.pi.first_name }} {{ project_review.project.pi.last_name }} ({{ project_review.project.pi.username }})</td>
         </tr>

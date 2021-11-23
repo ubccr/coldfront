@@ -65,6 +65,7 @@ We do not have information about your research. Please provide a detailed descri
     status = models.ForeignKey(ProjectStatusChoice, on_delete=models.CASCADE)
     force_review = models.BooleanField(default=False)
     requires_review = models.BooleanField(default=True)
+    end_date = models.DateField()
     history = HistoricalRecords()
 
     def clean(self):
@@ -127,6 +128,10 @@ We do not have information about your research. Please provide a detailed descri
             return True
 
         return False
+
+    @property
+    def expires_in(self):
+        return (self.end_date - datetime.date.today()).days
 
     def __str__(self):
         return self.title

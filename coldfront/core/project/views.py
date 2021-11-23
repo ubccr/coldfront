@@ -54,6 +54,9 @@ ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
     'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
 ALLOCATION_DEFAULT_ALLOCATION_LENGTH = import_from_settings(
     'ALLOCATION_DEFAULT_ALLOCATION_LENGTH', 365)
+PROJECT_DEFAULT_PROJECT_LENGTH = import_from_settings(
+    'PROJECT_DEFAULT_PROJECT_LENGTH', 365
+)
 
 if EMAIL_ENABLED:
     EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
@@ -128,7 +131,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                     Q(status__name__in=['Active', 'Expired',
                                         'New', 'Renewal Requested',
                                         'Payment Pending', 'Payment Requested',
-                                        'Payment Declined', 'Paid','Denied']) &
+                                        'Payment Declined', 'Paid', 'Denied']) &
                     Q(allocationuser__user=self.request.user) &
                     Q(allocationuser__status__name__in=['Active', ])
                 ).distinct().order_by('-end_date')
@@ -191,6 +194,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
                         'Waiting For Admin Approval',
                         'Review Pending',
                         'Denied',
+                        'Expired',
                     ]
                 ).order_by(order_by)
             else:
@@ -206,6 +210,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
                             'Waiting For Admin Approval',
                             'Review Pending',
                             'Denied',
+                            'Expired',
                         ]
                     ) &
                     Q(projectuser__user=self.request.user) &
@@ -239,6 +244,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
                         'Waiting For Admin Approval',
                         'Review Pending',
                         'Denied',
+                        'Expired',
                     ]
                 ) &
                 Q(projectuser__user=self.request.user) &
@@ -507,6 +513,9 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         project_obj = form.save(commit=False)
         form.instance.pi = self.request.user
         form.instance.status = ProjectStatusChoice.objects.get(name='Waiting For Admin Approval')
+        form.instance.end_date = datetime.datetime.today() + datetime.timedelta(
+            days=PROJECT_DEFAULT_PROJECT_LENGTH
+        )
         project_obj.save()
         self.object = project_obj
 
@@ -552,7 +561,7 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name in ['Archived', 'Denied', ]:
+        if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
             messages.error(request, 'You cannot update a(n) {} project.'.format(project_obj.status.name))
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
@@ -580,7 +589,7 @@ class ProjectAddUsersSearchView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name in ['Archived', 'Denied', ]:
+        if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
             messages.error(
                 request, 'You cannot add users to a(n) {} project.'.format(project_obj.status.name))
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
@@ -617,7 +626,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name in ['Archived', 'Denied', ]:
+        if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
             messages.error(
                 request, 'You cannot add users to a(n) {} project.'.format(project_obj.status.name))
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
@@ -699,7 +708,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name in ['Archived', 'Denied', ]:
+        if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
             messages.error(
                 request, 'You cannot add users to a(n) {} project.'.format(project_obj.status.name))
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
@@ -840,7 +849,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name in ['Archived', 'Denied', ]:
+        if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
             messages.error(
                 request, 'You cannot remove users from a(n) {} project.'.format(project_obj.status.name))
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
@@ -970,7 +979,7 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         project_user_pk = self.kwargs.get('project_user_pk')
 
-        if project_obj.status.name in ['Archived', 'Denied', ]:
+        if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
             messages.error(
                 request, 'You cannot update a user in a(n) {} project.'.format(project_obj.status.name))
             return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_user_pk}))
@@ -1045,7 +1054,11 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
 
-        if not project_obj.needs_review:
+        if (
+            not project_obj.needs_review
+            and (project_obj.expires_in > 60
+                 or project_obj.status.name not in ['Active', 'Expired', ])
+        ):
             messages.error(request, 'You do not need to review this project.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
@@ -1063,7 +1076,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
     def get_allocation_data(self, project_obj):
         allocations = project_obj.allocation_set.filter(
-            status__name__in=['Active', ]
+            status__name__in=['Active', 'Expired', ]
         )
         initial_data = []
         if allocations:
@@ -1339,6 +1352,7 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         project_review_obj.status = project_review_status_obj
         project_obj.status = project_status_obj
+        project_obj.end_date += datetime.timedelta(days=PROJECT_DEFAULT_PROJECT_LENGTH)
 
         if project_review_obj.allocation_renewals:
             allocation_status_choice = AllocationStatusChoice.objects.get(name="Active")

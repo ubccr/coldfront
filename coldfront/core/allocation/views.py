@@ -508,7 +508,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 request, 'You cannot request a new allocation because you have to review your project first.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
-        if project_obj.status.name in ['Archived', 'Denied', 'Review Pending',]:
+        if project_obj.status.name in ['Archived', 'Denied', 'Review Pending', 'Expired', ]:
             messages.error(
                 request, 'You cannot request a new allocation to a(n) {} project.'.format(project_obj.status.name))
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
@@ -1818,6 +1818,16 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
         messages.error(
             self.request, 'You do not have permission to activate a allocation request.')
 
+    def dispatch(self, request, *args, **kwargs):
+        allocation_obj = get_object_or_404(Allocation, pk=kwargs.get('pk'))
+        project_obj = allocation_obj.project
+
+        if project_obj.status.name != 'Active':
+            messages.error(request, 'Project must be approved first before you can approve this allocation!')
+            return HttpResponseRedirect(reverse('allocation-request-list'))
+
+        return super().dispatch(request, *args, **kwargs)
+
     def get(self, request, pk):
         allocation_obj = get_object_or_404(Allocation, pk=pk)
 
@@ -1889,6 +1899,16 @@ class AllocationDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         messages.error(
             self.request, 'You do not have permission to deny a allocation request.')
+
+    def dispatch(self, request, *args, **kwargs):
+        allocation_obj = get_object_or_404(Allocation, pk=kwargs.get('pk'))
+        project_obj = allocation_obj.project
+
+        if project_obj.status.name != 'Active':
+            messages.error(request, 'Project must be approved first before you can deny this allocation!')
+            return HttpResponseRedirect(reverse('allocation-request-list'))
+
+        return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, pk):
         allocation_obj = get_object_or_404(Allocation, pk=pk)

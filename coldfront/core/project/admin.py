@@ -90,9 +90,9 @@ class ProjectUserMessageInline(admin.TabularInline):
 
 @admin.register(Project)
 class ProjectAdmin(SimpleHistoryAdmin):
-    fields_change = ('title', 'pi', 'description', 'private', 'type', 'status', 'requires_review', 'force_review', 'created', 'modified', )
+    fields_change = ('title', 'pi', 'description', 'private', 'type', 'status', 'requires_review', 'force_review', 'created', 'end_date', 'modified', )
     readonly_fields_change = ('created', 'modified', )
-    list_display = ('pk', 'title', 'PI', 'created', 'modified', 'status')
+    list_display = ('pk', 'title', 'PI', 'created', 'modified', 'end_date', 'status')
     search_fields = ['pi__username', 'projectuser__user__username',
                      'projectuser__user__last_name', 'projectuser__user__last_name', 'title']
     list_filter = ('status', 'force_review')
