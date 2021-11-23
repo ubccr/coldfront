@@ -1434,7 +1434,7 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
         return HttpResponseRedirect(reverse('allocation-invoice-detail', kwargs={'pk': pk}))
 
 
-class AllocationAddInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, View):
+class AllocationAddInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = AllocationUserNote
     template_name = 'allocation/allocation_add_invoice_note.html'
     fields = ('is_private', 'note',)

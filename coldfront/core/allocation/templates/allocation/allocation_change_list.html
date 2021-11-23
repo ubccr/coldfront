@@ -2,11 +2,16 @@
 {% load crispy_forms_tags %}
 {% load common_tags %}
 {% load static %}
+
+
 {% block title %}
 Allocation Review New and Pending Change Requests
 {% endblock %}
+
+
 {% block content %}
 <h2>Allocation Change Requests</h2>
+
 {% if allocation_change_list %}
   <div class="table-responsive">
     <table class="table table-sm">
@@ -60,6 +65,7 @@ Allocation Review New and Pending Change Requests
     No new or pending allocation change requests!
   </div>
 {% endif %}
+
 <script>
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-admin").addClass("active");
