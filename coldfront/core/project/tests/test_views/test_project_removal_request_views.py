@@ -4,7 +4,7 @@ from django.urls import reverse
 from http import HTTPStatus
 
 from coldfront.core.project.models import *
-from coldfront.core.project.utils import ProjectRemovalRequestRunner
+from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestRunner
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.user.models import *
 from coldfront.core.allocation.models import *
@@ -18,8 +18,8 @@ import os
 import sys
 
 
-class TestProjectRemovalViews(TestCase):
-    """A class for testing Project Removal Views."""
+class TestBase(TestCase):
+    """Base class for testing project removal request views"""
 
     def setUp(self):
         """Set up test data."""
@@ -29,7 +29,7 @@ class TestProjectRemovalViews(TestCase):
             'add_allocation_defaults',
             'import_field_of_science_data',
             'add_default_project_choices',
-            'create_project_removal_request_statuses',
+            'create_staff_group',
         ]
         sys.stdout = open(os.devnull, 'w')
         for command in commands:
@@ -130,15 +130,22 @@ class TestProjectRemovalViews(TestCase):
         # Clear the mail outbox.
         mail.outbox = []
 
-    @staticmethod
-    def get_message_strings(response):
-        """Return messages included in the given response as a list of
-        strings."""
-        return [str(m) for m in get_messages(response.wsgi_request)]
+
+class TestProjectRemoveSelf(TestBase):
+    """A class for testing Project Removal Views."""
+
+    def setUp(self):
+        """Set up test data."""
+        super().setUp()
 
     def test_permissions_remove_self(self):
         """Test that the correct users have permissions to perform POST
         requests for ProjectRemoveSelf view."""
+
+        def get_message_strings(response):
+            """Return messages included in the given response as a list of
+            strings."""
+            return [str(m) for m in get_messages(response.wsgi_request)]
 
         def assert_has_access(user, has_access=True, expected_messages=[]):
             """Assert that the given user has or does not have access to
@@ -150,7 +157,7 @@ class TestProjectRemovalViews(TestCase):
             status_code = HTTPStatus.FOUND if has_access else HTTPStatus.FORBIDDEN
             response = self.client.post(url, {})
             if expected_messages:
-                actual_messages = self.get_message_strings(response)
+                actual_messages = get_message_strings(response)
                 for message in expected_messages:
                     self.assertIn(message, actual_messages)
             self.assertEqual(response.status_code, status_code)
@@ -216,6 +223,14 @@ class TestProjectRemovalViews(TestCase):
 
         self.client.logout()
 
+
+class TestProjectRemoveUsersView(TestBase):
+    """A class for testing ProjectRemoveUsersView."""
+
+    def setUp(self):
+        """Set up test data."""
+        super().setUp()
+
     def test_permissions_remove_users_view(self):
         """
         Testing permissions for ProjectRemoveUsersView
@@ -247,6 +262,14 @@ class TestProjectRemovalViews(TestCase):
 
         # manage users should have access
         assert_has_access(self.manager1, True)
+
+
+class TestProjectRemovalRequestListView(TestBase):
+    """A class for testing ProjectRemovalRequestListView."""
+
+    def setUp(self):
+        """Set up test data."""
+        super().setUp()
 
     def test_permissions_removal_request_list_view(self):
         """
@@ -429,6 +452,14 @@ class TestProjectRemovalViews(TestCase):
 
         self.client.logout()
 
+
+class TestProjectRemovalRequestUpdateStatusView(TestBase):
+    """A class for testing ProjectRemovalRequestUpdateStatusView."""
+
+    def setUp(self):
+        """Set up test data."""
+        super().setUp()
+
     def test_permissions_removal_request_update_status_view(self):
         """
         Testing permissions to access ProjectRemovalRequestUpdateStatusView
@@ -450,43 +481,6 @@ class TestProjectRemovalViews(TestCase):
         request_runner = ProjectRemovalRequestRunner(
             self.pi1, self.user2, self.project1)
         removal_request = request_runner.run()
-
-        # Superusers should have access.
-        self.user1.is_superuser = True
-        self.user1.save()
-        self.assertTrue(self.user1.is_superuser)
-        assert_has_access(self.user1, True)
-
-        # No other users should have access
-        assert_has_access(self.manager1, False)
-        assert_has_access(self.pi1, False)
-        assert_has_access(self.pi2, False)
-        assert_has_access(self.user2, False)
-
-    def test_permissions_removal_request_complete_status_view(self):
-        """
-        Testing permissions to access ProjectRemovalRequestCompleteStatusView
-        """
-        def assert_has_access(user, has_access=True):
-            """Assert that the given user has or does not have access to
-            the URL. Optionally assert that any messages were sent to
-            the user."""
-            self.client.login(username=user.username, password=self.password)
-            url = reverse(
-                'project-removal-request-complete-status',
-                kwargs={'pk': removal_request.pk})
-            status_code = HTTPStatus.OK if has_access else HTTPStatus.FORBIDDEN
-            response = self.client.get(url)
-            self.assertEqual(response.status_code, status_code)
-
-            self.client.logout()
-
-        request_runner = ProjectRemovalRequestRunner(
-            self.pi1, self.user2, self.project1)
-        removal_request = request_runner.run()
-        removal_request.status = \
-            ProjectUserRemovalRequestStatusChoice.objects.get(name='Processing')
-        removal_request.save()
 
         # Superusers should have access.
         self.user1.is_superuser = True
@@ -524,6 +518,51 @@ class TestProjectRemovalViews(TestCase):
         removal_request.refresh_from_db()
         self.assertEqual(removal_request.status.name, 'Processing')
         self.client.logout()
+
+
+class TestProjectRemovalRequestCompleteStatusView(TestBase):
+    """A class for testing ProjectRemovalRequestCompleteStatusView."""
+
+    def setUp(self):
+        """Set up test data."""
+        super().setUp()
+
+    def test_permissions_removal_request_complete_status_view(self):
+        """
+        Testing permissions to access ProjectRemovalRequestCompleteStatusView
+        """
+        def assert_has_access(user, has_access=True):
+            """Assert that the given user has or does not have access to
+            the URL. Optionally assert that any messages were sent to
+            the user."""
+            self.client.login(username=user.username, password=self.password)
+            url = reverse(
+                'project-removal-request-complete-status',
+                kwargs={'pk': removal_request.pk})
+            status_code = HTTPStatus.OK if has_access else HTTPStatus.FORBIDDEN
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status_code)
+
+            self.client.logout()
+
+        request_runner = ProjectRemovalRequestRunner(
+            self.pi1, self.user2, self.project1)
+        removal_request = request_runner.run()
+        removal_request.status = \
+            ProjectUserRemovalRequestStatusChoice.objects.get(name='Processing')
+        removal_request.save()
+
+        # Superusers should have access.
+        self.user1.is_superuser = True
+        self.user1.save()
+        self.assertTrue(self.user1.is_superuser)
+        assert_has_access(self.user1, True)
+
+        # No other users should have access
+        assert_has_access(self.manager1, False)
+        assert_has_access(self.pi1, False)
+        assert_has_access(self.pi2, False)
+        assert_has_access(self.user2, False)
 
     def test_removal_request_complete_status_view(self):
         """

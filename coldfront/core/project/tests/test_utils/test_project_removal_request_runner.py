@@ -1,5 +1,5 @@
 from coldfront.core.project.models import *
-from coldfront.core.project.utils import ProjectRemovalRequestRunner
+from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestRunner
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.user.models import *
 from coldfront.core.allocation.models import *
@@ -14,8 +14,8 @@ import os
 import sys
 
 
-class TestRunnerMixin(TestCase):
-    """A mixin for testing ProjectRemovalRequestRunner."""
+class TestProjectRemovalRequestRunner(TestCase):
+    """A testing class for ProjectRemovalRequestRunner."""
 
     def setUp(self):
         """Set up test data."""
@@ -25,7 +25,7 @@ class TestRunnerMixin(TestCase):
             'add_allocation_defaults',
             'import_field_of_science_data',
             'add_default_project_choices',
-            'create_project_removal_request_statuses',
+            'create_staff_group',
         ]
         sys.stdout = open(os.devnull, 'w')
         for command in commands:
@@ -130,13 +130,13 @@ class TestRunnerMixin(TestCase):
         success_messages, error_messages = request_runner.get_messages()
 
         # testing if a removal request was made
-        self.assertNotEqual(removal_request, None)
+        self.assertIsNotNone(removal_request)
 
         # testing removal request attributes
         self.assertEqual(removal_request.project_user,
                          self.project1.projectuser_set.get(user=self.user1))
         self.assertEqual(removal_request.requester, self.user1)
-        self.assertEqual(removal_request.completion_time, None)
+        self.assertIsNone(removal_request.completion_time)
         self.assertEqual(removal_request.status.name, 'Pending')
 
         # check messages
@@ -183,7 +183,7 @@ class TestRunnerMixin(TestCase):
         success_messages, error_messages = request_runner.get_messages()
 
         # testing if a removal request was made
-        self.assertEqual(removal_request, None)
+        self.assertIsNone(removal_request)
 
         # check messages
         test_message = f'Error requesting removal of user {self.user1.username}. ' \
@@ -209,13 +209,13 @@ class TestRunnerMixin(TestCase):
         success_messages, error_messages = request_runner.get_messages()
 
         # testing if a removal request was made
-        self.assertNotEqual(removal_request, None)
+        self.assertIsNotNone(removal_request)
 
         # testing removal request attributes
         self.assertEqual(removal_request.project_user,
                          self.project1.projectuser_set.get(user=self.user1))
         self.assertEqual(removal_request.requester, self.pi1)
-        self.assertEqual(removal_request.completion_time, None)
+        self.assertIsNone(removal_request.completion_time)
         self.assertEqual(removal_request.status.name, 'Pending')
 
         # check messages
@@ -263,7 +263,7 @@ class TestRunnerMixin(TestCase):
         success_messages, error_messages = request_runner.get_messages()
 
         # testing if a removal request was made
-        self.assertEqual(removal_request, None)
+        self.assertIsNone(removal_request)
 
         # check messages
         test_message = f'Error requesting removal of user {self.user1.username}. ' \
@@ -289,7 +289,7 @@ class TestRunnerMixin(TestCase):
         success_messages, error_messages = request_runner.get_messages()
 
         # testing if a removal request was made
-        self.assertEqual(removal_request, None)
+        self.assertIsNone(removal_request)
 
         # check messages
         test_message = f'Error requesting removal of user {self.pi1.username}. ' \
@@ -318,7 +318,7 @@ class TestRunnerMixin(TestCase):
         success_messages, error_messages = request_runner.get_messages()
 
         # testing if a removal request was made
-        self.assertEqual(removal_request, None)
+        self.assertIsNone(removal_request)
 
         # check messages
         test_message = f'Error requesting removal of user {self.manager.username}. ' \
@@ -357,13 +357,13 @@ class TestRunnerMixin(TestCase):
         success_messages, error_messages = request_runner.get_messages()
 
         # testing if a removal request was made
-        self.assertNotEqual(removal_request, None)
+        self.assertIsNotNone(removal_request)
 
         # testing removal request attributes
         self.assertEqual(removal_request.project_user,
                          self.project1.projectuser_set.get(user=self.user1))
         self.assertEqual(removal_request.requester, self.user1)
-        self.assertEqual(removal_request.completion_time, None)
+        self.assertIsNone(removal_request.completion_time)
         self.assertEqual(removal_request.status.name, 'Pending')
 
         # check messages
@@ -417,13 +417,13 @@ class TestRunnerMixin(TestCase):
         success_messages, error_messages = request_runner.get_messages()
 
         # testing if a removal request was made
-        self.assertNotEqual(removal_request, None)
+        self.assertIsNotNone(removal_request)
 
         # testing removal request attributes
         self.assertEqual(removal_request.project_user,
                          self.project1.projectuser_set.get(user=manager2))
         self.assertEqual(removal_request.requester, self.pi1)
-        self.assertEqual(removal_request.completion_time, None)
+        self.assertIsNone(removal_request.completion_time)
         self.assertEqual(removal_request.status.name, 'Pending')
 
         # check messages
@@ -469,7 +469,7 @@ class TestRunnerMixin(TestCase):
         success_messages, error_messages = request_runner.get_messages()
 
         # testing if a removal request was made
-        self.assertEqual(removal_request, None)
+        self.assertIsNone(removal_request)
 
         # check messages
         test_message = f'Error requesting removal of user {manager2.username}. ' \
