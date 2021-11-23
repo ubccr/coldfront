@@ -72,8 +72,8 @@ from coldfront.core.project.utils import (add_vector_user_to_designated_savio_pr
                                           send_project_join_request_denial_email,
                                           send_project_request_pooling_email,
                                           VectorProjectApprovalRunner,
-                                          vector_request_denial_reason,
-                                          ProjectRemovalRequestRunner)
+                                          vector_request_denial_reason,)
+from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestRunner
 # from coldfront.core.publication.models import Publication
 # from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.resource.models import Resource
@@ -917,7 +917,9 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
                     message = f'Cannot add user {username} to project ' \
                               f'{project_obj.name} due to an active ' \
-                              f'project removal request for the user.'
+                              f'project removal request for the user. Please ' \
+                              f'wait until it is completed before adding the ' \
+                              f'user again.'
                     messages.error(request, message)
                     continue
 
@@ -1126,18 +1128,26 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     user_obj = User.objects.get(
                         username=user_form_data.get('username'))
 
-                    request_runner = ProjectRemovalRequestRunner(
-                        self.request.user, user_obj, project_obj)
-                    runner_result = request_runner.run()
-                    success_messages, error_messages = request_runner.get_messages()
+                    try:
+                        request_runner = ProjectRemovalRequestRunner(
+                            self.request.user, user_obj, project_obj)
+                        runner_result = request_runner.run()
+                        success_messages, error_messages = request_runner.get_messages()
 
-                    if runner_result:
-                        request_runner.send_emails()
-                        for m in success_messages:
-                            messages.success(request, m)
-                    else:
-                        for m in error_messages:
-                            messages.error(request, m)
+
+                        if runner_result:
+                            request_runner.send_emails()
+                            for m in success_messages:
+                                messages.success(request, m)
+                        else:
+                            for m in error_messages:
+                                messages.error(request, m)
+
+                    except Exception as e:
+                        self.logger.exception(e)
+                        error_message = \
+                            'Unexpected error. Please contact an administrator.'
+                        messages.error(self.request, error_message)
 
         else:
             for error in formset.errors:
@@ -1163,25 +1173,32 @@ class ProjectRemoveSelf(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         if project_obj.projectuser_set.filter(
                 user=self.request.user,
                 role__name='Manager',
-                status__name='Active').exists() and len(project_obj.projectuser_set.filter(role__name='Manager')) > 1:
+                status__name='Active').exists() and \
+                len(project_obj.projectuser_set.filter(role__name='Manager')) > 1:
             return True
 
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         project_obj = get_object_or_404(Project, pk=pk)
 
-        request_runner = ProjectRemovalRequestRunner(
-            self.request.user, self.request.user, project_obj)
-        runner_result = request_runner.run()
-        success_messages, error_messages = request_runner.get_messages()
+        try:
+            request_runner = ProjectRemovalRequestRunner(
+                self.request.user, self.request.user, project_obj)
+            runner_result = request_runner.run()
+            success_messages, error_messages = request_runner.get_messages()
 
-        if runner_result:
-            request_runner.send_emails()
-            for message in success_messages:
-                messages.success(request, message)
-        else:
-            for message in error_messages:
-                messages.error(request, message)
+            if runner_result:
+                request_runner.send_emails()
+                for message in success_messages:
+                    messages.success(request, message)
+            else:
+                for message in error_messages:
+                    messages.error(request, message)
+        except Exception as e:
+            self.logger.exception(e)
+            error_message = \
+                'Unexpected error. Please contact an administrator.'
+            messages.error(self.request, error_message)
 
         return HttpResponseRedirect(reverse('home'))
 
@@ -1211,7 +1228,8 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 pk=project_user_pk)
 
             project_user_update_form = ProjectUserUpdateForm(
-                initial={'role': project_user_obj.role, 'enable_notifications': project_user_obj.enable_notifications})
+                initial={'role': project_user_obj.role, 'enable_notifications':
+                    project_user_obj.enable_notifications})
 
             context = {}
             context['project_obj'] = project_obj
@@ -3885,16 +3903,28 @@ class ProjectRemovalRequestListView(LoginRequiredMixin,
             data = removal_request_search_form.cleaned_data
 
             if data.get('username'):
-                project_removal_request_list = project_removal_request_list.filter(project_user__user__username__icontains=data.get('username'))
+                project_removal_request_list = \
+                    project_removal_request_list.filter(
+                        project_user__user__username__icontains=data.get(
+                            'username'))
 
             if data.get('email'):
-                project_removal_request_list = project_removal_request_list.filter(project_user__user__email__icontains=data.get('email'))
+                project_removal_request_list = \
+                    project_removal_request_list.filter(
+                        project_user__user__email__icontains=data.get(
+                            'email'))
 
             if data.get('project_name'):
-                project_removal_request_list = project_removal_request_list.filter(project_user__project__name__icontains=data.get('project_name'))
+                project_removal_request_list = \
+                    project_removal_request_list.filter(
+                        project_user__project__name__icontains=data.get(
+                            'project_name'))
 
             if data.get('requester'):
-                project_removal_request_list = project_removal_request_list.filter(requester__user__username__icontains=data.get('username'))
+                project_removal_request_list = \
+                    project_removal_request_list.filter(
+                        requester__user__username__icontains=data.get(
+                            'username'))
 
         return project_removal_request_list.order_by(order_by)
 
@@ -4069,7 +4099,7 @@ class ProjectRemovalRequestCompleteStatusView(LoginRequiredMixin,
 
         self.project_removal_request_obj.status = project_removal_status_choice
         if status == 'Complete':
-            self.project_removal_request_obj.completion_time = datetime.datetime.now(datetime.timezone.utc)
+            self.project_removal_request_obj.completion_time = utc_now_offset_aware()
         self.project_removal_request_obj.save()
 
         if status == 'Complete':
