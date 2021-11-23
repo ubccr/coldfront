@@ -72,7 +72,6 @@ from coldfront.core.project.utils import (add_vector_user_to_designated_savio_pr
                                           VectorProjectApprovalRunner,
                                           vector_request_denial_reason,)
 from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestRunner
-                                          VectorProjectApprovalRunner)
 from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
 from coldfront.core.project.utils_.renewal_utils import is_any_project_pi_renewable
 from coldfront.core.project.utils_.request_utils import project_allocation_request_latest_update_timestamp
