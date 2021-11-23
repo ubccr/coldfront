@@ -611,6 +611,11 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             quantity=quantity,
             status=allocation_status_obj
         )
+        
+        if ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT: 
+            allocation_obj.is_changeable = True
+            allocation_obj.save()
+
         allocation_obj.resources.add(resource_obj)
 
         if ALLOCATION_ACCOUNT_ENABLED and allocation_account and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING:
@@ -1066,7 +1071,6 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
         allocation_obj.status = allocation_status_active_obj
         allocation_obj.start_date = start_date
         allocation_obj.end_date = end_date
-        if ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT: allocation_obj.is_changeable = True
         allocation_obj.save()
 
         messages.success(request, 'Allocation to {} has been ACTIVATED for {} {} ({})'.format(
@@ -1430,7 +1434,7 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
         return HttpResponseRedirect(reverse('allocation-invoice-detail', kwargs={'pk': pk}))
 
 
-class AllocationAddInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+class AllocationAddInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, View):
     model = AllocationUserNote
     template_name = 'allocation/allocation_add_invoice_note.html'
     fields = ('is_private', 'note',)

@@ -28,7 +28,7 @@ Allocation Detail
 
 <div class="card mb-3">
   <div class="card-header">
-    {% if allocation.is_changeable and request.user.is_superuser or request.user.userprofile.is_pi or request.user.role.name == "Manager" %}
+    {% if allocation.is_changeable and is_allowed_to_update_project %}
     <div class="row">
       <div class="col">
         <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
@@ -135,17 +135,14 @@ Allocation Detail
               <td><i class="fas fa-lock-open" aria-hidden="true"></i></td>
             {% endif %}
           </tr>
-          <tr>
-            <th scope="row" class="text-nowrap">Is Changeable</th>
-            <td>
-            {% if request.user.is_superuser %}
-              {{ form.is_changeable }}
-            {% else %}
-              <input type="checkbox" {% if allocation.is_changeable %} checked {% endif %} disabled>
-            {% endif %}
-            </td>
-          </tr>
-          
+          {% if request.user.is_superuser or request.user.is_staff %}
+            <tr>
+              <th scope="row" class="text-nowrap">Allow Change Requests</th>
+              <td>
+                {{ form.is_changeable }}
+              </td>
+            </tr>
+          {% endif %}
         </table>
       </div>
       {% if request.user.is_superuser %}

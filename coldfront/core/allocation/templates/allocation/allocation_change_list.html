@@ -2,16 +2,11 @@
 {% load crispy_forms_tags %}
 {% load common_tags %}
 {% load static %}
-
-
 {% block title %}
 Allocation Review New and Pending Change Requests
 {% endblock %}
-
-
 {% block content %}
 <h2>Allocation Change Requests</h2>
-
 {% if allocation_change_list %}
   <div class="table-responsive">
     <table class="table table-sm">
@@ -23,8 +18,7 @@ Allocation Review New and Pending Change Requests
           <th scope="col">PI</th>
           <th scope="col">Resource</th>
           <th scope="col">Extension</th>
-          <th scope="col">Changes</th>
-          <th scope="col">Quick Actions</th>
+          <th scope="col">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -41,17 +35,20 @@ Allocation Review New and Pending Change Requests
               {% else %} {{change.end_date_extension}} days
               {% endif %}
             </td>
-            <td>
-              {% if change.allocationattributechangerequest_set.all %}
-                <i class="fas fa-plus fa-2x"></i>
-              {% else %}
-                <i class="fas fa-minus fa-2x"></i>
-              {% endif %}
-            </td>
             <td class="text-nowrap">
-              <a href="{% url 'allocation-activate-change' change.pk %}" class="btn btn-success mr-1">Approve</a>
-              <a href="{% url 'allocation-deny-change' change.pk %}" class="btn btn-danger mr-1">Deny</a>
-              <a href="{% url 'allocation-change-detail' change.pk %}" class="btn btn-primary mr-1">Details</a>
+              {% if change.allocationattributechangerequest_set.all %}
+                <a href="{% url 'allocation-activate-change' change.pk %}" class="btn btn-success mr-1" aria-disabled="true" 
+                style="
+                      cursor: not-allowed;
+                      opacity: 0.6;
+                      pointer-events: none;">
+                      Approve
+                </a>
+                <a href="{% url 'allocation-change-detail' change.pk %}" class="btn btn-primary mr-1">Details</a>
+              {% else %}
+                <a href="{% url 'allocation-activate-change' change.pk %}" class="btn btn-success mr-1">Approve</a>
+                <a href="{% url 'allocation-change-detail' change.pk %}" class="btn btn-primary mr-1">Details</a>
+              {% endif %}
             </td>
           </tr>
         {% endfor %}
@@ -63,7 +60,6 @@ Allocation Review New and Pending Change Requests
     No new or pending allocation change requests!
   </div>
 {% endif %}
-
 <script>
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-admin").addClass("active");
