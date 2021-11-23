@@ -7,110 +7,159 @@
 {% block content %}
     <h1>Remove users from project: {{project.title}}</h1>
     <hr>
-    {% if users_pending_removal %}
-        <div class="card border-light">
-            <div class="card-body">
-                <strong>Users With Pending Removal Requests:  </strong>
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                        <tr>
-                            <th scope="col">#</th>
-                            <th scope="col">Username</th>
-                            <th scope="col">First Name</th>
-                            <th scope="col">Last Name</th>
-                            <th scope="col">Email</th>
-                            <th scope="col">Role</th>
-                            <th scope="col">Status</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {% for proj_user in users_pending_removal %}
-                            <tr>
-                                <td>{{ forloop.counter }}</td>
-                                <td>{{ proj_user.user.username }}</td>
-                                <td>{{ proj_user.user.first_name }}</td>
-                                <td>{{ proj_user.user.last_name }}</td>
-                                <td>{{ proj_user.user.email }}</td>
-                                <td>{{ proj_user.role.name }}</td>
-                                <td><span class="badge badge-warning">{{ proj_user.status.name }} </span></td>
-                            </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    {% else %}
-        <div class="alert alert-info">
-            No pending project removal requests!
-        </div>
-    {% endif %}
-
-    <p></p>
-
-    {% if formset %}
-        <div class="card border-light">
-            <div class="card-body">
-                <strong>Select Users to Remove:  </strong>
-
-                <form action="{% url 'project-remove-users' project.pk %}" method="post">
-                    {% csrf_token %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                            <th>
-                                <input type="checkbox" class="check" id="selectAll">
-                            </th>
-                            <th scope="col">#</th>
-                            <th scope="col">Username</th>
-                            <th scope="col">First Name</th>
-                            <th scope="col">Last Name</th>
-                            <th scope="col">Email</th>
-                            <th scope="col">Role</th>
-                            <th scope="col">Status</th>
-                            </thead>
-                            <tbody>
-                            {% for form in formset %}
+    <tr>
+        <td>
+            Below is a list of users with pending removal requests from project {{ project.title }}
+            that must be reviewed and processed by admins.
+        </td>
+        <p></p>
+        <td>
+            {% if users_pending_removal %}
+                <div class="card">
+                    <div class="card-body">
+                        <strong>Users With Pending Removal Requests:  </strong>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
                                 <tr>
-                                    <td>{{ form.selected }}</td>
-                                    <td>{{ forloop.counter }}</td>
-                                    <td>{{ form.username.value }}</td>
-                                    <td>{{ form.first_name.value }}</td>
-                                    <td>{{ form.last_name.value }}</td>
-                                    <td>{{ form.email.value }}</td>
-                                    <td>{{ form.role.value }}</td>
-                                    <td><span class="badge badge-success">{{ form.status.value }} </span></td>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Username</th>
+                                    <th scope="col">First Name</th>
+                                    <th scope="col">Last Name</th>
+                                    <th scope="col">Email</th>
+                                    <th scope="col">Role</th>
+                                    <th scope="col">Status</th>
                                 </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                {% for proj_user in users_pending_removal %}
+                                    <tr>
+                                        <td>{{ forloop.counter }}</td>
+                                        <td>{{ proj_user.user.username }}</td>
+                                        <td>{{ proj_user.user.first_name }}</td>
+                                        <td>{{ proj_user.user.last_name }}</td>
+                                        <td>{{ proj_user.user.email }}</td>
+                                        <td>{{ proj_user.role.name }}</td>
+                                        <td><span class="badge badge-warning">{{ proj_user.status.name }} </span></td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                    {{ formset.management_form }}
-                    <div>
-                        <button type="submit" class="btn btn-primary"><i class="fas fa-user-minus" aria-hidden="true"></i> Remove Selected Users From Project</button>
-                        <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a>
-                        <br>
-                    </div>
-                </form>
-            </div>
-        </div>
-    {% else %}
-        <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a>
-        <div class="alert alert-info">
-            No users to remove!
-        </div>
-    {% endif %}
-    <script>
-        $("#selectAll").click(function() {
-            $("input[name^='userform-']").prop('checked', $(this).prop('checked'));
-        });
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    No pending project removal requests!
+                </div>
+            {% endif %}
+        </td>
 
-        $("input[name^='userform-']").click(function(ele) {
-            var id = $(this).attr('id');
-            if (id != "selectAll") {
-                $("#selectAll").prop('checked', false);
-            }
-        });
-    </script>
+        <p></p>
+        <td>
+            Below is a list of users eligible to be removed from project {{ project.title }}. To initiate a
+            removal request, click the "Remove" button next to the user to remove and click
+            "Submit User Removal Request" in the confirmation window. Once a removal
+            request is initiated, it must be reviewed and processed by admins.
+        </td>
+        <p></p>
+        <td>
+            {% if users_to_remove %}
+                <div class="card">
+                    <div class="card-body">
+                        <strong>Select Users to Remove:  </strong>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                <th scope="col">#</th>
+                                <th scope="col">Username</th>
+                                <th scope="col">First Name</th>
+                                <th scope="col">Last Name</th>
+                                <th scope="col">Email</th>
+                                <th scope="col">Role</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Remove</th>
+                                </thead>
+                                <tbody>
+                                {% for user in users_to_remove %}
+                                    <tr>
+                                        <td>{{ forloop.counter }}</td>
+                                        <td>{{ user.username }}</td>
+                                        <td>{{ user.first_name }}</td>
+                                        <td>{{ user.last_name }}</td>
+                                        <td>{{ user.email }}</td>
+                                        <td>{{ user.role }}</td>
+                                        <td>{{ user.status }}</td>
+
+                                        <td>
+                                            <div class="modal fade" id="remove{{ project.pk }}Modal" tabindex="-1" role="dialog" aria-labelledby="remove{{ project.pk }}ModalLabel" aria-hidden="true">
+                                                <div class="modal-dialog" role="document">
+                                                    <form action="{% url 'project-remove-users' project.pk %}" method="post" id="remove{{ project.pk }}Form">
+                                                        {% csrf_token %}
+                                                        <div class="modal-content">
+                                                            <div class="modal-header">
+                                                                <p class="modal-title">User Removal Request</p>
+                                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                                    <span aria-hidden="true">&times;</span>
+                                                                </button>
+                                                            </div>
+
+                                                            <div class="modal-body">
+                                                                <label>Are You Sure?</label>
+
+                                                                <br><b>User:</b> {{ user.username }}
+                                                                <br><b>Project:</b> {{ project.title }}
+                                                                <br><b>Role:</b> {{ user.role }}
+                                                                <br><b>Status:</b> {{ user.status }}
+
+                                                                <input type="hidden" value="{{ user.username }}" name="username">
+                                                            </div>
+
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                                                <button class="btn btn-danger" type="submit">
+                                                                    <i class="fas fa-user-plus" aria-hidden="true"></i>
+                                                                    Submit User Removal Request
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+
+                                            <button class="btn btn-danger" data-toggle="modal" data-target="#remove{{ project.pk }}Modal">
+                                                <i class="fas fa-user-plus" aria-hidden="true"></i>
+                                                Remove
+                                            </button>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                            {% if users_to_remove.has_other_pages %} Page {{ users_to_remove.number }} of {{ users_to_remove.paginator.num_pages }}
+                                <ul class="pagination float-right mr-3">
+                                    {% if users_to_remove.has_previous %}
+                                        <li class="page-item"><a class="page-link" href="?page={{ users_to_remove.previous_page_number }}">Previous</a></li>
+                                    {% else %}
+                                        <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+                                    {% endif %}
+                                    {% if users_to_remove.has_next %}
+                                        <li class="page-item"><a class="page-link" href="?page={{ users_to_remove.next_page_number }}">Next</a></li>
+                                    {% else %}
+                                        <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
+                                    {% endif %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a>
+                <div class="alert alert-info">
+                    No users to remove!
+                </div>
+            {% endif %}
+        </td>
+    </tr>
+
 {% endblock %}

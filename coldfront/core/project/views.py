@@ -1067,6 +1067,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
 class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'project/project_remove_users.html'
+    logger = logging.getLogger(__name__)
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -1091,6 +1092,22 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             return super().dispatch(request, *args, **kwargs)
 
     def get_users_to_remove(self, project_obj):
+
+        num_managers = project_obj.projectuser_set.filter(
+            role__name='Manager',
+            status__name='Active').count()
+
+        if num_managers > 1:
+            query_set = project_obj.projectuser_set.filter(
+                status__name='Active').exclude(
+                role__name='Principal Investigator').order_by(
+                'user__username')
+        else:
+            query_set = project_obj.projectuser_set.filter(
+                status__name='Active').exclude(
+                role__name__in=['Principal Investigator', 'Manager']).order_by(
+                'user__username')
+
         users_to_remove = [
 
             {'username': ele.user.username,
@@ -1100,10 +1117,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
              'role': ele.role,
              'status': ele.status.name}
 
-            for ele in project_obj.projectuser_set.filter(
-                status__name='Active').exclude(
-                role__name='Principal Investigator').order_by(
-                'user__username') if ele.user != self.request.user
+            for ele in query_set if ele.user != self.request.user
         ]
 
         users_pending_removal = [
@@ -1122,62 +1136,54 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         pk = self.kwargs.get('pk')
         project_obj = get_object_or_404(Project, pk=pk)
 
-        users_to_remove, users_pending_removal = self.get_users_to_remove(project_obj)
+        users_to_remove_list, users_pending_removal = self.get_users_to_remove(project_obj)
         context = {}
-
-        if users_to_remove:
-            formset = formset_factory(
-                ProjectRemoveUserForm, max_num=len(users_to_remove))
-            formset = formset(initial=users_to_remove, prefix='userform')
-            context['formset'] = formset
-
         context['project'] = get_object_or_404(Project, pk=pk)
         context['users_pending_removal'] = users_pending_removal
+
+        page = request.GET.get('page', 1)
+
+        paginator = Paginator(users_to_remove_list, 25)
+        try:
+            users_to_remove = paginator.page(page)
+        except PageNotAnInteger:
+            users_to_remove = paginator.page(1)
+        except EmptyPage:
+            users_to_remove = paginator.page(paginator.num_pages)
+
+        context['users_to_remove'] = users_to_remove
+
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         project_obj = get_object_or_404(Project, pk=pk)
+        user_obj = User.objects.get(
+            username=self.request.POST['username'])
 
-        users_to_remove, _ = self.get_users_to_remove(project_obj)
+        try:
+            request_runner = ProjectRemovalRequestRunner(
+                self.request.user, user_obj, project_obj)
+            runner_result = request_runner.run()
+            success_messages, error_messages = request_runner.get_messages()
 
-        formset = formset_factory(
-            ProjectRemoveUserForm, max_num=len(users_to_remove))
-        formset = formset(
-            request.POST, initial=users_to_remove, prefix='userform')
+            if runner_result:
+                request_runner.send_emails()
+                for m in success_messages:
+                    messages.success(request, m)
+            else:
+                for m in error_messages:
+                    messages.error(request, m)
 
-        if formset.is_valid():
-            for form in formset:
-                user_form_data = form.cleaned_data
-                if user_form_data['selected']:
+        except Exception as e:
+            self.logger.exception(e)
+            error_message = \
+                'Unexpected error. Please contact an administrator.'
+            messages.error(self.request, error_message)
 
-                    user_obj = User.objects.get(
-                        username=user_form_data.get('username'))
-
-                    try:
-                        request_runner = ProjectRemovalRequestRunner(
-                            self.request.user, user_obj, project_obj)
-                        runner_result = request_runner.run()
-                        success_messages, error_messages = request_runner.get_messages()
-
-
-                        if runner_result:
-                            request_runner.send_emails()
-                            for m in success_messages:
-                                messages.success(request, m)
-                        else:
-                            for m in error_messages:
-                                messages.error(request, m)
-
-                    except Exception as e:
-                        self.logger.exception(e)
-                        error_message = \
-                            'Unexpected error. Please contact an administrator.'
-                        messages.error(self.request, error_message)
-
-        else:
-            for error in formset.errors:
-                messages.error(request, error)
+        # else:
+        #     for error in formset.errors:
+        #         messages.error(request, error)
 
         return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': pk}))
 
