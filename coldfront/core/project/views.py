@@ -1251,7 +1251,7 @@ class ProjectActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
             }
 
             email_receiver_list = []
-            for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Error']):
+            for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Denied']):
                 if project_obj.projectuser_set.get(user=project_user.user).enable_notifications:
                     email_receiver_list.append(project_user.user.email)
 
@@ -1318,7 +1318,7 @@ class ProjectDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
             }
 
             email_receiver_list = []
-            for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Error']):
+            for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Denied']):
                 if project_obj.projectuser_set.get(user=project_user.user).enable_notifications:
                     email_receiver_list.append(project_user.user.email)
 
@@ -1394,7 +1394,7 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
             }
 
             email_receiver_list = []
-            for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Error']):
+            for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Denied']):
                 if project_obj.projectuser_set.get(user=project_user.user).enable_notifications:
                     email_receiver_list.append(project_user.user.email)
 
@@ -1466,7 +1466,7 @@ class ProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
             }
 
             email_receiver_list = []
-            for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Error']):
+            for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Denied']):
                 if project_obj.projectuser_set.get(user=project_user.user).enable_notifications:
                     email_receiver_list.append(project_user.user.email)
 
