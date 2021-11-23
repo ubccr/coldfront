@@ -1077,7 +1077,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def get_allocation_data(self, project_obj):
         allocations = project_obj.allocation_set.filter(
             status__name__in=['Active', 'Expired', ]
-        )
+        ).exclude(use_indefinitely=True)
         initial_data = []
         if allocations:
             for allocation in allocations:
