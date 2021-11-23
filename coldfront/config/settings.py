@@ -61,6 +61,14 @@ INSTALLED_APPS += [
     'formtools',
 ]
 
+# All-Auth Apps
+INSTALLED_APPS += [
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.cilogon',
+]
+
 # ------------------------------------------------------------------------------
 # Django Middleware
 # ------------------------------------------------------------------------------
