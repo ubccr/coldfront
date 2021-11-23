@@ -1083,7 +1083,7 @@ class VectorProjectReviewSetupForm(forms.Form):
 
 
 class ProjectRemovalRequestSearchForm(forms.Form):
-    project_name = forms.CharField(label='Project Title',
+    project_name = forms.CharField(label='Project Name',
                                    max_length=100, required=False)
     username = forms.CharField(
         label='User Username', max_length=100, required=False)
