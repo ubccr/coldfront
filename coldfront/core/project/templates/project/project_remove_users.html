@@ -92,9 +92,9 @@
                                         <td>{{ user.status }}</td>
 
                                         <td>
-                                            <div class="modal fade" id="remove{{ project.pk }}Modal" tabindex="-1" role="dialog" aria-labelledby="remove{{ project.pk }}ModalLabel" aria-hidden="true">
+                                            <div class="modal fade" id="remove{{ user.username }}Modal" tabindex="-1" role="dialog" aria-labelledby="remove{{ user.username }}ModalLabel" aria-hidden="true">
                                                 <div class="modal-dialog" role="document">
-                                                    <form action="{% url 'project-remove-users' project.pk %}" method="post" id="remove{{ project.pk }}Form">
+                                                    <form action="{% url 'project-remove-users' project.pk %}" method="post" id="remove{{ user.username }}Form">
                                                         {% csrf_token %}
                                                         <div class="modal-content">
                                                             <div class="modal-header">
@@ -127,7 +127,7 @@
                                                 </div>
                                             </div>
 
-                                            <button class="btn btn-danger" data-toggle="modal" data-target="#remove{{ project.pk }}Modal">
+                                            <button class="btn btn-danger" data-toggle="modal" data-target="#remove{{ user.username }}Modal">
                                                 <i class="fas fa-user-plus" aria-hidden="true"></i>
                                                 Remove
                                             </button>
@@ -162,4 +162,27 @@
         </td>
     </tr>
 
+    <script>
+        $(document).on('click', '#form_reset_button', function() {
+            resetForm($('#filter_form'));
+        });
+
+        function resetForm($form) {
+            $form.find('input:text, textarea').val('');
+        };
+
+        $("#expand_button").click(function() {
+
+            $('#collapseOne').collapse();
+            icon = $("#plus_minus");
+            icon.toggleClass("fa-plus fa-minus");
+
+        });
+    </script>
+
+    <script>
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip()
+        })
+    </script>
 {% endblock %}
