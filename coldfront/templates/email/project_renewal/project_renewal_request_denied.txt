@@ -1,0 +1,16 @@
+Dear {{ center_name }} user,
+
+Your request to renew PI {{ pi_name }}'s allowance has been denied for the following reason:
+
+Category: {{ reason_category }}
+Justification: {{ reason_justification }}
+
+Below are some additional details about the request:
+
+Current Project: {{ current_project_name }}
+Requested Project: {{ requested_project_name }}
+
+If you have any questions, contact us at {{ support_email }}.
+
+Thank you,
+{{ signature }}

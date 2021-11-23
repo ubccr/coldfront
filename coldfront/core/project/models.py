@@ -177,6 +177,13 @@ We do not have information about your research. Please provide a detailed descri
         return User.objects.filter(
             pk__in=manager_user_pks).order_by('username')
 
+    def is_pooled(self):
+        """Return whether this project is a pooled project. In
+        particular, it is pooled if it has more than one PI."""
+        pi_role = ProjectUserRoleChoice.objects.get(
+            name='Principal Investigator')
+        return self.projectuser_set.filter(role=pi_role).count() > 1
+
     def __str__(self):
         return self.name
 

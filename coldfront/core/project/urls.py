@@ -69,15 +69,17 @@ urlpatterns += [
                  'project/project_request/savio/project_request_landing.html')
          ),
          name='project-request-savio-landing'),
-    path('savio-project-request/', SavioProjectRequestWizard.as_view(
-         condition_dict={
-             '2': show_new_pi_form_condition,
-             '3': show_ica_extra_fields_form_condition,
-             '4': show_recharge_extra_fields_form_condition,
-             '5': show_pool_allocations_form_condition,
-             '6': show_pooled_project_selection_form_condition,
-             '7': show_details_form_condition,
-         }),
+    path('savio-project-request/',
+         SavioProjectRequestWizard.as_view(
+             condition_dict={
+                 '2': show_new_pi_form_condition,
+                 '3': show_ica_extra_fields_form_condition,
+                 '4': show_recharge_extra_fields_form_condition,
+                 '5': show_pool_allocations_form_condition,
+                 '6': show_pooled_project_selection_form_condition,
+                 '7': show_details_form_condition,
+             }
+         ),
          name='savio-project-request'),
     path('savio-project-pending-request-list/',
          SavioProjectRequestListView.as_view(completed=False),
@@ -151,4 +153,50 @@ urlpatterns += [
     path('project-removal-request/<int:pk>/complete-status',
          project_views.ProjectRemovalRequestCompleteStatusView.as_view(),
          name='project-removal-request-complete-status'),
+]
+
+
+from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestListView
+from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestDetailView
+from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestReviewDenyView
+from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestReviewEligibilityView
+# This is disabled because a PI may always make a new request.
+# from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestUndenyView
+from coldfront.core.project.views_.renewal_views.request_views import AllocationRenewalRequestUnderProjectView
+from coldfront.core.project.views_.renewal_views.request_views import AllocationRenewalRequestView
+
+
+urlpatterns += [
+    path('<int:pk>/renew',
+         AllocationRenewalRequestUnderProjectView.as_view(),
+         name='project-renew'),
+    path('renew-pi-allocation-landing/',
+         TemplateView.as_view(
+             template_name='project/project_renewal/request_landing.html'),
+         name='renew-pi-allocation-landing'),
+    path('renew-pi-allocation/',
+         AllocationRenewalRequestView.as_view(
+             condition_dict=AllocationRenewalRequestView.condition_dict(),
+         ),
+         name='renew-pi-allocation'),
+    path('pi-allocation-renewal-pending-request-list/',
+         AllocationRenewalRequestListView.as_view(completed=False),
+         name='pi-allocation-renewal-pending-request-list'),
+    path('pi-allocation-renewal-completed-request-list/',
+         AllocationRenewalRequestListView.as_view(completed=True),
+         name='pi-allocation-renewal-completed-request-list'),
+    path('pi-allocation-renewal-request-detail/<int:pk>/',
+         AllocationRenewalRequestDetailView.as_view(),
+         name='pi-allocation-renewal-request-detail'),
+    path('pi-allocation-renewal-request/<int:pk>/eligibility/',
+         AllocationRenewalRequestReviewEligibilityView.as_view(),
+         name='pi-allocation-renewal-request-review-eligibility'),
+    path('pi-allocation-renewal-request/<int:pk>/deny/',
+         AllocationRenewalRequestReviewDenyView.as_view(),
+         name='pi-allocation-renewal-request-review-deny'),
+    # This is disabled because a PI may always make a new request.
+    # path('pi-allocation-renewal-request/<int:pk>/undeny/',
+    #      AllocationRenewalRequestUndenyView.as_view(),
+    #      name='pi-allocation-renewal-request-review-undeny'),
+
 ]

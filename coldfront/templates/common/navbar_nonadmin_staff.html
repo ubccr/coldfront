@@ -1,44 +1,38 @@
 {% comment %}
-  intentionally keeping "navbar-admin" (rather than renaming to navbar-staff),
-  since existing templates use javascript to target it by ID
+    intentionally keeping "navbar-admin" (rather than renaming to navbar-staff),
+    since existing templates use javascript to target it by ID
 {% endcomment %}
 <li id="navbar-admin" class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">Staff</a>
-  <div class="dropdown-menu">
-    {# all staff can perform a user search #}
-    <a id="navbar-user-search" class="dropdown-item" href="{% url 'user-search-home' %}">User Search</a>
-      <a id="navbar-user-list" class="dropdown-item" href="{% url 'user-search-all' %}">All Users</a>
-    {% if perms.project.can_view_all_projects %}
-    <a class="dropdown-item" href="{% url 'project-list' %}?show_all_projects=on">All Projects</a>
-    {% endif %}
-    {% if perms.allocation.can_view_all_allocations %}
-    <a class="dropdown-item" href="{% url 'allocation-list' %}?show_all_allocations=on">All Allocations</a>
-    {% endif %}
-    {% if perms.project.can_review_pending_project_reviews %}
-    <a id="navbar-project-reviews" class="dropdown-item" href="{% url 'project-review-list' %}">Project Reviews</a>
-    {% endif %}
-    {% if perms.allocation.can_review_allocation_requests %}
-    <a id="navbar-allocation-requests" class="dropdown-item" href="{% url 'allocation-request-list' %}">
-      Allocation Requests</a>
-    {% endif %}
-    {% if perms.project.view_projectuserremovalrequest %}
-    <a id="navbar-project-removal-requests" class="dropdown-item" href="{% url 'project-removal-request-list' %}">
-        Project Removal Requests
-    </a>
-    {% endif %}
-    {% if perms.allocation.can_review_cluster_account_requests %}
-    <a id="navbar-cluster-requests" class="dropdown-item" href="{% url 'allocation-cluster-account-request-list' %}">
-        Cluster Account Requests</a>
-    {% endif %}
-      {% if perms.project.view_savioprojectallocationrequest %}
-      <a id="navbar-project-savio-project-requests" class="dropdown-item" href="{% url 'savio-project-pending-request-list' %}">
-          Savio Project Requests
-      </a>
-    {% endif %}
-    {% if perms.project.view_vectorprojectallocationrequest %}
-      <a id="navbar-project-vector-project-requests" class="dropdown-item" href="{% url 'vector-project-pending-request-list' %}">
-          Vector Project Requests
-      </a>
-    {% endif %}
-  </div>
+    <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">Staff</a>
+    <ul class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+    {% comment %}
+        all staff can perform a user search
+    {% endcomment %}
+        <li><a class="dropdown-item" href="{% url 'allocation-list' %}?show_all_allocations=on">All Allocations</a></li>
+        <li><a class="dropdown-item" href="{% url 'project-list' %}?show_all_projects=on">All Projects</a></li>
+        <li><a id="navbar-user-list" class="dropdown-item" href="{% url 'user-search-all' %}">All Users</a></li>
+        <li><a id="navbar-project-reviews" class="dropdown-item" href="{% url 'project-review-list' %}">Project Reviews</a></li>
+        <li><a id="navbar-user-search" class="dropdown-item" href="{% url 'user-search-home' %}">User Search</a></li>
+
+        <li><div class="dropdown-divider"></div></li>
+        <li class="dropdown-submenu"><a class="dropdown-item dropdown-toggle" href="#">Requests</a>
+            <ul class="dropdown-menu">
+                <li><a id="navbar-allocation-cluster-account-requests" class="dropdown-item" href="{% url 'allocation-cluster-account-request-list' %}?show_all_requests=on">
+                    Cluster Account Requests
+                </a></li>
+                <li><a id="navbar-project-removal-requests" class="dropdown-item" href="{% url 'project-removal-request-list' %}">
+                    Project Removal Requests
+                </a></li>
+                <li><a id="navbar-pi-allocation-renewal-requests" class="dropdown-item" href="{% url 'pi-allocation-renewal-pending-request-list' %}">
+                    Project Renewal Requests
+                </a></li>
+                <li><a id="navbar-project-savio-project-requests" class="dropdown-item" href="{% url 'savio-project-pending-request-list' %}">
+                    Savio Project Requests
+                </a></li>
+                <li><a id="navbar-project-vector-project-requests" class="dropdown-item" href="{% url 'vector-project-pending-request-list' %}">
+                    Vector Project Requests
+                </a></li>
+            </ul>
+        </li>
+    </ul>
 </li>

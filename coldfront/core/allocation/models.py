@@ -10,12 +10,14 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.utils import timezone
 from django.utils.html import mark_safe
 from django.utils.module_loading import import_string
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
 from coldfront.core.project.models import Project
+from coldfront.core.project.models import ProjectUser
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import import_from_settings
 
@@ -389,3 +391,120 @@ def validate_allocation_attribute_value_type(expected_value_type, value):
             raise ValidationError(
                 ('Invalid Value "%s". Date must be in format '
                  'YYYY-MM-DD') % value)
+
+
+class AllocationPeriod(TimeStampedModel):
+    name = models.CharField(max_length=255, unique=True)
+    start_date = models.DateField()
+    end_date = models.DateField()
+
+    def __str__(self):
+        return self.name
+
+
+class AllocationRenewalRequestStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]
+
+
+def allocation_renewal_request_state_schema():
+    """Return the schema for the AllocationRenewalRequest.state
+    field."""
+    return {
+        'eligibility': {
+            'status': 'Pending',
+            'justification': '',
+            'timestamp': '',
+        },
+        'other': {
+            'justification': '',
+            'timestamp': '',
+        }
+    }
+
+
+class AllocationRenewalRequest(TimeStampedModel):
+    requester = models.ForeignKey(
+        User, on_delete=models.CASCADE,
+        related_name='allocation_renewal_requester')
+    pi = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='allocation_renewal_pi')
+    allocation_period = models.ForeignKey(
+        AllocationPeriod, on_delete=models.CASCADE)
+    status = models.ForeignKey(
+        AllocationRenewalRequestStatusChoice, on_delete=models.CASCADE)
+
+    pre_project = models.ForeignKey(
+        Project, on_delete=models.CASCADE,
+        related_name='allocation_renewal_pre_project')
+    post_project = models.ForeignKey(
+        Project, on_delete=models.CASCADE,
+        related_name='allocation_renewal_post_project')
+    # Use quotation marks to avoid a circular import.
+    new_project_request = models.OneToOneField(
+        'project.SavioProjectAllocationRequest',
+        null=True, blank=True, on_delete=models.CASCADE)
+
+    num_service_units = models.DecimalField(
+        max_digits=settings.DECIMAL_MAX_DIGITS,
+        decimal_places=settings.DECIMAL_MAX_PLACES,
+        default=settings.ALLOCATION_MIN,
+        validators=[
+            MinValueValidator(settings.ALLOCATION_MIN),
+            MaxValueValidator(settings.ALLOCATION_MAX),
+        ])
+    request_time = models.DateTimeField(
+        null=True, blank=True, default=timezone.now)
+    approval_time = models.DateTimeField(null=True, blank=True)
+    completion_time = models.DateTimeField(null=True, blank=True)
+
+    state = models.JSONField(default=allocation_renewal_request_state_schema)
+    extra_fields = models.JSONField(default=dict)
+
+    UNPOOLED_TO_UNPOOLED = 'unpooled_to_unpooled'
+    UNPOOLED_TO_POOLED = 'unpooled_to_pooled'
+    POOLED_TO_POOLED_SAME = 'pooled_to_pooled_same'
+    POOLED_TO_POOLED_DIFFERENT = 'pooled_to_pooled_different'
+    POOLED_TO_UNPOOLED_OLD = 'pooled_to_unpooled_old'
+    POOLED_TO_UNPOOLED_NEW = 'pooled_to_unpooled_new'
+
+    def get_pooling_preference_case(self):
+        """Return a string denoting the pooling preference based on the
+        contents of the request.
+
+        Raise a ValueError if the case is unexpected.
+        """
+        pi = self.pi
+        pre_project = self.pre_project
+        post_project = self.post_project
+        is_pooled_pre = pre_project and pre_project.is_pooled()
+        is_pooled_post = post_project.is_pooled()
+        if pre_project == post_project:
+            if not is_pooled_pre:
+                return self.UNPOOLED_TO_UNPOOLED
+            else:
+                return self.POOLED_TO_POOLED_SAME
+        else:
+            if self.new_project_request:
+                return self.POOLED_TO_UNPOOLED_NEW
+            else:
+                if not is_pooled_pre:
+                    if not is_pooled_post:
+                        raise ValueError('Unexpected case.')
+                    else:
+                        return self.UNPOOLED_TO_POOLED
+                else:
+                    if pi in post_project.pis():
+                        return self.POOLED_TO_UNPOOLED_OLD
+                    else:
+                        return self.POOLED_TO_POOLED_DIFFERENT
+
+    def __str__(self):
+        period = self.allocation_period.name
+        pi = self.pi.username
+        return f'Renewal Request ({period}, {pi})'
