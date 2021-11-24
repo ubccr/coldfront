@@ -104,6 +104,8 @@ if EMAIL_ENABLED:
     SUPPORT_EMAIL = import_from_settings('CENTER_HELP_EMAIL')
     EMAIL_ADMIN_LIST = import_from_settings('EMAIL_ADMIN_LIST')
 
+logger = logging.getLogger(__name__)
+
 
 class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     model = Project
@@ -1067,7 +1069,6 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
 class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'project/project_remove_users.html'
-    logger = logging.getLogger(__name__)
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -1176,14 +1177,10 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     messages.error(request, m)
 
         except Exception as e:
-            self.logger.exception(e)
+            logger.exception(e)
             error_message = \
                 'Unexpected error. Please contact an administrator.'
             messages.error(self.request, error_message)
-
-        # else:
-        #     for error in formset.errors:
-        #         messages.error(request, error)
 
         return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': pk}))
 
@@ -1227,7 +1224,7 @@ class ProjectRemoveSelf(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 for message in error_messages:
                     messages.error(request, message)
         except Exception as e:
-            self.logger.exception(e)
+            logger.exception(e)
             error_message = \
                 'Unexpected error. Please contact an administrator.'
             messages.error(self.request, error_message)
