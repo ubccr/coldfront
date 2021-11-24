@@ -55,30 +55,32 @@ class EmailAddress(models.Model):
     def save(self, *args, **kwargs):
         self.email = self.email.lower()
 
-        try:
-            was_primary = EmailAddress.objects.get(pk=self.pk).is_primary
-        except EmailAddress.DoesNotExist:
-            was_primary = False
-        if not was_primary and self.is_primary:
-            # The address is going from not being primary to being primary.
-            f = Q(user=self.user) & Q(is_primary=True) & ~Q(pk=self.pk)
-            if EmailAddress.objects.filter(f).exists():
-                # Raise an error if a different address is already primary.
-                raise ValidationError(
-                    'User already has a primary email address. Manually unset '
-                    'the primary email before setting a new primary email.')
-            else:
-                # Non-verified addresses should not be set to primary.
-                if not self.is_verified:
+        if self.is_primary:
+            try:
+                was_primary = EmailAddress.objects.get(pk=self.pk).is_primary
+            except EmailAddress.DoesNotExist:
+                was_primary = False
+            if not was_primary:
+                # The address is going from not being primary to being primary.
+                f = Q(user=self.user) & Q(is_primary=True) & ~Q(pk=self.pk)
+                if EmailAddress.objects.filter(f).exists():
+                    # Raise an error if a different address is already primary.
                     raise ValidationError(
-                        'Only verified emails may be set to primary.')
+                        'User already has a primary email address. Manually '
+                        'unset the primary email before setting a new primary '
+                        'email.')
+                else:
+                    # Non-verified addresses should not be set to primary.
+                    if not self.is_verified:
+                        raise ValidationError(
+                            'Only verified emails may be set to primary.')
+                    self.user.email = self.email
+                    self.user.save()
+            else:
+                # The address was and is still primary; set the user's email
+                # field in case it differs.
                 self.user.email = self.email
                 self.user.save()
-        else:
-            # The address was and is still primary; set the user's email field
-            # in case it differs.
-            self.user.email = self.email
-            self.user.save()
 
         super().save(*args, **kwargs)
 
