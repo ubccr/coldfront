@@ -3,6 +3,7 @@ from django.core.validators import EmailValidator
 from django.core.validators import MinLengthValidator
 from django.core.validators import RegexValidator
 from django.db import models
+from django.db.models import Q
 from django.core.exceptions import ValidationError
 from rest_framework.authtoken.models import Token
 
@@ -33,7 +34,6 @@ class UserProfile(models.Model):
 
 class EmailAddress(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-
     email = models.EmailField(
         'email address',
         unique=True,
@@ -45,8 +45,8 @@ class EmailAddress(models.Model):
         }
     )
     is_verified = models.BooleanField(default=False)
-    is_primary = models.BooleanField(default=False,
-                                     help_text="Change is_primary status in list display.")
+    is_primary = models.BooleanField(
+        default=False, help_text='Change is_primary status in list display.')
 
     class Meta:
         verbose_name = 'Email Address'
@@ -55,27 +55,28 @@ class EmailAddress(models.Model):
     def save(self, *args, **kwargs):
         self.email = self.email.lower()
 
-        # fetch old primary val
-        if EmailAddress.objects.filter(pk=self.pk).exists():
-            old_primary_val = EmailAddress.objects.get(pk=self.pk).is_primary
+        try:
+            was_primary = EmailAddress.objects.get(pk=self.pk).is_primary
+        except EmailAddress.DoesNotExist:
+            was_primary = False
+        if not was_primary and self.is_primary:
+            # The address is going from not being primary to being primary.
+            f = Q(user=self.user) & Q(is_primary=True) & ~Q(pk=self.pk)
+            if EmailAddress.objects.filter(f).exists():
+                # Raise an error if a different address is already primary.
+                raise ValidationError(
+                    'User already has a primary email address. Manually unset '
+                    'the primary email before setting a new primary email.')
+            else:
+                # Non-verified addresses should not be set to primary.
+                if not self.is_verified:
+                    raise ValidationError(
+                        'Only verified emails may be set to primary.')
+                self.user.email = self.email
+                self.user.save()
         else:
-            # if the email address did not exist, default old primary to False
-            old_primary_val = False
-
-        # checks if another primary email exists for the user
-        primary_emails_exist = EmailAddress.objects.filter(user=self.user).filter(is_primary=True).exists()
-
-        # if changing is_primary from False -> True and other primary emails exist, raise error
-        if self.is_primary and not old_primary_val and primary_emails_exist:
-            raise ValidationError('User already has a primary email address. Manually unset the primary '
-                                  'email before setting a new primary email.')
-        # else if changing is_primary from False -> True and no other primary emails exist
-        elif self.is_primary and not old_primary_val and not primary_emails_exist:
-            # raise error if selected email is not verified
-            if not self.is_verified:
-                raise ValidationError('Only verified emails may be set to primary.')
-
-            # change user email
+            # The address was and is still primary; set the user's email field
+            # in case it differs.
             self.user.email = self.email
             self.user.save()
 
