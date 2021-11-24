@@ -38,6 +38,7 @@ from coldfront.core.user.utils import ExpiringTokenGenerator
 from coldfront.core.user.utils import send_account_activation_email
 from coldfront.core.user.utils import send_account_already_active_email
 from coldfront.core.user.utils import send_email_verification_email
+from coldfront.core.user.utils import update_user_primary_email_address
 from coldfront.core.utils.common import (import_from_settings,
                                          utc_now_offset_aware)
 from coldfront.core.utils.mail import send_email_template
@@ -739,6 +740,8 @@ class UpdatePrimaryEmailAddressView(LoginRequiredMixin, FormView):
     template_name = 'user/user_update_primary_email_address.html'
     login_url = '/'
 
+    error_message = 'Unexpected failure. Please contact an administrator.'
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['has_verified_non_primary_emails'] = \
@@ -747,47 +750,33 @@ class UpdatePrimaryEmailAddressView(LoginRequiredMixin, FormView):
         return context
 
     def form_valid(self, form):
-        # Set the old primary address as no longer primary.
         user = self.request.user
-        old = user.email.lower()
-
-        # first set all is_primary to False as insurance that no conflicting email states exist
-        primary_emails = EmailAddress.objects.filter(user=user, is_primary=True).exclude(email=old)
-        for email in primary_emails:
-            email.is_primary = False
-            email.save()
-
-        # create old primary email if it does not exist as an EmailAddress
-        old_primary, created = EmailAddress.objects.get_or_create(
-            user=user, email=old, is_verified=True)
-
-        if created:
-            message = (
-                f'Created EmailAddress {old_primary.pk} for User '
-                f'{user.pk}\'s old primary address {old}, which unexpectedly '
-                f'did not exist.')
-            logger.warning(message)
-        old_primary.is_primary = True # changed to True in case verification fails, dont want the user to have no primary
-        old_primary.save()
-
-        # Set the new primary address as primary.
         form_data = form.cleaned_data
         new_primary = form_data['email_address']
-        if not new_primary.is_verified:
+
+        try:
+            update_user_primary_email_address(new_primary)
+        except TypeError:
+            message = (
+                f'New primary EmailAddress {new_primary} has unexpected type: '
+                f'{type(new_primary)}.')
+            logger.error(message)
+            messages.error(self.request, self.error_message)
+        except ValueError:
             message = (
                 f'New primary EmailAddress {new_primary.pk} for User '
                 f'{user.pk} is unexpectedly not verified.')
             logger.error(message)
+            messages.error(self.request, self.error_message)
+        except Exception as e:
             message = (
-                'Unexpected server error. Please contact an administrator.')
-            messages.error(self.request, message)
+                f'Encountered unexpected exception when updating User '
+                f'{user.pk}\'s primary EmailAddress to {new_primary.pk}. '
+                f'Details:')
+            logger.error(message)
+            logger.exception(e)
+            messages.error(self.request, self.error_message)
         else:
-            old_primary.is_primary = False # set old_primary to False after insuring user has verified email as replacement
-            old_primary.save()
-
-            new_primary.is_primary = True
-            new_primary.save()
-
             message = f'{new_primary.email} is your new primary email address.'
             messages.success(self.request, message)
 
