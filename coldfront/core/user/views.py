@@ -524,7 +524,6 @@ class UserReactivateView(FormView):
 
 
 def activate_user_account(request, uidb64=None, token=None):
-    logger = logging.getLogger(__name__)
     try:
         user_pk = int(force_text(urlsafe_base64_decode(uidb64)))
         user = User.objects.get(pk=user_pk)
@@ -537,28 +536,27 @@ def activate_user_account(request, uidb64=None, token=None):
             try:
                 email_address, created = EmailAddress.objects.get_or_create(
                     user=user, email=email)
+                if created:
+                    logger.info(
+                        f'Created EmailAddress {email_address.pk} for User '
+                        f'{user.pk} and email {email}.')
+                email_address.is_verified = True
+                email_address.save()
+                update_user_primary_email_address(email_address)
             except Exception as e:
                 logger.error(
                     f'Failed to create EmailAddress for User {user.pk} and '
-                    f'email {email}. Details:')
+                    f'email {email} and set it as the primary address. '
+                    f'Details:')
                 logger.exception(e)
                 message = (
                     'Unexpected server error. Please contact an '
                     'administrator.')
                 messages.error(request, message)
             else:
-                if created:
-                    logger.info(
-                        f'Created EmailAddress {email_address.pk} for User '
-                        f'{user.pk} and email {email}.')
-                email_address.is_verified = True
-                email_address.is_primary = True
-                email_address.save()
-
                 # Only activate the User if the EmailAddress update succeeded.
                 user.is_active = True
                 user.save()
-
                 message = (
                     f'Your account has been activated. You may now log in. '
                     f'{email} has been verified and set as your primary email '
