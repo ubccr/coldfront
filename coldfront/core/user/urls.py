@@ -109,4 +109,8 @@ urlpatterns = [
          user_views.UserNameExistsView.as_view(),
          name='user-name-exists'),
 
+    # Link Personal Account
+    path('identity-link-request',
+         user_views.IdentityLinkRequestView.as_view(),
+         name='identity-link-request'),
 ]

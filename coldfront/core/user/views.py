@@ -25,6 +25,7 @@ from django.views.generic.edit import FormView
 
 from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.project.models import Project, ProjectUser
+from coldfront.core.user.models import IdentityLinkingRequest, IdentityLinkingRequestStatusChoice
 from coldfront.core.user.forms import EmailAddressAddForm
 from coldfront.core.user.forms import UserReactivateForm
 from coldfront.core.user.forms import PrimaryEmailAddressSelectionForm
@@ -91,6 +92,13 @@ class UserProfile(TemplateView):
             allocation_user__user=viewed_user,
             allocation_attribute_type__name='Cluster Account Status',
             value='Active').exists()
+
+        pending_identity_link_status = \
+            IdentityLinkingRequestStatusChoice.objects.get_or_create(name='Pending')
+        context['pending_identity_link'] = IdentityLinkingRequest.objects.filter(
+            requester=self.request.user,
+            status=pending_identity_link_status
+        ).exists()
 
         return context
 
@@ -816,3 +824,22 @@ class UserNameExistsView(View):
         if middle_name is not None:
             users = users.filter(userprofile__middle_name__iexact=middle_name)
         return JsonResponse({'name_exists': users.exists()})
+
+
+class IdentityLinkRequestView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+
+    def test_func(self):
+        if self.request.user.is_superuser:
+            return True
+
+        pending_identity_link_status = \
+            IdentityLinkingRequestStatusChoice.objects.get_or_create(name='Pending')
+
+        if not IdentityLinkingRequest.objects.filter(
+                requester=self.request.user,
+                status=pending_identity_link_status).exists():
+            return True
+
+    def post(self, request, *args, **kwargs):
+
+        return HttpResponseRedirect(reverse('home'))

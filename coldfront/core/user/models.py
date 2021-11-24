@@ -3,9 +3,12 @@ from django.core.validators import EmailValidator
 from django.core.validators import MinLengthValidator
 from django.core.validators import RegexValidator
 from django.db import models
+from pip._internal.commands import completion
 from rest_framework.authtoken.models import Token
 
 from phonenumber_field.modelfields import PhoneNumberField
+
+from coldfront.core.utils.common import utc_now_offset_aware
 
 
 class UserProfile(models.Model):
@@ -62,3 +65,26 @@ class ExpiringToken(Token):
 
     class Meta:
         verbose_name = 'Expiring Token'
+
+
+class IdentityLinkingRequestStatusChoice(models.Model):
+    name = models.CharField(max_length=64)
+    # one of "Pending", "Complete"
+
+
+class IdentityLinkingRequest(models.Model):
+    requester = models.ForeignKey(User, on_delete=models.CASCADE)
+    request_time = models.DateTimeField()
+    completion_time = models.DateTimeField(null=True)
+    status = models.ForeignKey(IdentityLinkingRequestStatusChoice,
+                               on_delete=models.CASCADE)
+
+
+"""
+
+    - requester (User making the request)
+    - request_time (datetime; use utc_now_offset_aware)
+    - completion_time (datetime; use utc_now_offset_aware)
+    - status (IdentityLinkingRequestStatusChoice)
+    
+    """
