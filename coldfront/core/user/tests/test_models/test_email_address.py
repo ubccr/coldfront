@@ -8,6 +8,7 @@ class TestEmailAddress(TestCase):
     """A class for testing the EmailAddress model."""
 
     def setUp(self):
+        """Set up test data."""
         self.user = User.objects.create(
             email='user@email.com',
             first_name='First',

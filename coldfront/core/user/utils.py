@@ -319,13 +319,13 @@ def update_user_primary_email_address(email_address):
         old_primary.is_primary = False
         old_primary.save()
 
+        for ea in EmailAddress.objects.filter(
+                user=user, is_primary=True).exclude(pk=email_address.pk):
+            ea.is_primary = False
+            ea.save()
+
         user.email = email_address.email
         user.save()
 
         email_address.is_primary = True
         email_address.save()
-
-        for email_address in EmailAddress.objects.filter(
-                user=user, is_primary=True).exclude(pk=email_address.pk):
-            email_address.is_primary = False
-            email_address.save()
