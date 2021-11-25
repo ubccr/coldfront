@@ -93,12 +93,15 @@ class UserProfile(TemplateView):
             allocation_attribute_type__name='Cluster Account Status',
             value='Active').exists()
 
-        pending_identity_link_status = \
+        pending_identity_link_status, _ = \
             IdentityLinkingRequestStatusChoice.objects.get_or_create(name='Pending')
         context['pending_identity_link'] = IdentityLinkingRequest.objects.filter(
             requester=self.request.user,
             status=pending_identity_link_status
         ).exists()
+
+        context['identity_link_requests'] = IdentityLinkingRequest.objects.filter(
+            requester=self.request.user).order_by('status')
 
         return context
 
@@ -826,13 +829,13 @@ class UserNameExistsView(View):
         return JsonResponse({'name_exists': users.exists()})
 
 
-class IdentityLinkRequestView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+class IdentityLinkRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
 
     def test_func(self):
         if self.request.user.is_superuser:
             return True
 
-        pending_identity_link_status = \
+        pending_identity_link_status, _ = \
             IdentityLinkingRequestStatusChoice.objects.get_or_create(name='Pending')
 
         if not IdentityLinkingRequest.objects.filter(
@@ -841,5 +844,12 @@ class IdentityLinkRequestView(LoginRequiredMixin, UserPassesTestMixin, TemplateV
             return True
 
     def post(self, request, *args, **kwargs):
+        pending_identity_link_status, _ = \
+            IdentityLinkingRequestStatusChoice.objects.get_or_create(name='Pending')
 
-        return HttpResponseRedirect(reverse('home'))
+        link_request = IdentityLinkingRequest.objects.create(
+            requester=self.request.user,
+            status=pending_identity_link_status,
+            request_time=utc_now_offset_aware())
+
+        return HttpResponseRedirect(reverse('user-profile'))
