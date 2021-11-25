@@ -232,58 +232,52 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
 
     <div class="card">
         <div class="card-header">
-            <i class="far fa-envelope"></i>
+            <i class="far fa-user-circle"></i>
             Link Your Personal Account
                 <div class="float-right">
+                    {% if pending_identity_link %}
+                        <a class="btn btn-secondary float-right disabled">
+                            <i class="fas fa-paper-plane"></i>
+                            Request Linking Email
+                        </a>
+                    {% else %}
+                        <form action="{% url 'identity-link-request' %}" method="post">
+                            {% csrf_token %}
+                            <button class="btn btn-success float-right"  type="submit">
+                                <i class="fas fa-paper-plane"></i>
+                                Request Linking Email
+                            </button>
+                        </form>
+                    {% endif %}
 
-                    <a class="btn btn-success float-right" href="{% url 'add-email-address' %}" role="button">
-                        <i class="fas fa-plus" aria-hidden="true"></i>
-                        Request Linking Email
-                    </a>
                 </div>
 
         </div>
         <div class="card-body">
-            <p>You may request a new OTP link to link your personal account/CalNet account with your MyBRC portal account. Below you will see pending and completed requests. If there you have a pending request, you cannot make a new request until the pending request has expired.</p>
-            <p>You can verify an address by clicking the “Verify” button, which will send a verification email to the address. The address will remain unverified until you have clicked the link provided in that email.</p>
+            <p>You may request a new OTP invite to link your personal email account or CalNet account with your cluster
+                account. Once requested, you will receive an email containing instructions on how
+                to link your accounts. Emails are sent on a rolling basis. If you have not received the
+                email after &lt; a day &gt;, please submit a support ticket by emailing "brc-hpc-help@berkeley.edu." </p>
+            <p>Below are pending and completed requests. If you have a pending request, you
+                cannot make a new request until the pending request has either been completed or expires.</p>
             <div class="table-responsive">
                 <table class="table table-sm">
                     <thead>
                     <tr>
-                        <th scope="col">Email Address</th>
+                        <th scope="col">Request Time</th>
+                        <th scope="col">Last Sent</th>
                         <th scope="col">Status</th>
-                        <th scope="col">Actions</th>
                     </tr>
-                    {% for email in other_emails %}
+                    {% for request in identity_link_requests %}
                         <tr>
-                            <td>{{ email.email }}</td>
+                            <td>{{ request.request_time }}</td>
+                            <td>{% if request.completion_time %}{{ request.completion_time }} {% else %} Sending Soon {% endif %}</td>
                             <td>
-                                {% if email.is_verified %}
-                                    <span class="badge badge-success">Verified</span>
+                                {% if request.status.name == 'Pending' %}
+                                    <span class="badge badge-warning">{{ request.status.name }}</span>
                                 {% else %}
-                                    <span class="badge badge-warning">Verification Pending</span>
+                                    <span class="badge badge-success"> Sent </span>
                                 {% endif %}
-                            </td>
-                            <td>
-                                {% if user == viewed_user %}
-                                    {% if not email.is_verified %}
-                                        <form action="{% url 'send-email-verification-email' email.pk %}" method="post" style="display: inline;">
-                                            {% csrf_token %}
-                                            <button class="btn btn-primary" type="submit">
-                                                Re-Verify
-                                            </button>
-                                        </form>
-                                    {% endif %}
-                                    <form action="{% url 'remove-email-address' email.pk %}" method="post" style="display: inline;">
-                                        {% csrf_token %}
-                                        <button class="btn btn-danger" type="submit">
-                                            Remove
-                                        </button>
-                                    </form>
-                                {% else %}
-                                    N/A
-                                {% endif %}
-                            </td>
                         </tr>
                     {% endfor %}
                     </thead>
