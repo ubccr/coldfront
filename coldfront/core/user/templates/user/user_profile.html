@@ -260,6 +260,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
                 email after &lt; a day &gt;, please submit a support ticket by emailing "brc-hpc-help@berkeley.edu." </p>
             <p>Below is your latest request. If you have a pending request, you
                 cannot make a new request until the pending request has been sent.</p>
+        {% if identity_link_request.request_time %}
             <div class="table-responsive">
                 <table class="table table-sm">
                     <tbody>
@@ -278,6 +279,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
                     </tbody>
                 </table>
             </div>
+        {% endif %}
         </div>
     </div>
 
