@@ -258,29 +258,24 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
                 account. Once requested, you will receive an email containing instructions on how
                 to link your accounts. Emails are sent on a rolling basis. If you have not received the
                 email after &lt; a day &gt;, please submit a support ticket by emailing "brc-hpc-help@berkeley.edu." </p>
-            <p>Below are pending and completed requests. If you have a pending request, you
-                cannot make a new request until the pending request has either been completed or expires.</p>
+            <p>Below is your latest request. If you have a pending request, you
+                cannot make a new request until the pending request has been sent.</p>
             <div class="table-responsive">
                 <table class="table table-sm">
-                    <thead>
+                    <tbody>
                     <tr>
-                        <th scope="col">Request Time</th>
-                        <th scope="col">Last Sent</th>
-                        <th scope="col">Status</th>
-                    </tr>
-                    {% for request in identity_link_requests %}
-                        <tr>
-                            <td>{{ request.request_time }}</td>
-                            <td>{% if request.completion_time %}{{ request.completion_time }} {% else %} Sending Soon {% endif %}</td>
-                            <td>
-                                {% if request.status.name == 'Pending' %}
-                                    <span class="badge badge-warning">{{ request.status.name }}</span>
+                        <th scope="row">Request Time:
+                                <span class="badge badge-success">{{ identity_link_request.request_time }}</span>
+                        </th>
+                        <th scope="row">Last Sent:
+                                {% if pending_identity_link %}
+                                    <span class="badge badge-warning">{{ identity_link_request.status.name }}</span>
                                 {% else %}
-                                    <span class="badge badge-success"> Sent </span>
+                                    <span class="badge badge-success">{{ identity_link_request.completion_time }}</span>
                                 {% endif %}
-                        </tr>
-                    {% endfor %}
-                    </thead>
+                        </th>
+                    </tr>
+                    </tbody>
                 </table>
             </div>
         </div>

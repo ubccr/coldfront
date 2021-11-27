@@ -95,13 +95,21 @@ class UserProfile(TemplateView):
 
         pending_identity_link_status, _ = \
             IdentityLinkingRequestStatusChoice.objects.get_or_create(name='Pending')
+        complete_identity_link_status, _ = \
+            IdentityLinkingRequestStatusChoice.objects.get_or_create(name='Complete')
         context['pending_identity_link'] = IdentityLinkingRequest.objects.filter(
             requester=self.request.user,
             status=pending_identity_link_status
         ).exists()
 
-        context['identity_link_requests'] = IdentityLinkingRequest.objects.filter(
-            requester=self.request.user).order_by('status')
+        if context['pending_identity_link']:
+            context['identity_link_request'] = IdentityLinkingRequest.objects.filter(
+                requester=self.request.user,
+                status=pending_identity_link_status).last()
+        else:
+            context['identity_link_request'] = IdentityLinkingRequest.objects.filter(
+                requester=self.request.user,
+                status=complete_identity_link_status).last()
 
         return context
 
