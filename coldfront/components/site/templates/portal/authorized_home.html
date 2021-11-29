@@ -26,24 +26,39 @@
                   <a href="{% url 'project-review' project.pk %}"><span class="badge badge-warning">Needs Review</span></a>
                 {% endif %}
               </td>
-              <td>
-                {{ project.status }}
-                {% if project.expires_in <= 0 and project.status.name == 'Expired' %}
+              {% if project.expires_in <= 0 and project.status.name == 'Expired' %}
+                <td class="text-danger">
+                  {{ project.status.name }}
                   <a href="{% url 'project-review' project.pk %}">
                     <span class="badge badge-warning">
                       <i class="fas fa-redo-alt" aria-hidden="true"></i>
                       Click to renew
                     </span>
                   </a>
-                {% elif project.expires_in <= 30 and project.status.name not in 'Review Pending, Denied, Archived' %}
+                </td>
+              {% elif project.expires_in <= 30 and project.status.name not in 'Review Pending, Denied, Archived' %}
+                <td class="text-warning">
+                  {{ project.status.name }}
                   <a href="{% url 'project-review' project.pk %}">
                     <span class="badge badge-warning">
                       <i class="fas fa-redo-alt" aria-hidden="true"></i>
                       Expires in {{ project.expires_in }} day{{ project.expires_in|pluralize }} - click to renew
                     </span>
                   </a>
-                {% endif %}
-              </td>
+                </td>
+              {% elif project.status.name in 'Denied, Archived' %}
+               <td class="text-danger">
+                {{ project.status.name }}
+               </td>
+              {% elif project.status.name == 'Active' %}
+               <td class="text-success">
+                {{ project.status.name }}
+               </td>
+              {% else %}
+                <td class="text-info">
+                  {{ project.status.name }}
+               </td>
+              {% endif %}
             </tr>
           {% endfor %}
         </tbody>
