@@ -513,9 +513,28 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         project_obj = form.save(commit=False)
         form.instance.pi = self.request.user
         form.instance.status = ProjectStatusChoice.objects.get(name='Waiting For Admin Approval')
-        form.instance.end_date = datetime.datetime.today() + datetime.timedelta(
-            days=PROJECT_DEFAULT_PROJECT_LENGTH
-        )
+        if form.instance.type.name == 'Class':
+            list_of_actual_dates = []
+            list_of_semester_start_dates = [(1, 19), (5, 11), (8, 23)]
+            for date in list_of_semester_start_dates:
+                actual_date = datetime.date(datetime.date.today().year, date[0], date[1])
+                list_of_actual_dates.append(actual_date)
+
+            todays_date = datetime.date.today()
+            if todays_date < list_of_actual_dates[1]:
+                if todays_date < list_of_actual_dates[0]:
+                    form.instance.end_date = list_of_actual_dates[0]
+                else:
+                    form.instance.end_date = list_of_actual_dates[1]
+            else:
+                if todays_date >= list_of_actual_dates[2]:
+                    form.instance.end_date = list_of_actual_dates[0] + datetime.timedelta(days=365)
+                else:
+                    form.instance.end_date = list_of_actual_dates[2]
+        else:
+            form.instance.end_date = datetime.datetime.today() + datetime.timedelta(
+                days=PROJECT_DEFAULT_PROJECT_LENGTH
+            )
         project_obj.save()
         self.object = project_obj
 
