@@ -20,7 +20,7 @@ Project Detail
     <div class="alert alert-warning">
       This project has expired. You cannot make any changes. <a href="{% url 'project-review' project.pk %}">Review Project</a>
     </div>
-  {% elif project.expires_in <= 60 and project.status.name != 'Review Pending' %}
+  {% elif project.expires_in <= 30 and project.status.name != 'Review Pending' %}
     <div class="alert alert-warning">
       This project expires in {{ project.expires_in }} day{{ project.expires_in|pluralize }}. <a href="{% url 'project-review' project.pk %}">Review Project</a>
     </div>

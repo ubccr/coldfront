@@ -35,7 +35,7 @@
                       Click to renew
                     </span>
                   </a>
-                {% elif project.expires_in <= 60 and project.status.name not in 'Review Pending, Denied, Archived' %}
+                {% elif project.expires_in <= 30 and project.status.name not in 'Review Pending, Denied, Archived' %}
                   <a href="{% url 'project-review' project.pk %}">
                     <span class="badge badge-warning">
                       <i class="fas fa-redo-alt" aria-hidden="true"></i>
