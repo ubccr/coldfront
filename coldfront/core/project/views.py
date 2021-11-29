@@ -545,6 +545,21 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
             status=ProjectUserStatusChoice.objects.get(name='Active')
         )
 
+        if EMAIL_ENABLED:
+            domain_url = get_domain_url(self.request)
+            project_review_url = reverse('project-review-list')
+            template_context = {
+                'url': '{}{}'.format(domain_url, project_review_url),
+                'signature': EMAIL_SIGNATURE
+            }
+            send_email_template(
+                'New Project Request',
+                'email/new_project_request.txt',
+                template_context,
+                EMAIL_SENDER,
+                [EMAIL_DIRECTOR_EMAIL_ADDRESS, ],
+            )
+
         return super().form_valid(form)
 
     def reverse_with_params(self, path, **kwargs):
