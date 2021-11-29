@@ -14,6 +14,7 @@
         <thead>
           <tr>
             <th scope="col">Project</th>
+            <th scope="col">PI</th>
             <th scope="col">Status</th>
           </tr>
         </thead>
@@ -23,6 +24,7 @@
               <td>
                 <a href="{% url 'project-detail' project.pk %}"><i class="fa fa-folder fa-lg" aria-hidden="true"></i> {{ project.title|truncatechars:50 }}</a>
               </td>
+              <td>{{ project.pi.first_name }} {{ project.pi.last_name }} ({{ project.pi.username }})</td>
               {% if project.expires_in <= 0 and project.status.name == 'Expired' %}
                 <td class="text-danger">
                   {{ project.status.name }}
