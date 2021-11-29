@@ -1169,6 +1169,11 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         if INVOICE_ENABLED and resource_obj.requires_payment:
             allocation_status_obj = AllocationStatusChoice.objects.get(
                 name=INVOICE_DEFAULT_STATUS)
+            if resource_obj.name == "Slate Project" and account_number == '':
+                # If a Slate Project request doesnt have an account number then it shouldn't be
+                # placed in the invoice list.
+                allocation_status_obj = AllocationStatusChoice.objects.get(
+                    name='New')
         else:
             allocation_status_obj = AllocationStatusChoice.objects.get(
                 name='New')

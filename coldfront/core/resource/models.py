@@ -77,6 +77,7 @@ class Resource(TimeStampedModel):
         self.resource_accounts = {
             'Carbonate': 'CN=iu-entlmt-app-rt-carbonate-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu',
             'BigRed3': 'CN=iu-entlmt-app-rt-bigred3-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu',
+            'Slate Project': 'CN=iu-entlmt-app-rt-slateproj-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu',
         }
 
     def get_missing_resource_attributes(self, required=False):
