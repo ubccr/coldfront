@@ -33,6 +33,45 @@ class TestAPIBase(TestCase):
         self.token = ExpiringToken.objects.create(user=staff_user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.token.key}')
 
+    def assert_authorization_token_required(self, url, method):
+        """Assert that a request with the given method to the given URL
+        requires a valid authorization token."""
+        # No credentials.
+        self.client = APIClient()
+        response = self.send_request(self.client, url, method)
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        json = response.json()
+        message = 'Authentication credentials were not provided.'
+        self.assertEqual(json['detail'], message)
+
+        # Invalid credentials.
+        self.client.credentials(HTTP_AUTHORIZATION='Token invalid')
+        response = self.send_request(self.client, url, method)
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        json = response.json()
+        message = 'Invalid token.'
+        self.assertEqual(json['detail'], message)
+
+        # Valid credentials.
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f'Token {self.superuser_token.key}')
+        response = self.send_request(self.client, url, method)
+        self.assertNotEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+
+    def assert_permissions_by_user(self, url, method, users):
+        """Given a list of tuples of the form (user, boolean), assert
+        that each user is not forbidden from making a request with the
+        given method to the given URL."""
+        for user, not_forbidden in users:
+            token_key = getattr(self, f'{user.username}_token').key
+            self.client.credentials(HTTP_AUTHORIZATION=f'Token {token_key}')
+            response = self.send_request(self.client, url, method)
+            if not_forbidden:
+                func = self.assertNotEqual
+            else:
+                func = self.assertEqual
+            func(response.status_code, HTTPStatus.FORBIDDEN)
+
     def assert_result_format(self, result, fields):
         """Given a dictionary representing a single result from the API,
         assert that all of the fields in the given list are in the
@@ -89,3 +128,9 @@ class TestAPIBase(TestCase):
     def pk_url(url, pk):
         """Return the URL for a specific primary key."""
         return os.path.join(url, str(pk), '')
+
+    @staticmethod
+    def send_request(client, url, method):
+        """Use the given client to send a request with the given method
+        to the given URL. Return the response."""
+        return getattr(client, method.lower())(url)

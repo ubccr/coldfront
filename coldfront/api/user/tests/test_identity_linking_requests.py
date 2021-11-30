@@ -4,7 +4,6 @@ from coldfront.core.user.models import IdentityLinkingRequest
 from coldfront.core.user.models import IdentityLinkingRequestStatusChoice
 from coldfront.core.utils.common import utc_now_offset_aware
 from http import HTTPStatus
-from rest_framework.test import APIClient
 
 """A test suite for the /identity_linking_requests/ endpoints, divided
 by method."""
@@ -14,7 +13,7 @@ SERIALIZER_FIELDS = (
 BASE_URL = '/api/identity_linking_requests/'
 
 
-class TestIdentityLinkRequestsBase(TestUserBase):
+class TestIdentityLinkingRequestsBase(TestUserBase):
     """A base class for tests of the /identity_linking_requests/
     endpoints."""
 
@@ -25,7 +24,6 @@ class TestIdentityLinkRequestsBase(TestUserBase):
         # Create four IdentityLinkingRequests: two pending and two complete.
         status_choices = IdentityLinkingRequestStatusChoice.objects.all()
         for i in range(4):
-            status_name = 'Pending' if i < 2 else 'Complete'
             kwargs = {
                 'requester': getattr(self, f'user{i}'),
                 'request_time': utc_now_offset_aware(),
@@ -42,51 +40,8 @@ class TestIdentityLinkRequestsBase(TestUserBase):
         self.client.credentials(
             HTTP_AUTHORIZATION=f'Token {self.superuser_token.key}')
 
-    def assert_authorization_token_required(self, url, method):
-        """Assert that a request with the given method to the given URL
-        requires a valid authorization token."""
-        # No credentials.
-        self.client = APIClient()
-        response = self.send_request(self.client, url, method)
-        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
-        json = response.json()
-        message = 'Authentication credentials were not provided.'
-        self.assertEqual(json['detail'], message)
 
-        # Invalid credentials.
-        self.client.credentials(HTTP_AUTHORIZATION='Token invalid')
-        response = self.send_request(self.client, url, method)
-        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
-        json = response.json()
-        message = 'Invalid token.'
-        self.assertEqual(json['detail'], message)
-
-        # Valid credentials.
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f'Token {self.superuser_token.key}')
-        response = self.send_request(self.client, url, method)
-        self.assertNotEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
-
-    def assert_permissions_by_user(self, url, method, users):
-        """Given a list of tuples of the form (user, boolean), assert
-        that each user is/is not denied from making a request with the
-        given method to the given URL."""
-        for user, denial_expected in users:
-            token_key = getattr(self, f'{user.username}_token').key
-            self.client.credentials(HTTP_AUTHORIZATION=f'Token {token_key}')
-            response = self.send_request(self.client, url, method)
-            if denial_expected:
-                func = self.assertEqual
-            else:
-                func = self.assertNotEqual
-            func(response.status_code, HTTPStatus.FORBIDDEN)
-
-    @staticmethod
-    def send_request(client, url, method):
-        return getattr(client, method.lower())(url)
-
-
-class TestCreateIdentityLinkingRequests(TestIdentityLinkRequestsBase):
+class TestCreateIdentityLinkingRequests(TestIdentityLinkingRequestsBase):
     """A class for testing POST /identity_linking_requests/."""
 
     def test_authorization_token_required(self):
@@ -106,14 +61,14 @@ class TestCreateIdentityLinkingRequests(TestIdentityLinkRequestsBase):
         url = BASE_URL
         method = 'POST'
         users = [
-            (self.user0, True),
-            (self.staff_user, True),
-            (self.superuser, False)
+            (self.user0, False),
+            (self.staff_user, False),
+            (self.superuser, True)
         ]
         self.assert_permissions_by_user(url, method, users)
 
 
-class TestDestroyIdentityLinkingRequests(TestIdentityLinkRequestsBase):
+class TestDestroyIdentityLinkingRequests(TestIdentityLinkingRequestsBase):
     """A class for testing DELETE /identity_linking_requests/
     {identity_linking_request_id}/."""
 
@@ -134,14 +89,14 @@ class TestDestroyIdentityLinkingRequests(TestIdentityLinkRequestsBase):
         url = self.pk_url(BASE_URL, '1')
         method = 'DELETE'
         users = [
-            (self.user0, True),
-            (self.staff_user, True),
-            (self.superuser, False)
+            (self.user0, False),
+            (self.staff_user, False),
+            (self.superuser, True)
         ]
         self.assert_permissions_by_user(url, method, users)
 
 
-class TestListIdentityLinkingRequests(TestIdentityLinkRequestsBase):
+class TestListIdentityLinkingRequests(TestIdentityLinkingRequestsBase):
     """A class for testing GET /identity_linking_requests/."""
 
     def test_authorization_token_required(self):
@@ -155,9 +110,9 @@ class TestListIdentityLinkingRequests(TestIdentityLinkRequestsBase):
         url = BASE_URL
         method = 'GET'
         users = [
-            (self.user0, True),
-            (self.staff_user, False),
-            (self.superuser, False)
+            (self.user0, False),
+            (self.staff_user, True),
+            (self.superuser, True)
         ]
         self.assert_permissions_by_user(url, method, users)
 
@@ -196,7 +151,7 @@ class TestListIdentityLinkingRequests(TestIdentityLinkRequestsBase):
                 self.assertEqual(result['status'], status)
 
 
-class TestRetrieveIdentityLinkingRequests(TestIdentityLinkRequestsBase):
+class TestRetrieveIdentityLinkingRequests(TestIdentityLinkingRequestsBase):
     """A class for testing GET /identity_linking_requests/
     {identity_linking_request_id}/."""
 
@@ -211,9 +166,9 @@ class TestRetrieveIdentityLinkingRequests(TestIdentityLinkRequestsBase):
         url = self.pk_url(BASE_URL, '1')
         method = 'GET'
         users = [
-            (self.user0, True),
-            (self.staff_user, False),
-            (self.superuser, False)
+            (self.user0, False),
+            (self.staff_user, True),
+            (self.superuser, True)
         ]
         self.assert_permissions_by_user(url, method, users)
 
@@ -242,7 +197,7 @@ class TestRetrieveIdentityLinkingRequests(TestIdentityLinkRequestsBase):
         self.assert_retrieve_invalid_response_format(url)
 
 
-class TestUpdatePatchIdentityLinkingRequests(TestIdentityLinkRequestsBase):
+class TestUpdatePatchIdentityLinkingRequests(TestIdentityLinkingRequestsBase):
     """A class for testing PATCH /identity_linking_requests/
     {identity_linking_request_id}/."""
 
@@ -257,9 +212,9 @@ class TestUpdatePatchIdentityLinkingRequests(TestIdentityLinkRequestsBase):
         url = self.pk_url(BASE_URL, '1')
         method = 'PATCH'
         users = [
-            (self.user0, True),
-            (self.staff_user, True),
-            (self.superuser, False)
+            (self.user0, False),
+            (self.staff_user, False),
+            (self.superuser, True)
         ]
         self.assert_permissions_by_user(url, method, users)
 
@@ -332,7 +287,7 @@ class TestUpdatePatchIdentityLinkingRequests(TestIdentityLinkRequestsBase):
             json['status'], ['Object with name=Invalid does not exist.'])
 
 
-class TestUpdatePutIdentityLinkingRequests(TestIdentityLinkRequestsBase):
+class TestUpdatePutIdentityLinkingRequests(TestIdentityLinkingRequestsBase):
     """A class for testing PUT /identity_linking_requests/
     {identity_linking_request_id}/."""
 
@@ -353,8 +308,8 @@ class TestUpdatePutIdentityLinkingRequests(TestIdentityLinkRequestsBase):
         url = self.pk_url(BASE_URL, '1')
         method = 'PUT'
         users = [
-            (self.user0, True),
-            (self.staff_user, True),
-            (self.superuser, False)
+            (self.user0, False),
+            (self.staff_user, False),
+            (self.superuser, True)
         ]
         self.assert_permissions_by_user(url, method, users)
