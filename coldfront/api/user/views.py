@@ -29,7 +29,7 @@ class IdentityLinkingRequestViewSet(mixins.ListModelMixin,
     serializer_class = IdentityLinkingRequestSerializer
 
     def get_queryset(self):
-        return IdentityLinkingRequest.objects.all()
+        return IdentityLinkingRequest.objects.order_by('id')
 
 
 class ObtainActiveUserExpiringAuthToken(ObtainAuthToken):
@@ -72,4 +72,4 @@ class UserViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin,
     serializer_class = UserSerializer
 
     def get_queryset(self):
-        return User.objects.all()
+        return User.objects.order_by('id')
