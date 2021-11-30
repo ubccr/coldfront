@@ -19,10 +19,10 @@ Review Project
   <p class="text-justify">Please update the following information:</p>
 
   <ol>
-    <li><a href="{% url 'project-detail' project.pk %}"><i class="fas fa-external-link-alt" aria-hidden="true"></i> Verify</a> your project description is accurate</li>
-    <li><a href="{% url 'project-detail' project.pk %}#publications"><i class="fas fa-external-link-alt" aria-hidden="true"></i> Add</a> Publications</li>
-    <li><a href="{% url 'project-detail' project.pk %}#grants"><i class="fas fa-external-link-alt" aria-hidden="true"></i> Add</a> Grants</li>
-    <li><a href="{% url 'project-detail' project.pk %}#users"><i class="fas fa-external-link-alt" aria-hidden="true"></i> Verify</a> the user accounts in your group and remove any that should no longer have access to {% settings_value 'CENTER_NAME' %} resources</li>
+    <li><a href="{% url 'project-update' project.pk %}"><i class="fas fa-external-link-alt" aria-hidden="true"></i> Verify</a> your project description is accurate</li>
+    <li><a href="{% url 'publication-search' project.pk %}"><i class="fas fa-external-link-alt" aria-hidden="true"></i> Add</a> Publications</li>
+    <li><a href="{% url 'grant-create' project.pk %}"><i class="fas fa-external-link-alt" aria-hidden="true"></i> Add</a> Grants</li>
+    <li><a href="{% url 'project-remove-users' project.pk %}"><i class="fas fa-external-link-alt" aria-hidden="true"></i> Verify</a> the user accounts in your group and remove any that should no longer have access to {% settings_value 'CENTER_NAME' %} resources</li>
   </ol>
 
   <div class="table-responsive">
