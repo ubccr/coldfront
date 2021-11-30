@@ -253,17 +253,20 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
     </div>
     <div class="card-body">
       <p>
-        You may request a new OTP invite to link your personal email account or
-        CalNet account with your cluster account. Once requested, you will
-        receive an email containing instructions on how to link your accounts.
-        Emails are sent on a rolling basis. If you have not received the email
-        after a day, please submit a support ticket by emailing
+        You may request a new invitation to link an external identity (e.g.,
+        your personal email account or CalNet account) to your cluster account.
+        Once requested, you will receive an email containing instructions on
+        how to link your accounts.
+      </p>
+      <p>
+        Emails are sent periodically. If you have not received the email after
+        an hour, please submit a support ticket by emailing
         <a href="mailto:{{ help_email }}">{{ help_email }}</a>.
       </p>
       {% if identity_link_request.request_time %}
         <p>
           Below is your latest request. If you have a pending request, you
-          cannot make a new request until the pending request has been sent.
+          cannot make a new one until it has been processed.
         </p>
         <div class="table-responsive">
           <table class="table table-sm">
