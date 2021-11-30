@@ -1386,7 +1386,42 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         project_review_obj.status = project_review_status_obj
         project_obj.status = project_status_obj
-        project_obj.end_date += datetime.timedelta(days=PROJECT_DEFAULT_PROJECT_LENGTH)
+        if project_obj.type.name == 'Class':
+            list_of_actual_dates = []
+            list_of_semester_start_dates = [(1, 19), (5, 11), (8, 23)]
+            for date in list_of_semester_start_dates:
+                actual_date = datetime.date(datetime.date.today().year, date[0], date[1])
+                list_of_actual_dates.append(actual_date)
+
+            todays_date = datetime.date.today()
+            if project_obj.status == 'Expired':
+                if todays_date < list_of_actual_dates[1]:
+                    if todays_date < list_of_actual_dates[0]:
+                        project_obj.end_date = list_of_actual_dates[0]
+                    else:
+                        project_obj.end_date = list_of_actual_dates[1]
+                else:
+                    if todays_date >= list_of_actual_dates[2]:
+                        project_obj.end_date = list_of_actual_dates[0] + datetime.timedelta(days=365)
+                    else:
+                        project_obj.end_date = list_of_actual_dates[2]
+            else:
+                if todays_date < list_of_actual_dates[1]:
+                    if todays_date <= list_of_actual_dates[0]:
+                        project_obj.end_date = list_of_actual_dates[1]
+                    else:
+                        project_obj.end_date = list_of_actual_dates[2]
+                elif todays_date > list_of_actual_dates[1]:
+                    if todays_date <= list_of_actual_dates[2]:
+                        project_obj.end_date = list_of_actual_dates[0] + datetime.timedelta(days=365)
+                    else:
+                        project_obj.end_date = list_of_actual_dates[1] + datetime.timedelta(days=365)
+                else:
+                    project_obj.end_date = list_of_actual_dates[2]
+        else:
+            project_obj.end_date += datetime.timedelta(
+                days=PROJECT_DEFAULT_PROJECT_LENGTH
+            )
 
         if project_review_obj.allocation_renewals:
             allocation_status_choice = AllocationStatusChoice.objects.get(name="Active")
