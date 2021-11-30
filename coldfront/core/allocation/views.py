@@ -1858,14 +1858,6 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
             'allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
         if EMAIL_ENABLED:
-            template_context = {
-                'center_name': EMAIL_CENTER_NAME,
-                'resource': resource_name,
-                'allocation_url': allocation_url,
-                'signature': EMAIL_SIGNATURE,
-                'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
-            }
-
             email_receiver_list = []
 
             for allocation_user in allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
@@ -1874,9 +1866,43 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
                 if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
                     email_receiver_list.append(allocation_user.user.email)
 
+            template_context = {
+                'center_name': EMAIL_CENTER_NAME,
+                'resource': resource_name,
+                'allocation_url': allocation_url,
+                'signature': EMAIL_SIGNATURE,
+                'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
+            }
+
+            resource_email_template_lookup_table = {
+                'Carbonate DL': {
+                    'template': 'email/allocation_carbonate_dl_activated.txt',
+                    'template_context': {
+                        'help_url': 'radl@iu.edu',
+                    },
+                },
+                'Carbonate GPU': {
+                    'template': 'email/allocation_carbonate_gpu_activated.txt',
+                    'template_context': {
+                        'help_url': 'radl@iu.edu',
+                    },
+                },
+            }
+
+            resource_email_template = resource_email_template_lookup_table.get(
+                allocation_obj.get_parent_resource.name
+            )
+            if resource_email_template is None:
+                email_template = 'email/allocation_activated.txt'
+            else:
+                email_template = resource_email_template['template']
+                template_context.update(resource_email_template['template_context'])
+
+            
+
             send_email_template(
                 'Allocation Activated',
-                'email/allocation_activated.txt',
+                email_template,
                 template_context,
                 EMAIL_SENDER,
                 email_receiver_list
