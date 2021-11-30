@@ -839,25 +839,37 @@ class UserNameExistsView(View):
 
 class IdentityLinkRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
 
+    pending_status = None
+
     def test_func(self):
-        if self.request.user.is_superuser:
-            return True
+        return True
 
-        pending_identity_link_status, _ = \
-            IdentityLinkingRequestStatusChoice.objects.get_or_create(name='Pending')
-
-        if not IdentityLinkingRequest.objects.filter(
-                requester=self.request.user,
-                status=pending_identity_link_status).exists():
-            return True
+    def dispatch(self, request, *args, **kwargs):
+        self.pending_status = IdentityLinkingRequestStatusChoice.objects.get(
+            name='Pending')
+        pending_requests_for_user = IdentityLinkingRequest.objects.filter(
+            requester=self.request.user, status=self.pending_status)
+        if pending_requests_for_user.exists():
+            message = (
+                'You have already requested a linking email. Please wait '
+                'until it has been sent to request another.')
+            messages.error(request, message)
+            return HttpResponseRedirect(reverse('user-profile'))
+        return super().dispatch(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        pending_identity_link_status, _ = \
-            IdentityLinkingRequestStatusChoice.objects.get_or_create(name='Pending')
-
-        link_request = IdentityLinkingRequest.objects.create(
-            requester=self.request.user,
-            status=pending_identity_link_status,
+        user = request.user
+        identity_linking_request = IdentityLinkingRequest.objects.create(
+            requester=user,
+            status=self.pending_status,
             request_time=utc_now_offset_aware())
+        logger.info(
+            f'User {user.pk} created IdentityLinkingRequest '
+            f'{identity_linking_request.pk} to be sent to {user.email}.')
+
+        message = (
+            f'A request has been generated. An email will be sent to '
+            f'{user.email} shortly.')
+        messages.success(request, message)
 
         return HttpResponseRedirect(reverse('user-profile'))
