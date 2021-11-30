@@ -17,3 +17,12 @@ def assert_identity_linking_request_serialization(identity_linking_request,
             expected = str(field_value)
         actual = str(result[field])
         assert expected == actual
+
+
+def assert_user_serialization(user, result, fields):
+    """Assert that User serialization gives the expected result."""
+    for field in fields:
+        field_value = getattr(user, field)
+        expected = str(field_value)
+        actual = str(result[field])
+        assert expected == actual
