@@ -1,12 +1,35 @@
+from coldfront.api.permissions import IsAdminUserOrReadOnly
+from coldfront.api.permissions import IsSuperuserOrStaff
 from coldfront.api.user.authentication import is_token_expired
+from coldfront.api.user.filters import IdentityLinkingRequestFilter
+from coldfront.api.user.serializers import IdentityLinkingRequestSerializer
+from coldfront.api.user.serializers import UserSerializer
 from coldfront.core.user.models import ExpiringToken
+from coldfront.core.user.models import IdentityLinkingRequest
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
 from django.conf import settings
 from django.contrib.auth.models import User
+from rest_framework import mixins
+from rest_framework import viewsets
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.response import Response
+
+
+class IdentityLinkingRequestViewSet(mixins.ListModelMixin,
+                                    mixins.RetrieveModelMixin,
+                                    mixins.UpdateModelMixin,
+                                    viewsets.GenericViewSet):
+    """A ViewSet for the IdentityLinkingRequest model."""
+
+    filterset_class = IdentityLinkingRequestFilter
+    http_method_names = ['get', 'patch']
+    permission_classes = [IsSuperuserOrStaff]
+    serializer_class = IdentityLinkingRequestSerializer
+
+    def get_queryset(self):
+        return IdentityLinkingRequest.objects.all()
 
 
 class ObtainActiveUserExpiringAuthToken(ObtainAuthToken):
@@ -39,3 +62,14 @@ class ObtainActiveUserExpiringAuthToken(ObtainAuthToken):
             token.expiration = now + timedelta(hours=expiration_hours)
             token.save()
         return Response({'token': token.key})
+
+
+class UserViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin,
+                  viewsets.GenericViewSet):
+    """A ViewSet for the User model."""
+
+    permission_class = [IsAdminUserOrReadOnly]
+    serializer_class = UserSerializer
+
+    def get_queryset(self):
+        return User.objects.all()

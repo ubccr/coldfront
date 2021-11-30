@@ -13,3 +13,19 @@ class IsAdminUserOrReadOnly(BasePermission):
             request.user.is_staff or
             request.user.is_superuser
         )
+
+
+class IsSuperuserOrStaff(BasePermission):
+    """
+    Allows write access to superusers, read access to staff, and no
+    access to other users.
+    """
+    def has_permission(self, request, view):
+        user = request.user
+        if not user:
+            return False
+        if user.is_superuser:
+            return True
+        elif user.is_staff:
+            return request.method in SAFE_METHODS
+        return False
