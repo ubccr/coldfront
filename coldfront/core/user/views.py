@@ -45,6 +45,7 @@ from coldfront.core.utils.mail import send_email_template
 
 logger = logging.getLogger(__name__)
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
+
 if EMAIL_ENABLED:
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings(
         'EMAIL_TICKET_SYSTEM_ADDRESS')
@@ -110,6 +111,8 @@ class UserProfile(TemplateView):
             context['identity_link_request'] = IdentityLinkingRequest.objects.filter(
                 requester=self.request.user,
                 status=complete_identity_link_status).last()
+
+        context['help_email'] = import_from_settings('CENTER_HELP_EMAIL')
 
         return context
 
