@@ -125,7 +125,17 @@ Project List
             <td>{{ project.pi.username }}</td>
             <td style="text-align: justify; text-justify: inter-word;">{{ project.title|truncatechars:30 }}</td>
             <td>{{ project.field_of_science.description }}</td>
-            <td>{{ project.status.name }}</td>
+            {% if project.status.name == 'Active' %}
+              {% if project.expires_in <= 30 %}
+                <td class="text-warning">{{ project.status.name }}</td>
+              {% else %}
+                <td class="text-success">{{ project.status.name}}</td>
+              {% endif %}
+            {% elif project.status.name in 'Archived, Denied, Expired' %}
+              <td class="text-danger">{{ project.status.name }}</td>
+            {% else %}
+              <td class="text-info">{{ project.status.name }}</td>
+            {% endif %}
             <td>{{ project.end_date }}</td>
           </tr>
         {% endfor %}
