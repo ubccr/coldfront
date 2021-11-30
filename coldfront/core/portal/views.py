@@ -50,6 +50,8 @@ def home(request):
             Q(allocationuser__user=request.user) &
             Q(allocationuser__status__name__in=['Active', ])
         ).distinct().order_by('-created')[:5]
+
+        context['user'] = request.user
         context['project_list'] = project_list
         context['allocation_list'] = allocation_list
         try:

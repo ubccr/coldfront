@@ -133,6 +133,13 @@ We do not have information about your research. Please provide a detailed descri
     def expires_in(self):
         return (self.end_date - datetime.date.today()).days
 
+    @property
+    def list_of_manager_usernames(self):
+        project_managers = self.projectuser_set.filter(
+            role=ProjectUserRoleChoice.objects.get(name='Manager')
+        )
+        return [manager.user.username for manager in project_managers]
+
     def __str__(self):
         return self.title
 
