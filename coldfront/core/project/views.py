@@ -1698,19 +1698,10 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
 
     @staticmethod
     def get_users_to_review(project_obj):
-        # delay = project_obj.joins_auto_approval_delay
-
         users_to_review = []
         queryset = project_obj.projectuser_set.filter(
             status__name='Pending - Add').order_by('user__username')
         for ele in queryset:
-            # try:
-            #     auto_approval_time = \
-            #         (ele.projectuserjoinrequest_set.latest('created').created +
-            #          delay)
-            # except ProjectUserJoinRequest.DoesNotExist:
-            #     auto_approval_time = 'Unknown'
-
             try:
                 reason = ele.projectuserjoinrequest_set.latest('created').reason
             except ProjectUserJoinRequest.DoesNotExist:
@@ -1722,7 +1713,6 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
                 'last_name': ele.user.last_name,
                 'email': ele.user.email,
                 'role': ele.role,
-                #'auto_approval_time': auto_approval_time,
                 'reason': reason
             }
             users_to_review.append(user)
