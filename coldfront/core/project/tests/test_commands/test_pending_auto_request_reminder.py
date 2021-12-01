@@ -1,9 +1,3 @@
-from http import HTTPStatus
-
-from django.contrib.messages import get_messages
-from django.urls import reverse
-
-from coldfront.core.project.forms import ProjectReviewUserJoinForm
 from coldfront.core.project.models import *
 from coldfront.core.user.models import UserProfile
 from django.test import TestCase
