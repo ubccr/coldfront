@@ -943,11 +943,11 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                         filter(project_user__user__username=username,
                                status__in=[pending_status, processing_status]).exists():
 
-                    message = f'Cannot add user {username} to project ' \
-                              f'{project_obj.name} due to an active ' \
-                              f'project removal request for the user. Please ' \
-                              f'wait until it is completed before adding the ' \
-                              f'user again.'
+                    message = (
+                        f'A pending request to remove User {username} from '
+                        f'Project {project_obj.name} has been made. Please '
+                        f'wait until it is completed before adding the user '
+                        f'again.')
                     messages.error(request, message)
                     continue
 
