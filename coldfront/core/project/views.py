@@ -523,14 +523,26 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
             todays_date = datetime.date.today()
             if todays_date < list_of_actual_dates[1]:
                 if todays_date < list_of_actual_dates[0]:
-                    form.instance.end_date = list_of_actual_dates[0]
+                    end_date = list_of_actual_dates[0]
+                    index = 0
                 else:
-                    form.instance.end_date = list_of_actual_dates[1]
+                    end_date = list_of_actual_dates[1]
+                    index = 1
             else:
                 if todays_date >= list_of_actual_dates[2]:
-                    form.instance.end_date = list_of_actual_dates[0] + datetime.timedelta(days=365)
+                    end_date = list_of_actual_dates[0] + datetime.timedelta(days=365)
+                    index = 3
                 else:
-                    form.instance.end_date = list_of_actual_dates[2]
+                    end_date = list_of_actual_dates[2]
+                    index = 2
+
+            if (end_date - todays_date).days <= 30:
+                index += 1
+                end_date = list_of_actual_dates[index % 3]
+                if index > 2:
+                    end_date += datetime.timedelta(days=365)
+
+            form.instance.end_date = end_date
         else:
             form.instance.end_date = datetime.datetime.today() + datetime.timedelta(
                 days=PROJECT_DEFAULT_PROJECT_LENGTH
@@ -1090,7 +1102,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         if (
             not project_obj.needs_review
-            and (project_obj.expires_in > 60
+            and (project_obj.expires_in > 30
                  or project_obj.status.name not in ['Active', 'Expired', ])
         ):
             messages.error(request, 'You do not need to review this project.')
@@ -1384,8 +1396,6 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
         project_obj = project_review_obj.project
         project_status_obj = ProjectStatusChoice.objects.get(name="Active")
 
-        project_review_obj.status = project_review_status_obj
-        project_obj.status = project_status_obj
         if project_obj.type.name == 'Class':
             list_of_actual_dates = []
             list_of_semester_start_dates = [(1, 19), (5, 11), (8, 23)]
@@ -1394,34 +1404,52 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
                 list_of_actual_dates.append(actual_date)
 
             todays_date = datetime.date.today()
-            if project_obj.status == 'Expired':
+            if project_obj.end_date < todays_date:
                 if todays_date < list_of_actual_dates[1]:
                     if todays_date < list_of_actual_dates[0]:
-                        project_obj.end_date = list_of_actual_dates[0]
+                        end_date = list_of_actual_dates[0]
+                        index = 0
                     else:
-                        project_obj.end_date = list_of_actual_dates[1]
+                        end_date = list_of_actual_dates[1]
+                        index = 1
                 else:
                     if todays_date >= list_of_actual_dates[2]:
-                        project_obj.end_date = list_of_actual_dates[0] + datetime.timedelta(days=365)
+                        end_date = list_of_actual_dates[0] + datetime.timedelta(days=365)
+                        index = 3
                     else:
-                        project_obj.end_date = list_of_actual_dates[2]
+                        end_date = list_of_actual_dates[2]
+                        index = 2
+
+                if (end_date - todays_date).days <= 30:
+                    index += 1
+                    end_date = list_of_actual_dates[index % 3]
+                    if index > 2:
+                        end_date += datetime.timedelta(days=365)
             else:
+                # These conditionals assume the project is expiring soon and sets the end date to
+                # the next given date. A class project that had a forced review will also have
+                # its end date set to the next given date even if it wasn't close to expiring.
                 if todays_date < list_of_actual_dates[1]:
                     if todays_date <= list_of_actual_dates[0]:
-                        project_obj.end_date = list_of_actual_dates[1]
+                        end_date = list_of_actual_dates[1]
                     else:
-                        project_obj.end_date = list_of_actual_dates[2]
+                        end_date = list_of_actual_dates[2]
                 elif todays_date > list_of_actual_dates[1]:
                     if todays_date <= list_of_actual_dates[2]:
-                        project_obj.end_date = list_of_actual_dates[0] + datetime.timedelta(days=365)
+                        end_date = list_of_actual_dates[0] + datetime.timedelta(days=365)
                     else:
-                        project_obj.end_date = list_of_actual_dates[1] + datetime.timedelta(days=365)
+                        end_date = list_of_actual_dates[1] + datetime.timedelta(days=365)
                 else:
-                    project_obj.end_date = list_of_actual_dates[2]
+                    end_date = list_of_actual_dates[2]
+
+            project_obj.end_date = end_date
         else:
             project_obj.end_date += datetime.timedelta(
                 days=PROJECT_DEFAULT_PROJECT_LENGTH
             )
+
+        project_review_obj.status = project_review_status_obj
+        project_obj.status = project_status_obj
 
         if project_review_obj.allocation_renewals:
             allocation_status_choice = AllocationStatusChoice.objects.get(name="Active")
