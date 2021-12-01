@@ -94,27 +94,32 @@ class UserProfile(TemplateView):
             allocation_attribute_type__name='Cluster Account Status',
             value='Active').exists()
 
-        pending_identity_link_status, _ = \
-            IdentityLinkingRequestStatusChoice.objects.get_or_create(name='Pending')
-        complete_identity_link_status, _ = \
-            IdentityLinkingRequestStatusChoice.objects.get_or_create(name='Complete')
-        context['pending_identity_link'] = IdentityLinkingRequest.objects.filter(
-            requester=self.request.user,
-            status=pending_identity_link_status
-        ).exists()
-
-        if context['pending_identity_link']:
-            context['identity_link_request'] = IdentityLinkingRequest.objects.filter(
-                requester=self.request.user,
-                status=pending_identity_link_status).last()
-        else:
-            context['identity_link_request'] = IdentityLinkingRequest.objects.filter(
-                requester=self.request.user,
-                status=complete_identity_link_status).last()
+        if viewed_user == self.request.user:
+            self.update_context_with_identity_linking_request_data(context)
 
         context['help_email'] = import_from_settings('CENTER_HELP_EMAIL')
 
         return context
+
+    def update_context_with_identity_linking_request_data(self, context):
+        """Update the given context dictionary with fields relating to
+        IdentityLinkingRequests.
+
+        In particular, set the key 'linking_request' to denote the
+        latest request, whether it be complete, pending, or nonexistent.
+        """
+        user_requests = IdentityLinkingRequest.objects.filter(
+            requester=self.request.user)
+        pending_requests = user_requests.filter(
+            status__name='Pending').order_by('request_time')
+        complete_requests = user_requests.filter(
+            status__name='Complete').order_by('completion_time')
+        if pending_requests.exists():
+            context['linking_request'] = pending_requests.last()
+        elif complete_requests.exists():
+            context['linking_request'] = complete_requests.last()
+        else:
+            context['linking_request'] = None
 
 
 @method_decorator(login_required, name='dispatch')

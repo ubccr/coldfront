@@ -235,19 +235,19 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
       <i class="far fa-user-circle"></i>
       Link Your Personal Account
       <div class="float-right">
-        {% if pending_identity_link %}
-        <a class="btn btn-secondary float-right disabled">
-        <i class="fas fa-paper-plane"></i>
-        Request Linking Email
-        </a>
+        {% if linking_request and linking_request.status.name == 'Pending' %}
+          <a class="btn btn-secondary float-right disabled" id="request-linking-email-button">
+            <i class="fas fa-paper-plane"></i>
+            Request Linking Email
+          </a>
         {% else %}
-        <form action="{% url 'identity-link-request' %}" method="post">
-          {% csrf_token %}
-          <button class="btn btn-success float-right"  type="submit">
-          <i class="fas fa-paper-plane"></i>
-          Request Linking Email
-          </button>
-        </form>
+          <form action="{% url 'identity-link-request' %}" method="post">
+            {% csrf_token %}
+            <button class="btn btn-success float-right" type="submit">
+              <i class="fas fa-paper-plane"></i>
+              Request Linking Email
+            </button>
+          </form>
         {% endif %}
       </div>
     </div>
@@ -263,31 +263,39 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
         an hour, please submit a support ticket by emailing
         <a href="mailto:{{ help_email }}">{{ help_email }}</a>.
       </p>
-      {% if identity_link_request.request_time %}
+      {% if linking_request %}
         <p>
-          Below is your latest request. If you have a pending request, you
-          cannot make a new one until it has been processed.
+          Below is your latest request. If it is pending, you cannot make a new
+          one until it has been processed.
         </p>
         <div class="table-responsive">
           <table class="table table-sm">
+            <thead>
+              <tr>
+                <th scope="col">Time Requested</th>
+                <th scope="col">Time Sent</th>
+              </tr>
+            </thead>
             <tbody>
               <tr>
-                <th scope="row">Request Time:
+                <td id="time-requested-timestamp">
                   <span class="badge badge-success">
-                    {{ identity_link_request.request_time }}
+                    {{ linking_request.request_time }}
                   </span>
-                </th>
-                <th scope="row">Last Sent:
-                  {% if pending_identity_link %}
-                    <span class="badge badge-warning">
-                      {{ identity_link_request.status.name }}
-                    </span>
-                  {% else %}
-                    <span class="badge badge-success">
-                      {{ identity_link_request.completion_time }}
-                    </span>
-                  {% endif %}
-                </th>
+                </td>
+                <td id="time-sent-timestamp">
+                  {% with status=linking_request.status.name %}
+                    {% if status == 'Pending' %}
+                      <span class="badge badge-warning">
+                        {{ status }}
+                      </span>
+                    {% else %}
+                      <span class="badge badge-success">
+                        {{ linking_request.completion_time }}
+                      </span>
+                    {% endif %}
+                  {% endwith %}
+                </td>
               </tr>
             </tbody>
           </table>
