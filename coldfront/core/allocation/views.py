@@ -1689,19 +1689,134 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
         initial_data = {
             'notes': allocation_change_obj.notes,
         }
-
         note_form = AllocationChangeNoteForm(request.POST, initial=initial_data)
 
         if note_form.is_valid():
-            form_data = note_form.cleaned_data
-            notes = form_data.get('notes')
+            if request.POST.get('choice') == 'approve':
+                form_data = note_form.cleaned_data
+                notes = form_data.get('notes')
 
-            allocation_change_obj.notes = notes
-            allocation_change_obj.save()
+                allocation_change_obj.notes = notes
 
-            messages.success(
-                request, 'Allocation change request updated!')
-            return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
+                allocation_change_status_active_obj = AllocationChangeStatusChoice.objects.get(
+                    name='Approved')
+                
+                allocation_change_obj.status = allocation_change_status_active_obj
+
+                if allocation_change_obj.end_date_extension != 0:
+                    new_end_date = allocation_change_obj.allocation.end_date + relativedelta(
+                        days=allocation_change_obj.end_date_extension)
+
+                    allocation_change_obj.allocation.end_date = new_end_date
+
+                allocation_change_obj.allocation.save()
+                allocation_change_obj.save()
+
+                attribute_change_list = allocation_change_obj.allocationattributechangerequest_set.all()
+
+                for attribute_change in attribute_change_list:
+                    attribute_change.allocation_attribute.value = attribute_change.new_value
+                    attribute_change.allocation_attribute.save()
+
+                messages.success(request, 'Allocation change request to {} has been APPROVED for {} {} ({})'.format(
+                    allocation_change_obj.allocation.get_parent_resource,
+                    allocation_change_obj.allocation.project.pi.first_name,
+                    allocation_change_obj.allocation.project.pi.last_name,
+                    allocation_change_obj.allocation.project.pi.username)
+                )
+
+                resource_name = allocation_change_obj.allocation.get_parent_resource
+                domain_url = get_domain_url(self.request)
+                allocation_url = '{}{}'.format(domain_url, reverse(
+                    'allocation-detail', kwargs={'pk': allocation_change_obj.allocation.pk}))
+
+                if EMAIL_ENABLED:
+                    template_context = {
+                        'center_name': EMAIL_CENTER_NAME,
+                        'resource': resource_name,
+                        'allocation_url': allocation_url,
+                        'signature': EMAIL_SIGNATURE,
+                        'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
+                    }
+
+                    email_receiver_list = []
+
+                    for allocation_user in allocation_change_obj.allocation.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
+                        allocation_activate_user.send(
+                            sender=self.__class__, allocation_user_pk=allocation_user.pk)
+                        if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
+                            email_receiver_list.append(allocation_user.user.email)
+
+                    send_email_template(
+                        'Allocation Change Approved',
+                        'email/allocation_change_approved.txt',
+                        template_context,
+                        EMAIL_SENDER,
+                        email_receiver_list
+                    )
+                
+                return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
+
+
+            if request.POST.get('choice') == 'deny':
+                form_data = note_form.cleaned_data
+                notes = form_data.get('notes')
+
+                allocation_change_obj.notes = notes
+
+                allocation_change_status_denied_obj = AllocationChangeStatusChoice.objects.get(
+                    name='Denied')
+
+                allocation_change_obj.status = allocation_change_status_denied_obj
+                allocation_change_obj.save()
+
+                messages.success(request, 'Allocation change request to {} has been DENIED for {} {} ({})'.format(
+                    allocation_change_obj.allocation.resources.first(),
+                    allocation_change_obj.allocation.project.pi.first_name,
+                    allocation_change_obj.allocation.project.pi.last_name,
+                    allocation_change_obj.allocation.project.pi.username)
+                )
+
+                resource_name = allocation_change_obj.allocation.get_parent_resource
+                domain_url = get_domain_url(self.request)
+                allocation_url = '{}{}'.format(domain_url, reverse(
+                    'allocation-detail', kwargs={'pk': allocation_change_obj.allocation.pk}))
+
+                if EMAIL_ENABLED:
+                    template_context = {
+                        'center_name': EMAIL_CENTER_NAME,
+                        'resource': resource_name,
+                        'allocation_url': allocation_url,
+                        'signature': EMAIL_SIGNATURE,
+                        'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
+                    }
+
+                    email_receiver_list = []
+                    for allocation_user in allocation_change_obj.allocation.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
+                        allocation_remove_user.send(
+                                    sender=self.__class__, allocation_user_pk=allocation_user.pk)
+                        if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
+                            email_receiver_list.append(allocation_user.user.email)
+
+                    send_email_template(
+                        'Allocation Change Denied',
+                        'email/allocation_change_denied.txt',
+                        template_context,
+                        EMAIL_SENDER,
+                        email_receiver_list
+                    )
+                return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
+
+            if request.POST.get('choice') == 'update':
+                form_data = note_form.cleaned_data
+                notes = form_data.get('notes')
+
+                allocation_change_obj.notes = notes
+                allocation_change_obj.save()
+
+                messages.success(
+                    request, 'Allocation change request updated!')
+                return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
         else:
             allocation_change_form = AllocationChangeForm(
                 initial={'justification': allocation_change_obj.justification})
