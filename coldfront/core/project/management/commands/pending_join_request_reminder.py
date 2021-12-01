@@ -32,7 +32,8 @@ class Command(BaseCommand):
 
             if diff > TIME_DELTA and settings.EMAIL_ENABLED:
                 subject = 'Pending Project Join Requests'
-                template_name = 'email/pending_project_join_requests.txt'
+                template_names = ['email/pending_project_join_requests.txt',
+                                  'email/pending_project_join_request_user.txt']
                 context = {
                     'project_name': request.project_user.project.name,
                     'user_first_name': request.project_user.user.first_name,
@@ -44,10 +45,12 @@ class Command(BaseCommand):
                 manager_pi_set = request.project_user.project.projectuser_set.filter(
                     role__name__in=['Manager', 'Principal Investigator'],
                     status__name='Active')
-                receiver_list = [proj_user.user.email for proj_user in manager_pi_set]
+                receiver_list = [[proj_user.user.email for proj_user in manager_pi_set],
+                                 [request.project_user.user.email]]
                 try:
-                    send_email_template(
-                        subject, template_name, context, sender, receiver_list)
+                    for template, recipients in zip(template_names, receiver_list):
+                        send_email_template(
+                            subject, template, context, sender, recipients)
                 except Exception as e:
                     message = 'Failed to send reminder email. Details:'
                     self.stderr.write(self.style.ERROR(message))
