@@ -76,11 +76,18 @@ def allocation_user_to_allocation_product_usage(allocation_user, product, overwr
         month = int(allocation_user.modified.strftime('%m'))
     if year is None:
         year = allocation_user.modified.year
+
+    try:
+        organization = allocation_user.allocation.project.projectorganization_set.first().organization
+    except ProjectOrganization.DoesNotExist:
+        raise Exception(f'Cannot map allocation_user {allocation_user} to organization')
+
     aupus = AllocationUserProductUsage.objects.filter(
         product_usage__product=product,
         product_usage__product_user=product_user,
         product_usage__month=month,
-        product_usage__year=year
+        product_usage__year=year,
+        product_usage__organization=organization,
     )
     if len(aupus) > 0:
         if overwrite:
@@ -95,7 +102,9 @@ def allocation_user_to_allocation_product_usage(allocation_user, product, overwr
         'product_user': product_user,
         'month': month,
         'year': year,
-        'start_date': timezone.make_aware(datetime(year, month, 1))
+        'start_date': timezone.make_aware(datetime(year, month, 1)),
+        'organization': organization,
+        'logged_by': product_user,
     }
     product_usage_data['quantity'] = allocation_user.usage_bytes
     # usage_bytes may be null

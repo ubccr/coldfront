@@ -196,8 +196,4 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
         '''
         Get the organization from the allocation -> project -> project_organization
         '''
-        project_organization = product_usage.allocationuserproductusage_set.first().allocation_user.allocation.project.projectorganization_set.first()
-        if project_organization:
-            return project_organization.organization
-        else:
-            return None
+        return product_usage.organization
