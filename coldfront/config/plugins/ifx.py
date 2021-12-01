@@ -16,10 +16,6 @@ IFX_APP = {
     'token': os.environ.get('COLDFRONT_IFX_APP_TOKEN', 'aslkdfj'),
 }
 
-class FACILITY():
-    NAME = 'Research Computing Storage'
-    OBJECT_CODE = '8250'
-
 class GROUPS():
     ADMIN_GROUP_NAME = 'rc_admin'
 
