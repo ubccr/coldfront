@@ -241,7 +241,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
             Request Linking Email
           </a>
         {% else %}
-          <form action="{% url 'identity-link-request' %}" method="post">
+          <form action="{% url 'identity-linking-request' %}" method="post">
             {% csrf_token %}
             <button class="btn btn-success float-right" type="submit">
               <i class="fas fa-paper-plane"></i>
