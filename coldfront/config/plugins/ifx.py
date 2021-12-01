@@ -16,8 +16,6 @@ IFX_APP = {
     'token': os.environ.get('COLDFRONT_IFX_APP_TOKEN', 'aslkdfj'),
 }
 
-FACILITIES = ['Research Computing Storage']
-
 class GROUPS():
     ADMIN_GROUP_NAME = 'rc_admin'
 
