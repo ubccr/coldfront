@@ -1,15 +1,17 @@
 from coldfront.core.user.models import EmailAddress
+from coldfront.core.user.tests.utils import TestUserBase
 from coldfront.core.user.utils import update_user_primary_email_address
 from django.contrib.auth.models import User
-from django.test import TestCase
 
 
-class TestUpdateUserPrimaryEmailAddress(TestCase):
+class TestUpdateUserPrimaryEmailAddress(TestUserBase):
     """A class for testing the utility method
     update_user_primary_email_address."""
 
     def setUp(self):
         """Set up test data."""
+        super().setUp()
+
         self.user = User.objects.create(
             email='user@email.com',
             first_name='First',
