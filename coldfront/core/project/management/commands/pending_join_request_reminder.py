@@ -25,6 +25,7 @@ class Command(BaseCommand):
 
         proj_join_requests_qeuryset = ProjectUserJoinRequest.objects.filter(project_user__status__name='Pending - Add')
 
+        emails_sent = 0
         for request in proj_join_requests_qeuryset:
             creation_time = request.created
             now = utc_now_offset_aware()
@@ -51,9 +52,13 @@ class Command(BaseCommand):
                     for template, recipients in zip(template_names, receiver_list):
                         send_email_template(
                             subject, template, context, sender, recipients)
+                        emails_sent += len(recipients)
                 except Exception as e:
                     message = 'Failed to send reminder email. Details:'
                     self.stderr.write(self.style.ERROR(message))
                     self.stderr.write(self.style.ERROR(str(e)))
                     self.logger.error(message)
                     self.logger.exception(e)
+
+        self.stdout.write(self.style.SUCCESS(f'Sent {str(emails_sent)} '
+                                             f'reminder emails.'))
