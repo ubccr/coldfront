@@ -1510,8 +1510,7 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 role=role,
                 status=status)
 
-        # Create a join request, whose 'created' timestamp is used to determine
-        # when to auto-approve the request.
+        # Create a join request
         ProjectUserJoinRequest.objects.create(project_user=project_user,
                                               reason=reason)
 
