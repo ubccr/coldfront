@@ -8,7 +8,7 @@ If approved, you will become a PI on the project. The requesting user will becom
 
 If you would like to prevent this, or have any questions, please contact us at {{ support_email }}.
 
-{% if pi_is_active %}You already have a portal account and may login here: {{ login_url }}{% else %}A portal account was automatically created on your behalf. Please complete the following steps:
+{% if pi_is_active %}You already have a portal account and may log in here: {{ login_url }}{% else %}A portal account was automatically created on your behalf. Please complete the following steps:
 1. Click on the following link to complete registration and activate your account: {{ activation_url }}
 2. Set your password here: {{ password_reset_url }}{% endif %}
 

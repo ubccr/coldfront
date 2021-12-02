@@ -53,19 +53,21 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserStatusChoice)
 from coldfront.core.project.utils import (add_vector_user_to_designated_savio_project,
                                           get_project_compute_allocation,
-                                          project_allocation_request_latest_update_timestamp,
                                           ProjectClusterAccessRequestRunner,
                                           ProjectDenialRunner,
                                           SavioProjectApprovalRunner,
-                                          savio_request_denial_reason,
                                           send_added_to_project_notification_email,
                                           send_new_cluster_access_request_notification_email,
                                           send_project_join_notification_email,
                                           send_project_join_request_approval_email,
                                           send_project_join_request_denial_email,
                                           send_project_request_pooling_email,
-                                          VectorProjectApprovalRunner,
-                                          vector_request_denial_reason)
+                                          VectorProjectApprovalRunner)
+from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
+from coldfront.core.project.utils_.renewal_utils import is_any_project_pi_renewable
+from coldfront.core.project.utils_.request_utils import project_allocation_request_latest_update_timestamp
+from coldfront.core.project.utils_.request_utils import savio_request_denial_reason
+from coldfront.core.project.utils_.request_utils import vector_request_denial_reason
 # from coldfront.core.publication.models import Publication
 # from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.resource.models import Resource
@@ -225,6 +227,20 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['cluster_accounts_requestable'] = cluster_accounts_requestable
         context['cluster_accounts_tooltip'] = cluster_accounts_tooltip
 
+        # Only display the "Renew Allowance" button for applicable allocation
+        # types.
+        # TODO: Display these for ic_ and pc_ when ready.
+        context['renew_allowance_current_visible'] = \
+            self.object.name.startswith('fc_')
+            # self.object.name.startswith(('fc_', 'ic_', 'pc_'))
+        # Only allow the "Renew Allowance" button to be clickable if any PIs do
+        # not have pending/approved renewal requests.
+        context['renew_allowance_current_clickable'] = (
+            # Short-circuit if the button is not visible.
+                context['renew_allowance_current_visible'] and
+                is_any_project_pi_renewable(
+                    self.object, get_current_allocation_period()))
+
         return context
 
 
@@ -255,7 +271,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
             data = project_search_form.cleaned_data
             if data.get('show_all_projects') and (self.request.user.is_superuser or self.request.user.has_perm('project.can_view_all_projects')):
                 projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
-                    status__name__in=['New', 'Active', ]
+                    status__name__in=['New', 'Active', 'Inactive', ]
                 ).annotate(
                     cluster_name=Case(
                         When(name='abc', then=Value('ABC')),
@@ -266,7 +282,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
                 ).order_by(order_by)
             else:
                 projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
-                    Q(status__name__in=['New', 'Active', ]) &
+                    Q(status__name__in=['New', 'Active', 'Inactive', ]) &
                     Q(projectuser__user=self.request.user) &
                     Q(projectuser__status__name='Active')
                 ).annotate(
@@ -316,7 +332,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
 
         else:
             projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
-                Q(status__name__in=['New', 'Active', ]) &
+                Q(status__name__in=['New', 'Active', 'Inactive', ]) &
                 Q(projectuser__user=self.request.user) &
                 Q(projectuser__status__name='Active')
             ).annotate(
@@ -382,6 +398,15 @@ class ProjectListView(LoginRequiredMixin, ListView):
             project_list = paginator.page(1)
         except EmptyPage:
             project_list = paginator.page(paginator.num_pages)
+
+        # The "Renew a PI's Allowance" button should only be visible to
+        # Managers and PIs.
+        role_names = ['Manager', 'Principal Investigator']
+        status = ProjectUserStatusChoice.objects.get(name='Active')
+        context['renew_allowance_current_visible'] = \
+            ProjectUser.objects.filter(
+                user=self.request.user, role__name__in=role_names,
+                status=status)
 
         return context
 
@@ -1441,6 +1466,15 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 self.request, 'You must sign the User Access Agreement before you can join a project.')
             return False
 
+        inactive_project_status = ProjectStatusChoice.objects.get(
+            name='Inactive')
+        if project_obj.status == inactive_project_status:
+            message = (
+                f'Project {project_obj.name} is inactive, and may not be '
+                f'joined.')
+            messages.error(self.request, message)
+            return False
+
         if project_users.exists():
             project_user = project_users.first()
             if project_user.status.name == 'Active':
@@ -1854,7 +1888,9 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
 
 
 # TODO: Once finalized, move these imports above.
-from coldfront.core.project.forms import ProjectAllocationReviewForm
+from coldfront.core.allocation.models import AllocationRenewalRequest
+from coldfront.core.project.forms import ReviewDenyForm
+from coldfront.core.project.forms import ReviewStatusForm
 from coldfront.core.project.forms import SavioProjectAllocationTypeForm
 from coldfront.core.project.forms import SavioProjectDetailsForm
 from coldfront.core.project.forms import SavioProjectExistingPIForm
@@ -1865,7 +1901,6 @@ from coldfront.core.project.forms import SavioProjectPoolAllocationsForm
 from coldfront.core.project.forms import SavioProjectPooledProjectSelectionForm
 from coldfront.core.project.forms import SavioProjectRechargeExtraFieldsForm
 from coldfront.core.project.forms import SavioProjectReviewAllocationDatesForm
-from coldfront.core.project.forms import SavioProjectReviewDenyForm
 from coldfront.core.project.forms import SavioProjectReviewMemorandumSignedForm
 from coldfront.core.project.forms import SavioProjectReviewSetupForm
 from coldfront.core.project.forms import SavioProjectSurveyForm
@@ -2015,14 +2050,13 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
         """Perform processing and store information in a request
         object."""
         redirect_url = '/'
-
-        # Retrieve form data; include empty dictionaries for skipped steps.
-        data = iter([form.cleaned_data for form in form_list])
-        form_data = [{} for _ in range(len(self.form_list))]
-        for step in sorted(form_dict.keys()):
-            form_data[int(step)] = next(data)
-
         try:
+            # Retrieve form data; include empty dictionaries for skipped steps.
+            data = iter([form.cleaned_data for form in form_list])
+            form_data = [{} for _ in range(len(self.form_list))]
+            for step in sorted(form_dict.keys()):
+                form_data[int(step)] = next(data)
+
             request_kwargs = {
                 'requester': self.request.user,
             }
@@ -2536,8 +2570,17 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         return HttpResponseRedirect(self.redirect)
 
     def __get_service_units_to_allocate(self):
-        """Return the number of service units to allocate to the
-        project if it were to be approved now."""
+        """Return the number of service units to allocate to the project
+        if it were to be approved now.
+
+        If the request was created as part of an allocation renewal, it
+        may be associated with at most one AllocationRenewalRequest. If
+        so, service units will be allocated when the latter request is
+        approved."""
+        if AllocationRenewalRequest.objects.filter(
+                new_project_request=self.request_obj).exists():
+            return settings.ALLOCATION_MIN
+
         allocation_type = self.request_obj.allocation_type
         now = utc_now_offset_aware()
         if allocation_type == SavioProjectAllocationRequest.CO:
@@ -2586,7 +2629,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 class SavioProjectReviewEligibilityView(LoginRequiredMixin,
                                         UserPassesTestMixin,
                                         SavioProjectRequestMixin, FormView):
-    form_class = ProjectAllocationReviewForm
+    form_class = ReviewStatusForm
     template_name = (
         'project/project_request/savio/project_review_eligibility.html')
     login_url = '/'
@@ -2661,7 +2704,7 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
 
 class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
                                       SavioProjectRequestMixin, FormView):
-    form_class = ProjectAllocationReviewForm
+    form_class = ReviewStatusForm
     template_name = (
         'project/project_request/savio/project_review_readiness.html')
     login_url = '/'
@@ -3032,7 +3075,7 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
 
 class SavioProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
                                  SavioProjectRequestMixin, FormView):
-    form_class = SavioProjectReviewDenyForm
+    form_class = ReviewDenyForm
     template_name = (
         'project/project_request/savio/project_review_deny.html')
     login_url = '/'
@@ -3216,7 +3259,8 @@ class VectorProjectRequestListView(LoginRequiredMixin, TemplateView):
         user = self.request.user
 
         request_list = self.get_queryset()
-        if not (user.is_superuser or user.has_perm('project.view_vectorprojectallocationrequest')):
+        permission = 'project.view_vectorprojectallocationrequest'
+        if not (user.is_superuser or user.has_perm(permission)):
             args.append(Q(requester=user) | Q(pi=user))
         if self.completed:
             status__name__in = ['Approved - Complete', 'Denied']
@@ -3250,7 +3294,8 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('project.view_vectorprojectallocationrequest'):
+        permission = 'project.view_vectorprojectallocationrequest'
+        if self.request.user.has_perm(permission):
             return True
 
         if (self.request.user == self.request_obj.requester or
@@ -3361,7 +3406,7 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
 class VectorProjectReviewEligibilityView(LoginRequiredMixin,
                                          UserPassesTestMixin, FormView):
-    form_class = ProjectAllocationReviewForm
+    form_class = ReviewStatusForm
     template_name = (
         'project/project_request/vector/project_review_eligibility.html')
     login_url = '/'

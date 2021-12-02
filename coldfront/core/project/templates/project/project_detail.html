@@ -58,6 +58,23 @@ Project Detail
             Review Join Requests
             &nbsp;<span class="badge badge-light">{{ num_join_requests }}</span>
           </a>
+        {% endif %}
+        {% if renew_allowance_current_visible %}
+          {% if renew_allowance_current_clickable %}
+            <a
+                class="btn btn-success"
+                href="{% url 'project-renew' project.pk %}"
+                role="button">
+              <i class="fas fa-plus" aria-hidden="true"></i>
+              Renew Allowance
+            </a>
+          {% else %}
+            <button type="button" class="btn btn-success" disabled>
+              <i class="fas fa-plus" aria-hidden="true"></i>
+              Renew Allowance
+            </button>
+          {% endif %}
+        {% endif %}
       {% endif %}
     </div>
   </div>

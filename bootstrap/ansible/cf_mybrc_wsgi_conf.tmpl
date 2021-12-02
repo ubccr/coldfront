@@ -5,7 +5,7 @@ LoadModule headers_module modules/mod_headers.so
 
 WSGIPassAuthorization On
 
-<VirtualHost 0.0.0.0:8000>
+<VirtualHost 0.0.0.0:{{ app_port }}>
 
     ServerName {{ hostname }}
     ServerAlias {{ hostname }}

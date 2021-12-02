@@ -1,0 +1,79 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Project Renewal - PI Selection
+{% endblock %}
+
+
+{% block head %}
+{{ wizard.form.media }}
+{% endblock %}
+
+
+{% block content %}
+<script type='text/javascript' src="{% static 'selectize/selectize.min.js' %}"></script>
+<link rel='stylesheet' type='text/css' href="{% static 'selectize/selectize.bootstrap3.css' %}"/>
+
+<h1>Select a PI</h1><hr>
+
+<p>
+  Select the PI whose allocation should be renewed. You are allowed to renew
+  the allocation of any active PI of any Project on which you are an active
+  Manager or PI.
+</p>
+
+<!-- TODO: Account for other allocation types. -->
+<!-- TODO: Add "during this allocation period" when they become relevant. -->
+<p>
+  Note: Each PI may only have one FCA at a time, so any that have pending or
+  approved renewal requests are not selectable.
+</p>
+
+<form action="" method="post">
+  {% csrf_token %}
+  <table>
+    {{ wizard.management_form }}
+    {% if wizard.form.forms %}
+      {{ wizard.form.management_form }}
+      {% for form in wizard.form.forms %}
+        {{ form|crispy }}
+      {% endfor %}
+    {% else %}
+      {{ wizard.form|crispy }}
+    {% endif %}
+  </table>
+  {% if wizard.steps.prev %}
+    <button
+        class="btn btn-secondary"
+        formnovalidate="formnovalidate"
+        name="wizard_goto_step"
+        type="submit"
+        value="{{ wizard.steps.first }}">
+      First Step
+    </button>
+    <button
+        class="btn btn-secondary"
+        formnovalidate="formnovalidate"
+        name="wizard_goto_step"
+        type="submit"
+        value="{{ wizard.steps.prev }}">
+      Previous Step
+    </button>
+  {% endif %}
+  <input class="btn btn-primary" type="submit" value="Next Step"/>
+</form>
+<br>
+
+<p>Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
+
+<script>
+  $('select').selectize({
+    create: false,
+    sortField: 'text'
+  })
+</script>
+
+{% endblock %}

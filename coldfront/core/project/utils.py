@@ -1,10 +1,11 @@
-from coldfront.api.statistics.utils import set_user_project_allocation_value
+from coldfront.api.statistics.utils import set_project_user_allocation_value
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.utils import get_or_create_active_allocation_user
+from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.allocation.utils import next_allocation_start_datetime
 from coldfront.core.allocation.utils import review_cluster_access_requests_url
 from coldfront.core.allocation.utils import set_allocation_user_attribute_value
@@ -17,21 +18,24 @@ from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.models import VectorProjectAllocationRequest
+from coldfront.core.project.signals import new_project_request_denied
+from coldfront.core.project.utils_.request_utils import savio_request_denial_reason
+from coldfront.core.project.utils_.request_utils import vector_request_denial_reason
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.user.utils import account_activation_url
 from coldfront.core.utils.common import import_from_settings
+from coldfront.core.utils.common import project_detail_url
 from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.utils.common import validate_num_service_units
 from coldfront.core.utils.mail import send_email_template
 from collections import namedtuple
 from datetime import timedelta
 from decimal import Decimal
 from django.conf import settings
-from django.contrib import messages
 from django.core.exceptions import MultipleObjectsReturned
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
-from django.http import HttpRequest
 
 from django.urls import reverse
 from urllib.parse import urljoin
@@ -351,7 +355,7 @@ def send_project_request_approval_email(request):
         template_name = (
             'email/project_request/new_project_request_approved.txt')
 
-    project_url = __project_detail_url(request.project)
+    project_url = project_detail_url(request.project)
     context = {
         'center_name': settings.CENTER_NAME,
         'project_name': request.project.name,
@@ -451,89 +455,6 @@ def send_project_request_pooling_email(request):
         ))
 
     send_email_template(subject, template_name, context, sender, receiver_list)
-
-
-def project_allocation_request_latest_update_timestamp(request):
-    """Return the latest timestamp stored in the given Savio or Vector
-    ProjectAllocationRequest's 'state' field, or the empty string.
-
-    The expected values are ISO 8601 strings, or the empty string, so
-    taking the maximum should provide the correct output."""
-    types = (SavioProjectAllocationRequest, VectorProjectAllocationRequest)
-    if not isinstance(request, types):
-        raise TypeError(
-            f'Provided request has unexpected type {type(request)}.')
-    state = request.state
-    max_timestamp = ''
-    for field in state:
-        max_timestamp = max(max_timestamp, state[field].get('timestamp', ''))
-    return max_timestamp
-
-
-def savio_request_denial_reason(savio_request):
-    """Return the reason why the given SavioProjectAllocationRequest was
-    denied, based on its 'state' field."""
-    if not isinstance(savio_request, SavioProjectAllocationRequest):
-        raise TypeError(
-            f'Provided request has unexpected type {type(savio_request)}.')
-    if savio_request.status.name != 'Denied':
-        raise ValueError(
-            f'Provided request has unexpected status '
-            f'{savio_request.status.name}.')
-
-    state = savio_request.state
-    eligibility = state['eligibility']
-    readiness = state['readiness']
-    other = state['other']
-
-    DenialReason = namedtuple(
-        'DenialReason', 'category justification timestamp')
-
-    if other['timestamp']:
-        category = 'Other'
-        justification = other['justification']
-        timestamp = other['timestamp']
-    elif eligibility['status'] == 'Denied':
-        category = 'PI Ineligible'
-        justification = eligibility['justification']
-        timestamp = eligibility['timestamp']
-    elif readiness['status'] == 'Denied':
-        category = 'Readiness Criteria Unsatisfied'
-        justification = readiness['justification']
-        timestamp = readiness['timestamp']
-    else:
-        raise ValueError('Provided request has an unexpected state.')
-
-    return DenialReason(
-        category=category, justification=justification, timestamp=timestamp)
-
-
-def vector_request_denial_reason(vector_request):
-    """Return the reason why the given VectorProjectAllocationRequest
-    was denied, based on its 'state' field."""
-    if not isinstance(vector_request, VectorProjectAllocationRequest):
-        raise TypeError(
-            f'Provided request has unexpected type {type(vector_request)}.')
-    if vector_request.status.name != 'Denied':
-        raise ValueError(
-            f'Provided request has unexpected status '
-            f'{vector_request.status.name}.')
-
-    state = vector_request.state
-    eligibility = state['eligibility']
-
-    DenialReason = namedtuple(
-        'DenialReason', 'category justification timestamp')
-
-    if eligibility['status'] == 'Denied':
-        category = 'Requester Ineligible'
-        justification = eligibility['justification']
-        timestamp = eligibility['timestamp']
-    else:
-        raise ValueError('Provided request has an unexpected state.')
-
-    return DenialReason(
-        category=category, justification=justification, timestamp=timestamp)
 
 
 def savio_request_state_status(savio_request):
@@ -778,7 +699,7 @@ class SavioProjectApprovalRunner(ProjectApprovalRunner):
     Savio project request is approved and processed."""
 
     def __init__(self, request_obj, num_service_units):
-        self.__validate_num_service_units(num_service_units)
+        validate_num_service_units(num_service_units)
         self.num_service_units = num_service_units
         super().__init__(request_obj)
 
@@ -827,7 +748,7 @@ class SavioProjectApprovalRunner(ProjectApprovalRunner):
             if pool:
                 existing_value = Decimal(allocation_attribute.value)
                 new_value = existing_value + self.num_service_units
-                self.__validate_num_service_units(new_value)
+                validate_num_service_units(new_value)
             else:
                 new_value = self.num_service_units
         allocation_attribute.value = str(new_value)
@@ -851,34 +772,11 @@ class SavioProjectApprovalRunner(ProjectApprovalRunner):
         date_time = utc_now_offset_aware()
         for project_user in project.projectuser_set.all():
             user = project_user.user
-            set_user_project_allocation_value(user, project, value)
+            set_project_user_allocation_value(user, project, value)
             ProjectUserTransaction.objects.create(
                 project_user=project_user,
                 date_time=date_time,
                 allocation=Decimal(value))
-
-    @staticmethod
-    def __validate_num_service_units(num_service_units):
-        """Raise exceptions if the given number of service units does
-        not conform to the expected constraints."""
-        if not isinstance(num_service_units, Decimal):
-            raise TypeError(
-                f'Number of service units {num_service_units} is not a '
-                f'Decimal.')
-        if not (settings.ALLOCATION_MIN <= num_service_units <=
-                settings.ALLOCATION_MAX):
-            raise ValueError(
-                f'Number of service units is not in the acceptable range '
-                f'[{settings.ALLOCATION_MIN}, {settings.ALLOCATION_MAX}].')
-        num_service_units_tuple = num_service_units.as_tuple()
-        if len(num_service_units_tuple.digits) > settings.DECIMAL_MAX_DIGITS:
-            raise ValueError(
-                f'Number of service units has greater than '
-                f'{settings.DECIMAL_MAX_DIGITS} digits.')
-        if abs(num_service_units_tuple.exponent) > settings.DECIMAL_MAX_PLACES:
-            raise ValueError(
-                f'Number of service units has greater than '
-                f'{settings.DECIMAL_MAX_PLACES} decimal places.')
 
 
 class VectorProjectApprovalRunner(ProjectApprovalRunner):
@@ -943,6 +841,20 @@ class ProjectDenialRunner(object):
             self.deny_project()
         self.deny_request()
         self.send_email()
+        self.deny_associated_renewal_request_if_existent()
+
+    def deny_associated_renewal_request_if_existent(self):
+        """Send a signal to deny any AllocationRenewalRequest that
+        references this request."""
+        kwargs = {'request_id': self.request_obj.pk}
+        new_project_request_denied.send(sender=None, **kwargs)
+
+    def deny_project(self):
+        """Set the Project's status to 'Denied'."""
+        project = self.request_obj.project
+        project.status = ProjectStatusChoice.objects.get(name='Denied')
+        project.save()
+        return project
 
     def deny_request(self):
         """Set the status of the request to 'Denied'."""
@@ -957,13 +869,6 @@ class ProjectDenialRunner(object):
         except Exception as e:
             logger.error('Failed to send notification email. Details:\n')
             logger.exception(e)
-
-    def deny_project(self):
-        """Set the Project's status to 'Denied'."""
-        project = self.request_obj.project
-        project.status = ProjectStatusChoice.objects.get(name='Denied')
-        project.save()
-        return project
 
 
 class ProjectClusterAccessRequestRunnerError(Exception):
