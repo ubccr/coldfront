@@ -158,14 +158,16 @@
                               </td>
 
                               <td>
-                                    {% if 'Active' in project.display_status %}
-                                      <span class="badge badge-success">Active</span>
+                                    {% if project.name in pending_removal_request_projects %}
+                                        <span class="badge badge-danger">Pending Removal</span>
+                                    {% elif 'Active' in project.display_status %}
+                                        <span class="badge badge-success">Active</span>
                                     {% elif 'Pending' in project.display_status %}
-                                      <span class="badge badge-warning">Pending</span>
+                                        <span class="badge badge-warning">Pending</span>
                                     {% elif 'Processing' in project.display_status %}
-                                      <span class="badge badge-warning">Processing</span>
+                                        <span class="badge badge-warning">Processing</span>
                                     {% else %}
-                                      <span class="badge badge-danger">No Access</span>
+                                        <span class="badge badge-danger">No Access</span>
                                     {% endif %}
                               </td>
                           </tr>
@@ -211,12 +213,14 @@
                               </td>
 
                               <td>
-                                  {% if 'Active' in project.display_status %}
-                                  <span class="badge badge-success">Active</span>
+                                  {% if project.name in pending_removal_request_projects %}
+                                      <span class="badge badge-danger">Pending Removal</span>
+                                  {% elif 'Active' in project.display_status %}
+                                      <span class="badge badge-success">Active</span>
                                   {% elif 'Pending' in project.display_status %}
-                                  <span class="badge badge-warning">Pending</span>
+                                      <span class="badge badge-warning">Pending</span>
                                   {% else %}
-                                  <span class="badge badge-danger">No Access</span>
+                                      <span class="badge badge-danger">No Access</span>
                                   {% endif %}
                               </td>
                           </tr>
@@ -265,12 +269,14 @@
                             </td>
 
                             <td>
-                                {% if 'Active' in project.display_status %}
-                                  <span class="badge badge-success">Active</span>
+                                {% if project.name in pending_removal_request_projects %}
+                                    <span class="badge badge-danger">Pending Removal</span>
+                                {% elif 'Active' in project.display_status %}
+                                    <span class="badge badge-success">Active</span>
                                 {% elif 'Pending' in project.display_status %}
-                                  <span class="badge badge-warning">Pending</span>
+                                    <span class="badge badge-warning">Pending</span>
                                 {% else %}
-                                  <span class="badge badge-danger">No Access</span>
+                                    <span class="badge badge-danger">No Access</span>
                                 {% endif %}
                             </td>
                         </tr>
