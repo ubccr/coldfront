@@ -706,8 +706,11 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             if '__select_all__' in allocation_form_data:
                 allocation_form_data.remove('__select_all__')
             no_accounts = {}
+
+            managers_rejected = []
             for form in formset:
                 user_form_data = form.cleaned_data
+
                 if user_form_data['selected']:
                     added_users_count += 1
 
@@ -720,6 +723,13 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                     user_obj.save()
 
                     role_choice = user_form_data.get('role')
+
+                    # If no more managers can be added then give the user the 'User' role.
+                    if role_choice.name == 'Manager':
+                        if project_obj.check_exceeds_max_managers(1):
+                            role_choice = ProjectUserRoleChoice.objects.get(name='User')
+                            managers_rejected.append(user_form_data.get('username'))
+
                     # Is the user already in the project?
                     if project_obj.projectuser_set.filter(user=user_obj).exists():
                         project_user_obj = project_obj.projectuser_set.get(
@@ -768,6 +778,16 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                 messages.warning(
                     request, warning_message
                 )
+
+            if managers_rejected:
+                messages.warning(
+                    request,
+                    """
+                    Users {} were not given the Manager role. The maximum permitted Managers on
+                    this project is {}.
+                    """.format(', '.join(managers_rejected), project_obj.max_managers)
+                )
+
             messages.success(
                 request, 'Added {} users to project.'.format(added_users_count))
         else:
@@ -947,13 +967,35 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     request, 'PI role and email notification option cannot be changed.')
                 return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_user_pk}))
 
-            project_user_update_form = ProjectUserUpdateForm(request.POST,
-                                                             initial={'role': project_user_obj.role.name,
-                                                                      'enable_notifications': project_user_obj.enable_notifications}
-                                                             )
+            project_user_update_form = ProjectUserUpdateForm(
+                request.POST,
+                initial={
+                    'role': project_user_obj.role.name,
+                    'enable_notifications': project_user_obj.enable_notifications
+                }
+            )
 
             if project_user_update_form.is_valid():
                 form_data = project_user_update_form.cleaned_data
+                if form_data.get('role').name == 'Manager':
+                    if project_obj.get_current_num_managers() >= project_obj.max_managers:
+                        messages.error(
+                            request,
+                            """
+                            This project is at its maximum Managers limit ({}) and cannot have
+                            more.
+                            """.format(project_obj.max_managers)
+                        )
+                        return HttpResponseRedirect(
+                            reverse(
+                                'project-user-detail',
+                                kwargs={
+                                    'pk': project_obj.pk,
+                                    'project_user_pk': project_user_obj.pk
+                                }
+                            )
+                        )
+
                 project_user_obj.enable_notifications = form_data.get(
                     'enable_notifications')
                 project_user_obj.role = ProjectUserRoleChoice.objects.get(
