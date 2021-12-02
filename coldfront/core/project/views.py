@@ -4162,13 +4162,15 @@ class ProjectRemovalRequestCompleteStatusView(LoginRequiredMixin,
                 allocation_obj = Allocation.objects.get(project=project_obj)
                 allocation_user = \
                     allocation_obj.allocationuser_set.get(user=removed_user.user)
-                allocation_denied_status, _ = \
-                    AllocationUserStatusChoice.objects.get_or_create(name='Denied')
-                allocation_user.status = allocation_denied_status
-                allocation_user.save()
+                cluster_account_status = \
+                    allocation_user.allocationuserattribute_set.get(
+                        allocation_attribute_type=AllocationAttributeType.objects.get(name='Cluster Account Status'))
+                cluster_account_status.value = 'Denied'
+                cluster_account_status.save()
             except Exception as e:
-                message = f'Unexpected error setting AllocationUserStatusChoice' \
-                          f'to "Denied" for user {removed_user.user.username}.'
+                message = f'Unexpected error setting AllocationAttributeType' \
+                          f'Cluster Account Status to "Denied" for user ' \
+                          f'{removed_user.user.username}.'
                 messages.error(self.request, message)
 
         self.project_removal_request_obj.save()
