@@ -3,6 +3,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.forms.widgets import RadioSelect
 from django.shortcuts import get_object_or_404
+from django.utils.html import format_html
 from django.utils.module_loading import import_string
 
 from coldfront.core.allocation.models import (AllocationAccount,
@@ -111,6 +112,7 @@ class AllocationForm(forms.Form):
     cost = forms.IntegerField(disabled=True, required=False)
     total_cost = forms.IntegerField(disabled=True, required=False)
     confirm_understanding = forms.BooleanField(required=False)
+    data_manager = forms.CharField(max_length=50, required=False)
 
     users = forms.MultipleChoiceField(
         widget=forms.CheckboxSelectMultiple, required=False)
@@ -119,6 +121,7 @@ class AllocationForm(forms.Form):
     def __init__(self, request_user, project_pk,  *args, **kwargs):
         super().__init__(*args, **kwargs)
         project_obj = get_object_or_404(Project, pk=project_pk)
+        self.project_obj = project_obj
         self.fields['resource'].queryset = get_user_resources(request_user)
         user_query_set = project_obj.projectuser_set.select_related('user').filter(
             status__name__in=['Active', ])
@@ -149,6 +152,7 @@ class AllocationForm(forms.Form):
         self.fields['applications_list'].help_text = 'Format: app1,app2,app3,etc'
         self.fields['it_pros'].help_text = 'Format: name1,name2,name3,etc'
         self.fields['project_directory_name'].help_text = 'Must be alphanumeric and not exceed 10 characters in length'
+        self.fields['data_manager'].help_text = 'Must be a project Manager. Only this user can add and remove users from this resource.'
 
         ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
         search_class_obj = ldap_search()
@@ -193,6 +197,7 @@ class AllocationForm(forms.Form):
             'unit',
             'primary_contact',
             'secondary_contact',
+            'data_manager',
             'department_full_name',
             'department_short_name',
             'fiscal_officer',
@@ -270,6 +275,7 @@ class AllocationForm(forms.Form):
                 'store_ephi': cleaned_data.get('store_ephi'),
                 'storage_space': cleaned_data.get('storage_space'),
                 'account_number': cleaned_data.get('account_number'),
+                'data_manager': cleaned_data.get('data_manager')
             },
             'Priority Boost': {
                 'is_grand_challenge': cleaned_data.get('is_grand_challenge'),
@@ -357,6 +363,30 @@ class AllocationForm(forms.Form):
                 if not value.isalnum():
                     raise_error = True
                     self.add_error(key, 'Project directory name must be alphanumeric')
+                    continue
+            elif key == 'data_manager':
+                manager_exists = self.project_obj.projectuser_set.filter(
+                    user__username=value,
+                    role__name='Manager',
+                    status__name='Active'
+                ).exists()
+                if not manager_exists:
+                    raise_error = True
+                    self.add_error(key, 'Data Manager must be a project Manager')
+                    continue
+
+                check_resource_account = resource_obj.get_attribute('check_user_account')
+                if check_resource_account and not resource_obj.check_user_account_exists(value, check_resource_account):
+                    raise_error = True
+                    self.add_error(
+                        key,
+                        format_html(
+                            """
+                            Data Manager must have a Slate Project account. They can create one
+                            <a href="https://access.iu.edu/Accounts/Create">here</a>
+                            """
+                        )
+                    )
                     continue
 
             # Value checks for a specific resource's required fields should go here.

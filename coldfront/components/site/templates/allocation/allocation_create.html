@@ -146,6 +146,8 @@ Request New Allocation
   var resources_form_faculty_email_label = {{ resources_form_faculty_email_label | safe }}
   var resources_form_store_ephi = {{ resources_form_store_ephi | safe }}
   var resources_form_store_ephi_label = {{ resources_form_store_ephi_label | safe }}
+  var resources_form_data_manager = {{ resources_form_data_manager | safe }}
+  var resources_form_data_manager_label = {{ resources_form_data_manager_label | safe }}
 
 
   $(document).ready(function () {
@@ -950,6 +952,17 @@ Request New Allocation
       $('#div_id_store_ephi').show();
     } else {
       $('#div_id_store_ephi').hide();
+    }
+
+    if (resources_form_data_manager_label[resource_id]) {
+      var label = $('label[for="id_data_manager"]');
+      label.html(resources_form_data_manager_label[resource_id]);
+      if ($('#id_data_manager').val().length < 1) {
+        $('#id_data_manager').val(resources_form_data_manager[resource_id]);
+      }
+      $('#div_id_data_manager').show();
+    } else {
+      $('#div_id_data_manager').hide();
     }
     
     if (resources_with_accounts.includes(parseInt(resource_id))) {

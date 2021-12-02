@@ -144,6 +144,7 @@ class Allocation(TimeStampedModel):
         blank=True,
         null=True
     )
+    data_manager = models.CharField(max_length=50, blank=True, null=True)
     justification = models.TextField()
     description = models.CharField(max_length=512, blank=True, null=True)
     is_locked = models.BooleanField(default=False)

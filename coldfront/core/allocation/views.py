@@ -586,6 +586,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         resources_form_faculty_email_label = {}
         resources_form_store_ephi = {}
         resources_form_store_ephi_label = {}
+        resources_form_data_manager = {}
+        resources_form_data_manager_label = {}
         resources_with_eula = {}
 
         for resource in user_resources:
@@ -946,6 +948,16 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     else:
                         resources_form_prorated_cost[resource.id] = 0
 
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='data_manager').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='data_manager').value
+                resources_form_data_manager[resource.id] = value
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='data_manager_label').exists():
+                value = resource.resourceattribute_set.get(
+                    resource_attribute_type__name='data_manager_label').value
+                resources_form_data_manager_label[resource.id] = mark_safe(
+                    '<strong>{}*</strong>'.format(value))
+
             if resource.resourceattribute_set.filter(resource_attribute_type__name='eula').exists():
                 value = resource.resourceattribute_set.get(
                     resource_attribute_type__name='eula').value
@@ -1021,6 +1033,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         context['resources_form_faculty_email_label'] = resources_form_faculty_email_label
         context['resources_form_store_ephi'] = resources_form_store_ephi
         context['resources_form_store_ephi_label'] = resources_form_store_ephi_label
+        context['resources_form_data_manager'] = resources_form_data_manager
+        context['resources_form_data_manager_label'] = resources_form_data_manager_label
         context['resources_with_eula'] = resources_with_eula
         context['resources_with_accounts'] = list(Resource.objects.filter(
             name__in=list(ALLOCATION_ACCOUNT_MAPPING.keys())).values_list('id', flat=True))
@@ -1086,6 +1100,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         url = form_data.get('url')
         faculty_email = form_data.get('faculty_email')
         store_ephi = form_data.get('store_ephi')
+        data_manager = form_data.get('data_manager')
         allocation_account = form_data.get('allocation_account', None)
         license_term = form_data.get('license_term', None)
 
@@ -1130,6 +1145,11 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
 
         users = [User.objects.get(username=username) for username in usernames]
+        if resource_obj.name == 'Slate Project':
+            users.append(User.objects.get(username=data_manager))
+            # Remove potential duplicate usernames
+            users = list(set(users))
+
         resource = resource_obj.get_attribute('check_user_account')
         if resource and not resource_obj.check_user_account_exists(project_obj.pi.username, resource):
             form.add_error(
@@ -1217,6 +1237,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             url=url,
             faculty_email=faculty_email,
             store_ephi=store_ephi,
+            data_manager=data_manager,
             status=allocation_status_obj
         )
         allocation_obj.resources.add(resource_obj)
