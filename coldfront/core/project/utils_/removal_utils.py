@@ -26,6 +26,7 @@ class ProjectRemovalRequestRunner(object):
         # check for active removal request for user
         if ProjectUserRemovalRequest.objects.filter(
                 project_user__user=self.user_obj,
+                project_user__project=self.proj_obj,
                 status__in=[pending_status, processing_status]).exists():
             message = f'Error requesting removal of user {self.user_obj.username}. ' \
                       f'An active project removal request for user ' \
