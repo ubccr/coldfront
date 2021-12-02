@@ -941,6 +941,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
                 if ProjectUserRemovalRequest.objects.\
                         filter(project_user__user__username=username,
+                               project_user__project=project_obj,
                                status__in=[pending_status, processing_status]).exists():
 
                     message = (
@@ -1643,7 +1644,7 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             processing_status = ProjectUserRemovalRequestStatusChoice.objects.get(name='Processing')
 
             if ProjectUserRemovalRequest.objects. \
-                    filter(project_user=project_users.first(),
+                    filter(project_user=project_user,
                            status__in=[pending_status, processing_status]).exists():
                 message = (
                     f'You cannot join Project {project_obj.name} because you '
@@ -1866,10 +1867,17 @@ class ProjectJoinListView(ProjectListView, UserPassesTestMixin):
                 is_requester_or_pi,
                 status__name__in=pending_project_request_statuses
             ).values_list('project__name', flat=True))
+        pending_removal_requests = set([removal_request.project_user.project.name
+                                        for removal_request in
+                                        ProjectUserRemovalRequest.objects.filter(
+                                            Q(project_user__user__username=self.request.user.username) &
+                                            Q(status__name='Pending'))])
+        print(pending_removal_requests)
         not_joinable = set.union(
             already_pending_or_active,
             is_part_of_pending_savio_project_request,
-            is_part_of_pending_vector_project_request)
+            is_part_of_pending_vector_project_request,
+            pending_removal_requests)
 
         join_requests = Project.objects.filter(Q(projectuser__user=self.request.user)
                                                & Q(status__name__in=['New', 'Active', ])
@@ -4149,6 +4157,20 @@ class ProjectRemovalRequestCompleteStatusView(LoginRequiredMixin,
         self.project_removal_request_obj.status = project_removal_status_choice
         if status == 'Complete':
             self.project_removal_request_obj.completion_time = utc_now_offset_aware()
+
+            try:
+                allocation_obj = Allocation.objects.get(project=project_obj)
+                allocation_user = \
+                    allocation_obj.allocationuser_set.get(user=removed_user.user)
+                allocation_denied_status, _ = \
+                    AllocationUserStatusChoice.objects.get_or_create(name='Denied')
+                allocation_user.status = allocation_denied_status
+                allocation_user.save()
+            except Exception as e:
+                message = f'Unexpected error setting AllocationUserStatusChoice' \
+                          f'to "Denied" for user {removed_user.user.username}.'
+                messages.error(self.request, message)
+
         self.project_removal_request_obj.save()
 
         if status == 'Complete':
