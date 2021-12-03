@@ -1,0 +1,50 @@
+###############################################################################
+# General Settings
+###############################################################################
+
+domain: localhost
+reponame: coldfront
+djangoprojname: coldfront
+
+###############################################################################
+# BRC Config
+###############################################################################
+
+# The name of the PostgreSQL database.
+db_name: cf_brc_db
+
+# The credentials for the database admin user.
+db_admin_user: admin
+db_admin_passwd: password_here
+
+# Log paths.
+log_path: /var/log/user_portals/cf_mybrc
+portal_log_file: cf_mybrc_portal.log
+api_log_file: cf_mybrc_api.log
+
+email_port: 1025
+from_email: you@email.com
+admin_email: you@email.com
+email_subject_prefix: "[MyBRC-User-Portal]"
+
+google_sheets_credentials: /tmp/credentials.json
+
+###############################################################################
+# dev_settings
+###############################################################################
+
+deployment: dev
+djangooperator: vagrant
+
+debug: True
+git_prefix: /vagrant/coldfront_app
+hostname: localhost
+host_ip: localhost
+app_port: 80
+full_host_path: http://localhost
+
+ssl_enabled: false
+
+ip_range_with_api_access: 0.0.0.0/0
+
+request_approval_cc_list: ["you@email.com"]

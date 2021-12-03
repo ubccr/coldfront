@@ -1834,8 +1834,6 @@ class AllocationClusterAccountUpdateStatusView(LoginRequiredMixin,
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('allocation.can_review_cluster_account_requests'):
-            return True
         message = (
             'You do not have permission to modify a cluster access request.')
         messages.error(self.request, message)
