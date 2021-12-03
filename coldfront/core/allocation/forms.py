@@ -467,6 +467,20 @@ class AllocationRemoveUserForm(forms.Form):
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
 
+    def __init__(self, *args, disable_selected, **kwargs):
+        super().__init__(*args, **kwargs)
+        if disable_selected:
+            self.fields['selected'].disabled = True
+
+
+class AllocationRemoveUserFormset(forms.BaseFormSet):
+    def get_form_kwargs(self, index):
+        """
+        Override so specific users can be prevented from being removed.
+        """
+        kwargs = super().get_form_kwargs(index)
+        disable_selected = kwargs['disable_selected'][index]
+        return {'disable_selected': disable_selected}
 
 class AllocationAttributeDeleteForm(forms.Form):
     pk = forms.IntegerField(required=False, disabled=True)

@@ -74,6 +74,21 @@ class ProjectRemoveUserForm(forms.Form):
     role = forms.CharField(max_length=30, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
 
+    def __init__(self, *args, disable_selected, **kwargs):
+        super().__init__(*args, **kwargs)
+        if disable_selected:
+            self.fields['selected'].disabled = True
+
+
+class ProjectRemoveUserFormset(forms.BaseFormSet):
+    def get_form_kwargs(self, index):
+        """
+        Override so specific users can be prevented from being removed.
+        """
+        kwargs = super().get_form_kwargs(index)
+        disable_selected = kwargs['disable_selected'][index]
+        return {'disable_selected': disable_selected}
+
 
 class ProjectUserUpdateForm(forms.Form):
     role = forms.ModelChoiceField(

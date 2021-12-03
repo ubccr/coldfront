@@ -30,6 +30,7 @@ from coldfront.core.grant.models import Grant
 from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectAddUsersToAllocationForm,
                                           ProjectRemoveUserForm,
+                                          ProjectRemoveUserFormset,
                                           ProjectReviewEmailForm,
                                           ProjectReviewForm, ProjectSearchForm,
                                           ProjectPISearchForm,
@@ -844,6 +845,28 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         return users_to_remove
 
+    def get_data_managers(self, project_obj):
+        data_manager_list = [
+            allocation.data_manager for allocation in project_obj.allocation_set.filter(
+                resources__name="Slate Project"
+            )
+        ]
+
+        return set(data_manager_list)
+
+    def get_disable_select_list(self, project_obj, users_to_remove):
+        """
+        Gets a list that determines if a user can be removed by disabling the
+        ProjectRemoveUserForm's selected field.
+        """
+        data_manager_list = self.get_data_managers(project_obj)
+        disable_select_list = [False] * len(users_to_remove)
+        for i, user in enumerate(users_to_remove):
+            if user['username'] in data_manager_list:
+                disable_select_list[i] = True
+
+        return disable_select_list
+
     def get(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         project_obj = get_object_or_404(Project, pk=pk)
@@ -853,11 +876,24 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         if users_to_remove:
             formset = formset_factory(
-                ProjectRemoveUserForm, max_num=len(users_to_remove))
-            formset = formset(initial=users_to_remove, prefix='userform')
+                ProjectRemoveUserForm,
+                max_num=len(users_to_remove),
+                formset=ProjectRemoveUserFormset
+            )
+
+            formset = formset(
+                initial=users_to_remove,
+                prefix='userform',
+                form_kwargs={
+                    'disable_selected': self.get_disable_select_list(project_obj, users_to_remove)
+                }
+            )
+
             context['formset'] = formset
 
+        context['data_managers'] = self.get_data_managers(project_obj)
         context['project'] = get_object_or_404(Project, pk=pk)
+
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
@@ -867,9 +903,19 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         users_to_remove = self.get_users_to_remove(project_obj)
 
         formset = formset_factory(
-            ProjectRemoveUserForm, max_num=len(users_to_remove))
+            ProjectRemoveUserForm,
+            max_num=len(users_to_remove),
+            formset=ProjectRemoveUserFormset
+        )
+
         formset = formset(
-            request.POST, initial=users_to_remove, prefix='userform')
+            request.POST,
+            initial=users_to_remove,
+            prefix='userform',
+            form_kwargs={
+                'disable_selected': self.get_disable_select_list(project_obj, users_to_remove)
+            }
+        )
 
         remove_users_count = 0
 
