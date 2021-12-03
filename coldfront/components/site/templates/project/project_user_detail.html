@@ -17,7 +17,15 @@ Project User Detail
 <form action="{% url 'project-user-detail' project_obj.pk project_user_obj.pk %}" method="post">
   {% csrf_token %}
   <div class="card">
-    <div class="card-header"><i class="fas fa-user" aria-hidden="true"></i> User Detail</div>
+    <div class="card-header">
+      <i class="fas fa-user" aria-hidden="true"></i> User Detail
+      {% if is_data_manager %}
+        <span class="float-right">
+          <i class="fas fa-info-circle" aria-hidden="true"></i>
+          Cannot change the role of a Slate Project Data Manager
+        </span>
+      {% endif %}
+    </div>
     <div class="card-body">
       <div class="table-responsive">
         <table class="table">
@@ -44,7 +52,9 @@ Project User Detail
           {% if project_user_obj.user == project_user_obj.project.pi %}
             <tr>
               <th scope="row">Role:</th>
-              <td>{{project_user_obj.role}}</td>
+              <td>
+                {{project_user_obj.role}}
+              </td>
             </tr>
             <tr>
               <th scope="row">Notifications Enabled:</th>

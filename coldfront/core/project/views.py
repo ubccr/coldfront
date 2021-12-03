@@ -977,6 +977,24 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
             return True
 
+    def check_user_is_data_manager(self, project_obj, project_user_obj):
+        data_manager_list = [
+            allocation.data_manager for allocation in project_obj.allocation_set.filter(
+                resources__name="Slate Project"
+            )
+        ]
+
+        if project_user_obj.user.username in set(data_manager_list):
+            return True
+
+        return False
+
+    def check_user_is_manager(self, project_user_obj):
+        if project_user_obj.role == ProjectUserRoleChoice.objects.get(name='Manager'):
+            return True
+
+        return False
+
     def get(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         project_user_pk = self.kwargs.get('project_user_pk')
@@ -985,13 +1003,22 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             project_user_obj = project_obj.projectuser_set.get(
                 pk=project_user_pk)
 
+            is_data_manager = self.check_user_is_data_manager(project_obj, project_user_obj)
+            is_manager = self.check_user_is_manager(project_user_obj)
             project_user_update_form = ProjectUserUpdateForm(
-                initial={'role': project_user_obj.role, 'enable_notifications': project_user_obj.enable_notifications})
+                initial={
+                    'role': project_user_obj.role,
+                    'enable_notifications': project_user_obj.enable_notifications
+                },
+                disable_role=is_data_manager,
+                disable_enable_notifications=is_manager
+            )
 
             context = {}
             context['project_obj'] = project_obj
             context['project_user_update_form'] = project_user_update_form
             context['project_user_obj'] = project_user_obj
+            context['is_data_manager'] = is_data_manager
 
             return render(request, self.template_name, context)
 
@@ -1004,6 +1031,7 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 request, 'You cannot update a user in an archived project.')
             return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_user_pk}))
 
+
         if project_obj.projectuser_set.filter(id=project_user_pk).exists():
             project_user_obj = project_obj.projectuser_set.get(
                 pk=project_user_pk)
@@ -1013,37 +1041,48 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     request, 'PI role and email notification option cannot be changed.')
                 return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_user_pk}))
 
+            is_data_manager = self.check_user_is_data_manager(project_obj, project_user_obj)
+            is_manager = self.check_user_is_manager(project_user_obj)
             project_user_update_form = ProjectUserUpdateForm(
                 request.POST,
                 initial={
                     'role': project_user_obj.role.name,
                     'enable_notifications': project_user_obj.enable_notifications
-                }
+                },
+                disable_role=is_data_manager,
+                disable_enable_notifications=is_manager
             )
+            project_user_update_form.role = ProjectUserRoleChoice.objects.get(name='Manager')
+
+            # If nothing has changed then don't update it.
+            if is_data_manager:
+                return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_obj.pk, 'project_user_pk': project_user_obj.pk}))
 
             if project_user_update_form.is_valid():
                 form_data = project_user_update_form.cleaned_data
+                enable_notifications = form_data.get('enable_notifications')
                 if form_data.get('role').name == 'Manager':
-                    if project_obj.get_current_num_managers() >= project_obj.max_managers:
-                        messages.error(
-                            request,
-                            """
-                            This project is at its maximum Managers limit ({}) and cannot have
-                            more.
-                            """.format(project_obj.max_managers)
-                        )
-                        return HttpResponseRedirect(
-                            reverse(
-                                'project-user-detail',
-                                kwargs={
-                                    'pk': project_obj.pk,
-                                    'project_user_pk': project_user_obj.pk
-                                }
+                    enable_notifications = True
+                    if project_user_obj.role.name != 'Manager':
+                        if project_obj.get_current_num_managers() >= project_obj.max_managers:
+                            messages.error(
+                                request,
+                                """
+                                This project is at its maximum Managers limit ({}) and cannot have
+                                more.
+                                """.format(project_obj.max_managers)
                             )
-                        )
+                            return HttpResponseRedirect(
+                                reverse(
+                                    'project-user-detail',
+                                    kwargs={
+                                        'pk': project_obj.pk,
+                                        'project_user_pk': project_user_obj.pk
+                                    }
+                                )
+                            )
 
-                project_user_obj.enable_notifications = form_data.get(
-                    'enable_notifications')
+                project_user_obj.enable_notifications = enable_notifications
                 project_user_obj.role = ProjectUserRoleChoice.objects.get(
                     name=form_data.get('role'))
                 project_user_obj.save()
