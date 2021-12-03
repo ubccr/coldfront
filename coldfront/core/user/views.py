@@ -25,6 +25,7 @@ from django.views.generic.edit import FormView
 
 from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.project.models import Project, ProjectUser
+from coldfront.core.user.models import IdentityLinkingRequest, IdentityLinkingRequestStatusChoice
 from coldfront.core.user.forms import EmailAddressAddForm
 from coldfront.core.user.forms import UserReactivateForm
 from coldfront.core.user.forms import PrimaryEmailAddressSelectionForm
@@ -45,6 +46,7 @@ from coldfront.core.utils.mail import send_email_template
 
 logger = logging.getLogger(__name__)
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
+
 if EMAIL_ENABLED:
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings(
         'EMAIL_TICKET_SYSTEM_ADDRESS')
@@ -93,7 +95,32 @@ class UserProfile(TemplateView):
             allocation_attribute_type__name='Cluster Account Status',
             value='Active').exists()
 
+        if viewed_user == self.request.user:
+            self.update_context_with_identity_linking_request_data(context)
+
+        context['help_email'] = import_from_settings('CENTER_HELP_EMAIL')
+
         return context
+
+    def update_context_with_identity_linking_request_data(self, context):
+        """Update the given context dictionary with fields relating to
+        IdentityLinkingRequests.
+
+        In particular, set the key 'linking_request' to denote the
+        latest request, whether it be complete, pending, or nonexistent.
+        """
+        user_requests = IdentityLinkingRequest.objects.filter(
+            requester=self.request.user)
+        pending_requests = user_requests.filter(
+            status__name='Pending').order_by('request_time')
+        complete_requests = user_requests.filter(
+            status__name='Complete').order_by('completion_time')
+        if pending_requests.exists():
+            context['linking_request'] = pending_requests.last()
+        elif complete_requests.exists():
+            context['linking_request'] = complete_requests.last()
+        else:
+            context['linking_request'] = None
 
 
 @method_decorator(login_required, name='dispatch')
@@ -815,3 +842,42 @@ class UserNameExistsView(View):
         if middle_name is not None:
             users = users.filter(userprofile__middle_name__iexact=middle_name)
         return JsonResponse({'name_exists': users.exists()})
+
+
+@method_decorator(login_required, name='dispatch')
+class IdentityLinkingRequestView(UserPassesTestMixin, View):
+    login_url = '/'
+    pending_status = None
+
+    def test_func(self):
+        return True
+
+    def dispatch(self, request, *args, **kwargs):
+        self.pending_status = IdentityLinkingRequestStatusChoice.objects.get(
+            name='Pending')
+        pending_requests_for_user = IdentityLinkingRequest.objects.filter(
+            requester=self.request.user, status=self.pending_status)
+        if pending_requests_for_user.exists():
+            message = (
+                'You have already requested a linking email. Please wait '
+                'until it has been sent to request another.')
+            messages.error(request, message)
+            return HttpResponseRedirect(reverse('user-profile'))
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        identity_linking_request = IdentityLinkingRequest.objects.create(
+            requester=user,
+            status=self.pending_status,
+            request_time=utc_now_offset_aware())
+        logger.info(
+            f'User {user.pk} created IdentityLinkingRequest '
+            f'{identity_linking_request.pk} to be sent to {user.email}.')
+
+        message = (
+            f'A request has been generated. An email will be sent to '
+            f'{user.email} shortly.')
+        messages.success(request, message)
+
+        return HttpResponseRedirect(reverse('user-profile'))

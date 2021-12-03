@@ -5,9 +5,10 @@ from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models import Q
 from django.core.exceptions import ValidationError
-from rest_framework.authtoken.models import Token
-
+from django.utils import timezone
+from model_utils.models import TimeStampedModel
 from phonenumber_field.modelfields import PhoneNumberField
+from rest_framework.authtoken.models import Token
 
 
 class UserProfile(models.Model):
@@ -93,3 +94,16 @@ class ExpiringToken(Token):
 
     class Meta:
         verbose_name = 'Expiring Token'
+
+
+class IdentityLinkingRequestStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+
+
+class IdentityLinkingRequest(TimeStampedModel):
+    requester = models.ForeignKey(User, on_delete=models.CASCADE)
+    request_time = models.DateTimeField(
+        null=True, blank=True, default=timezone.now)
+    completion_time = models.DateTimeField(null=True, blank=True)
+    status = models.ForeignKey(
+        IdentityLinkingRequestStatusChoice, on_delete=models.CASCADE)

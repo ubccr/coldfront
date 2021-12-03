@@ -1,19 +1,21 @@
 from coldfront.core.user.models import EmailAddress
+from coldfront.core.user.tests.utils import TestUserBase
 from coldfront.core.user.utils import account_activation_url
 from django.contrib.auth.models import User
 from django.contrib.messages import get_messages
 from django.test import Client
-from django.test import TestCase
 from django.urls import reverse
 
 
-class TestActivateUserAccount(TestCase):
+class TestActivateUserAccount(TestUserBase):
     """A class for testing the view for activating a user's account."""
 
     password = 'test1234'
 
     def setUp(self):
         """Set up test data."""
+        super().setUp()
+
         self.user = User.objects.create(
             email='user@email.com',
             first_name='First',

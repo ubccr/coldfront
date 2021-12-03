@@ -1,21 +1,23 @@
 from django.core.exceptions import ValidationError
-from django.test import TestCase
 from django.contrib.auth.models import User
 from django.contrib.admin.sites import AdminSite
 from coldfront.core.user.models import EmailAddress
 from coldfront.core.user.admin import EmailAddressAdmin
+from coldfront.core.user.tests.utils import TestUserBase
 from django.http import HttpRequest
 from django.contrib.messages.storage import default_storage
 from django.contrib.messages import get_messages
 
 
-class EmailAddressAdminTest(TestCase):
+class EmailAddressAdminTest(TestUserBase):
     """
     Class for testing methods in EmailAddressAdmin
     """
 
     def setUp(self):
         """Set up test data."""
+        super().setUp()
+
         self.app_admin = EmailAddressAdmin(EmailAddress, AdminSite())
 
         self.user1 = User.objects.create(
