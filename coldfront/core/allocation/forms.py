@@ -152,7 +152,7 @@ class AllocationForm(forms.Form):
         self.fields['applications_list'].help_text = 'Format: app1,app2,app3,etc'
         self.fields['it_pros'].help_text = 'Format: name1,name2,name3,etc'
         self.fields['project_directory_name'].help_text = 'Must be alphanumeric and not exceed 10 characters in length'
-        self.fields['data_manager'].help_text = 'Must be a project Manager. Only this user can add and remove users from this resource.'
+        self.fields['data_manager'].help_text = 'Must be a project Manager. Only this user can add and remove users from this resource. They will automatically be added to the resource.'
 
         ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
         search_class_obj = ldap_search()

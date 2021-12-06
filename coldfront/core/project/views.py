@@ -632,7 +632,14 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
             context['users_already_in_project'] = users_already_in_project
 
         # The following block of code is used to hide/show the allocation div in the form.
-        if project_obj.allocation_set.filter(status__name__in=['Active', 'New', 'Renewal Requested']).exists():
+        has_slate_resource = False
+        status_list = ['Active', 'New', 'Renewal Requested']
+        for allocation in project_obj.allocation_set.filter(status__name__in=status_list):
+            if allocation.get_parent_resource.name == 'Slate Project':
+                if allocation.data_manager != request.user.username:
+                    has_slate_resource = True
+
+        if project_obj.allocation_set.filter(status__name__in=status_list).exists():
             div_allocation_class = 'placeholder_div_class'
         else:
             div_allocation_class = 'd-none'
@@ -643,6 +650,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
             request.user, project_obj.pk, prefix='allocationform')
         context['pk'] = pk
         context['allocation_form'] = allocation_form
+        context['has_slate_resource'] = has_slate_resource
         return render(request, self.template_name, context)
 
 

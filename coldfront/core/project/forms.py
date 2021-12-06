@@ -56,9 +56,26 @@ class ProjectAddUsersToAllocationForm(forms.Form):
 
         allocation_query_set = project_obj.allocation_set.filter(
             status__name__in=['Active', 'New', 'Renewal Requested', ], resources__is_allocatable=True, is_locked=False)
-        allocation_choices = [(allocation.id, "%s (%s) %s" % (allocation.get_parent_resource.name, allocation.get_parent_resource.resource_type.name,
-                                                              allocation.description if allocation.description else '')) for allocation in allocation_query_set]
-        allocation_choices.insert(0, ('__select_all__', 'Select All'))
+
+        allocation_choices = []
+        # Remove allocations the request user is not a data manager in. Maybe in the future we
+        # should disable selecting the allocation rather than removing it entirely.
+        for allocation in allocation_query_set:
+            if allocation.get_parent_resource.name == 'Slate Project':
+                if allocation.data_manager != request_user.username:
+                    print('In Here')
+                    continue
+
+            allocation_choices.append(
+                (allocation.id, "{} ({}) {}" .format(
+                    allocation.get_parent_resource.name,
+                    allocation.get_parent_resource.resource_type.name,
+                    allocation.description if allocation.description else ''
+                )
+            ))
+
+        if allocation_choices:
+            allocation_choices.insert(0, ('__select_all__', 'Select All'))
         if allocation_query_set:
             self.fields['allocation'].choices = allocation_choices
             self.fields['allocation'].help_text = '<br/>Select allocations to add selected users to. If a user does not have an account on a resource in an allocation they will not be added.'

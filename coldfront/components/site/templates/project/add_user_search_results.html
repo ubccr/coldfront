@@ -26,8 +26,19 @@
     <div class="card bg-light mb-3 {{div_allocation_class}}">
       <div class="card-header">Available Allocations</div>
       <div class="card-body">
-        {{allocation_form|crispy}}
+        {% if allocation_form.allocation %}
+          {{allocation_form|crispy}}
+        {% else %}
+          <i class="fa fa-info-circle" aria-hidden="true"></i>
+          There are allocations in your project, but you do not have permission to add users to them.
+        {% endif %}
       </div>
+      {% if has_slate_resource %}
+        <div class="card-footer">
+          <i class="fa fa-info-circle" aria-hidden="true"></i>
+          Only Slate Project allocations you are a data manager of will appear.
+        </div>
+      {% endif %}
     </div>
 
     <div class="table-responsive">

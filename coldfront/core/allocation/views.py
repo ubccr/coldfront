@@ -1131,8 +1131,23 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             return self.form_invalid(form)
 
         usernames = form_data.get('users')
-        usernames.append(project_obj.pi.username)
-        usernames = list(set(usernames))
+        if resource_obj.name == 'Slate Project':
+            # If the requestor is not a data manager then do not add any selected users other than
+            # the provided data manager's username.
+            if usernames and data_manager != self.request.user.username:
+                try:
+                    usernames.remove(data_manager)
+                except ValueError:
+                    pass
+
+                messages.warning(
+                    self.request,
+                    'Only the data manager can add users to Slate Project. Users {} were not added'
+                    .format(', '.join(usernames))
+                )
+                usernames = []
+
+            usernames.append(data_manager)
 
         # If a resource has a user limit make sure it's not surpassed.
         total_users = len(usernames)
@@ -1144,12 +1159,9 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 ))
                 return self.form_invalid(form)
 
-
+        # Remove potential duplicate usernames
+        usernames = list(set(usernames))
         users = [User.objects.get(username=username) for username in usernames]
-        if resource_obj.name == 'Slate Project':
-            users.append(User.objects.get(username=data_manager))
-            # Remove potential duplicate usernames
-            users = list(set(users))
 
         resource = resource_obj.get_attribute('check_user_account')
         if resource and not resource_obj.check_user_account_exists(project_obj.pi.username, resource):
@@ -1312,6 +1324,14 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk'))
 
+        if allocation_obj.get_parent_resource.name == 'Slate Project':
+            if allocation_obj.data_manager != self.request.user.username:
+                messages.error(
+                    self.request,
+                    'Only the Data Manager can add users to this resource.'
+                )
+                return False
+
         if allocation_obj.project.pi == self.request.user:
             return True
 
@@ -1334,8 +1354,8 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             messages.error(request, 'You cannot add users to a allocation with status {}.'.format(
                 allocation_obj.status.name))
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
-        else:
-            return super().dispatch(request, *args, **kwargs)
+        
+        return super().dispatch(request, *args, **kwargs)
 
     def get_users_to_add(self, allocation_obj):
         active_users_in_project = list(allocation_obj.project.projectuser_set.filter(
@@ -1473,6 +1493,14 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk'))
 
+        if allocation_obj.get_parent_resource.name == 'Slate Project':
+            if allocation_obj.data_manager != self.request.user.username:
+                messages.error(
+                    self.request,
+                    'Only the Data Manager can remove users to this resource.'
+                )
+                return False
+
         if allocation_obj.project.pi == self.request.user:
             return True
 
@@ -1495,8 +1523,8 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
             messages.error(request, 'You cannot remove users from a allocation with status {}.'.format(
                 allocation_obj.status.name))
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
-        else:
-            return super().dispatch(request, *args, **kwargs)
+
+        return super().dispatch(request, *args, **kwargs)
 
     def get_users_to_remove(self, allocation_obj):
         users_to_remove = list(allocation_obj.allocationuser_set.exclude(
