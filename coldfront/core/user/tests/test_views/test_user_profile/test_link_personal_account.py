@@ -1,9 +1,19 @@
 from bs4 import BeautifulSoup
+from coldfront.api.statistics.utils import create_project_allocation
+from coldfront.api.statistics.utils import create_user_project_allocation
+from coldfront.core.allocation.models import AllocationAttributeType
+from coldfront.core.allocation.models import AllocationUserAttribute
+from coldfront.core.project.models import Project
+from coldfront.core.project.models import ProjectStatusChoice
+from coldfront.core.project.models import ProjectUser
+from coldfront.core.project.models import ProjectUserRoleChoice
+from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.user.models import IdentityLinkingRequest
 from coldfront.core.user.models import IdentityLinkingRequestStatusChoice
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 from datetime import timedelta
+from decimal import Decimal
 from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils.formats import localize
@@ -82,9 +92,10 @@ class TestLinkPersonalAccount(TestBase):
         self.assertNotIn('Time Requested', html)
         self.assertNotIn('Time Sent', html)
 
-    def test_request_button_disabled_if_pending_request_exists(self):
-        """Test that, if the User has a pending IdentityLinkingRequest,
-        the button to request a new one is disabled."""
+    def test_request_button_conditionally_disabled(self):
+        """Test that, if the User (a) does not have active cluster
+        access, or (b) has a pending IdentityLinkingRequest, the button
+        to request a new one is disabled."""
 
         def get_button_html():
             """Return the HTML of the request button."""
@@ -94,6 +105,32 @@ class TestLinkPersonalAccount(TestBase):
             soup = BeautifulSoup(html, 'html.parser')
             button = soup.find('a', {'id': 'request-linking-email-button'})
             return str(button)
+
+        # Grant the user access to the cluster under a Project.
+        project_name = 'test_project'
+        project = Project.objects.create(
+            name=project_name,
+            status=ProjectStatusChoice.objects.get(name='Active'),
+            title=project_name,
+            description=f'Description of {project_name}.')
+        ProjectUser.objects.create(
+            project=project,
+            user=self.user,
+            role=ProjectUserRoleChoice.objects.get(name='User'),
+            status=ProjectUserStatusChoice.objects.get(name='Active'))
+        num_service_units = Decimal('0.00')
+        create_project_allocation(project, num_service_units)
+        objects = create_user_project_allocation(
+            self.user, project, num_service_units)
+        allocation = objects.allocation
+        allocation_user = objects.allocation_user
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Cluster Account Status')
+        allocation_user_attribute = AllocationUserAttribute.objects.create(
+            allocation_attribute_type=allocation_attribute_type,
+            allocation=allocation,
+            allocation_user=allocation_user,
+            value='Active')
 
         # No requests exist.
         self.assertNotIn('disabled', get_button_html())
@@ -113,6 +150,10 @@ class TestLinkPersonalAccount(TestBase):
         identity_linking_request.status = complete_status
         identity_linking_request.save()
         self.assertNotIn('disabled', get_button_html())
+
+        # The user no longer has cluster access.
+        allocation_user_attribute.delete()
+        self.assertIn('disabled', get_button_html())
 
     def test_section_hidden_if_viewing_other_user_profile(self):
         """Test that, when logged in as one user but viewing another
