@@ -1,19 +1,10 @@
 from bs4 import BeautifulSoup
-from coldfront.api.statistics.utils import create_project_allocation
-from coldfront.api.statistics.utils import create_user_project_allocation
-from coldfront.core.allocation.models import AllocationAttributeType
-from coldfront.core.allocation.models import AllocationUserAttribute
-from coldfront.core.project.models import Project
-from coldfront.core.project.models import ProjectStatusChoice
-from coldfront.core.project.models import ProjectUser
-from coldfront.core.project.models import ProjectUserRoleChoice
-from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.user.models import IdentityLinkingRequest
 from coldfront.core.user.models import IdentityLinkingRequestStatusChoice
+from coldfront.core.user.tests.utils import grant_user_cluster_access_under_test_project
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 from datetime import timedelta
-from decimal import Decimal
 from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils.formats import localize
@@ -106,31 +97,9 @@ class TestLinkPersonalAccount(TestBase):
             button = soup.find('a', {'id': 'request-linking-email-button'})
             return str(button)
 
-        # Grant the user access to the cluster under a Project.
-        project_name = 'test_project'
-        project = Project.objects.create(
-            name=project_name,
-            status=ProjectStatusChoice.objects.get(name='Active'),
-            title=project_name,
-            description=f'Description of {project_name}.')
-        ProjectUser.objects.create(
-            project=project,
-            user=self.user,
-            role=ProjectUserRoleChoice.objects.get(name='User'),
-            status=ProjectUserStatusChoice.objects.get(name='Active'))
-        num_service_units = Decimal('0.00')
-        create_project_allocation(project, num_service_units)
-        objects = create_user_project_allocation(
-            self.user, project, num_service_units)
-        allocation = objects.allocation
-        allocation_user = objects.allocation_user
-        allocation_attribute_type = AllocationAttributeType.objects.get(
-            name='Cluster Account Status')
-        allocation_user_attribute = AllocationUserAttribute.objects.create(
-            allocation_attribute_type=allocation_attribute_type,
-            allocation=allocation,
-            allocation_user=allocation_user,
-            value='Active')
+        # The user has cluster access.
+        allocation_user_attribute = \
+            grant_user_cluster_access_under_test_project(self.user)
 
         # No requests exist.
         self.assertNotIn('disabled', get_button_html())
