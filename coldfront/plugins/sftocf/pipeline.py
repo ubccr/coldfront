@@ -41,6 +41,8 @@ svp = {
   }
 }
 
+datadir = "./coldfront/plugins/sftocf/data/"
+confirm_dirpath_exists(datadir)
 
 class StarFishServer:
     """Class for interacting with StarFish API.
@@ -65,7 +67,7 @@ class StarFishServer:
         # response.status_code
         response_json = response.json()
         token = response_json["token"]
-        logger.debug(f"response_json: {responsejson}\ntoken: {token}")
+        logger.debug(f"response_json: {response_json}\ntoken: {token}")
         return token
 
     def generate_headers(self):
@@ -237,7 +239,7 @@ class ColdFrontDB:
                 filepaths = collect_starfish_usage(server, vol, path, vol_labs_resources)
         return filepaths
 
-    def push_cf(self, filepaths, clean):
+    def push_cf(self, filepaths, clean, dryrun=False):
         for f in filepaths:
             content = read_json(f)
             statdicts = content['contents']
@@ -245,11 +247,11 @@ class ColdFrontDB:
             for statdict in statdicts:
                 try:
                     server_tier = content['server'] + "/" + content['tier']
-                    self.update_usage(statdict, server_tier)
+                    self.update_usage(statdict, server_tier, dryrun=dryrun)
                 except Exception as e:
                     logger.debug("EXCEPTION FOR ENTRY: {}".format(e),  exc_info=True)
                     errors = True
-            if not errors and clean == True:
+            if not errors and clean == True and dryrun == False:
                     os.remove(f)
 
     def generate_project_resource_dict(self):
@@ -263,13 +265,13 @@ class ColdFrontDB:
         logger.debug(f"project_resource_dict:\n{pr_dict}")
         return pr_dict
 
-    def update_usage(self, userdict, server_tier):
+    def update_usage(self, userdict, server_tier, dryrun=False):
         # get ids needed to locate correct allocationuser entry
         # user = LabUser(userdict["username"], userdict["groupname"])
         try:
             user = get_user_model().objects.get(username=userdict["username"])
         except IfxUser.DoesNotExist:
-            filepath = './coldfront/plugins/sftocf/data/missing_ifxusers.csv'
+            filepath = f'{datadir}missing_ifxusers.csv'
             datestr = datetime.today().strftime("%Y%m%d")
             pattern = "{},{}".format(userdict["username"], datestr)
             write_update_file_line(filepath, pattern)
@@ -287,7 +289,7 @@ class ColdFrontDB:
                 allocation_id=allocation.id, user_id=user.id
             )
         except AllocationUser.DoesNotExist:
-            filepath = './coldfront/plugins/sftocf/data/missing_allocationusers.csv'
+            filepath = f'{datadir}missing_allocationusers.csv'
             logger.info("creating allocation user:")
             allocationuser_obj, _ = AllocationUser.objects.create(
                 allocation=allocation,
@@ -299,10 +301,7 @@ class ColdFrontDB:
                 allocation_id=allocation.id, user_id=user.id
             )
 
-        allocationuser.usage_bytes = userdict["size_sum"]
-        usage, unit = split_num_string(userdict["size_sum_hum"])
-        allocationuser.usage = usage
-        allocationuser.unit = unit
+        allocationuser.usage = userdict["size_sum"]
         # automatically updates "modified" field & adds old record to history
         allocationuser.save()
         logger.debug(f"successful entry: {userdict['groupname']}, {userdict['username']}")
@@ -351,43 +350,47 @@ def collect_starfish_usage(server, volume, volumepath, projects):
     filepaths : list
         list of filepath names
     """
-    filepaths = []
-    datestr = datetime.today().strftime("%Y%m%d")
+    filepaths_collected = []
+    filepaths_tocollect = []
+    date = datetime.today().strftime("%Y%m%d")
     projects_reduced = {p:r for p,r in projects.items() if r[0] == volume}
     logger.debug(f"projects: {projects}\nprojects_reduced: {projects_reduced}")
     for p, r in projects_reduced.items():
-        homepath = "./coldfront/plugins/sftocf/data/"
-        filepath = f"{homepath}{p}_{server.name}_{datestr}.json"
+        filepath = f"{datadir}{p}_{server.name}_{date}.json"
         logger.debug(f"filepath 1: {filepath}")
         if Path(filepath).exists():
-            filepaths.append(filepath)
+            filepaths_collected.append(filepath)
         else:
-            lab_volpath = volumepath# + "/{}".format(p)
-            queryline = "type=f groupname={}".format(p)
-            usage_query = server.create_query(
-                queryline, "username, groupname", f"{volume}:{lab_volpath}", sec=2
-            )
+            filepaths_tocollect.append([filepath, p, r])
+    for l in filepaths_tocollect:
+        filepath = l[0]
+        p = l[1]
+        r = l[2]
+        lab_volpath = volumepath# + "/{}".format(p)
+        queryline = "type=f groupname={}".format(p)
+        usage_query = server.create_query(
+            queryline, "username, groupname", f"{volume}:{lab_volpath}", sec=2
+        )
+        data = usage_query.result
+        logger.debug("usage_query.result:{}".format(data))
+        if not data:
+            logger.warning("No starfish result for lab {}".format(p))
+        elif type(data) is dict and "error" in data:
+            logger.warning("Error in starfish result for lab {}:\n{}".format(p, data))
+        else:
             data = usage_query.result
-            logger.debug("usage_query.result:{}".format(data))
-            if not data:
-                logger.warning("No starfish result for lab {}".format(p))
-            elif type(data) is dict and "error" in data:
-                logger.warning("Error in starfish result for lab {}:\n{}".format(p, data))
-            else:
-                data = usage_query.result
-                logger.debug(data)
-                record = {
-                    "server": server.name,
-                    "volume": volume,
-                    "path": lab_volpath,
-                    "tier": r[1],
-                    "date": datestr,
-                    "contents": data,
-                }
-                confirm_dirpath_exists(homepath)
-                save_json(filepath, record)
-                filepaths.append(filepath)
-    return filepaths
+            logger.debug(data)
+            record = {
+                "server": server.name,
+                "volume": volume,
+                "path": lab_volpath,
+                "tier": r[1],
+                "date": datestr,
+                "contents": data,
+            }
+            save_json(filepath, record)
+            filepaths_collected.append(filepath)
+    return filepaths_collected
 
 def collect_costperuser(ifx_uid, lab_name):
     # to get to BillingRecord from ifx_uid:
@@ -408,8 +411,6 @@ def collect_costperuser(ifx_uid, lab_name):
 #     account_id => lab_name
 #
 #     product_usage_id links to product_usage table, containing
-#
-#
 # id
 # charge
 # description
@@ -428,12 +429,11 @@ def collect_costperuser(ifx_uid, lab_name):
 def clean_data_dir():
     """Remove json from data folder that's more than a week old
     """
-    files = os.listdir("./coldfront/plugins/sftocf/data/")
+    files = os.listdir(datadir)
     json_files = [f for f in files if ".json" in f]
-    print(json_files)
     now = time.time()
     for f in json_files:
-        fpath = f"./coldfront/plugins/sftocf/data/{f}"
+        fpath = f"{datadir}{f}"
         created = os.stat(fpath).st_ctime
         if created < now - 7 * 86400:
             os.remove(fpath)
