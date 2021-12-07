@@ -27,8 +27,10 @@ class Command(BaseCommand):
             ProjectUserJoinRequest.objects.filter(
                 project_user__status__name='Pending - Add')
 
-        projects_with_pending_join_requests = set([request.project_user.project for request in proj_join_requests_qeuryset])
-        users_with_pending_join_requests = set([request.project_user.user for request in proj_join_requests_qeuryset])
+        projects_with_pending_join_requests = \
+            set([request.project_user.project for request in proj_join_requests_qeuryset])
+        users_with_pending_join_requests = \
+            set([request.project_user.user for request in proj_join_requests_qeuryset])
 
         emails_sent = 0
         for project in projects_with_pending_join_requests:
@@ -69,8 +71,12 @@ class Command(BaseCommand):
                     from django.template.loader import render_to_string
 
 
-                    msg_plain = render_to_string('email/pending_project_join_requests.txt', context)
-                    msg_html = render_to_string('email/pending_project_join_requests.html', context)
+                    msg_plain = \
+                        render_to_string('email/project_join_request/pending_project_join_requests.txt',
+                                         context)
+                    msg_html = \
+                        render_to_string('email/project_join_request/pending_project_join_requests.html',
+                                         context)
 
                     send_mail(
                         'Pending Project Join Requests',
@@ -109,7 +115,7 @@ class Command(BaseCommand):
                 try:
                     send_email_template(
                         'Pending Project Join Requests',
-                        'email/pending_project_join_request_user.txt',
+                        'email/project_join_request/pending_project_join_request_user.txt',
                         context,
                         settings.EMAIL_SENDER,
                         [user.email])
