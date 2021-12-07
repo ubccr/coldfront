@@ -1,6 +1,0 @@
-Dear managers of {{ project_name }},
-
-This is a reminder that user {{ user_first_name }} {{ user_last_name }} ({{ user_email }}) has requested to join your project, {{ project_name }} via MyBRC user portal. Please approve/deny this request. You will periodically receive reminder emails until you approve/deny this request.
-
-Thank you,
-{{ signature }}

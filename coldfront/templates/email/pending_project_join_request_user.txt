@@ -1,6 +1,0 @@
-Dear {{ user_first_name }} {{ user_last_name }},
-
-This is a reminder that you have requested to join project {{ project_name }} via MyBRC user portal. You will periodically receive reminder emails until the managers/PIs of {{ project_name }} approve/deny this request.
-
-Thank you,
-{{ signature }}
