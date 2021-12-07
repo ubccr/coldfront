@@ -124,8 +124,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context = super().get_context_data(**kwargs)
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
-        allocation_users = allocation_obj.allocationuser_set.exclude(
-            status__name__in=['Removed']).order_by('user__username')
+        allocation_users = allocation_obj.allocationuser_set.order_by('user__username')
 
         # Manually display "Service Units" for each user if applicable.
         # TODO: Avoid doing this manually.
@@ -151,6 +150,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                     except AttributeError:
                         pass
                 allocation_user_su_usages[username] = usage
+                print(username, usage)
         context['has_service_units'] = has_service_units
         context['allocation_user_su_usages'] = allocation_user_su_usages
 
@@ -212,14 +212,14 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             context['is_allowed_to_update_project'] = False
 
         # filter based on if user was removed from project but not allocation
-        project_user_status_removed, _ = \
-            ProjectUserStatusChoice.objects.get_or_create(
-                name='Removed')
-        proj_removed_user_set = allocation_obj.project.projectuser_set.filter(status=project_user_status_removed)
-        proj_removed_user_set = [obj.user for obj in proj_removed_user_set]
-        context['allocation_users'] = allocation_users.exclude(user__in=proj_removed_user_set)
-        context['allocation_users_removed_from_proj'] = allocation_users.filter(user__in=proj_removed_user_set)
-
+        allocation_user_status_choice_removed = \
+            AllocationUserStatusChoice.objects.get(name='Removed')
+        context['allocation_users'] = \
+            allocation_users.exclude(status=allocation_user_status_choice_removed)
+        context['allocation_users_removed_from_proj'] = \
+            allocation_users.filter(status=allocation_user_status_choice_removed)
+        print(context['allocation_users'])
+        print(context['allocation_users_removed_from_proj'])
         if self.request.user.is_superuser:
             notes = allocation_obj.allocationusernote_set.all()
         else:
