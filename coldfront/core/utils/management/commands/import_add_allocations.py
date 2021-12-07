@@ -38,11 +38,10 @@ class Command(BaseCommand):
             lab_resource_allocation = row.resource
             print(lab_name, lab_resource_allocation)
             try:
-                filtered_query = Project.objects.get(title = lab_name) # find project
-                allocations = Allocation.objects.filter(project = filtered_query, resources__name=lab_resource_allocation, status__name='Active')
+                project_obj = Project.objects.get(title = lab_name) # find project
+                allocations = Allocation.objects.filter(project = project_obj, resources__name=lab_resource_allocation, status__name='Active')
                 if(allocations.count() == 0):
-                    print("creating allocation" + lab_name)
-                    project_obj = Project.objects.get(title = lab_name)
+                    print("creating allocation: " + lab_name)
                     if (project_obj != ""):
                         start_date = datetime.datetime.now()
                         end_date = datetime.datetime.now() + relativedelta(days=365)
@@ -56,15 +55,18 @@ class Command(BaseCommand):
                         )
                         allocation_obj.resources.add(
                             Resource.objects.get(name=lab_resource_allocation))
-                        pi_obj = get_user_model().objects.get(username = project_obj.pi)
-                        allocation_user_obj = AllocationUser.objects.create(
-                            allocation=allocation_obj,
-                            user=pi_obj,
-                            status=AllocationUserStatusChoice.objects.get(name='Active')
-                        )
-                        allocation_user_obj.save()
                         allocation_obj.save()
-                        # allocations = Allocation.objects.filter(project = filtered_query,resources__name=lab_resource_allocation, status__name='Active')
+                        allocations = Allocation.objects.filter(project = project_obj,resources__name=lab_resource_allocation, status__name='Active')
+                    
+                print("Adding PI: " + project_obj.pi.username)
+                pi_obj = get_user_model().objects.get(username = project_obj.pi.username)
+                allocation_user_obj = AllocationUser.objects.get_or_create(
+                allocation=allocations[0],
+                user=pi_obj,
+                    status=AllocationUserStatusChoice.objects.get(name='Active')
+                )
+                # allocation_user_obj.save()
+                      
             
             except Project.DoesNotExist:
                 print("Project not found: " + lab_name)
