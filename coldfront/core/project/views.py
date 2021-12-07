@@ -4158,22 +4158,6 @@ class ProjectRemovalRequestCompleteStatusView(LoginRequiredMixin,
         if status == 'Complete':
             self.project_removal_request_obj.completion_time = utc_now_offset_aware()
 
-            try:
-                allocation_obj = Allocation.objects.get(project=project_obj)
-                allocation_user = \
-                    allocation_obj.allocationuser_set.get(user=removed_user.user)
-                cluster_account_status = \
-                    allocation_user.allocationuserattribute_set.get(
-                        allocation_attribute_type=AllocationAttributeType.objects.get(
-                            name='Cluster Account Status'))
-                cluster_account_status.value = 'Denied'
-                cluster_account_status.save()
-            except Exception as e:
-                message = f'Unexpected error setting AllocationAttributeType' \
-                          f'Cluster Account Status to "Denied" for user ' \
-                          f'{removed_user.user.username}.'
-                messages.error(self.request, message)
-
         self.project_removal_request_obj.save()
 
         if status == 'Complete':
@@ -4182,6 +4166,29 @@ class ProjectRemovalRequestCompleteStatusView(LoginRequiredMixin,
                     name='Removed')
             removed_user.status = project_user_status_removed
             removed_user.save()
+
+            try:
+                allocation_obj = Allocation.objects.get(project=project_obj)
+                allocation_user = \
+                    allocation_obj.allocationuser_set.get(user=removed_user.user)
+                allocation_user_status_choice_removed = \
+                    AllocationUserStatusChoice.objects.get(name='Removed')
+                allocation_user.status = allocation_user_status_choice_removed
+                allocation_user.save()
+
+                cluster_account_status = \
+                    allocation_user.allocationuserattribute_set.get(
+                        allocation_attribute_type=AllocationAttributeType.objects.get(
+                            name='Cluster Account Status'))
+                cluster_account_status.value = 'Denied'
+                cluster_account_status.save()
+
+            except Exception as e:
+                message = f'Unexpected error setting AllocationAttributeType' \
+                          f'Cluster Account Status to "Denied" and ' \
+                          f'AllocationUserStatusChoice to "Removed" ' \
+                          f'for user {removed_user.user.username}.'
+                messages.error(self.request, message)
 
         message = (
             f'Project removal request initiated by '
