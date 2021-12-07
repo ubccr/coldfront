@@ -17,35 +17,11 @@ from coldfront.core.resource.models import (Resource, )
 from coldfront.config.env import ENV
 
 import pandas as pd
-from os import walk
 
 logger = logging.getLogger()
 
 base_dir = settings.BASE_DIR
 
-def splitString(str):
-
-    alpha = ""
-    num = ""
-    special = ""
-    for i in range(len(str)):
-        if (str[i].isdigit()):
-            num = num+ str[i]
-        elif((str[i] >= 'A' and str[i] <= 'Z') or
-             (str[i] >= 'a' and str[i] <= 'z')):
-            alpha += str[i]
-        else:
-            num += str[i]
-
-    return(num, alpha)
-
-def kb_to_tb(kb_storage):
-    tb_storage = kb_storage / 1073741824
-    return tb_storage
-
-def kb_to_bytes(kb_storage):
-    tb_storage = kb_storage * 1024
-    return tb_storage
 
 class Command(BaseCommand):
     help = "./manage.py import_allocationquotas --storagename '' --tier ''"
@@ -75,7 +51,7 @@ class Command(BaseCommand):
         lab_list_file = os.path.join(LOCALDATA_ROOT, 'local_data/',fileName)
 
          # Missing projects/allocations
-        proj_all_header = ['Lab', 'resource','type']
+        proj_all_header = ['lab', 'resource','type']
         proj_allocation = open('local_data/missing_project_allocation.csv', 'w')
         writer = csv.writer(proj_allocation)
         writer.writerow(proj_all_header)
