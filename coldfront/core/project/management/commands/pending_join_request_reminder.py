@@ -6,6 +6,7 @@ from django.core.management.base import BaseCommand
 from django.urls import reverse
 from urllib.parse import urljoin
 import logging
+from django.db.models import Q
 
 from coldfront.core.utils.common import utc_now_offset_aware
 from datetime import datetime
@@ -54,10 +55,16 @@ class Command(BaseCommand):
                     'pk': project.pk,
                     'signature': settings.EMAIL_SIGNATURE
                 }
-                manager_pi_set = project.projectuser_set.filter(
-                    role__name__in=['Manager', 'Principal Investigator'],
-                    status__name='Active')
-                recipients = [proj_user.user.email for proj_user in manager_pi_set]
+                pi_condition = Q(
+                    role__name='Principal Investigator', status__name='Active',
+                    enable_notifications=True)
+                manager_condition = Q(role__name='Manager', status__name='Active')
+                recipients = list(
+                    project.projectuser_set.filter(
+                        pi_condition | manager_condition
+                    ).values_list(
+                        'user__email', flat=True
+                    ))
                 try:
                     # send_email_template(
                     #     'Pending Project Join Requests',
@@ -69,7 +76,6 @@ class Command(BaseCommand):
 
                     from django.core.mail import send_mail
                     from django.template.loader import render_to_string
-
 
                     msg_plain = \
                         render_to_string('email/project_join_request/pending_project_join_requests.txt',
