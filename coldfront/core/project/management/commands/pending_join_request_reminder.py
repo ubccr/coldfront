@@ -85,7 +85,6 @@ class Command(BaseCommand):
                         recipients,
                         html_message=msg_html,
                     )
-                    print(recipients)
                     emails_sent += len(recipients)
                 except Exception as e:
                     message = 'Failed to send reminder email. Details:'
