@@ -26,19 +26,36 @@
     <div class="card bg-light mb-3 {{div_allocation_class}}">
       <div class="card-header">Available Allocations</div>
       <div class="card-body">
-        {% if allocation_form.allocation %}
-          {{allocation_form|crispy}}
-        {% else %}
-          <i class="fa fa-info-circle" aria-hidden="true"></i>
-          There are allocations in your project, but you do not have permission to add users to them.
-        {% endif %}
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th><input type="checkbox" class="check" id="selectAllAllocations"></th>
+                <th scope="col">#</th>
+                <th scope="col">Resource</th>
+                <th scope="col">Resource Type</th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for form in allocation_form %}
+                <tr>
+                  <td>{{ form.selected }}</td>
+                  <td><a href="{% url 'allocation-detail' form.pk.value %}" target="_blank">{{ form.pk.value }}</a></td>
+                  <td>{{ form.resource.value }}</td>
+                  <td>{{ form.resource_type.value }}</td>
+                  <td>{{ form.status.value }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>      
       </div>
-      {% if has_slate_resource %}
-        <div class="card-footer">
-          <i class="fa fa-info-circle" aria-hidden="true"></i>
-          Only Slate Project allocations you are a data manager of will appear.
-        </div>
-      {% endif %}
+      <div class="card-footer">
+        <i class="fa fa-info-circle" aria-hidden="true"></i>
+        {{ help_text }}
+      </div>
+      {{ allocation_form.management_form }}
     </div>
 
     <div class="table-responsive">
@@ -101,14 +118,14 @@
     }
   });
 
-  $("#id_allocationform-allocation_1").click(function () {
-    $("input[name^='allocationform-']").prop('checked', $(this).prop('checked'));
+  $("#selectAllAllocations").click(function () {
+    $("input[name^='allocationform-']").not(":disabled").prop('checked', $(this).prop('checked'));
   });
 
   $("input[name^='allocationform-']").click(function (ele) {
     var id = $(this).attr('id');
-    if ( id != "id_allocationform-allocation_1") {
-      $("#id_allocationform-allocation_1").prop('checked', false);
+    if ( id != "selectAllAllocations") {
+      $("#selectAllAllocations").prop('checked', false);
     }
   });
 </script>

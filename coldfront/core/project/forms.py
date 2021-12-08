@@ -15,6 +15,16 @@ EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
     'EMAIL_DIRECTOR_EMAIL_ADDRESS', '')
 
 
+class ProjectFormSetWithSelectDisabled(forms.BaseFormSet):
+    def get_form_kwargs(self, index):
+        """
+        Override so specific selections can be disabled.
+        """
+        kwargs = super().get_form_kwargs(index)
+        disable_selected = kwargs['disable_selected'][index]
+        return {'disable_selected': disable_selected}
+
+
 class ProjectPISearchForm(forms.Form):
     PI_USERNAME = 'PI Username'
     pi_username = forms.CharField(label=PI_USERNAME, max_length=100, required=False)
@@ -47,40 +57,16 @@ class ProjectAddUserForm(forms.Form):
 
 
 class ProjectAddUsersToAllocationForm(forms.Form):
-    allocation = forms.MultipleChoiceField(
-        widget=forms.CheckboxSelectMultiple(attrs={'checked': 'checked'}), required=False)
+    pk = forms.IntegerField(disabled=True)
+    selected = forms.BooleanField(initial=False, required=False)
+    resource = forms.CharField(max_length=50, disabled=True)
+    resource_type = forms.CharField(max_length=50, disabled=True)
+    status = forms.CharField(max_length=50, disabled=True)
 
-    def __init__(self, request_user, project_pk, *args, **kwargs):
+    def __init__(self, *args, disable_selected, **kwargs):
         super().__init__(*args, **kwargs)
-        project_obj = get_object_or_404(Project, pk=project_pk)
-
-        allocation_query_set = project_obj.allocation_set.filter(
-            status__name__in=['Active', 'New', 'Renewal Requested', ], resources__is_allocatable=True, is_locked=False)
-
-        allocation_choices = []
-        # Remove allocations the request user is not a data manager in. Maybe in the future we
-        # should disable selecting the allocation rather than removing it entirely.
-        for allocation in allocation_query_set:
-            if allocation.get_parent_resource.name == 'Slate Project':
-                if allocation.data_manager != request_user.username:
-                    print('In Here')
-                    continue
-
-            allocation_choices.append(
-                (allocation.id, "{} ({}) {}" .format(
-                    allocation.get_parent_resource.name,
-                    allocation.get_parent_resource.resource_type.name,
-                    allocation.description if allocation.description else ''
-                )
-            ))
-
-        if allocation_choices:
-            allocation_choices.insert(0, ('__select_all__', 'Select All'))
-        if allocation_query_set:
-            self.fields['allocation'].choices = allocation_choices
-            self.fields['allocation'].help_text = '<br/>Select allocations to add selected users to. If a user does not have an account on a resource in an allocation they will not be added.'
-        else:
-            self.fields['allocation'].widget = forms.HiddenInput()
+        if disable_selected:
+            self.fields['selected'].disabled = True
 
 
 class ProjectRemoveUserForm(forms.Form):

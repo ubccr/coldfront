@@ -29,6 +29,7 @@ from coldfront.core.allocation.signals import (allocation_activate_user,
 from coldfront.core.grant.models import Grant
 from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectAddUsersToAllocationForm,
+                                          ProjectFormSetWithSelectDisabled,
                                           ProjectRemoveUserForm,
                                           ProjectRemoveUserFormset,
                                           ProjectReviewEmailForm,
@@ -588,6 +589,30 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         else:
             return super().dispatch(request, *args, **kwargs)
 
+    def get_initial_data(self, request, allocations):
+        initial_data = []
+        for allocation in allocations:
+            initial_data.append({
+                'pk': allocation.pk,
+                'resource': allocation.get_parent_resource.name,
+                'resource_type': allocation.get_parent_resource.resource_type.name,
+                'status': allocation.status.name
+            })
+
+        return initial_data
+
+    def get_disable_select_list(self, request, allocations):
+        """
+        Gets a list that determines if an allocation can be selected.
+        """
+        disable_select_list = [False] * len(allocations)
+        for i, allocation in enumerate(allocations):
+            if allocation.get_parent_resource.name == 'Slate Project':
+                if allocation.data_manager != request.user.username:
+                    disable_select_list[i] = True
+
+        return disable_select_list
+
     def post(self, request, *args, **kwargs):
         user_search_string = request.POST.get('q')
         search_by = request.POST.get('search_by')
@@ -631,26 +656,43 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
                     users_already_in_project.append(ele)
             context['users_already_in_project'] = users_already_in_project
 
-        # The following block of code is used to hide/show the allocation div in the form.
-        has_slate_resource = False
         status_list = ['Active', 'New', 'Renewal Requested']
-        for allocation in project_obj.allocation_set.filter(status__name__in=status_list):
-            if allocation.get_parent_resource.name == 'Slate Project':
-                if allocation.data_manager != request.user.username:
-                    has_slate_resource = True
+        allocations = project_obj.allocation_set.filter(
+            status__name__in=status_list,
+            allocationuser__user=request.user
+        )
+        initial_data = self.get_initial_data(request, allocations)
 
-        if project_obj.allocation_set.filter(status__name__in=status_list).exists():
+        help_text = 'Select allocations to add selected users to. If a user does not have an account on a resource in an allocation they will not be added.'
+        for allocation_info in initial_data:
+            if allocation_info['resource'] == 'Slate Project':
+                help_text += ' Only Slate Project allocations you are a data manager of can be selected.'
+                break
+
+        allocation_formset = formset_factory(
+            ProjectAddUsersToAllocationForm,
+            max_num=len(initial_data),
+            formset=ProjectFormSetWithSelectDisabled
+        )
+        allocation_formset = allocation_formset(
+            initial=initial_data,
+            prefix="allocationform",
+            form_kwargs={
+                'disable_selected': self.get_disable_select_list(request, allocations)
+            }
+        )
+
+        # The following block of code is used to hide/show the allocation div in the form.
+        if initial_data:
             div_allocation_class = 'placeholder_div_class'
         else:
             div_allocation_class = 'd-none'
         context['div_allocation_class'] = div_allocation_class
         ###
 
-        allocation_form = ProjectAddUsersToAllocationForm(
-            request.user, project_obj.pk, prefix='allocationform')
         context['pk'] = pk
-        context['allocation_form'] = allocation_form
-        context['has_slate_resource'] = has_slate_resource
+        context['help_text'] = help_text
+        context['allocation_form'] = allocation_formset
         return render(request, self.template_name, context)
 
 
@@ -678,6 +720,30 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         else:
             return super().dispatch(request, *args, **kwargs)
 
+    def get_initial_data(self, request, allocations):
+        initial_data = []
+        for allocation in allocations:
+            initial_data.append({
+                'pk': allocation.pk,
+                'resource': allocation.get_parent_resource.name,
+                'resource_type': allocation.get_parent_resource.resource_type.name,
+                'status': allocation.status.name
+            })
+
+        return initial_data
+
+    def get_disable_select_list(self, request, allocations):
+        """
+        Gets a list that determines if an allocation can be selected.
+        """
+        disable_select_list = [False] * len(allocations)
+        for i, allocation in enumerate(allocations):
+            if allocation.get_parent_resource.name == 'Slate Project':
+                if allocation.data_manager != request.user.username:
+                    disable_select_list[i] = True
+
+        return disable_select_list
+
     def post(self, request, *args, **kwargs):
         user_search_string = request.POST.get('q')
         search_by = request.POST.get('search_by')
@@ -702,20 +768,35 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         formset = formset_factory(ProjectAddUserForm, max_num=len(matches))
         formset = formset(request.POST, initial=matches, prefix='userform')
 
-        allocation_form = ProjectAddUsersToAllocationForm(
-            request.user, project_obj.pk, request.POST, prefix='allocationform')
+        status_list = ['Active', 'New', 'Renewal Requested']
+        allocations = project_obj.allocation_set.filter(
+            status__name__in=status_list,
+            allocationuser__user=request.user
+        )
+        initial_data = self.get_initial_data(request, allocations)
+
+        allocation_formset = formset_factory(
+            ProjectAddUsersToAllocationForm,
+            max_num=len(initial_data),
+            formset=ProjectFormSetWithSelectDisabled
+        )
+        allocation_formset = allocation_formset(
+            request.POST,
+            initial=initial_data,
+            prefix="allocationform",
+            form_kwargs={
+                'disable_selected': self.get_disable_select_list(request, allocations)
+            }
+        )
 
         added_users_count = 0
-        if formset.is_valid() and allocation_form.is_valid():
+        if formset.is_valid() and allocation_formset.is_valid():
             project_user_active_status_choice = ProjectUserStatusChoice.objects.get(
                 name='Active')
             allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(
                 name='Active')
-            allocation_form_data = allocation_form.cleaned_data['allocation']
-            if '__select_all__' in allocation_form_data:
-                allocation_form_data.remove('__select_all__')
-            no_accounts = {}
 
+            no_accounts = {}
             managers_rejected = []
             for form in formset:
                 user_form_data = form.cleaned_data
@@ -757,26 +838,29 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
                     username = user_form_data.get('username')
                     no_accounts[username] = []
-                    for allocation in Allocation.objects.filter(pk__in=allocation_form_data):
-                        # If the user does not have an account on the resource in the allocation then do not add them to it.
-                        if not allocation.check_user_account_exists_on_resource(username):
-                            # Make sure there are no duplicates for a user if there's more than one instance of a resource.
-                            if allocation.get_parent_resource.name not in no_accounts[username]:
-                                no_accounts[username].append(allocation.get_parent_resource.name)
-                            continue
+                    for allocation in allocation_formset:
+                        cleaned_data = allocation.cleaned_data
+                        if cleaned_data['selected']:
+                            allocation = allocations.get(pk=cleaned_data['pk'])
+                            # If the user does not have an account on the resource in the allocation then do not add them to it.
+                            if not allocation.check_user_account_exists_on_resource(username):
+                                # Make sure there are no duplicates for a user if there's more than one instance of a resource.
+                                if allocation.get_parent_resource.name not in no_accounts[username]:
+                                    no_accounts[username].append(allocation.get_parent_resource.name)
+                                continue
 
-                        if allocation.allocationuser_set.filter(user=user_obj).exists():
-                            allocation_user_obj = allocation.allocationuser_set.get(
-                                user=user_obj)
-                            allocation_user_obj.status = allocation_user_active_status_choice
-                            allocation_user_obj.save()
-                        else:
-                            allocation_user_obj = AllocationUser.objects.create(
-                                allocation=allocation,
-                                user=user_obj,
-                                status=allocation_user_active_status_choice)
-                        allocation_activate_user.send(sender=self.__class__,
-                                                      allocation_user_pk=allocation_user_obj.pk)
+                            if allocation.allocationuser_set.filter(user=user_obj).exists():
+                                allocation_user_obj = allocation.allocationuser_set.get(
+                                    user=user_obj)
+                                allocation_user_obj.status = allocation_user_active_status_choice
+                                allocation_user_obj.save()
+                            else:
+                                allocation_user_obj = AllocationUser.objects.create(
+                                    allocation=allocation,
+                                    user=user_obj,
+                                    status=allocation_user_active_status_choice)
+                            allocation_activate_user.send(sender=self.__class__,
+                                                        allocation_user_pk=allocation_user_obj.pk)
 
             warning_message = ''
             for username, no_account_list in no_accounts.items():
@@ -804,8 +888,8 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                 for error in formset.errors:
                     messages.error(request, error)
 
-            if not allocation_form.is_valid():
-                for error in allocation_form.errors:
+            if not allocation_formset.is_valid():
+                for error in allocation_formset.errors:
                     messages.error(request, error)
 
         if after_project_creation == 'true':
