@@ -70,6 +70,16 @@ def home(request):
         context['savio_projects'] = savio_projects
         context['vector_projects'] = vector_projects
         context['allocation_list'] = allocation_list
+
+        num_join_requests = \
+            ProjectUserJoinRequest.objects.filter(
+                project_user__status__name='Pending - Add',
+                project_user__user=request.user). \
+                order_by('project_user', '-created'). \
+                distinct('project_user').count()
+
+        context['num_join_requests'] = num_join_requests
+
     else:
         template_name = 'portal/nonauthorized_home.html'
 
@@ -78,15 +88,6 @@ def home(request):
     if 'coldfront.plugins.system_monitor' in settings.EXTRA_APPS:
         from coldfront.plugins.system_monitor.utils import get_system_monitor_context
         context.update(get_system_monitor_context())
-
-    num_join_requests = \
-        ProjectUserJoinRequest.objects.filter(
-            project_user__status__name='Pending - Add',
-            project_user__user=request.user).\
-            order_by('project_user', '-created').\
-            distinct('project_user').count()
-
-    context['num_join_requests'] = num_join_requests
 
     return render(request, template_name, context)
 
