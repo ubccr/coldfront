@@ -26,6 +26,7 @@ log_path: '/var/log/user_portals/cf_mybrc'
 portal_log_file: 'cf_mybrc_portal.log'
 api_log_file: 'cf_mybrc_api.log'
 
+email_port: 25
 from_email: brc-hpc-help@berkeley.edu
 admin_email: brc-hpcs@berkeley.edu
 email_subject_prefix: '[MyBRC-User-Portal]'
@@ -50,7 +51,7 @@ google_sheets_credentials: '/tmp/credentials.json'
 #ssl_certificate_key_file: /etc/ssl/ssl_certificate_key.file
 #ssl_certificate_chain_file: /etc/ssl/ssl_certification_chain.file
 
-ip_range_with_api_access: 0.0.0.0/0
+ip_range_with_api_access: 0.0.0.0/24
 
 request_approval_cc_list: []
 

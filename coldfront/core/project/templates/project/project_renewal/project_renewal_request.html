@@ -1,0 +1,35 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Renew Project {{ project.name }} Allocation
+{% endblock %}
+
+
+{% block content %}
+<script type='text/javascript' src="{% static 'selectize/selectize.min.js' %}"></script>
+<link rel='stylesheet' type='text/css' href="{% static 'selectize/selectize.bootstrap3.css' %}"/>
+
+<h1>Renew Project {{ project.name }} Allocation</h1>
+<hr>
+
+<p>
+  Select the PI whose allocation should be renewed under this project.
+</p>
+
+<p>
+  Note: Each PI may only have one FCA at a time, so any that have pending or
+  approved renewal requests are not selectable.
+</p>
+
+<form action="" method="post">
+  {% csrf_token %}
+  {{ form|crispy }}
+  <button type="submit" class="btn btn-primary">
+    Submit
+  </button>
+</form>
+
+{% endblock %}

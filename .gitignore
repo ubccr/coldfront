@@ -24,3 +24,4 @@ db.json
 coldfront.db.self.broken
 main.yml
 *.dump
+.vagrant

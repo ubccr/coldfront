@@ -7,9 +7,9 @@ from coldfront.core.allocation.models import AllocationUser
 from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.allocation.models import AllocationUserStatusChoice
+from coldfront.core.allocation.utils import get_project_compute_resource_name
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectUser
-from coldfront.core.project.utils import get_project_compute_resource_name
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.management.commands.utils import get_gspread_worksheet
 from coldfront.core.utils.management.commands.utils import get_gspread_worksheet_data

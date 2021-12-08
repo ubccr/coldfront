@@ -155,6 +155,15 @@
         virtualenv: "{{ git_prefix }}/venv"
       become_user: "{{ djangooperator }}"
 
+    - name: CF MyBRC Django app create_staff_group
+      django_manage:
+        command: create_staff_group
+        app_path: "{{ git_prefix }}/{{ reponame }}"
+        settings: "config.settings"
+        pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+        virtualenv: "{{ git_prefix }}/venv"
+      become_user: "{{ djangooperator }}"
+
     - name: CF MyBRC Django app collectstatic
       django_manage:
         command: collectstatic --noinput

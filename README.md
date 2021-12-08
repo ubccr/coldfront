@@ -115,6 +115,109 @@ Password for all users is also `test1234`.
 python manage.py add_brc_accounting_defaults
 ```
 
+## Vagrant VM Install
+
+Alternatively, the application may be installed within a Vagrant VM, running
+Scientific Linux 7. The VM is provisioned using an Ansible playbook similar to
+the one used in production.
+
+1. Install [VirtualBox](https://www.virtualbox.org/).
+2. Clone the repository.
+   ```
+   git clone https://github.com/ucb-rit/coldfront.git
+   cd coldfront
+   ```
+3. Prevent Git from detecting changes to file permissions.
+   ```
+   git config core.fileMode false
+   ```
+4. Checkout the desired branch (probably `develop`).
+5. Install vagrant-vbguest.
+   ```
+   vagrant plugin install vagrant-vbguest
+   ```
+6. Create a `main.yml` file in the top-level of the repository. This is a file
+of variables used by Ansible to configure the system.
+   ```
+   cp bootstrap/development/main.copyme main.yml
+   ```
+7. Customize `main.yml`. In particular, fill in the below variables. Note
+that quotes should not be provided, except in the list variable.
+   ```
+   db_admin_passwd: password_here
+   from_email: you@email.com
+   admin_email: you@email.com
+   request_approval_cc_list: ["you@email.com"]
+   ```
+8. Provision the VM. This should run the Ansible playbook. Expect this to take
+a few minutes on the first run.
+   ```
+   vagrant up
+   ```
+9. SSH into the VM.
+   ```
+   vagrant ssh
+   ```
+10. On the host machine, navigate to `http://localhost:8880`, where the
+application should be served.
+11. Load test data or (TODO) load a backup of the production database.
+
+### Miscellanea
+
+#### Virtual Machine
+
+- Once the VM has been provisioned the first time, starting and accessing it 
+can be done with:
+  ```
+  vagrant up
+  vagrant ssh
+  ```
+
+- To stop the VM, run:
+  ```
+  vagrant halt
+  ```
+
+- To re-provision the VM, run:
+  ```
+  vagrant provision
+  ```
+
+#### Environment
+
+- The application is served via Apache, so any changes to the application
+(excluding changes to templates) are not applied until Apache is restarted,
+which can be done with:
+  ```
+  sudo service httpd restart
+  ```
+- The Ansible playbook can be run manually with:
+  ```
+  cd /vagrant/coldfront_app/coldfront
+  # Assert that there is a properly-configured main.yml in the current directory.
+  ansible-playbook bootstrap/development/playbook.yml
+  ```
+- Any custom Django settings can be applied by modifying `dev_settings.py`.
+Note that running the Ansible playbook will overwrite these.
+- It may be convenient to add the following to `/home/vagrant/.bashrc`:
+  ```
+  # Upon login, navigate to the ColdFront directory and source the virtual environment.
+  cd /vagrant/coldfront_app/coldfront
+  source /vagrant/coldfront_app/venv/bin/activate
+  # Restart Apache with a keyword.
+  alias reload="sudo service httpd restart"
+  ```
+
+#### Emails
+
+- By default, emails are configured to be sent via SMTP on port 1025. If no
+such server is running on that port, many operations will fail. To start a
+server, start a separate SSH session (`vagrant ssh`), and run the below. All
+emails will be outputted here for inspection.
+  ```
+  python -m smtpd -n -c DebuggingServer localhost:1025
+  ```
+
 ## Directory structure
 
 - coldfront
@@ -146,6 +249,74 @@ In practice, when contributing to the code, ensure that changes do not cause
 accessibility issues to be flagged by the
 [tota11y](https://khan.github.io/tota11y/) tool. This will be considered
 during the code review process.
+
+## REST API
+
+The service's REST API is located at `/api`.
+
+### Getting a Token
+
+Some endpoints require an authorization token, which can be retrieved:
+
+1. From an API endpoint, using username and password (not recommended over
+HTTP):<br><br>
+
+   Make a `POST` request to `/api/api_token_auth/` with body:
+
+   ```
+   {
+       "username": "username",
+       "password": "password",
+   }
+   ```
+
+   This will return a response containing the requested user's token. Note that
+the token displayed below is not valid.
+
+   ```
+   {
+       "token": "c99b5142a126796ff03454f475b0381736793a1f"
+   }
+   ```
+
+2. For developers, from the Django shell:
+
+   ```
+   from coldfront.core.user.models import ExpiringToken
+   from django.contrib.auth.models import User
+
+   username = "username"
+   user = User.objects.get(username=username)
+   ExpiringToken.objects.create(user=user)
+   ```
+
+### Authorizing a Request
+
+For those endpoints requiring an authorization token, it must be provided in
+the request headers. Note that this is exposed when not using HTTPS.
+
+```
+{
+    "Authorization": "Token c99b5142a126796ff03454f475b0381736793a1f",
+}
+```
+
+#### cURL Example
+
+```
+curl --header "Authorization: Token c99b5142a126796ff03454f475b0381736793a1f" https://domain.tld/api/
+```
+
+### Limiting Write Access
+
+Some methods (i.e., `POST`, `PUT`, `PATCH`) may only be accessible to
+superusers. For these, the provided authorization token must belong to a user
+with `is_superuser` set to `True`.
+
+### Limiting Access by IP
+
+Access to the API may be limited by IP range. This can be configured in
+Ansible, via the `ip_range_with_api_access` variable.
 
 ## Deployments
 
