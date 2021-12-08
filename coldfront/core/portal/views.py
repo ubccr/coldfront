@@ -15,7 +15,9 @@ from coldfront.core.portal.utils import (generate_allocations_chart_data,
                                          generate_publication_by_year_chart_data,
                                          generate_resources_chart_data,
                                          generate_total_grants_by_agency_chart_data)
-from coldfront.core.project.models import Project
+from coldfront.core.project.models import Project, ProjectUserJoinRequest
+
+
 # from coldfront.core.publication.models import Publication
 # from coldfront.core.research_output.models import ResearchOutput
 
@@ -76,6 +78,15 @@ def home(request):
     if 'coldfront.plugins.system_monitor' in settings.EXTRA_APPS:
         from coldfront.plugins.system_monitor.utils import get_system_monitor_context
         context.update(get_system_monitor_context())
+
+    num_join_requests = \
+        ProjectUserJoinRequest.objects.filter(
+            project_user__status__name='Pending - Add',
+            project_user__user=request.user).\
+            order_by('project_user', '-created').\
+            distinct('project_user').count()
+
+    context['num_join_requests'] = num_join_requests
 
     return render(request, template_name, context)
 
