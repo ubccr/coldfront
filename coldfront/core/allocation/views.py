@@ -1149,6 +1149,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
             usernames.append(data_manager)
 
+        usernames.append(project_obj.pi.username)
+
         # If a resource has a user limit make sure it's not surpassed.
         total_users = len(usernames)
         user_limit = resource_obj.get_attribute("user_limit")
