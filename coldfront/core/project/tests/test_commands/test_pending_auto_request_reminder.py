@@ -160,10 +160,18 @@ class TestPendingJoinRequestReminderCommand(TestCase):
                     request_list = f'{self.project1.name} | ' \
                                    f'{self.request1.created.strftime("%m/%d/%Y, %H:%M")}'
                     self.assertIn(request_list, email.body)
+
+                    body = 'This is a reminder that you have 1' \
+                           ' project join request(s).'
+                    self.assertIn(body, email.body)
                 elif addr == self.user2.email:
                     request_list = f'{self.project1.name} | ' \
                                    f'{self.request2.created.strftime("%m/%d/%Y, %H:%M")}'
                     self.assertIn(request_list, email.body)
+
+                    body = 'This is a reminder that you have 1' \
+                           ' project join request(s).'
+                    self.assertIn(body, email.body)
 
                 else:
                     self.fail('Email not sent to either the user '
@@ -215,10 +223,18 @@ class TestPendingJoinRequestReminderCommand(TestCase):
                     request_list = f'{self.project1.name} | ' \
                                    f'{self.request1.created.strftime("%m/%d/%Y, %H:%M")}'
                     self.assertIn(request_list, email.body)
+
+                    body = 'This is a reminder that you have 1' \
+                           ' project join request(s).'
+                    self.assertIn(body, email.body)
                 elif addr == self.user2.email:
                     request_list = f'{self.project1.name} | ' \
                                    f'{self.request2.created.strftime("%m/%d/%Y, %H:%M")}'
                     self.assertIn(request_list, email.body)
+
+                    body = 'This is a reminder that you have 1' \
+                           ' project join request(s).'
+                    self.assertIn(body, email.body)
 
                 else:
                     self.fail('Email not sent to either the user '
@@ -334,6 +350,85 @@ class TestPendingJoinRequestReminderCommand(TestCase):
 
                     body = 'This is a reminder that you have 1' \
                               ' project join request(s).'
+                    self.assertIn(body, email.body)
+
+                else:
+                    self.fail('Email not sent to either the user '
+                              'or managers/PIs of project')
+
+            self.assertEqual(settings.EMAIL_SENDER, email.from_email)
+
+    def test_command_previously_denied_requests(self):
+        """
+        Testing pending_join_request_reminder command when a user has a
+        previously denied join request
+        """
+        # represents a denied request
+        proj_user = ProjectUser.objects.get(user=self.user1, project=self.project1)
+        request4 = \
+            ProjectUserJoinRequest.objects.create(project_user=proj_user)
+        request4.created = datetime.datetime.now() - datetime.timedelta(days=4)
+        request4.save()
+
+        out, err = StringIO(), StringIO()
+        sys.stdout = open(os.devnull, 'w')
+        call_command('pending_join_request_reminder', stdout=out, stderr=err)
+        sys.stdout = sys.__stdout__
+
+        pi_condition = Q(
+            role__name='Principal Investigator', status__name='Active',
+            enable_notifications=True)
+        manager_condition = Q(role__name='Manager', status__name='Active')
+        manager_emails = list(
+            self.project1.projectuser_set.filter(
+                pi_condition | manager_condition
+            ).values_list(
+                'user__email', flat=True
+            ))
+
+        for email in mail.outbox:
+            for addr in email.to:
+                if addr in manager_emails:
+                    body = f'This is a reminder that there are 2 requests(s) ' \
+                           f'to join your project, { self.project1.name }, ' \
+                           f'via MyBRC user portal.'
+                    self.assertIn(body, email.body)
+
+                    for request in [self.request1, self.request2]:
+                        request_list = f'{request.project_user.user.first_name} ' \
+                                       f'{request.project_user.user.last_name} | ' \
+                                       f'{request.project_user.user.email} | ' \
+                                       f'{request.created.strftime("%m/%d/%Y, %H:%M")}'
+                        self.assertIn(request_list, email.body)
+
+                    request_list = f'{request4.project_user.user.first_name} ' \
+                                   f'{request4.project_user.user.last_name} | ' \
+                                   f'{request4.project_user.user.email} | ' \
+                                   f'{request4.created.strftime("%m/%d/%Y, %H:%M")}'
+                    self.assertNotIn(request_list, email.body)
+
+                elif addr == self.user1.email:
+                    request_list = f'{self.project1.name} | ' \
+                                   f'{self.request1.created.strftime("%m/%d/%Y, %H:%M")}'
+                    self.assertIn(request_list, email.body)
+
+                    request_list = f'{request4.project_user.user.first_name} ' \
+                                   f'{request4.project_user.user.last_name} | ' \
+                                   f'{request4.project_user.user.email} | ' \
+                                   f'{request4.created.strftime("%m/%d/%Y, %H:%M")}'
+                    self.assertNotIn(request_list, email.body)
+
+                    body = 'This is a reminder that you have 1' \
+                           ' project join request(s).'
+                    self.assertIn(body, email.body)
+
+                elif addr == self.user2.email:
+                    request_list = f'{self.project1.name} | ' \
+                                   f'{self.request2.created.strftime("%m/%d/%Y, %H:%M")}'
+                    self.assertIn(request_list, email.body)
+
+                    body = 'This is a reminder that you have 1' \
+                           ' project join request(s).'
                     self.assertIn(body, email.body)
 
                 else:

@@ -42,7 +42,9 @@ class Command(BaseCommand):
             proj_join_requests_qeuryset = \
                 ProjectUserJoinRequest.objects.filter(
                     project_user__project=project,
-                    project_user__status__name='Pending - Add')
+                    project_user__status__name='Pending - Add').\
+                    order_by('project_user', '-created').\
+                    distinct('project_user')
 
             if settings.EMAIL_ENABLED:
                 request_string_list = [f'{request.project_user.user.first_name} ' \
@@ -108,7 +110,9 @@ class Command(BaseCommand):
             proj_join_requests_qeuryset = \
                 ProjectUserJoinRequest.objects.filter(
                     project_user__user=user,
-                    project_user__status__name='Pending - Add')
+                    project_user__status__name='Pending - Add'). \
+                    order_by('project_user', '-created'). \
+                    distinct('project_user')
 
             if settings.EMAIL_ENABLED:
                 request_string_list = [f'{request.project_user.project.name} | ' \
