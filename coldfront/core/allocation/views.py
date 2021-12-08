@@ -150,7 +150,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                     except AttributeError:
                         pass
                 allocation_user_su_usages[username] = usage
-                print(username, usage)
+
         context['has_service_units'] = has_service_units
         context['allocation_user_su_usages'] = allocation_user_su_usages
 
