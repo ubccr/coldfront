@@ -13,7 +13,7 @@ from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.forms import formset_factory
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse, request
 from django.http.response import HttpResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse, reverse_lazy
@@ -1150,6 +1150,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             usernames.append(data_manager)
 
         usernames.append(project_obj.pi.username)
+        usernames.append(self.request.user.username)
 
         # If a resource has a user limit make sure it's not surpassed.
         total_users = len(usernames)
