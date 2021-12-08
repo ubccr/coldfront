@@ -120,6 +120,25 @@ class TestPendingJoinRequestReminderCommand(TestCase):
         # Clear the mail outbox.
         mail.outbox = []
 
+    @staticmethod
+    def manager_pi_message_body(num_requests, project_name):
+        """Return the message the email sent to the managers and PIs
+        should contain, given an integer number of requests and the name
+        of the project."""
+        verb = 'are' if num_requests > 1 else 'is'
+        return (
+            f'This is a reminder that there {verb} {num_requests} request(s) '
+            f'to join your project, {project_name}, via the MyBRC User '
+            f'Portal.')
+
+    @staticmethod
+    def user_message_body(num_requests):
+        """Return the message the email sent to the user should contain,
+        given an integer number of requests."""
+        return (
+            f'This is a reminder that you have {num_requests} project join '
+            f'request(s) in the MyBRC User Portal.')
+
     def test_command_single_proj_multiple_requests(self):
         """
         Testing pending_join_request_reminder command with a single project,
@@ -144,9 +163,7 @@ class TestPendingJoinRequestReminderCommand(TestCase):
         for email in mail.outbox:
             for addr in email.to:
                 if addr in manager_emails:
-                    body = f'This is a reminder that there are 2 requests(s) ' \
-                           f'to join your project, { self.project1.name }, ' \
-                           f'via MyBRC user portal.'
+                    body = self.manager_pi_message_body(2, self.project1.name)
                     self.assertIn(body, email.body)
 
                     for request in [self.request1, self.request2]:
@@ -161,16 +178,14 @@ class TestPendingJoinRequestReminderCommand(TestCase):
                                    f'{self.request1.created.strftime("%m/%d/%Y, %H:%M")}'
                     self.assertIn(request_list, email.body)
 
-                    body = 'This is a reminder that you have 1' \
-                           ' project join request(s).'
+                    body = self.user_message_body(1)
                     self.assertIn(body, email.body)
                 elif addr == self.user2.email:
                     request_list = f'{self.project1.name} | ' \
                                    f'{self.request2.created.strftime("%m/%d/%Y, %H:%M")}'
                     self.assertIn(request_list, email.body)
 
-                    body = 'This is a reminder that you have 1' \
-                           ' project join request(s).'
+                    body = self.user_message_body(1)
                     self.assertIn(body, email.body)
 
                 else:
@@ -207,9 +222,7 @@ class TestPendingJoinRequestReminderCommand(TestCase):
         for email in mail.outbox:
             for addr in email.to:
                 if addr in manager_emails:
-                    body = f'This is a reminder that there are 2 requests(s) ' \
-                           f'to join your project, { self.project1.name }, ' \
-                           f'via MyBRC user portal.'
+                    body = self.manager_pi_message_body(2, self.project1.name)
                     self.assertIn(body, email.body)
 
                     for request in [self.request1, self.request2]:
@@ -224,16 +237,14 @@ class TestPendingJoinRequestReminderCommand(TestCase):
                                    f'{self.request1.created.strftime("%m/%d/%Y, %H:%M")}'
                     self.assertIn(request_list, email.body)
 
-                    body = 'This is a reminder that you have 1' \
-                           ' project join request(s).'
+                    body = self.user_message_body(1)
                     self.assertIn(body, email.body)
                 elif addr == self.user2.email:
                     request_list = f'{self.project1.name} | ' \
                                    f'{self.request2.created.strftime("%m/%d/%Y, %H:%M")}'
                     self.assertIn(request_list, email.body)
 
-                    body = 'This is a reminder that you have 1' \
-                           ' project join request(s).'
+                    body = self.user_message_body(1)
                     self.assertIn(body, email.body)
 
                 else:
@@ -308,9 +319,8 @@ class TestPendingJoinRequestReminderCommand(TestCase):
             for addr in email.to:
                 if addr in manager_emails1:
                     try:
-                        body = f'This is a reminder that there are 2 requests(s) ' \
-                               f'to join your project, { self.project1.name }, ' \
-                               f'via MyBRC user portal.'
+                        body = self.manager_pi_message_body(
+                            2, self.project1.name)
                         self.assertIn(body, email.body)
 
                         for request in [self.request1, self.request2]:
@@ -320,9 +330,7 @@ class TestPendingJoinRequestReminderCommand(TestCase):
                                            f'{request.created.strftime("%m/%d/%Y, %H:%M")}'
                             self.assertIn(request_list, email.body)
                     except:
-                        body = f'This is a reminder that there is 1 requests(s) ' \
-                               f'to join your project, { project2.name }, ' \
-                               f'via MyBRC user portal.'
+                        body = self.manager_pi_message_body(1, project2.name)
                         self.assertIn(body, email.body)
 
                         request_list = f'{request3.project_user.user.first_name} ' \
@@ -339,8 +347,7 @@ class TestPendingJoinRequestReminderCommand(TestCase):
                                    f'{request3.created.strftime("%m/%d/%Y, %H:%M")}'
                     self.assertIn(request_list, email.body)
 
-                    body = 'This is a reminder that you have 2' \
-                              ' project join request(s).'
+                    body = self.user_message_body(2)
                     self.assertIn(body, email.body)
 
                 elif addr == self.user2.email:
@@ -348,8 +355,7 @@ class TestPendingJoinRequestReminderCommand(TestCase):
                                    f'{self.request2.created.strftime("%m/%d/%Y, %H:%M")}'
                     self.assertIn(request_list, email.body)
 
-                    body = 'This is a reminder that you have 1' \
-                              ' project join request(s).'
+                    body = self.user_message_body(1)
                     self.assertIn(body, email.body)
 
                 else:
@@ -367,7 +373,7 @@ class TestPendingJoinRequestReminderCommand(TestCase):
         proj_user = ProjectUser.objects.get(user=self.user1, project=self.project1)
         request4 = \
             ProjectUserJoinRequest.objects.create(project_user=proj_user)
-        request4.created = datetime.datetime.now() - datetime.timedelta(days=4)
+        request4.created = utc_now_offset_aware() - datetime.timedelta(days=4)
         request4.save()
 
         out, err = StringIO(), StringIO()
@@ -389,9 +395,7 @@ class TestPendingJoinRequestReminderCommand(TestCase):
         for email in mail.outbox:
             for addr in email.to:
                 if addr in manager_emails:
-                    body = f'This is a reminder that there are 2 requests(s) ' \
-                           f'to join your project, { self.project1.name }, ' \
-                           f'via MyBRC user portal.'
+                    body = self.manager_pi_message_body(2, self.project1.name)
                     self.assertIn(body, email.body)
 
                     for request in [self.request1, self.request2]:
@@ -418,8 +422,7 @@ class TestPendingJoinRequestReminderCommand(TestCase):
                                    f'{request4.created.strftime("%m/%d/%Y, %H:%M")}'
                     self.assertNotIn(request_list, email.body)
 
-                    body = 'This is a reminder that you have 1' \
-                           ' project join request(s).'
+                    body = self.user_message_body(1)
                     self.assertIn(body, email.body)
 
                 elif addr == self.user2.email:
@@ -427,8 +430,7 @@ class TestPendingJoinRequestReminderCommand(TestCase):
                                    f'{self.request2.created.strftime("%m/%d/%Y, %H:%M")}'
                     self.assertIn(request_list, email.body)
 
-                    body = 'This is a reminder that you have 1' \
-                           ' project join request(s).'
+                    body = self.user_message_body(1)
                     self.assertIn(body, email.body)
 
                 else:
