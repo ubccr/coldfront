@@ -11,14 +11,10 @@ from django.urls import reverse
 from urllib.parse import urljoin
 import logging
 from django.db.models import Q
-
-from coldfront.core.utils.common import utc_now_offset_aware
-from datetime import datetime
-from datetime import timedelta
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
 
 """An admin command that sends PIs reminder emails of pending join requests."""
-
-TIME_DELTA = timedelta(days=4)
 
 class Command(BaseCommand):
 
@@ -75,17 +71,6 @@ class Command(BaseCommand):
                         'user__email', flat=True
                     ))
                 try:
-                    # send_email_template(
-                    #     'Pending Project Join Requests',
-                    #     'email/pending_project_join_requests.txt',
-                    #     context,
-                    #     settings.EMAIL_SENDER,
-                    #     recipients)
-                    # emails_sent += len(recipients)
-
-                    from django.core.mail import send_mail
-                    from django.template.loader import render_to_string
-
                     msg_plain = \
                         render_to_string('email/project_join_request/pending_project_join_requests.txt',
                                          context)
