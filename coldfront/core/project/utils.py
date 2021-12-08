@@ -91,7 +91,13 @@ def __project_detail_url(project):
     return urljoin(domain, view)
 
 
-def __review_project_join_requests_url(project):
+def project_join_list_url():
+    domain = import_from_settings('CENTER_BASE_URL')
+    view = reverse('project-join-list')
+    return urljoin(domain, view)
+
+
+def review_project_join_requests_url(project):
     domain = import_from_settings('CENTER_BASE_URL')
     view = reverse('project-review-join-requests', kwargs={'pk': project.pk})
     return urljoin(domain, view)

@@ -3,6 +3,8 @@ from django.contrib.auth.models import User
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
 from coldfront.core.project.models import ProjectUserJoinRequest, Project
+from coldfront.core.project.utils import project_join_list_url
+from coldfront.core.project.utils import review_project_join_requests_url
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.urls import reverse
@@ -59,7 +61,8 @@ class Command(BaseCommand):
                     'num_requests': proj_join_requests_qeuryset.count(),
                     'verb': 'are' if proj_join_requests_qeuryset.count() > 1 else 'is',
                     'pk': project.pk,
-                    'signature': settings.EMAIL_SIGNATURE
+                    'review_url': review_project_join_requests_url(project),
+                    'signature': settings.EMAIL_SIGNATURE,
                 }
                 pi_condition = Q(
                     role__name='Principal Investigator', status__name='Active',
@@ -123,7 +126,8 @@ class Command(BaseCommand):
                     'user_name': f'{user.first_name} {user.last_name}',
                     'request_list': '\n'.join(request_string_list),
                     'num_requests': proj_join_requests_qeuryset.count(),
-                    'signature': settings.EMAIL_SIGNATURE
+                    'review_url': project_join_list_url(),
+                    'signature': settings.EMAIL_SIGNATURE,
                 }
 
                 try:

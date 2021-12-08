@@ -5,7 +5,7 @@ This is a reminder that you have {{ num_requests }} project join request(s) in t
 Project | Request Time
 {{ request_list }}
 
-You will periodically receive reminder emails until the managers/PIs of each project approve/deny your request(s).
+You may review these requests at {{ review_url }}.You will periodically receive reminder emails until the managers/PIs of each project approve/deny your request(s).
 
 Thank you,
 {{ signature }}
