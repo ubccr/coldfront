@@ -1,6 +1,8 @@
+from django.contrib.auth.models import User
+
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
-from coldfront.core.project.models import ProjectUserJoinRequest
+from coldfront.core.project.models import ProjectUserJoinRequest, Project
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.urls import reverse
@@ -24,17 +26,19 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
-        proj_join_requests_qeuryset = \
+        proj_join_requests_queryset = \
             ProjectUserJoinRequest.objects.filter(
                 project_user__status__name='Pending - Add')
 
-        projects_with_pending_join_requests = \
-            set([request.project_user.project for request in proj_join_requests_qeuryset])
-        users_with_pending_join_requests = \
-            set([request.project_user.user for request in proj_join_requests_qeuryset])
+        projects_with_pending_join_requests = proj_join_requests_queryset.values_list(
+            'project_user__project', flat=True).distinct()
+
+        users_with_pending_join_requests = proj_join_requests_queryset.values_list(
+            'project_user__user', flat=True).distinct()
 
         emails_sent = 0
-        for project in projects_with_pending_join_requests:
+        for pk in projects_with_pending_join_requests:
+            project = Project.objects.get(pk=pk)
             proj_join_requests_qeuryset = \
                 ProjectUserJoinRequest.objects.filter(
                     project_user__project=project,
@@ -99,7 +103,8 @@ class Command(BaseCommand):
                     self.logger.error(message)
                     self.logger.exception(e)
 
-        for user in users_with_pending_join_requests:
+        for pk in users_with_pending_join_requests:
+            user = User.objects.get(pk=pk)
             proj_join_requests_qeuryset = \
                 ProjectUserJoinRequest.objects.filter(
                     project_user__user=user,
