@@ -89,7 +89,8 @@ class ProjectRemovalRequestRunner(object):
 
             manager_pi_queryset = [x.user for x in self.proj_obj.projectuser_set.filter(
                 role__name__in=['Manager', 'Principal Investigator'],
-                status__name='Active').exclude(user=self.requester_obj)]
+                status__name='Active',
+                enable_notifications=True).exclude(user=self.requester_obj)]
 
             # send emails to user and all pis/managers that did not make request
             for user in manager_pi_queryset + [self.user_obj] \
