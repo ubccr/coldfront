@@ -41,7 +41,8 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectReviewUserJoinForm,
                                           ProjectSearchForm,
                                           ProjectUpdateForm,
-                                          ProjectUserUpdateForm)
+                                          ProjectUserUpdateForm,
+                                          JoinRequestSearchForm)
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectReviewStatusChoice,
                                            ProjectStatusChoice, ProjectUser,
@@ -3667,3 +3668,106 @@ class VectorProjectUndenyRequestView(LoginRequiredMixin, UserPassesTestMixin, Vi
         return HttpResponseRedirect(
             reverse('vector-project-request-detail',
                     kwargs={'pk': kwargs.get('pk')}))
+
+
+class ProjectJoinRequestListView(LoginRequiredMixin,
+                                 UserPassesTestMixin,
+                                 ListView):
+    template_name = 'project/project_join_request_list.html'
+    paginate_by = 2
+
+    def get_queryset(self):
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            if direction == 'asc':
+                direction = ''
+            else:
+                direction = '-'
+            order_by = direction + 'created'
+        else:
+            order_by = '-created'
+
+        project_join_requests = ProjectUserJoinRequest.objects.filter(project_user__status__name='Pending - Add').order_by('project_user', '-created').distinct('project_user')
+        project_join_requests = ProjectUserJoinRequest.objects.filter(pk__in=project_join_requests)
+
+        join_request_search_form = JoinRequestSearchForm(self.request.GET)
+
+        if join_request_search_form.is_valid():
+            data = join_request_search_form.cleaned_data
+
+            if data.get('username'):
+                project_join_requests = project_join_requests.filter(project_user__user__username__icontains=data.get('username'))
+
+            if data.get('email'):
+                project_join_requests = project_join_requests.filter(project_user__user__email__icontains=data.get('email'))
+
+            if data.get('project_name'):
+                project_join_requests = project_join_requests.filter(project_user__project__name__icontains=data.get('project_name'))
+
+        return project_join_requests.order_by(order_by)
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('project.view_projectuserjoinrequest'):
+            return True
+
+        message = (
+            'You do not have permission to view project join requests.')
+        messages.error(self.request, message)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        join_request_search_form = JoinRequestSearchForm(self.request.GET)
+        if join_request_search_form.is_valid():
+            context['join_request_search_form'] = join_request_search_form
+            data = join_request_search_form.cleaned_data
+            filter_parameters = ''
+            for key, value in data.items():
+                if value:
+                    if isinstance(value, list):
+                        for ele in value:
+                            filter_parameters += '{}={}&'.format(key, ele)
+                    else:
+                        filter_parameters += '{}={}&'.format(key, value)
+            context['join_request_search_form'] = join_request_search_form
+        else:
+            filter_parameters = None
+            context['join_request_search_form'] = JoinRequestSearchForm()
+
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            filter_parameters_with_order_by = filter_parameters + \
+                                              'order_by=%s&direction=%s&' % (order_by, direction)
+        else:
+            filter_parameters_with_order_by = filter_parameters
+
+        context['expand_accordion'] = 'show'
+
+        context['filter_parameters'] = filter_parameters
+        context['filter_parameters_with_order_by'] = filter_parameters_with_order_by
+
+        print(context['filter_parameters'])
+        print(context['filter_parameters_with_order_by'])
+
+        join_request_queryset = self.get_queryset()
+
+        paginator = Paginator(join_request_queryset, self.paginate_by)
+
+        page = self.request.GET.get('page')
+
+        try:
+            join_requests = paginator.page(page)
+        except PageNotAnInteger:
+            join_requests = paginator.page(1)
+        except EmptyPage:
+            join_requests = paginator.page(paginator.num_pages)
+
+        context['join_request_list'] = join_requests
+
+        return context
