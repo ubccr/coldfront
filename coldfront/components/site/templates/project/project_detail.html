@@ -16,11 +16,11 @@ Project Detail
     <div class="alert alert-warning">
       You need to review this project. <a href="{% url 'project-review' project.pk %}">Review Project</a>
     </div>
-  {% elif project.expires_in <= 0 and project.status.name == 'Expired' %}
+  {% elif project.can_be_reviewed and project.status.name == 'Expired' %}
     <div class="alert alert-warning">
       This project has expired. You cannot make any changes. <a href="{% url 'project-review' project.pk %}">Review Project</a>
     </div>
-  {% elif project.expires_in <= 30 and project.status.name != 'Review Pending' %}
+  {% elif project.can_be_reviewed and project.status.name != 'Review Pending' %}
     <div class="alert alert-warning">
       This project expires in {{ project.expires_in }} day{{ project.expires_in|pluralize }}. <a href="{% url 'project-review' project.pk %}">Review Project</a>
     </div>
@@ -110,8 +110,10 @@ Project Detail
     <p class="card-text text-justify"><strong>Project Type: </strong>{{ project.type.name }}</p>
     <p class="card-text text-justify"><strong>Project Status: </strong>
     {% if project.status.name == 'Active' %}
-      {% if project.expires_in <= 30 %}
+      {% if project.can_be_reviewed %}
         <span class="text-warning">{{ project.status.name }}</span>
+      {% elif project.needs_review %}
+        <span class="text-danger">{{ project.status.name }} </span>
       {% else %}
         <span class="text-success">{{ project.status.name}}</span>
       {% endif %}

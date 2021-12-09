@@ -262,7 +262,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
         project_count = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
             Q(pi__username=self.request.user.username) &
             Q(projectuser__status__name='Active') &
-            Q(status__name__in=['New', 'Active', ])
+            Q(status__name__in=['New', 'Active', 'Review Pending', 'Waiting For Admin Approval', ])
         ).distinct().count()
         context['project_requests_remaining'] = max(0, max_projects - project_count)
 
@@ -1100,11 +1100,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
 
-        if (
-            not project_obj.needs_review
-            and (project_obj.expires_in > 30
-                 or project_obj.status.name not in ['Active', 'Expired', ])
-        ):
+        if not project_obj.needs_review and not project_obj.can_be_reviewed:
             messages.error(request, 'You do not need to review this project.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 

@@ -99,10 +99,8 @@ We do not have information about your research. Please provide a detailed descri
     @property
     def needs_review(self):
 
-        if self.status.name == 'Archived':
+        if self.status.name in ['Archived', 'Expired', ]:
             return False
-
-        now = datetime.datetime.now(datetime.timezone.utc)
 
         if self.force_review is True:
             return True
@@ -113,18 +111,23 @@ We do not have information about your research. Please provide a detailed descri
         if self.requires_review is False:
             return False
 
-        if self.projectreview_set.exists():
-            last_review = self.projectreview_set.order_by('-created')[0]
-            last_review_over_365_days = (now - last_review.created).days > 365
-        else:
-            last_review = None
+        return False
 
-        days_since_creation = (now - self.created).days
+    @property
+    def can_be_reviewed(self):
+        if self.status.name in ['Archived', 'Denied', ]:
+            return False
 
-        if days_since_creation > 365 and last_review is None:
-            return True
+        if self.force_review is True:
+            return False
 
-        if last_review and last_review_over_365_days:
+        if not PROJECT_ENABLE_PROJECT_REVIEW:
+            return False
+
+        if self.requires_review is False:
+            return False
+
+        if self.expires_in <= 30:
             return True
 
         return False
