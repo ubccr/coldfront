@@ -23,6 +23,7 @@ urlpatterns = [
     path('project-review-complete/<int:project_review_pk>/', project_views.ProjectReviewCompleteView.as_view(),
          name='project-review-complete'),
     path('project-review/<int:pk>/email', project_views.ProjectReivewEmailView.as_view(), name='project-review-email'),
+    path('join-list/', project_views.ProjectJoinRequestListView.as_view(), name='project-join-request-list'),
 
 ]
 
