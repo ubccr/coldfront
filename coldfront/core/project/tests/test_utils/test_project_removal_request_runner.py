@@ -379,8 +379,8 @@ class TestProjectRemovalRequestRunner(TestCase):
 
     def test_manager_removal_request_given_multiple_managers(self):
         """
-        Testing when a PI requests a user to be removed given that the
-        user has a past completed removal request for the project
+        Testing when a PI requests to remove a manager given that
+        there are multuple managers
         """
 
         manager2 = User.objects.create(
@@ -478,3 +478,73 @@ class TestProjectRemovalRequestRunner(TestCase):
         self.assertEqual(error_messages[0], test_message)
         self.assertEqual(len(success_messages), 0)
         self.assertEqual(len(error_messages), 1)
+
+    def test_normal_user_self_removal_request_pi_no_notifications(self):
+        """
+        Testing when a single user self requests to be removed and the PI
+        has enable_notifications=False
+        """
+
+        self.pi1.enable_notifications = False
+        self.pi1.save()
+
+        self.assertFalse(self.pi1.enable_notifications)
+
+        # Test project user status before removal
+        self.assertEqual(self.project1.projectuser_set.get(
+            user=self.user1).status.name,
+                         'Active')
+
+        request_runner = ProjectRemovalRequestRunner(
+            self.user1, self.user1, self.project1)
+        removal_request = request_runner.run()
+        success_messages, error_messages = request_runner.get_messages()
+
+        # testing if a removal request was made
+        self.assertIsNotNone(removal_request)
+
+        # testing removal request attributes
+        self.assertEqual(removal_request.project_user,
+                         self.project1.projectuser_set.get(user=self.user1))
+        self.assertEqual(removal_request.requester, self.user1)
+        self.assertIsNone(removal_request.completion_time)
+        self.assertEqual(removal_request.status.name, 'Pending')
+
+        # check messages
+        test_message = f'Successfully created project removal request for ' \
+                       f'user {self.user1.username}.'
+        self.assertEqual(success_messages[0], test_message)
+        self.assertEqual(len(success_messages), 1)
+        self.assertEqual(len(error_messages), 0)
+
+        # Test project user status
+        self.assertEqual(self.project1.projectuser_set.get(
+            user=self.user1).status.name,
+                         'Pending - Remove')
+
+        # send email to admins, pis and managers for self removal
+        request_runner.send_emails()
+        manager_pi_queryset = self.project1.projectuser_set.filter(
+            role__name__in=['Manager', 'Principal Investigator'],
+            status__name='Active',
+            enable_notifications=True).exclude(user=removal_request.requester)
+
+        email_to_list = [proj_user.user.email for proj_user in manager_pi_queryset]
+        self.assertEqual(len(mail.outbox), len(manager_pi_queryset) + 1)
+
+        email_body = f'{self.user1.first_name} {self.user1.last_name} of ' \
+                     f'Project {self.project1.name} has requested to remove ' \
+                     f'{self.user1.first_name} {self.user1.last_name} ' \
+                     f'from {self.project1.name}'
+        email_body_admin = f'There is a new request to remove ' \
+                           f'{self.user1.first_name} {self.user1.last_name} ' \
+                           f'from {self.project1.name}.'
+
+        for email in mail.outbox:
+            if email.to[0] in settings.EMAIL_ADMIN_LIST:
+                self.assertIn(email_body_admin, email.body)
+            else:
+                self.assertIn(email_body, email.body)
+                self.assertIn(email.to[0], email_to_list)
+            self.assertNotEqual(email.to, self.pi1.email)
+            self.assertEqual(settings.EMAIL_SENDER, email.from_email)
