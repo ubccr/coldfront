@@ -49,7 +49,7 @@ We do not have information about your research. Please provide a detailed descri
     status = models.ForeignKey(ProjectStatusChoice, on_delete=models.CASCADE)
     force_review = models.BooleanField(default=False)
     requires_review = models.BooleanField(default=True)
-    max_managers = models.IntegerField(default=3)
+    max_managers = models.IntegerField()
     history = HistoricalRecords()
 
     def clean(self):

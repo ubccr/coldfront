@@ -17,6 +17,7 @@ CENTER_BASE_URL = ENV.str('CENTER_BASE_URL', default='')
 # Enable Project Review
 #------------------------------------------------------------------------------
 PROJECT_ENABLE_PROJECT_REVIEW = ENV.bool('PROJECT_ENABLE_PROJECT_REVIEW', default=True)
+PROJECT_DEFAULT_MAX_MANAGERS = ENV.int('PROJECT_DEFAULT_MAX_MANAGERS', default=3)
 
 #------------------------------------------------------------------------------
 # Allocation related

@@ -55,6 +55,9 @@ ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
     'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
 ALLOCATION_DEFAULT_ALLOCATION_LENGTH = import_from_settings(
     'ALLOCATION_DEFAULT_ALLOCATION_LENGTH', 365)
+PROJECT_DEFAULT_MAX_MANAGERS = import_from_settings(
+    'PROJECT_DEFAULT_MAX_MANAGERS', 3
+)
 
 if EMAIL_ENABLED:
     EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
@@ -472,6 +475,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         project_obj = form.save(commit=False)
         form.instance.pi = self.request.user
         form.instance.status = ProjectStatusChoice.objects.get(name='New')
+        form.instance.max_managers = PROJECT_DEFAULT_MAX_MANAGERS
         project_obj.save()
         self.object = project_obj
 
