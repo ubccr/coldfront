@@ -1088,3 +1088,11 @@ class VectorProjectReviewSetupForm(forms.Form):
             raise forms.ValidationError(
                 f'A project with name {final_name} already exists.')
         return final_name
+
+
+class JoinRequestSearchForm(forms.Form):
+    project_name = forms.CharField(label='Project Name',
+                                   max_length=100, required=False)
+    username = forms.CharField(
+        label='Username', max_length=100, required=False)
+    email = forms.CharField(label='Email', max_length=100, required=False)
