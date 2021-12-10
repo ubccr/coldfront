@@ -105,12 +105,6 @@ We do not have information about your research. Please provide a detailed descri
         if self.force_review is True:
             return True
 
-        if not PROJECT_ENABLE_PROJECT_REVIEW:
-            return False
-
-        if self.requires_review is False:
-            return False
-
         return False
 
     @property
