@@ -27,7 +27,9 @@
 <script>
   $('[name="request_access"]').on('click', function(event) {
     var pk = event.target.id;
-    $('#' + pk).text('Sending...');
+    $('#' + pk).html(
+      '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Sending...'
+    );
     $('#' + pk).prop('disabled', true);
     $('#' + pk).blur()
     $.ajax({
