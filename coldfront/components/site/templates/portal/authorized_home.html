@@ -54,13 +54,15 @@
               {% elif project.status.name in 'Archived, Denied, Expired' %}
                 <td class="text-danger">
                   {{ project.status.name }}
-                  {% if project.status.name == 'Expired' %}
-                    <a href="{% url 'project-review' project.pk %}">
-                      <span class="badge badge-warning">
-                        <i class="fas fa-redo-alt" aria-hidden="true"></i>
-                        Click to renew
-                      </span>
-                    </a>
+                  {% if user.username in project.list_of_manager_usernames %}
+                    {% if project.status.name == 'Expired' %}
+                      <a href="{% url 'project-review' project.pk %}">
+                        <span class="badge badge-warning">
+                          <i class="fas fa-redo-alt" aria-hidden="true"></i>
+                          Click to renew
+                        </span>
+                      </a>
+                    {% endif %}
                   {% endif %}
                 </td>
               {% else %}

@@ -162,7 +162,19 @@ Project List
                 <td class="text-success">{{ project.status.name}}</td>
               {% endif %}
             {% elif project.status.name in 'Archived, Denied, Expired' %}
-              <td class="text-danger">{{ project.status.name }}</td>
+              <td class="text-danger">
+                {{ project.status.name }}
+                  {% if user.username in project.list_of_manager_usernames %}
+                    {% if project.status.name == 'Expired' %}
+                      <a href="{% url 'project-review' project.pk %}">
+                        <span class="badge badge-warning">
+                          <i class="fas fa-redo-alt" aria-hidden="true"></i>
+                          Click to renew
+                        </span>
+                      </a>
+                    {% endif %}
+                  {% endif %}
+              </td>
             {% else %}
               <td class="text-info">{{ project.status.name }}</td>
             {% endif %}
