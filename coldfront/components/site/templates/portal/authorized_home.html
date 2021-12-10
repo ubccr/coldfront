@@ -28,21 +28,25 @@
               {% if project.status.name == 'Active' %}
                 {% if project.can_be_reviewed %}
                   <td class="text-warning">{{ project.status.name }}
-                    <a href="{% url 'project-review' project.pk %}">
-                      <span class="badge badge-warning">
-                        <i class="fas fa-redo-alt" aria-hidden="true"></i>
-                        Expires in {{ project.expires_in }} day{{ project.expires_in|pluralize }} - click to renew
-                      </span>
-                    </a>
+                    {% if user.username in project.list_of_manager_usernames %}
+                      <a href="{% url 'project-review' project.pk %}">
+                        <span class="badge badge-warning">
+                          <i class="fas fa-redo-alt" aria-hidden="true"></i>
+                          Expires in {{ project.expires_in }} day{{ project.expires_in|pluralize }} - click to renew
+                        </span>
+                      </a>
+                    {% endif %}
                   </td>
                 {% elif project.needs_review %}
                   <td class="text-danger">{{ project.status.name }}
-                    <a href="{% url 'project-review' project.pk %}">
-                      <span class="badge badge-warning">
-                        <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-                        Needs Review - click to review
-                      </span>
-                    </a>
+                    {% if user.username in project.list_of_manager_usernames %}
+                      <a href="{% url 'project-review' project.pk %}">
+                        <span class="badge badge-warning">
+                          <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                          Needs Review - click to review
+                        </span>
+                      </a>
+                    {% endif %}
                   </td>
                 {% else %}
                   <td class="text-success">{{ project.status.name}}</td>
