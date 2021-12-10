@@ -146,7 +146,9 @@ TEMPLATES = [
 
 SESSION_COOKIE_AGE = 60 * 15
 SESSION_SAVE_EVERY_REQUEST = True
-SESSION_COOKIE_SAMESITE = 'Strict'
+# Setting "SameSite" to "Strict" wipes out the session state written by
+# django-allauth, causing OAuth2 callbacks to fail.
+SESSION_COOKIE_SAMESITE = 'Lax'
 
 WSGI_APPLICATION = 'coldfront.config.wsgi.application'
 
