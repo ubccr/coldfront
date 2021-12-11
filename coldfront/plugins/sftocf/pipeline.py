@@ -187,6 +187,7 @@ class StarFishQuery:
         logger.debug(response)
         return response["query_id"]
 
+
     # 4. return query results
     def return_results_once_prepared(self, sec=3):
         logger.debug("return_results_once_prepared")
@@ -255,10 +256,11 @@ class ColdFrontDB:
                     server_tier = content['server'] + "/" + content['tier']
                     self.update_usage(statdict, server_tier, dryrun=dryrun)
                 except Exception as e:
-                    logger.debug("EXCEPTION FOR ENTRY: {}".format(e),  exc_info=True)
+                    logger.debug("EXCEPTION FOR ENTRY: {}".format(e), exc_info=True)
                     errors = True
             if not errors and clean == True and dryrun == False:
                     os.remove(f)
+
 
     def generate_project_resource_dict(self):
         """
@@ -428,7 +430,7 @@ def collect_costperuser(ifx_uid, lab_name):
 # rate
 
 def use_zone(project):
-    # if zone flag to be named is database, return True. Else, return False.
+    # if zone flag to be named is in database, return True. Else, return False.
     return False
 
 def clean_data_dir():
