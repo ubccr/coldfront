@@ -41,6 +41,13 @@ svp = {
   }
 }
 
+def confirm_dirpath_exists(dpath):
+    isExist = os.path.exists(dpath)
+    if not isExist:
+      os.makedirs(path)
+      logger.debug(f"created new directory {dpath}")
+
+
 datadir = "./coldfront/plugins/sftocf/data/"
 confirm_dirpath_exists(datadir)
 
@@ -84,7 +91,6 @@ class StarFishServer:
         """ Generate a list of the volumes available on the server.
         """
         logger.debug("get_volume_names")
-        vols_paths = {}
         stor_url = self.api_url + "storage/"
         response = return_get_json(stor_url, self.headers)
         volnames = [i["name"] for i in response["items"]]
@@ -121,10 +127,10 @@ class StarFishServer:
         -------
         query : Query class object
         """
-        query = StarFishQuery(
+        q = StarFishQuery(
             self.headers, self.api_url, query, group_by, volpath, sec=sec
         )
-        return query
+        return q
 
     def get_vol_user_membership(self, volume):
         logger.debug("get_vol_user_membership")
@@ -335,12 +341,6 @@ def read_json(filepath):
         data = json.loads(myfile.read())
     return data
 
-def confirm_dirpath_exists(dpath):
-    isExist = os.path.exists(dpath)
-    if not isExist:
-      os.makedirs(path)
-      logger.debug(f"created new directory {dpath}")
-
 
 def collect_starfish_usage(server, volume, volumepath, projects):
     """
@@ -367,9 +367,10 @@ def collect_starfish_usage(server, volume, volumepath, projects):
         p = l[1]
         r = l[2]
         lab_volpath = volumepath# + "/{}".format(p)
-        queryline = "type=f groupname={}".format(p)
+        zone_or_groupname = "zone" if use_zone(p) else "groupname"
+        queryline = "type=f {}={}".format(zone_or_groupname, p)
         usage_query = server.create_query(
-            queryline, "username, groupname", f"{volume}:{lab_volpath}", sec=2
+            queryline, f"username, {zone_or_groupname}", f"{volume}:{lab_volpath}", sec=2
         )
         data = usage_query.result
         logger.debug("usage_query.result:{}".format(data))
@@ -425,6 +426,10 @@ def collect_costperuser(ifx_uid, lab_name):
 # author_id
 # updated_by_id
 # rate
+
+def use_zone(project):
+    # if zone flag to be named is database, return True. Else, return False.
+    return False
 
 def clean_data_dir():
     """Remove json from data folder that's more than a week old
