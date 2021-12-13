@@ -1872,7 +1872,7 @@ class ProjectJoinListView(ProjectListView, UserPassesTestMixin):
                                         ProjectUserRemovalRequest.objects.filter(
                                             Q(project_user__user__username=self.request.user.username) &
                                             Q(status__name='Pending'))])
-        print(pending_removal_requests)
+
         not_joinable = set.union(
             already_pending_or_active,
             is_part_of_pending_savio_project_request,
