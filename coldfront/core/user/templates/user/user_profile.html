@@ -235,7 +235,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
       <i class="far fa-user-circle"></i>
       Link Your Personal Account
       <div class="float-right">
-        {% if linking_request and linking_request.status.name == 'Pending' %}
+        {% if not has_cluster_access or linking_request and linking_request.status.name == 'Pending' %}
           <a class="btn btn-secondary float-right disabled" id="request-linking-email-button">
             <i class="fas fa-paper-plane"></i>
             Request Linking Email
@@ -253,10 +253,16 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
     </div>
     <div class="card-body">
       <p>
-        You may request a new invitation to link an external identity (e.g.,
-        your personal email account or CalNet account) to your cluster account.
-        Once requested, you will receive an email containing instructions on
-        how to link your accounts.
+        If you have an active cluster account, you may request a new invitation
+        to link an external identity (e.g., your personal email account or
+        CalNet account) to it, allowing you to manage one-time password (OTP)
+        tokens. Once requested, you will receive an email containing
+        instructions on how to link your accounts.
+      </p>
+      <p>
+        If you have an LBL account, you do not need to link an external
+        identity. Instead, you can manage OTP tokens by logging into LBL
+        <a href="https://identity.lbl.gov/otptokens/hpccluster">here</a>.
       </p>
       <p>
         Emails are sent periodically. If you have not received the email after
