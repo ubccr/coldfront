@@ -52,7 +52,7 @@ Review Project
     <div class="card-body">
       {% if formset %}
       <div class="card-text">
-        <p>Please remove any users who no longer need access to these allocations. If you do not renew an allocation it will expire on its current expire date.</p>
+        <p>Please remove any users who no longer need access to these allocations. If you do not renew an allocation it will expire on its current end date.</p>
       </div>
       <div class="table-responsive">
         <table class="table table-bordered table-sm">
@@ -86,7 +86,7 @@ Review Project
       </div>
       {{ formset.management_form }}
       {% else %}
-        <p class="alert alert-info">This project has no allocations!</p>
+        <p class="alert alert-info">This project has no active or expired allocations!</p>
       {% endif %}
     </div>
   </div>
