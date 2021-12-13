@@ -213,7 +213,7 @@ class AllocationRequestClusterAccountForm(forms.Form):
 class AllocationClusterAccountUpdateStatusForm(forms.Form):
 
     STATUS_CHOICES = [
-        ('Pending', 'Pending - Add'),
+        ('Pending - Add', 'Pending - Add'),
         ('Processing', 'Processing'),
     ]
 
