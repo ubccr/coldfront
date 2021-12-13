@@ -211,15 +211,14 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         else:
             context['is_allowed_to_update_project'] = False
 
-        # filter based on if user was removed from project but not allocation
+        # Filter users by whether they have been removed from the allocation.
         allocation_user_status_choice_removed = \
             AllocationUserStatusChoice.objects.get(name='Removed')
         context['allocation_users'] = \
             allocation_users.exclude(status=allocation_user_status_choice_removed)
         context['allocation_users_removed_from_proj'] = \
             allocation_users.filter(status=allocation_user_status_choice_removed)
-        print(context['allocation_users'])
-        print(context['allocation_users_removed_from_proj'])
+
         if self.request.user.is_superuser:
             notes = allocation_obj.allocationusernote_set.all()
         else:
