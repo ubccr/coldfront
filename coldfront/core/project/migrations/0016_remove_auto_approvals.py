@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('project', '0014_project_allocation_request_rename_mou_to_recharge'),
+        ('project', '0015_project_user_removal_request'),
     ]
 
     operations = [
