@@ -1,11 +1,12 @@
 from coldfront.core.user.models import EmailAddress
+from coldfront.core.user.tests.utils import TestUserBase
 from django.contrib.auth.models import User
 from django.contrib.messages import get_messages
-from django.test import Client, TestCase
+from django.test import Client
 from django.urls import reverse
 
 
-class TestUpdateUserPrimaryEmailAddress(TestCase):
+class TestUpdateUserPrimaryEmailAddress(TestUserBase):
     """
     A class for testing the view for updating a user's
     primary email address'.
@@ -13,6 +14,8 @@ class TestUpdateUserPrimaryEmailAddress(TestCase):
 
     def setUp(self):
         """Set up test data."""
+        super().setUp()
+
         self.password = 'password'
 
         self.user1 = User.objects.create(

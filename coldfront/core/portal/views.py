@@ -16,6 +16,8 @@ from coldfront.core.portal.utils import (generate_allocations_chart_data,
                                          generate_resources_chart_data,
                                          generate_total_grants_by_agency_chart_data)
 from coldfront.core.project.models import Project, ProjectUserJoinRequest
+from coldfront.core.project.models import ProjectUserJoinRequest
+from coldfront.core.project.models import ProjectUserRemovalRequest
 
 
 # from coldfront.core.publication.models import Publication
@@ -30,7 +32,7 @@ def home(request):
         project_list = Project.objects.filter(
             (Q(status__name__in=['New', 'Active', ]) &
              Q(projectuser__user=request.user) &
-             Q(projectuser__status__name__in=['Active', ]))
+             Q(projectuser__status__name__in=['Active', 'Pending - Remove']))
         ).distinct().order_by('-created')
 
 
@@ -88,6 +90,13 @@ def home(request):
     if 'coldfront.plugins.system_monitor' in settings.EXTRA_APPS:
         from coldfront.plugins.system_monitor.utils import get_system_monitor_context
         context.update(get_system_monitor_context())
+
+    context['pending_removal_request_projects'] = \
+        [removal_request.project_user.project.name
+         for removal_request in
+         ProjectUserRemovalRequest.objects.filter(
+             Q(project_user__user__username=request.user.username) &
+             Q(status__name='Pending'))]
 
     return render(request, template_name, context)
 

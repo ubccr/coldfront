@@ -1,14 +1,16 @@
 from coldfront.core.user.models import EmailAddress
+from coldfront.core.user.tests.utils import TestUserBase
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.test import TestCase
 
 
-class TestEmailAddress(TestCase):
+class TestEmailAddress(TestUserBase):
     """A class for testing the EmailAddress model."""
 
     def setUp(self):
         """Set up test data."""
+        super().setUp()
+
         self.user = User.objects.create(
             email='user@email.com',
             first_name='First',
