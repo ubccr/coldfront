@@ -19,6 +19,7 @@ class Command(BaseCommand):
             'can_review_pending_project_reviews',
             'can_view_all_allocations',
             'can_view_all_projects',
+            'view_projectuserremovalrequest',
         ]
 
         for perm_codename in perm_codename_lst:

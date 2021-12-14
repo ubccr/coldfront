@@ -124,8 +124,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context = super().get_context_data(**kwargs)
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
-        allocation_users = allocation_obj.allocationuser_set.exclude(
-            status__name__in=['Removed']).order_by('user__username')
+        allocation_users = allocation_obj.allocationuser_set.order_by('user__username')
 
         # Manually display "Service Units" for each user if applicable.
         # TODO: Avoid doing this manually.
@@ -151,6 +150,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                     except AttributeError:
                         pass
                 allocation_user_su_usages[username] = usage
+
         context['has_service_units'] = has_service_units
         context['allocation_user_su_usages'] = allocation_user_su_usages
 
@@ -210,7 +210,14 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                 context['is_allowed_to_update_project'] = False
         else:
             context['is_allowed_to_update_project'] = False
-        context['allocation_users'] = allocation_users
+
+        # Filter users by whether they have been removed from the allocation.
+        allocation_user_status_choice_removed = \
+            AllocationUserStatusChoice.objects.get(name='Removed')
+        context['allocation_users'] = \
+            allocation_users.exclude(status=allocation_user_status_choice_removed)
+        context['allocation_users_removed_from_proj'] = \
+            allocation_users.filter(status=allocation_user_status_choice_removed)
 
         if self.request.user.is_superuser:
             notes = allocation_obj.allocationusernote_set.all()
