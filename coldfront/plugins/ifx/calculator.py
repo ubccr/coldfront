@@ -2,10 +2,13 @@
 Custom billing calculator class for Coldfront
 '''
 import logging
-from functools import reduce
+from collections import defaultdict
 from decimal import Decimal
 from django.db import connection
+from django.utils import timezone
 from ifxbilling.calculator import BasicBillingCalculator
+from ifxbilling.models import Account, Product, ProductUsage
+from coldfront.core.allocation.models import Allocation
 
 
 logger = logging.getLogger(__name__)
@@ -15,6 +18,20 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
     '''
     Calculate and collect Allocation fractions so that billing can reflect the percentage of the Allocation used
     '''
+    def __init__(self):
+        '''
+        Setup a structure for calculating offer letter charges
+        '''
+        self.allocation_offer_letters = defaultdict(dict)
+        for allocation in Allocation.objects.all():
+            offer_letter_tb = allocation.get_attribute('Offer Letter')
+            if offer_letter_tb:
+                self.allocation_offer_letters[allocation.id]['offer_letter_tb'] = offer_letter_tb
+            offer_letter_code = allocation.get_attribute('Offer Letter Code')
+            if offer_letter_code:
+                self.allocation_offer_letters[allocation.id]['offer_letter_code'] = offer_letter_code
+
+
     def getRateDescription(self, rate):
         '''
         Text description of rate for use in txn rate and description.
@@ -76,6 +93,21 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
 
         # Round Decimal charge to nearest integer (pennies)
         charge = round(Decimal(rate.price) * quota * product_user_percent * percent / 100)
+
+        # Check for offer letter.  If so, remove the percent of the allocation represented by the offer letter and add to an accumulating charge.
+        # For example, if allocation is 2Tb and offer letter is 1Tb, remove half of the charge for this usage and apply to the offer_letter_charge
+        offer_letter_data = self.allocation_offer_letters.get(allocation.id)
+        if offer_letter_data:
+            allocation_subsidy_percent = offer_letter_data['offer_letter_tb'] / quota
+            if allocation_subsidy_percent > 1:
+                allocation_subsidy_percent = 1
+            allocation_subsidy = charge * allocation_subsidy_percent
+            charge = charge - allocation_subsidy
+            self.allocation_offer_letters[allocation.id]['offer_letter_charge'] += allocation_subsidy
+            self.allocation_offer_letters[allocation.id]['year'] = product_usage.year
+            self.allocation_offer_letters[allocation.id]['month'] = product_usage.month
+            self.allocation_offer_letters[allocation.id]['rate'] = rate
+
         dollar_charge = Decimal(charge / 100).quantize(Decimal("100.00"))
 
         description = f'${dollar_charge} for {percent_str}{product_user_percent.quantize(Decimal("100.000")) * 100}% of {quota} TB at ${dollar_price.quantize(Decimal(".01"))} per {rate.units}'
@@ -197,3 +229,73 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
         Get the organization from the allocation -> project -> project_organization
         '''
         return product_usage.organization
+
+    def finalize(self):
+        '''
+        Create billing records for offer letter charges.
+
+        The values accumulated for the offer letters are not persisted until this finalize method is run at the end.
+        If there are any errors in this process, the entire month has to be rerun.
+        '''
+        for allocation_id, offer_letter_data in self.allocation_offer_letters.items():
+            try:
+                allocation = Allocation.objects.get(id=allocation_id)
+            except Allocation.DoesNotExist:
+                raise Exception(f'Cannot find allocation for id {allocation_id} when processing offer letter data')
+
+            organization = allocation.project.projectorganization_set.first()
+            if not organization:
+                raise Exception(f'Unable to find an organization for the allocation {allocation} on project {allocation.project}')
+
+            try:
+                pi = organization.useraffiliation_set.get(role='pi').user
+            except Exception:
+                raise Exception(f'Unable to find PI for {organization}')
+
+
+            offer_letter_code = offer_letter_data.get('offer_letter_code')
+            if not offer_letter_code:
+                raise Exception(f'Unable to find offer letter code for allocation {allocation}')
+            try:
+                account = Account.objects.get(code=offer_letter_code)
+            except Account.DoesNotExist:
+                raise Exception(f'Unable to find offer letter code {offer_letter_code}')
+
+            offer_letter_tb = offer_letter_data.get('offer_letter_tb')
+            if not offer_letter_tb:
+                raise Exception(f'Offer letter for allocation {allocation} has no TB amount')
+            offer_letter_rate = offer_letter_data.get('rate')
+            if not offer_letter_rate:
+                raise Exception(f'Offer letter for allcation {allocation} has no rate')
+
+            year = offer_letter_data.get('year')
+            month = offer_letter_data.get('month')
+            if not year or not month:
+                raise Exception(f'Offer letter for allocation {allocation} needs both year and month')
+
+            offer_letter_product = Product.objects.get('Offer Letter Storage')
+
+            description = 'Offer letter subsidy'
+
+            try:
+                offer_letter_usage = ProductUsage.objects.create(
+                    product=offer_letter_product,
+                    year=year,
+                    month=month,
+                    start_date=timezone.now(),
+                    product_user=pi,
+                    product_description=description
+                )
+            except Exception as e:
+                raise Exception(f'Unable to create Offer Letter Usage: {e}')
+
+            charge = Decimal(offer_letter_rate.price) * offer_letter_tb
+            transactions_data = [
+                {
+                    'charge': charge,
+                    'description': description,
+                    'author': pi,
+                    'rate': self.getRateDescription(offer_letter_rate)
+                }
+            ]
+            self.createBillingRecordForUsage(offer_letter_usage, account, 100, year, month, description)
