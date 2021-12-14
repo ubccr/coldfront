@@ -4199,10 +4199,12 @@ class ProjectRemovalRequestCompleteStatusView(LoginRequiredMixin,
         messages.success(self.request, message)
 
         if EMAIL_ENABLED and status == 'Complete':
-            manager_pi_queryset = project_obj.projectuser_set.filter(
-                role__name__in=['Manager', 'Principal Investigator'],
-                status__name='Active',
+            pi_condition = Q(
+                role__name='Principal Investigator', status__name='Active',
                 enable_notifications=True)
+            manager_condition = Q(role__name='Manager', status__name='Active')
+            manager_pi_queryset = project_obj.projectuser_set.filter(
+                pi_condition | manager_condition)
 
             for proj_user in list(chain(manager_pi_queryset, [removed_user])):
                 curr_user = proj_user.user
