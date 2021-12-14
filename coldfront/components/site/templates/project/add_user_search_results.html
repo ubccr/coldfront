@@ -1,6 +1,6 @@
 {% load crispy_forms_tags %}
 
-<form action="{% url 'project-add-users' pk %}" method="post">
+<form action="{% url 'project-add-users' pk %}" method="post" id="postForm">
   {% csrf_token %}
   <div class="mb-3">
     {% if number_of_usernames_found %}
@@ -86,6 +86,9 @@
         </tbody>
       </table>
     </div>
+    <div>
+      <p id="id_manager_warning" class="alert alert-danger">You have too many managers selected. The max allowed managers on this project is {{ max_managers }}.</p>
+    </div>
     {{ formset.management_form }}
 
     <input id="q" type="hidden" name="q" value="{{user_search_string}}">
@@ -107,8 +110,40 @@
 </form>
 
 <script>
+  var current_num_managers = {{ current_num_managers | safe}}
+  var max_managers = {{ max_managers | safe }}
+
+  function checkNumManagers() {
+    var checked_users = $("input[name^='userform-']:checked");
+    var num_managers = 0;
+    for (var i=0; i < checked_users.length; i++) {
+      var name = checked_users[i].name.slice(0, -8) + 'role';
+      var role = $("select[name='" + name + "'] option:selected").text();
+      if (role === "Manager") {
+        num_managers += 1;
+      }
+    }
+
+    if (num_managers + current_num_managers > max_managers) {
+      $("button[type='submit']").prop('disabled', true);
+      $('#id_manager_warning').show()
+    } else {
+      $("button[type='submit']").prop('disabled', false);
+      $('#id_manager_warning').hide()
+    }
+  }
+
+  $('document').ready(function () {
+    $('#id_manager_warning').hide()
+  })
+
+  $("select[name^='userform-']").change(function() {
+    checkNumManagers();
+  });
+
   $("#selectAll").click(function () {
     $("input[name^='userform-']").prop('checked', $(this).prop('checked'));
+    checkNumManagers();
   });
 
   $("input[name^='userform-']").click(function (ele) {
@@ -116,6 +151,7 @@
     if ( id != "selectAll") {
       $("#selectAll").prop('checked', false);
     }
+    checkNumManagers();
   });
 
   $("#selectAllAllocations").click(function () {

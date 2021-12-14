@@ -697,6 +697,8 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         context['pk'] = pk
         context['help_text'] = help_text
         context['allocation_form'] = allocation_formset
+        context['current_num_managers'] = project_obj.get_current_num_managers()
+        context['max_managers'] = project_obj.max_managers
         return render(request, self.template_name, context)
 
 
