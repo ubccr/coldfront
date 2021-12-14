@@ -1595,7 +1595,6 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
             context['formset'] = formset
 
         context['allocation'] = allocation_obj
-        context['data_manager_exists'] = self.check_data_manager_exists(allocation_obj)
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
