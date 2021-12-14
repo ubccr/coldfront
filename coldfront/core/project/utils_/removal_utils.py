@@ -3,6 +3,7 @@ from coldfront.core.project.models import (ProjectUserRemovalRequestStatusChoice
                                            ProjectUserStatusChoice)
 from coldfront.core.utils.mail import send_email_template
 from coldfront.core.utils.common import import_from_settings
+from django.db.models import Q
 
 
 class ProjectRemovalRequestRunner(object):
@@ -87,14 +88,20 @@ class ProjectRemovalRequestRunner(object):
             support_email = import_from_settings('CENTER_HELP_EMAIL')
             email_admin_list = import_from_settings('EMAIL_ADMIN_LIST')
 
-            manager_pi_queryset = [x.user for x in self.proj_obj.projectuser_set.filter(
-                role__name__in=['Manager', 'Principal Investigator'],
-                status__name='Active',
-                enable_notifications=True).exclude(user=self.requester_obj)]
-
-            # send emails to user and all pis/managers that did not make request
-            for user in manager_pi_queryset + [self.user_obj] \
-                    if self.user_obj != self.requester_obj else manager_pi_queryset:
+            # Send emails to the removed user, the project's PIs (who have
+            # notifications enabled), and the project's managers. Exclude the
+            # user who made the request.
+            pi_condition = Q(
+                role__name='Principal Investigator', status__name='Active',
+                enable_notifications=True)
+            manager_condition = Q(role__name='Manager', status__name='Active')
+            manager_pi_queryset = self.proj_obj.projectuser_set.filter(
+                pi_condition | manager_condition).exclude(
+                    user=self.requester_obj)
+            users_to_notify = [x.user for x in manager_pi_queryset]
+            if self.user_obj != self.requester_obj:
+                users_to_notify.append(self.user_obj)
+            for user in users_to_notify:
                 template_context = {
                     'user_first_name': user.first_name,
                     'user_last_name': user.last_name,
@@ -106,26 +113,22 @@ class ProjectRemovalRequestRunner(object):
                     'signature': email_signature,
                     'support_email': support_email,
                 }
-
                 send_email_template(
                     'Project Removal Request',
                     'email/project_removal/project_removal.txt',
                     template_context,
                     email_sender,
-                    [user.email]
-                )
+                    [user.email])
 
-            # send email to admins
+            # Email cluster administrators.
             template_context = {
                 'user_first_name': self.user_obj.first_name,
                 'user_last_name': self.user_obj.last_name,
                 'project_name': self.proj_obj.name,
             }
-
             send_email_template(
                 'Project Removal Request',
                 'email/project_removal/project_removal_admin.txt',
                 template_context,
                 email_sender,
-                email_admin_list
-            )
+                email_admin_list)
