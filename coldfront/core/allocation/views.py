@@ -146,34 +146,24 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         for a in invalid_attributes:
             attributes_with_usage.remove(a)
 
-        if self.request.user.is_superuser:
-            context['is_allowed_to_update_project'] = True
-        elif allocation_obj.project.projectuser_set.filter(user=self.request.user).exists():
-            project_user = allocation_obj.project.projectuser_set.get(
-                user=self.request.user)
-            if project_user.role.name == 'Manager':
-                context['is_allowed_to_update_project'] = True
-            else:
-                context['is_allowed_to_update_project'] = False
-        else:
-            context['is_allowed_to_update_project'] = False
-
         context['guage_data'] = guage_data
         context['attributes_with_usage'] = attributes_with_usage
         context['attributes'] = attributes
 
         # Can the user update the project?
+        context['is_allowed_to_update_project'] = False
         if self.request.user.is_superuser:
             context['is_allowed_to_update_project'] = True
         elif allocation_obj.project.projectuser_set.filter(user=self.request.user).exists():
             project_user = allocation_obj.project.projectuser_set.get(
                 user=self.request.user)
             if project_user.role.name == 'Manager':
-                context['is_allowed_to_update_project'] = True
-            else:
-                context['is_allowed_to_update_project'] = False
-        else:
-            context['is_allowed_to_update_project'] = False
+                if allocation_obj.get_parent_resource.name == "Slate Project":
+                    if allocation_obj.data_manager == self.request.user.username:
+                        context['is_allowed_to_update_project'] = True
+                else:
+                    context['is_allowed_to_update_project'] = True
+
         context['allocation_users'] = allocation_users
 
         if self.request.user.is_superuser:
