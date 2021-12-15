@@ -65,7 +65,7 @@ class StarFishServer:
         # response.status_code
         response_json = response.json()
         token = response_json["token"]
-        logger.debug(f"response_json: {responsejson}\ntoken: {token}")
+        logger.debug(f"response_json: {response_json}\ntoken: {token}")
         return token
 
     def generate_headers(self):
