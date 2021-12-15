@@ -122,6 +122,7 @@ class AllocationForm(forms.Form):
         super().__init__(*args, **kwargs)
         project_obj = get_object_or_404(Project, pk=project_pk)
         self.project_obj = project_obj
+        self.request_user = request_user
         self.fields['resource'].queryset = get_user_resources(request_user)
         user_query_set = project_obj.projectuser_set.select_related('user').filter(
             status__name__in=['Active', ])
@@ -225,6 +226,7 @@ class AllocationForm(forms.Form):
     def clean(self):
         cleaned_data = super().clean()
         resource_obj = cleaned_data.get('resource')
+        users = cleaned_data.get('users')
         resources = {
             'Carbonate DL': {
                 'leverage_multiple_gpus': cleaned_data.get('leverage_multiple_gpus'),
@@ -415,6 +417,12 @@ class AllocationForm(forms.Form):
                         self.add_error(key, 'Username(s) {} are not valid'.format(
                             ', '.join(invalid_users)
                             ))
+                        continue
+            elif resource_name == 'Slate Project':
+                if key == 'data_manager':
+                    if users and value != self.request_user.username:
+                        raise_error = True
+                        self.add_error('users', 'Only the data manager can add users to a Slate Project resource')
                         continue
 
         if raise_error:

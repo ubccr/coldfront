@@ -506,6 +506,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         project_obj = get_object_or_404(
             Project, pk=self.kwargs.get('project_pk'))
         context['project'] = project_obj
+        context['request_user_username'] = {'username': self.request.user.username}
 
         user_resources = get_user_resources(self.request.user)
         resource_descriptions = {}
@@ -1122,21 +1123,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         usernames = form_data.get('users')
         if resource_obj.name == 'Slate Project':
-            # If the requestor is not a data manager then do not add any selected users other than
-            # the provided data manager's username.
-            if usernames and data_manager != self.request.user.username:
-                try:
-                    usernames.remove(data_manager)
-                except ValueError:
-                    pass
-
-                messages.warning(
-                    self.request,
-                    'Only the data manager can add users to Slate Project. Users {} were not added'
-                    .format(', '.join(usernames))
-                )
-                usernames = []
-
             usernames.append(data_manager)
 
         usernames.append(project_obj.pi.username)
