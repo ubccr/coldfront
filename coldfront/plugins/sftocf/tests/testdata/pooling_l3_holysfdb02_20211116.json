@@ -1,0 +1,72 @@
+{
+    "contents": [
+        {
+            "count": 17135,
+            "groupname": "pooling_l3",
+            "size_sum": 936311643,
+            "size_sum_hum": "892.9MiB",
+            "username": "amayenchacon"
+        },
+        {
+            "count": 1497,
+            "groupname": "pooling_l3",
+            "size_sum": 41296399,
+            "size_sum_hum": "39.4MiB",
+            "username": "jgenkinger"
+        },
+        {
+            "count": 2751,
+            "groupname": "pooling_l3",
+            "size_sum": 148214802,
+            "size_sum_hum": "141.3MiB",
+            "username": "ndimou"
+        },
+        {
+            "count": 4,
+            "groupname": "pooling_l3",
+            "size_sum": 3498,
+            "size_sum_hum": "3.4KiB",
+            "username": "root"
+        },
+        {
+            "count": 8903,
+            "groupname": "pooling_l3",
+            "size_sum": 780269394,
+            "size_sum_hum": "744.1MiB",
+            "username": "ruisong"
+        },
+        {
+            "count": 3599655,
+            "groupname": "pooling_l3",
+            "size_sum": 750595838766,
+            "size_sum_hum": "699.0GiB",
+            "username": "swarner"
+        },
+        {
+            "count": 736982,
+            "groupname": "pooling_l3",
+            "size_sum": 181721885334,
+            "size_sum_hum": "169.2GiB",
+            "username": "syaun"
+        },
+        {
+            "count": 589,
+            "groupname": "pooling_l3",
+            "size_sum": 24354530713,
+            "size_sum_hum": "22.7GiB",
+            "username": "thou"
+        },
+        {
+            "count": 9735,
+            "groupname": "pooling_l3",
+            "size_sum": 3200504344,
+            "size_sum_hum": "3.0GiB",
+            "username": "yyue"
+        }
+    ],
+    "date": "20211116",
+    "path": "",
+    "server": "holysfdb02",
+    "tier": "tier1",
+    "volume": "holy-isilon"
+}

@@ -1,0 +1,23 @@
+{
+    "contents": [
+        {
+            "count": 1,
+            "groupname": "tingley_harvardx_l3",
+            "size_sum": 0,
+            "size_sum_hum": "0B",
+            "username": "rjsingh"
+        },
+        {
+            "count": 13067323,
+            "groupname": "tingley_harvardx_l3",
+            "size_sum": 24700411577417,
+            "size_sum_hum": "22.5TiB",
+            "username": "slduncan"
+        }
+    ],
+    "date": "20211116",
+    "path": "",
+    "server": "holysfdb02",
+    "tier": "tier1",
+    "volume": "holy-isilon"
+}

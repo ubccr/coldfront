@@ -1,0 +1,135 @@
+{
+    "contents": [
+        {
+            "count": 441,
+            "groupname": "holman_lab",
+            "size_sum": 5232836,
+            "size_sum_hum": "5.0MiB",
+            "username": "akrolewski"
+        },
+        {
+            "count": 918353,
+            "groupname": "holman_lab",
+            "size_sum": 485827678065,
+            "size_sum_hum": "452.5GiB",
+            "username": "alexhp"
+        },
+        {
+            "count": 14074004,
+            "groupname": "holman_lab",
+            "size_sum": 29603465801659,
+            "size_sum_hum": "26.9TiB",
+            "username": "cchen"
+        },
+        {
+            "count": 1929,
+            "groupname": "holman_lab",
+            "size_sum": 99421312,
+            "size_sum_hum": "94.8MiB",
+            "username": "coati"
+        },
+        {
+            "count": 22,
+            "groupname": "holman_lab",
+            "size_sum": 157198,
+            "size_sum_hum": "153.5KiB",
+            "username": "danmurray15"
+        },
+        {
+            "count": 87781,
+            "groupname": "holman_lab",
+            "size_sum": 47262684203,
+            "size_sum_hum": "44.0GiB",
+            "username": "dhernandez"
+        },
+        {
+            "count": 1,
+            "groupname": "holman_lab",
+            "size_sum": 329,
+            "size_sum_hum": "329B",
+            "username": "dragozzine"
+        },
+        {
+            "count": 9572131,
+            "groupname": "holman_lab",
+            "size_sum": 4784587284440,
+            "size_sum_hum": "4.4TiB",
+            "username": "edlin"
+        },
+        {
+            "count": 2209,
+            "groupname": "holman_lab",
+            "size_sum": 26227803,
+            "size_sum_hum": "25.0MiB",
+            "username": "induni"
+        },
+        {
+            "count": 3,
+            "groupname": "holman_lab",
+            "size_sum": 383801,
+            "size_sum_hum": "374.8KiB",
+            "username": "jclindaniel"
+        },
+        {
+            "count": 17940,
+            "groupname": "holman_lab",
+            "size_sum": 283388132654,
+            "size_sum_hum": "263.9GiB",
+            "username": "jkurlander"
+        },
+        {
+            "count": 501245,
+            "groupname": "holman_lab",
+            "size_sum": 543939323751,
+            "size_sum_hum": "506.6GiB",
+            "username": "kdeck"
+        },
+        {
+            "count": 325977234,
+            "groupname": "holman_lab",
+            "size_sum": 119194261296890,
+            "size_sum_hum": "108.4TiB",
+            "username": "matthewjohnpayne"
+        },
+        {
+            "count": 4254146,
+            "groupname": "holman_lab",
+            "size_sum": 24395004032151,
+            "size_sum_hum": "22.2TiB",
+            "username": "mholman"
+        },
+        {
+            "count": 192,
+            "groupname": "holman_lab",
+            "size_sum": 295440820,
+            "size_sum_hum": "281.8MiB",
+            "username": "mlackner"
+        },
+        {
+            "count": 418862,
+            "groupname": "holman_lab",
+            "size_sum": 17124781238,
+            "size_sum_hum": "15.9GiB",
+            "username": "pavlos"
+        },
+        {
+            "count": 18663,
+            "groupname": "holman_lab",
+            "size_sum": 169512166839,
+            "size_sum_hum": "157.9GiB",
+            "username": "shadden"
+        },
+        {
+            "count": 13,
+            "groupname": "holman_lab",
+            "size_sum": 79107100,
+            "size_sum_hum": "75.4MiB",
+            "username": "zmark"
+        }
+    ],
+    "date": "20211214",
+    "path": "HDD/C/LABS",
+    "server": "holysfdb01",
+    "tier": "tier0",
+    "volume": "holylfs04"
+}
