@@ -50,10 +50,6 @@ We do not have information about your research. Please provide a detailed descri
     requires_review = models.BooleanField(default=True)
     history = HistoricalRecords()
 
-    JOINS_AUTO_APPROVAL_DELAY = datetime.timedelta(hours=6)
-    joins_auto_approval_delay = models.DurationField(
-        default=JOINS_AUTO_APPROVAL_DELAY)
-
     def clean(self):
         if 'Auto-Import Project'.lower() in self.title.lower():
             raise ValidationError(
@@ -61,9 +57,6 @@ We do not have information about your research. Please provide a detailed descri
 
         if 'We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!' in self.description:
             raise ValidationError('You must update the project description.')
-
-        if self.joins_auto_approval_delay < datetime.timedelta():
-            raise ValidationError('Delay must be non-negative.')
 
     def save(self, *args, **kwargs):
         """If the Project previously existed and its status has changed,

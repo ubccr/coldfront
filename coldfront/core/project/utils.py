@@ -67,98 +67,37 @@ def add_project_user_status_choices(apps, schema_editor):
         ProjectUserStatusChoice.objects.get_or_create(name=choice)
 
 
-def auto_approve_project_join_requests():
-    """Approve each request to join a Project that has completed its
-    delay period. Return the results of each approval attempt, where
-    each result has a 'success' boolean and a string message.
-
-    Because users are allowed to join 'New' Projects, only requests that
-    are for 'Active' projects should be considered. Handling elsewhere
-    should replace all join requests for a Project when it goes from
-    'New' to 'Active'."""
-    JoinAutoApprovalResult = namedtuple(
-        'JoinAutoApprovalResult', 'success message')
-
-    pending_status = ProjectUserStatusChoice.objects.get(
-        name='Pending - Add')
-    active_status = ProjectUserStatusChoice.objects.get(name='Active')
-    project_active_status = ProjectStatusChoice.objects.get(name='Active')
-
-    project_user_objs = ProjectUser.objects.prefetch_related(
-        'project', 'project__allocation_set', 'projectuserjoinrequest_set'
-    ).filter(status=pending_status, project__status=project_active_status)
-
-    now = utc_now_offset_aware()
-    results = []
-
-    for project_user_obj in project_user_objs:
-        project_obj = project_user_obj.project
-        user_obj = project_user_obj.user
-
-        # Retrieve the latest ProjectUserJoinRequest for the ProjectUser.
-        try:
-            queryset = project_user_obj.projectuserjoinrequest_set
-            join_request = queryset.latest('created')
-        except ProjectUserJoinRequest.DoesNotExist:
-            message = (
-                f'ProjectUser {project_user_obj.pk} has no corresponding '
-                f'ProjectUserJoinRequest.')
-            logger.error(message)
-            results.append(
-                JoinAutoApprovalResult(success=False, message=message))
-            continue
-
-        # If the request has not yet completed the Project's delay period,
-        # continue to the next one. Otherwise, auto-approve the user and
-        # request cluster access.
-        delay = project_obj.joins_auto_approval_delay
-        if join_request.created + delay > now:
-            continue
-
-        # Set the ProjectUser's status to 'Active'.
-        project_user_obj.status = active_status
-        project_user_obj.save()
-
-        # Request cluster access.
-        request_runner = ProjectClusterAccessRequestRunner(project_user_obj)
-        runner_result = request_runner.run()
-        success = runner_result.success
-        if success:
-            message = (
-                f'Created a cluster access request for User {user_obj.pk} '
-                f'under Project {project_obj.pk}.')
-        else:
-            message = runner_result.error_message
-
-        results.append(
-            JoinAutoApprovalResult(success=success, message=message))
-
-        # Send an email to the user.
-        try:
-            send_project_join_request_approval_email(
-                project_obj, project_user_obj)
-        except Exception as e:
-            message = 'Failed to send notification email. Details:'
-            logger.error(message)
-            logger.exception(e)
-
-        # If the Project is a Vector project, automatically add the User to the
-        # designated Savio project for Vector users.
-        if project_obj.name.startswith('vector_'):
-            try:
-                add_vector_user_to_designated_savio_project(user_obj)
-            except Exception as e:
-                message = (
-                    f'Encountered unexpected exception when automatically '
-                    f'providing User {user_obj.pk} with access to Savio. '
-                    f'Details:')
-                logger.error(message)
-                logger.exception(e)
-
-    return results
+def get_project_compute_resource_name(project_obj):
+    """Return the name of the Compute Resource that corresponds to the
+    given Project."""
+    if project_obj.name == 'abc':
+        resource_name = 'ABC Compute'
+    elif project_obj.name.startswith('vector_'):
+        resource_name = 'Vector Compute'
+    else:
+        resource_name = 'Savio Compute'
+    return resource_name
 
 
-def __review_project_join_requests_url(project):
+def get_project_compute_allocation(project_obj):
+    """Return the given Project's Allocation to a Compute Resource."""
+    resource_name = get_project_compute_resource_name(project_obj)
+    return project_obj.allocation_set.get(resources__name=resource_name)
+
+
+def __project_detail_url(project):
+    domain = import_from_settings('CENTER_BASE_URL')
+    view = reverse('project-detail', kwargs={'pk': project.pk})
+    return urljoin(domain, view)
+
+
+def project_join_list_url():
+    domain = import_from_settings('CENTER_BASE_URL')
+    view = reverse('project-join-list')
+    return urljoin(domain, view)
+
+
+def review_project_join_requests_url(project):
     domain = import_from_settings('CENTER_BASE_URL')
     view = reverse('project-review-join-requests', kwargs={'pk': project.pk})
     return urljoin(domain, view)
@@ -207,14 +146,8 @@ def send_project_join_notification_email(project, project_user):
         'signature': import_from_settings('EMAIL_SIGNATURE', ''),
     }
 
-    delay = project.joins_auto_approval_delay
-    if delay != timedelta():
-        template_name = 'email/new_project_join_request_delay.txt'
-        context['url'] = __review_project_join_requests_url(project)
-        context['delay'] = str(delay)
-    else:
-        template_name = 'email/new_project_join_request_no_delay.txt'
-        context['url'] = project_detail_url(project)
+    template_name = 'email/new_project_join_request.txt'
+    context['url'] = __project_detail_url(project)
 
     sender = settings.EMAIL_SENDER
 

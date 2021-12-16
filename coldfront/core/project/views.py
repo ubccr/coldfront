@@ -43,6 +43,7 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectSearchForm,
                                           ProjectUpdateForm,
                                           ProjectUserUpdateForm,
+                                          JoinRequestSearchForm,
                                           ProjectRemovalRequestSearchForm,
                                           ProjectRemovalRequestUpdateStatusForm,
                                           ProjectRemovalRequestCompletionForm)
@@ -58,7 +59,6 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserRemovalRequest,
                                            ProjectUserRemovalRequestStatusChoice)
 from coldfront.core.project.utils import (add_vector_user_to_designated_savio_project,
-                                          auto_approve_project_join_requests,
                                           get_project_compute_allocation,
                                           ProjectClusterAccessRequestRunner,
                                           ProjectDenialRunner,
@@ -249,12 +249,6 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['compute_allocation_pk'] = compute_allocation_pk
         context['cluster_accounts_requestable'] = cluster_accounts_requestable
         context['cluster_accounts_tooltip'] = cluster_accounts_tooltip
-
-        context['joins_auto_approved'] = (
-            self.object.joins_auto_approval_delay == datetime.timedelta())
-
-        context['join_request_delay_period'] = \
-            str(self.object.joins_auto_approval_delay).rsplit(':', 1)[0]
 
         # Only display the "Renew Allowance" button for applicable allocation
         # types.
@@ -684,61 +678,7 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
         return reverse('project-detail', kwargs={'pk': self.object.pk})
 
     def form_valid(self, form):
-        # If joins_auto_approval_delay is set to 0, automatically approve all
-        # pending join requests.
-        delay = form.cleaned_data['joins_auto_approval_delay']
-        if delay == datetime.timedelta():
-            if not self.__approve_pending_join_requests():
-                return False
         return super().form_valid(form)
-
-    def __approve_pending_join_requests(self):
-        project_obj = self.get_object()
-        active_status = ProjectUserStatusChoice.objects.get(name='Active')
-
-        project_user_objs = project_obj.projectuser_set.filter(
-            status__name='Pending - Add')
-        for project_user_obj in project_user_objs:
-            project_user_obj.status = active_status
-            project_user_obj.save()
-
-        for project_user_obj in project_user_objs:
-            # Request cluster access.
-            request_runner = ProjectClusterAccessRequestRunner(
-                project_user_obj)
-            runner_result = request_runner.run()
-            if not runner_result.success:
-                messages.error(self.request, runner_result.error_message)
-            # Send an email to the user.
-            try:
-                send_project_join_request_approval_email(
-                    project_obj, project_user_obj)
-            except Exception as e:
-                message = 'Failed to send notification email. Details:'
-                self.logger.error(message)
-                self.logger.exception(e)
-            # If the Project is a Vector project, automatically add the
-            # User to the designated Savio project for Vector users.
-            if project_obj.name.startswith('vector_'):
-                user_obj = project_user_obj.user
-                try:
-                    add_vector_user_to_designated_savio_project(user_obj)
-                except Exception as e:
-                    message = (
-                        f'Encountered unexpected exception when '
-                        f'automatically providing User {user_obj.pk} with '
-                        f'access to Savio. Details:')
-                    self.logger.error(message)
-                    self.logger.exception(e)
-
-        message = (
-            f'Join requests no longer require approval, so '
-            f'{project_user_objs.count()} pending requests were automatically '
-            f'approved. BRC staff have been notified to set up cluster access '
-            f'for each request.')
-        messages.warning(self.request, message)
-
-        return True
 
 
 class ProjectAddUsersSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -1708,38 +1648,15 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 role=role,
                 status=status)
 
-        # Create a join request, whose 'created' timestamp is used to determine
-        # when to auto-approve the request.
+        # Create a join request
         ProjectUserJoinRequest.objects.create(project_user=project_user,
                                               reason=reason)
 
-        if project_obj.joins_auto_approval_delay != datetime.timedelta():
-            message = (
-                f'You have requested to join Project {project_obj.name}. The '
-                f'managers have been notified. The request will automatically '
-                f'be approved after a delay period, unless managers '
-                f'explicitly deny it.')
-            messages.success(self.request, message)
-            next_view = reverse('project-join-list')
-        else:
-            # Activate the user.
-            status = ProjectUserStatusChoice.objects.get(name='Active')
-            project_user.status = status
-            project_user.save()
-
-            # Request cluster access.
-            request_runner = ProjectClusterAccessRequestRunner(project_user)
-            runner_result = request_runner.run()
-            if runner_result.success:
-                message = (
-                    f'You have requested to join Project {project_obj.name}. '
-                    f'Your request has automatically been approved. BRC staff '
-                    f'have been notified to set up cluster access.')
-                messages.success(self.request, message)
-                next_view = reverse(
-                    'project-detail', kwargs={'pk': project_obj.pk})
-            else:
-                messages.error(self.request, runner_result.error_message)
+        message = (
+            f'You have requested to join Project {project_obj.name}. The '
+            f'managers have been notified.')
+        messages.success(self.request, message)
+        next_view = reverse('project-join-list')
 
         # Send a notification to the project managers.
         try:
@@ -1887,13 +1804,6 @@ class ProjectJoinListView(ProjectListView, UserPassesTestMixin):
                                         default=Value('Savio'),
                                         output_field=CharField()))
 
-        for request in join_requests:
-            delay = request.joins_auto_approval_delay
-            project_user = request.projectuser_set.get(user=self.request.user)
-            join_request_date = project_user.projectuserjoinrequest_set.latest('created').created
-            auto_approval_time = join_request_date + delay
-            request.auto_approval_time = auto_approval_time
-
         context['join_requests'] = join_requests
         context['not_joinable'] = not_joinable
         return context
@@ -1932,19 +1842,10 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
 
     @staticmethod
     def get_users_to_review(project_obj):
-        delay = project_obj.joins_auto_approval_delay
-
         users_to_review = []
         queryset = project_obj.projectuser_set.filter(
             status__name='Pending - Add').order_by('user__username')
         for ele in queryset:
-            try:
-                auto_approval_time = \
-                    (ele.projectuserjoinrequest_set.latest('created').created +
-                     delay)
-            except ProjectUserJoinRequest.DoesNotExist:
-                auto_approval_time = 'Unknown'
-
             try:
                 reason = ele.projectuserjoinrequest_set.latest('created').reason
             except ProjectUserJoinRequest.DoesNotExist:
@@ -1956,7 +1857,6 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
                 'last_name': ele.user.last_name,
                 'email': ele.user.email,
                 'role': ele.role,
-                'auto_approval_time': auto_approval_time,
                 'reason': reason
             }
             users_to_review.append(user)
@@ -2096,37 +1996,6 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
 
         return HttpResponseRedirect(
             reverse('project-detail', kwargs={'pk': pk}))
-
-
-class ProjectAutoApproveJoinRequestsView(LoginRequiredMixin,
-                                         UserPassesTestMixin, View):
-
-    def test_func(self):
-        if self.request.user.is_superuser:
-            return True
-        message = (
-            'You do not have permission to automatically approve project '
-            'requests.')
-        messages.error(self.request, message)
-
-    def post(self, request, *args, **kwargs):
-        results = auto_approve_project_join_requests()
-        num_processed = len(results)
-        num_successes, num_failures = 0, 0
-        for result in results:
-            if result.success:
-                num_successes = num_successes + 1
-            else:
-                num_failures = num_failures + 1
-        message = (
-            f'{num_processed} pending join requests were processed. '
-            f'{num_successes} succeeded. {num_failures} failed.')
-        if num_failures == 0:
-            messages.success(request, message)
-        else:
-            messages.error(request, message)
-        return HttpResponseRedirect(
-            reverse('allocation-cluster-account-request-list'))
 
 
 # TODO: Once finalized, move these imports above.
@@ -3911,6 +3780,117 @@ class VectorProjectUndenyRequestView(LoginRequiredMixin, UserPassesTestMixin, Vi
                     kwargs={'pk': kwargs.get('pk')}))
 
 
+class ProjectJoinRequestListView(LoginRequiredMixin,
+                                 UserPassesTestMixin,
+                                 ListView):
+    template_name = 'project/project_join_request_list.html'
+    paginate_by = 25
+
+    def get_queryset(self):
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            if direction == 'asc':
+                direction = ''
+            else:
+                direction = '-'
+            order_by = direction + 'created'
+        else:
+            order_by = '-created'
+
+        project_join_requests = \
+            ProjectUserJoinRequest.objects.filter(
+                pk__in=ProjectUserJoinRequest.objects.filter(
+                    project_user__status__name=
+                    'Pending - Add').order_by(
+                    'project_user', '-created').distinct(
+                    'project_user'))
+
+        join_request_search_form = JoinRequestSearchForm(self.request.GET)
+
+        if join_request_search_form.is_valid():
+            data = join_request_search_form.cleaned_data
+
+            if data.get('username'):
+                project_join_requests = \
+                    project_join_requests.filter(
+                        project_user__user__username__icontains=data.get('username'))
+
+            if data.get('email'):
+                project_join_requests = \
+                    project_join_requests.filter(
+                        project_user__user__email__icontains=data.get('email'))
+
+            if data.get('project_name'):
+                project_join_requests = \
+                    project_join_requests.filter(
+                        project_user__project__name__icontains=data.get('project_name'))
+
+        return project_join_requests.order_by(order_by)
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('project.view_projectuserjoinrequest'):
+            return True
+
+        message = (
+            'You do not have permission to view project join requests.')
+        messages.error(self.request, message)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        join_request_search_form = JoinRequestSearchForm(self.request.GET)
+        if join_request_search_form.is_valid():
+            context['join_request_search_form'] = join_request_search_form
+            data = join_request_search_form.cleaned_data
+            filter_parameters = ''
+            for key, value in data.items():
+                if value:
+                    if isinstance(value, list):
+                        for ele in value:
+                            filter_parameters += '{}={}&'.format(key, ele)
+                    else:
+                        filter_parameters += '{}={}&'.format(key, value)
+            context['join_request_search_form'] = join_request_search_form
+        else:
+            filter_parameters = None
+            context['join_request_search_form'] = JoinRequestSearchForm()
+
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            filter_parameters_with_order_by = filter_parameters + \
+                                              'order_by=%s&direction=%s&' % (order_by, direction)
+        else:
+            filter_parameters_with_order_by = filter_parameters
+
+        context['expand_accordion'] = 'show'
+
+        context['filter_parameters'] = filter_parameters
+        context['filter_parameters_with_order_by'] = filter_parameters_with_order_by
+
+        join_request_queryset = self.get_queryset()
+
+        paginator = Paginator(join_request_queryset, self.paginate_by)
+
+        page = self.request.GET.get('page')
+
+        try:
+            join_requests = paginator.page(page)
+        except PageNotAnInteger:
+            join_requests = paginator.page(1)
+        except EmptyPage:
+            join_requests = paginator.page(paginator.num_pages)
+
+        context['join_request_list'] = join_requests
+
+        return context
+
+
 class ProjectRemovalRequestListView(LoginRequiredMixin,
                                     UserPassesTestMixin,
                                     ListView):
@@ -4243,4 +4223,3 @@ class ProjectRemovalRequestCompleteStatusView(LoginRequiredMixin,
 
     def get_success_url(self):
         return reverse('project-removal-request-list')
-

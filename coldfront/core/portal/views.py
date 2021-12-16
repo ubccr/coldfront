@@ -15,7 +15,9 @@ from coldfront.core.portal.utils import (generate_allocations_chart_data,
                                          generate_publication_by_year_chart_data,
                                          generate_resources_chart_data,
                                          generate_total_grants_by_agency_chart_data)
-from coldfront.core.project.models import Project, ProjectUserRemovalRequest
+from coldfront.core.project.models import Project, ProjectUserJoinRequest
+from coldfront.core.project.models import ProjectUserJoinRequest
+from coldfront.core.project.models import ProjectUserRemovalRequest
 
 
 # from coldfront.core.publication.models import Publication
@@ -70,6 +72,16 @@ def home(request):
         context['savio_projects'] = savio_projects
         context['vector_projects'] = vector_projects
         context['allocation_list'] = allocation_list
+
+        num_join_requests = \
+            ProjectUserJoinRequest.objects.filter(
+                project_user__status__name='Pending - Add',
+                project_user__user=request.user). \
+                order_by('project_user', '-created'). \
+                distinct('project_user').count()
+
+        context['num_join_requests'] = num_join_requests
+
     else:
         template_name = 'portal/nonauthorized_home.html'
 
