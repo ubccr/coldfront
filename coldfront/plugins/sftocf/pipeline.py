@@ -20,7 +20,7 @@ from coldfront.core.utils.common import import_from_settings
 from coldfront.core.project.models import Project, ProjectUser
 from coldfront.core.allocation.models import Allocation, AllocationUser, AllocationUserStatusChoice
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("sftocf")
 logger.propagate = False
 logger.setLevel(logging.DEBUG)
 filehandler = logging.FileHandler('coldfront/plugins/sftocf/sfc.log', 'w')
