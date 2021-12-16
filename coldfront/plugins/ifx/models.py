@@ -36,6 +36,9 @@ class ProjectOrganization(models.Model):
         on_delete=models.PROTECT
     )
 
+    def __str__(self):
+        return f'{self.project} - {self.organization}'
+
 class AllocationUserProductUsage(models.Model):
     '''
     Link between ProductUsage and Allocation
