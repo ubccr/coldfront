@@ -128,7 +128,10 @@ class TestListAllocationUsers(TestAllocationBase):
         resource = Resource.objects.create(
             name='Other Compute', resource_type=resource_type)
         allocation.resources.add(resource)
-        allocation_ids_iterator = iter([1, 1, 2, 2])
+
+        first = allocation.pk
+        second = Allocation.objects.get(project=self.project1).pk
+        allocation_ids_iterator = iter([first, first, second, second])
 
         url = self.endpoint_url()
         query_parameters = {
