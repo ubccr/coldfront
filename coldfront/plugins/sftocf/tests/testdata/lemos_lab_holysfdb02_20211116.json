@@ -1,0 +1,37 @@
+{
+    "contents": [
+        {
+            "count": 192,
+            "groupname": "lemos_lab",
+            "size_sum": 4897793200528,
+            "size_sum_hum": "4.5TiB",
+            "username": "camendonca"
+        },
+        {
+            "count": 43657,
+            "groupname": "lemos_lab",
+            "size_sum": 1035576308408,
+            "size_sum_hum": "964.5GiB",
+            "username": "cdadams"
+        },
+        {
+            "count": 2,
+            "groupname": "lemos_lab",
+            "size_sum": 1463,
+            "size_sum_hum": "1.4KiB",
+            "username": "root"
+        },
+        {
+            "count": 202,
+            "groupname": "lemos_lab",
+            "size_sum": 37379467105,
+            "size_sum_hum": "34.8GiB",
+            "username": "shoukaiyu"
+        }
+    ],
+    "date": "20211116",
+    "path": "",
+    "server": "holysfdb02",
+    "tier": "tier1",
+    "volume": "holy-isilon"
+}

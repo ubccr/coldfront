@@ -284,7 +284,7 @@ class ColdFrontDB:
             logger.debug(f"EXCEPT a_id:{allocation.id}")
         try:
             allocationuser = AllocationUser.objects.get(
-                allocation_id=allocation.id, user_id=user.id
+                allocation_id=str(allocation.id), user_id=str(user.id)
             )
         except AllocationUser.DoesNotExist:
             filepath = './coldfront/plugins/sftocf/data/missing_allocationusers.csv'
@@ -296,7 +296,7 @@ class ColdFrontDB:
                 user=user
             )
             allocationuser = AllocationUser.objects.get(
-                allocation_id=allocation.id, user_id=user.id
+                allocation_id=str(allocation.id), user_id=str(user.id)
             )
 
         allocationuser.usage_bytes = userdict["size_sum"]
