@@ -1,5 +1,4 @@
 from django.test import TestCase
-from django.contrib.messages import get_messages
 from django.urls import reverse
 from http import HTTPStatus
 
@@ -8,12 +7,13 @@ from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.user.models import *
 from coldfront.core.allocation.models import *
 
-from django.contrib.auth.models import User, Permission
+from django.contrib.auth.models import User
 from django.core import mail
 from django.core.management import call_command
 
 from io import StringIO
 import os
+import pytz
 import sys
 
 
@@ -135,7 +135,9 @@ class TestProjectJoinRequestListView(TestCase):
 
     def assert_request_shown(self, response, request):
         self.assertContains(response, request.reason)
-        self.assertContains(response, request.created.strftime("%b. %d, %Y"))
+        request_date = request.created.astimezone(
+            pytz.timezone('America/Los_Angeles')).strftime('%b. %d, %Y')
+        self.assertContains(response, request_date)
         self.assertContains(response, request.project_user.user.username)
         self.assertContains(response, request.project_user.user.email)
         self.assertContains(response, request.project_user.project.name)
