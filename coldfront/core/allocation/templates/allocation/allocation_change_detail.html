@@ -39,7 +39,7 @@ Allocation Change Detail
     </div>
   {% endif %}
 
-
+  <form method="post">
   <div class="card mb-3">
     <div class="card-header">
         <h3 class="d-inline"><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
@@ -133,16 +133,23 @@ Allocation Change Detail
               </tr>
             </thead>
             <tbody>
-              {% for attribute in attribute_changes %}
+              {% for form in formset %}
                   <tr>
-                    <td>{{attribute.allocation_attribute}}</td>
+                    <td>{{form.name.value}}</td>
                     {% if allocation_change.status.name == 'Pending' %}
-                      <td>{{attribute.allocation_attribute.value}}</td>
-                    {% endif %}
-                    {% if attribute.new_value == '' %}
-                      <td>None</td>
+                      <td>{{form.value.value}}</td>
+                      <td>
+                        {{form.new_value}}
+                        <a href="" class="float-right">
+                          <i class="far fa-trash-alt fa-lg"></i>
+                        </a>
+                      </td>
                     {% else %}
-                      <td>{{attribute.new_value}}</td>
+                      {% if form.new_value.value == '' %}
+                        <td>None</td>
+                      {% else %}
+                        <td>{{form.new_value.value}}</td>
+                      {% endif %}
                     {% endif %}
                   </tr>
               {% endfor %}
@@ -155,6 +162,7 @@ Allocation Change Detail
             There are no requested allocation attribute changes to display.
         </div>
       {% endif %}
+      {{ formset.management_form }}
     </div>
   </div>
 
@@ -169,7 +177,7 @@ Allocation Change Detail
       </div>
       <div class="card-body">
 
-          <form method="post">
+          
             {% csrf_token %}
             {{note_form.notes | as_crispy_field}}
             <div style="float: right;">
@@ -181,11 +189,12 @@ Allocation Change Detail
                 <i class="fas fa-sync" aria-hidden="true"></i> Update
               </button>
             </div>
-          </form>
         </div>   
       </div>
     </div>
   {% endif %}
+</form>
+
 
   <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation_change.allocation.pk %}" role="button">
     View Allocation
