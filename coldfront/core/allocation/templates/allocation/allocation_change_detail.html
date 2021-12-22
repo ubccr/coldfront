@@ -134,10 +134,11 @@ Allocation Change Detail
             </thead>
             <tbody>
               {% for form in formset %}
-                  <tr>
-                    <td>{{form.name.value}}</td>
-                    {% if allocation_change.status.name == 'Pending' %}
-                      <td>{{form.value.value}}</td>
+                <tr>
+                  <td>{{form.name.value}}</td>
+                  {% if allocation_change.status.name == 'Pending' %}
+                    <td>{{form.value.value}}</td>
+                    {% if request.user.is_superuser %}
                       <td>
                         {{form.new_value}}
                         <a href="{% url 'allocation-attribute-change-delete' form.change_pk.value %}" class="float-right confirm-delete">
@@ -145,13 +146,16 @@ Allocation Change Detail
                         </a>
                       </td>
                     {% else %}
-                      {% if form.new_value.value == '' %}
-                        <td>None</td>
-                      {% else %}
-                        <td>{{form.new_value.value}}</td>
-                      {% endif %}
+                      <td>{{form.new_value.value}}</td>
                     {% endif %}
-                  </tr>
+                  {% else %}
+                    {% if form.new_value.value == '' %}
+                      <td>None</td>
+                    {% else %}
+                      <td>{{form.new_value.value}}</td>
+                    {% endif %}
+                  {% endif %}
+                </tr>
               {% endfor %}
             </tbody>
           </table>
