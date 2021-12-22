@@ -3,6 +3,7 @@ from django.shortcuts import get_object_or_404
 
 from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationAttributeType,
+                                              AllocationAttribute,
                                               AllocationStatusChoice)
 from coldfront.core.allocation.utils import get_user_resources
 from coldfront.core.project.models import Project
@@ -11,6 +12,8 @@ from coldfront.core.utils.common import import_from_settings
 
 ALLOCATION_ACCOUNT_ENABLED = import_from_settings(
     'ALLOCATION_ACCOUNT_ENABLED', False)
+ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS = import_from_settings(
+    'ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS', [])
 
 
 class AllocationForm(forms.Form):
@@ -64,6 +67,7 @@ class AllocationUpdateForm(forms.Form):
     description = forms.CharField(max_length=512,
                                   label='Description',
                                   required=False)
+    is_changeable = forms.BooleanField(required=False)
 
     def clean(self):
         cleaned_data = super().clean()
@@ -174,3 +178,75 @@ class AllocationAccountForm(forms.ModelForm):
     class Meta:
         model = AllocationAccount
         fields = ['name', ]
+
+
+class AllocationAttributeChangeForm(forms.Form):
+    pk = forms.IntegerField(required=False, disabled=True)
+    name = forms.CharField(max_length=150, required=False, disabled=True)
+    value = forms.CharField(max_length=150, required=False, disabled=True)
+    new_value = forms.CharField(max_length=150, required=False, disabled=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['pk'].widget = forms.HiddenInput()
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        if cleaned_data.get('new_value') != "":
+            allocation_attribute = AllocationAttribute.objects.get(pk=cleaned_data.get('pk'))
+            allocation_attribute.value = cleaned_data.get('new_value')
+            allocation_attribute.clean()
+
+
+class AllocationAttributeUpdateForm(forms.Form):
+    change_pk = forms.IntegerField(required=False, disabled=True)
+    attribute_pk = forms.IntegerField(required=False, disabled=True)
+    name = forms.CharField(max_length=150, required=False, disabled=True)
+    value = forms.CharField(max_length=150, required=False, disabled=True)
+    new_value = forms.CharField(max_length=150, required=False, disabled=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['change_pk'].widget = forms.HiddenInput()
+        self.fields['attribute_pk'].widget = forms.HiddenInput()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        allocation_attribute = AllocationAttribute.objects.get(pk=cleaned_data.get('attribute_pk'))
+
+        allocation_attribute.value = cleaned_data.get('new_value')
+        allocation_attribute.clean()
+
+
+class AllocationChangeForm(forms.Form):
+    EXTENSION_CHOICES = [
+        (0, "No Extension")
+    ]
+    for choice in ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS:
+        EXTENSION_CHOICES.append((choice, "{} days".format(choice)))
+
+    end_date_extension = forms.TypedChoiceField(
+        label='Request End Date Extension',
+        choices = EXTENSION_CHOICES,
+        coerce=int,
+        required=False,
+        empty_value=0,)
+    justification = forms.CharField(
+        label='Justification for Changes',
+        widget=forms.Textarea,
+        required=False,
+        help_text='Justification for requesting this allocation change request.')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+class AllocationChangeNoteForm(forms.Form):
+        notes = forms.CharField(
+            max_length=512, 
+            label='Notes', 
+            required=False, 
+            widget=forms.Textarea,
+            help_text="Leave any feedback about the allocation change request.")
+

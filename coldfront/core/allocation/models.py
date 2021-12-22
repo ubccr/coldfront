@@ -46,6 +46,7 @@ class Allocation(TimeStampedModel):
     justification = models.TextField()
     description = models.CharField(max_length=512, blank=True, null=True)
     is_locked = models.BooleanField(default=False)
+    is_changeable = models.BooleanField(default=False)
     history = HistoricalRecords()
 
     class Meta:
@@ -206,6 +207,7 @@ class AllocationAttributeType(TimeStampedModel):
     is_required = models.BooleanField(default=False)
     is_unique = models.BooleanField(default=False)
     is_private = models.BooleanField(default=True)
+    is_changeable = models.BooleanField(default=False)
     history = HistoricalRecords()
 
     def __str__(self):
@@ -238,19 +240,19 @@ class AllocationAttribute(TimeStampedModel):
 
         if expected_value_type == "Int" and not isinstance(literal_eval(self.value), int):
             raise ValidationError(
-                'Invalid Value "%s". Value must be an integer.' % (self.value))
+                'Invalid Value "%s" for "%s". Value must be an integer.' % (self.value, self.allocation_attribute_type.name))
         elif expected_value_type == "Float" and not (isinstance(literal_eval(self.value), float) or isinstance(literal_eval(self.value), int)):
             raise ValidationError(
-                'Invalid Value "%s". Value must be a float.' % (self.value))
+                'Invalid Value "%s" for "%s". Value must be a float.' % (self.value, self.allocation_attribute_type.name))
         elif expected_value_type == "Yes/No" and self.value not in ["Yes", "No"]:
             raise ValidationError(
-                'Invalid Value "%s". Allowed inputs are "Yes" or "No".' % (self.value))
+                'Invalid Value "%s" for "%s". Allowed inputs are "Yes" or "No".' % (self.value, self.allocation_attribute_type.name))
         elif expected_value_type == "Date":
             try:
                 datetime.datetime.strptime(self.value.strip(), "%Y-%m-%d")
             except ValueError:
                 raise ValidationError(
-                    'Invalid Value "%s". Date must be in format YYYY-MM-DD' % (self.value))
+                    'Invalid Value "%s" for "%s". Date must be in format YYYY-MM-DD' % (self.value, self.allocation_attribute_type.name))
 
     def __str__(self):
         return '%s' % (self.allocation_attribute_type.name)
@@ -302,3 +304,44 @@ class AllocationAccount(TimeStampedModel):
 
     class Meta:
         ordering = ['name', ]
+
+
+class AllocationChangeStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]
+
+
+class AllocationChangeRequest(TimeStampedModel):
+    allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE,)
+    status = models.ForeignKey(
+        AllocationChangeStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
+    end_date_extension = models.IntegerField(blank=True, null=True)
+    justification = models.TextField()
+    notes = models.CharField(max_length=512, blank=True, null=True)
+    history = HistoricalRecords()
+
+    @property
+    def get_parent_resource(self):
+        if self.allocation.resources.count() == 1:
+            return self.allocation.resources.first()
+        else:
+            return self.allocation.resources.filter(is_allocatable=True).first()
+
+    def __str__(self):
+        return "%s (%s)" % (self.get_parent_resource.name, self.allocation.project.pi)
+
+
+class AllocationAttributeChangeRequest(TimeStampedModel):
+    allocation_change_request = models.ForeignKey(AllocationChangeRequest, on_delete=models.CASCADE)
+    allocation_attribute = models.ForeignKey(AllocationAttribute, on_delete=models.CASCADE)
+    new_value = models.CharField(max_length=128)
+    history = HistoricalRecords()
+
+    def __str__(self):
+        return '%s' % (self.allocation_attribute.allocation_attribute_type.name)
+
