@@ -3,10 +3,11 @@ import os
 from django.core.management.base import BaseCommand
 
 from coldfront.core.project.models import (ProjectReviewStatusChoice,
-                                            ProjectStatusChoice,
-                                            ProjectUserRoleChoice,
-                                            ProjectUserStatusChoice,
-                                            ProjectAllocationRequestStatusChoice)
+                                           ProjectStatusChoice,
+                                           ProjectUserRoleChoice,
+                                           ProjectUserStatusChoice,
+                                           ProjectAllocationRequestStatusChoice,
+                                           ProjectUserRemovalRequestStatusChoice)
 
 
 class Command(BaseCommand):
@@ -14,7 +15,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # ProjectStatusChoice.objects.all().delete()
-        for choice in ['New', 'Active', 'Archived', 'Denied', ]:
+        for choice in ['New', 'Active', 'Archived', 'Denied', 'Inactive', ]:
             ProjectStatusChoice.objects.get_or_create(name=choice)
 
         # ProjectReviewStatusChoice.objects.all().delete()
@@ -39,3 +40,6 @@ class Command(BaseCommand):
         for choice in choices:
             ProjectAllocationRequestStatusChoice.objects.get_or_create(
                 name=choice)
+
+        for choice in ['Pending', 'Processing', 'Complete']:
+            ProjectUserRemovalRequestStatusChoice.objects.get_or_create(name=choice)

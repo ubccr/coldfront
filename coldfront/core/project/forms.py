@@ -1,6 +1,7 @@
 import datetime
 
 from django import forms
+from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
 
@@ -90,6 +91,7 @@ class ProjectRemoveUserForm(forms.Form):
     last_name = forms.CharField(max_length=150, required=False, disabled=True)
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     role = forms.CharField(max_length=30, disabled=True)
+    status = forms.CharField(max_length=50, required=False, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
 
 
@@ -163,37 +165,21 @@ class ProjectReviewUserJoinForm(forms.Form):
     last_name = forms.CharField(max_length=150, required=False, disabled=True)
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     role = forms.CharField(max_length=30, disabled=True)
-    auto_approval_time = forms.DateTimeField(disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
     reason = forms.CharField(max_length=1000, required=False, disabled=True)
 
 
 class ProjectUpdateForm(forms.ModelForm):
-
-    joins_auto_approval_delay = forms.DurationField(
-        label='Auto-Approval Delay for Join Requests',
-        widget=TimeDurationWidget(
-            show_days=True, show_hours=True, show_minutes=False,
-            show_seconds=False),
-        required=False,
-        help_text=(
-            'Requests to join the project will automatically be approved '
-            'after a delay period, allowing managers to review them. The '
-            'default is 6 hours. An empty input is interpreted as 0.'))
-
-    # def __init__(self, *args, **kwargs):
-    #     super(ProjectUpdateForm, self).__init__(*args, **kwargs)
-    #     self.fields['field_of_science'].disabled = True
-
     class Meta:
         model = Project
         fields = (
-            'title', 'description', #'field_of_science',
-            'joins_auto_approval_delay')
+            'title', 'description',) #'field_of_science',
 
 # TODO: Once finalized, move these imports above.
+from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import SavioProjectAllocationRequest
+from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
 from coldfront.core.utils.common import utc_now_offset_aware
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -252,39 +238,65 @@ class SavioProjectExistingPIForm(forms.Form):
 
         super().__init__(*args, **kwargs)
 
-        # PIs may only have one FCA, so only allow those without an active FCA
-        # to be selected. The same applies for PCA.
         queryset = User.objects.all()
         exclude_user_pks = set()
         pi_role = ProjectUserRoleChoice.objects.get(
             name='Principal Investigator')
+
+        ineligible_project_status_names = ['New', 'Active', 'Inactive']
+        ineligible_project_request_status_names = [
+            'Under Review', 'Approved - Processing', 'Approved - Complete']
+        ineligible_renewal_request_status_names = [
+            'Under Review', 'Approved', 'Complete']
+
         if self.allocation_type == 'FCA':
+
+            # PIs may only have one FCA, so disable any PIs who:
+            #     (a) have an existing 'New', 'Active', or 'Inactive' FCA,
+            #     (b) have non-denied AllocationRenewalRequests during this
+            #         AllocationPeriod, or
+            #     (c) have non-denied SavioProjectAllocationRequests.
+            #         TODO: Once the first AllocationPeriod has ended, this
+            #         TODO: will need to be refined to filter on time.
+
             pis_with_existing_fcas = set(ProjectUser.objects.filter(
                 role=pi_role,
                 project__name__startswith='fc_',
-                project__status__name__in=['New', 'Active']
+                project__status__name__in=ineligible_project_status_names
             ).values_list('user__pk', flat=True))
-            status = ProjectAllocationRequestStatusChoice.objects.get(
-                name='Under Review')
             pis_with_pending_requests = set(
                 SavioProjectAllocationRequest.objects.filter(
                     allocation_type=SavioProjectAllocationRequest.FCA,
-                    status=status
+                    status__name__in=ineligible_project_request_status_names
+                ).values_list('pi__pk', flat=True))
+            allocation_period = get_current_allocation_period()
+            pis_with_renewal_requests = set(
+                AllocationRenewalRequest.objects.filter(
+                    allocation_period=allocation_period,
+                    status__name__in=ineligible_renewal_request_status_names
                 ).values_list('pi__pk', flat=True))
             exclude_user_pks.update(
-                set.union(pis_with_existing_fcas, pis_with_pending_requests))
+                set.union(
+                    pis_with_existing_fcas,
+                    pis_with_pending_requests,
+                    pis_with_renewal_requests))
         elif self.allocation_type == 'PCA':
+
+            # PIs may only have one PCA, so disable any PIs who:
+            #    (a) have an existing 'New' or 'Active' PCA, or
+            #    (b) have non-denied SavioProjectAllocationRequests.
+            #        TODO: Once the first AllocationPeriod has ended, this
+            #        TODO: will need to be refined to filter on time.
+
             pis_with_existing_pcas = set(ProjectUser.objects.filter(
                 role=pi_role,
                 project__name__startswith='pc_',
-                project__status__name__in=['New', 'Active']
+                project__status__name__in=ineligible_project_status_names
             ).values_list('user__pk', flat=True))
-            status = ProjectAllocationRequestStatusChoice.objects.get(
-                name='Under Review')
             pis_with_pending_requests = set(
                 SavioProjectAllocationRequest.objects.filter(
                     allocation_type=SavioProjectAllocationRequest.PCA,
-                    status=status
+                    status__name__in=ineligible_project_request_status_names
                 ).values_list('pi__pk', flat=True))
             exclude_user_pks.update(
                 set.union(pis_with_existing_pcas, pis_with_pending_requests))
@@ -793,7 +805,7 @@ class SavioProjectSurveyForm(forms.Form):
                 self.fields[field].disabled = True
 
 
-class ProjectAllocationReviewForm(forms.Form):
+class ReviewStatusForm(forms.Form):
 
     status = forms.ChoiceField(
         choices=(
@@ -956,7 +968,7 @@ class SavioProjectReviewSetupForm(forms.Form):
         return final_name
 
 
-class SavioProjectReviewDenyForm(forms.Form):
+class ReviewDenyForm(forms.Form):
 
     justification = forms.CharField(
         help_text=(
@@ -1078,3 +1090,45 @@ class VectorProjectReviewSetupForm(forms.Form):
             raise forms.ValidationError(
                 f'A project with name {final_name} already exists.')
         return final_name
+
+
+class JoinRequestSearchForm(forms.Form):
+    project_name = forms.CharField(label='Project Name',
+                                   max_length=100, required=False)
+    username = forms.CharField(
+        label='Username', max_length=100, required=False)
+    email = forms.CharField(label='Email', max_length=100, required=False)
+
+
+class ProjectRemovalRequestSearchForm(forms.Form):
+    project_name = forms.CharField(label='Project Name',
+                                   max_length=100, required=False)
+    username = forms.CharField(
+        label='User Username', max_length=100, required=False)
+    requester = forms.CharField(
+        label='Requester Username', max_length=100, required=False)
+    email = forms.CharField(label='User Email', max_length=100, required=False)
+    show_all_requests = forms.BooleanField(initial=True, required=False)
+
+
+class ProjectRemovalRequestUpdateStatusForm(forms.Form):
+
+    STATUS_CHOICES = [
+        ('Pending', 'Pending'),
+        ('Processing', 'Processing'),
+    ]
+
+    status = forms.ChoiceField(
+        label='Status', choices=STATUS_CHOICES, required=True,
+        widget=forms.Select())
+
+
+class ProjectRemovalRequestCompletionForm(forms.Form):
+    STATUS_CHOICES = [
+        ('Processing', 'Processing'),
+        ('Complete', 'Complete')
+    ]
+
+    status = forms.ChoiceField(
+        label='Status', choices=STATUS_CHOICES, required=True,
+        widget=forms.Select())

@@ -65,7 +65,8 @@ class AllocationAdmin(SimpleHistoryAdmin):
     list_filter = ('resources__resource_type__name',
                    'status', 'resources__name', 'is_locked')
     search_fields = ['resources__name',
-                     'allocationuser__user__first_name', 'allocationuser__user__last_name', 'allocationuser__user__username']
+                     'allocationuser__user__first_name', 'allocationuser__user__last_name', 'allocationuser__user__username',
+                     'project__name', 'project__title']
     filter_horizontal = ['resources', ]
     raw_id_fields = ('project',)
 

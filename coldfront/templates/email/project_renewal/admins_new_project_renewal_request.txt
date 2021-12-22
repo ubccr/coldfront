@@ -1,0 +1,3 @@
+There is a new allocation renewal request under PI {{ pi_str }} from requester {{ requester_str }}.
+
+Please review the request: {{ review_url }}.

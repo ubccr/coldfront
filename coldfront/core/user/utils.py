@@ -7,6 +7,7 @@ from datetime import time
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.db import transaction
 from django.db.models import Q
 from django.urls import reverse
 from django.utils.crypto import constant_time_compare
@@ -15,6 +16,7 @@ from django.utils.http import base36_to_int
 from django.utils.http import urlsafe_base64_encode
 from django.utils.module_loading import import_string
 
+from coldfront.core.user.models import EmailAddress
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
 
@@ -272,3 +274,58 @@ def send_email_verification_email(email_address):
     receiver_list = [email_address.email, ]
 
     send_email_template(subject, template_name, context, sender, receiver_list)
+
+
+def update_user_primary_email_address(email_address):
+    """Given an EmailAddress, which must be verified, perform the
+    following:
+        - If the user's current email field does not have a
+          corresponding EmailAddress, create one (verified);
+        - Set the user's email field to it;
+        - Set it as the primary EmailAddress of the user; and
+        - Set the user's other EmailAddress objects to be non-primary.
+
+    Perform the updates in a transaction so that they all fail together
+    or all succeed together.
+
+    Parameters:
+        - email_address (EmailAddress): the EmailAddress object to set
+                                        as the new primary
+
+    Returns:
+        - None
+
+    Raises:
+        - TypeError, if the provided address has an invalid type
+        - ValueError, if the provided address is not verified
+    """
+    if not isinstance(email_address, EmailAddress):
+        raise TypeError(f'Invalid EmailAddress {email_address}.')
+    if not email_address.is_verified:
+        raise ValueError(f'EmailAddress {email_address} is unverified.')
+
+    user = email_address.user
+    with transaction.atomic():
+
+        old_primary, created = EmailAddress.objects.get_or_create(
+            user=user, email=user.email.lower())
+        if created:
+            message = (
+                f'Created EmailAddress {old_primary.pk} for User {user.pk}\'s '
+                f'old primary address {old_primary.email}, which unexpectedly '
+                f'did not exist.')
+            logger.warning(message)
+        old_primary.is_verified = True
+        old_primary.is_primary = False
+        old_primary.save()
+
+        for ea in EmailAddress.objects.filter(
+                user=user, is_primary=True).exclude(pk=email_address.pk):
+            ea.is_primary = False
+            ea.save()
+
+        user.email = email_address.email
+        user.save()
+
+        email_address.is_primary = True
+        email_address.save()

@@ -1,0 +1,11 @@
+Dear managers of {{ project_name }},
+
+This is a reminder that there {{ verb }} {{ num_requests }} request(s) to join your project, {{ project_name }}, via the MyBRC User Portal.
+
+Name | Email | Request Time
+{{ request_list }}
+
+Please approve/deny these request(s) here. You will periodically receive reminder emails until you approve/deny these request(s).
+
+Thank you,
+{{ signature }}

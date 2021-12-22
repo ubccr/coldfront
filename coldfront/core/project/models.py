@@ -50,10 +50,6 @@ We do not have information about your research. Please provide a detailed descri
     requires_review = models.BooleanField(default=True)
     history = HistoricalRecords()
 
-    JOINS_AUTO_APPROVAL_DELAY = datetime.timedelta(hours=6)
-    joins_auto_approval_delay = models.DurationField(
-        default=JOINS_AUTO_APPROVAL_DELAY)
-
     def clean(self):
         if 'Auto-Import Project'.lower() in self.title.lower():
             raise ValidationError(
@@ -61,9 +57,6 @@ We do not have information about your research. Please provide a detailed descri
 
         if 'We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!' in self.description:
             raise ValidationError('You must update the project description.')
-
-        if self.joins_auto_approval_delay < datetime.timedelta():
-            raise ValidationError('Delay must be non-negative.')
 
     def save(self, *args, **kwargs):
         """If the Project previously existed and its status has changed,
@@ -176,6 +169,13 @@ We do not have information about your research. Please provide a detailed descri
             role__name='Manager').values_list('user', flat=True)
         return User.objects.filter(
             pk__in=manager_user_pks).order_by('username')
+
+    def is_pooled(self):
+        """Return whether this project is a pooled project. In
+        particular, it is pooled if it has more than one PI."""
+        pi_role = ProjectUserRoleChoice.objects.get(
+            name='Principal Investigator')
+        return self.projectuser_set.filter(role=pi_role).count() > 1
 
     def __str__(self):
         return self.name
@@ -483,3 +483,18 @@ class VectorProjectAllocationRequest(TimeStampedModel):
     class Meta:
         verbose_name = 'Vector Project Allocation Request'
         verbose_name_plural = 'Vector Project Allocation Requests'
+
+
+class ProjectUserRemovalRequestStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+    # one of "Pending", "Processing", "Complete"
+
+
+class ProjectUserRemovalRequest(TimeStampedModel):
+    project_user = models.ForeignKey(ProjectUser, on_delete=models.CASCADE)
+    requester = models.ForeignKey(User, on_delete=models.CASCADE)
+    request_time = models.DateTimeField(auto_now_add=True)
+    completion_time = models.DateTimeField(null=True)
+    status = models.ForeignKey(ProjectUserRemovalRequestStatusChoice, on_delete=models.CASCADE, null=True)
+
+

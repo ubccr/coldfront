@@ -1,0 +1,8 @@
+Dear {{ user_first_name }} {{ user_last_name }},
+
+The request to remove {{ removed_user_first_name }} {{ removed_user_last_name }} of Project {{ project_name }} initiated by {{ requester_first_name}} {{ requester_last_name }} has been completed. {{ removed_user_first_name }} {{ removed_user_last_name }} is no longer a user of Project {{ project_name }}.
+
+If you have any questions, please contact us at {{ support_email }}.
+
+Thank you,
+{{ signature }}

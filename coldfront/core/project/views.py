@@ -1,5 +1,6 @@
 import datetime
 import pprint
+from itertools import chain
 
 from django import forms
 from django.conf import settings
@@ -41,7 +42,11 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectReviewUserJoinForm,
                                           ProjectSearchForm,
                                           ProjectUpdateForm,
-                                          ProjectUserUpdateForm)
+                                          ProjectUserUpdateForm,
+                                          JoinRequestSearchForm,
+                                          ProjectRemovalRequestSearchForm,
+                                          ProjectRemovalRequestUpdateStatusForm,
+                                          ProjectRemovalRequestCompletionForm)
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectReviewStatusChoice,
                                            ProjectStatusChoice, ProjectUser,
@@ -50,15 +55,14 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice,
                                            ProjectAllocationRequestStatusChoice,
-                                           ProjectUserStatusChoice)
+                                           ProjectUserStatusChoice,
+                                           ProjectUserRemovalRequest,
+                                           ProjectUserRemovalRequestStatusChoice)
 from coldfront.core.project.utils import (add_vector_user_to_designated_savio_project,
-                                          auto_approve_project_join_requests,
                                           get_project_compute_allocation,
-                                          project_allocation_request_latest_update_timestamp,
                                           ProjectClusterAccessRequestRunner,
                                           ProjectDenialRunner,
                                           SavioProjectApprovalRunner,
-                                          savio_request_denial_reason,
                                           send_added_to_project_notification_email,
                                           send_new_cluster_access_request_notification_email,
                                           send_project_join_notification_email,
@@ -66,7 +70,13 @@ from coldfront.core.project.utils import (add_vector_user_to_designated_savio_pr
                                           send_project_join_request_denial_email,
                                           send_project_request_pooling_email,
                                           VectorProjectApprovalRunner,
-                                          vector_request_denial_reason)
+                                          vector_request_denial_reason,)
+from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestRunner
+from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
+from coldfront.core.project.utils_.renewal_utils import is_any_project_pi_renewable
+from coldfront.core.project.utils_.request_utils import project_allocation_request_latest_update_timestamp
+from coldfront.core.project.utils_.request_utils import savio_request_denial_reason
+from coldfront.core.project.utils_.request_utils import vector_request_denial_reason
 # from coldfront.core.publication.models import Publication
 # from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.resource.models import Resource
@@ -88,6 +98,13 @@ if EMAIL_ENABLED:
     EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
         'EMAIL_DIRECTOR_EMAIL_ADDRESS')
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
+    EMAIL_OPT_OUT_INSTRUCTION_URL = import_from_settings(
+        'EMAIL_OPT_OUT_INSTRUCTION_URL')
+    EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
+    SUPPORT_EMAIL = import_from_settings('CENTER_HELP_EMAIL')
+    EMAIL_ADMIN_LIST = import_from_settings('EMAIL_ADMIN_LIST')
+
+logger = logging.getLogger(__name__)
 
 
 class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
@@ -105,7 +122,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         project_obj = self.get_object()
 
-        if project_obj.projectuser_set.filter(user=self.request.user, status__name='Active').exists():
+        if project_obj.projectuser_set.filter(user=self.request.user, status__name__in=['Active', 'Pending - Remove']).exists():
             return True
 
         messages.error(
@@ -123,6 +140,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         # Can the user update the project?
         context['is_allowed_to_update_project'] = False
+        context['can_leave_project'] = False
 
         if self.request.user.is_superuser:
             context['is_allowed_to_update_project'] = True
@@ -133,6 +151,12 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             if project_user.role.name in ['Principal Investigator', 'Manager']:
                 context['username'] = project_user.user.username
                 context['is_allowed_to_update_project'] = True
+
+            if project_user.status.name == 'Active' and project_user.role.name == 'User':
+                context['can_leave_project'] = True
+
+            if project_user.role.name == 'Manager' and len(self.object.projectuser_set.filter(role__name='Manager')) > 1:
+                context['can_leave_project'] = True
 
         # Retrieve cluster access statuses.
         cluster_access_statuses = {}
@@ -226,11 +250,19 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['cluster_accounts_requestable'] = cluster_accounts_requestable
         context['cluster_accounts_tooltip'] = cluster_accounts_tooltip
 
-        context['joins_auto_approved'] = (
-            self.object.joins_auto_approval_delay == datetime.timedelta())
-
-        context['join_request_delay_period'] = \
-            str(self.object.joins_auto_approval_delay).rsplit(':', 1)[0]
+        # Only display the "Renew Allowance" button for applicable allocation
+        # types.
+        # TODO: Display these for ic_ and pc_ when ready.
+        context['renew_allowance_current_visible'] = \
+            self.object.name.startswith('fc_')
+            # self.object.name.startswith(('fc_', 'ic_', 'pc_'))
+        # Only allow the "Renew Allowance" button to be clickable if any PIs do
+        # not have pending/approved renewal requests.
+        context['renew_allowance_current_clickable'] = (
+            # Short-circuit if the button is not visible.
+                context['renew_allowance_current_visible'] and
+                is_any_project_pi_renewable(
+                    self.object, get_current_allocation_period()))
 
         return context
 
@@ -262,7 +294,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
             data = project_search_form.cleaned_data
             if data.get('show_all_projects') and (self.request.user.is_superuser or self.request.user.has_perm('project.can_view_all_projects')):
                 projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
-                    status__name__in=['New', 'Active', ]
+                    status__name__in=['New', 'Active', 'Inactive', ]
                 ).annotate(
                     cluster_name=Case(
                         When(name='abc', then=Value('ABC')),
@@ -273,9 +305,9 @@ class ProjectListView(LoginRequiredMixin, ListView):
                 ).order_by(order_by)
             else:
                 projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
-                    Q(status__name__in=['New', 'Active', ]) &
+                    Q(status__name__in=['New', 'Active', 'Inactive', ]) &
                     Q(projectuser__user=self.request.user) &
-                    Q(projectuser__status__name='Active')
+                    Q(projectuser__status__name__in=['Active',  'Pending - Remove'])
                 ).annotate(
                     cluster_name=Case(
                         When(name='abc', then=Value('ABC')),
@@ -323,9 +355,9 @@ class ProjectListView(LoginRequiredMixin, ListView):
 
         else:
             projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
-                Q(status__name__in=['New', 'Active', ]) &
+                Q(status__name__in=['New', 'Active', 'Inactive', ]) &
                 Q(projectuser__user=self.request.user) &
-                Q(projectuser__status__name='Active')
+                Q(projectuser__status__name__in=['Active', 'Pending - Remove'])
             ).annotate(
                 cluster_name=Case(
                     When(name='abc', then=Value('ABC')),
@@ -389,6 +421,15 @@ class ProjectListView(LoginRequiredMixin, ListView):
             project_list = paginator.page(1)
         except EmptyPage:
             project_list = paginator.page(paginator.num_pages)
+
+        # The "Renew a PI's Allowance" button should only be visible to
+        # Managers and PIs.
+        role_names = ['Manager', 'Principal Investigator']
+        status = ProjectUserStatusChoice.objects.get(name='Active')
+        context['renew_allowance_current_visible'] = \
+            ProjectUser.objects.filter(
+                user=self.request.user, role__name__in=role_names,
+                status=status)
 
         return context
 
@@ -637,61 +678,7 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
         return reverse('project-detail', kwargs={'pk': self.object.pk})
 
     def form_valid(self, form):
-        # If joins_auto_approval_delay is set to 0, automatically approve all
-        # pending join requests.
-        delay = form.cleaned_data['joins_auto_approval_delay']
-        if delay == datetime.timedelta():
-            if not self.__approve_pending_join_requests():
-                return False
         return super().form_valid(form)
-
-    def __approve_pending_join_requests(self):
-        project_obj = self.get_object()
-        active_status = ProjectUserStatusChoice.objects.get(name='Active')
-
-        project_user_objs = project_obj.projectuser_set.filter(
-            status__name='Pending - Add')
-        for project_user_obj in project_user_objs:
-            project_user_obj.status = active_status
-            project_user_obj.save()
-
-        for project_user_obj in project_user_objs:
-            # Request cluster access.
-            request_runner = ProjectClusterAccessRequestRunner(
-                project_user_obj)
-            runner_result = request_runner.run()
-            if not runner_result.success:
-                messages.error(self.request, runner_result.error_message)
-            # Send an email to the user.
-            try:
-                send_project_join_request_approval_email(
-                    project_obj, project_user_obj)
-            except Exception as e:
-                message = 'Failed to send notification email. Details:'
-                self.logger.error(message)
-                self.logger.exception(e)
-            # If the Project is a Vector project, automatically add the
-            # User to the designated Savio project for Vector users.
-            if project_obj.name.startswith('vector_'):
-                user_obj = project_user_obj.user
-                try:
-                    add_vector_user_to_designated_savio_project(user_obj)
-                except Exception as e:
-                    message = (
-                        f'Encountered unexpected exception when '
-                        f'automatically providing User {user_obj.pk} with '
-                        f'access to Savio. Details:')
-                    self.logger.error(message)
-                    self.logger.exception(e)
-
-        message = (
-            f'Join requests no longer require approval, so '
-            f'{project_user_objs.count()} pending requests were automatically '
-            f'approved. BRC staff have been notified to set up cluster access '
-            f'for each request.')
-        messages.warning(self.request, message)
-
-        return True
 
 
 class ProjectAddUsersSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -887,6 +874,23 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             added_users = []
             for form in formset:
                 user_form_data = form.cleaned_data
+                # checking for users with pending/processing project removal requests.
+                username = user_form_data.get('username')
+                pending_status = ProjectUserRemovalRequestStatusChoice.objects.get(name='Pending')
+                processing_status = ProjectUserRemovalRequestStatusChoice.objects.get(name='Processing')
+
+                if ProjectUserRemovalRequest.objects.\
+                        filter(project_user__user__username=username,
+                               project_user__project=project_obj,
+                               status__in=[pending_status, processing_status]).exists():
+
+                    message = (
+                        f'A pending request to remove User {username} from '
+                        f'Project {project_obj.name} has been made. Please '
+                        f'wait until it is completed before adding the user '
+                        f'again.')
+                    messages.error(request, message)
+                    continue
 
                 # recording users with unsigned user access agreements
                 if user_form_data['user_access_agreement'] == 'Unsigned':
@@ -1030,93 +1034,143 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             return super().dispatch(request, *args, **kwargs)
 
     def get_users_to_remove(self, project_obj):
+
+        num_managers = project_obj.projectuser_set.filter(
+            role__name='Manager',
+            status__name='Active').count()
+
+        if num_managers > 1:
+            query_set = project_obj.projectuser_set.filter(
+                status__name='Active').exclude(
+                role__name='Principal Investigator').order_by(
+                'user__username')
+        else:
+            query_set = project_obj.projectuser_set.filter(
+                status__name='Active').exclude(
+                role__name__in=['Principal Investigator', 'Manager']).order_by(
+                'user__username')
+
         users_to_remove = [
 
             {'username': ele.user.username,
              'first_name': ele.user.first_name,
              'last_name': ele.user.last_name,
              'email': ele.user.email,
-             'role': ele.role}
+             'role': ele.role,
+             'status': ele.status.name}
 
-            for ele in project_obj.projectuser_set.filter(
-                status__name='Active').exclude(
-                role__name='Principal Investigator').order_by(
-                'user__username') if ele.user != self.request.user
+            for ele in query_set if ele.user != self.request.user
         ]
 
-        return users_to_remove
+        users_pending_removal = [
+
+            ele
+
+            for ele in project_obj.projectuser_set.filter(
+                status__name='Pending - Remove').exclude(
+                role__name='Principal Investigator').order_by(
+                'user__username')
+        ]
+
+        return users_to_remove, users_pending_removal
 
     def get(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         project_obj = get_object_or_404(Project, pk=pk)
 
-        users_to_remove = self.get_users_to_remove(project_obj)
+        users_to_remove_list, users_pending_removal = self.get_users_to_remove(project_obj)
         context = {}
-
-        if users_to_remove:
-            formset = formset_factory(
-                ProjectRemoveUserForm, max_num=len(users_to_remove))
-            formset = formset(initial=users_to_remove, prefix='userform')
-            context['formset'] = formset
-
         context['project'] = get_object_or_404(Project, pk=pk)
+        context['users_pending_removal'] = users_pending_removal
+
+        page = request.GET.get('page', 1)
+
+        paginator = Paginator(users_to_remove_list, 25)
+        try:
+            users_to_remove = paginator.page(page)
+        except PageNotAnInteger:
+            users_to_remove = paginator.page(1)
+        except EmptyPage:
+            users_to_remove = paginator.page(paginator.num_pages)
+
+        context['users_to_remove'] = users_to_remove
+
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         project_obj = get_object_or_404(Project, pk=pk)
+        user_obj = User.objects.get(
+            username=self.request.POST['username'])
 
-        users_to_remove = self.get_users_to_remove(project_obj)
+        try:
+            request_runner = ProjectRemovalRequestRunner(
+                self.request.user, user_obj, project_obj)
+            runner_result = request_runner.run()
+            success_messages, error_messages = request_runner.get_messages()
 
-        formset = formset_factory(
-            ProjectRemoveUserForm, max_num=len(users_to_remove))
-        formset = formset(
-            request.POST, initial=users_to_remove, prefix='userform')
+            if runner_result:
+                request_runner.send_emails()
+                for m in success_messages:
+                    messages.success(request, m)
+            else:
+                for m in error_messages:
+                    messages.error(request, m)
 
-        remove_users_count = 0
-
-        if formset.is_valid():
-            project_user_removed_status_choice = ProjectUserStatusChoice.objects.get(
-                name='Removed')
-            allocation_user_removed_status_choice = AllocationUserStatusChoice.objects.get(
-                name='Removed')
-            for form in formset:
-                user_form_data = form.cleaned_data
-                if user_form_data['selected']:
-
-                    remove_users_count += 1
-
-                    user_obj = User.objects.get(
-                        username=user_form_data.get('username'))
-
-                    if project_obj.projectuser_set.filter(
-                            user=user_obj,
-                            role__name='Principal Investigator').exists():
-                        continue
-
-                    project_user_obj = project_obj.projectuser_set.get(
-                        user=user_obj)
-                    project_user_obj.status = project_user_removed_status_choice
-                    project_user_obj.save()
-
-                    # get allocation to remove users from
-                    allocations_to_remove_user_from = project_obj.allocation_set.filter(
-                        status__name__in=['Active', 'New', 'Renewal Requested'])
-                    for allocation in allocations_to_remove_user_from:
-                        for allocation_user_obj in allocation.allocationuser_set.filter(user=user_obj, status__name__in=['Active', ]):
-                            allocation_user_obj.status = allocation_user_removed_status_choice
-                            allocation_user_obj.save()
-
-                            allocation_remove_user.send(sender=self.__class__,
-                                                        allocation_user_pk=allocation_user_obj.pk)
-
-            messages.success(
-                request, 'Removed {} users from project.'.format(remove_users_count))
-        else:
-            for error in formset.errors:
-                messages.error(request, error)
+        except Exception as e:
+            logger.exception(e)
+            error_message = \
+                'Unexpected error. Please contact an administrator.'
+            messages.error(self.request, error_message)
 
         return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': pk}))
+
+
+class ProjectRemoveSelf(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+
+    def test_func(self):
+        if self.request.user.is_superuser:
+            return True
+
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+
+        if project_obj.projectuser_set.filter(
+                user=self.request.user,
+                role__name='User',
+                status__name='Active').exists():
+            return True
+
+        if project_obj.projectuser_set.filter(
+                user=self.request.user,
+                role__name='Manager',
+                status__name='Active').exists() and \
+                len(project_obj.projectuser_set.filter(role__name='Manager')) > 1:
+            return True
+
+    def post(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        project_obj = get_object_or_404(Project, pk=pk)
+
+        try:
+            request_runner = ProjectRemovalRequestRunner(
+                self.request.user, self.request.user, project_obj)
+            runner_result = request_runner.run()
+            success_messages, error_messages = request_runner.get_messages()
+
+            if runner_result:
+                request_runner.send_emails()
+                for message in success_messages:
+                    messages.success(request, message)
+            else:
+                for message in error_messages:
+                    messages.error(request, message)
+        except Exception as e:
+            logger.exception(e)
+            error_message = \
+                'Unexpected error. Please contact an administrator.'
+            messages.error(self.request, error_message)
+
+        return HttpResponseRedirect(reverse('home'))
 
 
 class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -1144,7 +1198,8 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 pk=project_user_pk)
 
             project_user_update_form = ProjectUserUpdateForm(
-                initial={'role': project_user_obj.role, 'enable_notifications': project_user_obj.enable_notifications})
+                initial={'role': project_user_obj.role, 'enable_notifications':
+                    project_user_obj.enable_notifications})
 
             context = {}
             context['project_obj'] = project_obj
@@ -1502,6 +1557,15 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 self.request, 'You must sign the User Access Agreement before you can join a project.')
             return False
 
+        inactive_project_status = ProjectStatusChoice.objects.get(
+            name='Inactive')
+        if project_obj.status == inactive_project_status:
+            message = (
+                f'Project {project_obj.name} is inactive, and may not be '
+                f'joined.')
+            messages.error(self.request, message)
+            return False
+
         if project_users.exists():
             project_user = project_users.first()
             if project_user.status.name == 'Active':
@@ -1514,6 +1578,19 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     f'You have already requested to join Project '
                     f'{project_obj.name}.')
                 messages.warning(self.request, message)
+                return False
+
+            pending_status = ProjectUserRemovalRequestStatusChoice.objects.get(name='Pending')
+            processing_status = ProjectUserRemovalRequestStatusChoice.objects.get(name='Processing')
+
+            if ProjectUserRemovalRequest.objects. \
+                    filter(project_user=project_user,
+                           status__in=[pending_status, processing_status]).exists():
+                message = (
+                    f'You cannot join Project {project_obj.name} because you '
+                    f'have a pending removal request for '
+                    f'{project_obj.name}.')
+                messages.error(self.request, message)
                 return False
 
         # If the user is the requester or PI on a pending request for the
@@ -1571,38 +1648,15 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 role=role,
                 status=status)
 
-        # Create a join request, whose 'created' timestamp is used to determine
-        # when to auto-approve the request.
+        # Create a join request
         ProjectUserJoinRequest.objects.create(project_user=project_user,
                                               reason=reason)
 
-        if project_obj.joins_auto_approval_delay != datetime.timedelta():
-            message = (
-                f'You have requested to join Project {project_obj.name}. The '
-                f'managers have been notified. The request will automatically '
-                f'be approved after a delay period, unless managers '
-                f'explicitly deny it.')
-            messages.success(self.request, message)
-            next_view = reverse('project-join-list')
-        else:
-            # Activate the user.
-            status = ProjectUserStatusChoice.objects.get(name='Active')
-            project_user.status = status
-            project_user.save()
-
-            # Request cluster access.
-            request_runner = ProjectClusterAccessRequestRunner(project_user)
-            runner_result = request_runner.run()
-            if runner_result.success:
-                message = (
-                    f'You have requested to join Project {project_obj.name}. '
-                    f'Your request has automatically been approved. BRC staff '
-                    f'have been notified to set up cluster access.')
-                messages.success(self.request, message)
-                next_view = reverse(
-                    'project-detail', kwargs={'pk': project_obj.pk})
-            else:
-                messages.error(self.request, runner_result.error_message)
+        message = (
+            f'You have requested to join Project {project_obj.name}. The '
+            f'managers have been notified.')
+        messages.success(self.request, message)
+        next_view = reverse('project-join-list')
 
         # Send a notification to the project managers.
         try:
@@ -1730,10 +1784,17 @@ class ProjectJoinListView(ProjectListView, UserPassesTestMixin):
                 is_requester_or_pi,
                 status__name__in=pending_project_request_statuses
             ).values_list('project__name', flat=True))
+        pending_removal_requests = set([removal_request.project_user.project.name
+                                        for removal_request in
+                                        ProjectUserRemovalRequest.objects.filter(
+                                            Q(project_user__user__username=self.request.user.username) &
+                                            Q(status__name='Pending'))])
+
         not_joinable = set.union(
             already_pending_or_active,
             is_part_of_pending_savio_project_request,
-            is_part_of_pending_vector_project_request)
+            is_part_of_pending_vector_project_request,
+            pending_removal_requests)
 
         join_requests = Project.objects.filter(Q(projectuser__user=self.request.user)
                                                & Q(status__name__in=['New', 'Active', ])
@@ -1742,13 +1803,6 @@ class ProjectJoinListView(ProjectListView, UserPassesTestMixin):
                                         When(name__startswith='vector_', then=Value('Vector')),
                                         default=Value('Savio'),
                                         output_field=CharField()))
-
-        for request in join_requests:
-            delay = request.joins_auto_approval_delay
-            project_user = request.projectuser_set.get(user=self.request.user)
-            join_request_date = project_user.projectuserjoinrequest_set.latest('created').created
-            auto_approval_time = join_request_date + delay
-            request.auto_approval_time = auto_approval_time
 
         context['join_requests'] = join_requests
         context['not_joinable'] = not_joinable
@@ -1788,19 +1842,10 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
 
     @staticmethod
     def get_users_to_review(project_obj):
-        delay = project_obj.joins_auto_approval_delay
-
         users_to_review = []
         queryset = project_obj.projectuser_set.filter(
             status__name='Pending - Add').order_by('user__username')
         for ele in queryset:
-            try:
-                auto_approval_time = \
-                    (ele.projectuserjoinrequest_set.latest('created').created +
-                     delay)
-            except ProjectUserJoinRequest.DoesNotExist:
-                auto_approval_time = 'Unknown'
-
             try:
                 reason = ele.projectuserjoinrequest_set.latest('created').reason
             except ProjectUserJoinRequest.DoesNotExist:
@@ -1812,7 +1857,6 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
                 'last_name': ele.user.last_name,
                 'email': ele.user.email,
                 'role': ele.role,
-                'auto_approval_time': auto_approval_time,
                 'reason': reason
             }
             users_to_review.append(user)
@@ -1954,39 +1998,10 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
             reverse('project-detail', kwargs={'pk': pk}))
 
 
-class ProjectAutoApproveJoinRequestsView(LoginRequiredMixin,
-                                         UserPassesTestMixin, View):
-
-    def test_func(self):
-        if self.request.user.is_superuser:
-            return True
-        message = (
-            'You do not have permission to automatically approve project '
-            'requests.')
-        messages.error(self.request, message)
-
-    def post(self, request, *args, **kwargs):
-        results = auto_approve_project_join_requests()
-        num_processed = len(results)
-        num_successes, num_failures = 0, 0
-        for result in results:
-            if result.success:
-                num_successes = num_successes + 1
-            else:
-                num_failures = num_failures + 1
-        message = (
-            f'{num_processed} pending join requests were processed. '
-            f'{num_successes} succeeded. {num_failures} failed.')
-        if num_failures == 0:
-            messages.success(request, message)
-        else:
-            messages.error(request, message)
-        return HttpResponseRedirect(
-            reverse('allocation-cluster-account-request-list'))
-
-
 # TODO: Once finalized, move these imports above.
-from coldfront.core.project.forms import ProjectAllocationReviewForm
+from coldfront.core.allocation.models import AllocationRenewalRequest
+from coldfront.core.project.forms import ReviewDenyForm
+from coldfront.core.project.forms import ReviewStatusForm
 from coldfront.core.project.forms import SavioProjectAllocationTypeForm
 from coldfront.core.project.forms import SavioProjectDetailsForm
 from coldfront.core.project.forms import SavioProjectExistingPIForm
@@ -1997,7 +2012,6 @@ from coldfront.core.project.forms import SavioProjectPoolAllocationsForm
 from coldfront.core.project.forms import SavioProjectPooledProjectSelectionForm
 from coldfront.core.project.forms import SavioProjectRechargeExtraFieldsForm
 from coldfront.core.project.forms import SavioProjectReviewAllocationDatesForm
-from coldfront.core.project.forms import SavioProjectReviewDenyForm
 from coldfront.core.project.forms import SavioProjectReviewMemorandumSignedForm
 from coldfront.core.project.forms import SavioProjectReviewSetupForm
 from coldfront.core.project.forms import SavioProjectSurveyForm
@@ -2147,14 +2161,13 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
         """Perform processing and store information in a request
         object."""
         redirect_url = '/'
-
-        # Retrieve form data; include empty dictionaries for skipped steps.
-        data = iter([form.cleaned_data for form in form_list])
-        form_data = [{} for _ in range(len(self.form_list))]
-        for step in sorted(form_dict.keys()):
-            form_data[int(step)] = next(data)
-
         try:
+            # Retrieve form data; include empty dictionaries for skipped steps.
+            data = iter([form.cleaned_data for form in form_list])
+            form_data = [{} for _ in range(len(self.form_list))]
+            for step in sorted(form_dict.keys()):
+                form_data[int(step)] = next(data)
+
             request_kwargs = {
                 'requester': self.request.user,
             }
@@ -2668,8 +2681,17 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         return HttpResponseRedirect(self.redirect)
 
     def __get_service_units_to_allocate(self):
-        """Return the number of service units to allocate to the
-        project if it were to be approved now."""
+        """Return the number of service units to allocate to the project
+        if it were to be approved now.
+
+        If the request was created as part of an allocation renewal, it
+        may be associated with at most one AllocationRenewalRequest. If
+        so, service units will be allocated when the latter request is
+        approved."""
+        if AllocationRenewalRequest.objects.filter(
+                new_project_request=self.request_obj).exists():
+            return settings.ALLOCATION_MIN
+
         allocation_type = self.request_obj.allocation_type
         now = utc_now_offset_aware()
         if allocation_type == SavioProjectAllocationRequest.CO:
@@ -2718,7 +2740,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 class SavioProjectReviewEligibilityView(LoginRequiredMixin,
                                         UserPassesTestMixin,
                                         SavioProjectRequestMixin, FormView):
-    form_class = ProjectAllocationReviewForm
+    form_class = ReviewStatusForm
     template_name = (
         'project/project_request/savio/project_review_eligibility.html')
     login_url = '/'
@@ -2793,7 +2815,7 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
 
 class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
                                       SavioProjectRequestMixin, FormView):
-    form_class = ProjectAllocationReviewForm
+    form_class = ReviewStatusForm
     template_name = (
         'project/project_request/savio/project_review_readiness.html')
     login_url = '/'
@@ -3164,7 +3186,7 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
 
 class SavioProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
                                  SavioProjectRequestMixin, FormView):
-    form_class = SavioProjectReviewDenyForm
+    form_class = ReviewDenyForm
     template_name = (
         'project/project_request/savio/project_review_deny.html')
     login_url = '/'
@@ -3348,7 +3370,8 @@ class VectorProjectRequestListView(LoginRequiredMixin, TemplateView):
         user = self.request.user
 
         request_list = self.get_queryset()
-        if not (user.is_superuser or user.has_perm('project.view_vectorprojectallocationrequest')):
+        permission = 'project.view_vectorprojectallocationrequest'
+        if not (user.is_superuser or user.has_perm(permission)):
             args.append(Q(requester=user) | Q(pi=user))
         if self.completed:
             status__name__in = ['Approved - Complete', 'Denied']
@@ -3382,7 +3405,8 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('project.view_vectorprojectallocationrequest'):
+        permission = 'project.view_vectorprojectallocationrequest'
+        if self.request.user.has_perm(permission):
             return True
 
         if (self.request.user == self.request_obj.requester or
@@ -3493,7 +3517,7 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
 class VectorProjectReviewEligibilityView(LoginRequiredMixin,
                                          UserPassesTestMixin, FormView):
-    form_class = ProjectAllocationReviewForm
+    form_class = ReviewStatusForm
     template_name = (
         'project/project_request/vector/project_review_eligibility.html')
     login_url = '/'
@@ -3754,3 +3778,448 @@ class VectorProjectUndenyRequestView(LoginRequiredMixin, UserPassesTestMixin, Vi
         return HttpResponseRedirect(
             reverse('vector-project-request-detail',
                     kwargs={'pk': kwargs.get('pk')}))
+
+
+class ProjectJoinRequestListView(LoginRequiredMixin,
+                                 UserPassesTestMixin,
+                                 ListView):
+    template_name = 'project/project_join_request_list.html'
+    paginate_by = 25
+
+    def get_queryset(self):
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            if direction == 'asc':
+                direction = ''
+            else:
+                direction = '-'
+            order_by = direction + 'created'
+        else:
+            order_by = '-created'
+
+        project_join_requests = \
+            ProjectUserJoinRequest.objects.filter(
+                pk__in=ProjectUserJoinRequest.objects.filter(
+                    project_user__status__name=
+                    'Pending - Add').order_by(
+                    'project_user', '-created').distinct(
+                    'project_user'))
+
+        join_request_search_form = JoinRequestSearchForm(self.request.GET)
+
+        if join_request_search_form.is_valid():
+            data = join_request_search_form.cleaned_data
+
+            if data.get('username'):
+                project_join_requests = \
+                    project_join_requests.filter(
+                        project_user__user__username__icontains=data.get('username'))
+
+            if data.get('email'):
+                project_join_requests = \
+                    project_join_requests.filter(
+                        project_user__user__email__icontains=data.get('email'))
+
+            if data.get('project_name'):
+                project_join_requests = \
+                    project_join_requests.filter(
+                        project_user__project__name__icontains=data.get('project_name'))
+
+        return project_join_requests.order_by(order_by)
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('project.view_projectuserjoinrequest'):
+            return True
+
+        message = (
+            'You do not have permission to view project join requests.')
+        messages.error(self.request, message)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        join_request_search_form = JoinRequestSearchForm(self.request.GET)
+        if join_request_search_form.is_valid():
+            context['join_request_search_form'] = join_request_search_form
+            data = join_request_search_form.cleaned_data
+            filter_parameters = ''
+            for key, value in data.items():
+                if value:
+                    if isinstance(value, list):
+                        for ele in value:
+                            filter_parameters += '{}={}&'.format(key, ele)
+                    else:
+                        filter_parameters += '{}={}&'.format(key, value)
+            context['join_request_search_form'] = join_request_search_form
+        else:
+            filter_parameters = None
+            context['join_request_search_form'] = JoinRequestSearchForm()
+
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            filter_parameters_with_order_by = filter_parameters + \
+                                              'order_by=%s&direction=%s&' % (order_by, direction)
+        else:
+            filter_parameters_with_order_by = filter_parameters
+
+        context['expand_accordion'] = 'show'
+
+        context['filter_parameters'] = filter_parameters
+        context['filter_parameters_with_order_by'] = filter_parameters_with_order_by
+
+        join_request_queryset = self.get_queryset()
+
+        paginator = Paginator(join_request_queryset, self.paginate_by)
+
+        page = self.request.GET.get('page')
+
+        try:
+            join_requests = paginator.page(page)
+        except PageNotAnInteger:
+            join_requests = paginator.page(1)
+        except EmptyPage:
+            join_requests = paginator.page(paginator.num_pages)
+
+        context['join_request_list'] = join_requests
+
+        return context
+
+
+class ProjectRemovalRequestListView(LoginRequiredMixin,
+                                    UserPassesTestMixin,
+                                    ListView):
+    template_name = 'project/project_removal_request_list.html'
+    login_url = '/'
+    completed = False
+    paginate_by = 30
+    context_object_name = "project_removal_request_list"
+
+    def get_queryset(self):
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            if direction == 'asc':
+                direction = ''
+            else:
+                direction = '-'
+            order_by = direction + order_by
+        else:
+            order_by = 'id'
+
+        project_removal_status_complete, _ = \
+            ProjectUserRemovalRequestStatusChoice.objects.get_or_create(
+            name='Complete')
+
+        project_removal_status_pending, _ = \
+            ProjectUserRemovalRequestStatusChoice.objects.get_or_create(
+                name='Pending')
+
+        project_removal_status_processing, _ = \
+            ProjectUserRemovalRequestStatusChoice.objects.get_or_create(
+                name='Processing')
+
+        project_removal_status_not_complete = [project_removal_status_pending,
+                                               project_removal_status_processing]
+
+        removal_request_search_form = ProjectRemovalRequestSearchForm(self.request.GET)
+
+        if self.completed:
+            project_removal_request_list = ProjectUserRemovalRequest.objects.filter(
+                status=project_removal_status_complete)
+        else:
+            project_removal_request_list = ProjectUserRemovalRequest.objects.filter(
+                status__in=project_removal_status_not_complete)
+
+        if removal_request_search_form.is_valid():
+            data = removal_request_search_form.cleaned_data
+
+            if data.get('username'):
+                project_removal_request_list = \
+                    project_removal_request_list.filter(
+                        project_user__user__username__icontains=data.get(
+                            'username'))
+
+            if data.get('email'):
+                project_removal_request_list = \
+                    project_removal_request_list.filter(
+                        project_user__user__email__icontains=data.get(
+                            'email'))
+
+            if data.get('project_name'):
+                project_removal_request_list = \
+                    project_removal_request_list.filter(
+                        project_user__project__name__icontains=data.get(
+                            'project_name'))
+
+            if data.get('requester'):
+                project_removal_request_list = \
+                    project_removal_request_list.filter(
+                        requester__user__username__icontains=data.get(
+                            'username'))
+
+        return project_removal_request_list.order_by(order_by)
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('project.view_projectuserremovalrequest'):
+            return True
+
+        message = (
+            'You do not have permission to review project removal requests.')
+        messages.error(self.request, message)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        removal_request_search_form = ProjectRemovalRequestSearchForm(self.request.GET)
+        if removal_request_search_form.is_valid():
+            context['removal_request_search_form'] = removal_request_search_form
+            data = removal_request_search_form.cleaned_data
+            filter_parameters = ''
+            for key, value in data.items():
+                if value:
+                    if isinstance(value, list):
+                        for ele in value:
+                            filter_parameters += '{}={}&'.format(key, ele)
+                    else:
+                        filter_parameters += '{}={}&'.format(key, value)
+            context['removal_request_search_form'] = removal_request_search_form
+        else:
+            filter_parameters = None
+            context['removal_request_search_form'] = ProjectRemovalRequestSearchForm()
+
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            filter_parameters_with_order_by = filter_parameters + \
+                                              'order_by=%s&direction=%s&' % (order_by, direction)
+        else:
+            filter_parameters_with_order_by = filter_parameters
+
+        context['expand_accordion'] = "toggle"
+
+        context['filter_parameters'] = filter_parameters
+        context['filter_parameters_with_order_by'] = filter_parameters_with_order_by
+
+        context['request_filter'] = (
+            'completed' if self.completed else 'pending')
+        removal_request_list = self.get_queryset()
+
+        paginator = Paginator(removal_request_list, self.paginate_by)
+
+        page = self.request.GET.get('page')
+
+        try:
+            removal_requests = paginator.page(page)
+        except PageNotAnInteger:
+            removal_requests = paginator.page(1)
+        except EmptyPage:
+            removal_requests = paginator.page(paginator.num_pages)
+
+        context['removal_request_list'] = removal_requests
+
+        return context
+
+
+class ProjectRemovalRequestUpdateStatusView(LoginRequiredMixin,
+                                            UserPassesTestMixin, FormView):
+    form_class = ProjectRemovalRequestUpdateStatusForm
+    login_url = '/'
+    template_name = (
+        'project/project_removal_request_update_status.html')
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+
+        message = (
+            'You do not have permission to update project removal requests.')
+        messages.error(self.request, message)
+
+    def dispatch(self, request, *args, **kwargs):
+        self.project_removal_request_obj = get_object_or_404(
+            ProjectUserRemovalRequest, pk=self.kwargs.get('pk'))
+        self.user_obj = self.project_removal_request_obj.project_user.user
+        status = self.project_removal_request_obj.status.name
+        if status != 'Pending':
+            message = f'Project removal request has unexpected status {status}.'
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse('project-removal-request-list'))
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        form_data = form.cleaned_data
+        status = form_data.get('status')
+
+        project_removal_status_choice, _ =\
+            ProjectUserRemovalRequestStatusChoice.objects.get_or_create(
+                name=status)
+        self.project_removal_request_obj.status = project_removal_status_choice
+        self.project_removal_request_obj.save()
+
+        message = (
+            f'Project removal request initiated by '
+            f'{self.project_removal_request_obj.requester.username} for User '
+            f'{self.user_obj.username} under '
+            f'Project {self.project_removal_request_obj.project_user.project.name} '
+            f'has been marked as {status}.')
+        messages.success(self.request, message)
+
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['project_removal_request'] = self.project_removal_request_obj
+        return context
+
+    def get_initial(self):
+        initial = {
+            'status': self.project_removal_request_obj.status.name,
+        }
+        return initial
+
+    def get_success_url(self):
+        return reverse('project-removal-request-list')
+
+
+class ProjectRemovalRequestCompleteStatusView(LoginRequiredMixin,
+                                              UserPassesTestMixin,
+                                              FormView):
+    form_class = ProjectRemovalRequestCompletionForm
+    login_url = '/'
+    template_name = (
+        'project/project_removal_request_complete_status.html')
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+
+        message = (
+            'You do not have permission to update project removal requests.')
+        messages.error(self.request, message)
+
+    def dispatch(self, request, *args, **kwargs):
+        self.project_removal_request_obj = get_object_or_404(
+            ProjectUserRemovalRequest, pk=self.kwargs.get('pk'))
+        self.user_obj = self.project_removal_request_obj.project_user.user
+        status = self.project_removal_request_obj.status.name
+        if status != 'Processing':
+            message = f'Project removal request has unexpected status {status}.'
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse('project-removal-request-list'))
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        form_data = form.cleaned_data
+        status = form_data.get('status')
+
+        project_removal_status_choice, _ = \
+            ProjectUserRemovalRequestStatusChoice.objects.get_or_create(
+                name=status)
+
+        project_obj = self.project_removal_request_obj.project_user.project
+        removed_user = self.project_removal_request_obj.project_user
+        requester = self.project_removal_request_obj.requester
+
+        self.project_removal_request_obj.status = project_removal_status_choice
+        if status == 'Complete':
+            self.project_removal_request_obj.completion_time = utc_now_offset_aware()
+
+        self.project_removal_request_obj.save()
+
+        if status == 'Complete':
+            project_user_status_removed, _ = \
+                ProjectUserStatusChoice.objects.get_or_create(
+                    name='Removed')
+            removed_user.status = project_user_status_removed
+            removed_user.save()
+
+            try:
+                allocation_obj = Allocation.objects.get(project=project_obj)
+                allocation_user = \
+                    allocation_obj.allocationuser_set.get(user=removed_user.user)
+                allocation_user_status_choice_removed = \
+                    AllocationUserStatusChoice.objects.get(name='Removed')
+                allocation_user.status = allocation_user_status_choice_removed
+                allocation_user.save()
+
+                cluster_account_status = \
+                    allocation_user.allocationuserattribute_set.get(
+                        allocation_attribute_type=AllocationAttributeType.objects.get(
+                            name='Cluster Account Status'))
+                cluster_account_status.value = 'Denied'
+                cluster_account_status.save()
+
+            except Exception as e:
+                message = f'Unexpected error setting AllocationAttributeType' \
+                          f'Cluster Account Status to "Denied" and ' \
+                          f'AllocationUserStatusChoice to "Removed" ' \
+                          f'for user {removed_user.user.username}.'
+                messages.error(self.request, message)
+
+        message = (
+            f'Project removal request initiated by '
+            f'{self.project_removal_request_obj.requester.username} for User '
+            f'{self.user_obj.username} under '
+            f'Project {self.project_removal_request_obj.project_user.project.name} '
+            f'has been marked as {status}.')
+        messages.success(self.request, message)
+
+        if EMAIL_ENABLED and status == 'Complete':
+            pi_condition = Q(
+                role__name='Principal Investigator', status__name='Active',
+                enable_notifications=True)
+            manager_condition = Q(role__name='Manager', status__name='Active')
+            manager_pi_queryset = project_obj.projectuser_set.filter(
+                pi_condition | manager_condition)
+
+            for proj_user in list(chain(manager_pi_queryset, [removed_user])):
+                curr_user = proj_user.user
+                template_context = {
+                    'user_first_name': curr_user.first_name,
+                    'user_last_name': curr_user.last_name,
+                    'removed_user_first_name': removed_user.user.first_name,
+                    'removed_user_last_name': removed_user.user.last_name,
+                    'requester_first_name': requester.first_name,
+                    'requester_last_name': requester.last_name,
+                    'project_name': project_obj.name,
+                    'signature': EMAIL_SIGNATURE,
+                    'support_email': SUPPORT_EMAIL,
+                }
+
+                send_email_template(
+                    'Project Removal Request Completed',
+                    'email/project_removal/project_removal_complete.txt',
+                    template_context,
+                    EMAIL_SENDER,
+                    [curr_user.email]
+                )
+
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['project_removal_request'] = self.project_removal_request_obj
+        return context
+
+    def get_initial(self):
+        initial = {
+            'status': self.project_removal_request_obj.status.name,
+        }
+        return initial
+
+    def get_success_url(self):
+        return reverse('project-removal-request-list')

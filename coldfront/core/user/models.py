@@ -3,9 +3,12 @@ from django.core.validators import EmailValidator
 from django.core.validators import MinLengthValidator
 from django.core.validators import RegexValidator
 from django.db import models
-from rest_framework.authtoken.models import Token
-
+from django.db.models import Q
+from django.core.exceptions import ValidationError
+from django.utils import timezone
+from model_utils.models import TimeStampedModel
 from phonenumber_field.modelfields import PhoneNumberField
+from rest_framework.authtoken.models import Token
 
 
 class UserProfile(models.Model):
@@ -44,7 +47,8 @@ class EmailAddress(models.Model):
         }
     )
     is_verified = models.BooleanField(default=False)
-    is_primary = models.BooleanField(default=False)
+    is_primary = models.BooleanField(
+        default=False, help_text='Change is_primary status in list display.')
 
     class Meta:
         verbose_name = 'Email Address'
@@ -52,6 +56,34 @@ class EmailAddress(models.Model):
 
     def save(self, *args, **kwargs):
         self.email = self.email.lower()
+
+        if self.is_primary:
+            try:
+                was_primary = EmailAddress.objects.get(pk=self.pk).is_primary
+            except EmailAddress.DoesNotExist:
+                was_primary = False
+            if not was_primary:
+                # The address is going from not being primary to being primary.
+                f = Q(user=self.user) & Q(is_primary=True) & ~Q(pk=self.pk)
+                if EmailAddress.objects.filter(f).exists():
+                    # Raise an error if a different address is already primary.
+                    raise ValidationError(
+                        'User already has a primary email address. Manually '
+                        'unset the primary email before setting a new primary '
+                        'email.')
+                else:
+                    # Non-verified addresses should not be set to primary.
+                    if not self.is_verified:
+                        raise ValidationError(
+                            'Only verified emails may be set to primary.')
+                    self.user.email = self.email
+                    self.user.save()
+            else:
+                # The address was and is still primary; set the user's email
+                # field in case it differs.
+                self.user.email = self.email
+                self.user.save()
+
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -63,3 +95,16 @@ class ExpiringToken(Token):
 
     class Meta:
         verbose_name = 'Expiring Token'
+
+
+class IdentityLinkingRequestStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+
+
+class IdentityLinkingRequest(TimeStampedModel):
+    requester = models.ForeignKey(User, on_delete=models.CASCADE)
+    request_time = models.DateTimeField(
+        null=True, blank=True, default=timezone.now)
+    completion_time = models.DateTimeField(null=True, blank=True)
+    status = models.ForeignKey(
+        IdentityLinkingRequestStatusChoice, on_delete=models.CASCADE)

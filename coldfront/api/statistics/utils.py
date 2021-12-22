@@ -344,7 +344,7 @@ def set_project_usage_value(project, value):
     return True
 
 
-def set_user_project_allocation_value(user, project, value):
+def set_project_user_allocation_value(user, project, value):
     """Set the value of the compute allocation for the given User and
     Project; return whether or not the update was performed
     successfully.
@@ -379,7 +379,7 @@ def set_user_project_allocation_value(user, project, value):
     return True
 
 
-def set_user_project_usage_value(user, project, value):
+def set_project_user_usage_value(user, project, value):
     """Set the usage value of the usage for the compute allocation for
     the given Project; return whether or not the update was performed
     successfully.

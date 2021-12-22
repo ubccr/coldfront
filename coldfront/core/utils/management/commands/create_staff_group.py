@@ -11,13 +11,17 @@ class Command(BaseCommand):
         if not created:
             new_group.permissions.clear()
 
-        perm_codename_lst = ['view_vectorprojectallocationrequest',
-                             'view_savioprojectallocationrequest',
-                             'can_review_cluster_account_requests',
-                             'can_review_pending_project_reviews',
-                             'can_view_all_allocations',
-                             'can_view_all_projects',
-                             ]
+        perm_codename_lst = [
+            'view_allocationrenewalrequest',
+            'view_vectorprojectallocationrequest',
+            'view_savioprojectallocationrequest',
+            'can_review_cluster_account_requests',
+            'can_review_pending_project_reviews',
+            'can_view_all_allocations',
+            'can_view_all_projects',
+            'view_projectuserjoinrequest',
+            'view_projectuserremovalrequest',
+        ]
 
         for perm_codename in perm_codename_lst:
             try:

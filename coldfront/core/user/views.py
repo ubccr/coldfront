@@ -25,6 +25,7 @@ from django.views.generic.edit import FormView
 
 from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.project.models import Project, ProjectUser
+from coldfront.core.user.models import IdentityLinkingRequest, IdentityLinkingRequestStatusChoice
 from coldfront.core.user.forms import EmailAddressAddForm
 from coldfront.core.user.forms import UserReactivateForm
 from coldfront.core.user.forms import PrimaryEmailAddressSelectionForm
@@ -38,12 +39,14 @@ from coldfront.core.user.utils import ExpiringTokenGenerator
 from coldfront.core.user.utils import send_account_activation_email
 from coldfront.core.user.utils import send_account_already_active_email
 from coldfront.core.user.utils import send_email_verification_email
+from coldfront.core.user.utils import update_user_primary_email_address
 from coldfront.core.utils.common import (import_from_settings,
                                          utc_now_offset_aware)
 from coldfront.core.utils.mail import send_email_template
 
 logger = logging.getLogger(__name__)
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
+
 if EMAIL_ENABLED:
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings(
         'EMAIL_TICKET_SYSTEM_ADDRESS')
@@ -92,7 +95,32 @@ class UserProfile(TemplateView):
             allocation_attribute_type__name='Cluster Account Status',
             value='Active').exists()
 
+        if viewed_user == self.request.user:
+            self.update_context_with_identity_linking_request_data(context)
+
+        context['help_email'] = import_from_settings('CENTER_HELP_EMAIL')
+
         return context
+
+    def update_context_with_identity_linking_request_data(self, context):
+        """Update the given context dictionary with fields relating to
+        IdentityLinkingRequests.
+
+        In particular, set the key 'linking_request' to denote the
+        latest request, whether it be complete, pending, or nonexistent.
+        """
+        user_requests = IdentityLinkingRequest.objects.filter(
+            requester=self.request.user)
+        pending_requests = user_requests.filter(
+            status__name='Pending').order_by('request_time')
+        complete_requests = user_requests.filter(
+            status__name='Complete').order_by('completion_time')
+        if pending_requests.exists():
+            context['linking_request'] = pending_requests.last()
+        elif complete_requests.exists():
+            context['linking_request'] = complete_requests.last()
+        else:
+            context['linking_request'] = None
 
 
 @method_decorator(login_required, name='dispatch')
@@ -166,6 +194,7 @@ class UserProjectsManagersView(ListView):
         ongoing_project_statuses = (
             'New',
             'Active',
+            'Inactive',
         )
 
         qs = ProjectUser.objects.filter(
@@ -524,7 +553,6 @@ class UserReactivateView(FormView):
 
 
 def activate_user_account(request, uidb64=None, token=None):
-    logger = logging.getLogger(__name__)
     try:
         user_pk = int(force_text(urlsafe_base64_decode(uidb64)))
         user = User.objects.get(pk=user_pk)
@@ -537,28 +565,27 @@ def activate_user_account(request, uidb64=None, token=None):
             try:
                 email_address, created = EmailAddress.objects.get_or_create(
                     user=user, email=email)
+                if created:
+                    logger.info(
+                        f'Created EmailAddress {email_address.pk} for User '
+                        f'{user.pk} and email {email}.')
+                email_address.is_verified = True
+                email_address.save()
+                update_user_primary_email_address(email_address)
             except Exception as e:
                 logger.error(
                     f'Failed to create EmailAddress for User {user.pk} and '
-                    f'email {email}. Details:')
+                    f'email {email} and set it as the primary address. '
+                    f'Details:')
                 logger.exception(e)
                 message = (
                     'Unexpected server error. Please contact an '
                     'administrator.')
                 messages.error(request, message)
             else:
-                if created:
-                    logger.info(
-                        f'Created EmailAddress {email_address.pk} for User '
-                        f'{user.pk} and email {email}.')
-                email_address.is_verified = True
-                email_address.is_primary = True
-                email_address.save()
-
                 # Only activate the User if the EmailAddress update succeeded.
                 user.is_active = True
                 user.save()
-
                 message = (
                     f'Your account has been activated. You may now log in. '
                     f'{email} has been verified and set as your primary email '
@@ -740,6 +767,8 @@ class UpdatePrimaryEmailAddressView(LoginRequiredMixin, FormView):
     template_name = 'user/user_update_primary_email_address.html'
     login_url = '/'
 
+    error_message = 'Unexpected failure. Please contact an administrator.'
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['has_verified_non_primary_emails'] = \
@@ -748,38 +777,36 @@ class UpdatePrimaryEmailAddressView(LoginRequiredMixin, FormView):
         return context
 
     def form_valid(self, form):
-        # Set the old primary address as no longer primary.
         user = self.request.user
-        old = user.email.lower()
-        old_primary, created = EmailAddress.objects.get_or_create(
-            user=user, email=old)
-        if created:
-            message = (
-                f'Created EmailAddress {old_primary.pk} for User '
-                f'{user.pk}\'s old primary address {old}, which unexpectedly '
-                f'did not exist.')
-            logger.warning(message)
-        old_primary.is_primary = False
-        old_primary.save()
-        # Set the new primary address as primary.
         form_data = form.cleaned_data
         new_primary = form_data['email_address']
-        if not new_primary.is_verified:
+
+        try:
+            update_user_primary_email_address(new_primary)
+        except TypeError:
+            message = (
+                f'New primary EmailAddress {new_primary} has unexpected type: '
+                f'{type(new_primary)}.')
+            logger.error(message)
+            messages.error(self.request, self.error_message)
+        except ValueError:
             message = (
                 f'New primary EmailAddress {new_primary.pk} for User '
                 f'{user.pk} is unexpectedly not verified.')
             logger.error(message)
+            messages.error(self.request, self.error_message)
+        except Exception as e:
             message = (
-                'Unexpected server error. Please contact an administrator.')
-            messages.error(self.request, message)
+                f'Encountered unexpected exception when updating User '
+                f'{user.pk}\'s primary EmailAddress to {new_primary.pk}. '
+                f'Details:')
+            logger.error(message)
+            logger.exception(e)
+            messages.error(self.request, self.error_message)
         else:
-            new_primary.is_primary = True
-            new_primary.save()
             message = f'{new_primary.email} is your new primary email address.'
             messages.success(self.request, message)
-            # Set the User's email field.
-            user.email = new_primary.email
-            user.save()
+
         return super().form_valid(form)
 
     def get_form_kwargs(self):
@@ -815,3 +842,57 @@ class UserNameExistsView(View):
         if middle_name is not None:
             users = users.filter(userprofile__middle_name__iexact=middle_name)
         return JsonResponse({'name_exists': users.exists()})
+
+
+@method_decorator(login_required, name='dispatch')
+class IdentityLinkingRequestView(UserPassesTestMixin, View):
+    login_url = '/'
+    pending_status = None
+
+    def test_func(self):
+        return True
+
+    def dispatch(self, request, *args, **kwargs):
+        self.pending_status = IdentityLinkingRequestStatusChoice.objects.get(
+            name='Pending')
+        user = self.request.user
+        redirection = HttpResponseRedirect(reverse('user-profile'))
+
+        has_cluster_access = AllocationUserAttribute.objects.filter(
+            allocation_user__user=user,
+            allocation_attribute_type__name='Cluster Account Status',
+            value='Active').exists()
+        if not has_cluster_access:
+            message = (
+                'You do not have active cluster access. Please gain access to '
+                'the cluster before attempting to request a linking email.')
+            messages.error(request, message)
+            return redirection
+
+        pending_requests_for_user = IdentityLinkingRequest.objects.filter(
+            requester=user, status=self.pending_status)
+        if pending_requests_for_user.exists():
+            message = (
+                'You have already requested a linking email. Please wait '
+                'until it has been sent to request another.')
+            messages.error(request, message)
+            return redirection
+
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        identity_linking_request = IdentityLinkingRequest.objects.create(
+            requester=user,
+            status=self.pending_status,
+            request_time=utc_now_offset_aware())
+        logger.info(
+            f'User {user.pk} created IdentityLinkingRequest '
+            f'{identity_linking_request.pk} to be sent to {user.email}.')
+
+        message = (
+            f'A request has been generated. An email will be sent to '
+            f'{user.email} shortly.')
+        messages.success(request, message)
+
+        return HttpResponseRedirect(reverse('user-profile'))

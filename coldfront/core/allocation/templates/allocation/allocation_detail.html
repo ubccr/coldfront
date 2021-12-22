@@ -225,6 +225,47 @@ Allocation Detail
   </div>
 </div>
 
+<!-- Start Removed Project Users -->
+<div class="card mb-3">
+    <div class="card-header">
+        <h2 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Users in Allocation and Removed from Project </h2> <span
+            class="badge badge-secondary">{{allocation_users_removed_from_proj.count}}</span>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Cluster Username</th>
+                    <th scope="col">Usage</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for user in allocation_users_removed_from_proj %}
+                    <tr>
+                        <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
+                        <td>{{ user.user.email }}</td>
+                        {% if user.user.userprofile.cluster_uid is not None %}
+                            <td>{{ user.user.username }}</td>
+                        {% else %}
+                            <td>
+            <span class="badge badge-danger">
+              No cluster account.
+            </span>
+                            </td>
+                        {% endif %}
+                        <td>{{ allocation_user_su_usages|get_value_from_dict:user.user.username }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
+
 <!-- Start Admin Messages -->
 <div class="card mb-3">
   <div class="card-header">
