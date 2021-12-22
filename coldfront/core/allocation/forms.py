@@ -199,9 +199,29 @@ class AllocationAttributeChangeForm(forms.Form):
             allocation_attribute.clean()
 
 
+class AllocationAttributeUpdateForm(forms.Form):
+    change_pk = forms.IntegerField(required=False, disabled=True)
+    attribute_pk = forms.IntegerField(required=False, disabled=True)
+    name = forms.CharField(max_length=150, required=False, disabled=True)
+    value = forms.CharField(max_length=150, required=False, disabled=True)
+    new_value = forms.CharField(max_length=150, required=False, disabled=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['change_pk'].widget = forms.HiddenInput()
+        self.fields['attribute_pk'].widget = forms.HiddenInput()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        allocation_attribute = AllocationAttribute.objects.get(pk=cleaned_data.get('attribute_pk'))
+
+        allocation_attribute.value = cleaned_data.get('new_value')
+        allocation_attribute.clean()
+
+
 class AllocationChangeForm(forms.Form):
     EXTENSION_CHOICES = [
-        (0, "----")
+        (0, "No Extension")
     ]
     for choice in ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS:
         EXTENSION_CHOICES.append((choice, "{} days".format(choice)))

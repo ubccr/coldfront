@@ -140,7 +140,7 @@ Allocation Change Detail
                       <td>{{form.value.value}}</td>
                       <td>
                         {{form.new_value}}
-                        <a href="" class="float-right">
+                        <a href="{% url 'allocation-attribute-change-delete' form.change_pk.value %}" class="float-right confirm-delete">
                           <i class="far fa-trash-alt fa-lg"></i>
                         </a>
                       </td>
@@ -206,4 +206,10 @@ Allocation Change Detail
   {% endif %}
   <br>
 
+<script>
+  $(document).on('click', '.confirm-delete', function(){
+      return confirm('Are you sure you want to delete this requested allocation attribute change?');
+  })
+</script>
 {% endblock %}
+

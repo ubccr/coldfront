@@ -18,6 +18,8 @@ urlpatterns = [
          name='allocation-activate-change'),
     path('<int:pk>/deny-change-request', allocation_views.AllocationChangeDenyView.as_view(),
          name='allocation-deny-change'),
+    path('<int:pk>/delete-attribute-change', allocation_views.AllocationChangeDeleteAttributeView.as_view(),
+         name='allocation-attribute-change-delete'),
     path('<int:pk>/add-users', allocation_views.AllocationAddUsersView.as_view(),
          name='allocation-add-users'),
     path('<int:pk>/remove-users', allocation_views.AllocationRemoveUsersView.as_view(),
