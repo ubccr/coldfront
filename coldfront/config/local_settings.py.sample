@@ -375,6 +375,28 @@ EXTRA_AUTHENTICATION_BACKENDS += [
 EMAIL_VERIFICATION_TIMEOUT = 24 * 60 * 60
 
 #------------------------------------------------------------------------------
+# Django All-Auth settings
+#------------------------------------------------------------------------------
+
+EXTRA_AUTHENTICATION_BACKENDS += [
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+# Use a custom adapter to handle logins with CILogon differently.
+SOCIALACCOUNT_ADAPTER = (
+    'coldfront.core.socialaccount.adapter.CILogonAccountAdapter')
+
+SOCIALACCOUNT_PROVIDERS = {
+    'cilogon': {
+        # Interpret all email addresses provided by the provider as 'verified'.
+        'VERIFIED_EMAIL': True,
+    },
+}
+
+# Always request the 'email' scope.
+SOCIALACCOUNT_QUERY_EMAIL = True
+
+#------------------------------------------------------------------------------
 # Data import settings
 #------------------------------------------------------------------------------
 
