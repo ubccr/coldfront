@@ -25,8 +25,7 @@ class OrcidAPI:
         # Sets up orcid research info importing
         # Set sandbox to false on production
         # Requires institution key and institution secret
-        # Currently set to testing application (can only access sandbox info)
-        orc_api = orcid.PublicAPI(INST_KEY, INST_SECRET, sandbox=True)
+        orc_api = orcid.PublicAPI(INST_KEY, INST_SECRET, sandbox=settings.ORCID_USE_SANDBOX)
     except AttributeError:
         pass
 
