@@ -127,17 +127,24 @@ Allocation Detail
             <td>{{ allocation.modified|date:"M. d, Y" }}</td>
           </tr>
           <tr>
-            {% if allocation.is_locked %}
-              <th scope="row" class="text-nowrap">Locked</th>
-              <td><i class="fas fa-lock" aria-hidden="true"></i></td>
+            {% if request.user.is_superuser or request.user.is_staff %}
+              <th scope="row" class="text-nowrap">Lock/Unlock Allocation:</th>
+              <td>
+                {{ form.is_locked }}
+              </td>
             {% else %}
-              <th scope="row" class="text-nowrap">Unlocked</th>
-              <td><i class="fas fa-lock-open" aria-hidden="true"></i></td>
+              {% if allocation.is_locked %}
+                <th scope="row" class="text-nowrap">Locked</th>
+                <td><i class="fas fa-lock" aria-hidden="true"></i></td>
+              {% else %}
+                <th scope="row" class="text-nowrap">Unlocked</th>
+                <td><i class="fas fa-lock-open" aria-hidden="true"></i></td>
+              {% endif %}
             {% endif %}
           </tr>
           {% if request.user.is_superuser or request.user.is_staff %}
             <tr>
-              <th scope="row" class="text-nowrap">Allow Change Requests</th>
+              <th scope="row" class="text-nowrap">Allow Change Requests:</th>
               <td>
                 {{ form.is_changeable }}
               </td>
@@ -146,8 +153,14 @@ Allocation Detail
         </table>
       </div>
       {% if request.user.is_superuser %}
-        <button type="submit" class="btn btn-success float-right"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
+      <div class="float-right">
+        {% if allocation.status.name == 'New' or allocation.status.name == 'Renewal Requested' %}
+          <a href="{% url 'allocation-activate-request' allocation.pk %}" class="btn btn-success mr-1 confirm-activate">Approve</a>
+          <a href="{% url 'allocation-deny-request' allocation.pk %}" class="btn btn-danger mr-1 confirm-deny">Deny</a>
+        {% endif %}
+        <button type="submit" class="btn btn-primary"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
       {% endif %}
+    </div>
     </form>
   </div>
 </div>
@@ -234,7 +247,7 @@ Allocation Detail
           <tbody>
             {% for change_request in allocation_changes %}
                 <tr>
-                  <td>{{ change_request.modified|date:"M. d, Y" }}</td>
+                  <td>{{ change_request.created|date:"M. d, Y" }}</td>
                   {% if change_request.status.name == 'Approved' %}
                     <td class="text-success">{{ change_request.status.name }}</td>
                   {% elif change_request.status.name == 'Denied' %}
@@ -318,6 +331,13 @@ Allocation Detail
   <div class="card-header">
     <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Notifications</h3>
     <span class="badge badge-secondary">{{notes.count}}</span>
+    <div class="float-right">
+      {% if request.user.is_superuser %}
+        <a class="btn btn-success" href="{% url 'allocation-note-add' allocation.pk %}" role="button">
+          <i class="fas fa-plus" aria-hidden="true"></i> Add Notification
+        </a>
+      {% endif %}
+    </div>
   </div>
   <div class="card-body">
     {% if notes %}
@@ -382,5 +402,17 @@ Allocation Detail
     }
   }
   $(".datepicker").datepicker({ dateFormat: 'yy-mm-dd' });
+  $(document).on('click', '.confirm-activate', function(){
+    var attributes_num = {{ attributes | length }};
+    if (attributes_num == 0) {
+      return confirm('Are you sure you want to activate this allocation request without setting any allocation attributes?');
+    }
+  })
+  $(document).on('click', '.confirm-deny', function(){
+    var notes_num = {{ notes | length }};
+    if (notes_num == 0) {
+      return confirm('Are you sure you want to deny this allocation request without setting a notification?');
+    }
+  })
 </script>
 {% endblock %}
