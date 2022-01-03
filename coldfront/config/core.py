@@ -28,6 +28,10 @@ ALLOCATION_FUNCS_ON_EXPIRE = ['coldfront.core.allocation.utils.test_allocation_f
 # This is in days
 ALLOCATION_DEFAULT_ALLOCATION_LENGTH = ENV.int('ALLOCATION_DEFAULT_ALLOCATION_LENGTH', default=365)
 
+#------------------------------------------------------------------------------
+# Resource related
+#------------------------------------------------------------------------------
+SLATE_PROJECT_MAX_ALLOCATED_STORAGE = ENV.int('SLATE_PROJECT_MAX_ALLOCATED_STORAGE', default=60)
 
 #------------------------------------------------------------------------------
 # Allow user to select account name for allocation

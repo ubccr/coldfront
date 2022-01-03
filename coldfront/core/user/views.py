@@ -1,4 +1,5 @@
 import logging
+from coldfront.core.allocation.models import Allocation
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -21,6 +22,8 @@ from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
 
 logger = logging.getLogger(__name__)
+
+SLATE_PROJECT_MAX_ALLOCATED_STORAGE = import_from_settings('SLATE_PROJECT_MAX_ALLOCATED_STORAGE', 60)
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 if EMAIL_ENABLED:
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings(
@@ -49,6 +52,19 @@ class UserProfile(TemplateView):
 
         return super().dispatch(request, *args, viewed_username=viewed_username, **kwargs)
 
+    def get_statistics(self, viewed_user):
+        statistics = {'slate_quota': 0}
+        projects = viewed_user.project_set.filter(pi=viewed_user, status__name='Active')
+        for project in projects:
+            allocations = project.allocation_set.filter(
+                status__name='Active'
+            )
+            for allocation in allocations:
+                if allocation.get_parent_resource.name == 'Slate Project':
+                    statistics['slate_quota'] += allocation.storage_space
+
+        return statistics
+
     def get_context_data(self, viewed_username=None, **kwargs):
         context = super().get_context_data(**kwargs)
 
@@ -61,6 +77,8 @@ class UserProfile(TemplateView):
             [group.name for group in viewed_user.groups.all()])
         context['group_list'] = group_list
         context['viewed_user'] = viewed_user
+        context['statistics'] = self.get_statistics(viewed_user)
+        context['SLATE_PROJECT_MAX_ALLOCATED_STORAGE'] = SLATE_PROJECT_MAX_ALLOCATED_STORAGE
         return context
 
 

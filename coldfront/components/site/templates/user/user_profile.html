@@ -60,6 +60,12 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
               {% endif %}
             </td>
           </tr>
+          {% if statistics.slate_quota > 0 %}
+            <tr>
+              <th scope="row">Slate Project Allocated Storage Quota:</th>
+              <td>{{statistics.slate_quota}}/{{SLATE_PROJECT_MAX_ALLOCATED_STORAGE}} TB</td>
+            </tr>
+          {% endif %}
           <tr>
             <th scope="row">Last Login:</th>
             <td>{{viewed_user.last_login}}</td>
