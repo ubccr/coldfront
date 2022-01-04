@@ -1870,8 +1870,15 @@ class AllocationClusterAccountUpdateStatusView(LoginRequiredMixin,
         message = (
             f'Cluster access request from User {self.user_obj.email} under '
             f'Project {project_obj.name} and Allocation {allocation_obj.pk} '
-            f'has been marked for processing.')
+            f'has been updated to have status "{status}".')
         messages.success(self.request, message)
+
+        log_message = (
+            f'Superuser {self.request.user.pk} changed the value of "Cluster '
+            f'Account Status" AllocationUserAttribute '
+            f'{self.allocation_user_attribute_obj.pk} from "Pending - Add" to '
+            f'"{status}".')
+        logger.info(log_message)
 
         return super().form_valid(form)
 
@@ -1947,6 +1954,13 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
             f'Project {project_obj.name} and Allocation {allocation_obj.pk} '
             f'has been ACTIVATED.')
         messages.success(self.request, message)
+
+        log_message = (
+            f'Superuser {self.request.user.pk} changed the value of "Cluster '
+            f'Account Status" AllocationUserAttribute '
+            f'{self.allocation_user_attribute_obj.pk} from "Processing" to '
+            f'"Active".')
+        logger.info(log_message)
 
         if EMAIL_ENABLED:
             subject = 'Cluster Access Activated'
