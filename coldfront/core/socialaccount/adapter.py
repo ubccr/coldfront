@@ -5,7 +5,9 @@ from allauth.account.utils import user_username
 from allauth.exceptions import ImmediateHttpResponse
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from allauth.utils import valid_email_or_none
+from collections import defaultdict
 from django.conf import settings
+from django.http import HttpResponseBadRequest
 from django.http import HttpResponseServerError
 from django.template.loader import render_to_string
 import logging
@@ -43,7 +45,7 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
                     f'Provider {provider} did not provide an email address '
                     f'for User with UID {user_uid}.')
                 logger.error(log_message)
-                self.raise_error()
+                self.raise_server_error(self.get_auth_error_message())
             validated_email = validated_email.lower()
 
             user = sociallogin.user
@@ -96,7 +98,7 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
                 f'Provider {provider} did not provide any email addresses for '
                 f'User with email {user_email} and UID {user_uid}.')
             logger.error(log_message)
-            self.raise_error()
+            self.raise_server_error(self.get_auth_error_message())
 
         # SOCIALACCOUNT_PROVIDERS['cilogon']['VERIFIED_EMAIL'] should be True,
         # so all provider-given addresses should be interpreted as verified.
@@ -108,50 +110,83 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
                 f'None of the email addresses in '
                 f'[{", ".join(provider_addresses)}] are verified.')
             logger.error(log_message)
-            self.raise_error()
+            self.raise_server_error(self.get_auth_error_message())
 
-        # Fetch Users that have a verified EmailAddress matching those given by
-        # the provider.
-        matching_users = set()
+        # Fetch EmailAddresses matching those given by the provider, divided by
+        # the associated User.
+        matching_addresses_by_user = defaultdict(set)
         for address in verified_provider_addresses:
             try:
                 email_address = EmailAddress.objects.get(
-                    email__iexact=address.email, verified=True)
+                    email__iexact=address.email)
             except EmailAddress.DoesNotExist:
                 continue
-            matching_users.add(email_address.user)
+            matching_addresses_by_user[email_address.user].add(email_address)
 
-        # If there are none, proceed with signup. If there is exactly one,
-        # connect the two accounts. If there are more, raise an error.
-        if not matching_users:
+        # If no Users were found, proceed with signup. If exactly one was
+        # found, perform further checks. If more than one was found, raise an
+        # error.
+        if not matching_addresses_by_user:
             return
-        elif len(matching_users) == 1:
-            user = list(matching_users)[0]
-            log_message = (
-                f'Attempting to connect data for User with email {user_email} '
-                f'and UID {user_uid} from provider {provider} to local User '
-                f'{user.pk}.')
-            logger.info(log_message)
-            sociallogin.connect(request, user)
-            log_message = f'Successfully connected data to User {user.pk}.'
-            logger.info(log_message)
+        elif len(matching_addresses_by_user) == 1:
+            # If at least one address was verified, connect the two accounts.
+            # Otherwise, raise an error with instructions on how to proceed.
+            user = next(iter(matching_addresses_by_user))
+            addresses = matching_addresses_by_user[user]
+            if any([a.verified for a in addresses]):
+                log_message = (
+                    f'Attempting to connect data for User with email '
+                    f'{user_email} and UID {user_uid} from provider '
+                    f'{provider} to local User {user.pk}.')
+                logger.info(log_message)
+                sociallogin.connect(request, user)
+                log_message = f'Successfully connected data to User {user.pk}.'
+                logger.info(log_message)
+            else:
+                log_message = (
+                    f'Found only unverified email addresses associated with '
+                    f'local User {user.pk} matching those given by provider '
+                    f'{provider} for User with email {user_email} and UID '
+                    f'{user_uid}.')
+                logger.warning(log_message)
+                message = (
+                    'You are attempting to login using an email address '
+                    'associated with an existing User, but it is unverified. '
+                    'Please login to that account using a different provider, '
+                    'verify the email address, and try again.')
+                self.raise_client_error(message)
         else:
-            user_pks = [user.pk for user in matching_users]
+            user_pks = [user.pk for user in matching_addresses_by_user]
             log_message = (
                 f'Unexpectedly found multiple Users ([{", ".join(user_pks)}]) '
-                f'that had verified email addresses matching those provided '
-                f'by provider {provider} for User with email {user_email} and '
+                f'that had email addresses matching those provided by '
+                f'provider {provider} for User with email {user_email} and '
                 f'UID {user_uid}.')
             logger.error(log_message)
-            self.raise_error()
+            self.raise_server_error(self.get_auth_error_message())
 
     @staticmethod
-    def raise_error():
-        """Raise an ImmediateHttpResponse with a server error."""
-        template = 'error_with_message.html'
-        message = (
+    def get_auth_error_message():
+        """Return the generic message the user should receive if
+        authentication-related errors occur."""
+        return (
             f'Unexpected authentication error. Please contact '
             f'{settings.CENTER_HELP_EMAIL} for further assistance.')
+
+    @staticmethod
+    def raise_client_error(message):
+        """Raise an ImmediateHttpResponse with a client error and the
+        given message."""
+        template = 'error_with_message.html'
+        html = render_to_string(template, {'message': message})
+        response = HttpResponseBadRequest(html)
+        raise ImmediateHttpResponse(response)
+
+    @staticmethod
+    def raise_server_error(message):
+        """Raise an ImmediateHttpResponse with a server error and the
+        given message."""
+        template = 'error_with_message.html'
         html = render_to_string(template, {'message': message})
         response = HttpResponseServerError(html)
         raise ImmediateHttpResponse(response)
