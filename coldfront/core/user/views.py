@@ -17,13 +17,16 @@ from django.views.generic import ListView, TemplateView
 
 from coldfront.core.project.models import Project, ProjectUser
 from coldfront.core.user.forms import UserSearchForm
-from coldfront.core.user.utils import CombinedUserSearch
+from coldfront.core.user.utils import (CombinedUserSearch,
+                                       generate_allocated_slate_storage_chart_data)
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
 
 logger = logging.getLogger(__name__)
 
-SLATE_PROJECT_MAX_ALLOCATED_STORAGE = import_from_settings('SLATE_PROJECT_MAX_ALLOCATED_STORAGE', 60)
+SLATE_PROJECT_MAX_ALLOCATED_STORAGE = import_from_settings(
+    'SLATE_PROJECT_MAX_ALLOCATED_STORAGE', 60
+)
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 if EMAIL_ENABLED:
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings(
@@ -77,7 +80,9 @@ class UserProfile(TemplateView):
             [group.name for group in viewed_user.groups.all()])
         context['group_list'] = group_list
         context['viewed_user'] = viewed_user
+        context['viewed_username'] = {'viewed_username': viewed_user.username}
         context['statistics'] = self.get_statistics(viewed_user)
+        context['slate_allocated_storage_chart_data'] = generate_allocated_slate_storage_chart_data(viewed_user)
         context['SLATE_PROJECT_MAX_ALLOCATED_STORAGE'] = SLATE_PROJECT_MAX_ALLOCATED_STORAGE
         return context
 
@@ -287,3 +292,40 @@ class UserListAllocations(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
         context['user_dict'] = user_dict
 
         return context
+
+
+@method_decorator(login_required, name='dispatch')
+class UserStatistics(View):
+    template_name = 'user/user_statistics.html'
+
+    def dispatch(self, request, *args, viewed_username=None, **kwargs):
+        # viewing another user's statistics requires permissions
+        if viewed_username:
+            if request.user.is_superuser or request.user.is_staff:
+                # allow, via fallthrough
+                pass
+            else:
+                # redirect them to their own profile
+
+                # error if they tried to do something naughty
+                if not request.user.username == viewed_username:
+                    messages.error(request, "You aren't allowed to view other users' statistics!")
+                # if they used their own username, no need to provide an error - just redirect
+
+                return HttpResponseRedirect(reverse('user-profile'))
+
+        return super().dispatch(request, *args, viewed_username=viewed_username, **kwargs)
+
+    def post(self, request, viewed_username=None):
+        context = {}
+        if viewed_username is None:
+            viewed_user = get_object_or_404(User, username=request.POST.get('viewed_username'))
+        else:
+            viewed_user = get_object_or_404(User, username=viewed_username)
+
+        chart_data = generate_allocated_slate_storage_chart_data(viewed_user)
+        has_stats = len(chart_data['columns']) > 1
+        context['allocated_slate_storage_chart_data'] = chart_data
+        context['has_stats'] = has_stats
+
+        return render(request, self.template_name, context)
