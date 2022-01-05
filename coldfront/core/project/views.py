@@ -1452,7 +1452,7 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
             for allocation_pk in project_review_obj.allocation_renewals.split(','):
                 allocation = Allocation.objects.get(pk=int(allocation_pk))
                 allocation.start_date = datetime.datetime.today()
-                allocation.end_date = datetime.datetime.today() + datetime.timedelta(days=365)
+                allocation.end_date = project_obj.end_date
                 allocation.status = allocation_status_choice
                 allocation.save()
 
