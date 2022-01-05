@@ -21,6 +21,8 @@ PROJECT_ENABLE_PROJECT_REVIEW = ENV.bool('PROJECT_ENABLE_PROJECT_REVIEW', defaul
 #------------------------------------------------------------------------------
 # Allocation related
 #------------------------------------------------------------------------------
+ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT = ENV.bool('ALLOCATION_ENABLE_CHANGE_REQUESTS', default=True)
+ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS = ENV.list('ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS', cast=int, default=[30, 60, 90])
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = ENV.bool('ALLOCATION_ENABLE_ALLOCATION_RENEWAL', default=True)
 ALLOCATION_FUNCS_ON_EXPIRE = ['coldfront.core.allocation.utils.test_allocation_function', ]
 

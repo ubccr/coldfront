@@ -28,8 +28,22 @@ Allocation Detail
 
 <div class="card mb-3">
   <div class="card-header">
-    <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
+    {% if allocation.is_changeable and is_allowed_to_update_project %}
+    <div class="row">
+      <div class="col">
+        <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
+      </div>
+      <div class="col">
+        <a class="btn btn-primary" href="{% url 'allocation-change' allocation.pk %}" role="button" style="float: right;">
+          Request Change
+        </a>
+      </div>
+    </div>
+    {% else %}
+      <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>   
+    {% endif %}
   </div>
+  
   <div class="card-body">
     <form method="post">
       {% csrf_token %}
@@ -121,6 +135,14 @@ Allocation Detail
               <td><i class="fas fa-lock-open" aria-hidden="true"></i></td>
             {% endif %}
           </tr>
+          {% if request.user.is_superuser or request.user.is_staff %}
+            <tr>
+              <th scope="row" class="text-nowrap">Allow Change Requests</th>
+              <td>
+                {{ form.is_changeable }}
+              </td>
+            </tr>
+          {% endif %}
         </table>
       </div>
       {% if request.user.is_superuser %}
@@ -165,7 +187,9 @@ Allocation Detail
                 {% else %}
                   <tr>
                     <td>{{attribute}}</td>
-                    <td>{{attribute.value}}</td>
+                    <td>
+                      {{attribute.value}}
+                    </td>
                   </tr>
                 {% endif %}
               {% endfor %}
@@ -188,6 +212,56 @@ Allocation Detail
     </div>
   </div>
 {% endif %}
+
+<!-- Start Allocation Change Requests -->
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Change Requests</h3> <span class="badge badge-secondary">{{allocation_changes.count}}</span>
+  </div>
+  
+  <div class="card-body">
+    {% if allocation_changes %}
+      <div class="table-responsive">
+        <table id="allocation_change_table" class="table table-bordered table-sm">
+          <thead>
+            <tr>
+              <th scope="col">Date Requested</th>
+              <th scope="col">Status</th>
+              <th scope="col">Notes</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for change_request in allocation_changes %}
+                <tr>
+                  <td>{{ change_request.modified|date:"M. d, Y" }}</td>
+                  {% if change_request.status.name == 'Approved' %}
+                    <td class="text-success">{{ change_request.status.name }}</td>
+                  {% elif change_request.status.name == 'Denied' %}
+                    <td class="text-danger">{{ change_request.status.name }}</td>
+                  {% else %}
+                    <td class="text-info">{{ change_request.status.name }}</td>
+                  {% endif %}
+                  </td>
+                  {% if change_request.notes %}
+                    <td>{{change_request.notes}}</td>
+                  {% else %}
+                    <td></td>
+                  {% endif %}
+                  <td><a href="{% url 'allocation-change-detail' change_request.pk %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
+                </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-info" role="alert">
+        <i class="fas fa-info-circle" aria-hidden="true"></i>
+         There are no allocation changes to display.
+      </div>
+    {% endif %}
+  </div>
+</div>
 
 <!-- Start Allocation Users -->
 <div class="card mb-3">
@@ -242,7 +316,7 @@ Allocation Detail
 <!-- Start Admin Messages -->
 <div class="card mb-3">
   <div class="card-header">
-    <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Messages from System Administrators</h3>
+    <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Notifications</h3>
     <span class="badge badge-secondary">{{notes.count}}</span>
   </div>
   <div class="card-body">
@@ -281,6 +355,16 @@ Allocation Detail
   $(document).ready(function () {
     var guage_data = {{ guage_data | safe }};
     drawGauges(guage_data);
+
+    $('#allocation_change_table').DataTable({
+      lengthMenu: [5, 10, 20, 50, 100],
+      "pageLength": 5,
+      "ordering": false,
+      'aoColumnDefs': [{
+        'bSortable': false,
+        'aTargets': ['nosort']
+      }]
+    });
   });
 
   function drawGauges(guage_data) {
