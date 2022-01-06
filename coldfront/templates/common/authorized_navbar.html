@@ -17,6 +17,7 @@
         <li id="navbar-project-menu" class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">Project</a>
           <div class="dropdown-menu">
+            <a id="navbar-jobs-list" class="dropdown-item" href="{% url 'slurm-job-list' %}">Jobs</a>
             <a id="navbar-project" class="dropdown-item" href="{% url 'project-list' %}">Projects</a>
             {% if request.user.is_superuser %}
             <a id="navbar-allocation" class="dropdown-item" href="{% url 'allocation-list' %}">Allocations</a>

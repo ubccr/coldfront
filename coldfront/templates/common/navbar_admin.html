@@ -3,6 +3,7 @@
     <ul class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
         <li><a class="dropdown-item" href="/admin">MyBRC Administration</a></li>
         <li><a class="dropdown-item" href="{% url 'allocation-list' %}?show_all_allocations=on">All Allocations</a></li>
+        <li><a id="navbar-jobs-list" class="dropdown-item" href="{% url 'slurm-job-list' %}?show_all_jobs=on">All Jobs</a></li>
         <li><a class="dropdown-item" href="{% url 'project-list' %}?show_all_projects=on">All Projects</a></li>
         <li><a class="dropdown-item" href="{% url 'user-search-all' %}">All Users</a></li>
         <a id="navbar-project-reviews" class="dropdown-item" href="{% url 'project-review-list' %}">Project Reviews</a>
