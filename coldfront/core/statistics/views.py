@@ -1,55 +1,15 @@
-import datetime
-import pprint
-from itertools import chain
-
-from django import forms
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.contrib.auth.models import User
-from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db import IntegrityError
-from django.db.models import Case, CharField, F, Q, Value, When
-from django.forms import formset_factory
-from django.http import (HttpResponse, HttpResponseForbidden,
-                         HttpResponseRedirect)
-from django.shortcuts import get_object_or_404, redirect, render
-from django.template.loader import render_to_string
-from django.urls import reverse, reverse_lazy
-from django.views import View
-from django.views.generic import CreateView, DetailView, ListView, UpdateView
-from django.views.generic.base import TemplateView
-from django.views.generic.edit import FormView
+from django.db.models import Q
+from django.views.generic import DetailView, ListView
 from django.utils.html import strip_tags
 
 from coldfront.core.project.models import Project
 from coldfront.core.statistics.models import Job
 from coldfront.core.statistics.forms import JobSearchForm
 
-from coldfront.core.utils.common import (get_domain_url, import_from_settings,
-                                         utc_now_offset_aware)
-from coldfront.core.utils.mail import send_email, send_email_template
-
-import time
-
 import logging
-
-EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
-ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
-    'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
-ALLOCATION_DEFAULT_ALLOCATION_LENGTH = import_from_settings(
-    'ALLOCATION_DEFAULT_ALLOCATION_LENGTH', 365)
-
-if EMAIL_ENABLED:
-    EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
-        'EMAIL_DIRECTOR_EMAIL_ADDRESS')
-    EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
-    EMAIL_OPT_OUT_INSTRUCTION_URL = import_from_settings(
-        'EMAIL_OPT_OUT_INSTRUCTION_URL')
-    EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
-    SUPPORT_EMAIL = import_from_settings('CENTER_HELP_EMAIL')
-    EMAIL_ADMIN_LIST = import_from_settings('EMAIL_ADMIN_LIST')
 
 logger = logging.getLogger(__name__)
 

@@ -1,18 +1,6 @@
-import datetime
-
 from django import forms
-from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.core.exceptions import ValidationError
-from django.shortcuts import get_object_or_404
-from django.db.models import Q
-
-from coldfront.core.field_of_science.models import FieldOfScience
-from coldfront.core.project.models import (Project, ProjectReview,
-                                           ProjectUserRoleChoice,
-                                           ProjectAllocationRequestStatusChoice)
 from coldfront.core.utils.common import import_from_settings
-
-from durationwidget.widgets import TimeDurationWidget
 
 EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL = import_from_settings(
     'EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL')
