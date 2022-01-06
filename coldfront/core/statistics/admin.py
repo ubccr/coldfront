@@ -24,9 +24,23 @@ class ProjectUserTransactionAdmin(admin.ModelAdmin):
     get_user.short_description = 'User'
     get_user.admin_order_field = 'project_user__user'
 
+@admin.register(Job)
+class JobAdmin(admin.ModelAdmin):
+    list_display = ('jobslurmid', 'userid', 'accountid', 'jobstatus', 'partition')
+    search_fields = ['jobslurmid', 'userid__username', 'accountid__name', 'jobstatus', 'partition']
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
 
 admin.register(CPU)
-admin.register(Job)
 admin.register(Node)
 admin.site.register(ProjectTransaction, ProjectTransactionAdmin)
 admin.site.register(ProjectUserTransaction, ProjectUserTransactionAdmin)
