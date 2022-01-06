@@ -1,4 +1,5 @@
 {% extends "common/base.html" %}
+{% load socialaccount %}
 
 {% load common_tags %}
 
@@ -10,7 +11,7 @@
         <h2 class="text-center">Log In to MyBRC</h2>
         <hr>
         <p>
-          <a class="btn btn-primary btn-block" href="/accounts/login/" role="button">
+          <a class="btn btn-primary btn-block" href="{% provider_login_url 'cilogon' process='login' %}" role="button">
             <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
             CILogon Log In
           </a>
