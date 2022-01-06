@@ -10,7 +10,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
-        for attribute_type in ('Active/Inactive', 'Date', 'Int', 'Public/Private', 'Text', 'Yes/No'):
+        for attribute_type in ('Active/Inactive', 'Date', 'Int', 
+            'Public/Private', 'Text', 'Yes/No', 'Attribute Expanded Text'):
             AttributeType.objects.get_or_create(name=attribute_type)
 
         for resource_attribute_type, attribute_type in (
@@ -26,7 +27,8 @@ class Command(BaseCommand):
             ('ServiceEnd', 'Date'),
             ('ServiceStart', 'Date'),
             ('slurm_cluster', 'Text'),
-            ('slurm_specs', 'Text'),
+            ('slurm_specs', 'Attribute Expanded Text'),
+            ('slurm_specs_attriblist', 'Text'),
             ('Status', 'Public/Private'),
             ('Vendor', 'Text'),
             ('Model', 'Text'),
