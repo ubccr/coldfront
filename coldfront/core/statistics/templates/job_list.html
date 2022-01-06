@@ -1,0 +1,187 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+
+{% block title %}
+    Jobs
+{% endblock %}
+
+
+{% block content %}
+    <h1>Jobs</h1>
+
+    {% if expand_accordion == "show" or job_list %}
+        <div class="mb-3" id="accordion">
+            <div class="card">
+                <div class="card-header">
+                    <a id="expand_button" role="button" class="card-link " data-toggle="collapse" href="#collapseOne">
+                        <i class="fas fa-filter" aria-hidden="true"></i> Filter
+                        <i id="plus_minus" class="fas {{expand_accordion|get_icon}} float-right"></i>
+                    </a>
+                </div>
+                <div id="collapseOne" class="collapse {{ expand_accordion }}" data-parent="#accordion">
+                    <div class="card-body">
+                        <form id="filter_form" method="GET" action="{% url 'slurm-job-list' %}" autocomplete="off">
+                            <div>{{ job_search_form.status|as_crispy_field }}</div>
+                            <div>{{ job_search_form.jobslurmid|as_crispy_field }}</div>
+                            <div>{{ job_search_form.project_name|as_crispy_field }}</div>
+                            <div>{{ job_search_form.username|as_crispy_field }}</div>
+                            <div>{{ job_search_form.partition|as_crispy_field }}</div>
+                            <div class="row">
+                                {% for field in job_search_form %}
+                                    {% if field.name in inline_fields %}
+                                        <div class="col-sm-6 ">
+                                            {{ field|as_crispy_field }}
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            <div>{{ job_search_form.show_all_jobs|as_crispy_field }}</div>
+                            <input type="submit" class="btn btn-primary" value="Search">
+                            <button id="form_reset_button" type="button" class="btn btn-secondary">Reset</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if job_list %}
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                <tr>
+                    <th scope="col">
+                        Slurm ID
+                        <a href="?order_by=jobslurmid&direction=asc&{{filter_parameters}}">
+                            <span class="accessibility-link-text">Sort by Ascending Slurm ID</span>
+                            <i class="fas fa-sort-up"></i>
+                        </a>
+                        <a href="?order_by=jobslurmid&direction=des&{{filter_parameters}}">
+                            <span class="accessibility-link-text">Sort by Descending Slurm ID</span>
+                            <i class="fas fa-sort-down"></i>
+                        </a>
+                    </th>
+                    <th scope="col">
+                        Username
+                    </th>
+                    <th scope="col">
+                        Project
+                    </th>
+                    <th scope="col">
+                        Job Status
+                        <a href="?order_by=jobstatus&direction=asc&{{filter_parameters}}">
+                            <span class="accessibility-link-text">Sort by Ascending Job Status</span>
+                            <i class="fas fa-sort-up"></i>
+                        </a>
+                        <a href="?order_by=jobstatus&direction=des&{{filter_parameters}}">
+                            <span class="accessibility-link-text">Sort by Descending Job Status</span>
+                            <i class="fas fa-sort-down"></i>
+                        </a>
+                    </th>
+                    <th scope="col">
+                        Partition
+                    </th>
+                    <th scope="col">
+                        Submit Date
+                        <a href="?order_by=submitdate&direction=asc&{{filter_parameters}}">
+                            <span class="accessibility-link-text">Sort by Ascending Submit Date</span>
+                            <i class="fas fa-sort-up"></i>
+                        </a>
+                        <a href="?order_by=submitdate&direction=des&{{filter_parameters}}">
+                            <span class="accessibility-link-text">Sort by Descending Submit Date</span>
+                            <i class="fas fa-sort-down"></i>
+                        </a>
+                    </th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for job in job_list %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'slurm-job-detail' job.jobslurmid %}">
+                                <span class="accessibility-link-text">Job {{ job.jobslurmid }}</span>
+                                {{ job.jobslurmid }}
+                            </a>
+                        </td>
+
+                        <td>{{ job.userid.username }}</td>
+                        <td>{{ job.accountid.name }}</td>
+                        <td>
+                            {% with status=job.jobstatus %}
+                                {% if status in status_danger_list %}
+                                    <span class="badge badge-danger">{{ status }}</span>
+                                {% elif "CANCEL" in status %}
+                                    <span class="badge badge-danger">CANCELLED</span>
+                                {% elif status == "COMPLETING" %}
+                                    <span class="badge badge-success">COMPLETED</span>
+                                {% elif status == "RUNNING" %}
+                                    <span class="badge badge-success">{{ status }}</span>
+                                {% elif status in status_warning_list %}
+                                    <span class="badge badge-warning">{{ status }}</span>
+                                {% else %}
+                                    <span class="badge badge-info">{{ status }}</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td>{{ job.partition }}</td>
+                        <td>{{ job.submitdate | date:"M. d, Y" }}</td>
+
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% if is_paginated %} Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                <ul class="pagination float-right mr-3">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{filter_parameters_with_order_by}}">Previous</a></li>
+                    {% else %}
+                        <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+                    {% endif %}
+                    {% if page_obj.has_next %}
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{filter_parameters_with_order_by}}">Next</a></li>
+                    {% else %}
+                        <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
+                    {% endif %}
+                </ul>
+            {% endif %}
+        </div>
+    {% elif expand_accordion == "show" %}
+        <div class="alert alert-secondary">
+            No search results!
+        </div>
+    {% else %}
+        <div class="alert alert-secondary">
+            No jobs to display!
+        </div>
+    {% endif %}
+
+    <script>
+        $("#navbar-main > ul > li.active").removeClass("active");
+        $("#navbar-project-menu").addClass("active");
+        $("#navbar-jobs-list").addClass("active");
+    </script>
+
+    <script>
+        $(document).on('click', '#form_reset_button', function () {
+
+            resetForm($('#filter_form'));
+        });
+        $(".datepicker").datepicker();
+
+        function resetForm($form) {
+            $form.find('input:text, input:password, input:file, select, textarea').val('');
+            $form.find('input:radio, input:checkbox').removeAttr('checked').removeAttr('selected');
+        };
+
+        $("#expand_button").click(function () {
+
+            $('#collapseOne').collapse();
+            icon = $("#plus_minus");
+            icon.toggleClass("fa-plus fa-minus");
+
+        });
+    </script>
+
+{% endblock %}
