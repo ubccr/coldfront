@@ -28,6 +28,11 @@ class Command(BaseCommand):
             ('slurm_cluster', 'Text'),
             ('slurm_specs', 'Text'),
             ('Status', 'Public/Private'),
+            ('Vendor', 'Text'),
+            ('Model', 'Text'),
+            ('RackUnits', 'Int'),
+            ('InstallDate', 'Date'),
+            ('WarrantyExpirationDate', 'Date'),
         ):
             ResourceAttributeType.objects.get_or_create(
                 name=resource_attribute_type, attribute_type=AttributeType.objects.get(name=attribute_type))
@@ -36,6 +41,7 @@ class Command(BaseCommand):
             ('Cloud', 'Cloud Computing'),
             ('Cluster', 'Cluster servers'),
             ('Cluster Partition', 'Cluster Partition '),
+            ('Compute Node', 'Compute Node'),
             ('Server', 'Extra servers providing various services'),
             ('Software License', 'Software license purchased by users'),
             ('Storage', 'NAS storage'),
