@@ -855,14 +855,29 @@ class IdentityLinkingRequestView(UserPassesTestMixin, View):
     def dispatch(self, request, *args, **kwargs):
         self.pending_status = IdentityLinkingRequestStatusChoice.objects.get(
             name='Pending')
+        user = self.request.user
+        redirection = HttpResponseRedirect(reverse('user-profile'))
+
+        has_cluster_access = AllocationUserAttribute.objects.filter(
+            allocation_user__user=user,
+            allocation_attribute_type__name='Cluster Account Status',
+            value='Active').exists()
+        if not has_cluster_access:
+            message = (
+                'You do not have active cluster access. Please gain access to '
+                'the cluster before attempting to request a linking email.')
+            messages.error(request, message)
+            return redirection
+
         pending_requests_for_user = IdentityLinkingRequest.objects.filter(
-            requester=self.request.user, status=self.pending_status)
+            requester=user, status=self.pending_status)
         if pending_requests_for_user.exists():
             message = (
                 'You have already requested a linking email. Please wait '
                 'until it has been sent to request another.')
             messages.error(request, message)
-            return HttpResponseRedirect(reverse('user-profile'))
+            return redirection
+
         return super().dispatch(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):

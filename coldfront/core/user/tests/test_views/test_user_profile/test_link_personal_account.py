@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 from coldfront.core.user.models import IdentityLinkingRequest
 from coldfront.core.user.models import IdentityLinkingRequestStatusChoice
+from coldfront.core.user.tests.utils import grant_user_cluster_access_under_test_project
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 from datetime import timedelta
@@ -82,9 +83,10 @@ class TestLinkPersonalAccount(TestBase):
         self.assertNotIn('Time Requested', html)
         self.assertNotIn('Time Sent', html)
 
-    def test_request_button_disabled_if_pending_request_exists(self):
-        """Test that, if the User has a pending IdentityLinkingRequest,
-        the button to request a new one is disabled."""
+    def test_request_button_conditionally_disabled(self):
+        """Test that, if the User (a) does not have active cluster
+        access, or (b) has a pending IdentityLinkingRequest, the button
+        to request a new one is disabled."""
 
         def get_button_html():
             """Return the HTML of the request button."""
@@ -94,6 +96,10 @@ class TestLinkPersonalAccount(TestBase):
             soup = BeautifulSoup(html, 'html.parser')
             button = soup.find('a', {'id': 'request-linking-email-button'})
             return str(button)
+
+        # The user has cluster access.
+        allocation_user_attribute = \
+            grant_user_cluster_access_under_test_project(self.user)
 
         # No requests exist.
         self.assertNotIn('disabled', get_button_html())
@@ -113,6 +119,10 @@ class TestLinkPersonalAccount(TestBase):
         identity_linking_request.status = complete_status
         identity_linking_request.save()
         self.assertNotIn('disabled', get_button_html())
+
+        # The user no longer has cluster access.
+        allocation_user_attribute.delete()
+        self.assertIn('disabled', get_button_html())
 
     def test_section_hidden_if_viewing_other_user_profile(self):
         """Test that, when logged in as one user but viewing another

@@ -128,6 +128,13 @@
       <h3>My BRC Cluster Projects &raquo;</h3>
     </a>
     <hr>
+  {% if num_join_requests %}
+      <div class="alert alert-warning" role="alert">
+          <i class="fa fa-exclamation-circle" aria-hidden="true"></i>
+          You have {{ num_join_requests }} project join requests pending manager approval.
+          Click <a href="{% url 'project-join-list' %}">here</a> to view your pending project join requests.
+      </div>
+  {% endif %}
 
     {% if project_list %}
       <div class="row">
@@ -158,14 +165,16 @@
                               </td>
 
                               <td>
-                                    {% if 'Active' in project.display_status %}
-                                      <span class="badge badge-success">Active</span>
+                                    {% if project.name in pending_removal_request_projects %}
+                                        <span class="badge badge-danger">Pending Removal</span>
+                                    {% elif 'Active' in project.display_status %}
+                                        <span class="badge badge-success">Active</span>
                                     {% elif 'Pending' in project.display_status %}
-                                      <span class="badge badge-warning">Pending</span>
+                                        <span class="badge badge-warning">Pending</span>
                                     {% elif 'Processing' in project.display_status %}
-                                      <span class="badge badge-warning">Processing</span>
+                                        <span class="badge badge-warning">Processing</span>
                                     {% else %}
-                                      <span class="badge badge-danger">No Access</span>
+                                        <span class="badge badge-danger">No Access</span>
                                     {% endif %}
                               </td>
                           </tr>
@@ -211,12 +220,14 @@
                               </td>
 
                               <td>
-                                  {% if 'Active' in project.display_status %}
-                                  <span class="badge badge-success">Active</span>
+                                  {% if project.name in pending_removal_request_projects %}
+                                      <span class="badge badge-danger">Pending Removal</span>
+                                  {% elif 'Active' in project.display_status %}
+                                      <span class="badge badge-success">Active</span>
                                   {% elif 'Pending' in project.display_status %}
-                                  <span class="badge badge-warning">Pending</span>
+                                      <span class="badge badge-warning">Pending</span>
                                   {% else %}
-                                  <span class="badge badge-danger">No Access</span>
+                                      <span class="badge badge-danger">No Access</span>
                                   {% endif %}
                               </td>
                           </tr>
@@ -265,12 +276,14 @@
                             </td>
 
                             <td>
-                                {% if 'Active' in project.display_status %}
-                                  <span class="badge badge-success">Active</span>
+                                {% if project.name in pending_removal_request_projects %}
+                                    <span class="badge badge-danger">Pending Removal</span>
+                                {% elif 'Active' in project.display_status %}
+                                    <span class="badge badge-success">Active</span>
                                 {% elif 'Pending' in project.display_status %}
-                                  <span class="badge badge-warning">Pending</span>
+                                    <span class="badge badge-warning">Pending</span>
                                 {% else %}
-                                  <span class="badge badge-danger">No Access</span>
+                                    <span class="badge badge-danger">No Access</span>
                                 {% endif %}
                             </td>
                         </tr>
@@ -293,6 +306,9 @@
         You are not part of any BRC cluster projects at this time. Please click Join to join any of the existing projects. You can also click Create to request setup of a new project.
       </div>
     {% endif %}
+    <a class="btn btn-primary" href="{% url 'user-projects-managers' %}">
+      View all projects and managers
+    </a>
   </div>
 
 

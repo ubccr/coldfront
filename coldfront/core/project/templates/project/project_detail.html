@@ -34,7 +34,7 @@ Project Detail
 <h1 class="text-justify">{{ project.name }}</h1> <hr>
 </div>
 
-{% if project.status.name != 'Archived' %}
+{% if project.status.name != 'Archived' and is_allowed_to_update_project %}
   <div class="card mb-3 bg-light">
     <div class="card-header">
       <h2 class="d-inline"><i class="fas fa-cubes"></i></a> <a name="manage-project">Manage Project</a></h2>
@@ -43,7 +43,7 @@ Project Detail
             <a class="btn btn-primary" href="{% url 'project-update' project.pk %}" role="button"><i class="far fa-edit" aria-hidden="true"></i> Update Project Information</a>
 
             {% if is_allowed_to_archive_project %}
-                <a class="btn btn-primary" href="{% url 'project-archive' project.id %}" role="button"><i class="fas fa-file-archive" aria-hidden="true"></i> Archive Project</a>
+                <a class="btn btn-primary" href="{% url 'project-archive' project.pk %}" role="button"><i class="fas fa-file-archive" aria-hidden="true"></i> Archive Project</a>
             {% endif %}
           {% endif %}
       </div>
@@ -53,7 +53,6 @@ Project Detail
           {% if is_allowed_to_update_project %}
         <a class="btn btn-success" href="{% url 'project-add-users-search' project.pk %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
               {% endif %}
-        {% if not joins_auto_approved %}
           <a class="btn btn-success" href="{% url 'project-review-join-requests' project.pk %}" role="button">
             <i class="fas fa-user-plus" aria-hidden="true"></i>
             Review Join Requests
@@ -76,7 +75,6 @@ Project Detail
             </button>
           {% endif %}
         {% endif %}
-      {% endif %}
     </div>
   </div>
 
@@ -86,6 +84,12 @@ Project Detail
 
 <!-- Start Project Heading -->
 <div class="card mb-3">
+    <div class="card-header">
+        <h2 class="d-inline">
+            <i class="fas fa-server"></i>
+            Project Information
+        </h2>
+    </div>
   <div class="card-body">
     <p class="card-title">
       <b>
@@ -122,12 +126,7 @@ Project Detail
     <p class="card-text text-justify"><strong>Created: </strong>{{ project.created|date:"M. d, Y" }}</p>
     <p class="card-text text-justify">
       <strong>Requests to Join: </strong>
-      User requests to join the project
-      {% if joins_auto_approved %}
-        are automatically approved.
-      {% else %}
-        are automatically approved after a delay.
-      {% endif %}
+      User requests to join the project must be approved by a PI.
       {% if is_allowed_to_update_project %}
         <a href="{% url 'project-update' project.pk %}">
           <span class="accessibility-link-text">Update Project settings</span>
@@ -135,7 +134,6 @@ Project Detail
         </a>
       {% endif %}
     </p>
-      <p class="card-text text-justify"><strong>Join Request Delay Period: </strong>{{ join_request_delay_period }} hours</p>
   </div>
 </div>
 
@@ -225,11 +223,47 @@ Project Detail
         {% comment %}
           <a class="btn btn-primary" href="{{mailto}}" role="button"><i class="far fa-envelope"></i> Email Project Users</a>
         {% endcomment %}
-        <a class="btn btn-success" href="{% url 'project-add-users-search' project.id %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
-        {% comment %}<a class="btn btn-danger" href="{% url 'project-remove-users' project.id %}" role="button"><i class="fas fa-user-times" aria-hidden="true"></i> Remove Users</a>{% endcomment %}
+        <a class="btn btn-success" href="{% url 'project-add-users-search' project.pk %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
+        <a class="btn btn-danger" href="{% url 'project-remove-users' project.pk %}" role="button"><i class="fas fa-user-times" aria-hidden="true"></i> Remove Users</a>
       {% endif %}
     </div>
+    <div class="float-right">
+      {% if project.status.name != 'Archived' and can_leave_project %}
+        <div class="modal fade" id="denial{{ user.pk }}Modal" tabindex="-1" role="dialog" aria-labelledby="denial{{ user.pk }}ModalLabel" aria-hidden="true">
+          <div class="modal-dialog" role="document">
+            <form action="{% url 'project-remove-self' project.pk %}" method="post">
+              {% csrf_token %}
 
+              <div class="modal-content">
+                <div class="modal-header">
+                  <p class="modal-title">Leave Project: {{ project.name }}</p>
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                </div>
+
+                <div class="modal-body">
+                  <label>Are you sure? You will immediately be disallowed from submitting jobs under this project.</label>
+
+                  <br><b>User:</b> {{ user.email }}
+                  <br><b>Project:</b> {{ project.name }}
+                </div>
+
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                  <button class="btn btn-danger mr-1" type="submit">
+                    Yes, leave this project.
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+        <button class="btn btn-danger mr-1" data-toggle="modal" data-target="#denial{{ user.pk }}Modal">
+          Leave Project
+        </button>
+      {% endif %}
+    </div>
   </div>
   <div class="card-body">
     <div class="table-responsive">
