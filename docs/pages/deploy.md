@@ -167,6 +167,38 @@ WantedBy=multi-user.target
 # systemctl status gunicorn.service
 ```
 
+## Create systemd unit file for ColdFront qcluster scheduled tasks
+ColdFront uses Django Q to run scheduled tasks such as sending allocation expiration
+warning emails. We need to create a unit file to run the qserver process or these
+tasks will never run.
+
+Create file `/etc/systemd/system/coldfrontq.service`:
+
+```ini
+[Unit]
+Description=DjangoQ instance to run Coldfront scheduled tasks
+After=syslog.target network.target mariadb.service gunicorn.service
+
+[Service]
+User=coldfront
+Group=nginx
+WorkingDirectory=/srv/coldfront
+Environment="PATH=/srv/coldfront/venv/bin"
+ExecStart=/srv/coldfront/venv/bin/coldfront qcluster
+
+[Install]
+WantedBy=multi-user.target
+```
+
+## Start/enable ColdFront qcluster
+
+```
+# systemctl start coldfrontq.service
+# systemctl enable coldfrontq.service
+
+# Check for any errors
+# systemctl status coldfrontq.service
+```
 ## Configure nginx
 
 We now configure nginx to proxy requests to the ColdFront Gunicorn workers via
