@@ -12,7 +12,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
-        for attribute_type in ('Date', 'Float', 'Int', 'Text', 'Yes/No'):
+        for attribute_type in ('Date', 'Float', 'Int', 'Text', 'Yes/No',
+            'Attribute Expanded Text'):
             AttributeType.objects.get_or_create(name=attribute_type)
 
         for choice in ('Active', 'Denied', 'Expired',
@@ -42,8 +43,10 @@ class Command(BaseCommand):
             ('Purchase Order Number', 'Int', False, True),
             ('send_expiry_email_on_date', 'Date', False, True),
             ('slurm_account_name', 'Text', False, False),
-            ('slurm_specs', 'Text', False, True),
-            ('slurm_user_specs', 'Text', False, True),
+            ('slurm_specs', 'Attribute Expanded Text', False, True),
+            ('slurm_specs_attriblist', 'Text', False, True),
+            ('slurm_user_specs', 'Attribute Expanded Text', False, True),
+            ('slurm_user_specs_attriblist', 'Text', False, True),
             ('Storage Quota (GB)', 'Int', False, False),
             ('Storage_Group_Name', 'Text', False, False),
             ('SupportersQOS', 'Yes/No', False, False),
