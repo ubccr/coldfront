@@ -5,12 +5,12 @@
 
 
 {% block title %}
-Add Allocation Note
+Add Allocation Notification
 {% endblock %}
 
 
 {% block content %}
-<h2>Adding note to {{allocation.get_parent_resource}} for PI {{ allocation.project.pi.first_name }}
+<h2>Adding notification to {{allocation.get_parent_resource}} for PI {{ allocation.project.pi.first_name }}
   {{ allocation.project.pi.last_name }} ({{ allocation.project.pi.username }})</h2>
 
 <form method="post">
