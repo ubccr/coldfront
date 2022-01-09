@@ -29,14 +29,33 @@
                             <div>{{ job_search_form.username|as_crispy_field }}</div>
                             <div>{{ job_search_form.partition|as_crispy_field }}</div>
                             <div class="row">
-                                {% for field in job_search_form %}
-                                    {% if field.name in inline_fields %}
-                                        <div class="col-sm-6 ">
-                                            {{ field|as_crispy_field }}
-                                        </div>
-                                    {% endif %}
-                                {% endfor %}
+                                <div class="col-sm-2 ">Submitted</div>
+                                <div class="col-sm-5">
+                                    {{ job_search_form.submit_modifier|as_crispy_field }}
+                                </div>
+                                <div class="col-sm-5 ">
+                                    {{ job_search_form.submitdate|as_crispy_field }}
+                                </div>
                             </div>
+                            <div class="row">
+                                <div class="col-sm-2 ">Started</div>
+                                <div class="col-sm-5">
+                                    {{ job_search_form.start_modifier|as_crispy_field }}
+                                </div>
+                                <div class="col-sm-5 ">
+                                    {{ job_search_form.startdate|as_crispy_field }}
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-2 ">Ended</div>
+                                <div class="col-sm-5">
+                                    {{ job_search_form.end_modifier|as_crispy_field }}
+                                </div>
+                                <div class="col-sm-5 ">
+                                    {{ job_search_form.enddate|as_crispy_field }}
+                                </div>
+                            </div>
+
                             <div>{{ job_search_form.show_all_jobs|as_crispy_field }}</div>
                             <input type="submit" class="btn btn-primary" value="Search">
                             <button id="form_reset_button" type="button" class="btn btn-secondary">Reset</button>
@@ -172,7 +191,7 @@
 
         function resetForm($form) {
             $form.find('input:text, input:password, input:file, select, textarea').val('');
-            $form.find('input:radio, input:checkbox').removeAttr('checked').removeAttr('selected');
+
         };
 
         $("#expand_button").click(function () {
