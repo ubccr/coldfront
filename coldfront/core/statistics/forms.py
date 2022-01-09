@@ -45,32 +45,35 @@ class JobSearchForm(forms.Form):
     partition = forms.CharField(label='Partition', max_length=100, required=False)
 
     submitdate = forms.DateField(
-        label='Submit Date',
-        widget=forms.DateInput(attrs={'class': 'datepicker'}),
-        required=False)
+        widget=forms.DateInput(attrs={'class': 'datepicker',
+                                      'placeholder': 'MM/DD/YYYY'}),
+        required=False,)
 
     submit_modifier = forms.ChoiceField(
-        label='Submit Modifier', choices=DATE_MODIFIERS, required=False,
+        choices=DATE_MODIFIERS,
+        required=False,
         widget=forms.Select()
     )
 
     startdate = forms.DateField(
-        label='Start Date',
-        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        widget=forms.DateInput(attrs={'class': 'datepicker',
+                                      'placeholder': 'MM/DD/YYYY'}),
         required=False)
 
     start_modifier = forms.ChoiceField(
-        label='Start Modifier', choices=DATE_MODIFIERS, required=False,
+        choices=DATE_MODIFIERS,
+        required=False,
         widget=forms.Select()
     )
 
     enddate = forms.DateField(
-        label='End Date',
-        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        widget=forms.DateInput(attrs={'class': 'datepicker',
+                                      'placeholder': 'MM/DD/YYYY'}),
         required=False)
 
     end_modifier = forms.ChoiceField(
-        label='End Modifier', choices=DATE_MODIFIERS, required=False,
+        choices=DATE_MODIFIERS,
+        required=False,
         widget=forms.Select()
     )
 
@@ -93,32 +96,44 @@ class JobSearchForm(forms.Form):
             # Only do something if both fields are valid so far.
             if not submit_modifier:
                 error_dict['submitdate'] = \
-                    ValidationError('Must select a modifier for Submit Date')
+                    ValidationError('Must select a modifier after selecting a date')
 
         if startdate:
             if not start_modifier:
                 error_dict['startdate'] = \
-                    ValidationError('Must select a modifier for Start Date')
+                    ValidationError('Must select a modifier after selecting a date')
 
         if enddate:
             if not end_modifier:
                 error_dict['enddate'] = \
-                    ValidationError('Must select a modifier for End Date')
+                    ValidationError('Must select a modifier after selecting a date')
 
         if submit_modifier:
             if not submitdate:
                 error_dict['submit_modifier'] = \
-                    ValidationError('Must select a Submit Date when selecting modifier')
+                    ValidationError('Must select a date after selecting modifier')
 
         if start_modifier:
             if not startdate:
                 error_dict['start_modifier'] = \
-                    ValidationError('Must select a Start Date when selecting modifier')
+                    ValidationError('Must select a date after selecting modifier')
 
         if end_modifier:
             if not enddate:
                 error_dict['end_modifier'] = \
-                    ValidationError('Must select an End Date when selecting modifier')
+                    ValidationError('Must select a date after selecting modifier')
 
         if error_dict:
             raise forms.ValidationError(error_dict)
+
+    def __init__(self, *args, **kwargs):
+        ''' remove any labels here if desired
+        '''
+        super(JobSearchForm, self).__init__(*args, **kwargs)
+
+        self.fields['submitdate'].label = ''
+        self.fields['submit_modifier'].label = ''
+        self.fields['startdate'].label = ''
+        self.fields['start_modifier'].label = ''
+        self.fields['enddate'].label = ''
+        self.fields['end_modifier'].label = ''
