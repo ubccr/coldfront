@@ -21,6 +21,7 @@ class Command(BaseCommand):
             'can_view_all_projects',
             'view_projectuserjoinrequest',
             'view_projectuserremovalrequest',
+            'view_job',
         ]
 
         for perm_codename in perm_codename_lst:
