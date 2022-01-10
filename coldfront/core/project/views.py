@@ -145,7 +145,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         if self.request.user.is_superuser:
             context['is_allowed_to_update_project'] = True
 
-        elif self.object.projectuser_set.filter(user=self.request.user).exists():
+        if self.object.projectuser_set.filter(user=self.request.user).exists():
             project_user = self.object.projectuser_set.get(user=self.request.user)
 
             if project_user.role.name in ['Principal Investigator', 'Manager']:
