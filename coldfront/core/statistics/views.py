@@ -38,27 +38,36 @@ class SlurmJobListView(LoginRequiredMixin,
         if job_search_form.is_valid():
             data = job_search_form.cleaned_data
 
-            if data.get('show_all_jobs') and (self.request.user.is_superuser or self.request.user.has_perm('statistics.view_job')):
+            if data.get('show_all_jobs') and \
+                    (self.request.user.is_superuser or
+                     self.request.user.has_perm('statistics.view_job')):
                 job_list = Job.objects.all()
             else:
-                proj_set = Project.objects.filter(projectuser__user__username=self.request.user, projectuser__status__name__in=['Active', 'Pending - Remove'])
+                proj_set = Project.objects.filter(
+                    projectuser__user__username=self.request.user,
+                    projectuser__status__name__in=['Active', 'Pending - Remove'])
                 job_list = Job.objects.filter(Q(accountid__in=proj_set) |
                                               Q(userid=self.request.user))
 
             if data.get('status'):
-                job_list = job_list.filter(jobstatus__icontains=data.get('status'))
+                job_list = job_list.filter(
+                    jobstatus__icontains=data.get('status'))
 
             if data.get('jobslurmid'):
-                job_list = job_list.filter(jobslurmid__icontains=data.get('jobslurmid'))
+                job_list = job_list.filter(
+                    jobslurmid__icontains=data.get('jobslurmid'))
 
             if data.get('project_name'):
-                job_list = job_list.filter(accountid__name__icontains=data.get('project_name'))
+                job_list = job_list.filter(
+                    accountid__name__icontains=data.get('project_name'))
 
             if data.get('username'):
-                job_list = job_list.filter(userid__username__icontains=data.get('username'))
+                job_list = job_list.filter(
+                    userid__username__icontains=data.get('username'))
 
             if data.get('partition'):
-                job_list = job_list.filter(partition__icontains=data.get('partition'))
+                job_list = job_list.filter(
+                    partition__icontains=data.get('partition'))
 
             if data.get('submitdate'):
                 submit_modifier = data.get('submit_modifier')
@@ -99,12 +108,15 @@ class SlurmJobListView(LoginRequiredMixin,
                 elif end_modifier == 'After':
                     job_list = job_list.filter(enddate__gt=end_date)
         else:
-            proj_set = Project.objects.filter(projectuser__user__username=self.request.user, projectuser__status__name__in=['Active', 'Pending - Remove'])
+            proj_set = Project.objects.filter(
+                projectuser__user__username=self.request.user,
+                projectuser__status__name__in=['Active', 'Pending - Remove'])
             job_list = Job.objects.filter(Q(accountid__in=proj_set) |
                                           Q(userid=self.request.user))
 
             for error in job_search_form.errors:
-                messages.warning(self.request, strip_tags(job_search_form.errors[error]))
+                messages.warning(self.request,
+                                 strip_tags(job_search_form.errors[error]))
 
         return job_list.order_by(order_by)
 
@@ -132,7 +144,8 @@ class SlurmJobListView(LoginRequiredMixin,
         if order_by:
             direction = self.request.GET.get('direction')
             filter_parameters_with_order_by = filter_parameters + \
-                                              'order_by=%s&direction=%s&' % (order_by, direction)
+                                              'order_by=%s&direction=%s&' % \
+                                              (order_by, direction)
         else:
             filter_parameters_with_order_by = filter_parameters
 
@@ -166,7 +179,9 @@ class SlurmJobListView(LoginRequiredMixin,
         context['status_warning_list'] = ['PREEMPTED',
                                           'REQUEUED']
 
-        context['can_view_all_jobs'] = self.request.user.is_superuser or self.request.user.has_perm('statistics.view_job')
+        context['can_view_all_jobs'] = \
+            self.request.user.is_superuser or \
+            self.request.user.has_perm('statistics.view_job')
 
         return context
 
