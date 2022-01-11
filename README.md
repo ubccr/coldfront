@@ -160,7 +160,13 @@ a few minutes on the first run.
    ```
 10. On the host machine, navigate to `http://localhost:8880`, where the
 application should be served.
-11. Load test data or (TODO) load a backup of the production database.
+11. (Optional) Load data from a database dump file.
+    ```
+    # Clear the Django database to avoid conflicts.
+    python manage.py sqlflush | python manage.py dbshell
+    # Load from the dump file.
+    sh bootstrap/development/load_database_backup.sh /absolute/path/to/dump.file
+    ```
 
 ### Miscellanea
 
