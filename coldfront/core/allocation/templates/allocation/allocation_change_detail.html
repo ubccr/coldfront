@@ -93,12 +93,12 @@ Allocation Change Detail
               <td>{{ allocation_change.allocation.description }}</td>
             </tr>
             <tr>
-              <th scope="row" class="text-nowrap">Created:</th>
-              <td>{{ allocation_change.allocation.created|date:"M. d, Y" }}</td>
+              <th scope="row" class="text-nowrap">Change Requested:</th>
+              <td>{{ allocation_change.created|date:"M. d, Y" }}</td>
             </tr>
             <tr>
-              <th scope="row" class="text-nowrap">Last Modified:</th>
-              <td>{{ allocation_change.allocation.modified|date:"M. d, Y" }}</td>
+              <th scope="row" class="text-nowrap">Change Last Modified:</th>
+              <td>{{ allocation_change.modified|date:"M. d, Y" }}</td>
             </tr>
             <tr>
               {% if allocation_change.allocation.is_locked %}
