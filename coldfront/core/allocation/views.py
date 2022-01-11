@@ -472,6 +472,8 @@ class AllocationListView(LoginRequiredMixin, ListView):
                     if isinstance(value, QuerySet):
                         for ele in value:
                             filter_parameters += '{}={}&'.format(key, ele.pk)
+                    elif hasattr(value, 'pk'):
+                        filter_parameters += '{}={}&'.format(key, value.pk)                              
                     else:
                         filter_parameters += '{}={}&'.format(key, value)
             context['allocation_search_form'] = allocation_search_form
