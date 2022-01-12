@@ -247,6 +247,8 @@ exist in your backend LDAP to show up in the ColdFront user search.
 | LDAP_USER_SEARCH_BIND_DN    | The distinguished name to use when binding to the LDAP server      |
 | LDAP_USER_SEARCH_BIND_PASSWORD  | The password to use LDAP_USER_SEARCH_BIND_DN   |
 | LDAP_USER_SEARCH_BASE       | User search base dn                     |
+| LDAP_USER_SEARCH_CONNECT_TIMEOUT  | Time in seconds to wait before timing out. Default 2.5  |
+| LDAP_USER_SEARCH_USE_SSL  | Whether to use ssl when connecting to LDAP server. Default True |
 
 ## Advanced Configuration
 
