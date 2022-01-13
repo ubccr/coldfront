@@ -3,6 +3,7 @@ Base Django settings for ColdFront project.
 """
 import os
 import coldfront
+from django.apps import AppConfig
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management.utils import get_random_secret_key
 from coldfront.config.env import ENV, PROJECT_ROOT
@@ -33,6 +34,15 @@ USE_TZ = True
 #------------------------------------------------------------------------------
 # Django Apps
 #------------------------------------------------------------------------------
+
+# See: https://docs.djangoproject.com/en/3.2/releases/3.2/#customizing-type-of-auto-created-primary-keys
+# We should change this to BigAutoField at some point
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
+# Set this attribute to False to prevent Django from selecting a configuration
+# class automatically. See: https://docs.djangoproject.com/en/3.2/ref/applications/#configuring-applications
+AppConfig.default = False
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -83,6 +93,15 @@ MIDDLEWARE = [
 # Django authentication backend. See auth.py
 #------------------------------------------------------------------------------
 AUTHENTICATION_BACKENDS = []
+
+#------------------------------------------------------------------------------
+# Django Q
+#------------------------------------------------------------------------------
+Q_CLUSTER = {
+    'timeout': ENV.int('Q_CLUSTER_TIMEOUT', default=120),
+    'retry': ENV.int('Q_CLUSTER_RETRY', default=120),
+}
+
 
 #------------------------------------------------------------------------------
 # Django template and site settings
