@@ -1,0 +1,96 @@
+{% extends "common/base.html" %} 
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Import Grant from ORCID
+{% endblock %}
+
+{% block content %}
+<h1>Import Grant from ORCID</h1>
+
+<div class="col">
+    <form method="GET">
+        {% csrf_token %}
+        <div id="div_id_orcid" class="form-group">
+            <label for="id_orcid" class="col-form-label requiredField">
+                ORCID ID<span class="asteriskField">*</span>
+            </label>
+            <input id="id_search_id" type="text" class="textinput textInput form-control" required/>
+        </div>
+        <button id="search-btn" type="submit" class="btn btn-success btn-block">Import</button>
+    </form>
+</div>
+
+<br/>
+
+<div class="col" id="search_results" >
+    <div class="card border-light">
+      <div class="card-body">
+        <div id="search_results_inner"><a class="btn btn-secondary" href="{% url 'project-detail' project_pk %}" role="button">Back to Project</a></div>
+      </div>
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block javascript %} 
+  {{ block.super }}
+
+<script>
+    $('#search-btn').on('click', function(event)
+    {
+      console.log("search-btn clicked");
+
+      event.preventDefault();
+      $('#search_results').show();
+      $("#search_results_inner").html('<div class="alert alert-info text-center"><i class="fas fa-sync fa-spin fa-fw"></i> Searching</div>')
+      create_post();
+    });
+  //   $('#post-form').on('submit', function(event){
+  //     console.log("Yeet");
+
+  //     //Test if this is actually running
+  //     window.print();
+
+  //     event.preventDefault();
+  //     $('#search_results').show();
+  //     $("#search_results_inner").html('<div class="alert alert-info text-center"><i class="fas fa-sync fa-spin fa-fw"></i> Searching</div>')
+  //     create_post();
+  // });
+  
+    function create_post() {
+      search_id = $('#id_search_id').val().trim();
+    
+      var pk = "{{ project.pk }}"
+      $.ajax({
+          url : "/grant/project/" + pk + "/orcid-import-search-result/", // the endpoint
+          type : "POST", // http method
+          data : {
+            search_id : search_id, 
+            csrfmiddlewaretoken: "{{ csrf_token }}"
+          }, // data sent with the post request
+          // handle a successful response
+          success : function(data) {
+              $('#id_search_id').val(''); // remove the value from the input
+              $('#search_results').show();
+              $('#search_results_inner').html(data);
+          },
+  
+          // handle a non-successful response
+          error : function(xhr,errmsg,err) {
+              $('#results').html("<div class='alert-box alert radius' data-alert>Oops! We have encountered an error: "+errmsg+
+                  " <a href='#' class='close'>&times;</a></div>"); // add the error to the dom
+              console.log(xhr.status + ": " + xhr.responseText); // provide a bit more info about the error to the console
+          }
+      });
+  };
+  
+  $(document).ready(function(){
+    $('[data-toggle="popover"]').popover(); 
+  });
+  </script>
+
+{% endblock %}

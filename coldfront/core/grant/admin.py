@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from coldfront.core.grant.models import Grant, GrantFundingAgency
+from coldfront.core.grant.models import Grant, GrantSource, GrantFundingAgency
 from simple_history.admin import SimpleHistoryAdmin
 
 
@@ -8,6 +8,9 @@ from simple_history.admin import SimpleHistoryAdmin
 class GrantFundingAgencyChoiceAdmin(admin.ModelAdmin):
     list_display = ('name', )
 
+@admin.register(GrantSource)
+class GrantSourceAdmin(SimpleHistoryAdmin):
+    list_display = ('name', 'url',)
 
 @admin.register(Grant)
 class GrantAdmin(SimpleHistoryAdmin):

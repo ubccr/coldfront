@@ -13,11 +13,11 @@ class PublicationAddForm(forms.Form):
 
 class PublicationSearchForm(forms.Form):
     search_id = forms.CharField(
-        label='Search ID', widget=forms.Textarea, required=True)
+        label='Search ID or ORCID ID', widget=forms.Textarea, required=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['search_id'].help_text = '<br/>Enter ID such as DOI or Bibliographic Code to search.'
+        self.fields['search_id'].help_text = '<br/>Enter ID such as DOI or Bibliographic Code to search. Enter an ORCID ID to import works.'
 
 
 class PublicationResultForm(forms.Form):
