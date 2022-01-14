@@ -1,0 +1,32 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Buy Service Units
+{% endblock %}
+
+
+{% block content %}
+<h1>Buy Service Units for {{ project.name }}</h1>
+
+<p>
+  Please provide the following details to buy time on Savio. You will also need
+  to return a signed copy of a Memorandum of Understanding that will be sent to
+  you.
+</p>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form|crispy }}
+  <input class="btn btn-primary" type="submit" value="Submit" />
+  <a
+      class="btn btn-secondary"
+      href="{% url 'buy-service-units-landing' project.pk %}"
+      role="button">
+    Cancel
+  </a>
+</form>
+
+{% endblock %}

@@ -28,7 +28,8 @@ urlpatterns = [
 ]
 
 
-# TODO: Once finalized, move these imports above.
+# New Project Requests
+# TODO: Integrate this section with the rest.
 from coldfront.core.project.views import ProjectRequestView
 from coldfront.core.project.views import SavioProjectRequestDetailView
 from coldfront.core.project.views import SavioProjectRequestListView
@@ -53,7 +54,6 @@ from coldfront.core.project.views import VectorProjectReviewEligibilityView
 from coldfront.core.project.views import VectorProjectReviewSetupView
 from coldfront.core.project.views import VectorProjectUndenyRequestView
 from coldfront.core.project.views import ProjectRemoveSelf
-from coldfront.core.project.views import ProjectRemovalRequestUpdateStatusView
 from django.views.generic import TemplateView
 
 
@@ -154,6 +154,8 @@ urlpatterns += [
 ]
 
 
+# Allocation Renewal Requests
+# TODO: Integrate this section with the rest.
 from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestListView
 from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestDetailView
 from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestReviewDenyView
@@ -197,4 +199,20 @@ urlpatterns += [
     #      AllocationRenewalRequestUndenyView.as_view(),
     #      name='pi-allocation-renewal-request-review-undeny'),
 
+]
+
+
+# Buy Service Units
+# TODO: Integrate this section with the rest.
+from coldfront.core.project.views_.addition_views.request_views import AllocationAdditionRequestLandingView
+from coldfront.core.project.views_.addition_views.request_views import AllocationAdditionRequestView
+
+
+urlpatterns += [
+    path('<int:pk>/buy-service-units-landing/',
+         AllocationAdditionRequestLandingView.as_view(),
+         name='buy-service-units-landing'),
+    path('<int:pk>/buy-service-units/',
+         AllocationAdditionRequestView.as_view(),
+         name='buy-service-units'),
 ]
