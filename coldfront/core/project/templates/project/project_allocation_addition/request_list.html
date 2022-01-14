@@ -14,24 +14,24 @@ Service Units Purchase {{ request_filter|title }} Requests %}
 <hr>
 
 <p>
-  Note: Requests to purchase additional Service Units are currently limited to
-  Recharge (ac_) projects on Savio.
-</p>
-
-<p>
   {% if request_filter == 'completed' %}
     View completed requests to purchase additional Service Units. You may also
     view pending requests
-    <a href="{% url 'service-units-purchase-pending-request-list' %}"
+    <a href="{% url 'service-units-purchase-pending-request-list' %}">
       <span class="accessibility-link-text">Pending Requests</span>
       here</a>.
   {% else %}
     View pending requests to purchase additional Service Units. You may also
     view completed requests
-    <a href="{% url 'service-units-purchase-completed-request-list' %}"
+    <a href="{% url 'service-units-purchase-completed-request-list' %}">
       <span class="accessibility-link-text">Completed Requests</span>
       here</a>.
   {% endif %}
+</p>
+
+<p>
+  Note: Requests to purchase additional Service Units are limited to Recharge
+  (ac_) projects on Savio.
 </p>
 
 {% if request_list %}
