@@ -207,6 +207,10 @@ class AllocationAdditionRequestView(LoginRequiredMixin, UserPassesTestMixin,
         context['project'] = self.project_obj
         return context
 
+    def get_success_url(self):
+        """Redirect to the Project Detail view on success."""
+        return reverse('project-detail', kwargs={'pk': self.project_obj.pk})
+
     def test_func(self):
         """Allow active PIs and Managers of the Project who have signed
         the User Access Agreement."""

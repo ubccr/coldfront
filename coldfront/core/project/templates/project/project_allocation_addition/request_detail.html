@@ -1,0 +1,90 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+{% load iso8601_to_datetime %}
+
+
+{% block title %}
+Service Units Purchase Request Detail
+{% endblock %}
+
+
+{% block content %}
+<h1>
+  Service Units Purchase Request ({{ addition_request.project.name }})
+  {% with status=addition_request.status.name %}
+    {% if status == 'Under Review' %}
+      <span class="badge badge-warning float-right">{{ status }}</span>
+    {% elif status == 'Complete' %}
+      <span class="badge badge-success float-right">{{ status }}</span>
+    {% else %}
+      <span class="badge badge-danger float-right">{{ status }}</span>
+    {% endif %}
+  {% endwith %}
+</h1>
+<hr>
+
+{% include 'project/project_allocation_addition/request_card.html' with addition_request=addition_request %}
+
+<div class="card mb-3">
+  <div class="card-header">
+    <h2>
+      <i class="fas fa-question-circle" aria-hidden="true"></i>
+      Request Status
+    </h2>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <tbody>
+          <tr>
+            <th>Status:</th>
+            <td>
+              {% with status=addition_request.status.name %}
+                {% if status == 'Under Review' %}
+                  <p>
+                    This request is currently under review. Administrators must
+                    confirm that the Memorandum of Understanding has been
+                    signed and that funds have been transferred.
+                  </p>
+                {% elif status == 'Complete' %}
+                  <p>
+                    This request has been approved, and service units have been
+                    allocated.
+                  </p>
+                {% else %}
+                  <p>
+                    This request has been denied. Below are specific details:
+                  </p>
+                  <p>
+                    <strong>Category:</strong>
+                    {{ denial_reason.category }}
+                  </p>
+                  <p>
+                    <strong>Justification:</strong>
+                    {{ denial_reason.justification }}
+                  </p>
+                  <p>
+                    <strong>Timestamp:</strong>
+                    {{ denial_reason.timestamp|iso8601_to_datetime }}
+                  </p>
+                  <p>
+                    If you have any questions or concerns, please contact us at
+                    {{ support_email }}.
+                  </p>
+                {% endif %}
+              {% endwith %}
+            </td>
+          </tr>
+          <tr>
+            <th>Latest Update Timestamp:</th>
+            <td>{{ latest_update_timestamp }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

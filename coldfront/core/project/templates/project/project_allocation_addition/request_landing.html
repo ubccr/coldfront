@@ -20,11 +20,13 @@ Purchase Service Units
   {{ current_usage }}/{{ current_allowance }} ({{ usage_percentage}})
 </p>
 
-
-
 <p>
   The PIs and managers of the Project will be contacted to provide a signed
   Memorandum of Understanding as part of the approval process.
+</p>
+
+<p>
+  Note: A Project may only have one pending request at a time.
 </p>
 
 
@@ -35,7 +37,7 @@ Purchase Service Units
     Continue
   </a>
 {% else %}
-  <button type="button" class="btn btn-success" disabled>
+  <button type="button" class="btn btn-primary" disabled>
     Continue
   </button>
 {% endif %}
@@ -50,7 +52,7 @@ Purchase Service Units
 <div class="row">
   <div class="col-lg-12 mt-2">
     <p>
-      You have view your
+      You may view your
       <a href="{% url 'service-units-purchase-pending-request-list' %}">
         pending
       </a>

@@ -2,7 +2,43 @@ from coldfront.core.allocation.models import AllocationAdditionRequest
 from coldfront.core.project.utils_.permissions_utils import is_user_manager_or_pi_of_project
 
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import UserPassesTestMixin
+from django.shortcuts import get_object_or_404
+from django.views.generic import DetailView
 from django.views.generic import TemplateView
+
+
+class AllocationAdditionRequestDetailView(LoginRequiredMixin,
+                                          UserPassesTestMixin, DetailView):
+    """A view with details on a single request to purchase more service
+    units under a Project."""
+
+    model = AllocationAdditionRequest
+    template_name = 'project/project_allocation_addition/request_detail.html'
+    login_url = '/'
+    context_object_name = 'addition_request'
+
+    request_obj = None
+
+    def dispatch(self, request, *args, **kwargs):
+        """TODO"""
+        pk = self.kwargs.get('pk')
+        self.request_obj = get_object_or_404(AllocationAdditionRequest, pk=pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        """TODO"""
+        context = super().get_context_data(**kwargs)
+        return context
+
+    def get_redirect_url(self, pk):
+        """TODO"""
+        # TODO
+        return '/'
+
+    def test_func(self):
+        """Allow TODO"""
+        return True
 
 
 class AllocationAdditionRequestListView(LoginRequiredMixin, TemplateView):
@@ -37,7 +73,7 @@ class AllocationAdditionRequestListView(LoginRequiredMixin, TemplateView):
             request_list = AllocationAdditionRequest.objects.filter(
                 id__in=request_ids).order_by(order_by)
 
-        context['request_list'] = request_list
+        context['addition_request_list'] = request_list
         context['request_filter'] = (
             'completed' if self.completed else 'pending')
 

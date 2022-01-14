@@ -204,6 +204,7 @@ urlpatterns += [
 
 # Purchase Service Units
 # TODO: Integrate this section with the rest.
+from coldfront.core.project.views_.addition_views.approval_views import AllocationAdditionRequestDetailView
 from coldfront.core.project.views_.addition_views.approval_views import AllocationAdditionRequestListView
 from coldfront.core.project.views_.addition_views.request_views import AllocationAdditionRequestLandingView
 from coldfront.core.project.views_.addition_views.request_views import AllocationAdditionRequestView
@@ -222,4 +223,7 @@ urlpatterns += [
     path('service-units-purchase-completed-request-list/',
          AllocationAdditionRequestListView.as_view(completed=True),
          name='service-units-purchase-completed-request-list'),
+    path('service-units-purchase-request-detail/<int:pk>/',
+         AllocationAdditionRequestDetailView.as_view(),
+         name='service-units-purchase-request-detail'),
 ]
