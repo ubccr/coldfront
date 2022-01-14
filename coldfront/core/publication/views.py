@@ -1,5 +1,10 @@
+import hashlib
+import json
 import re
-import uuid
+
+from typing import Union
+from django.conf import settings
+
 import requests
 import os
 import io
@@ -27,7 +32,10 @@ from coldfront.core.publication.forms import (
 )
 from coldfront.core.publication.models import Publication, PublicationSource
 from doi2bib import crossref
+# import orcid #NEW REQUIREMENT: orcid (pip install orcid)
+from coldfront.orcid_vars import OrcidAPI
 
+from coldfront.dict_methods import get_value_or_default
 
 MANUAL_SOURCE = 'manual'
 
@@ -94,64 +102,165 @@ class PublicationSearchResultView(LoginRequiredMixin, UserPassesTestMixin, Templ
         else:
             return super().dispatch(request, *args, **kwargs)
 
-    def _search_id(self, unique_id):
-        matching_source_obj = None
-        for source in PublicationSource.objects.all():
-            if source.name == 'doi':
-                try:
-                    status, bib_str = crossref.get_bib(unique_id)
-                    bp = BibTexParser(interpolate_strings=False)
-                    bib_database = bp.parse(bib_str)
-                    bib_json = bib_database.entries[0]
-                    matching_source_obj = source
-                    break
-                except:
-                    continue
 
-            elif source.name == 'adsabs':
-                try:
-                    url = 'http://adsabs.harvard.edu/cgi-bin/nph-bib_query?bibcode={}&data_type=BIBTEX'.format(
-                        unique_id)
-                    r = requests.get(url, timeout=5)
-                    bp = BibTexParser(interpolate_strings=False)
-                    bib_database = bp.parse(r.text)
-                    bib_json = bib_database.entries[0]
-                    matching_source_obj = source
-                    break
-                except:
-                    continue
+    def _search_id(self, unique_id) -> Union[dict, bool]:
+        def _gen_pub_dic_doi(matching_source_obj, bib_json, unique_id) -> Union[dict, bool]:
+            """Get a publication dictionary for doi
 
-        if not matching_source_obj:
-            return False
+            Returns
+            -------
+            :returns: dict, False
+                The dictionary on success, otherwise false.
+            """
+            if not matching_source_obj:
+                return False
 
-        year = as_text(bib_json['year'])
-        author = as_text(bib_json['author']).replace('{\\textquotesingle}', "'").replace('{\\textendash}', '-').replace(
-            '{\\textemdash}', '-').replace('{\\textasciigrave}', ' ').replace('{\\textdaggerdbl}', ' ').replace('{\\textdagger}', ' ')
-        title = as_text(bib_json['title']).replace('{\\textquotesingle}', "'").replace('{\\textendash}', '-').replace(
-            '{\\textemdash}', '-').replace('{\\textasciigrave}', ' ').replace('{\\textdaggerdbl}', ' ').replace('{\\textdagger}', ' ')
-
-        author = re.sub("{|}", "", author)
-        title = re.sub("{|}", "", title)
-
-        # not all bibtex entries will have a journal field
-        if 'journal' in bib_json:
-            journal = as_text(bib_json['journal']).replace('{\\textquotesingle}', "'").replace('{\\textendash}', '-').replace(
+            year = as_text(bib_json['year'])
+            author = as_text(bib_json['author']).replace('{\\textquotesingle}', "'").replace('{\\textendash}', '-').replace(
                 '{\\textemdash}', '-').replace('{\\textasciigrave}', ' ').replace('{\\textdaggerdbl}', ' ').replace('{\\textdagger}', ' ')
-            journal = re.sub("{|}", "", journal)
-        else:
-            # fallback: clearly indicate that data was absent
-            source_name = matching_source_obj.name
-            journal = '[no journal info from {}]'.format(source_name.upper())
+            title = as_text(bib_json['title']).replace('{\\textquotesingle}', "'").replace('{\\textendash}', '-').replace(
+                '{\\textemdash}', '-').replace('{\\textasciigrave}', ' ').replace('{\\textdaggerdbl}', ' ').replace('{\\textdagger}', ' ')
 
-        pub_dict = {}
-        pub_dict['author'] = author
-        pub_dict['year'] = year
-        pub_dict['title'] = title
-        pub_dict['journal'] = journal
-        pub_dict['unique_id'] = unique_id
-        pub_dict['source_pk'] = matching_source_obj.pk
+            author = re.sub("{|}", "", author)
+            title = re.sub("{|}", "", title)
 
-        return pub_dict
+            # not all bibtex entries will have a journal field
+            if 'journal' in bib_json:
+                journal = as_text(bib_json['journal']).replace('{\\textquotesingle}', "'").replace('{\\textendash}', '-').replace(
+                    '{\\textemdash}', '-').replace('{\\textasciigrave}', ' ').replace('{\\textdaggerdbl}', ' ').replace('{\\textdagger}', ' ')
+                journal = re.sub("{|}", "", journal)
+            else:
+                # fallback: clearly indicate that data was absent
+                source_name = matching_source_obj.name
+                journal = '[no journal info from {}]'.format(source_name.upper())
+
+            pub_dict_entree = {}
+            pub_dict_entree['author'] = author
+            pub_dict_entree['year'] = year
+            pub_dict_entree['title'] = title
+            pub_dict_entree['journal'] = journal
+            pub_dict_entree['unique_id'] = unique_id
+            pub_dict_entree['source_pk'] = matching_source_obj.pk
+
+            # Uncomment to generate pub_dict_entree dump
+            # log_file = open("pub_dict_dump.json", "w")
+            # log_file.write(json.dumps(pub_dict_entree, indent=2))
+            # log_file.close()
+
+            return [pub_dict_entree]
+        
+        def _gen_pub_dic_orc(matching_source_obj, orc_record, unique_id, orc_id, orc_token) -> Union[dict, bool]:
+            """Get a publication dictionary for ORCID
+
+            Returns
+            -------
+            :returns: dict, False
+                The dictionary on success, otherwise false.
+            """
+            # # Uncomment for orc record dump
+            # log_file = open("orc_record_dump.json", "w")
+            # log_file.write(json.dumps(orc_record, indent=2))
+            # log_file.close()
+
+            orc_works = orc_record['group']
+            orc_worksummary = [works['work-summary'][0] for works in orc_works]
+
+            orc_pub_dict = []
+
+            for work in orc_worksummary:
+                orc_pub_dict_entree = {}
+
+                orc_pub_dict_entree['title'] = get_value_or_default(work, "title", "title", "value",
+                    default_value="[No Title]")
+                orc_pub_dict_entree['author'] = get_value_or_default(work, "source", "source-name", "value",
+                    default_value="[No Author]")
+                # Program wants only 4 characters for year, but year is optional in ORCID
+                # Program crashes w/out int for year, so I'll put in a future year
+                # to signify a missing date
+                orc_pub_dict_entree['year'] = get_value_or_default(work, "publication-date", "year", "value",
+                    default_value=9999)
+                orc_pub_dict_entree['unique_id'] = get_value_or_default(work, "path",
+                    default_value="[No ID]").strip("/")
+                orc_pub_dict_entree['source_pk'] = matching_source_obj.pk
+
+                try:
+                    # Not all the required info is in the summary.
+                    # Get more detailed info from put-code
+                    putcode = work['put-code']
+                    orc_work_full = OrcidAPI.orc_api.read_record_public(orc_id, f'works/{putcode}', orc_token)
+                    orc_work_full = orc_work_full['bulk'][0]['work']
+
+                    orc_pub_dict_entree['journal'] = get_value_or_default(orc_work_full, 'journal-title', 'value',
+                        default_value="[No Journal]")
+                except:
+                    pass
+                
+                orc_pub_dict.append(orc_pub_dict_entree)
+
+                # print("Title: ", orc_pub_dict_entree['title'])
+                # print("Year: ", orc_pub_dict_entree['year'])
+            
+            return orc_pub_dict
+        
+        matching_source_obj = None
+
+        for source in PublicationSource.objects.all():
+            if (source.name == 'doi' or source.name == 'adsabs'):
+                if source.name == 'doi':
+                    try:
+                        status, bib_str = crossref.get_bib(unique_id)
+                        bp = BibTexParser(interpolate_strings=False)
+                        bib_database = bp.parse(bib_str)
+                        bib_json = bib_database.entries[0]
+                        matching_source_obj = source
+                        
+                        return _gen_pub_dic_doi(matching_source_obj, bib_json, unique_id)
+                    except:
+                        continue
+
+                elif source.name == 'adsabs':
+                    try:
+                        url = 'http://adsabs.harvard.edu/cgi-bin/nph-bib_query?bibcode={}&data_type=BIBTEX'.format(
+                            unique_id)
+                        r = requests.get(url, timeout=5)
+                        bp = BibTexParser(interpolate_strings=False)
+                        bib_database = bp.parse(r.text)
+                        bib_json = bib_database.entries[0]
+                        matching_source_obj = source
+                        
+                        return _gen_pub_dic_doi(matching_source_obj, bib_json, unique_id)
+                    except:
+                        continue
+            
+            elif source.name == 'orcid':
+                # Code for Orcid here
+
+                try:
+                    # Regex the ORCID id from input
+                    orc_id_match = re.search(OrcidAPI.ORC_RE_KEY, unique_id)
+
+                    if (orc_id_match):
+                        orc_id : str = orc_id_match.group()
+
+                        orc_token = OrcidAPI.orc_api.get_search_token_from_orcid()
+
+                        # url is for a sign-in page
+                        # url = orcid_vars.orc_api.get_login_url('/authenticate', ORC_REDIRECT)
+
+                        # Can only find researchers in sandbox env if app is in sandbox
+                        orc_record : dict = OrcidAPI.orc_api.read_record_public(orc_id, 'works', orc_token)       
+
+                        matching_source_obj = source
+                        return _gen_pub_dic_orc(matching_source_obj, orc_record, unique_id, orc_id, orc_token)
+                except Exception as e:
+                    # print("EXCEPTION HIT IN ORCID RESEARCHER IMPORTING.")
+                    # print(e)
+                    # print(e.args)
+                    # print("continuing...")
+
+                    continue
+
+        return False
 
     def post(self, request, *args, **kwargs):
         search_ids = list(set(request.POST.get('search_id').split()))
@@ -162,7 +271,9 @@ class PublicationSearchResultView(LoginRequiredMixin, UserPassesTestMixin, Templ
         for ele in search_ids:
             pub_dict = self._search_id(ele)
             if pub_dict:
-                pubs.append(pub_dict)
+                for pub_dict_entree in pub_dict:
+                    if pub_dict_entree:
+                        pubs.append(pub_dict_entree)
 
         formset = formset_factory(PublicationResultForm, max_num=len(pubs))
         formset = formset(initial=pubs, prefix='pubform')
@@ -200,7 +311,7 @@ class PublicationAddView(LoginRequiredMixin, UserPassesTestMixin, View):
                 request, 'You cannot add publications to an archived project.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
-            return super().dispatch(request, *args, **kwargs)
+            return super().dispatch(request, *args, **kwargs)        
 
     def post(self, request, *args, **kwargs):
         pubs = eval(request.POST.get('pubs'))
@@ -215,10 +326,14 @@ class PublicationAddView(LoginRequiredMixin, UserPassesTestMixin, View):
         if formset.is_valid():
             for form in formset:
                 form_data = form.cleaned_data
-                
+                created = False
+
+                # Was missing if statement to check if element was selected
                 if form_data['selected']:
                     source_obj = PublicationSource.objects.get(
-                        pk=form_data.get('source_pk'))
+                        pk=form_data.get('source_pk')
+                    )
+                    
                     publication_obj, created = Publication.objects.get_or_create(
                         project=project_obj,
                         title=form_data.get('title'),
@@ -237,6 +352,10 @@ class PublicationAddView(LoginRequiredMixin, UserPassesTestMixin, View):
             if publications_added:
                 msg += 'Added {} publication{} to project.'.format(
                     publications_added, 's' if publications_added > 1 else '')
+                if publications_skipped:
+                    # Add space to separate the messages generated from
+                    # publications_added and publications_skipped
+                    msg += ' '
             if publications_skipped:
                 msg += 'Publication already exists on this project. Skipped adding: {}'.format(
                     ', '.join(publications_skipped))
@@ -466,10 +585,20 @@ class PublicationExportPublicationsView(LoginRequiredMixin, UserPassesTestMixin,
                     )
                     print("id is"+publication_obj.display_uid())
                     temp_id = publication_obj.display_uid()
-                    status, bib_str = crossref.get_bib(publication_obj.display_uid())
-                    bp = BibTexParser(interpolate_strings=False)
-                    bib_database = bp.parse(bib_str)
-                    bib_text += bib_str
+
+                    orc_id = re.match(OrcidAPI.ORC_RE_KEY, temp_id)
+                    if (orc_id):  # Evaluate for ORCID instead of DOI
+                        putcode = re.search("[0-9]{7}", temp_id)
+
+                        orc_token : str = OrcidAPI.orc_api.get_search_token_from_orcid()
+                        orc_record : dict = OrcidAPI.orc_api.read_record_public(orc_id.group(0), 'work', orc_token, putcode.group(0))   
+
+                        bib_str = json.dumps(orc_record, indent=2)
+                    else:
+                        status, bib_str = crossref.get_bib(publication_obj.display_uid())
+                        bp = BibTexParser(interpolate_strings=False)
+                        bib_database = bp.parse(bib_str)
+                    bib_text += bib_str + "\n"
             response = HttpResponse(content_type='text/plain')
             response['Content-Disposition'] = 'attachment; filename=refs.bib'
             buffer = io.StringIO()

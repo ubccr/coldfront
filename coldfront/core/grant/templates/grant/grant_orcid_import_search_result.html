@@ -1,0 +1,151 @@
+{% load crispy_forms_tags %}
+
+<style>
+  /* I don't know which css page to put this in */
+  select
+  {
+    border: none;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  select option
+  {
+    cursor: pointer;
+  }
+
+  .editable_values input
+  {
+    width: 50%;
+  }
+</style>
+
+{% if formset %}
+<div class="card border-light">
+    <div class="card-body">
+      
+      <form action="{% url 'grant-orcid-import' project_pk %}" method="post">
+        {% csrf_token %}
+
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th>
+                  <input type="checkbox" class="check" id="selectAll">
+                </th>
+                <th scope="col">#</th>
+                <th scope="col">Grant</th>
+                <th scope="col">Editable Values</th>
+                <th scope="col"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for form in formset %}
+              <tr>
+                <td>{{ form.selected }}</td>
+                <td>{{ forloop.counter }}</td>
+                <td>
+                  <strong>Title: </strong>{{ form.title.value }} <br>
+                  <strong>Funding Agency: </strong>{{ form.funding_agency.value }} <br>
+                  <strong>Grant Number: </strong>{{ form.grant_number.value }} <br>
+                  <strong>Total Amount Awarded: </strong>{{ form.total_amount_awarded.value }} 
+                    {{ form.amount_awarded_currency.value }}<br>
+                  <strong>Start Date: </strong><span class="date_disp">{{ form.grant_start.value }}</span> <br>
+                  <strong>End Date: </strong><span class="date_disp">{{ form.grant_end.value }}</span> <br>
+                </td>
+                <td>
+                  <div class="editable_values" title="First Last">
+                    <label class="col-form-label  requiredField">
+                      Project PI Name
+                    </label> <br>
+                    {{ form.grant_pi_full_name }}
+                  </div>
+                  <br>
+                  <div class="editable_values" title="
+                    Percent credit as entered in the sponsored projects form for grant submission as financial credit to the department/unit in the credit distribution section">
+                    <label for="id_grantform-0-percent_credit" class="col-form-label  requiredField">
+                      Percent credit to HPC Resources<span class="asteriskField">*</span>
+                    </label> <br>
+                    {{ form.percent_credit }} 
+                    <span>%</span>
+                  </div>
+                  <br>
+                  <div class="editable_values" title="Funds budgeted specifically for HPC Resources services, hardware, software, and/or personnel, in {{form.amount_awarded_currency.value}}">
+                    <label for="id_grantform-0-direct_funding" class="col-form-label  requiredField">
+                      Direct funding to HPC Resources<span class="asteriskField">*</span>
+                    </label> <br>
+                    {{ form.direct_funding }}
+                    <span>{{ form.amount_awarded_currency.value }}</span>
+                  </div>
+                  <br>
+                  <div>
+                    
+                  </div>
+                </td>
+                <td>
+                  <label for="id_grantform-0-role" class="col-form-label">
+                    Project PI Role
+                  </label> <br>
+                  {{ form.role }}
+                  <br>
+                  <label for="id_grantform-0-status" class="col-form-label">
+                    Project Status<span class="asteriskField">*</span>
+                  </label> <br>
+                  {{ form.status }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        {{ formset.management_form }}
+         <div>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-plus" aria-hidden="true"></i> Add Selected Grants to Project</button>
+          <a class="btn btn-secondary" href="{% url 'project-detail' project_pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a>
+          <input id="search_ids" type="hidden" name="search_ids" value="{{search_ids}}">
+          <input id="grants" type="hidden" name="grants" value="{{grants}}">
+        </div>
+  
+      </form>
+    </div>
+  </div>
+  {% else %} 
+    <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a> 
+    <div class="alert alert-info">
+      No grants to add!
+    </div>
+  {% endif %}
+  
+  
+  <script>
+  $(document).ready(function()
+    {
+      var missing_date_re = new RegExp("9999-12-31");
+
+      $(".date_disp").each(function()
+      {
+        if (missing_date_re.test($(this).text()))
+        {
+          $(this).attr("title", "Missing date! Edit grant on project page.");
+          $(this).attr("style", "color:red;")
+        }
+      });
+
+      console.log($(".date_disp").text())
+    }
+  );
+  
+
+  $("#selectAll").click(function() {
+    $("input[name^='grantform-']").prop('checked', $(this).prop('checked'));
+  });
+  
+  $("input[name^='grantform-']").click(function(ele) {
+    var id = $(this).attr('id');
+    if (id != "selectAll") {
+      $("#selectAll").prop('checked', false);
+    }
+  });
+  </script>
