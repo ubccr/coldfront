@@ -4,16 +4,16 @@
 
 
 {% block title %}
-Buy Service Units
+Purchase Service Units
 {% endblock %}
 
 
 {% block content %}
-<h1>Buy Service Units for {{ project.name }}</h1><hr>
+<h1>Purchase Service Units for {{ project.name }}</h1><hr>
 
 <p>
-  Project {{ project.name }} is eligible to buy additional Service Units for
-  use on the Savio cluster.
+  Project {{ project.name }} is eligible to purchase additional Service Units
+  for use on the Savio cluster.
 </p>
 <p>
   <b>Current Usage:</b>
@@ -28,9 +28,17 @@ Buy Service Units
 </p>
 
 
-<a class="btn btn-primary" href="{% url 'buy-service-units' project.pk %}">
-  Continue
-</a>
+{% if not has_pending_request %}
+  <a
+      class="btn btn-primary"
+      href="{% url 'purchase-service-units' project.pk %}">
+    Continue
+  </a>
+{% else %}
+  <button type="button" class="btn btn-success" disabled>
+    Continue
+  </button>
+{% endif %}
 <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}">
   Back
 </a>
@@ -42,15 +50,15 @@ Buy Service Units
 <div class="row">
   <div class="col-lg-12 mt-2">
     <p>
-      You may view your
-      <a href="">
+      You have view your
+      <a href="{% url 'service-units-purchase-pending-request-list' %}">
         pending
       </a>
       renewal requests.
     </p>
     <p>
       You may also view your
-      <a href="">
+      <a href="{% url 'service-units-purchase-completed-request-list' %}">
         completed
       </a>
       renewal requests.

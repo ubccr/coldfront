@@ -4,17 +4,17 @@
 
 
 {% block title %}
-Buy Service Units
+Purchase Service Units
 {% endblock %}
 
 
 {% block content %}
-<h1>Buy Service Units for {{ project.name }}</h1>
+<h1>Purchase Service Units for {{ project.name }}</h1>
 
 <p>
-  Please provide the following details to buy time on Savio. You will also need
-  to return a signed copy of a Memorandum of Understanding that will be sent to
-  you.
+  Please provide the following details to purchase time on Savio. You will also
+  need to return a signed copy of a Memorandum of Understanding that will be
+  sent to you.
 </p>
 
 <form method="post">
@@ -23,7 +23,7 @@ Buy Service Units
   <input class="btn btn-primary" type="submit" value="Submit" />
   <a
       class="btn btn-secondary"
-      href="{% url 'buy-service-units-landing' project.pk %}"
+      href="{% url 'purchase-service-units-landing' project.pk %}"
       role="button">
     Cancel
   </a>
