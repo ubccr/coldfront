@@ -508,3 +508,61 @@ class AllocationRenewalRequest(TimeStampedModel):
         period = self.allocation_period.name
         pi = self.pi.username
         return f'Renewal Request ({period}, {pi})'
+
+
+class AllocationAdditionRequestStatusChoice(TimeStampedModel):
+    """A status that a AllocationAdditionRequest may have."""
+
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]
+
+
+def allocation_addition_request_state_schema():
+    """Return the schema for the AllocationAdditionRequest.state
+    field."""
+    return {
+        'other': {
+            'justification': '',
+            'timestamp': '',
+        }
+    }
+
+
+class AllocationAdditionRequest(TimeStampedModel):
+    """A request to purchase additional Service Units for under eligible
+    Project."""
+
+    requester = models.ForeignKey(
+        User, on_delete=models.CASCADE,
+        related_name='allocation_addition_requester')
+    project = models.ForeignKey(
+        Project, on_delete=models.CASCADE,
+        related_name='allocation_addition_project')
+    status = models.ForeignKey(
+        AllocationAdditionRequestStatusChoice, on_delete=models.CASCADE)
+
+    num_service_units = models.DecimalField(
+        max_digits=settings.DECIMAL_MAX_DIGITS,
+        decimal_places=settings.DECIMAL_MAX_PLACES,
+        default=settings.ALLOCATION_MIN,
+        validators=[
+            MinValueValidator(settings.ALLOCATION_MIN),
+            MaxValueValidator(settings.ALLOCATION_MAX),
+        ])
+    request_time = models.DateTimeField(
+        null=True, blank=True, default=timezone.now)
+    approval_time = models.DateTimeField(null=True, blank=True)
+    completion_time = models.DateTimeField(null=True, blank=True)
+
+    state = models.JSONField(default=allocation_addition_request_state_schema)
+    extra_fields = models.JSONField(default=dict)
+
+    def __str__(self):
+        project_name = self.project.name
+        num_sus = self.num_service_units
+        return f'Addition Request ({project_name}, {num_sus})'
