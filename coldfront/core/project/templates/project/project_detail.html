@@ -143,11 +143,19 @@ Project Detail
 <!-- Start Project Allocations -->
 <div class="card mb-3">
   <div class="card-header">
-  <h2 class="d-inline">
-    <i class="fas fa-server"></i>
-    Allocations
-    <span class="badge badge-secondary">{{allocations.count}}</span>
-  </h2>
+    <h2 class="d-inline">
+      <i class="fas fa-server"></i>
+      Allocations
+      <span class="badge badge-secondary">{{allocations.count}}</span>
+    </h2>
+    <div class="float-right">
+      {% if buy_sus_visible %}
+        <a class="btn btn-success" href="" role="button">
+          <i class="fas fa-dollar-sign" aria-hidden="true"></i>
+          Buy Service Units
+        </a>
+      {% endif %}
+    </div>
   </div>
   <div class="card-body">
     {% if allocations %}

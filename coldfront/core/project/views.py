@@ -71,6 +71,7 @@ from coldfront.core.project.utils import (add_vector_user_to_designated_savio_pr
                                           send_project_request_pooling_email,
                                           VectorProjectApprovalRunner,
                                           vector_request_denial_reason,)
+from coldfront.core.project.utils_.permissions_utils import can_project_buy_service_units
 from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestRunner
 from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
 from coldfront.core.project.utils_.renewal_utils import is_any_project_pi_renewable
@@ -250,8 +251,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['cluster_accounts_requestable'] = cluster_accounts_requestable
         context['cluster_accounts_tooltip'] = cluster_accounts_tooltip
 
-        # Only display the "Renew Allowance" button for applicable allocation
-        # types.
+        # Display the "Renew Allowance" button for eligible allocation types.
         # TODO: Display these for ic_ and pc_ when ready.
         context['renew_allowance_current_visible'] = \
             self.object.name.startswith('fc_')
@@ -263,6 +263,9 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 context['renew_allowance_current_visible'] and
                 is_any_project_pi_renewable(
                     self.object, get_current_allocation_period()))
+
+        # Display the "Buy Service Units" button for eligible allocation types.
+        context['buy_sus_visible'] = can_project_buy_service_units(self.object)
 
         return context
 
