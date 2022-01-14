@@ -1,5 +1,11 @@
 {% load crispy_forms_tags %}
 
+{% if missing_orcid_api %}
+<p>
+  ORCID detected in search, but the ORCID API has not been set up yet. See the ORCID API settings in
+  local_settings.py.sample for more information.
+</p>
+{% endif %}
 {% if formset %}
   <div class="card border-light">
     <div class="card-body">

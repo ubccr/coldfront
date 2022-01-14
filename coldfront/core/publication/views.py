@@ -266,6 +266,7 @@ class PublicationSearchResultView(LoginRequiredMixin, UserPassesTestMixin, Templ
         search_ids = list(set(request.POST.get('search_id').split()))
         project_pk = self.kwargs.get('project_pk')
 
+        missing_orcid_api = False       # True if the system detects an ORCID, but the ORCID API is not set up
         project_obj = get_object_or_404(Project, pk=project_pk)
         pubs = []
         for ele in search_ids:
@@ -274,6 +275,10 @@ class PublicationSearchResultView(LoginRequiredMixin, UserPassesTestMixin, Templ
                 for pub_dict_entree in pub_dict:
                     if pub_dict_entree:
                         pubs.append(pub_dict_entree)
+            
+            # Updates missing_orcid_api
+            if not missing_orcid_api and not pub_dict and re.search(OrcidAPI.ORC_RE_KEY, ele):
+                missing_orcid_api = True
 
         formset = formset_factory(PublicationResultForm, max_num=len(pubs))
         formset = formset(initial=pubs, prefix='pubform')
@@ -283,6 +288,7 @@ class PublicationSearchResultView(LoginRequiredMixin, UserPassesTestMixin, Templ
         context['formset'] = formset
         context['search_ids'] = search_ids
         context['pubs'] = pubs
+        context['missing_orcid_api'] = missing_orcid_api
 
         return render(request, self.template_name, context)
 

@@ -286,11 +286,13 @@ LOCAL_SETTINGS_EXPORT += [
 # XDMOD_API_URL = 'http://localhost'
 
 #------------------------------------------------------------------------------
-# ORCID Import settings
+# ORCID API Settings
 #------------------------------------------------------------------------------
-# Sets constants for orc_api (ORCID API)
-# These are required for ORCID importing to work
-# Default values are for test
+# Sets constants for orc_api (ORCID API).
+# These are required for ORCID importing to work.
+# Default values are for test.
+# See https://info.orcid.org/documentation/features/public-api/ for information
+# on creating ORCID APIs.
 
 # The Client ID in ORCID developer tools
 # Example is APP-HLD5WRQGSNL1YEIM
