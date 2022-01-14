@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+- Add a checkbox to 'select all' users on the project to enable/disable notifications [#291](https://github.com/ubccr/coldfront/issues/291)
+- Archived grant not viewable by PI [#259](https://github.com/ubccr/coldfront/issues/259)
+- Add more detail info when multiple allocations on a project for same resource [#193](https://github.com/ubccr/coldfront/issues/193)
+- Admins can prevent the renewal of allocations [#203](https://github.com/ubccr/coldfront/issues/203)
+- Allow logout redirect URL to be configured [#311](https://github.com/ubccr/coldfront/pull/311)
+- Fix empty user search exception [#313](https://github.com/ubccr/coldfront/issues/313)
+- Add allocation change requests [#294](https://github.com/ubccr/coldfront/issues/294)
+- Added signal dispatch for resource allocations [#319](https://github.com/ubccr/coldfront/pull/319)
+- mokey oidc plugin: Handle groups claim as list [#332](https://github.com/ubccr/coldfront/pull/332)
+- Fix divide by zero error when attribute that has 0 usage [#336](https://github.com/ubccr/coldfront/issues/336)
+- Allocation request flow updates [#341](https://github.com/ubccr/coldfront/issues/341) 
+- Add attribute expansion support [#324](https://github.com/ubccr/coldfront/pull/324)
+- Fix adding not-selected publications [#343](https://github.com/ubccr/coldfront/pull/343)
+- Add forward filter parameters between active-archived projects search pages [#347](https://github.com/ubccr/coldfront/pull/347)
+- Fix sorting arrows for allocation search [#344](https://github.com/ubccr/coldfront/pull/344)
+- SECURITY BUG FIX: Check permissions on notification updates [#348](https://github.com/ubccr/coldfront/pull/348) 
+- Allow site-level control of how resources ordered within an allocation [#334](https://github.com/ubccr/coldfront/issues/334)
+- LDAP user search plugin: Add ldap connect timeout config option [#351](https://github.com/ubccr/coldfront/pull/351)
+
 ## [1.0.4] - 2021-03-25
 
 - Fix [#235](https://github.com/ubccr/coldfront/issues/235)
