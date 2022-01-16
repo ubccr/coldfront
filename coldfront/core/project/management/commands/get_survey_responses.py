@@ -32,7 +32,8 @@ class Command(BaseCommand):
         objects = SavioProjectAllocationRequest.objects.filter(
             project__name__istartswith=allowance_type).values_list('survey_answers', flat=True)
 
-        writer(objects)
+        writer(objects, output=options.get('stdout', stdout),
+               error=options.get('stderr', stderr))
 
     @staticmethod
     def to_csv(query_set, output=stdout, error=stderr):
