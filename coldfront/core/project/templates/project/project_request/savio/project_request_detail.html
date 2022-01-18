@@ -54,8 +54,14 @@ Savio Project Request Detail
                       allocation.
                     {% endif %}
                     {% if savio_request.allocation_type in 'ICA,RECHARGE' %}
-                      They must also confirm that the Memorandum of
-                      Understanding has been signed.
+                      {% if savio_request.allocation_type == 'ICA' %}
+                        They must also confirm that the Memorandum of
+                        Understanding has been signed.
+                      {% else %}
+                        They must also confirm that the Memorandum of
+                        Understanding has been signed and that funds have been
+                        transferred.
+                      {% endif %}
                     {% endif %}
                   </p>
                 {% elif status == 'Approved - Processing' %}
@@ -217,7 +223,17 @@ Savio Project Request Detail
               {% if savio_request.allocation_type in 'ICA,RECHARGE' %}
                 {% with memorandum_signed=savio_request.state.memorandum_signed %}
                   <tr>
-                    <td>Confirm that the Memorandum of Understanding has been signed.</td>
+                    {% if savio_request.allocation_type == 'ICA' %}
+                      <td>
+                        Confirm that the Memorandum of Understanding has been
+                        signed.
+                      </td>
+                    {% else %}
+                      <td>
+                        Confirm that the Memorandum of Understanding has been
+                        signed and that funds have been transferred.
+                      </td>
+                    {% endif %}
                     <td>
                       {% if eligibility.status == 'Denied' or readiness.status == 'Denied' %}
                         <span class="badge badge-danger">
