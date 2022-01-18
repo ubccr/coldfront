@@ -1,3 +1,7 @@
+import copy
+import csv
+import io
+
 from django.test import TestCase
 from django.urls import reverse
 from http import HTTPStatus
@@ -120,7 +124,8 @@ class TestJobBase(TestCase):
                                        enddate=self.current_time - datetime.timedelta(days=3),
                                        userid=self.user1,
                                        accountid=self.project1,
-                                       jobstatus='COMPLETING')
+                                       jobstatus='COMPLETING',
+                                       partition='test_partition1')
 
         self.job2 = Job.objects.create(jobslurmid='98765',
                                        submitdate=self.current_time - datetime.timedelta(days=6),
@@ -128,7 +133,8 @@ class TestJobBase(TestCase):
                                        enddate=self.current_time - datetime.timedelta(days=4),
                                        userid=self.user1,
                                        accountid=self.project2,
-                                       jobstatus='COMPLETING')
+                                       jobstatus='COMPLETING',
+                                       partition='test_partition2')
 
     def assert_has_access(self, user, has_access, url):
         self.client.login(username=user.username, password=self.password)
@@ -303,3 +309,116 @@ class TestSlurmJobDetailView(TestJobBase):
         url = reverse('slurm-job-detail', kwargs={'pk': self.job2.pk})
         self.assert_has_access(self.admin, True, url)
         self.assert_has_access(self.staff, True, url)
+
+
+class ExportJobListView(TestJobBase):
+    """A class for testing SlurmJobDetailView"""
+
+    def setUp(self):
+        """Set up test data."""
+        super().setUp()
+
+    def test_access(self):
+        url = reverse('export-job-list')
+
+        self.assert_has_access(self.user1, False, url)
+        self.assert_has_access(self.user2, False, url)
+        self.assert_has_access(self.admin, True, url)
+        self.assert_has_access(self.staff, True, url)
+
+    def test_job_list_view(self):
+        """Testing if 'Export Job List to CSV' button appears"""
+        url = reverse('slurm-job-list')
+        response = self.get_response(self.user1, url)
+        self.assertNotContains(response, 'Export Job List to CSV')
+
+        response = self.get_response(self.admin, url)
+        self.assertContains(response, 'Export Job List to CSV')
+
+    def test_job_list_saves_session(self):
+        """Testing if cleaned form data is saved in session"""
+        url = reverse('slurm-job-list') + '?show_all_jobs=on&username=user1&partition=testpartition'
+        self.get_response(self.admin, url)
+
+        self.assertEqual(self.client.session.get('job_search_form_data')['username'],
+                         self.user1.username)
+        self.assertEqual(self.client.session.get('job_search_form_data')['partition'],
+                         'testpartition')
+
+    def create_job_csv_line(self, job):
+        job_line = f'{job.jobslurmid},{job.userid.username},' \
+                    f'{job.accountid.name},{job.partition},' \
+                    f'{job.jobstatus},{job.submitdate},' \
+                    f'{job.startdate},{job.enddate}'
+
+        return job_line
+
+    def test_exported_csv_no_filtering(self):
+        """Testing if exported CSV file has correct data"""
+
+        url = reverse('export-job-list')
+        self.client.login(username=self.admin.username, password=self.password)
+
+        session = self.client.session
+        session['job_search_form_data'] = {'status': '',
+                                           'jobslurmid': '',
+                                           'project_name': '',
+                                           'username': '',
+                                           'partition': '',
+                                           'submitdate': None,
+                                           'submit_modifier': '',
+                                           'startdate': None,
+                                           'start_modifier': '',
+                                           'enddate': None,
+                                           'end_modifier': '',
+                                           'show_all_jobs': True}
+        session.save()
+
+        response = self.client.get(url)
+
+        csv_lines = copy.deepcopy(list(response.streaming_content))
+
+        self.assertIn(f'jobslurmid,username,project_name,partition,'
+                      f'jobstatus,submitdate,startdate,enddate',
+                      csv_lines[0].decode('utf-8'))
+
+        job1_line = self.create_job_csv_line(self.job1)
+        job2_line = self.create_job_csv_line(self.job2)
+
+        self.assertIn(job1_line, csv_lines[1].decode('utf-8'))
+        self.assertIn(job2_line, csv_lines[2].decode('utf-8'))
+        self.assertEqual(len(csv_lines), 3)
+
+    def test_exported_csv_with_filtering(self):
+        """Testing if exported CSV file has correct data"""
+
+        url = reverse('export-job-list')
+        self.client.login(username=self.admin.username, password=self.password)
+
+        session = self.client.session
+        session['job_search_form_data'] = {'status': '',
+                                           'jobslurmid': '',
+                                           'project_name': '',
+                                           'username': '',
+                                           'partition': 'test_partition1',
+                                           'submitdate': None,
+                                           'submit_modifier': '',
+                                           'startdate': None,
+                                           'start_modifier': '',
+                                           'enddate': None,
+                                           'end_modifier': '',
+                                           'show_all_jobs': True}
+        session.save()
+
+        response = self.client.get(url)
+
+        csv_lines = copy.deepcopy(list(response.streaming_content))
+
+        self.assertIn(f'jobslurmid,username,project_name,partition,'
+                      f'jobstatus,submitdate,startdate,enddate',
+                      csv_lines[0].decode('utf-8'))
+
+        job1_line = self.create_job_csv_line(self.job1)
+
+        self.assertIn(job1_line, csv_lines[1].decode('utf-8'))
+        self.assertEqual(len(csv_lines), 2)
