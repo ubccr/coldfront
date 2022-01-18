@@ -23,8 +23,6 @@ urlpatterns = [
     path('project/', include('coldfront.core.project.urls')),
     path('allocation/', include('coldfront.core.allocation.urls')),
     path('jobs/', include('coldfront.core.statistics.urls')),
-    # path('jobs', statistics_views.SlurmJobListView.as_view(), name='slurm-job-list'),
-    # path('jobs/<int:pk>', statistics_views.SlurmJobDetailView.as_view(), name='slurm-job-detail'),
     # path('grant/', include('coldfront.core.grant.urls')),
     # path('publication/', include('coldfront.core.publication.urls')),
     # path('research-output/', include('coldfront.core.research_output.urls')),
