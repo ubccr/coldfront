@@ -1,8 +1,15 @@
+import copy
+import csv
+import itertools
+import time
+from datetime import datetime
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
-from django.views.generic import DetailView, ListView
+from django.http import HttpResponse, StreamingHttpResponse
+from django.views.generic import DetailView, ListView, TemplateView
 from django.utils.html import strip_tags
 
 from coldfront.core.project.models import Project
@@ -12,6 +19,7 @@ from coldfront.core.statistics.forms import JobSearchForm
 import logging
 
 logger = logging.getLogger(__name__)
+DATE_FORMAT = '%m/%d/%Y, %H:%M:%S'
 
 
 class SlurmJobListView(LoginRequiredMixin,
@@ -20,6 +28,14 @@ class SlurmJobListView(LoginRequiredMixin,
     login_url = '/'
     paginate_by = 30
     context_object_name = 'job_list'
+
+    def save_form_to_session(self, data):
+        new_data = copy.deepcopy(data)
+        for date in ['submitdate', 'startdate', 'enddate']:
+            if data.get(date):
+                new_data[date] = data.get(date).strftime(DATE_FORMAT)
+                print(new_data[date])
+        self.request.session['job_search_form_data'] = new_data
 
     def get_queryset(self):
         order_by = self.request.GET.get('order_by')
@@ -37,6 +53,8 @@ class SlurmJobListView(LoginRequiredMixin,
 
         if job_search_form.is_valid():
             data = job_search_form.cleaned_data
+            self.save_form_to_session(data)
+            self.request.session.modified = True
 
             if data.get('show_all_jobs') and \
                     (self.request.user.is_superuser or
@@ -229,3 +247,108 @@ class SlurmJobDetailView(LoginRequiredMixin,
         context['nodes'] = ', '.join([x.name for x in job_obj.nodes.all()])
 
         return context
+
+
+class ExportJobListView(LoginRequiredMixin,
+                        UserPassesTestMixin,
+                        TemplateView):
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('statistics.view_job'):
+            return True
+
+    def dispatch(self, request, *args, **kwargs):
+        data = self.request.session.get('job_search_form_data')
+
+        job_list = Job.objects.all()
+
+        if data.get('status'):
+            job_list = job_list.filter(
+                jobstatus__icontains=data.get('status'))
+
+        if data.get('jobslurmid'):
+            job_list = job_list.filter(
+                jobslurmid__icontains=data.get('jobslurmid'))
+
+        if data.get('project_name'):
+            job_list = job_list.filter(
+                accountid__name__icontains=data.get('project_name'))
+
+        if data.get('username'):
+            job_list = job_list.filter(
+                userid__username__icontains=data.get('username'))
+
+        if data.get('partition'):
+            job_list = job_list.filter(
+                partition__icontains=data.get('partition'))
+
+        if data.get('submitdate'):
+            submit_modifier = data.get('submit_modifier')
+            submit_date = datetime.strptime(data.get('submitdate'), DATE_FORMAT)
+
+            if submit_modifier == 'Before':
+                job_list = job_list.filter(submitdate__lt=submit_date)
+            elif submit_modifier == 'On':
+                job_list = job_list.filter(submitdate__year=submit_date.year,
+                                           submitdate__month=submit_date.month,
+                                           submitdate__day=submit_date.day)
+            elif submit_modifier == 'After':
+                job_list = job_list.filter(submitdate__gt=submit_date)
+
+        if data.get('startdate'):
+            start_modifier = data.get('start_modifier')
+            start_date = datetime.strptime(data.get('startdate'), DATE_FORMAT)
+
+            if start_modifier == 'Before':
+                job_list = job_list.filter(startdate__lt=start_date)
+            elif start_modifier == 'On':
+                job_list = job_list.filter(startdate__year=start_date.year,
+                                           startdate__month=start_date.month,
+                                           startdate__day=start_date.day)
+            elif start_modifier == 'After':
+                job_list = job_list.filter(startdate__gt=start_date)
+
+        if data.get('enddate'):
+            end_modifier = data.get('end_modifier')
+            end_date = datetime.strptime(data.get('enddate'), DATE_FORMAT)
+
+            if end_modifier == 'Before':
+                job_list = job_list.filter(enddate__lt=end_date)
+            elif end_modifier == 'On':
+                job_list = job_list.filter(enddate__year=end_date.year,
+                                           enddate__month=end_date.month,
+                                           enddate__day=end_date.day)
+            elif end_modifier == 'After':
+                job_list = job_list.filter(enddate__gt=end_date)
+
+        class Echo:
+            def write(self, value):
+                return value
+
+        echo_buffer = Echo()
+        writer = csv.writer(echo_buffer)
+        header = ('jobslurmid',
+                  'username',
+                  'project_name',
+                  'partition',
+                  'jobstatus',
+                  'submitdate',
+                  'startdate',
+                  'enddate')
+        job_list = job_list.values_list('jobslurmid',
+                                        'userid__username',
+                                        'accountid__name',
+                                        'partition',
+                                        'jobstatus',
+                                        'submitdate',
+                                        'startdate',
+                                        'enddate')
+        rows = (writer.writerow(row) for row in itertools.chain([header], job_list.iterator()))
+        response = StreamingHttpResponse(rows, content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="job_list.csv"'
+
+        return response
