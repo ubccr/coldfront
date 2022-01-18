@@ -1,14 +1,13 @@
 import copy
 import csv
 import itertools
-import time
 from datetime import datetime
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
-from django.http import HttpResponse, StreamingHttpResponse
+from django.http import StreamingHttpResponse
 from django.views.generic import DetailView, ListView, TemplateView
 from django.utils.html import strip_tags
 
