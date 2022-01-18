@@ -236,7 +236,7 @@ class AllocationChangeForm(forms.Form):
     justification = forms.CharField(
         label='Justification for Changes',
         widget=forms.Textarea,
-        required=False,
+        required=True,
         help_text='Justification for requesting this allocation change request.')
 
     def __init__(self, *args, **kwargs):

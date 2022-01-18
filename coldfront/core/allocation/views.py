@@ -1757,7 +1757,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
         allocation_change_form.fields['justification'].disabled = True
         if allocation_change_obj.status.name != 'Pending': 
             allocation_change_form.fields['end_date_extension'].disabled = True
-        if allocation_change_obj.allocation.project.pi == self.request.user:
+        if not self.request.user.is_staff and not self.request.user.is_superuser:
             allocation_change_form.fields['end_date_extension'].disabled = True
 
         note_form = AllocationChangeNoteForm(
@@ -1781,6 +1781,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
         allocation_change_form = AllocationChangeForm(request.POST,
             initial={'justification': allocation_change_obj.justification,
                      'end_date_extension': allocation_change_obj.end_date_extension})
+        allocation_change_form.fields['justification'].required = False
 
         allocation_attributes_to_change = self.get_allocation_attributes_to_change(
             allocation_change_obj)
