@@ -55,8 +55,9 @@
                                     {{ job_search_form.enddate|as_crispy_field }}
                                 </div>
                             </div>
-
-                            <div>{{ job_search_form.show_all_jobs|as_crispy_field }}</div>
+                            {% if can_view_all_jobs %}
+                                <div>{{ job_search_form.show_all_jobs|as_crispy_field }}</div>
+                            {% endif %}
                             <input type="submit" class="btn btn-primary" value="Search">
                             <button id="form_reset_button" type="button" class="btn btn-secondary">Reset</button>
                         </form>
