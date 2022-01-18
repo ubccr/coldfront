@@ -77,7 +77,9 @@ class JobSearchForm(forms.Form):
         widget=forms.Select()
     )
 
-    show_all_jobs = forms.BooleanField(initial=False, required=False)
+    show_all_jobs = forms.BooleanField(initial=False,
+                                       required=False,
+                                       label='Show All Jobs')
 
     def clean(self):
         cleaned_data = super().clean()
