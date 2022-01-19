@@ -53,6 +53,20 @@ class TestJobBase(TestCase):
             last_name='User2',
             username='user2')
 
+        self.pi = User.objects.create(
+            email='pi@email.com',
+            first_name='PI',
+            last_name='PI',
+            username='pi'
+        )
+
+        self.manager = User.objects.create(
+            email='manager@email.com',
+            first_name='Manager',
+            last_name='Manager',
+            username='manager'
+        )
+
         active_project_status = ProjectStatusChoice.objects.get(name='Active')
         self.active_project_user_status = ProjectUserStatusChoice.objects.get(
             name='Active')
@@ -62,6 +76,12 @@ class TestJobBase(TestCase):
         user_project_role = ProjectUserRoleChoice.objects.get(
             name='User')
 
+        pi_role = ProjectUserRoleChoice.objects.get(
+            name='Principal Investigator')
+
+        manager_role = ProjectUserRoleChoice.objects.get(
+            name='Manager')
+
         # Create Projects.
         self.project1 = Project.objects.create(
             name='project1', status=active_project_status)
@@ -69,7 +89,6 @@ class TestJobBase(TestCase):
         self.project2 = Project.objects.create(
             name='project2', status=active_project_status)
 
-        # add user1 and user2 with Pending - Add status
         self.project1_user1 = ProjectUser.objects.create(
             user=self.user1,
             project=self.project1,
@@ -86,6 +105,18 @@ class TestJobBase(TestCase):
             user=self.user1,
             project=self.project2,
             role=user_project_role,
+            status=self.active_project_user_status)
+
+        self.project1_pi = ProjectUser.objects.create(
+            user=self.pi,
+            project=self.project1,
+            role=pi_role,
+            status=self.active_project_user_status)
+
+        self.project1_manager = ProjectUser.objects.create(
+            user=self.manager,
+            project=self.project1,
+            role=manager_role,
             status=self.active_project_user_status)
 
         # create admin and staff users
@@ -141,7 +172,6 @@ class TestJobBase(TestCase):
         response = self.client.get(url)
         status_code = HTTPStatus.OK if has_access else HTTPStatus.FORBIDDEN
         self.assertEqual(response.status_code, status_code)
-        self.client.logout()
 
     def get_response(self, user, url):
         self.client.login(username=user.username, password=self.password)
@@ -161,6 +191,8 @@ class TestSlurmJobListView(TestJobBase):
         url = reverse('slurm-job-list')
         self.assert_has_access(self.user1, True, url)
         self.assert_has_access(self.user2, True, url)
+        self.assert_has_access(self.pi, True, url)
+        self.assert_has_access(self.manager, True, url)
 
     def test_user_list_view_content(self):
         """Testing content when users access SlurmJobListView"""
@@ -168,22 +200,27 @@ class TestSlurmJobListView(TestJobBase):
 
         # user1 should be able to see both jobs
         response = self.get_response(self.user1, url)
-
         self.assertContains(response, self.job1.jobslurmid)
         self.assertContains(response, self.job2.jobslurmid)
         self.assertContains(response, '<span class="badge badge-success">COMPLETED</span>')
         self.assertNotContains(response, '<span class="badge badge-success">COMPLETING</span>')
 
-        self.assertNotContains(response, 'Show All Jobs')
-        self.client.logout()
-
         # user2 should not be able to see job2
         response = self.get_response(self.user2, url)
+        self.assertNotContains(response, self.job1.jobslurmid)
+        self.assertNotContains(response, self.job2.jobslurmid)
 
+    def test_pi_manager_list_view_content(self):
+        """Testing content when users access SlurmJobListView"""
+        url = reverse('slurm-job-list')
+
+        response = self.get_response(self.pi, url)
         self.assertContains(response, self.job1.jobslurmid)
         self.assertNotContains(response, self.job2.jobslurmid)
 
-        self.client.logout()
+        response = self.get_response(self.manager, url)
+        self.assertContains(response, self.job1.jobslurmid)
+        self.assertNotContains(response, self.job2.jobslurmid)
 
     def test_admin_list_view_access(self):
         url = reverse('slurm-job-list')
@@ -199,12 +236,10 @@ class TestSlurmJobListView(TestJobBase):
             response = self.get_response(user, url)
             self.assertNotContains(response, self.job1.jobslurmid)
             self.assertNotContains(response, self.job2.jobslurmid)
-            self.assertContains(response, 'Show All Jobs')
 
             response = self.get_response(user, url + '?show_all_jobs=on')
             self.assertContains(response, self.job1.jobslurmid)
             self.assertContains(response, self.job2.jobslurmid)
-            self.client.logout()
 
         admin_test_content(self.admin)
         admin_test_content(self.staff)
@@ -294,11 +329,22 @@ class TestSlurmJobDetailView(TestJobBase):
 
         url = reverse('slurm-job-detail', kwargs={'pk': self.job1.pk})
         self.assert_has_access(self.user1, True, url)
-        self.assert_has_access(self.user2, True, url)
+        self.assert_has_access(self.user2, False, url)
 
         url = reverse('slurm-job-detail', kwargs={'pk': self.job2.pk})
         self.assert_has_access(self.user1, True, url)
         self.assert_has_access(self.user2, False, url)
+
+    def test_pi_manager_access(self):
+        """Testing PI/manager access to job detail view"""
+
+        url = reverse('slurm-job-detail', kwargs={'pk': self.job1.pk})
+        self.assert_has_access(self.pi, True, url)
+        self.assert_has_access(self.manager, True, url)
+
+        url = reverse('slurm-job-detail', kwargs={'pk': self.job2.pk})
+        self.assert_has_access(self.pi, False, url)
+        self.assert_has_access(self.manager, False, url)
 
     def test_admin_access(self):
         """Testing staff and admin access to job detail view"""
