@@ -34,12 +34,6 @@ Project Detail
   <div class="card mb-3 bg-light">
     <div class="card-header">
       <h3 class="d-inline" id="manage-project"><i class="fas fa-cubes" aria-hidden="true"></i> Manage Project</h3>
-      <div class="float-right">
-        {% if project.status.name in 'Active, New' %}
-          <a class="btn btn-info" href="{% url 'project-update' project.pk %}" role="button"><i class="far fa-edit" aria-hidden="true"></i> Update Project Information</a>
-          <a class="btn btn-info" href="{% url 'project-archive' project.id %}" role="button"><i class="fas fa-file-archive" aria-hidden="true"></i> Archive Project</a>
-        {% endif %}
-      </div>
     </div>
     <div class="card-body">
       {% if project.status.name != 'Archived' %}
@@ -47,7 +41,16 @@ Project Detail
         <a class="btn btn-success" href="{% url 'grant-create' project.id %}" role="button"><i class="fas fa-trophy" aria-hidden="true"></i> Add Grant</a>
         <a class="btn btn-success" href="{% url 'publication-search' project.pk %}" role="button"><i class="fas fa-newspaper" aria-hidden="true"></i> Add Publication</a>
         <a class="btn btn-success" href="{% url 'add-research-output' project.pk %}" role="button"><i class="far fa-newspaper" aria-hidden="true"></i> Add Research Output</a>
+        <br><br>
+        <a class="btn btn-info" href="{% url 'project-update' project.pk %}" role="button"><i class="far fa-edit" aria-hidden="true"></i> Update Project Information</a>
+        <a class="btn btn-info" href="{% url 'project-export' project.pk %}" role="button" target="_blank"><i class="fas fa-file-export" aria-hidden="true"></i> Export Project</a>
       {% endif %}
+
+      <div class="float-right">
+        {% if project.status.name in 'Active, New' %}
+          <a class="btn btn-info" href="{% url 'project-archive' project.id %}" role="button"><i class="fas fa-file-archive" aria-hidden="true"></i> Archive Project</a>
+        {% endif %}
+      </div>
     </div>
   </div>
 {% endif %}

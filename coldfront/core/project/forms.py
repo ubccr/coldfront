@@ -14,6 +14,15 @@ EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
     'EMAIL_DIRECTOR_EMAIL_ADDRESS', '')
 
 
+class ProjectImportForm(forms.Form):
+    '''
+    Project Import form
+    '''
+    FILE_UPLOAD = "Upload Project File"
+
+    file_upload = forms.FileField(label=FILE_UPLOAD)
+
+
 class ProjectSearchForm(forms.Form):
     """ Search form for the Project list page.
     """

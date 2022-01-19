@@ -1,5 +1,9 @@
 import datetime
 import pprint
+import json
+from re import template
+from typing import Any, Optional
+from django import http
 
 from django.conf import settings
 from django.contrib import messages
@@ -8,11 +12,12 @@ from django.contrib.auth.decorators import user_passes_test, login_required
 from django.contrib.auth.models import User
 from coldfront.core.utils.common import import_from_settings
 from django.contrib.messages.views import SuccessMessageMixin
+from django.core import serializers
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.forms import formset_factory
 from django.http import (HttpResponse, HttpResponseForbidden,
-                         HttpResponseRedirect)
+                         HttpResponseRedirect, JsonResponse)
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -33,7 +38,7 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectRemoveUserForm,
                                           ProjectReviewEmailForm,
                                           ProjectReviewForm, ProjectSearchForm,
-                                          ProjectUserUpdateForm)
+                                          ProjectUserUpdateForm, ProjectImportForm)
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectReviewStatusChoice,
                                            ProjectStatusChoice, ProjectUser,
@@ -57,6 +62,17 @@ if EMAIL_ENABLED:
         'EMAIL_DIRECTOR_EMAIL_ADDRESS')
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
 
+try:
+    PROJECT_SERIALIZE_DATA = [
+            json.loads(serializers.serialize('json', Project.objects.all())),
+            serializers.serialize('json', User.objects.all()),
+            serializers.serialize('json', Publication.objects.all()),
+            serializers.serialize('json', Grant.objects.all()),
+            serializers.serialize('json', Allocation.objects.all())
+            # Resource does not appear to be finished. Once it is, serialize it here
+        ]
+except:
+    pass
 
 class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     model = Project
@@ -240,6 +256,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
         context['filter_parameters_with_order_by'] = filter_parameters_with_order_by
 
         project_list = context.get('project_list')
+        # project_list = Project.objects.all()
         paginator = Paginator(project_list, self.paginate_by)
 
         page = self.request.GET.get('page')
@@ -471,6 +488,121 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
 
     def get_success_url(self):
         return reverse('project-detail', kwargs={'pk': self.object.pk})
+
+
+class ProjectImportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    model = Project
+    template_name = 'project/project_import.html'
+
+    def test_func(self) -> Optional[bool]:
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.userprofile.is_pi:
+            return True
+    
+    def post(self, request, *args, **kwargs):
+        form = ProjectImportForm(request.POST, request.FILES)
+
+        # print(form.is_valid())
+        if form.is_valid():
+            file = request.FILES['file_upload']
+            file_content = file.read()
+
+            grouped_data = {}
+            try:
+                # The data at this point is grouped and each member needs to be
+                # individually feed through the deserializer
+                grouped_data = json.loads(file_content)
+            except json.JSONDecodeError:
+                # Error w/ json decoding
+                messages.info(request, "JSON Decode Error: The project file you have selected is corrupted " + 
+                    "or is in a format ColdFront does not recognise.")
+                return HttpResponseRedirect(reverse('project-list'))
+            
+            
+            for member in grouped_data:
+                # data_obj has the complete data of the Django model
+                data_obj = serializers.deserialize('json', member)  # TODO: Do something with this object
+
+                for obj in data_obj:
+                    # obj is deserialized and can now be saved.
+                    # Create a new project type
+                    if (type(obj.object) == Project):
+                        # obj.object.pk = None
+                        project_obj = obj.object
+                        project_obj.pk = None
+                        
+                        obj.save()
+
+                        # Assign current user.
+                        project_user_obj = ProjectUser.objects.create(
+                            user=self.request.user,
+                            project=project_obj,
+                            role=ProjectUserRoleChoice.objects.get(name='Manager'),
+                            status=ProjectUserStatusChoice.objects.get(name='Active')
+                        )
+
+                        continue
+
+                    obj.save()
+
+
+        return HttpResponseRedirect(reverse('project-list'))
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context['project_import_form'] = ProjectImportForm()
+        return context
+
+    def get_success_url(self):
+        return reverse('project-detail', kwargs={'pk': self.object.pk})
+
+def fix_serialize_data(data) -> list:
+    # return list([entry for entry in json.loads(serializers.serialize('json', data))])
+    return serializers.serialize('json', data)
+
+class ProjectExportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'project/project_export.html'
+
+    def test_func(self) -> Optional[bool]:
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+
+        if project_obj.pi == self.request.user:
+            return True
+
+        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+            return True
+
+    def dispatch(self, request: http.HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        if project_obj.status.name not in ['Active', 'New', ]:
+            messages.error(
+                request, 'You cannot export an archived project.')
+            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+        else:
+            serialize_data = [
+                fix_serialize_data(Project.objects.all()),
+                fix_serialize_data(User.objects.all()),
+                fix_serialize_data(Publication.objects.all()),
+                fix_serialize_data(Grant.objects.all()),
+                fix_serialize_data(Allocation.objects.all())
+                # Resource does not appear to be finished. Once it is, serialize it here
+            ]
+            response = JsonResponse(serialize_data, content_type='application/json', safe=False)
+            response['Content-Disposition'] = 'attachment; filename="project.json"'
+            
+            return response
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context['project'] = Project.objects.get(pk=self.kwargs.get('pk'))
+        return context
 
 
 class ProjectAddUsersSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
