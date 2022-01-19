@@ -242,6 +242,34 @@ class TestProjectRemoveSelf(TestBase):
 
         self.client.logout()
 
+    def test_remove_self_superuser(self):
+        """Test that ProjectRemoveSelf POST performs the correct actions when
+        requester is a superuser."""
+        self.user1.is_superuser = True
+        self.user1.save()
+        self.assertTrue(self.user1.is_superuser)
+        self.client.login(username=self.user1.username, password=self.password)
+
+        url = reverse('project-detail', kwargs={'pk': self.project1.pk})
+        response = self.client.get(url)
+        self.assertContains(response, 'Leave Project')
+
+        url = reverse(
+            'project-remove-self', kwargs={'pk': self.project1.pk})
+        pre_time = utc_now_offset_aware()
+        response = self.client.post(url, {})
+
+        self.assertRedirects(response, reverse('home'))
+        self.assertTrue(ProjectUserRemovalRequest.objects.filter(
+            requester=self.user1).exists())
+
+        removal_request = \
+            ProjectUserRemovalRequest.objects.filter(requester=self.user1).first()
+        self.assertTrue(pre_time <= removal_request.request_time <=
+                        utc_now_offset_aware())
+
+        self.client.logout()
+
 
 class TestProjectRemoveUsersView(TestBase):
     """A class for testing ProjectRemoveUsersView."""
