@@ -210,7 +210,7 @@ class ExportJobListView(LoginRequiredMixin,
 
     def dispatch(self, request, *args, **kwargs):
         if self.test_func():
-            data = self.request.session.get('job_search_form_data')
+            data = copy.deepcopy(self.request.session.get('job_search_form_data'))
 
             job_list = Job.objects.all()
 
