@@ -1,10 +1,22 @@
 from datetime import datetime, timedelta
 from django.db.models import Q
+from django.urls import reverse
 
 from coldfront.core.allocation.models import (AllocationUser,
                                               AllocationUserStatusChoice)
 from coldfront.core.resource.models import Resource
+from coldfront.core.utils.common import get_domain_url, import_from_settings
+from coldfront.core.utils.mail import send_email_template
 
+EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
+if EMAIL_ENABLED:
+    EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
+    EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings(
+        'EMAIL_TICKET_SYSTEM_ADDRESS')
+    EMAIL_OPT_OUT_INSTRUCTION_URL = import_from_settings(
+        'EMAIL_OPT_OUT_INSTRUCTION_URL')
+    EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
+    EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
 
 def set_allocation_user_status_to_error(allocation_user_pk):
     allocation_user_obj = AllocationUser.objects.get(pk=allocation_user_pk)
@@ -68,3 +80,25 @@ def compute_prorated_amount(total_cost):
     one_year = expire_date - expire_date.replace(year=expire_date.year - 1)
     cost_per_day = total_cost / one_year.days
     return round(cost_per_day * difference.days + cost_per_day)
+
+def send_pending_users_email(request, usernames, parent_resource_name):
+    if EMAIL_ENABLED:
+        domain_url = get_domain_url(request)
+        url = '{}{}'.format(domain_url, reverse('allocation-users-pending-list'))
+        template_context = {
+            'center_name': EMAIL_CENTER_NAME,
+            'resource': parent_resource_name,
+            'url': url,
+            'signature': EMAIL_SIGNATURE,
+            'users': usernames
+        }
+
+        email_receiver_list = ['mkusz_iu.edu']
+
+        send_email_template(
+            'New Pending User(s)',
+            'email/new_pending_users.txt',
+            template_context,
+            EMAIL_SENDER,
+            email_receiver_list
+        )

@@ -5,6 +5,7 @@ from ast import literal_eval
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.urls import reverse
 from django.utils.html import mark_safe
 from django.utils.module_loading import import_string
 from model_utils.models import TimeStampedModel
@@ -12,7 +13,8 @@ from simple_history.models import HistoricalRecords
 
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
-from coldfront.core.utils.common import import_from_settings
+from coldfront.core.utils.common import get_domain_url, import_from_settings
+from coldfront.core.utils.mail import send_email_template
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +24,15 @@ ALLOCATION_FUNCS_ON_EXPIRE = import_from_settings(
 SLURM_ACCOUNT_ATTRIBUTE_NAME = import_from_settings(
     'SLURM_ACCOUNT_ATTRIBUTE_NAME', 'slurm_account_name')
 
+EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
+if EMAIL_ENABLED:
+    EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
+    EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings(
+        'EMAIL_TICKET_SYSTEM_ADDRESS')
+    EMAIL_OPT_OUT_INSTRUCTION_URL = import_from_settings(
+        'EMAIL_OPT_OUT_INSTRUCTION_URL')
+    EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
+    EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
 
 class AllocationStatusChoice(TimeStampedModel):
     name = models.CharField(max_length=64)
@@ -276,6 +287,31 @@ class Allocation(TimeStampedModel):
             return True
 
         return self.get_parent_resource.check_user_account_exists(username, resource)
+
+    def send_pending_users_email(self, request, status_choice, usernames):
+        if status_choice.name == 'Pending - Add' or status_choice.name == 'Pending - Remove':
+            if EMAIL_ENABLED:
+                domain_url = get_domain_url(request)
+                url = '{}{}'.format(domain_url, reverse('allocation-users-pending-list'))
+                template_context = {
+                    'center_name': EMAIL_CENTER_NAME,
+                    'resource': self.get_parent_resource.name,
+                    'url': url,
+                    'signature': EMAIL_SIGNATURE,
+                    'users': usernames
+                }
+
+                email_receiver_list = ['mkusz_iu.edu']
+
+                send_email_template(
+                    'New Pending User(s)',
+                    'email/new_pending_users.txt',
+                    template_context,
+                    EMAIL_SENDER,
+                    email_receiver_list
+                )
+        
+        return
 
     def __str__(self):
         return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)

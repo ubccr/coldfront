@@ -799,11 +799,12 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         if formset.is_valid() and allocation_formset.is_valid():
             project_user_active_status_choice = ProjectUserStatusChoice.objects.get(
                 name='Active')
-            allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(
+            allocation_user_status_choice = AllocationUserStatusChoice.objects.get(
                 name='Active')
 
             no_accounts = {}
             managers_rejected = []
+            resource_pending_users = {}
             for form in formset:
                 user_form_data = form.cleaned_data
 
@@ -848,23 +849,35 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                         cleaned_data = allocation.cleaned_data
                         if cleaned_data['selected']:
                             allocation = allocations.get(pk=cleaned_data['pk'])
+                            resource_name = allocation.get_parent_resource.name
                             # If the user does not have an account on the resource in the allocation then do not add them to it.
                             if not allocation.check_user_account_exists_on_resource(username):
                                 # Make sure there are no duplicates for a user if there's more than one instance of a resource.
-                                if allocation.get_parent_resource.name not in no_accounts[username]:
-                                    no_accounts[username].append(allocation.get_parent_resource.name)
+                                if resource_name not in no_accounts[username]:
+                                    no_accounts[username].append(resource_name)
                                 continue
+
+                            manual = allocation.get_parent_resource.get_attribute(
+                                'manually_handle_users'
+                            )
+                            if manual is not None and manual == 'True':
+                                resource_pending_users.setdefault(resource_name, [])
+                                resource_pending_users[resource_name].append(username)
+
+                                allocation_user_status_choice = AllocationUserStatusChoice.objects.get(
+                                    name='Pending - Add'
+                                )
 
                             if allocation.allocationuser_set.filter(user=user_obj).exists():
                                 allocation_user_obj = allocation.allocationuser_set.get(
                                     user=user_obj)
-                                allocation_user_obj.status = allocation_user_active_status_choice
+                                allocation_user_obj.status = allocation_user_status_choice
                                 allocation_user_obj.save()
                             else:
                                 allocation_user_obj = AllocationUser.objects.create(
                                     allocation=allocation,
                                     user=user_obj,
-                                    status=allocation_user_active_status_choice)
+                                    status=allocation_user_status_choice)
                             allocation_activate_user.send(sender=self.__class__,
                                                         allocation_user_pk=allocation_user_obj.pk)
 

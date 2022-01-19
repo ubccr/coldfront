@@ -1,0 +1,49 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+
+{% block title %}
+Pending Users
+{% endblock %}
+
+{% block content %}
+<h2>Pending Users</h2>
+
+{% if pending_users_list %}
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th scope="col">First Name</th>
+          <th scope="col">Last Name</th>
+          <th scpoe="col">Username</th>
+          <th scope="col">Status</th>
+          <th scope="col">Allocation</th>
+          <th scope="col">Project</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in pending_users_list %}
+          <tr>
+            <td>{{ user.user.first_name }}</td>
+            <td>{{ user.user.last_name }}</td>
+            <td>{{ user.user.username }}</td>
+            <td>{{ user.status }}</td>
+            <td><a href="{% url 'allocation-detail' user.allocation.pk %}">{{ user.allocation.get_parent_resource }}</a></td>
+            <td><a href="{% url 'project-detail' user.allocation.project.pk %}">{{ user.allocation.project.title|truncatechars:50 }}</a></td>
+            <td>
+              <a href="{% url 'allocation-approve-user' user.pk %}" class="btn btn-success mr-1">Approve</a>
+              <a href="{% url 'allocation-deny-user' user.pk %}" class="btn btn-danger mr-1">Deny</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <p class="alert alert-info">There are no pending users!</p>
+{% endif %}
+
+{% endblock %}
