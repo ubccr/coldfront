@@ -7,7 +7,6 @@ from django.urls import include, path
 from django.views.generic import TemplateView
 
 import coldfront.core.portal.views as portal_views
-import coldfront.core.statistics.views as statistics_views
 
 admin.site.site_header = 'ColdFront Administration'
 admin.site.site_title = 'ColdFront Administration'
