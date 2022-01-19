@@ -165,9 +165,7 @@ class SlurmJobDetailView(LoginRequiredMixin,
 
         job_obj = self.get_object()
 
-        if job_obj.accountid.projectuser_set.filter(
-                user=self.request.user,
-                status__name__in=['Active', 'Pending - Remove']).exists():
+        if job_obj.userid == self.request.user:
             return True
 
         messages.error(
