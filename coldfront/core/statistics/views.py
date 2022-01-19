@@ -39,6 +39,7 @@ class SlurmJobListView(LoginRequiredMixin,
                 new_data[date] = data.get(date).strftime(DATE_FORMAT)
                 print(new_data[date])
         self.request.session['job_search_form_data'] = new_data
+        self.request.session.modified = True
 
     def get_queryset(self):
         order_by = self.request.GET.get('order_by')
@@ -57,7 +58,6 @@ class SlurmJobListView(LoginRequiredMixin,
         if job_search_form.is_valid():
             data = job_search_form.cleaned_data
             self.save_form_to_session(data)
-            self.request.session.modified = True
 
             if data.get('show_all_jobs') and \
                     (self.request.user.is_superuser or
