@@ -122,6 +122,24 @@
                             <i class="fas fa-sort-down"></i>
                         </a>
                     </th>
+                    <th scope="col">
+                        Service Units
+                      <a href="#" data-toggle="popover" title="Service Units" data-trigger="hover" data-content=
+                              "For RUNNING jobs, the amount reflects the estimated number of service units
+                              that a job will use. For COMPLETED jobs, the amount is the number of service
+                              units that a job did use.">
+                        <span class="accessibility-link-text">Service Units</span>
+                        <i class="fas fa-info-circle"></i>
+                      </a>
+                      <a href="?order_by=amount&direction=asc&{{filter_parameters}}">
+                        <span class="accessibility-link-text">Sort by Ascending Amount</span>
+                        <i class="fas fa-sort-up"></i>
+                      </a>
+                      <a href="?order_by=amount&direction=des&{{filter_parameters}}">
+                        <span class="accessibility-link-text">Sort by Descending Amount</span>
+                        <i class="fas fa-sort-down"></i>
+                      </a>
+                    </th>
                 </tr>
                 </thead>
                 <tbody>
@@ -155,6 +173,7 @@
                         </td>
                         <td>{{ job.partition }}</td>
                         <td>{{ job.submitdate | date:"M. d, Y" }}</td>
+                        <td>{{ job.amount }}</td>
 
                     </tr>
                 {% endfor %}
@@ -189,9 +208,11 @@
         $("#navbar-main > ul > li.active").removeClass("active");
         $("#navbar-project-menu").addClass("active");
         $("#navbar-jobs-list").addClass("active");
-    </script>
 
-    <script>
+        $(document).ready(function() {
+            $('[data-toggle="popover"]').popover();
+        });
+
         $(document).on('click', '#form_reset_button', function () {
 
             resetForm($('#filter_form'));

@@ -98,7 +98,17 @@ Job Detail
                     </td>
                 </tr>
                 <tr>
-                    <th scope="row" class="text-nowrap">Amount:</th>
+                    <th scope="row" class="text-nowrap">
+                      Service Units
+                      <a href="#" data-toggle="popover" title="Service Units" data-trigger="hover" data-content=
+                              "For RUNNING jobs, the amount reflects the estimated number of service units
+                              that a job will use. For COMPLETED jobs, the amount is the number of service
+                              units that a job did use.">
+                        <span class="accessibility-link-text">Service Units</span>
+                        <i class="fas fa-info-circle"></i>
+                      </a>
+                      :
+                    </th>
                     <td>
                         {{ job.amount }}
                     </td>
@@ -140,13 +150,18 @@ Job Detail
                     </td>
                 </tr>
             </table>
+        </div>
     </div>
 </div>
 
-    <script>
-        $("#navbar-main > ul > li.active").removeClass("active");
-        $("#navbar-project-menu").addClass("active");
-        $("#navbar-jobs-list").addClass("active");
-    </script>
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-project-menu").addClass("active");
+  $("#navbar-jobs-list").addClass("active");
+
+  $(document).ready(function() {
+      $('[data-toggle="popover"]').popover();
+  });
+</script>
 
 {% endblock %}
