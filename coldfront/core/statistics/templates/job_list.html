@@ -55,9 +55,7 @@
                                     {{ job_search_form.enddate|as_crispy_field }}
                                 </div>
                             </div>
-                            {% if can_view_all_jobs %}
-                                <div>{{ job_search_form.show_all_jobs|as_crispy_field }}</div>
-                            {% endif %}
+                            <div>{{ job_search_form.show_all_jobs|as_crispy_field }}</div>
                             <input type="submit" class="btn btn-primary" value="Search">
                             <button id="form_reset_button" type="button" class="btn btn-secondary">Reset</button>
                         </form>
@@ -69,7 +67,7 @@
 
     <div class="card mb-3 bg-light">
         <div class="card-header">
-            {% if can_view_all_jobs %}
+            {% if user.is_superuser %}
                 <a class="btn btn-primary" href="{% url 'export-job-list' %}" role="button" style="float: right;">
                     <i class="fas fa-download" aria-hidden="true"></i>
                     Export Job List to CSV

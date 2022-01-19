@@ -66,7 +66,8 @@ class SlurmJobListView(LoginRequiredMixin,
             else:
                 proj_set = Project.objects.filter(
                     projectuser__user__username=self.request.user,
-                    projectuser__status__name__in=['Active', 'Pending - Remove'])
+                    projectuser__status__name__in=['Active', 'Pending - Remove'],
+                    projectuser__role__name__in=['Principal Investigator', 'Manager'])
                 job_list = Job.objects.filter(Q(accountid__in=proj_set) |
                                               Q(userid=self.request.user))
 
@@ -143,10 +144,6 @@ class SlurmJobListView(LoginRequiredMixin,
 
         context['status_warning_list'] = ['PREEMPTED',
                                           'REQUEUED']
-
-        context['can_view_all_jobs'] = \
-            self.request.user.is_superuser or \
-            self.request.user.has_perm('statistics.view_job')
 
         return context
 
