@@ -165,6 +165,12 @@ class SlurmJobDetailView(LoginRequiredMixin,
 
         job_obj = self.get_object()
 
+        if job_obj.userid.projectuser_set.filter(
+                user=self.request.user,
+                status__name__in=['Active', 'Pending - Remove'],
+                role__name__in=['Principal Investigator', 'Manager']).exists():
+            return True
+
         if job_obj.userid == self.request.user:
             return True
 
