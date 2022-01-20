@@ -1,5 +1,6 @@
 # test_integration.py
 import unittest
+
 from django.test import TestCase
 
 from coldfront.plugins.sftocf.pipeline import *
@@ -16,6 +17,7 @@ class UploadTests(TestCase):
 
     def test_push_cf(self):
         self.cfconn.push_cf(self.testfiles, False)
+
 
     def test_update_usage(self):
         content = read_json(f"{self.pref}holman_lab_holysfdb01_test.json")

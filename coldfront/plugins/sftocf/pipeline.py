@@ -15,18 +15,17 @@ from django.contrib.auth import get_user_model
 from dateutil.relativedelta import relativedelta
 from ifxbilling.models import Account, BillingRecord, ProductUsage
 
-from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.project.models import Project, ProjectUser
-from coldfront.core.allocation.models import Allocation, AllocationUser, AllocationUserStatusChoice
+from coldfront.core.allocation.models import Allocation, AllocationUser, AllocationAttribute, AllocationUserStatusChoice
+
+datestr = datetime.today().strftime("%Y%m%d")
 
 logger = logging.getLogger("sftocf")
 logger.propagate = False
 logger.setLevel(logging.DEBUG)
-filehandler = logging.FileHandler('coldfront/plugins/sftocf/sfc.log', 'w')
+filehandler = logging.FileHandler(f'coldfront/plugins/sftocf/data/sfc{datestr}.log', 'w')
 logger.addHandler(filehandler)
-
-datestr = datetime.today().strftime("%Y%m%d")
 
 svp = {
 "holysfdb01": {
@@ -160,7 +159,6 @@ class StarFishQuery:
         self.query_id = self.post_async_query(query, group_by, volpath)
         self.result = self.return_results_once_prepared(sec=sec)
 
-
     @record_process
     def post_async_query(self, query, group_by, volpath):
         query_url = self.api_url + "async/query/"
@@ -198,7 +196,6 @@ class StarFishQuery:
             else:
                 time.sleep(sec)
 
-
     def return_query_result(self):
         query_result_url = self.api_url + "async/query_result/" + self.query_id
         response = return_get_json(query_result_url, self.headers)
@@ -223,75 +220,119 @@ class LabUser:
 class ColdFrontDB:
 
     @record_process
+    def produce_lab_list(self, vol):
+        pr_objs = Allocation.objects.only("id", "project_id")
+        pr_dict = {
+            return_pname(o.project_id):o.get_resources_as_string for o in pr_objs}
+        labs_resources = {p:r.split("/") for p, r in pr_dict.items()}
+        logger.debug(f"labs_resources:\n{labs_resources}")
+        lr = labs_resources if not vol else {k:v for k, v in labs_resources.items() if vol in v}
+        return lr
+
+
+    def check_server_collection(self, servername, v, lr):
+        filepaths = []
+        to_collect = {}
+        for vol, path in v.items():
+            projs = {l:r for l, r in lr.items() if r[0] == vol}
+            localdata = LocalData()
+            fp, coll = localdata.sort_collected_uncollected(servername, projs)
+            filepaths.extend(fp)
+            to_collect.update(coll)
+        return filepaths, to_collect
+
+
     def pull_sf(self, volume=None):
-        labs_resources = self.generate_project_resource_dict()
-        logger.debug(f"labs_resources 1:\n{labs_resources}")
-        lr = labs_resources if not volume else {k:v for k, v in labs_resources.items() if volume in v}
-        logger.debug(f"labs_resources 2:\n{lr}")
+        lr = self.produce_lab_list(volume)
         vol_set = {v[0] for v in lr.values()}
         logger.debug(f"vol_set: {vol_set}")
         serv_vols = generate_serv_vol_dict(vol_set)
+        all_filepaths = []
         for s, v in serv_vols.items():
-            server = StarFishServer(s)
-            for vol, path in v.items():
-                vol_labs_resources = {l:r for l, r in lr.items() if r[0] == vol}
-                logger.debug(f"vol_labs_resources: {vol_labs_resources}")
-                filepaths = collect_starfish_usage(server, vol, path, vol_labs_resources)
-        return filepaths
+            filepaths, to_collect = self.check_server_collection(s, v, lr)
+            all_filepaths.extend(filepaths)
+            if to_collect:
+                logger.debug(f"to collect: {to_collect}")
+                server = StarFishServer(s)
+                for vol, path in v.items():
+                    serv_to_collect = {s:d for s, d in to_collect.items() if d[0] == vol}
+                    projdicts = {l:r for l, r in lr.items() if r[0] == vol}
+                    logger.debug(f"projdicts: {projdicts}")
+                    fpaths = collect_starfish_usage(server, vol, path, serv_to_collect, projdicts)
+                    all_filepaths.extend(fpaths)
+        return set(all_filepaths)
 
-    def push_cf(self, filepaths, clean):
-        logger.debug(f"push_cf filepaths: {filepaths}")
-        for f in filepaths:
-            content = read_json(f)
-            statdicts = content['contents']
-            errors = False
-            for statdict in statdicts:
-                try:
-                    server_tier = content['server'] + "/" + content['tier']
-                    self.update_usage(statdict, server_tier)
-                except Exception as e:
-                    logger.debug("EXCEPTION FOR ENTRY: {}".format(e),  exc_info=True)
-                    errors = True
-            if not errors and clean:
-                    os.remove(f)
-        logger.debug("push_cf complete")
+    def return_server_tier_usernames(self, f):
+        content = read_json(f)
+        unames = [d['username'] for d in content['contents']]
+        return (str(content['server']), str(content['tier']), unames, content['contents'])
 
-    @record_process
-    def generate_project_resource_dict(self):
-        """
-        Return dict with keys as project names and values as a list where [0] is the volume and [1] is the tier.
-        """
-        pr_entries = Allocation.objects.only("id", "project_id")
-        pr_dict = {
-            return_pname(o.project_id):o.get_resources_as_string for o in pr_entries}
-        pr_dict = {p:r.split("/") for p, r in pr_dict.items()}
-        return pr_dict
-
-    def update_usage(self, userdict, server_tier):
-        # get ids needed to locate correct allocationuser entry
-        # user = LabUser(userdict["username"], userdict["groupname"])
-        try:
-            user = get_user_model().objects.get(username=userdict["username"])
-        except IfxUser.DoesNotExist:
-            filepath = './coldfront/plugins/sftocf/data/missing_ifxusers.csv'
-            pattern = "{},{}".format(userdict["username"], datestr)
-            write_update_file_line(filepath, pattern)
-            raise
-        project = Project.objects.get(title=userdict["groupname"])
+    def return_proj_allocation(self, project):
         try:
             allocation = Allocation.objects.get(project_id=project.id)
         except Allocation.MultipleObjectsReturned:
             logger.debug(f"Too many allocations for project id {project.id}; choosing one with 'Allocation Information' in justification.")
-            allocation = Allocation.objects.get(
-                project_id=project.id, justification__icontains=f"Allocation Information")
-            logger.debug(f"EXCEPT a_id:{allocation.id}")
+            try:
+                allocation = Allocation.objects.get(
+                    project_id=project.id,
+                    justification__icontains='Allocation Information',
+                    justification__endswith=project.title)
+            except Allocation.MultipleObjectsReturned:
+                logger.warning("Too many allocations for project id {project.id}, matching justifications; choosing the first. Fix this duplication.")
+                allocations = Allocation.objects.filter(
+                    project_id=project.id,
+                    justification__icontains='Allocation Information',
+                    justification__endswith=project.title)
+                for a in allocations:
+                    logger.warning(f"Duplicate item:{a}")
+                allocation = allocations.first()
+            logger.debug(f"Item:{allocation.id}")
+        return allocation
+
+
+    def log_missing_user_models(self, user_models, usernames):
+        missing_unames = [u for u in usernames if u not in [m.username for m in user_models]]
+        if missing_unames:
+            fpath = './coldfront/plugins/sftocf/data/missing_ifxusers.csv'
+            pattern = "{},{}".format(missing_unames, datestr)
+            write_update_file_line(fpath, pattern)
+            logger.warning(f"no IfxUser found for users: {missing_unames}")
+
+
+    def push_cf(self, filepaths, clean):
+        for f in filepaths:
+            errors = False
+            server, tier, usernames, userdicts = self.return_server_tier_usernames(f)
+
+            user_models = get_user_model().objects.only("id","username")\
+                    .filter(username__in=usernames)
+            self.log_missing_user_models(user_models, usernames)
+            project = Project.objects.get(title=groupdict[0]["groupname"])
+            logger.debug(f"usernames for {project.title}: {usernames}")
+            logger.debug(f"user_models for {project.title}: {[u.username for u in user_models]}")
+            allocation = self.return_proj_allocation(project)
+            for user in user_models:
+                userdict = [d for d in groupdict if d["username"] == user.username][0]
+                try:
+                    server_tier = server + "/" + tier
+                    self.update_usage(user, userdict, server_tier, allocation)
+                except Exception as e:
+                    logger.warning("EXCEPTION FOR ENTRY: {}".format(e), exc_info=True)
+                    errors = True
+            if not errors and clean:
+                os.remove(f)
+        logger.debug("push_cf complete")
+
+
+    def update_usage(self, user, userdict, server_tier, allocation):
+        # get ids needed to locate correct allocationuser entry
+        # user = LabUser(userdict["username"], userdict["groupname"])
         try:
             allocationuser = AllocationUser.objects.get(
                 allocation_id=str(allocation.id), user_id=str(user.id)
             )
         except AllocationUser.DoesNotExist:
-            filepath = './coldfront/plugins/sftocf/data/missing_allocationusers.csv'
-            logger.info("creating allocation user:")
+            logger.info(f"creating allocation user:{user}")
             allocationuser_obj, _ = AllocationUser.objects.create(
                 allocation=allocation,
                 created=timezone.now(),
@@ -302,10 +343,7 @@ class ColdFrontDB:
                 allocation_id=str(allocation.id), user_id=str(user.id)
             )
 
-        allocationuser.usage_bytes = userdict["size_sum"]
-        usage, unit = split_num_string(userdict["size_sum_hum"])
-        allocationuser.usage = usage
-        allocationuser.unit = unit
+        allocationuser.usage = userdict["size_sum"]
         # automatically updates "modified" field & adds old record to history
         allocationuser.save()
         logger.debug(f"successful entry: {userdict['groupname']}, {userdict['username']}")
@@ -318,6 +356,7 @@ class LocalData():
     @record_process
     def sort_collected_uncollected(self, server_name, projects):
         filepaths = []
+        tocollect = {}
         for p in list(projects.keys()):
             yesterdaystr = (datetime.today()-timedelta(1)).strftime("%Y%m%d")
             dates = [yesterdaystr, datestr]
@@ -326,10 +365,10 @@ class LocalData():
                 for fpath in fpaths:
                     if Path(fpath).exists():
                         filepaths.append(fpath)
-                        del projects[p]
             else:
-                projects[p].append(fpaths[-1])
-        return filepaths, projects
+                tocollect[p] = projects[p]
+                tocollect[p].append(fpaths[-1])
+        return (filepaths, tocollect)
 
 
     def clean_data_dir(self):
@@ -353,10 +392,6 @@ def write_update_file_line(filepath, pattern):
 def return_pname(pid):
     project = Project.objects.get(id=pid)
     return project.title
-
-def return_djangoobj_val(Obj, matchkey, matchval, returnval):
-    obj = Obj.objects.get(matchkey=matchval)
-    return obj.returnval
 
 def split_num_string(x):
     n = re.search("\d*\.?\d+", x).group()
@@ -383,7 +418,7 @@ def confirm_dirpath_exists(dpath):
         logger.info(f"created new directory {dpath}")
 
 @record_process
-def collect_starfish_usage(server, volume, volumepath, projects):
+def collect_starfish_usage(server, volume, volumepath, to_collect, projects):
     """
 
     Returns
@@ -391,16 +426,16 @@ def collect_starfish_usage(server, volume, volumepath, projects):
     filepaths : list
         list of filepath names
     """
-    projects_prepped = {p:r for p,r in projects.items() if r[0] == volume}
-    logger.debug(f"projects: {projects}\nprojects_prepped: {projects_prepped}")
+    logger.debug(f"projects: {projects}")
     localdata = LocalData()
-    filepaths, projects_to_collect = localdata.sort_collected_uncollected(server.name, projects_prepped)
-    for p, r in projects_to_collect.items():
+    filepaths = []
+    for p, r in to_collect.items():
         filepath = r[2]
         lab_volpath = volumepath# + "/{}".format(p)
-        queryline = "type=f groupname={}".format(p)
+        zone_or_groupname = "zone" if use_zone(p) else "groupname"
+        queryline = "type=f {}={}".format(zone_or_groupname, p)
         usage_query = server.create_query(
-            queryline, "username, groupname", f"{volume}:{lab_volpath}", sec=2
+            queryline, f"username, {zone_or_groupname}", f"{volume}:{lab_volpath}", sec=2
         )
         data = usage_query.result
         logger.debug("usage_query.result:{}".format(data))
@@ -416,6 +451,7 @@ def collect_starfish_usage(server, volume, volumepath, projects):
                 "path": lab_volpath,
                 "tier": r[1],
                 "date": datestr,
+                "groupname": data[0]['groupname'],
                 "contents": data,
             }
             save_json(filepath, record)
@@ -457,7 +493,24 @@ def collect_costperuser(ifx_uid, lab_name):
 # updated_by_id
 # rate
 
+def use_zone(project_name):
+    # attribute type ID will need to change to match the zone flag.
 
+    try:
+        allocation = Allocation.objects.get(justification__contains=project_name)
+    except Allocation.MultipleObjectsReturned:
+        logger.debug(f"Too many allocations for project {project_name}; narrowing to the one that ends with project name")
+        allocation = Allocation.objects.get(
+            justification__endswith=project_name)
+        logger.debug(f"EXCEPT a_id:{allocation.id}")
+    except Allocation.DoesNotExist:
+        return False
+    if allocation:
+        aa_entries = AllocationAttribute.objects.filter(allocation=allocation.id)
+        for aa in aa_entries:
+            if int(aa.allocation_attribute_type_id) == 747 and aa.value == "True":
+                return True
+    return False
 
 def generate_serv_vol_dict(vol_set):
     search_svp = {}

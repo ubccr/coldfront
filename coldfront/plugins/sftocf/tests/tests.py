@@ -15,5 +15,5 @@ class PipelineTests(unittest.TestCase):
         e2 = {"holysfdb01": {"holylfs04":"HDD/C/LABS",'holylfs05':"C/LABS",}}
         assert generate_serv_vol_dict(v2) == e2
 
-    # def test_use_zone(self):
-    #     assert not use_zone("name")
+    def test_use_zone(self):
+        assert not use_zone("name")
