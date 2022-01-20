@@ -26,6 +26,7 @@ from coldfront.core.allocation.models import (Allocation,
                                               AllocationUserStatusChoice)
 from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user)
+from coldfront.core.allocation.utils import send_pending_users_email
 from coldfront.core.grant.models import Grant
 from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectAddUsersToAllocationForm,
@@ -129,7 +130,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                                         'Payment Pending', 'Payment Requested',
                                         'Payment Declined', 'Paid','Denied']) &
                     Q(allocationuser__user=self.request.user) &
-                    Q(allocationuser__status__name__in=['Active', ])
+                    Q(allocationuser__status__name__in=['Active', 'Pending - Remove'])
                 ).distinct().order_by('-end_date')
             else:
                 allocations = Allocation.objects.prefetch_related(
@@ -857,10 +858,10 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                                     no_accounts[username].append(resource_name)
                                 continue
 
-                            manual = allocation.get_parent_resource.get_attribute(
+                            has_manual_addition = allocation.get_parent_resource.get_attribute(
                                 'manually_handle_users'
                             )
-                            if manual is not None and manual == 'True':
+                            if has_manual_addition is not None and has_manual_addition == 'True':
                                 resource_pending_users.setdefault(resource_name, [])
                                 resource_pending_users[resource_name].append(username)
 
@@ -899,6 +900,9 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                     this project is {}.
                     """.format(', '.join(managers_rejected), project_obj.max_managers)
                 )
+
+            for resource_name, users in resource_pending_users.items():
+                send_pending_users_email(self.request, users, resource_name)
 
             messages.success(
                 request, 'Added {} users to project.'.format(added_users_count))
@@ -1035,36 +1039,61 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                 name='Removed')
             allocation_user_removed_status_choice = AllocationUserStatusChoice.objects.get(
                 name='Removed')
+
+            resources_requiring_manual_removal = {}
             for form in formset:
                 user_form_data = form.cleaned_data
                 if user_form_data['selected']:
-
-                    remove_users_count += 1
-
                     user_obj = User.objects.get(
                         username=user_form_data.get('username'))
 
                     if project_obj.pi == user_obj:
                         continue
 
-                    project_user_obj = project_obj.projectuser_set.get(
-                        user=user_obj)
-                    project_user_obj.status = project_user_removed_status_choice
-                    project_user_obj.save()
+                    remove_user_from_project = True
 
                     # get allocation to remove users from
                     allocations_to_remove_user_from = project_obj.allocation_set.filter(
                         status__name__in=['Active', 'New', 'Renewal Requested'])
                     for allocation in allocations_to_remove_user_from:
-                        for allocation_user_obj in allocation.allocationuser_set.filter(user=user_obj, status__name__in=['Active', ]):
+                        for allocation_user_obj in allocation.allocationuser_set.filter(user=user_obj, status__name__in=['Active', 'Pending - Add', 'Pending - Remove']):
+                            resource = allocation.get_parent_resource
+                            has_manual_removal = resource.get_attribute(
+                                'manually_handle_users'
+                            )
+
+                            # Users will still be removed from allocations that do not require
+                            # manual removal.
+                            if has_manual_removal is not None and has_manual_removal == 'True':
+                                resources_requiring_manual_removal.setdefault(resource.name, [])
+                                resources_requiring_manual_removal[resource.name].append(
+                                    allocation_user_obj.user.username
+                                )
+                                remove_user_from_project = False
+                                continue
+
                             allocation_user_obj.status = allocation_user_removed_status_choice
                             allocation_user_obj.save()
 
                             allocation_remove_user.send(sender=self.__class__,
                                                         allocation_user_pk=allocation_user_obj.pk)
 
-            messages.success(
-                request, 'Removed {} users from project.'.format(remove_users_count))
+                    if remove_user_from_project:
+                        remove_users_count += 1
+                        project_user_obj = project_obj.projectuser_set.get(
+                            user=user_obj)
+                        project_user_obj.status = project_user_removed_status_choice
+                        project_user_obj.save()
+
+            if remove_users_count:
+                messages.success(
+                    request, 'Removed {} users from project.'.format(remove_users_count))
+
+            for resource_name, users in resources_requiring_manual_removal.items():
+                messages.warning(
+                    request, 'User(s) {} in resource {} must be removed from the allocation first.'
+                    .format(', '.join(users), resource_name)
+                )
         else:
             for error in formset.errors:
                 messages.error(request, error)

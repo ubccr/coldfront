@@ -13,7 +13,7 @@ from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.forms import formset_factory
-from django.http import HttpResponseRedirect, JsonResponse, request
+from django.http import HttpResponseRedirect, JsonResponse
 from django.http.response import HttpResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse, reverse_lazy
@@ -21,7 +21,6 @@ from django.utils.html import format_html, mark_safe
 from django.views import View
 from django.views.generic import ListView, TemplateView
 from django.views.generic.edit import CreateView, FormView, UpdateView
-from django.utils.module_loading import import_string
 
 from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationAddUserForm,
@@ -105,7 +104,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             user=self.request.user, status__name__in=['Active', 'New', ]).exists()
 
         user_can_access_allocation = allocation_obj.allocationuser_set.filter(
-            user=self.request.user, status__name__in=['Active', ]).exists()
+            user=self.request.user, status__name__in=['Active', 'Pending - Remove']).exists()
 
         if user_can_access_project and user_can_access_allocation:
             return True
@@ -1455,37 +1454,23 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     allocation_activate_user.send(sender=self.__class__,
                                                   allocation_user_pk=allocation_user_obj.pk)
             if added_users:
-                messages.success(
-                    request,
-                    'Added user(s) {} to allocation.'.format(', '.join(added_users))
-                )
+
                 if allocation_user_status_choice.name == 'Pending - Add':
                     send_pending_users_email(
                         self.request,
                         added_users,
                         allocation_obj.get_parent_resource.name
                     )
-                # if allocation_user_status_choice.name == 'Pending - Add':
-                #     if EMAIL_ENABLED:
-                #         domain_url = get_domain_url(self.request)
-                #         url = '{}{}'.format(domain_url, reverse('allocation-users-pending-list'))
-                #         template_context = {
-                #             'center_name': EMAIL_CENTER_NAME,
-                #             'resource': allocation_obj.get_parent_resource.name,
-                #             'url': url,
-                #             'signature': EMAIL_SIGNATURE,
-                #             'users': added_users
-                #         }
-
-                #         email_receiver_list = ['mkusz_iu.edu']
-
-                #         send_email_template(
-                #             'New Pending User(s)',
-                #             'email/new_pending_users.txt',
-                #             template_context,
-                #             EMAIL_SENDER,
-                #             email_receiver_list
-                #         )
+                    messages.success(
+                        request,
+                        'Pending addition of user(s) {} to allocation.'.format(', '.join(added_users))
+                    )
+                else:
+                    messages.success(
+                        request,
+                        'Added user(s) {} to allocation.'.format(', '.join(added_users))
+                    )
+                
 
             if denied_users:
                 messages.warning(
@@ -1679,30 +1664,14 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
                         removed_users,
                         allocation_obj.get_parent_resource.name
                     )
-                # if allocation_user_status_choice.name == 'Pending - Remove':
-                #     if EMAIL_ENABLED:
-                #         domain_url = get_domain_url(self.request)
-                #         url = '{}{}'.format(domain_url, reverse('allocation-users-pending-list'))
-                #         template_context = {
-                #             'center_name': EMAIL_CENTER_NAME,
-                #             'resource': allocation_obj.get_parent_resource.name,
-                #             'url': url,
-                #             'signature': EMAIL_SIGNATURE,
-                #             'users': removed_users
-                #         }
+                    messages.success(
+                        request, 'Pending removal of user(s) {} from allocation.'.format(', '.join(removed_users))
+                    )
+                else:
+                    messages.success(
+                        request, 'Removed user(s) {} from allocation.'.format(', '.join(removed_users))
+                    )
 
-                #         email_receiver_list = ['mkusz_iu.edu']
-
-                #         send_email_template(
-                #             'New Pending User(s)',
-                #             'email/new_pending_users.txt',
-                #             template_context,
-                #             EMAIL_SENDER,
-                #             email_receiver_list
-                #         )
-
-            messages.success(
-                request, 'Removed {} users from allocation.'.format(remove_users_count))
         else:
             for error in formset.errors:
                 messages.error(request, error)
