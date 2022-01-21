@@ -19,6 +19,12 @@ def job_query_filtering(job_list, data):
         job_list = job_list.filter(
             partition__icontains=data.get('partition'))
 
+    if data.get('amount'):
+        if data.get('amount_modifier') == 'leq':
+            job_list = job_list.filter(amount__lte=data.get('amount'))
+        else:
+            job_list = job_list.filter(amount__gte=data.get('amount'))
+
     if data.get('submitdate'):
         submit_modifier = data.get('submit_modifier')
         submit_date = data.get('submitdate')
