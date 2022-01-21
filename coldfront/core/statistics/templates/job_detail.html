@@ -58,7 +58,7 @@ Job Detail
                             {% elif status == "COMPLETING" %}
                                 <span class="badge badge-success">COMPLETED</span>
                             {% elif status == "RUNNING" %}
-                                <span class="badge badge-success">{{ status }}</span>
+                                <span class="badge badge-primary">{{ status }}</span>
                             {% elif status in status_warning_list %}
                                 <span class="badge badge-warning">{{ status }}</span>
                             {% else %}

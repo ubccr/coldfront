@@ -29,6 +29,15 @@
                             <div>{{ job_search_form.username|as_crispy_field }}</div>
                             <div>{{ job_search_form.partition|as_crispy_field }}</div>
                             <div class="row">
+                              <div class="col-sm-2 ">Service Units {% include 'service_unit_popover.html' %}</div>
+                              <div class="col-sm-5">
+                                {{ job_search_form.amount_modifier|as_crispy_field }}
+                              </div>
+                              <div class="col-sm-5 ">
+                                {{ job_search_form.amount|as_crispy_field }}
+                              </div>
+                            </div>
+                            <div class="row">
                                 <div class="col-sm-2 ">Submitted</div>
                                 <div class="col-sm-5">
                                     {{ job_search_form.submit_modifier|as_crispy_field }}
@@ -159,7 +168,7 @@
                                 {% elif status == "COMPLETING" %}
                                     <span class="badge badge-success">COMPLETED</span>
                                 {% elif status == "RUNNING" %}
-                                    <span class="badge badge-success">{{ status }}</span>
+                                    <span class="badge badge-primary">{{ status }}</span>
                                 {% elif status in status_warning_list %}
                                     <span class="badge badge-warning">{{ status }}</span>
                                 {% else %}
