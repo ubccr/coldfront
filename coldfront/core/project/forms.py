@@ -517,6 +517,13 @@ class SavioProjectRechargeExtraFieldsForm(SavioProjectExtraFieldsForm):
         max_length=100,
         required=True)
 
+    def __init__(self, *args, **kwargs):
+        disable_fields = kwargs.pop('disable_fields', False)
+        super().__init__(*args, **kwargs)
+        if disable_fields:
+            for field in self.fields:
+                self.fields[field].disabled = True
+
     def clean_num_service_units(self):
         cleaned_data = super().clean()
         num_service_units = cleaned_data['num_service_units']
@@ -805,6 +812,19 @@ class SavioProjectSurveyForm(forms.Form):
                 self.fields[field].disabled = True
 
 
+class MemorandumSignedForm(forms.Form):
+
+    status = forms.ChoiceField(
+        choices=(
+            ('', 'Select one.'),
+            ('Pending', 'Pending'),
+            ('Complete', 'Complete'),
+        ),
+        help_text='If you are unsure, leave the status as "Pending".',
+        label='Status',
+        required=True)
+
+
 class ReviewStatusForm(forms.Form):
 
     status = forms.ChoiceField(
@@ -878,19 +898,6 @@ class SavioProjectReviewAllocationDatesForm(forms.Form):
             if status == 'Complete':
                 raise forms.ValidationError(
                     'One or more dates have not been set.')
-
-
-class SavioProjectReviewMemorandumSignedForm(forms.Form):
-
-    status = forms.ChoiceField(
-        choices=(
-            ('', 'Select one.'),
-            ('Pending', 'Pending'),
-            ('Complete', 'Complete'),
-        ),
-        help_text='If you are unsure, leave the status as "Pending".',
-        label='Status',
-        required=True)
 
 
 class SavioProjectReviewSetupForm(forms.Form):

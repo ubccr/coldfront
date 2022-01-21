@@ -26,7 +26,8 @@ from django.views.generic.edit import FormView
 
 import logging
 
-"""Views relating to purchasing more Service Units for a Project."""
+"""Views relating to making requests to purchase more Service Units for
+a Project."""
 
 
 logger = logging.getLogger(__name__)

@@ -1,11 +1,27 @@
+from copy import deepcopy
+
 from coldfront.core.allocation.models import AllocationAdditionRequest
+from coldfront.core.project.forms import MemorandumSignedForm
+from coldfront.core.project.forms import SavioProjectRechargeExtraFieldsForm
 from coldfront.core.project.utils_.permissions_utils import is_user_manager_or_pi_of_project
 
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.mixins import UserPassesTestMixin
+from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
+from django.urls import reverse
 from django.views.generic import DetailView
 from django.views.generic import TemplateView
+from django.views.generic.edit import FormView
+
+import logging
+
+"""Views relating to reviewing requests to purchase more Service Units
+for a Project."""
+
+
+logger = logging.getLogger(__name__)
 
 
 class AllocationAdditionRequestDetailView(LoginRequiredMixin,
@@ -26,15 +42,53 @@ class AllocationAdditionRequestDetailView(LoginRequiredMixin,
         self.request_obj = get_object_or_404(AllocationAdditionRequest, pk=pk)
         return super().dispatch(request, *args, **kwargs)
 
+    def get_checklist(self):
+        """Return a nested list, where each row contains the details of
+        one item on the checklist.
+
+        Each row is of the form: [task text, status name, latest update
+        timestamp, is "Manage" button available, URL of "Manage"
+        button]."""
+        checklist = []
+        memorandum_signed = self.request_obj.state['memorandum_signed']
+        checklist.append([
+            ('Confirm that the Memorandum of Understanding has been signed '
+             'and that funds have been transferred.'),
+            memorandum_signed['status'],
+            memorandum_signed['timestamp'],
+            True,
+            reverse(
+                'service-units-purchase-request-review-memorandum-signed',
+                kwargs={'pk': self.request_obj.pk})
+        ])
+        return checklist
+
     def get_context_data(self, **kwargs):
         """TODO"""
         context = super().get_context_data(**kwargs)
+
+        initial = deepcopy(self.request_obj.extra_fields)
+        initial['num_service_units'] = self.request_obj.num_service_units
+        context['purchase_details_form'] = SavioProjectRechargeExtraFieldsForm(
+            initial=initial, disable_fields=True)
+
+        # context['checklist'] = self.get_checklist()
+        context['is_checklist_complete'] = False
+        context['review_controls_visible'] = (
+            self.request.user.is_superuser and
+            self.request_obj.status.name not in ('Denied', 'Complete'))
+
         return context
 
     def get_redirect_url(self, pk):
         """TODO"""
         # TODO
         return '/'
+
+    def is_checklist_complete(self):
+        """Return whether the request is ready for final submission."""
+        # TODO
+        return False
 
     def test_func(self):
         """Allow TODO"""
@@ -94,3 +148,63 @@ class AllocationAdditionRequestListView(LoginRequiredMixin, TemplateView):
         else:
             order_by = 'id'
         return order_by
+
+
+class AllocationAdditionReviewMemorandumSignedView(LoginRequiredMixin,
+                                                   UserPassesTestMixin,
+                                                   FormView):
+    """A view that allows administrators to confirm that the Memorandum
+    of Understanding has been signed and that funds have been
+    transferred."""
+
+    form_class = MemorandumSignedForm
+    template_name = (
+        'project/project_allocation_addition/review_memorandum_signed.html')
+    login_url = '/'
+
+    request_obj = None
+
+    def dispatch(self, request, *args, **kwargs):
+        """Store the AllocationAdditionRequest object for reuse. If it
+        has an unexpected status, redirect."""
+        pk = self.kwargs.get('pk')
+        self.request_obj = get_object_or_404(AllocationAdditionRequest, pk=pk)
+        status_name = self.request_obj.status.name
+        if status_name in ['Complete', 'Denied']:
+            message = f'You cannot review a request with status {status_name}.'
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse(
+                    'service-units-purchase-request-detail',
+                    kwargs={'pk': pk}))
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        """TODO"""
+        context = super().get_context_data(**kwargs)
+        context['addition_request'] = self.request_obj
+        initial = deepcopy(self.request_obj.extra_fields)
+        initial['num_service_units'] = self.request_obj.num_service_units
+        context['purchase_details_form'] = SavioProjectRechargeExtraFieldsForm(
+            initial=initial, disable_fields=True)
+        return context
+
+    def get_initial(self):
+        """TODO"""
+        initial = super().get_initial()
+        memorandum_signed = self.request_obj.state['memorandum_signed']
+        initial['status'] = memorandum_signed['status']
+        return initial
+
+    def get_success_url(self):
+        """TODO"""
+        return reverse(
+            'service-units-purchase-request-detail', kwargs={'pk': pk})
+
+    def test_func(self):
+        """Allow superusers."""
+        if self.request.user.is_superuser:
+            return True
+        message = 'You do not have permission to view the previous page.'
+        messages.error(self.request, message)
+        return False

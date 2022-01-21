@@ -2005,6 +2005,7 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
 
 # TODO: Once finalized, move these imports above.
 from coldfront.core.allocation.models import AllocationRenewalRequest
+from coldfront.core.project.forms import MemorandumSignedForm
 from coldfront.core.project.forms import ReviewDenyForm
 from coldfront.core.project.forms import ReviewStatusForm
 from coldfront.core.project.forms import SavioProjectAllocationTypeForm
@@ -2017,7 +2018,6 @@ from coldfront.core.project.forms import SavioProjectPoolAllocationsForm
 from coldfront.core.project.forms import SavioProjectPooledProjectSelectionForm
 from coldfront.core.project.forms import SavioProjectRechargeExtraFieldsForm
 from coldfront.core.project.forms import SavioProjectReviewAllocationDatesForm
-from coldfront.core.project.forms import SavioProjectReviewMemorandumSignedForm
 from coldfront.core.project.forms import SavioProjectReviewSetupForm
 from coldfront.core.project.forms import SavioProjectSurveyForm
 from coldfront.core.project.forms import VectorProjectDetailsForm
@@ -3015,7 +3015,7 @@ class SavioProjectReviewMemorandumSignedView(LoginRequiredMixin,
                                              UserPassesTestMixin,
                                              SavioProjectRequestMixin,
                                              FormView):
-    form_class = SavioProjectReviewMemorandumSignedForm
+    form_class = MemorandumSignedForm
     template_name = (
         'project/project_request/savio/project_review_memorandum_signed.html')
     login_url = '/'
