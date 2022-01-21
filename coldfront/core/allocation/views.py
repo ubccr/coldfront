@@ -961,6 +961,22 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         )
         allocation_obj.resources.add(resource_obj)
 
+        if project_obj.slurm_account_name:
+            value = project_obj.slurm_account_name
+            if resource_obj.name == 'Carbonate DL':
+                value = 'dl' + project_obj.slurm_account_name
+            elif resource_obj.name == 'Carbonate GPU':
+                value = 'gpu' + project_obj.slurm_account_name
+
+            slurm_account_name_attribute_type = AllocationAttributeType.objects.get(
+                name='slurm_account_name'
+            )
+            AllocationAttribute.objects.create(
+                allocation_attribute_type=slurm_account_name_attribute_type,
+                allocation=allocation_obj,
+                value=value
+            )
+
         if ALLOCATION_ACCOUNT_ENABLED and allocation_account and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING:
 
             allocation_attribute_type_obj = AllocationAttributeType.objects.get(

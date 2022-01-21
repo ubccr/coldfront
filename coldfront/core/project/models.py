@@ -41,6 +41,12 @@ We do not have information about your research. Please provide a detailed descri
         ],
     )
 
+    slurm_account_name = models.CharField(
+        max_length=15,
+        help_text='''
+All allocations that require a slurm account name will use this name plus an additional identifier.
+        '''
+    )
     field_of_science = models.ForeignKey(FieldOfScience, on_delete=models.CASCADE, default=FieldOfScience.DEFAULT_PK)
     private = models.BooleanField(
         default=False,

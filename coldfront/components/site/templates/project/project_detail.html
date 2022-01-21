@@ -93,6 +93,7 @@ Project Detail
       <a href="mailto:{{ project.pi.email }} "><i class="far fa-envelope" aria-hidden="true"></i><span class="sr-only">Email PI</span></a>
     </h3>
     <p class="card-text text-justify"><strong>Description: </strong>{{ project.description }}</p>
+    <p class="card-text text-justify"><strong>Slurm Account Name: </strong>{{ project.slurm_account_name }}</p>
     <p class="card-text text-justify"><strong>Field of Science: </strong>{{ project.field_of_science }}</p>
     <p class="card-text text-justify"><strong>Project Status: </strong>{{ project.status }}
         {% if project.last_project_review and  project.last_project_review.status.name == 'Pending'%}
