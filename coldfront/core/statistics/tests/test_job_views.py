@@ -204,11 +204,13 @@ class TestSlurmJobListView(TestJobBase):
         self.assertContains(response, self.job2.jobslurmid)
         self.assertContains(response, '<span class="badge badge-success">COMPLETED</span>')
         self.assertNotContains(response, '<span class="badge badge-success">COMPLETING</span>')
+        self.assertNotContains(response, 'Show All Jobs')
 
         # user2 should not be able to see job2
         response = self.get_response(self.user2, url)
         self.assertNotContains(response, self.job1.jobslurmid)
         self.assertNotContains(response, self.job2.jobslurmid)
+        self.assertNotContains(response, 'Show All Jobs')
 
     def test_pi_manager_list_view_content(self):
         """Testing content when users access SlurmJobListView"""
@@ -217,10 +219,12 @@ class TestSlurmJobListView(TestJobBase):
         response = self.get_response(self.pi, url)
         self.assertContains(response, self.job1.jobslurmid)
         self.assertNotContains(response, self.job2.jobslurmid)
+        self.assertNotContains(response, 'Show All Jobs')
 
         response = self.get_response(self.manager, url)
         self.assertContains(response, self.job1.jobslurmid)
         self.assertNotContains(response, self.job2.jobslurmid)
+        self.assertNotContains(response, 'Show All Jobs')
 
     def test_admin_list_view_access(self):
         url = reverse('slurm-job-list')
@@ -236,10 +240,12 @@ class TestSlurmJobListView(TestJobBase):
             response = self.get_response(user, url)
             self.assertNotContains(response, self.job1.jobslurmid)
             self.assertNotContains(response, self.job2.jobslurmid)
+            self.assertContains(response, 'Show All Jobs')
 
             response = self.get_response(user, url + '?show_all_jobs=on')
             self.assertContains(response, self.job1.jobslurmid)
             self.assertContains(response, self.job2.jobslurmid)
+            self.assertContains(response, 'Show All Jobs')
 
         admin_test_content(self.admin)
         admin_test_content(self.staff)
