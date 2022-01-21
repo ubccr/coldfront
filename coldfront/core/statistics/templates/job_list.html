@@ -215,15 +215,10 @@
         $("#navbar-jobs-list").addClass("active");
 
         $(document).on('click', '#form_reset_button', function () {
-
-            resetForm($('#filter_form'));
+            document.getElementById('filter_form').reset();
         });
+
         $(".datepicker").datepicker();
-
-        function resetForm($form) {
-            $form.find('input:text, input:password, input:file, select, textarea').val('');
-
-        };
 
         $("#expand_button").click(function () {
 
