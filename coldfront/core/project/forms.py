@@ -9,6 +9,7 @@ from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserRoleChoice,
                                            ProjectAllocationRequestStatusChoice)
+from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import import_from_settings
 
 from durationwidget.widgets import TimeDurationWidget
@@ -30,12 +31,12 @@ class ProjectSearchForm(forms.Form):
     PROJECT_NAME = 'Project Name'
     CLUSTER_NAME = 'Cluster Name'
 
-    CLUSTER_NAME_CHOICES = [
-        ('', '-----'),
-        ('ABC', 'ABC'),
-        ('Savio', 'Savio'),
-        ('Vector', 'Vector'),
-    ]
+    Resource.objects.values_list('name')
+
+    CLUSTER_NAME_CHOICES = \
+        [('', '-----')] + \
+        [(x.replace(' Compute', ''), x.replace(' Compute', ''))
+         for x in Resource.objects.values_list('name', flat=True)]
 
     last_name = forms.CharField(label=LAST_NAME, max_length=100, required=False)
     username = forms.CharField(label=USERNAME, max_length=100, required=False)
