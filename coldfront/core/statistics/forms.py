@@ -1,12 +1,5 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from coldfront.core.utils.common import import_from_settings
-
-EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL = import_from_settings(
-    'EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL')
-EMAIL_ADMIN_LIST = import_from_settings('EMAIL_ADMIN_LIST', [])
-EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
-    'EMAIL_DIRECTOR_EMAIL_ADDRESS', '')
 
 
 class JobSearchForm(forms.Form):
@@ -129,9 +122,12 @@ class JobSearchForm(forms.Form):
             raise forms.ValidationError(error_dict)
 
     def __init__(self, *args, **kwargs):
-        ''' remove any labels here if desired
-        '''
+        user = kwargs.pop('user', None)
         super(JobSearchForm, self).__init__(*args, **kwargs)
+
+        if not (user.is_superuser or
+                user.has_perm('statistics.view_job')):
+            self.fields.pop('show_all_jobs')
 
         self.fields['submitdate'].label = ''
         self.fields['submit_modifier'].label = ''

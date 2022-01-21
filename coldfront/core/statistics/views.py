@@ -53,7 +53,7 @@ class SlurmJobListView(LoginRequiredMixin,
         else:
             order_by = '-submitdate'
 
-        job_search_form = JobSearchForm(self.request.GET)
+        job_search_form = JobSearchForm(self.request.GET, user=self.request.user)
 
         if job_search_form.is_valid():
             data = job_search_form.cleaned_data
@@ -89,7 +89,7 @@ class SlurmJobListView(LoginRequiredMixin,
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        job_search_form = JobSearchForm(self.request.GET)
+        job_search_form = JobSearchForm(self.request.GET, user=self.request.user)
         if job_search_form.is_valid():
             context['job_search_form'] = job_search_form
             data = job_search_form.cleaned_data
@@ -144,6 +144,10 @@ class SlurmJobListView(LoginRequiredMixin,
 
         context['status_warning_list'] = ['PREEMPTED',
                                           'REQUEUED']
+
+        context['can_view_all_jobs'] = \
+            self.request.user.is_superuser or \
+            self.request.user.has_perm('statistics.view_job')
 
         return context
 
