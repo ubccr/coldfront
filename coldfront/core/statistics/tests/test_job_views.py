@@ -233,22 +233,28 @@ class TestSlurmJobListView(TestJobBase):
 
     def test_admin_list_view_content(self):
         """Testing content when admins access SlurmJobListView"""
-        def admin_test_content(user):
+        # both admin and staff should see no jobs until selecting Show All Jobs
+        def test_admin_contents(user):
             url = reverse('slurm-job-list')
-
-            # both admin and staff should see no jobs until selecting Show All Jobs
             response = self.get_response(user, url)
             self.assertNotContains(response, self.job1.jobslurmid)
             self.assertNotContains(response, self.job2.jobslurmid)
             self.assertContains(response, 'Show All Jobs')
+            self.assertContains(response, 'Viewing only jobs belonging to')
+            self.assertNotContains(response, 'Viewing all jobs.')
+            self.assertNotContains(response, 'Viewing your jobs and the jobs')
 
             response = self.get_response(user, url + '?show_all_jobs=on')
             self.assertContains(response, self.job1.jobslurmid)
             self.assertContains(response, self.job2.jobslurmid)
             self.assertContains(response, 'Show All Jobs')
+            self.assertContains(response, 'Show All Jobs')
+            self.assertNotContains(response, 'Viewing only jobs belonging to')
+            self.assertContains(response, 'Viewing all jobs.')
+            self.assertNotContains(response, 'Viewing your jobs and the jobs')
 
-        admin_test_content(self.admin)
-        admin_test_content(self.staff)
+        test_admin_contents(self.admin)
+        test_admin_contents(self.staff)
 
     def test_pagination(self):
         """Testing pagination of list view"""
@@ -299,28 +305,51 @@ class TestSlurmJobListView(TestJobBase):
                               'TIMEOUT']
         helper_test_status_colors(status_danger_list, 'danger')
         helper_test_status_colors(['PREEMPTED', 'REQUEUED'], 'warning')
-        helper_test_status_colors(['RUNNING', 'COMPLETING'], 'success')
+        helper_test_status_colors(['COMPLETING'], 'success')
+        helper_test_status_colors(['RUNNING'], 'primary')
 
     def test_search_form_validation_errors(self):
         """Testing error messages raised from JobSearchForm validation"""
 
-        def test_error_message(tag, modifier):
+        def test_error_message(tag, throw_error, date=True):
             url = reverse('slurm-job-list') + '?show_all_jobs=on' + tag
             response = self.get_response(self.admin, url)
 
-            if modifier:
-                self.assertContains(response,
-                                    'Must select a date after selecting modifier')
+            if throw_error:
+                if date:
+                    self.assertContains(response,
+                                        'When filtering on a date, you must '
+                                        'select both a modifier and a date.')
+                else:
+                    self.assertContains(response,
+                                        'When filtering on Service Units, '
+                                        'you must select both a modifier and '
+                                        'an amount.')
             else:
-                self.assertContains(response,
-                                    'Must select a modifier after selecting a date')
+                self.assertNotContains(response,
+                                       'When filtering on Service Units, '
+                                       'you must select both a modifier and '
+                                       'an amount.')
+                self.assertNotContains(response,
+                                       'When filtering on a date, you must '
+                                       'select both a modifier and a date.')
 
         test_error_message('&submit_modifier=Before', True)
         test_error_message('&start_modifier=Before', True)
         test_error_message('&end_modifier=Before', True)
-        test_error_message('&submitdate=01%2F05%2F2022', False)
-        test_error_message('&startdate=01%2F05%2F2022', False)
-        test_error_message('&enddate=01%2F05%2F2022', False)
+        test_error_message('&submitdate=01%2F05%2F2022', True)
+        test_error_message('&startdate=01%2F05%2F2022', True)
+        test_error_message('&enddate=01%2F05%2F2022', True)
+        test_error_message('&end_modifier=Before&enddate=01%2F05%2F2022', False)
+
+        test_error_message(
+            '&end_modifier=Before&enddate=01%2F05%2F2022&start_modifier=Before',
+            True)
+
+        test_error_message('&amount=100', True, False)
+        test_error_message('&amount_modifier=leq', True, False)
+
+        test_error_message('&amount=100&amount_modifier=leq', False, False)
 
 
 class TestSlurmJobDetailView(TestJobBase):
@@ -376,12 +405,15 @@ class ExportJobListView(TestJobBase):
         self.assert_has_access(self.user1, False, url)
         self.assert_has_access(self.user2, False, url)
         self.assert_has_access(self.admin, True, url)
-        self.assert_has_access(self.staff, True, url)
+        self.assert_has_access(self.staff, False, url)
 
     def test_job_list_view(self):
         """Testing if 'Export Job List to CSV' button appears"""
         url = reverse('slurm-job-list')
         response = self.get_response(self.user1, url)
+        self.assertNotContains(response, 'Export Job List to CSV')
+
+        response = self.get_response(self.staff, url)
         self.assertNotContains(response, 'Export Job List to CSV')
 
         response = self.get_response(self.admin, url)
@@ -399,9 +431,10 @@ class ExportJobListView(TestJobBase):
 
     def create_job_csv_line(self, job):
         job_line = f'{job.jobslurmid},{job.userid.username},' \
-                    f'{job.accountid.name},{job.partition},' \
-                    f'{job.jobstatus},{job.submitdate},' \
-                    f'{job.startdate},{job.enddate}'
+                   f'{job.accountid.name},{job.partition},' \
+                   f'{job.jobstatus},{job.submitdate},' \
+                   f'{job.startdate},{job.enddate},' \
+                   f'{job.amount}'
 
         return job_line
 
@@ -467,7 +500,7 @@ class ExportJobListView(TestJobBase):
         csv_lines = copy.deepcopy(list(response.streaming_content))
 
         self.assertIn(f'jobslurmid,username,project_name,partition,'
-                      f'jobstatus,submitdate,startdate,enddate',
+                      f'jobstatus,submitdate,startdate,enddate,service_units',
                       csv_lines[0].decode('utf-8'))
 
         job1_line = self.create_job_csv_line(self.job1)

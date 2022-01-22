@@ -35,9 +35,8 @@ class SlurmJobListView(LoginRequiredMixin,
     def save_form_to_session(self, data):
         new_data = copy.deepcopy(data)
         for date in ['submitdate', 'startdate', 'enddate']:
-            if data.get(date):
-                new_data[date] = data.get(date).strftime(DATE_FORMAT)
-                print(new_data[date])
+            if data.get(date, None):
+                new_data[date] = data.get(date, None).strftime(DATE_FORMAT)
         self.request.session['job_search_form_data'] = new_data
         self.request.session.modified = True
 
@@ -74,11 +73,7 @@ class SlurmJobListView(LoginRequiredMixin,
             job_list = job_query_filtering(job_list, data)
 
         else:
-            proj_set = Project.objects.filter(
-                projectuser__user__username=self.request.user,
-                projectuser__status__name__in=['Active', 'Pending - Remove'])
-            job_list = Job.objects.filter(Q(accountid__in=proj_set) |
-                                          Q(userid=self.request.user))
+            job_list = Job.objects.none()
 
             for error in job_search_form.errors:
                 messages.warning(self.request,
@@ -210,9 +205,6 @@ class ExportJobListView(LoginRequiredMixin,
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('statistics.view_job'):
-            return True
-
     def dispatch(self, request, *args, **kwargs):
         if self.test_func():
             data = copy.deepcopy(self.request.session.get('job_search_form_data'))
@@ -221,8 +213,9 @@ class ExportJobListView(LoginRequiredMixin,
 
             if data:
                 for date in ['submitdate', 'startdate', 'enddate']:
-                    if data.get(date):
-                        data[date] = datetime.strptime(data.get(date), DATE_FORMAT)
+                    if data.get(date, None):
+                        data[date] = \
+                            datetime.strptime(data.get(date, None), DATE_FORMAT)
                 job_list = job_query_filtering(job_list, data)
 
             class Echo:
@@ -238,7 +231,8 @@ class ExportJobListView(LoginRequiredMixin,
                       'jobstatus',
                       'submitdate',
                       'startdate',
-                      'enddate')
+                      'enddate',
+                      'service_units')
             job_list = job_list.values_list('jobslurmid',
                                             'userid__username',
                                             'accountid__name',
@@ -246,7 +240,8 @@ class ExportJobListView(LoginRequiredMixin,
                                             'jobstatus',
                                             'submitdate',
                                             'startdate',
-                                            'enddate')
+                                            'enddate',
+                                            'amount')
             rows = (writer.writerow(row) for row in itertools.chain([header], job_list.iterator()))
             response = StreamingHttpResponse(rows, content_type="text/csv")
             response["Content-Disposition"] = 'attachment; filename="job_list.csv"'

@@ -2,156 +2,129 @@
 {% load crispy_forms_tags %}
 {% load humanize %}
 {% load static %}
+{% load tz %}
+{% timezone "America/Los_Angeles" %}
 
 
 {% block title %}
-Job Detail
+  Job Detail
 {% endblock %}
 
 
 {% block content %}
+  <div class="mb-3">
+    <h1 class="text-justify">Job Detail: {{ job.jobslurmid }}</h1> <hr>
+  </div>
 
-
-
-<div class="mb-3">
-<h1 class="text-justify">Job Detail: {{ job.jobslurmid }}</h1> <hr>
-</div>
-
-<div class="card mb-3">
+  <div class="card mb-3">
     <div class="card-header">
-        <h2><i class="fas fa-list"></i> Job Information</h2>
+      <h2><i class="fas fa-list"></i> Job Information</h2>
     </div>
     <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-bordered table-sm">
-                <tr>
-                    <th scope="row" class="text-nowrap">Slurm ID:</th>
-                    <td>{{ job.jobslurmid }}</td>
-                </tr>
-                <tr>
-                    <th scope="row" class="text-nowrap">Username:</th>
-                    <td>
-                        <a href="{% url 'user-profile' job.userid.username %}">
-                            <span class="accessibility-link-text">User {{ job.userid.username }}</span>
-                            {{ job.userid.username }}
-                        </a>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" class="text-nowrap">Project:</th>
-                    <td>
-                        <a href="{% url 'project-detail' job.accountid.pk %}">
-                            <span class="accessibility-link-text">Project {{ job.accountid.name }}</span>
-                            {{ job.accountid.name }}
-                        </a>
-                    </td>
-                </tr>
-
-                <tr>
-                    <th scope="row" class="text-nowrap">Job Status:</th>
-                    <td>
-                        {% with status=job.jobstatus %}
-                            {% if status in status_danger_list %}
-                                <span class="badge badge-danger">{{ status }}</span>
-                            {% elif "CANCEL" in status %}
-                                <span class="badge badge-danger">CANCELLED</span>
-                            {% elif status == "COMPLETING" %}
-                                <span class="badge badge-success">COMPLETED</span>
-                            {% elif status == "RUNNING" %}
-                                <span class="badge badge-primary">{{ status }}</span>
-                            {% elif status in status_warning_list %}
-                                <span class="badge badge-warning">{{ status }}</span>
-                            {% else %}
-                                <span class="badge badge-info">{{ status }}</span>
-                            {% endif %}
-                        {% endwith %}
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" class="text-nowrap">Submit Date:</th>
-                    <td>
-                        {{ job.submitdate }}
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" class="text-nowrap">Start Date:</th>
-                    <td>
-                        {{ job.startdate }}
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" class="text-nowrap">End Date:</th>
-                    <td>
-                        {{ job.enddate }}
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" class="text-nowrap">Partition:</th>
-                    <td>
-                        {{ job.partition }}
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" class="text-nowrap">Nodes:</th>
-                    <td>
-                        {{ nodes}}
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" class="text-nowrap">
-                      Service Units
-                      {% include 'service_unit_popover.html' %}
-                      :
-                    </th>
-                    <td>
-                        {{ job.amount }}
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" class="text-nowrap">Quality of Service:</th>
-                    <td>
-                        {{ job.qos }}
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" class="text-nowrap">Number of CPUs:</th>
-                    <td>
-                        {{ job.num_cpus }}
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" class="text-nowrap">Number of Required Nodes:</th>
-                    <td>
-                        {{ job.num_req_nodes }}
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" class="text-nowrap">Number of Allocated Nodes:</th>
-                    <td>
-                        {{ job.num_alloc_nodes }}
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" class="text-nowrap">Raw Time (seconds):</th>
-                    <td>
-                        {{ job.raw_time }}
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" class="text-nowrap">CPU Time (seconds):</th>
-                    <td>
-                        {{ job.cpu_time }}
-                    </td>
-                </tr>
-            </table>
-        </div>
+      <div class="table-responsive">
+        <table class="table table-bordered table-sm">
+          <tr>
+            <th scope="row" class="text-nowrap">Slurm ID:</th>
+            <td>{{ job.jobslurmid }}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Username:</th>
+            <td>
+              <a href="{% url 'user-profile' job.userid.username %}">
+                <span class="accessibility-link-text">User {{ job.userid.username }}</span>
+                {{ job.userid.username }}
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Project:</th>
+            <td>
+              <a href="{% url 'project-detail' job.accountid.pk %}">
+                <span class="accessibility-link-text">Project {{ job.accountid.name }}</span>
+                {{ job.accountid.name }}
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Job Status:</th>
+            <td>
+              {% with status=job.jobstatus %}
+                {% if status in status_danger_list %}
+                  <span class="badge badge-danger">{{ status }}</span>
+                {% elif "CANCEL" in status %}
+                  <span class="badge badge-danger">CANCELLED</span>
+                {% elif status == "COMPLETING" %}
+                  <span class="badge badge-success">COMPLETED</span>
+                {% elif status == "RUNNING" %}
+                  <span class="badge badge-primary">{{ status }}</span>
+                {% elif status in status_warning_list %}
+                  <span class="badge badge-warning">{{ status }}</span>
+                {% else %}
+                  <span class="badge badge-info">{{ status }}</span>
+                {% endif %}
+              {% endwith %}
+            </td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Submit Date:</th>
+            <td>{{ job.submitdate }}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Start Date:</th>
+            <td>{{ job.startdate }}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">End Date:</th>
+            <td>{{ job.enddate }}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Partition:</th>
+            <td>{{ job.partition }}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Nodes:</th>
+            <td>{{ nodes}}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">
+              Service Units {% include 'service_unit_popover.html' %}:
+            </th>
+            <td>{{ job.amount }}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Quality of Service:</th>
+            <td>{{ job.qos }}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Number of CPUs:</th>
+            <td>{{ job.num_cpus }}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Number of Required Nodes:</th>
+            <td>{{ job.num_req_nodes }}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Number of Allocated Nodes:</th>
+            <td>{{ job.num_alloc_nodes }}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Raw Time (seconds):</th>
+            <td>{{ job.raw_time }}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">CPU Time (seconds):</th>
+            <td>{{ job.cpu_time }}</td>
+          </tr>
+        </table>
+      </div>
     </div>
-</div>
+  </div>
 
-<script>
-  $("#navbar-main > ul > li.active").removeClass("active");
-  $("#navbar-project-menu").addClass("active");
-  $("#navbar-jobs-list").addClass("active");
-</script>
+  <script>
+    $("#navbar-main > ul > li.active").removeClass("active");
+    $("#navbar-project-menu").addClass("active");
+    $("#navbar-jobs-list").addClass("active");
+  </script>
 
 {% endblock %}
+{% endtimezone %}
