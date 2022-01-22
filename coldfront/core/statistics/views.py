@@ -20,6 +20,7 @@ import logging
 
 from coldfront.core.statistics.utils_.job_query_filtering import \
     job_query_filtering
+from coldfront.core.utils.common import Echo
 
 logger = logging.getLogger(__name__)
 DATE_FORMAT = '%m/%d/%Y, %H:%M:%S'
@@ -217,10 +218,6 @@ class ExportJobListView(LoginRequiredMixin,
                         data[date] = \
                             datetime.strptime(data.get(date, None), DATE_FORMAT)
                 job_list = job_query_filtering(job_list, data)
-
-            class Echo:
-                def write(self, value):
-                    return value
 
             echo_buffer = Echo()
             writer = csv.writer(echo_buffer)
