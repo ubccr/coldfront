@@ -13,6 +13,8 @@ from django.urls import reverse
 from urllib.parse import urljoin
 
 # Get an instance of a logger
+from coldfront.core.resource.models import Resource
+
 logger = logging.getLogger(__name__)
 
 
@@ -89,3 +91,10 @@ def validate_num_service_units(num_service_units):
         raise ValueError(
             f'Number of service units {num_service_units} has greater than '
             f'{max_places} decimal places.')
+
+
+def get_compute_resource_names():
+    """Returns sorted list of Resource names without ' Compute' in the name"""
+    names = [x.replace(' Compute', '') for x in
+             Resource.objects.values_list('name', flat=True).order_by('name')]
+    return names
