@@ -9,7 +9,6 @@ from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserRoleChoice,
                                            ProjectAllocationRequestStatusChoice)
-from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import (import_from_settings,
                                          get_compute_resource_names)
 
@@ -31,8 +30,6 @@ class ProjectSearchForm(forms.Form):
     PROJECT_TITLE = 'Project Title'
     PROJECT_NAME = 'Project Name'
     CLUSTER_NAME = 'Cluster Name'
-
-    Resource.objects.values_list('name')
 
     CLUSTER_NAME_CHOICES = \
         [('', '-----')] + [(x, x) for x in get_compute_resource_names()]
