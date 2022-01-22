@@ -257,8 +257,8 @@
 
         function resetForm($form) {
             $form.find('input:text, input:password, input:file, select, textarea').val('');
-            $form.find('input:number').val();
-        };
+            $form.find("input[type='number']").val('');
+        }
 
         $("#expand_button").click(function () {
 
