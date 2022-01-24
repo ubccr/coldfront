@@ -222,29 +222,42 @@ class ColdFrontDB:
     @record_process
     def produce_lab_list(self, vol):
         pr_objs = Allocation.objects.only("id", "project_id")
-        pr_dict = {
-            return_pname(o.project_id):o.get_resources_as_string for o in pr_objs}
-        labs_resources = {p:r.split("/") for p, r in pr_dict.items()}
+        pr_dict = {}
+        for o in pr_objs:
+            o_name = return_pname(o.project_id)
+            if o_name not in pr_dict:
+                pr_dict[o_name] = [o.get_resources_as_string]
+            else:
+                pr_dict[o_name].append(o.get_resources_as_string)
+        lr = pr_dict if not vol else {p:[i for i in r if vol in i] for p, r in pr_dict.items()}
+        labs_resources = {p:[rs.split("/") for rs in r] for p, r in lr.items()}
         logger.debug(f"labs_resources:\n{labs_resources}")
-        lr = labs_resources if not vol else {k:v for k, v in labs_resources.items() if vol in v}
-        return lr
+        return labs_resources
 
 
     def check_server_collection(self, servername, v, lr):
+        '''
+        Returns
+        -------
+        filepaths : list
+        to_collect :
+        '''
         filepaths = []
         to_collect = {}
         for vol, path in v.items():
-            projs = {l:r for l, r in lr.items() if r[0] == vol}
+            p = {l:[v for v in r if vol == v[0]] for l, r in lr.items() for v in r}
+            projs = {l:r[0] for l, r in p.items() if p[l]}
+            logger.debug(f"check_server_collection projs: {projs}")
             localdata = LocalData()
             fp, coll = localdata.sort_collected_uncollected(servername, projs)
             filepaths.extend(fp)
-            to_collect.update(coll)
+            to_collect[vol] = coll
         return filepaths, to_collect
 
 
     def pull_sf(self, volume=None):
         lr = self.produce_lab_list(volume)
-        vol_set = {v[0] for v in lr.values()}
+        vol_set = {v[0] for r in lr.values() for v in r}
         logger.debug(f"vol_set: {vol_set}")
         serv_vols = generate_serv_vol_dict(vol_set)
         all_filepaths = []
@@ -255,10 +268,9 @@ class ColdFrontDB:
                 logger.debug(f"to collect: {to_collect}")
                 server = StarFishServer(s)
                 for vol, path in v.items():
-                    serv_to_collect = {s:d for s, d in to_collect.items() if d[0] == vol}
-                    projdicts = {l:r for l, r in lr.items() if r[0] == vol}
-                    logger.debug(f"projdicts: {projdicts}")
-                    fpaths = collect_starfish_usage(server, vol, path, serv_to_collect, projdicts)
+                    serv_to_collect = to_collect[vol]
+                    logger.debug(f"vol:{vol}\nserv_to_collect:{serv_to_collect}")
+                    fpaths = collect_starfish_usage(server, vol, path, serv_to_collect)
                     all_filepaths.extend(fpaths)
         return set(all_filepaths)
 
@@ -307,15 +319,17 @@ class ColdFrontDB:
             user_models = get_user_model().objects.only("id","username")\
                     .filter(username__in=usernames)
             self.log_missing_user_models(user_models, usernames)
+
             project = Project.objects.get(title=groupdict[0]["groupname"])
+            allocation = self.return_proj_allocation(project)
             logger.debug(f"usernames for {project.title}: {usernames}")
             logger.debug(f"user_models for {project.title}: {[u.username for u in user_models]}")
-            allocation = self.return_proj_allocation(project)
+
             for user in user_models:
                 userdict = [d for d in groupdict if d["username"] == user.username][0]
                 try:
                     server_tier = server + "/" + tier
-                    self.update_usage(user, userdict, server_tier, allocation)
+                    self.update_usage(user_models, userdict, server_tier, allocation)
                 except Exception as e:
                     logger.warning("EXCEPTION FOR ENTRY: {}".format(e), exc_info=True)
                     errors = True
@@ -324,15 +338,17 @@ class ColdFrontDB:
         logger.debug("push_cf complete")
 
 
-    def update_usage(self, user, userdict, server_tier, allocation):
+    def update_usage(self, models, userdict, server_tier, allocation):
         # get ids needed to locate correct allocationuser entry
         # user = LabUser(userdict["username"], userdict["groupname"])
+        user = models.get(username=userdict["username"])
+        logger.debug(f"entering for user:{user.username}")
         try:
             allocationuser = AllocationUser.objects.get(
                 allocation_id=str(allocation.id), user_id=str(user.id)
             )
         except AllocationUser.DoesNotExist:
-            logger.info(f"creating allocation user:{user}")
+            logger.info("creating allocation user:")
             allocationuser_obj, _ = AllocationUser.objects.create(
                 allocation=allocation,
                 created=timezone.now(),
@@ -343,7 +359,10 @@ class ColdFrontDB:
                 allocation_id=str(allocation.id), user_id=str(user.id)
             )
 
-        allocationuser.usage = userdict["size_sum"]
+        allocationuser.usage_bytes = userdict["size_sum"]
+        usage, unit = split_num_string(userdict["size_sum_hum"])
+        allocationuser.usage = usage
+        allocationuser.unit = unit
         # automatically updates "modified" field & adds old record to history
         allocationuser.save()
         logger.debug(f"successful entry: {userdict['groupname']}, {userdict['username']}")
@@ -355,6 +374,8 @@ class LocalData():
 
     @record_process
     def sort_collected_uncollected(self, server_name, projects):
+        '''
+        '''
         filepaths = []
         tocollect = {}
         for p in list(projects.keys()):
@@ -418,7 +439,7 @@ def confirm_dirpath_exists(dpath):
         logger.info(f"created new directory {dpath}")
 
 @record_process
-def collect_starfish_usage(server, volume, volumepath, to_collect, projects):
+def collect_starfish_usage(server, volume, volumepath, to_collect):
     """
 
     Returns
@@ -426,37 +447,43 @@ def collect_starfish_usage(server, volume, volumepath, to_collect, projects):
     filepaths : list
         list of filepath names
     """
-    logger.debug(f"projects: {projects}")
-    localdata = LocalData()
     filepaths = []
-    for p, r in to_collect.items():
-        filepath = r[2]
-        lab_volpath = volumepath# + "/{}".format(p)
-        zone_or_groupname = "zone" if use_zone(p) else "groupname"
-        queryline = "type=f {}={}".format(zone_or_groupname, p)
-        usage_query = server.create_query(
-            queryline, f"username, {zone_or_groupname}", f"{volume}:{lab_volpath}", sec=2
-        )
-        data = usage_query.result
-        logger.debug("usage_query.result:{}".format(data))
-        if not data:
-            logger.warning("No starfish result for lab {}".format(p))
-        elif type(data) is dict and "error" in data:
-            logger.warning("Error in starfish result for lab {}:\n{}".format(p, data))
-        else:
-            logger.debug(f"data: {data}")
-            record = {
-                "server": server.name,
-                "volume": volume,
-                "path": lab_volpath,
-                "tier": r[1],
-                "date": datestr,
-                "groupname": data[0]['groupname'],
-                "contents": data,
-            }
-            save_json(filepath, record)
+    datestr = datetime.today().strftime("%Y%m%d")
+    logger.debug(f"projects: {projects}")
+    for p, r in projects.items():
+        homepath = "./coldfront/plugins/sftocf/data/"
+        filepath = f"{homepath}{p}_{server.name}_{datestr}.json"
+        logger.debug(f"filepath 1: {filepath}")
+        if Path(filepath).exists():
             filepaths.append(filepath)
+        else:
+            lab_volpath = volumepath# + "/{}".format(p)
+            queryline = "type=f groupname={}".format(p)
+            usage_query = server.create_query(
+                queryline, "username, groupname", f"{volume}:{lab_volpath}", sec=2
+            )
+            data = usage_query.result
+            logger.debug("usage_query.result:{}".format(data))
+            if not data:
+                logger.warning("No starfish result for lab {}".format(p))
+            elif type(data) is dict and "error" in data:
+                logger.warning("Error in starfish result for lab {}:\n{}".format(p, data))
+            else:
+                data = usage_query.result
+                logger.debug(data)
+                record = {
+                    "server": server.name,
+                    "volume": volume,
+                    "path": lab_volpath,
+                    "tier": r[1],
+                    "date": datestr,
+                    "contents": data,
+                }
+                confirm_dirpath_exists(homepath)
+                save_json(filepath, record)
+                filepaths.append(filepath)
     return filepaths
+
 
 def collect_costperuser(ifx_uid, lab_name):
     # to get to BillingRecord from ifx_uid:
