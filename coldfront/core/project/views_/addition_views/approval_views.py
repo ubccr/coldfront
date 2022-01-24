@@ -3,7 +3,10 @@ from copy import deepcopy
 from coldfront.core.allocation.models import AllocationAdditionRequest
 from coldfront.core.project.forms import MemorandumSignedForm
 from coldfront.core.project.forms import SavioProjectRechargeExtraFieldsForm
+from coldfront.core.project.utils_.addition_utils import AllocationAdditionProcessingRunner
 from coldfront.core.project.utils_.permissions_utils import is_user_manager_or_pi_of_project
+from coldfront.core.user.utils import access_agreement_signed
+from coldfront.core.utils.common import utc_now_offset_aware
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -36,8 +39,13 @@ class AllocationAdditionRequestDetailView(LoginRequiredMixin,
 
     request_obj = None
 
+    error_message = 'Unexpected failure. Please contact an administrator.'
+
+    detail_view_name = 'service-units-purchase-request-detail'
+    list_view_name = 'service-units-purchase-pending-request-list'
+
     def dispatch(self, request, *args, **kwargs):
-        """TODO"""
+        """Store the request object."""
         pk = self.kwargs.get('pk')
         self.request_obj = get_object_or_404(AllocationAdditionRequest, pk=pk)
         return super().dispatch(request, *args, **kwargs)
@@ -64,7 +72,13 @@ class AllocationAdditionRequestDetailView(LoginRequiredMixin,
         return checklist
 
     def get_context_data(self, **kwargs):
-        """TODO"""
+        """Set the following variables:
+            - num_service_units: Decimal
+            - purchase_details_form: Form instance
+            - checklist: List of lists
+            - is_checklist_complete: boolean
+            - review_controls_visible: boolean
+        """
         context = super().get_context_data(**kwargs)
 
         initial = deepcopy(self.request_obj.extra_fields)
@@ -72,27 +86,65 @@ class AllocationAdditionRequestDetailView(LoginRequiredMixin,
         context['purchase_details_form'] = SavioProjectRechargeExtraFieldsForm(
             initial=initial, disable_fields=True)
 
-        # context['checklist'] = self.get_checklist()
-        context['is_checklist_complete'] = False
+        context['checklist'] = self.get_checklist()
+        context['is_checklist_complete'] = self.is_checklist_complete()
         context['review_controls_visible'] = (
             self.request.user.is_superuser and
             self.request_obj.status.name not in ('Denied', 'Complete'))
 
         return context
 
-    def get_redirect_url(self, pk):
-        """TODO"""
-        # TODO
-        return '/'
-
     def is_checklist_complete(self):
         """Return whether the request is ready for final submission."""
-        # TODO
-        return False
+        memorandum_signed = self.request_obj.state['memorandum_signed']
+        return memorandum_signed['status'] == 'Complete'
+
+    def post(self, request, *args, **kwargs):
+        """Process the request after validating that it is ready to be
+        processed."""
+        pk = self.request_obj.pk
+        detail_view_redirect = HttpResponseRedirect(
+            reverse(self.detail_view_name, kwargs={'pk': pk}))
+
+        if not request.user.is_superuser:
+            message = 'You do not have permission to access this page.'
+            messages.error(request, message)
+            return detail_view_redirect
+
+        if not self.is_checklist_complete():
+            message = 'Please complete the checklist before final activation.'
+            messages.error(request, message)
+            return detail_view_redirect
+
+        try:
+            runner = AllocationAdditionProcessingRunner(self.request_obj)
+            total_service_units = runner.run()
+        except Exception as e:
+            logger.exception(e)
+            messages.error(request, self.error_message)
+        else:
+            message = (
+                f'Project {self.request_obj.project.name}\'s allocation has '
+                f'been set to {total_service_units} and its usage has been '
+                f'reset to zero.')
+            messages.success(request, message)
+
+        return HttpResponseRedirect(reverse(self.list_view_name))
 
     def test_func(self):
-        """Allow TODO"""
-        return True
+        """Allow superusers and staff. Allow active PIs and Managers of
+        the Project who have signed the Access Agreement."""
+        user = self.request.user
+        if user.is_superuser or user.is_staff:
+            return True
+        if not access_agreement_signed(user):
+            message = 'You must sign the User Access Agreement.'
+            messages.error(self.request, message)
+            return False
+        if is_user_manager_or_pi_of_project(user, self.project_obj):
+            return True
+        message = 'You must be an active PI or manager of the Project.'
+        messages.error(self.request, message)
 
 
 class AllocationAdditionRequestListView(LoginRequiredMixin, TemplateView):
@@ -179,8 +231,33 @@ class AllocationAdditionReviewMemorandumSignedView(LoginRequiredMixin,
                     kwargs={'pk': pk}))
         return super().dispatch(request, *args, **kwargs)
 
+    def form_valid(self, form):
+        """Update the relevant entry in the request's state with the
+        specified status and the current timestamp."""
+        form_data = form.cleaned_data
+        status = form_data['status']
+        timestamp = utc_now_offset_aware().isoformat()
+
+        self.request_obj.state['memorandum_signed'] = {
+            'status': status,
+            'timestamp': timestamp,
+        }
+
+        self.request_obj.save()
+
+        message = (
+            f'Memorandum Signed status for request {self.request_obj.pk} has '
+            f'been set to {status}.')
+        messages.success(self.request, message)
+
+        return super().form_valid(form)
+
     def get_context_data(self, **kwargs):
-        """TODO"""
+        """Set the following variables:
+            - addition_request: AllocationAdditionRequest instance
+            - num_service_units: Decimal
+            - purchase_details_form: Form instance
+        """
         context = super().get_context_data(**kwargs)
         context['addition_request'] = self.request_obj
         initial = deepcopy(self.request_obj.extra_fields)
@@ -190,16 +267,18 @@ class AllocationAdditionReviewMemorandumSignedView(LoginRequiredMixin,
         return context
 
     def get_initial(self):
-        """TODO"""
+        """Pre-populate the form with the existing value of the relevant
+        entry from the request's state."""
         initial = super().get_initial()
         memorandum_signed = self.request_obj.state['memorandum_signed']
         initial['status'] = memorandum_signed['status']
         return initial
 
     def get_success_url(self):
-        """TODO"""
+        """On success, redirect to the detail view."""
         return reverse(
-            'service-units-purchase-request-detail', kwargs={'pk': pk})
+            'service-units-purchase-request-detail',
+            kwargs={'pk': self.kwargs.get('pk')})
 
     def test_func(self):
         """Allow superusers."""

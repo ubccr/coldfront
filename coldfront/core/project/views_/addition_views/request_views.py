@@ -103,7 +103,7 @@ class AllocationAdditionRequestLandingView(LoginRequiredMixin,
         return context
 
     def test_func(self):
-        """Allow superusers and staff. Allow active PI and Managers of
+        """Allow superusers and staff. Allow active PIs and Managers of
         the Project who have signed the User Access Agreement."""
         user = self.request.user
         if user.is_superuser or user.is_staff:
