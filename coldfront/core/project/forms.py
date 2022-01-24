@@ -10,6 +10,7 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserRoleChoice,
                                            ProjectAllocationRequestStatusChoice)
 from coldfront.core.utils.common import import_from_settings
+from coldfront.core.resource.utils import get_compute_resource_names
 
 from durationwidget.widgets import TimeDurationWidget
 
@@ -30,12 +31,8 @@ class ProjectSearchForm(forms.Form):
     PROJECT_NAME = 'Project Name'
     CLUSTER_NAME = 'Cluster Name'
 
-    CLUSTER_NAME_CHOICES = [
-        ('', '-----'),
-        ('ABC', 'ABC'),
-        ('Savio', 'Savio'),
-        ('Vector', 'Vector'),
-    ]
+    CLUSTER_NAME_CHOICES = \
+        [('', '-----')] + [(x, x) for x in get_compute_resource_names()]
 
     last_name = forms.CharField(label=LAST_NAME, max_length=100, required=False)
     username = forms.CharField(label=USERNAME, max_length=100, required=False)
