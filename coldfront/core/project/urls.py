@@ -14,7 +14,6 @@ urlpatterns = [
     path('<int:pk>/add-users-search/', project_views.ProjectAddUsersSearchView.as_view(), name='project-add-users-search'),
     path('<int:pk>/add-users-search-results/', project_views.ProjectAddUsersSearchResultsView.as_view(), name='project-add-users-search-results'),
     path('<int:pk>/add-users/', project_views.ProjectAddUsersView.as_view(), name='project-add-users'),
-    path('<int:pk>/remove-users/', project_views.ProjectRemoveUsersView.as_view(), name='project-remove-users'),
     path('<int:pk>/user-detail/<int:project_user_pk>', project_views.ProjectUserDetail.as_view(), name='project-user-detail'),
     path('<int:pk>/review/', project_views.ProjectReviewView.as_view(), name='project-review'),
     path('<int:pk>/join/', project_views.ProjectJoinView.as_view(), name='project-join'),
@@ -52,8 +51,7 @@ from coldfront.core.project.views import VectorProjectRequestView
 from coldfront.core.project.views import VectorProjectReviewEligibilityView
 from coldfront.core.project.views import VectorProjectReviewSetupView
 from coldfront.core.project.views import VectorProjectUndenyRequestView
-from coldfront.core.project.views import ProjectRemoveSelf
-from coldfront.core.project.views import ProjectRemovalRequestUpdateStatusView
+import coldfront.core.project.views_.removal_views as removal_views
 from django.views.generic import TemplateView
 
 
@@ -137,20 +135,22 @@ urlpatterns += [
          VectorProjectUndenyRequestView.as_view(),
          name='vector-project-undeny-request'),
     path('<int:pk>/remove-self',
-         ProjectRemoveSelf.as_view(),
+         removal_views.ProjectRemoveSelf.as_view(),
          name='project-remove-self'),
     path('project-removal-request-list',
-         project_views.ProjectRemovalRequestListView.as_view(completed=False),
+         removal_views.ProjectRemovalRequestListView.as_view(completed=False),
          name='project-removal-request-list'),
     path('project-removal-request-list-completed',
-         project_views.ProjectRemovalRequestListView.as_view(completed=True),
+         removal_views.ProjectRemovalRequestListView.as_view(completed=True),
          name='project-removal-request-list-completed'),
     path('project-removal-request/<int:pk>/update-status',
-         project_views.ProjectRemovalRequestUpdateStatusView.as_view(),
+         removal_views.ProjectRemovalRequestUpdateStatusView.as_view(),
          name='project-removal-request-update-status'),
     path('project-removal-request/<int:pk>/complete-status',
-         project_views.ProjectRemovalRequestCompleteStatusView.as_view(),
+         removal_views.ProjectRemovalRequestCompleteStatusView.as_view(),
          name='project-removal-request-complete-status'),
+    path('<int:pk>/remove-users/',
+         removal_views.ProjectRemoveUsersView.as_view(), name='project-remove-users'),
 ]
 
 
