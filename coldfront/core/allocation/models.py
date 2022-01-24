@@ -526,6 +526,10 @@ def allocation_addition_request_state_schema():
     """Return the schema for the AllocationAdditionRequest.state
     field."""
     return {
+        'memorandum_signed': {
+            'status': 'Pending',
+            'timestamp': '',
+        },
         'other': {
             'justification': '',
             'timestamp': '',
@@ -556,7 +560,6 @@ class AllocationAdditionRequest(TimeStampedModel):
         ])
     request_time = models.DateTimeField(
         null=True, blank=True, default=timezone.now)
-    approval_time = models.DateTimeField(null=True, blank=True)
     completion_time = models.DateTimeField(null=True, blank=True)
 
     state = models.JSONField(default=allocation_addition_request_state_schema)
