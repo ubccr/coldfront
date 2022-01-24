@@ -9,8 +9,8 @@ from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserRoleChoice,
                                            ProjectAllocationRequestStatusChoice)
-from coldfront.core.utils.common import (import_from_settings,
-                                         get_compute_resource_names)
+from coldfront.core.utils.common import import_from_settings
+from coldfront.core.resource.utils import get_compute_resource_names
 
 from durationwidget.widgets import TimeDurationWidget
 
