@@ -201,12 +201,17 @@ class Command(BaseCommand):
                       'start_date and end_date'
             raise CommandError(message)
 
+        elif end_date and start_date and end_date < start_date:
+            message = 'start_date must be before end_date.'
+            raise CommandError(message)
+
         query_set = Job.objects.annotate(queue_time=ExpressionWrapper(
             F('startdate') - F('submitdate'), output_field=DurationField()))
 
         if start_date and end_date:
             start_date = self.convert_time_to_utc(start_date)
             end_date = self.convert_time_to_utc(end_date)
+
             query_set = query_set.filter(submitdate__gte=start_date,
                                          submitdate__lte=end_date)
 
