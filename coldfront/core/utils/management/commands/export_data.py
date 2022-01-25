@@ -9,7 +9,8 @@ from django.core import serializers
 
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand, CommandError
-from django.db.models import Value, F, CharField, DateTimeField, Func
+from django.db.models import Value, F, CharField, DateTimeField, Func, \
+    DurationField, ExpressionWrapper
 from django.db.models.functions import Cast, TruncSecond
 
 from coldfront.config import settings
@@ -54,10 +55,10 @@ class Command(BaseCommand):
 
         # TODO: Add parsers here.
 
-        user_list_parser = subparsers.add_parser('user_list',
-                                                 help='Export list of users'
-                                                      'who have submitted a job'
-                                                      'since a given date')
+        user_list_parser = \
+            subparsers.add_parser('user_list',
+                                  help='Export list of users who have '
+                                       'submitted a job since a given date.')
         user_list_parser.add_argument(
             '--format',
             choices=['csv', 'json'],
@@ -67,7 +68,38 @@ class Command(BaseCommand):
         user_list_parser.add_argument(
             '--date',
             help='Date that users last submitted a job. '
-                 'Must take the form of MM-DD-YYYY',
+                 'Must take the form of "MM-DD-YYYY".',
+            type=valid_date)
+
+        new_user_account_parser = \
+            subparsers.add_parser('new_user_account',
+                                  help='Export list of new user accounts '
+                                       'created since a given date.')
+        new_user_account_parser.add_argument(
+            '--format',
+            choices=['csv', 'json'],
+            required=True,
+            help='Export results in the given format.',
+            type=str)
+        new_user_account_parser.add_argument(
+            '--date',
+            help='Date that users last created an account. '
+                 'Must take the form of "MM-DD-YYYY".',
+            type=valid_date)
+
+        job_avg_queue_time_parser = \
+            subparsers.add_parser('job_avg_queue_time',
+                                  help='Export average queue time for jobs'
+                                       'between the given dates.')
+        job_avg_queue_time_parser.add_argument(
+            '--start_date',
+            help='Starting date for jobs. '
+                 'Must take the form of "MM-DD-YYYY".',
+            type=valid_date)
+        job_avg_queue_time_parser.add_argument(
+            '--end_date',
+            help='Ending date for jobs. '
+                 'Must take the form of "MM-DD-YYYY".',
             type=valid_date)
 
     def handle(self, *args, **options):
@@ -98,7 +130,7 @@ class Command(BaseCommand):
         date = options.get('date', None)
         format = options.get('format', None)
 
-        query_set = Job.objects.all().annotate(str_submitdate=Func(
+        query_set = Job.objects.annotate(str_submitdate=Func(
             F('submitdate'),
             Value('MM-dd-yyyy hh:mm:ss'),
             function='to_char',
@@ -125,6 +157,68 @@ class Command(BaseCommand):
             self.to_json(query_set,
                          output=options.get('stdout', stdout),
                          error=options.get('stderr', stderr))
+
+    def handle_new_user_account(self, *args, **options):
+        """Handle the 'new_user_account' subcommand."""
+        date = options.get('date', None)
+        format = options.get('format', None)
+
+        query_set = User.objects.annotate(str_date_joined=Func(
+            F('date_joined'),
+            Value('MM-dd-yyyy hh:mm:ss'),
+            function='to_char',
+            output_field=CharField()
+        ))
+
+        if date:
+            date = self.convert_time_to_utc(date)
+            query_set = query_set.filter(date_joined__gte=date)
+
+        query_set = query_set.order_by('username', '-date_joined'). \
+            distinct('username')
+
+        if format == 'csv':
+            query_set = query_set.values_list('username', 'str_date_joined')
+            header = ['username', 'str_date_joined']
+            self.to_csv(query_set,
+                        header=header,
+                        output=options.get('stdout', stdout),
+                        error=options.get('stderr', stderr))
+
+        else:
+            query_set = query_set.values('username', 'str_date_joined')
+            self.to_json(query_set,
+                         output=options.get('stdout', stdout),
+                         error=options.get('stderr', stderr))
+
+    def handle_job_avg_queue_time(self, *args, **options):
+        """Handle the 'job_avg_queue_time' subcommand."""
+        start_date = options.get('start_date', None)
+        end_date = options.get('end_date', None)
+
+        if bool(start_date) ^ bool(end_date):
+            message = 'Must either input NO dates or BOTH ' \
+                      'start_date and end_date'
+            raise CommandError(message)
+
+        query_set = Job.objects.annotate(queue_time=ExpressionWrapper(
+            F('startdate') - F('submitdate'), output_field=DurationField()))
+
+        if start_date and end_date:
+            start_date = self.convert_time_to_utc(start_date)
+            end_date = self.convert_time_to_utc(end_date)
+            query_set = query_set.filter(submitdate__gte=start_date,
+                                         submitdate__lte=end_date)
+
+        query_set = query_set.values_list('queue_time', flat=True)
+        avg_queue_time = sum(query_set, datetime.timedelta()) / query_set.count()
+
+        total_seconds = int(avg_queue_time.total_seconds())
+        hours, remainder = divmod(total_seconds, 60*60)
+        minutes, seconds = divmod(remainder, 60)
+        time_str = '{}hrs {}mins {}secs'.format(hours, minutes, seconds)
+
+        self.stdout.write(self.style.SUCCESS(time_str))
 
     @staticmethod
     def to_csv(query_set, header=None, output=stdout, error=stderr):
