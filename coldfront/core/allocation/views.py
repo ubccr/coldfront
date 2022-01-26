@@ -392,7 +392,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
                     'project', 'project__pi', 'status',).all().order_by(order_by)
             else:
                 allocations = Allocation.objects.prefetch_related('project', 'project__pi', 'status',).filter(
-                    Q(project__status__name='Active') &
+                    Q(project__status__name__in=['New', 'Active', ]) &
                     Q(project__projectuser__user=self.request.user) &
                     Q(project__projectuser__status__name='Active') &
                     Q(allocationuser__user=self.request.user) &
