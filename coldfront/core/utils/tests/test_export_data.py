@@ -3,6 +3,7 @@ import datetime
 import json
 from csv import DictReader
 
+import pytz
 from django.db.models import F, Func, Value, CharField
 from django.test import TestCase
 
@@ -13,6 +14,7 @@ from io import StringIO
 import os
 import sys
 
+from coldfront.config import settings
 from coldfront.core.statistics.models import Job
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -201,6 +203,159 @@ class TestUserList(TestBase2):
 
         err.seek(0)
         self.assertEqual(err.read(), '')
+
+
+class TestNewUserAccount(TestBase2):
+    """Test class to test export data subcommand new_user_account runs
+    correctly."""
+
+    def setUp(self):
+        """Setup test data"""
+        super().setUp()
+
+    def convert_time_to_utc(self, time):
+        """Convert naive LA time to UTC time"""
+        local_tz = pytz.timezone('America/Los_Angeles')
+        tz = pytz.timezone(settings.TIME_ZONE)
+        naive_dt = datetime.datetime.combine(time, datetime.datetime.min.time())
+        new_time = local_tz.localize(naive_dt).astimezone(tz).isoformat()
+
+        return new_time
+
+    def test_test_new_user_account_json_no_date(self):
+        """Testing new_user_account subcommand with NO date arg passed,
+        exporting as JSON"""
+
+        out, err = StringIO(''), StringIO('')
+        call_command('export_data', 'new_user_account', '--format=json',
+                     stdout=out, stderr=err)
+        sys.stdout = sys.__stdout__
+
+        out.seek(0)
+        output = json.loads(''.join(out.readlines()))
+
+        user_list = User.objects.annotate(str_date_joined=Func(
+            F('date_joined'),
+            Value('MM-dd-yyyy hh:mm:ss'),
+            function='to_char',
+            output_field=CharField()
+        )).order_by('username', '-date_joined'). \
+            distinct('username').values('username', 'str_date_joined')
+
+        for index, item in enumerate(output):
+            self.assertDictEqual(item, user_list[index])
+
+        err.seek(0)
+        self.assertEqual(err.read(), '')
+
+    def test_test_new_user_account_json_with_date(self):
+        """Testing new_user_account subcommand with ONE date arg passed,
+        exporting as JSON"""
+
+        start_date = datetime.datetime.strftime(
+            self.current_time - datetime.timedelta(days=4), '%m-%d-%Y')
+
+        new_date = self.convert_time_to_utc(self.current_time -
+                                            datetime.timedelta(days=10))
+        self.user2.date_joined = new_date
+        self.user2.save()
+        self.assertEqual(self.user2.date_joined, new_date)
+
+        out, err = StringIO(''), StringIO('')
+        call_command('export_data', 'new_user_account', '--format=json',
+                     f'--date={start_date}', stdout=out, stderr=err)
+        sys.stdout = sys.__stdout__
+
+        out.seek(0)
+        output = json.loads(''.join(out.readlines()))
+
+        user_list = User.objects.annotate(str_date_joined=Func(
+            F('date_joined'),
+            Value('MM-dd-yyyy hh:mm:ss'),
+            function='to_char',
+            output_field=CharField()
+        )).order_by('username', '-date_joined'). \
+            distinct('username').values('username', 'str_date_joined').get(
+            username=self.user1.username
+        )
+
+        for index, item in enumerate(output):
+            self.assertDictEqual(item, user_list)
+
+        err.seek(0)
+        self.assertEqual(err.read(), '')
+
+    def test_test_new_user_account_csv_no_date(self):
+        """Testing new_user_account subcommand with NO date arg passed,
+        exporting as CSV"""
+
+        out, err = StringIO(''), StringIO('')
+        call_command('export_data', 'new_user_account', '--format=csv',
+                     stdout=out, stderr=err)
+        sys.stdout = sys.__stdout__
+
+        out.seek(0)
+        reader = csv.reader(out.readlines())
+
+        user_list = User.objects.annotate(str_date_joined=Func(
+            F('date_joined'),
+            Value('MM-dd-yyyy hh:mm:ss'),
+            function='to_char',
+            output_field=CharField()
+        )).order_by('username', '-date_joined'). \
+            distinct('username').values_list('username', 'str_date_joined')
+
+        for index, item in enumerate(reader):
+            if index == 0:
+                lst = ['username', 'str_date_joined']
+            else:
+                lst = list(user_list[index-1])
+
+            self.assertEqual(item, lst)
+
+            err.seek(0)
+            self.assertEqual(err.read(), '')
+
+    def test_test_new_user_account_csv_with_date(self):
+        """Testing new_user_account subcommand with ONE date arg passed,
+        exporting as CSV"""
+        start_date = datetime.datetime.strftime(
+            self.current_time - datetime.timedelta(days=4), '%m-%d-%Y')
+
+        new_date = self.convert_time_to_utc(self.current_time -
+                                            datetime.timedelta(days=10))
+        self.user2.date_joined = new_date
+        self.user2.save()
+        self.assertEqual(self.user2.date_joined, new_date)
+
+        out, err = StringIO(''), StringIO('')
+        call_command('export_data', 'new_user_account', '--format=csv',
+                     f'--date={start_date}', stdout=out, stderr=err)
+        sys.stdout = sys.__stdout__
+
+        out.seek(0)
+        reader = csv.reader(out.readlines())
+
+        user_list = User.objects.annotate(str_date_joined=Func(
+            F('date_joined'),
+            Value('MM-dd-yyyy hh:mm:ss'),
+            function='to_char',
+            output_field=CharField()
+        )).order_by('username', '-date_joined'). \
+            distinct('username').values_list('username', 'str_date_joined').get(
+            username=self.user1.username
+        )
+
+        for index, item in enumerate(reader):
+            if index == 0:
+                lst = ['username', 'str_date_joined']
+            else:
+                lst = list(user_list)
+
+            self.assertEqual(item, lst)
+
+            err.seek(0)
+            self.assertEqual(err.read(), '')
 
 
 class TestJobAvgQueueTime(TestBase2):
