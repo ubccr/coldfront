@@ -8,7 +8,6 @@ from coldfront.core.project.models import (SavioProjectAllocationRequest,
                                            Project,
                                            ProjectAllocationRequestStatusChoice,
                                            ProjectStatusChoice,
-                                           FieldOfScience,
                                            User)
 
 from io import StringIO
@@ -48,15 +47,13 @@ class TestGetSurveyResponses(TestCase):
                 username=f'test_user{index}', first_name='Test', last_name='User',
                 is_superuser=True)
 
-            fos = FieldOfScience.objects.all()[0]
             project_status = ProjectStatusChoice.objects.get(name='Active')
             allocation_status = ProjectAllocationRequestStatusChoice.objects.get(
                 name='Under Review')
 
             project_prefix = 'fc_' if index % 2 else ''
             project = Project.objects.create(name=f'{project_prefix}test_project{index}',
-                                             status=project_status,
-                                             field_of_science=fos)
+                                             status=project_status)
 
             survey_answers = {'a': f'answera_{index}', 'b': f'answerb_{index}'}
             kwargs = {
