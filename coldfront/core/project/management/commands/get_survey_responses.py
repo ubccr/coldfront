@@ -12,7 +12,9 @@ from csv import DictWriter
 
 class Command(BaseCommand):
 
-    help = ('Dump Survey Responses to STDOUT')
+    help = (
+        'Dump survey responses from new project requests to stdout in the '
+        'specified format.')
     logger = logging.getLogger(__name__)
 
     def add_arguments(self, parser):
@@ -20,7 +22,8 @@ class Command(BaseCommand):
         parser.add_argument('--format', help='Format to dump survey responses in',
                             type=str, required=True, choices=['json', 'csv'])
         parser.add_argument('--allowance_type', help='Dump responses for Projects with given prefix',
-                            type=str, required=False, default='', choices=['ac_', 'co_', 'fc_', 'ic_', 'pc_'])
+                            type=str, required=False, default='',
+                            choices=['ac_', 'co_', 'fc_', 'ic_', 'pc_'])
 
     def handle(self, *args, **options):
         """ Get all survey responses, and dump to stdout in specified format."""
@@ -30,7 +33,8 @@ class Command(BaseCommand):
         writer = getattr(self, f'to_{format}')
 
         objects = SavioProjectAllocationRequest.objects.filter(
-            project__name__istartswith=allowance_type).values_list('survey_answers', flat=True)
+            project__name__istartswith=allowance_type).values_list('survey_answers',
+                                                                   flat=True)
 
         writer(objects, output=options.get('stdout', stdout),
                error=options.get('stderr', stderr))
@@ -80,7 +84,7 @@ class Command(BaseCommand):
             return
 
         try:
-            json_output = json.dumps(list(query_set))
+            json_output = json.dumps(list(query_set), indent=4)
             output.writelines(json_output)
         except Exception as e:
             error.write(str(e))

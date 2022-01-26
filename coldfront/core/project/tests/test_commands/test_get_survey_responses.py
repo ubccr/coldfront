@@ -4,11 +4,17 @@ from django.contrib.auth.models import User
 from django.core.management import call_command
 
 
-from coldfront.core.project.models import SavioProjectAllocationRequest, Project, ProjectAllocationRequestStatusChoice, ProjectStatusChoice, FieldOfScience, User
+from coldfront.core.project.models import (SavioProjectAllocationRequest,
+                                           Project,
+                                           ProjectAllocationRequestStatusChoice,
+                                           ProjectStatusChoice,
+                                           FieldOfScience,
+                                           User)
 
 from io import StringIO
 import sys
 import json
+import os
 from csv import DictReader
 
 
@@ -18,6 +24,17 @@ class TestGetSurveyResponses(TestCase):
     """
 
     def setUp(self):
+        # run setup commands
+        out, err = StringIO(), StringIO()
+        commands = [
+            'add_default_project_choices',
+            'import_field_of_science_data'
+        ]
+        sys.stdout = open(os.devnull, 'w')
+        for command in commands:
+            call_command(command, stdout=out, stderr=err)
+        sys.stdout = sys.__stdout__
+
         # create dummy survey responses
         fixtures = []
         filtered_fixtures = []
@@ -28,22 +45,27 @@ class TestGetSurveyResponses(TestCase):
 
         for index in range(5):
             pi = User.objects.create(
-                username=f'test_user{index}', first_name='Test', last_name='User', is_superuser=True)
+                username=f'test_user{index}', first_name='Test', last_name='User',
+                is_superuser=True)
+
+            fos = FieldOfScience.objects.all()[0]
+            project_status = ProjectStatusChoice.objects.get(name='Active')
+            allocation_status = ProjectAllocationRequestStatusChoice.objects.get(
+                name='Under Review')
+
             project_prefix = 'fc_' if index % 2 else ''
-            project = Project.objects.create(name=f'{project_prefix}test_project{index}', status=ProjectStatusChoice.objects.create(
-                name='Active'), field_of_science=FieldOfScience.objects.create())
-            status = ProjectAllocationRequestStatusChoice.objects.create(
-                name='TEST')
+            project = Project.objects.create(name=f'{project_prefix}test_project{index}',
+                                             status=project_status,
+                                             field_of_science=fos)
 
             survey_answers = {'a': f'answera_{index}', 'b': f'answerb_{index}'}
-
             kwargs = {
                 'allocation_type': allocation_type,
                 'pi': pi,
                 'project': project,
                 'pool': pool,
                 'survey_answers': survey_answers,
-                'status': status,
+                'status': allocation_status,
                 'requester': pi
             }
 
