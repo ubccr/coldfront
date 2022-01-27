@@ -8,6 +8,7 @@ def create_resource_types(apps, schema_editor):
     for resource_attribute_type, attribute_type in (
             ('Vendor', 'Text'),
             ('Model', 'Text'),
+            ('SerialNumber', 'Text'),
             ('RackUnits', 'Int'),
             ('InstallDate', 'Date'),
             ('WarrantyExpirationDate', 'Date'),

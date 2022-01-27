@@ -32,6 +32,7 @@ class Command(BaseCommand):
             ('Status', 'Public/Private'),
             ('Vendor', 'Text'),
             ('Model', 'Text'),
+            ('SerialNumber', 'Text'),
             ('RackUnits', 'Int'),
             ('InstallDate', 'Date'),
             ('WarrantyExpirationDate', 'Date'),
