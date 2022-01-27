@@ -33,11 +33,16 @@ Purchase Service Units
 {% if not has_pending_request %}
   <a
       class="btn btn-primary"
-      href="{% url 'purchase-service-units' project.pk %}">
+      href="{% url 'purchase-service-units' project.pk %}"
+      id="continue-button-enabled">
     Continue
   </a>
 {% else %}
-  <button type="button" class="btn btn-primary" disabled>
+  <button
+      class="btn btn-primary"
+      id="continue-button-disabled"
+      type="button"
+      disabled>
     Continue
   </button>
 {% endif %}

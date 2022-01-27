@@ -172,10 +172,12 @@ class AllocationAdditionRequestDetailView(LoginRequiredMixin,
         return HttpResponseRedirect(reverse(self.list_view_name))
 
     def test_func(self):
-        """Allow superusers and staff. Allow active PIs and Managers of
-        the Project who have signed the Access Agreement."""
+        """Allow superusers and users with permission to view
+        AllocationAdditionRequests. Allow active PIs and Managers of the
+        Project who have signed the User Access Agreement."""
         user = self.request.user
-        if user.is_superuser or user.is_staff:
+        permission = 'allocation.view_allocationadditionrequest'
+        if user.is_superuser or user.has_perm(permission):
             return True
         if not access_agreement_signed(user):
             message = 'You must sign the User Access Agreement.'

@@ -1,8 +1,10 @@
 from django.contrib.auth.models import User
+from django.contrib.messages import get_messages
 from django.core.management import call_command
 from coldfront.core.utils.common import utc_now_offset_aware
 from django.test import Client
 from django.test import TestCase
+from http import HTTPStatus
 from io import StringIO
 import os
 import sys
@@ -36,6 +38,25 @@ class TestBase(TestCase):
         # Create a test client.
         self.client = Client()
 
+    def assert_has_access(self, url, user, has_access=True,
+                          expected_messages=[]):
+        """Assert that the given user has or does not have access to the
+        given URL. Optionally, assert that the given messages were sent
+        to the user.
+
+        This method assumes that all users have their passwords set to
+        self.password. It logs the user in and out.
+        """
+        self.client.login(username=user.username, password=self.password)
+        status_code = HTTPStatus.OK if has_access else HTTPStatus.FORBIDDEN
+        response = self.client.get(url)
+        if expected_messages:
+            actual_messages = self.get_message_strings(response)
+            for message in expected_messages:
+                self.assertIn(message, actual_messages)
+        self.assertEqual(response.status_code, status_code)
+        self.client.logout()
+
     def create_test_user(self):
         """Create a User with username 'test_user' and set this
         instance's 'user' attribute to it."""
@@ -47,6 +68,12 @@ class TestBase(TestCase):
         self.user.set_password(self.password)
         self.user.save()
         return self.user
+
+    @staticmethod
+    def get_message_strings(response):
+        """Return messages included in the given response as a list of
+        strings."""
+        return [str(m) for m in get_messages(response.wsgi_request)]
 
     @staticmethod
     def sign_user_access_agreement(user):
