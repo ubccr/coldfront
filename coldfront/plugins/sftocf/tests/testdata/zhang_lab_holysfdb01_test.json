@@ -1,0 +1,21 @@
+{"contents": [
+    {
+        "count": 3871,
+        "groupname": "zhang_lab",
+        "size_sum": 2300725371120,
+        "size_sum_hum": "2.1TiB",
+        "username": "minwu"
+    },
+    {
+        "count": 8407,
+        "groupname": "zhang_lab",
+        "size_sum": 1480316775635,
+        "size_sum_hum": "1.3TiB",
+        "username": "mtchen"
+    }
+],
+"date": "20211215",
+"path": "C/LABS",
+"server": "holysfdb01",
+"tier": "tier0",
+"volume": "holylfs05"}
