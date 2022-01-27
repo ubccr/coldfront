@@ -3,11 +3,14 @@ from copy import deepcopy
 from coldfront.core.allocation.models import AllocationAdditionRequest
 from coldfront.core.project.forms import MemorandumSignedForm
 from coldfront.core.project.forms import SavioProjectRechargeExtraFieldsForm
+from coldfront.core.project.forms import ReviewDenyForm
+from coldfront.core.project.utils_.addition_utils import AllocationAdditionDenialRunner
 from coldfront.core.project.utils_.addition_utils import AllocationAdditionProcessingRunner
 from coldfront.core.project.utils_.permissions_utils import is_user_manager_or_pi_of_project
 from coldfront.core.user.utils import access_agreement_signed
 from coldfront.core.utils.common import utc_now_offset_aware
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.mixins import UserPassesTestMixin
@@ -18,7 +21,9 @@ from django.views.generic import DetailView
 from django.views.generic import TemplateView
 from django.views.generic.edit import FormView
 
+import iso8601
 import logging
+import os
 
 """Views relating to reviewing requests to purchase more Service Units
 for a Project."""
@@ -80,6 +85,41 @@ class AllocationAdditionRequestDetailView(LoginRequiredMixin,
             - review_controls_visible: boolean
         """
         context = super().get_context_data(**kwargs)
+
+        try:
+            latest_update_timestamp = \
+                self.request_obj.latest_update_timestamp()
+            if not latest_update_timestamp:
+                latest_update_timestamp = 'No updates yet.'
+            else:
+                latest_update_timestamp = iso8601.parse_date(
+                    latest_update_timestamp)
+        except Exception as e:
+            logger.exception(e)
+            messages.error(self.request, self.error_message)
+            latest_update_timestamp = 'Failed to determine timestamp.'
+        context['latest_update_timestamp'] = latest_update_timestamp
+
+        if self.request_obj.status.name == 'Denied':
+            try:
+                denial_reason = self.request_obj.denial_reason()
+                category = denial_reason.category
+                justification = denial_reason.justification
+                timestamp = denial_reason.timestamp
+            except Exception as e:
+                logger.exception(e)
+                messages.error(self.request, self.error_message)
+                category = 'Unknown Category'
+                justification = (
+                    'Failed to determine denial reason. Please contact an '
+                    'administrator.')
+                timestamp = 'Unknown Timestamp'
+            context['denial_reason'] = {
+                'category': category,
+                'justification': justification,
+                'timestamp': timestamp,
+            }
+            context['support_email'] = settings.CENTER_HELP_EMAIL
 
         initial = deepcopy(self.request_obj.extra_fields)
         initial['num_service_units'] = self.request_obj.num_service_units
@@ -202,19 +242,16 @@ class AllocationAdditionRequestListView(LoginRequiredMixin, TemplateView):
         return order_by
 
 
-class AllocationAdditionReviewMemorandumSignedView(LoginRequiredMixin,
-                                                   UserPassesTestMixin,
-                                                   FormView):
-    """A view that allows administrators to confirm that the Memorandum
-    of Understanding has been signed and that funds have been
-    transferred."""
+class AllocationAdditionReviewBase(LoginRequiredMixin, UserPassesTestMixin,
+                                   FormView):
+    """A base class for views for reviewing an
+    AllocationAdditionRequest."""
 
-    form_class = MemorandumSignedForm
-    template_name = (
-        'project/project_allocation_addition/review_memorandum_signed.html')
     login_url = '/'
 
+    error_message = 'Unexpected failure. Please contact an administrator.'
     request_obj = None
+    template_dir = 'project/project_allocation_addition'
 
     def dispatch(self, request, *args, **kwargs):
         """Store the AllocationAdditionRequest object for reuse. If it
@@ -230,6 +267,96 @@ class AllocationAdditionReviewMemorandumSignedView(LoginRequiredMixin,
                     'service-units-purchase-request-detail',
                     kwargs={'pk': pk}))
         return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        """Set the following variables:
+            - addition_request: AllocationAdditionRequest instance
+            - num_service_units: Decimal
+            - purchase_details_form: Form instance
+        """
+        context = super().get_context_data(**kwargs)
+        context['addition_request'] = self.request_obj
+        initial = deepcopy(self.request_obj.extra_fields)
+        initial['num_service_units'] = self.request_obj.num_service_units
+        context['purchase_details_form'] = SavioProjectRechargeExtraFieldsForm(
+            initial=initial, disable_fields=True)
+        return context
+
+    def get_form_class(self):
+        raise NotImplementedError
+
+    def get_initial(self):
+        return super().get_initial()
+
+    def get_success_url(self):
+        """On success, redirect to the detail view."""
+        return reverse(
+            'service-units-purchase-request-detail',
+            kwargs={'pk': self.kwargs.get('pk')})
+
+    def get_template_names(self):
+        raise NotImplementedError
+
+    def test_func(self):
+        """Allow superusers."""
+        if self.request.user.is_superuser:
+            return True
+        message = 'You do not have permission to view the previous page.'
+        messages.error(self.request, message)
+        return False
+
+
+class AllocationAdditionReviewDenyView(AllocationAdditionReviewBase):
+    """A view that allows administrators to deny an
+    AllocationAdditionRequest."""
+
+    def form_valid(self, form):
+        """Update the relevant entry in the request's state with the
+        specified justification and the current timestamp. Run denial
+        steps."""
+        form_data = form.cleaned_data
+        justification = form_data['justification']
+        timestamp = utc_now_offset_aware().isoformat()
+        self.request_obj.state['other'] = {
+            'justification': justification,
+            'timestamp': timestamp,
+        }
+        self.request_obj.save()
+
+        try:
+            runner = AllocationAdditionDenialRunner(self.request_obj)
+            runner.run()
+        except Exception as e:
+            logger.exception(e)
+            messages.error(self.request, self.error_message)
+        else:
+            message = f'Request {self.request_obj.pk} has been denied.'
+            messages.success(self.request, message)
+
+        return super().form_valid(form)
+
+    def get_form_class(self):
+        return ReviewDenyForm
+
+    def get_initial(self):
+        """Pre-populate the form with the existing value of the relevant
+        entry from the request's state."""
+        initial = super().get_initial()
+        other = self.request_obj.state['other']
+        initial['justification'] = other['justification']
+        return initial
+
+    def get_template_names(self):
+        return [os.path.join(self.template_dir, 'review_deny.html')]
+
+
+class AllocationAdditionReviewMemorandumSignedView(AllocationAdditionReviewBase):
+    """A view that allows administrators to confirm that the Memorandum
+    of Understanding has been signed and that funds have been
+    transferred."""
 
     def form_valid(self, form):
         """Update the relevant entry in the request's state with the
@@ -252,19 +379,8 @@ class AllocationAdditionReviewMemorandumSignedView(LoginRequiredMixin,
 
         return super().form_valid(form)
 
-    def get_context_data(self, **kwargs):
-        """Set the following variables:
-            - addition_request: AllocationAdditionRequest instance
-            - num_service_units: Decimal
-            - purchase_details_form: Form instance
-        """
-        context = super().get_context_data(**kwargs)
-        context['addition_request'] = self.request_obj
-        initial = deepcopy(self.request_obj.extra_fields)
-        initial['num_service_units'] = self.request_obj.num_service_units
-        context['purchase_details_form'] = SavioProjectRechargeExtraFieldsForm(
-            initial=initial, disable_fields=True)
-        return context
+    def get_form_class(self):
+        return MemorandumSignedForm
 
     def get_initial(self):
         """Pre-populate the form with the existing value of the relevant
@@ -274,16 +390,6 @@ class AllocationAdditionReviewMemorandumSignedView(LoginRequiredMixin,
         initial['status'] = memorandum_signed['status']
         return initial
 
-    def get_success_url(self):
-        """On success, redirect to the detail view."""
-        return reverse(
-            'service-units-purchase-request-detail',
-            kwargs={'pk': self.kwargs.get('pk')})
-
-    def test_func(self):
-        """Allow superusers."""
-        if self.request.user.is_superuser:
-            return True
-        message = 'You do not have permission to view the previous page.'
-        messages.error(self.request, message)
-        return False
+    def get_template_names(self):
+        return [
+            os.path.join(self.template_dir, 'review_memorandum_signed.html')]

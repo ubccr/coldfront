@@ -14,8 +14,8 @@ from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.common import validate_num_service_units
 from coldfront.core.utils.mail import send_email_template
 
+from collections import namedtuple
 from decimal import Decimal
-
 from django.conf import settings
 
 import logging
@@ -32,7 +32,12 @@ class AllocationAdditionRunnerBase(object):
     should inherit from."""
 
     def __init__(self, request_obj, *args, **kwargs):
+        """Store the given AllocationAdditionRequest. If it has an
+        unexpected status, raise an error."""
         self.request_obj = request_obj
+        expected_status = AllocationAdditionRequestStatusChoice.objects.get(
+            name='Under Review')
+        self.assert_request_status(expected_status)
 
     def assert_request_status(self, expected_status):
         """Raise an assertion error if the request does not have the
@@ -48,6 +53,50 @@ class AllocationAdditionRunnerBase(object):
         raise NotImplementedError('This method is not implemented.')
 
 
+class AllocationAdditionDenialRunner(AllocationAdditionRunnerBase):
+    """An object that performs necessary database changes when an
+    AllocationAdditionRequest is denied."""
+
+    def deny_request(self):
+        """Set the status of the request to 'Denied'."""
+        self.request_obj.status = \
+            AllocationAdditionRequestStatusChoice.objects.get(name='Denied')
+        self.request_obj.save()
+
+    def run(self):
+        """Deny the request and send notification emails."""
+        self.deny_request()
+        self.send_email()
+
+    def send_email(self):
+        """Send a notification email to the managers and PIs (who have
+        notifications enabled) of the requested Project, stating that
+        the request has been denied."""
+        try:
+            request = self.request_obj
+            project = request.project
+            reason = request.denial_reason()
+
+            subject = f'Service Units Purchase Request ({project.name}) Denied'
+            template_name = (
+                'email/project_allocation_addition/request_denied.txt')
+            context = {
+                'num_sus': str(request.num_service_units),
+                'project_name': project.name,
+                'reason_category': reason.category,
+                'reason_justification': reason.justification,
+                'signature': settings.EMAIL_SIGNATURE,
+                'support_email': settings.CENTER_HELP_EMAIL,
+            }
+            sender = settings.EMAIL_SENDER
+            receiver_list = project_email_receiver_list(project)
+            send_email_template(
+                subject, template_name, context, sender, receiver_list)
+        except Exception as e:
+            logger.error('Failed to send notification email. Details:')
+            logger.exception(e)
+
+
 class AllocationAdditionProcessingRunner(AllocationAdditionRunnerBase):
     """An object that performs necessary database changes when an
     AllocationAdditionRequest is processed."""
@@ -55,18 +104,14 @@ class AllocationAdditionProcessingRunner(AllocationAdditionRunnerBase):
     accounting_objects = None
 
     def __init__(self, request_obj):
-        """Store the given addition request. If it has an unexpected
-        status, if it has an invalid number of service units, or if an
-        expected database object does not exist, raise an error."""
+        """If the request has an invalid number of service units or if
+        an expected database object does not exist, raise an error."""
         super().__init__(request_obj)
-        expected_status = AllocationAdditionRequestStatusChoice.objects.get(
-            name='Under Review')
-        self.assert_request_status(expected_status)
         validate_num_service_units(self.request_obj.num_service_units)
         self.accounting_objects = get_accounting_allocation_objects(
             self.request_obj.project)
 
-    def complete_request(self, ):
+    def complete_request(self):
         """Set the status of the request to 'Complete' and set its
         completion_time."""
         self.request_obj.status = \

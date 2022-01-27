@@ -206,6 +206,7 @@ urlpatterns += [
 # TODO: Integrate this section with the rest.
 from coldfront.core.project.views_.addition_views.approval_views import AllocationAdditionRequestDetailView
 from coldfront.core.project.views_.addition_views.approval_views import AllocationAdditionRequestListView
+from coldfront.core.project.views_.addition_views.approval_views import AllocationAdditionReviewDenyView
 from coldfront.core.project.views_.addition_views.approval_views import AllocationAdditionReviewMemorandumSignedView
 from coldfront.core.project.views_.addition_views.request_views import AllocationAdditionRequestLandingView
 from coldfront.core.project.views_.addition_views.request_views import AllocationAdditionRequestView
@@ -230,5 +231,7 @@ urlpatterns += [
     path('service-units-purchase-request/<int:pk>/memorandum-signed',
          AllocationAdditionReviewMemorandumSignedView.as_view(),
          name='service-units-purchase-request-review-memorandum-signed'),
-
+    path('service-units-purchase-request/<int:pk>/deny',
+         AllocationAdditionReviewDenyView.as_view(),
+         name='service-units-purchase-request-review-deny'),
 ]

@@ -152,15 +152,23 @@ Service Units Purchase Request Detail
         <form action="" method="post">
           {% csrf_token %}
           <button type="submit" class="btn btn-primary">Submit</button>
-          <a href="" class="btn btn-secondary">Cancel</a>
-          <a href="" class="btn btn-danger" style="float: right;">
+          <a href="{% url 'service-units-purchase-pending-request-list' %}" class="btn btn-secondary">Cancel</a>
+          <a
+              href="{% url 'service-units-purchase-request-review-deny' addition_request.pk %}"
+              class="btn btn-danger" style="float: right;">
             Deny For Other Reason
           </a>
         </form>
       {% else %}
         <button type="button" class="btn btn-primary" disabled>Submit</button>
-        <a href="" class="btn btn-secondary">Cancel</a>
-        <a href="" class="btn btn-danger" style="float: right;">
+        <a
+            href="{% url 'service-units-purchase-pending-request-list' %}"
+            class="btn btn-secondary">
+          Cancel
+        </a>
+        <a
+            href="{% url 'service-units-purchase-request-review-deny' addition_request.pk %}"
+            class="btn btn-danger" style="float: right;">
           Deny For Other Reason
         </a>
       {% endif %}

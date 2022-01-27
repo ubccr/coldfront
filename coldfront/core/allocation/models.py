@@ -2,6 +2,7 @@ import datetime
 import importlib
 import logging
 from ast import literal_eval
+from collections import namedtuple
 from decimal import Decimal
 
 from django.conf import settings
@@ -569,3 +570,38 @@ class AllocationAdditionRequest(TimeStampedModel):
         project_name = self.project.name
         num_sus = self.num_service_units
         return f'Addition Request ({project_name}, {num_sus})'
+
+    def denial_reason(self):
+        """Return a namedtuple representing the reason why the request
+        was denied, based on its 'state' field. Raise a ValueError if it
+        doesn't have the 'Denied' status or if it has an unexpected
+        state."""
+        if self.status.name != 'Denied':
+            raise ValueError(
+                f'The request has unexpected status {self.status.name}.')
+        state = self.state
+        other = state['other']
+        if other['timestamp']:
+            category = 'Other'
+            justification = other['justification']
+            timestamp = other['timestamp']
+        else:
+            raise ValueError('The request has an unexpected state.')
+        DenialReason = namedtuple(
+            'DenialReason', 'category justification timestamp')
+        return DenialReason(
+            category=category, justification=justification,
+            timestamp=timestamp)
+
+    def latest_update_timestamp(self):
+        """Return the latest timestamp stored in the request's 'state'
+        field, or the empty string.
+
+        The expected values are ISO 8601 strings, or the empty string,
+        so taking the maximum should provide the correct output."""
+        state = self.state
+        max_timestamp = ''
+        for field in state:
+            max_timestamp = max(
+                max_timestamp, state[field].get('timestamp', ''))
+        return max_timestamp
