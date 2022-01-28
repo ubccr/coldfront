@@ -4,8 +4,6 @@ from coldfront.api.statistics.utils import create_project_allocation
 from coldfront.api.statistics.utils import set_project_usage_value
 from coldfront.core.allocation.models import AllocationAdditionRequest
 from coldfront.core.allocation.models import AllocationAdditionRequestStatusChoice
-from coldfront.core.project.models import Project
-from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
@@ -30,26 +28,6 @@ class TestAllocationAdditionRequestLandingView(TestBase):
         self.client.login(username=self.user.username, password=self.password)
 
     @staticmethod
-    def create_active_project(project_name, pi_user):
-        """Create an 'Active' Project with the given name and the given
-        user as its PI. Return the Project."""
-        active_project_status = ProjectStatusChoice.objects.get(name='Active')
-        project = Project.objects.create(
-            name=project_name,
-            title=project_name,
-            status=active_project_status)
-        pi_role = ProjectUserRoleChoice.objects.get(
-            name='Principal Investigator')
-        active_project_user_status = ProjectUserStatusChoice.objects.get(
-            name='Active')
-        ProjectUser.objects.create(
-            project=project,
-            role=pi_role,
-            status=active_project_user_status,
-            user=pi_user)
-        return project
-
-    @staticmethod
     def landing_view_url(pk):
         """Return the URL to the request landing view for the Project
         with the given primary key."""
@@ -70,7 +48,7 @@ class TestAllocationAdditionRequestLandingView(TestBase):
     def test_allocation_usage_displayed(self):
         """Test that the project's current 'Service Units' usage of its
         total allocation is displayed on a GET request."""
-        project = self.create_active_project('ac_project', self.user)
+        project = self.create_active_project_with_pi('ac_project', self.user)
 
         allocation_value = Decimal('1000.00')
         usage_value = Decimal('500.00')
@@ -88,7 +66,7 @@ class TestAllocationAdditionRequestLandingView(TestBase):
         """Test that, if the Project already has an 'Under Review'
         request, the button redirecting to the form to request another
         is disabled."""
-        project = self.create_active_project('ac_project', self.user)
+        project = self.create_active_project_with_pi('ac_project', self.user)
 
         allocation_value = Decimal('1000.00')
         usage_value = Decimal('500.00')
@@ -103,11 +81,12 @@ class TestAllocationAdditionRequestLandingView(TestBase):
                 name='Complete'),
             num_service_units=Decimal('1000.00'))
 
+        url = self.landing_view_url(project.pk)
+
         for status in AllocationAdditionRequestStatusChoice.objects.all():
             request.status = status
             request.save()
 
-            url = self.landing_view_url(project.pk)
             response = self.client.get(url)
             html = response.content.decode('utf-8')
             soup = BeautifulSoup(html, 'html.parser')
@@ -125,7 +104,7 @@ class TestAllocationAdditionRequestLandingView(TestBase):
         """Test that GET requests for ineligible Projects are redirected
         back to the Project's Detail view."""
         for prefix in ('ac_', 'co_', 'fc_', 'ic_', 'pc_'):
-            project = self.create_active_project(
+            project = self.create_active_project_with_pi(
                 f'{prefix}project', self.user)
             url = self.landing_view_url(project.pk)
             response = self.client.get(url)
@@ -142,7 +121,7 @@ class TestAllocationAdditionRequestLandingView(TestBase):
     def test_permissions_get(self):
         """Test that the correct users have permissions to perform GET
         requests."""
-        project = self.create_active_project('ac_project', self.user)
+        project = self.create_active_project_with_pi('ac_project', self.user)
         url = self.landing_view_url(project.pk)
 
         project_user = ProjectUser.objects.get(project=project, user=self.user)
@@ -177,8 +156,8 @@ class TestAllocationAdditionRequestLandingView(TestBase):
 
         project_user.delete()
 
-        # Users with the permission to view should have access. (Re-fetch the
-        # user to avoid permission caching.)
+        # Users with the permission to view AllocationAdditionRequests should
+        # have access. (Re-fetch the user to avoid permission caching.)
         permission = Permission.objects.get(
             codename='view_allocationadditionrequest')
         self.user.user_permissions.add(permission)

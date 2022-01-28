@@ -1,6 +1,11 @@
 from django.contrib.auth.models import User
 from django.contrib.messages import get_messages
 from django.core.management import call_command
+from coldfront.core.project.models import Project
+from coldfront.core.project.models import ProjectStatusChoice
+from coldfront.core.project.models import ProjectUser
+from coldfront.core.project.models import ProjectUserRoleChoice
+from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.utils.common import utc_now_offset_aware
 from django.test import Client
 from django.test import TestCase
@@ -56,6 +61,26 @@ class TestBase(TestCase):
                 self.assertIn(message, actual_messages)
         self.assertEqual(response.status_code, status_code)
         self.client.logout()
+
+    @staticmethod
+    def create_active_project_with_pi(project_name, pi_user):
+        """Create an 'Active' Project with the given name and the given
+        user as its PI. Return the Project."""
+        active_project_status = ProjectStatusChoice.objects.get(name='Active')
+        project = Project.objects.create(
+            name=project_name,
+            title=project_name,
+            status=active_project_status)
+        pi_role = ProjectUserRoleChoice.objects.get(
+            name='Principal Investigator')
+        active_project_user_status = ProjectUserStatusChoice.objects.get(
+            name='Active')
+        ProjectUser.objects.create(
+            project=project,
+            role=pi_role,
+            status=active_project_user_status,
+            user=pi_user)
+        return project
 
     def create_test_user(self):
         """Create a User with username 'test_user' and set this
