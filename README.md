@@ -166,6 +166,8 @@ application should be served.
     python manage.py sqlflush | python manage.py dbshell
     # Load from the dump file.
     sh bootstrap/development/load_database_backup.sh /absolute/path/to/dump.file
+    # Set user passwords.
+    python manage.py set_passwords --password <password>
     ```
 
 ### Miscellanea
