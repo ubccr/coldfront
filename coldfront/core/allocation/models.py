@@ -23,6 +23,9 @@ ALLOCATION_ATTRIBUTE_VIEW_LIST = import_from_settings(
     'ALLOCATION_ATTRIBUTE_VIEW_LIST', [])
 ALLOCATION_FUNCS_ON_EXPIRE = import_from_settings(
     'ALLOCATION_FUNCS_ON_EXPIRE', [])
+ALLOCATION_RESOURCE_ORDERING = import_from_settings(
+    'ALLOCATION_RESOURCE_ORDERING',
+    ['-is_allocatable', 'name'])
 
 
 class AllocationStatusChoice(TimeStampedModel):
@@ -131,7 +134,8 @@ class Allocation(TimeStampedModel):
 
     @property
     def get_resources_as_string(self):
-        return ', '.join([ele.name for ele in self.resources.all().order_by('-is_allocatable')])
+        return ', '.join([ele.name for ele in self.resources.all().order_by(
+            *ALLOCATION_RESOURCE_ORDERING)])
 
     @property
     def get_resources_as_list(self):
@@ -142,7 +146,12 @@ class Allocation(TimeStampedModel):
         if self.resources.count() == 1:
             return self.resources.first()
         else:
-            return self.resources.filter(is_allocatable=True).first()
+            parent = self.resources.order_by(
+                *ALLOCATION_RESOURCE_ORDERING).first()
+            if parent:
+                return parent
+            # Fallback
+            return self.resources.first()
 
     def get_attribute(self, name, expand=True, typed=True,
         extra_allocations=[]):

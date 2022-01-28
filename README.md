@@ -18,6 +18,13 @@ Python and released under the GPLv3 license.
 - Integration with 3rd party systems for automation and access control
 - Center director approval system and annual project reviews
 
+## Community Supported Plugins
+
+- [OpenStack Plugin](https://github.com/nerc-project/coldfront-plugin-openstack)
+- [Keycloak User Search](https://github.com/nerc-project/coldfront-plugin-keycloak)
+
+_Submit a PR to add your plugin to the list above._
+
 ## Documentation
 
 For more information on installing and using ColdFront see our [documentation here](https://coldfront.readthedocs.io)

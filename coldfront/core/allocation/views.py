@@ -206,6 +206,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             'end_date': allocation_obj.end_date,
             'start_date': allocation_obj.start_date,
             'description': allocation_obj.description,
+            'is_locked': allocation_obj.is_locked,
             'is_changeable': allocation_obj.is_changeable,
         }
 
@@ -230,6 +231,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             'end_date': allocation_obj.end_date,
             'start_date': allocation_obj.start_date,
             'description': allocation_obj.description,
+            'is_locked': allocation_obj.is_locked,
             'is_changeable': allocation_obj.is_changeable,
         }
         form = AllocationUpdateForm(request.POST, initial=initial_data)
@@ -239,25 +241,27 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             end_date = form_data.get('end_date')
             start_date = form_data.get('start_date')
             description = form_data.get('description')
+            is_locked = form_data.get('is_locked')
             is_changeable = form_data.get('is_changeable')
 
             allocation_obj.description = description
             allocation_obj.save()
 
-            if not start_date:
-                start_date = datetime.datetime.now()
-            if not end_date:
-                end_date = datetime.datetime.now(
-                ) + relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)
-
-            allocation_obj.end_date = end_date
-
             old_status = allocation_obj.status.name
             new_status = form_data.get('status').name
 
             allocation_obj.status = form_data.get('status')
+            allocation_obj.is_locked = is_locked
             allocation_obj.is_changeable = is_changeable
             allocation_obj.save()
+
+            if start_date and allocation_obj.start_date != start_date:
+                allocation_obj.start_date = start_date
+                allocation_obj.save()
+
+            if end_date and allocation_obj.end_date != end_date:
+                allocation_obj.end_date = end_date
+                allocation_obj.save()
 
             if EMAIL_ENABLED:
                 resource_name = allocation_obj.get_parent_resource
@@ -266,7 +270,14 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                     'allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
             if old_status != 'Active' and new_status == 'Active':
+                if not start_date:
+                    start_date = datetime.datetime.now()
+                if not end_date:
+                    end_date = datetime.datetime.now(
+                    ) + relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)
+
                 allocation_obj.start_date = start_date
+                allocation_obj.end_date = end_date
                 allocation_obj.save()
 
                 allocation_activate.send(
@@ -334,15 +345,12 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                         email_receiver_list
                     )
 
+            elif old_status != 'New' and new_status == 'New':
+                allocation_obj.start_date = None
+                allocation_obj.end_date = None
+                allocation_obj.save()
+
             allocation_obj.refresh_from_db()
-
-            if start_date and allocation_obj.start_date != start_date:
-                allocation_obj.start_date = start_date
-                allocation_obj.save()
-
-            if end_date and allocation_obj.end_date != end_date:
-                allocation_obj.end_date = end_date
-                allocation_obj.save()
 
             messages.success(request, 'Allocation updated!')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
@@ -464,6 +472,8 @@ class AllocationListView(LoginRequiredMixin, ListView):
                     if isinstance(value, QuerySet):
                         for ele in value:
                             filter_parameters += '{}={}&'.format(key, ele.pk)
+                    elif hasattr(value, 'pk'):
+                        filter_parameters += '{}={}&'.format(key, value.pk)                              
                     else:
                         filter_parameters += '{}={}&'.format(key, value)
             context['allocation_search_form'] = allocation_search_form
@@ -1020,6 +1030,48 @@ class AllocationAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Tem
         return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
 
+class AllocationNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    model = AllocationUserNote
+    fields = '__all__'
+    template_name = 'allocation/allocation_note_create.html'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+
+        if self.request.user.is_superuser:
+            return True
+        else:
+            messages.error(
+                self.request, 'You do not have permission to add allocation notes.')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        pk = self.kwargs.get('pk')
+        allocation_obj = get_object_or_404(Allocation, pk=pk)
+        context['allocation'] = allocation_obj
+        return context
+
+    def get_initial(self):
+        initial = super().get_initial()
+        pk = self.kwargs.get('pk')
+        allocation_obj = get_object_or_404(Allocation, pk=pk)
+        author = self.request.user
+        initial['allocation'] = allocation_obj
+        initial['author'] = author
+        return initial
+
+    def get_form(self, form_class=None):
+        """Return an instance of the form to be used in this view."""
+        form = super().get_form(form_class)
+        form.fields['allocation'].widget = forms.HiddenInput()
+        form.fields['author'].widget = forms.HiddenInput()
+        form.order_fields([ 'allocation', 'author', 'note', 'is_private' ])
+        return form
+
+    def get_success_url(self):
+        return reverse('allocation-detail', kwargs={'pk': self.kwargs.get('pk')})
+
+
 class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'allocation/allocation_request_list.html'
     login_url = '/'
@@ -1042,6 +1094,7 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
             status__name__in=['New', 'Renewal Requested', 'Paid', ])
         context['allocation_list'] = allocation_list
         context['PROJECT_ENABLE_PROJECT_REVIEW'] = PROJECT_ENABLE_PROJECT_REVIEW
+        context['ALLOCATION_DEFAULT_ALLOCATION_LENGTH'] = ALLOCATION_DEFAULT_ALLOCATION_LENGTH
         return context
 
 
@@ -1115,7 +1168,10 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
                 email_receiver_list
             )
 
-        return HttpResponseRedirect(reverse('allocation-request-list'))
+        if 'request-list' in request.path:
+            return HttpResponseRedirect(reverse('allocation-request-list'))
+        else:
+            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
 
 class AllocationDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
@@ -1184,7 +1240,11 @@ class AllocationDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
                 EMAIL_SENDER,
                 email_receiver_list
             )
-        return HttpResponseRedirect(reverse('allocation-request-list'))
+        if 'request-list' in request.path:
+            return HttpResponseRedirect(reverse('allocation-request-list'))
+        else:
+            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
+
 
 
 class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
