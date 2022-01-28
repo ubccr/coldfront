@@ -70,26 +70,12 @@ class TestAllocationRenewalRequestReviewDenyView(TestBase):
     def test_permissions_get(self):
         """Test that the correct users have permissions to perform GET
         requests."""
-
-        def assert_has_access(user, has_access=True, expected_messages=[]):
-            """Assert that the given user has or does not have access to
-            the URL. Optionally assert that any messages were sent to
-            the user."""
-            self.client.login(username=user.username, password=self.password)
-            url = self.pi_allocation_renewal_request_review_deny_url(
-                self.allocation_renewal_request.pk)
-            status_code = HTTPStatus.OK if has_access else HTTPStatus.FORBIDDEN
-            response = self.client.get(url)
-            if expected_messages:
-                actual_messages = self.get_message_strings(response)
-                for message in expected_messages:
-                    self.assertIn(message, actual_messages)
-            self.assertEqual(response.status_code, status_code)
-            self.client.logout()
+        url = self.pi_allocation_renewal_request_review_deny_url(
+            self.allocation_renewal_request.pk)
 
         # Superusers should have access.
         self.assertTrue(self.user.is_superuser)
-        assert_has_access(self.user)
+        self.assert_has_access(url, self.user)
 
         # Non-superusers should not have access.
         self.user.is_superuser = False
@@ -97,8 +83,9 @@ class TestAllocationRenewalRequestReviewDenyView(TestBase):
         expected_messages = [
             'You do not have permission to view the previous page.',
         ]
-        assert_has_access(
-            self.user, has_access=False, expected_messages=expected_messages)
+        self.assert_has_access(
+            url, self.user, has_access=False,
+            expected_messages=expected_messages)
 
     def test_permissions_post(self):
         """Test that the correct users have permissions to perform POST
