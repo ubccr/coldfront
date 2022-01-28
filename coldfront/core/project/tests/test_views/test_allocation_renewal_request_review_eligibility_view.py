@@ -63,8 +63,9 @@ class TestAllocationRenewalRequestReviewEligibilityView(TestBase):
 
     @staticmethod
     def pi_allocation_renewal_request_review_eligibility_url(pk):
-        """Return the URL for the view for denying the
-        AllocationRenewalRequest with the given primary key."""
+        """Return the URL for the view for reviewing the eligibility of
+        the PI of the AllocationRenewalRequest with the given primary
+        key."""
         return reverse(
             'pi-allocation-renewal-request-review-eligibility',
             kwargs={'pk': pk})
