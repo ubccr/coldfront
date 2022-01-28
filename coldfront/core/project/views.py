@@ -72,6 +72,7 @@ from coldfront.core.project.utils import (add_vector_user_to_designated_savio_pr
                                           VectorProjectApprovalRunner,
                                           vector_request_denial_reason,)
 from coldfront.core.project.utils_.addition_utils import can_project_purchase_service_units
+from coldfront.core.project.utils_.permissions_utils import is_user_manager_or_pi_of_project
 from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestRunner
 from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
 from coldfront.core.project.utils_.renewal_utils import is_any_project_pi_renewable
@@ -264,10 +265,11 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 is_any_project_pi_renewable(
                     self.object, get_current_allocation_period()))
 
-        # Display the "Purhcase Service Units" button for eligible allocation
-        # types.
-        context['purchase_sus_visible'] = can_project_purchase_service_units(
-            self.object)
+        # Display the "Purchase Service Units" button for eligible allocation
+        # types, for those allowed to update the project.
+        context['purchase_sus_visible'] = (
+            can_project_purchase_service_units(self.object) and
+            context.get('is_allowed_to_update_project', False))
 
         return context
 
