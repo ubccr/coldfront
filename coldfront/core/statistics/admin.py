@@ -24,6 +24,7 @@ class ProjectUserTransactionAdmin(admin.ModelAdmin):
     get_user.short_description = 'User'
     get_user.admin_order_field = 'project_user__user'
 
+
 @admin.register(Job)
 class JobAdmin(admin.ModelAdmin):
     list_display = ('jobslurmid', 'userid', 'accountid', 'jobstatus', 'partition')
@@ -37,7 +38,6 @@ class JobAdmin(admin.ModelAdmin):
 
     def has_change_permission(self, request, obj=None):
         return False
-
 
 
 admin.register(CPU)
