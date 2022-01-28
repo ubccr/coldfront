@@ -199,13 +199,15 @@ class AllocationAdditionProcessingRunner(AllocationAdditionRunnerBase):
         for project_user in project.projectuser_set.all():
             user = project_user.user
 
-            set_project_user_allocation_value(user, project, num_service_units)
+            allocation_updated = set_project_user_allocation_value(
+                user, project, num_service_units)
             set_project_user_usage_value(user, project, Decimal('0.00'))
 
-            ProjectUserTransaction.objects.create(
-                project_user=project_user,
-                date_time=date_time,
-                allocation=num_service_units)
+            if allocation_updated:
+                ProjectUserTransaction.objects.create(
+                    project_user=project_user,
+                    date_time=date_time,
+                    allocation=num_service_units)
 
 
 def can_project_purchase_service_units(project):

@@ -778,11 +778,13 @@ class SavioProjectApprovalRunner(ProjectApprovalRunner):
         date_time = utc_now_offset_aware()
         for project_user in project.projectuser_set.all():
             user = project_user.user
-            set_project_user_allocation_value(user, project, value)
-            ProjectUserTransaction.objects.create(
-                project_user=project_user,
-                date_time=date_time,
-                allocation=Decimal(value))
+            allocation_updated = set_project_user_allocation_value(
+                user, project, value)
+            if allocation_updated:
+                ProjectUserTransaction.objects.create(
+                    project_user=project_user,
+                    date_time=date_time,
+                    allocation=Decimal(value))
 
 
 class VectorProjectApprovalRunner(ProjectApprovalRunner):
