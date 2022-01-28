@@ -183,7 +183,7 @@ class AllocationAdditionRequestDetailView(LoginRequiredMixin,
             message = 'You must sign the User Access Agreement.'
             messages.error(self.request, message)
             return False
-        if is_user_manager_or_pi_of_project(user, self.project_obj):
+        if is_user_manager_or_pi_of_project(user, self.request_obj.project):
             return True
         message = 'You must be an active PI or manager of the Project.'
         messages.error(self.request, message)
