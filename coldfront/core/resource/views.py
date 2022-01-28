@@ -204,40 +204,12 @@ class ResourceListView(LoginRequiredMixin, ListView):
 
         if resource_search_form.is_valid():
             data = resource_search_form.cleaned_data
-            if data.get('show_all_resources') and (self.request.user.is_superuser or self.request.user.has_perm('resource.can_view_all_resources')):
-                resources = Resource.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
-                    status__name__in=['New', 'Active', ]).order_by(order_by)
+            if data.get('show_all_resources') and (self.request.user.is_superuser or self.request.user.is_staff):
+                resources = Resource.objects.all().order_by(order_by)
             else:
-                resources = Resource.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
-                    Q(status__name__in=['New', 'Active', ]) &
-                    Q(resourceuser__user=self.request.user) &
-                    Q(resourceuser__status__name='Active')
-                ).order_by(order_by)
-
-            # Last Name
-            if data.get('last_name'):
-                resources = resources.filter(
-                    pi__last_name__icontains=data.get('last_name'))
-
-            # Username
-            if data.get('username'):
-                resources = resources.filter(
-                    Q(pi__username__icontains=data.get('username')) |
-                    Q(resourceuser__user__username__icontains=data.get('username')) &
-                    Q(resourceuser__status__name='Active')
-                )
-
-            # Field of Science
-            if data.get('field_of_science'):
-                resources = resources.filter(
-                    field_of_science__description__icontains=data.get('field_of_science'))
-
+                resources = Resource.objects.all().order_by(order_by)
         else:
-            resources = Resource.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
-                Q(status__name__in=['New', 'Active', ]) &
-                Q(resourceuser__user=self.request.user) &
-                Q(resourceuser__status__name='Active')
-            ).order_by(order_by)
+            resources = Resource.objects.all().order_by(order_by)
 
         return resources.distinct()
 

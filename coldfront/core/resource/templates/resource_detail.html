@@ -138,7 +138,7 @@ Resource Detail
             <tbody>
               {% for child in child_resources %}
                   <tr>
-                    <td>{{child.object}}</td>
+                    <td><a href="{% url 'resource-detail' child.object.pk %}">{{child.object}}</a></td>
                     <td>{{child.WarrantyExpirationDate}}</td>
                     <td>{{child.ServiceEnd}}</td>
                     <td>{{child.Vendor}}</td>
