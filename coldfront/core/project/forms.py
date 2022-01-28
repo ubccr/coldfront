@@ -113,7 +113,6 @@ class ProjectReviewForm(forms.Form):
 
 
 class ProjectReviewEmailForm(forms.Form):
-    """Currently not in use."""
     cc = forms.CharField(
         required=False
     )
@@ -127,6 +126,21 @@ class ProjectReviewEmailForm(forms.Form):
         project_review_obj = get_object_or_404(ProjectReview, pk=int(pk))
         self.fields['email_body'].initial = 'Dear {} {} \n{}'.format(
             project_review_obj.project.pi.first_name, project_review_obj.project.pi.last_name, EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL)
+        self.fields['cc'].initial = ', '.join(
+            [EMAIL_DIRECTOR_EMAIL_ADDRESS] + EMAIL_ADMIN_LIST)
+
+
+class ProjectRequestEmailForm(forms.Form):
+    cc = forms.CharField(
+        required=False
+    )
+    email_body = forms.CharField(
+        required=True,
+        widget=forms.Textarea
+    )
+
+    def __init__(self, pk, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.fields['cc'].initial = ', '.join(
             [EMAIL_DIRECTOR_EMAIL_ADDRESS] + EMAIL_ADMIN_LIST)
 

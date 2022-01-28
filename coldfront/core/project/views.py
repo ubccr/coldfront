@@ -31,6 +31,7 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectAddUsersToAllocationForm,
                                           ProjectRemoveUserForm,
                                           ProjectReviewEmailForm,
+                                          ProjectRequestEmailForm,
                                           ProjectReviewForm, ProjectSearchForm,
                                           ProjectPISearchForm,
                                           ProjectUserUpdateForm,
@@ -1629,7 +1630,6 @@ class ProjectReviewCompleteView(LoginRequiredMixin, UserPassesTestMixin, View):
 
 
 class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
-    """Currently not in use."""
     form_class = ProjectReviewEmailForm
     template_name = 'project/project_review_email.html'
     login_url = "/"
@@ -1684,6 +1684,68 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             project_review_obj.project.pi.first_name,
             project_review_obj.project.pi.last_name,
             project_review_obj.project.pi.username)
+        )
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('project-review-list')
+
+
+class ProjectRequestEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+    form_class = ProjectRequestEmailForm
+    template_name = 'project/project_request_email.html'
+    login_url = "/"
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('project.can_review_pending_project_reviews'):
+            return True
+
+        messages.error(
+            self.request, 'You do not have permission to send email for a pending project request.')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        pk = self.kwargs.get('pk')
+        project_obj = get_object_or_404(Project, pk=pk)
+        context['project'] = project_obj
+
+        return context
+
+    def get_form(self, form_class=None):
+        """Return an instance of the form to be used in this view."""
+        if form_class is None:
+            form_class = self.get_form_class()
+        return form_class(self.kwargs.get('pk'), **self.get_form_kwargs())
+
+    def form_valid(self, form):
+        pk = self.kwargs.get('pk')
+        project_obj = get_object_or_404(Project, pk=pk)
+        form_data = form.cleaned_data
+
+        receiver_list = [project_obj.pi.email]
+        cc = form_data.get('cc').strip()
+        if cc:
+            cc = cc.split(',')
+        else:
+            cc = []
+
+        send_email(
+            'Request for more information',
+            form_data.get('email_body'),
+            EMAIL_DIRECTOR_EMAIL_ADDRESS,
+            receiver_list,
+            cc
+        )
+
+        messages.success(self.request, 'Email sent to {} {} ({})'.format(
+            project_obj.pi.first_name,
+            project_obj.pi.last_name,
+            project_obj.pi.username)
         )
         return super().form_valid(form)
 
