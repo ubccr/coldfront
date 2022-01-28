@@ -119,12 +119,11 @@ class AllocationAdditionProcessingRunner(AllocationAdditionRunnerBase):
         self.request_obj.completion_time = utc_now_offset_aware()
         self.request_obj.save()
 
-    @staticmethod
-    def compute_updated_service_units(project, added_service_units):
+    def compute_updated_service_units(self, added_service_units):
         """Return the new total number of Service Units the given
         Project should have, after subtracting usage and adding the
         given number."""
-        objects = get_accounting_allocation_objects(project)
+        objects = self.accounting_objects
         allocation = Decimal(objects.allocation_attribute.value)
         usage = Decimal(objects.allocation_attribute_usage.value)
         unused_service_units = max(allocation - usage, Decimal('0.00'))
