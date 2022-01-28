@@ -107,7 +107,6 @@ class AllocationAdditionProcessingRunner(AllocationAdditionRunnerBase):
         """If the request has an invalid number of service units or if
         an expected database object does not exist, raise an error."""
         super().__init__(request_obj)
-        validate_num_service_units(self.request_obj.num_service_units)
         self.accounting_objects = get_accounting_allocation_objects(
             self.request_obj.project)
 
@@ -134,7 +133,7 @@ class AllocationAdditionProcessingRunner(AllocationAdditionRunnerBase):
         Return the Project's updated Service Units amount."""
         added_service_units = self.request_obj.num_service_units
         total_service_units = self.compute_updated_service_units(
-            self.request_obj.project, added_service_units)
+            added_service_units)
         date_time = utc_now_offset_aware()
 
         self.update_allocation(total_service_units, date_time)
