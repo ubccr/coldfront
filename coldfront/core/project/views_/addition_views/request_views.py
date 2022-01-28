@@ -8,6 +8,8 @@ from coldfront.core.project.utils_.addition_utils import can_project_purchase_se
 from coldfront.core.project.utils_.addition_utils import has_pending_allocation_addition_request
 from coldfront.core.project.utils_.permissions_utils import is_user_manager_or_pi_of_project
 from coldfront.core.user.utils import access_agreement_signed
+from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.utils.mail import send_email_template
 
 from decimal import Decimal
 from decimal import DivisionByZero
@@ -23,6 +25,8 @@ from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
+
+from urllib.parse import urljoin
 
 import logging
 
@@ -157,7 +161,8 @@ class AllocationAdditionRequestView(LoginRequiredMixin, UserPassesTestMixin,
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
-        """Create an AllocationAdditionRequest."""
+        """Create an AllocationAdditionRequest and send a notification
+        email to admins."""
         try:
             requester = self.request.user
             project = self.project_obj
@@ -174,10 +179,13 @@ class AllocationAdditionRequestView(LoginRequiredMixin, UserPassesTestMixin,
                 'status': AllocationAdditionRequestStatusChoice.objects.get(
                     name='Under Review'),
                 'num_service_units': num_service_units,
+                'request_time': utc_now_offset_aware(),
                 'extra_fields': extra_fields,
             }
             request = AllocationAdditionRequest.objects.create(
                 **request_kwargs)
+
+            self.send_email(request)
 
             log_message = (
                 f'User {requester.pk} created AllocationAdditionRequest '
@@ -213,6 +221,42 @@ class AllocationAdditionRequestView(LoginRequiredMixin, UserPassesTestMixin,
     def get_success_url(self):
         """Redirect to the Project Detail view on success."""
         return reverse('project-detail', kwargs={'pk': self.project_obj.pk})
+
+    @staticmethod
+    def send_email(request):
+        """Send a notification email to admins notifying them of the
+        given new AllocationAdditionRequest."""
+        try:
+            subject = 'New Service Units Purchase Request'
+            template_name = (
+                'email/project_allocation_addition/admins_new_request.txt')
+
+            requester = request.requester
+            requester_str = (
+                f'{requester.first_name} {requester.last_name} '
+                f'({requester.email})')
+
+            detail_view_name = 'service-units-purchase-request-detail'
+            review_url = urljoin(
+                settings.CENTER_BASE_URL,
+                reverse(detail_view_name, kwargs={'pk': request.pk}))
+
+            context = {
+                'num_service_units': request.num_service_units,
+                'project_name': request.project.name,
+                'requester_str': requester_str,
+                'review_url': review_url,
+            }
+
+            sender = settings.EMAIL_SENDER
+            receiver_list = settings.EMAIL_ADMIN_LIST
+
+            send_email_template(
+                subject, template_name, context, sender, receiver_list)
+        except Exception as e:
+            message = 'Failed to send notification email. Details:'
+            logger.error(message)
+            logger.exception(e)
 
     def test_func(self):
         """Allow active PIs and Managers of the Project who have signed
