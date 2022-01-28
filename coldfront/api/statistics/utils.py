@@ -338,7 +338,8 @@ def set_project_usage_value(project, value):
         logger = logging.getLogger(__name__)
         logger.error(e)
         return False
-    project_usage = allocation_objects.allocation_attribute_usage
+    project_usage = AllocationAttributeUsage.objects.select_for_update().get(
+        pk=allocation_objects.allocation_attribute_usage.pk)
     project_usage.value = value
     project_usage.save()
     return True
@@ -408,7 +409,9 @@ def set_project_user_usage_value(user, project, value):
         logger = logging.getLogger(__name__)
         logger.error(e)
         return False
-    user_project_usage = allocation_objects.allocation_user_attribute_usage
+    user_project_usage = \
+        AllocationUserAttributeUsage.objects.select_for_update().get(
+            pk=allocation_objects.allocation_user_attribute_usage.pk)
     user_project_usage.value = value
     user_project_usage.save()
     return True
