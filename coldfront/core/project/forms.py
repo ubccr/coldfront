@@ -527,6 +527,10 @@ class SavioProjectRechargeExtraFieldsForm(SavioProjectExtraFieldsForm):
     def clean_num_service_units(self):
         cleaned_data = super().clean()
         num_service_units = cleaned_data['num_service_units']
+        if not (100 <= num_service_units <= settings.ALLOCATION_MAX):
+            raise forms.ValidationError(
+                f'The number of service units {num_service_units} is outside '
+                f'of the expected range.')
         if num_service_units % 100:
             raise forms.ValidationError(
                 f'The number of service units {num_service_units} is not '
