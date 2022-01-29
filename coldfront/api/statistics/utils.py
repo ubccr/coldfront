@@ -19,6 +19,7 @@ from datetime import timedelta
 from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.db import transaction
 import logging
 
 
@@ -338,10 +339,12 @@ def set_project_usage_value(project, value):
         logger = logging.getLogger(__name__)
         logger.error(e)
         return False
-    project_usage = AllocationAttributeUsage.objects.select_for_update().get(
-        pk=allocation_objects.allocation_attribute_usage.pk)
-    project_usage.value = value
-    project_usage.save()
+    with transaction.atomic():
+        project_usage = \
+            AllocationAttributeUsage.objects.select_for_update().get(
+                pk=allocation_objects.allocation_attribute_usage.pk)
+        project_usage.value = value
+        project_usage.save()
     return True
 
 
@@ -409,9 +412,10 @@ def set_project_user_usage_value(user, project, value):
         logger = logging.getLogger(__name__)
         logger.error(e)
         return False
-    user_project_usage = \
-        AllocationUserAttributeUsage.objects.select_for_update().get(
-            pk=allocation_objects.allocation_user_attribute_usage.pk)
-    user_project_usage.value = value
-    user_project_usage.save()
+    with transaction.atomic():
+        user_project_usage = \
+            AllocationUserAttributeUsage.objects.select_for_update().get(
+                pk=allocation_objects.allocation_user_attribute_usage.pk)
+        user_project_usage.value = value
+        user_project_usage.save()
     return True
