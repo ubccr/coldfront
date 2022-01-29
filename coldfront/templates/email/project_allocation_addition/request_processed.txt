@@ -1,6 +1,6 @@
 Dear managers of {{ project_name }},
 
-Your request to purchase {{ added_sus }} service units for Project {{ project_name }}'s allowance has been processed. Your current total allowance is {{ total_sus }} service units.
+Your request to purchase {{ added_sus }} service units for Project {{ project_name }}'s allowance has been processed. Your current total allowance, after subtracting (and resetting) usage, is {{ total_sus }} service units.
 
 You may manage your project at {{ project_url }}.
 
