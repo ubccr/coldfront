@@ -1,4 +1,6 @@
-from coldfront.core.project.models import Project, SavioProjectAllocationRequest
+from django.shortcuts import get_list_or_404
+from coldfront.core.project.models import (Project,
+                                           SavioProjectAllocationRequest)
 from django.core.management.base import BaseCommand
 
 import logging
@@ -21,7 +23,8 @@ class Command(BaseCommand):
         # NOTE(vir): can add date filtering
         parser.add_argument('--format', help='Format to dump survey responses in',
                             type=str, required=True, choices=['json', 'csv'])
-        parser.add_argument('--allowance_type', help='Dump responses for Projects with given prefix',
+        parser.add_argument('--allowance_type',
+                            help='Dump responses for Projects with given prefix',
                             type=str, required=False, default='',
                             choices=['ac_', 'co_', 'fc_', 'ic_', 'pc_'])
 
@@ -32,11 +35,18 @@ class Command(BaseCommand):
         allowance_type = options['allowance_type']
         writer = getattr(self, f'to_{format}')
 
-        objects = SavioProjectAllocationRequest.objects.filter(
-            project__name__istartswith=allowance_type).values_list('survey_answers',
-                                                                   flat=True)
+        alloc_requests = SavioProjectAllocationRequest.objects.filter(
+            project__name__istartswith=allowance_type)
 
-        writer(objects, output=options.get('stdout', stdout),
+        surveys = list(alloc_requests.values_list('survey_answers', flat=True))
+        projects = Project.objects.filter(
+            pk__in=alloc_requests.values_list('project', flat=True))
+
+        for project, survey in zip(projects, surveys):
+            survey['project_name'] = project.name
+            survey['project_title'] = project.title
+
+        writer(surveys, output=options.get('stdout', stdout),
                error=options.get('stderr', stderr))
 
     @staticmethod

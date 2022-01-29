@@ -55,7 +55,9 @@ class TestGetSurveyResponses(TestCase):
             project = Project.objects.create(name=f'{project_prefix}test_project{index}',
                                              status=project_status)
 
-            survey_answers = {'a': f'answera_{index}', 'b': f'answerb_{index}'}
+            survey_answers = {'a': f'answera_{index}', 'b': f'answerb_{index}',
+                              'roject_name': project.name,
+                              'project_title': project.title}
             kwargs = {
                 'allocation_type': allocation_type,
                 'pi': pi,
