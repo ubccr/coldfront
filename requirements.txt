@@ -40,5 +40,6 @@ requests==2.22.0
 six==1.12.0
 sqlparse==0.3.0
 text-unidecode==1.3
+tqdm==4.62.3
 urllib3==1.24.2
 wcwidth==0.1.7
