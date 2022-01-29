@@ -10,6 +10,7 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserRoleChoice,
                                            ProjectAllocationRequestStatusChoice)
 from coldfront.core.utils.common import import_from_settings
+from coldfront.core.resource.utils import get_compute_resource_names
 
 from durationwidget.widgets import TimeDurationWidget
 
@@ -30,12 +31,8 @@ class ProjectSearchForm(forms.Form):
     PROJECT_NAME = 'Project Name'
     CLUSTER_NAME = 'Cluster Name'
 
-    CLUSTER_NAME_CHOICES = [
-        ('', '-----'),
-        ('ABC', 'ABC'),
-        ('Savio', 'Savio'),
-        ('Vector', 'Vector'),
-    ]
+    CLUSTER_NAME_CHOICES = \
+        [('', '-----')] + [(x, x) for x in get_compute_resource_names()]
 
     last_name = forms.CharField(label=LAST_NAME, max_length=100, required=False)
     username = forms.CharField(label=USERNAME, max_length=100, required=False)
@@ -83,16 +80,6 @@ class ProjectAddUsersToAllocationForm(forms.Form):
             self.fields['allocation'].help_text = '<br/>Select allocations to add selected users to.'
         else:
             self.fields['allocation'].widget = forms.HiddenInput()
-
-
-class ProjectRemoveUserForm(forms.Form):
-    username = forms.CharField(max_length=150, disabled=True)
-    first_name = forms.CharField(max_length=30, required=False, disabled=True)
-    last_name = forms.CharField(max_length=150, required=False, disabled=True)
-    email = forms.EmailField(max_length=100, required=False, disabled=True)
-    role = forms.CharField(max_length=30, disabled=True)
-    status = forms.CharField(max_length=50, required=False, disabled=True)
-    selected = forms.BooleanField(initial=False, required=False)
 
 
 class ProjectUserUpdateForm(forms.Form):
@@ -1110,36 +1097,3 @@ class JoinRequestSearchForm(forms.Form):
         label='Username', max_length=100, required=False)
     email = forms.CharField(label='Email', max_length=100, required=False)
 
-
-class ProjectRemovalRequestSearchForm(forms.Form):
-    project_name = forms.CharField(label='Project Name',
-                                   max_length=100, required=False)
-    username = forms.CharField(
-        label='User Username', max_length=100, required=False)
-    requester = forms.CharField(
-        label='Requester Username', max_length=100, required=False)
-    email = forms.CharField(label='User Email', max_length=100, required=False)
-    show_all_requests = forms.BooleanField(initial=True, required=False)
-
-
-class ProjectRemovalRequestUpdateStatusForm(forms.Form):
-
-    STATUS_CHOICES = [
-        ('Pending', 'Pending'),
-        ('Processing', 'Processing'),
-    ]
-
-    status = forms.ChoiceField(
-        label='Status', choices=STATUS_CHOICES, required=True,
-        widget=forms.Select())
-
-
-class ProjectRemovalRequestCompletionForm(forms.Form):
-    STATUS_CHOICES = [
-        ('Processing', 'Processing'),
-        ('Complete', 'Complete')
-    ]
-
-    status = forms.ChoiceField(
-        label='Status', choices=STATUS_CHOICES, required=True,
-        widget=forms.Select())

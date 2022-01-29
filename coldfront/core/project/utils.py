@@ -1,3 +1,6 @@
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+
 from coldfront.api.statistics.utils import set_project_user_allocation_value
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttribute
@@ -140,16 +143,11 @@ def send_project_join_notification_email(project, project_user):
     user = project_user.user
 
     subject = f'New request to join Project {project.name}'
-    context = {
-        'project_name': project.name,
-        'user_string': f'{user.first_name} {user.last_name} ({user.email})',
-        'signature': import_from_settings('EMAIL_SIGNATURE', ''),
-    }
-
-    template_name = 'email/new_project_join_request.txt'
-    context['url'] = __project_detail_url(project)
-
-    sender = settings.EMAIL_SENDER
+    context = {'project_name': project.name,
+               'user_string': f'{user.first_name} {user.last_name} ({user.email})',
+               'signature': import_from_settings('EMAIL_SIGNATURE', ''),
+               'review_url': review_project_join_requests_url(project),
+               'url': __project_detail_url(project)}
 
     pi_condition = Q(
         role__name='Principal Investigator', status__name='Active',
@@ -162,7 +160,20 @@ def send_project_join_notification_email(project, project_user):
             'user__email', flat=True
         ))
 
-    send_email_template(subject, template_name, context, sender, receiver_list)
+    msg_plain = \
+        render_to_string('email/new_project_join_request.txt',
+                         context)
+    msg_html = \
+        render_to_string('email/new_project_join_request.html',
+                         context)
+
+    send_mail(
+        subject,
+        msg_plain,
+        settings.EMAIL_SENDER,
+        receiver_list,
+        html_message=msg_html,
+    )
 
 
 def send_project_join_request_approval_email(project, project_user):
