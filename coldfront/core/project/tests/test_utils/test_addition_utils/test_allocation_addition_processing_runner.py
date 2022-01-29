@@ -12,6 +12,7 @@ from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
+from coldfront.core.project.tests.test_utils.test_addition_utils.test_runner_mixin import TestRunnerMixin
 from coldfront.core.project.utils_.addition_utils import AllocationAdditionProcessingRunner
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
@@ -24,7 +25,7 @@ from django.contrib.auth.models import User
 from django.core import mail
 
 
-class TestAllocationAdditionProcessingRunner(TestBase):
+class TestAllocationAdditionProcessingRunner(TestRunnerMixin, TestBase):
     """A class for testing AllocationAdditionProcessingRunner."""
 
     def setUp(self):
@@ -87,43 +88,6 @@ class TestAllocationAdditionProcessingRunner(TestBase):
                     name='Under Review'),
                 num_service_units=self.sus_addition)
 
-    def assert_allocation_service_units_values(self, allocation,
-                                               expected_value,
-                                               expected_usage):
-        """Assert that the given Allocation has an AllocationAttribute
-        with type 'Service Units' and the given expected value and the
-        given expected usage."""
-        allocation_attribute_type = AllocationAttributeType.objects.get(
-            name='Service Units')
-        kwargs = {
-            'allocation_attribute_type': allocation_attribute_type,
-        }
-        attributes = allocation.allocationattribute_set.filter(**kwargs)
-        self.assertEqual(attributes.count(), 1)
-        attribute = attributes.first()
-        self.assertEqual(str(expected_value), attribute.value)
-        self.assertEqual(
-            expected_usage, attribute.allocationattributeusage.value)
-
-    def assert_allocation_user_service_units_values(self, allocation_user,
-                                                    expected_value,
-                                                    expected_usage):
-        """Assert that the given AllocationUser has an
-        AllocationUserAttribute with type 'Service Units' and the given
-        expected value and the given expected usage."""
-        allocation_attribute_type = AllocationAttributeType.objects.get(
-            name='Service Units')
-        kwargs = {
-            'allocation_attribute_type': allocation_attribute_type,
-        }
-        attributes = allocation_user.allocationuserattribute_set.filter(
-            **kwargs)
-        self.assertEqual(attributes.count(), 1)
-        attribute = attributes.first()
-        self.assertEqual(str(expected_value), attribute.value)
-        self.assertEqual(
-            expected_usage, attribute.allocationuserattributeusage.value)
-
     def test_pre_existent_accounting_objects_assumed(self):
         """Test that the runner assumes that the Project has an
         Allocation, a 'Service Units' attribute, and an associated
@@ -161,14 +125,12 @@ class TestAllocationAdditionProcessingRunner(TestBase):
             self.request_obj.save()
             if status.name == 'Under Review':
                 try:
-                    AllocationAdditionProcessingRunner(
-                        self.request_obj)
+                    AllocationAdditionProcessingRunner(self.request_obj)
                 except AssertionError:
                     self.fail('An AssertionError should not have been raised.')
             else:
                 try:
-                    AllocationAdditionProcessingRunner(
-                        self.request_obj)
+                    AllocationAdditionProcessingRunner(self.request_obj)
                 except AssertionError:
                     pass
                 else:
