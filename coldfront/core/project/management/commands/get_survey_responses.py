@@ -38,13 +38,17 @@ class Command(BaseCommand):
         alloc_requests = SavioProjectAllocationRequest.objects.filter(
             project__name__istartswith=allowance_type)
 
-        surveys = list(alloc_requests.values_list('survey_answers', flat=True))
+        _surveys = list(alloc_requests.values_list('survey_answers', flat=True))
         projects = Project.objects.filter(
             pk__in=alloc_requests.values_list('project', flat=True))
 
-        for project, survey in zip(projects, surveys):
-            survey['project_name'] = project.name
-            survey['project_title'] = project.title
+        surveys = []
+        for project, survey in zip(projects, _surveys):
+            surveys.append({
+                'project_name': project.name,
+                'project_title': project.title,
+                **survey
+            })
 
         writer(surveys, output=options.get('stdout', stdout),
                error=options.get('stderr', stderr))
