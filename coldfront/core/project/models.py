@@ -146,6 +146,7 @@ We do not have information about your research. Please provide a detailed descri
         permissions = (
             ("can_view_all_projects", "Can view all projects"),
             ("can_review_pending_project_reviews", "Can review pending project reviews"),
+            ("can_review_pending_project_requests", "Can review pending project requests"),
         )
 
 

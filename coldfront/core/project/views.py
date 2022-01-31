@@ -1263,7 +1263,7 @@ class ProjectActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('project.can_review_pending_project_reviews'):
+        if self.request.user.has_perm('project.can_review_pending_project_requests'):
             return True
 
         messages.error(
@@ -1318,7 +1318,7 @@ class ProjectDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('project.can_review_pending_project_reviews'):
+        if self.request.user.has_perm('project.can_review_pending_project_requests'):
             return True
 
         messages.error(
@@ -1702,7 +1702,7 @@ class ProjectRequestEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView)
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('project.can_review_pending_project_reviews'):
+        if self.request.user.has_perm('project.can_review_pending_project_requests'):
             return True
 
         messages.error(
