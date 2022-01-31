@@ -1239,11 +1239,12 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('project.can_review_pending_project_reviews'):
+        if (self.request.user.has_perm('project.can_review_pending_project_reviews')
+            and self.request.user.has_perm('project.can_review_pending_project_requests')):
             return True
 
         messages.error(
-            self.request, 'You do not have permission to review pending project reviews.')
+            self.request, 'You do not have permission to review pending project reviews/requests.')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -1251,6 +1252,7 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         context['project_request_list'] = Project.objects.filter(
             status__name="Waiting For Admin Approval"
         )
+        context['EMAIL_ENABLED'] = EMAIL_ENABLED
         return context
 
 
@@ -1637,6 +1639,11 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     def test_func(self):
         """ UserPassesTestMixin Tests"""
 
+        if not EMAIL_ENABLED:
+            messages.error(
+                self.request, 'Emails are not enabled.')
+            return False
+
         if self.request.user.is_superuser:
             return True
 
@@ -1665,26 +1672,35 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         project_review_obj = get_object_or_404(ProjectReview, pk=pk)
         form_data = form.cleaned_data
 
-        receiver_list = [project_review_obj.project.pi.email]
-        cc = form_data.get('cc').strip()
-        if cc:
-            cc = cc.split(',')
+        if EMAIL_ENABLED:
+            receiver_list = [project_review_obj.project.pi.email]
+            cc = form_data.get('cc').strip()
+            if cc:
+                cc = cc.split(',')
+            else:
+                cc = []
+
+            send_email(
+                'Request for more information',
+                form_data.get('email_body'),
+                EMAIL_DIRECTOR_EMAIL_ADDRESS,
+                receiver_list,
+                cc
+            )
+
+            messages.success(self.request, 'Email sent to {} {} ({})'.format(
+                project_review_obj.project.pi.first_name,
+                project_review_obj.project.pi.last_name,
+                project_review_obj.project.pi.username)
+            )
         else:
-            cc = []
+            messages.error(self.request, 'Failed to send email: Email not enabled')
 
-        send_email(
-            'Request for more information',
-            form_data.get('email_body'),
-            EMAIL_DIRECTOR_EMAIL_ADDRESS,
-            receiver_list,
-            cc
-        )
+            logger.warning(
+                'Email has not been enabled'
+            )
+            return super().form_invalid(form)
 
-        messages.success(self.request, 'Email sent to {} {} ({})'.format(
-            project_review_obj.project.pi.first_name,
-            project_review_obj.project.pi.last_name,
-            project_review_obj.project.pi.username)
-        )
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -1698,6 +1714,11 @@ class ProjectRequestEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView)
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
+
+        if not EMAIL_ENABLED:
+            messages.error(
+                self.request, 'Emails are not enabled.')
+            return False
 
         if self.request.user.is_superuser:
             return True
@@ -1727,26 +1748,35 @@ class ProjectRequestEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView)
         project_obj = get_object_or_404(Project, pk=pk)
         form_data = form.cleaned_data
 
-        receiver_list = [project_obj.pi.email]
-        cc = form_data.get('cc').strip()
-        if cc:
-            cc = cc.split(',')
+        if EMAIL_ENABLED:
+            receiver_list = [project_obj.pi.email]
+            cc = form_data.get('cc').strip()
+            if cc:
+                cc = cc.split(',')
+            else:
+                cc = []
+
+            send_email(
+                'Request for more information',
+                form_data.get('email_body'),
+                EMAIL_DIRECTOR_EMAIL_ADDRESS,
+                receiver_list,
+                cc
+            )
+
+            messages.success(self.request, 'Email sent to {} {} ({})'.format(
+                project_obj.pi.first_name,
+                project_obj.pi.last_name,
+                project_obj.pi.username)
+            )
         else:
-            cc = []
+            messages.error(self.request, 'Failed to send email: Email not enabled')
 
-        send_email(
-            'Request for more information',
-            form_data.get('email_body'),
-            EMAIL_DIRECTOR_EMAIL_ADDRESS,
-            receiver_list,
-            cc
-        )
+            logger.warning(
+                'Email has not been enabled'
+            )
+            return super().form_invalid(form)
 
-        messages.success(self.request, 'Email sent to {} {} ({})'.format(
-            project_obj.pi.first_name,
-            project_obj.pi.last_name,
-            project_obj.pi.username)
-        )
         return super().form_valid(form)
 
     def get_success_url(self):
