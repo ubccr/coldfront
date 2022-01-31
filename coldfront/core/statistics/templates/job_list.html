@@ -1,0 +1,273 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+{% load tz %}
+{% timezone "America/Los_Angeles" %}
+
+{% block title %}
+  Job List
+{% endblock %}
+
+
+{% block content %}
+  <h1>Job List</h1>
+
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <tbody>
+      <tr>
+        <td>
+          {% if can_view_all_jobs %}
+            {% if job_search_form.show_all_jobs.value %}
+              Viewing all jobs. To only view jobs belonging to you and belonging to projects
+              in which you are a PI or manager, deselect "Show All Jobs" in the search form
+              below and search, or click
+              <a href="{% url 'slurm-job-list' %}">
+                <span class="accessibility-link-text">
+                  Select Jobs
+                </span>here</a>.
+            {% else %}
+              Viewing only jobs belonging to you and belonging to projects
+              in which you are a PI or manager. To view all jobs select "Show All Jobs"
+              in the search form below and search, or click
+              <a href="{% url 'slurm-job-list' %}?show_all_jobs=on">
+                <span class="accessibility-link-text">
+                  All Jobs
+                </span>here</a>.
+            {% endif %}
+          {% else %}
+            Viewing your jobs and the jobs belonging to projects in which you are a PI or manager.
+          {% endif %}
+        </td>
+        <td>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  {% if expand_accordion == "show" or job_list %}
+    <div class="mb-3" id="accordion">
+      <div class="card">
+        <div class="card-header">
+          <a id="expand_button" role="button" class="card-link " data-toggle="collapse" href="#collapseOne">
+                        <i class="fas fa-filter" aria-hidden="true"></i> Filter
+                        <i id="plus_minus" class="fas {{expand_accordion|get_icon}} float-right"></i>
+                    </a>
+                </div>
+                <div id="collapseOne" class="collapse {{ expand_accordion }}" data-parent="#accordion">
+                    <div class="card-body">
+                        <form id="filter_form" method="GET" action="{% url 'slurm-job-list' %}" autocomplete="off">
+                            <div>{{ job_search_form.status|as_crispy_field }}</div>
+                            <div>{{ job_search_form.jobslurmid|as_crispy_field }}</div>
+                            <div>{{ job_search_form.project_name|as_crispy_field }}</div>
+                            <div>{{ job_search_form.username|as_crispy_field }}</div>
+                            <div>{{ job_search_form.partition|as_crispy_field }}</div>
+                            <div class="row">
+                              <div class="col-sm-2 ">Service Units {% include 'service_unit_popover.html' %}</div>
+                              <div class="col-sm-5">
+                                {{ job_search_form.amount_modifier|as_crispy_field }}
+                              </div>
+                              <div class="col-sm-5 ">
+                                {{ job_search_form.amount|as_crispy_field }}
+                              </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-2 ">Submitted</div>
+                                <div class="col-sm-5">
+                                    {{ job_search_form.submit_modifier|as_crispy_field }}
+                                </div>
+                                <div class="col-sm-5 ">
+                                    {{ job_search_form.submitdate|as_crispy_field }}
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-2 ">Started</div>
+                                <div class="col-sm-5">
+                                    {{ job_search_form.start_modifier|as_crispy_field }}
+                                </div>
+                                <div class="col-sm-5 ">
+                                    {{ job_search_form.startdate|as_crispy_field }}
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-2 ">Ended</div>
+                                <div class="col-sm-5">
+                                    {{ job_search_form.end_modifier|as_crispy_field }}
+                                </div>
+                                <div class="col-sm-5 ">
+                                    {{ job_search_form.enddate|as_crispy_field }}
+                                </div>
+                            </div>
+                            {% if can_view_all_jobs %}
+                              <div>{{ job_search_form.show_all_jobs|as_crispy_field }}</div>
+                            {% endif %}
+                            <input type="submit" class="btn btn-primary" value="Search">
+                            <button id="form_reset_button" type="button" class="btn btn-secondary">Reset</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+  {% if user.is_superuser %}
+    <div class="card mb-3 bg-light">
+        <div class="card-header">
+                <a class="btn btn-primary" href="{% url 'export-job-list' %}" role="button" style="float: right;">
+                    <i class="fas fa-download" aria-hidden="true"></i>
+                    Export Job List to CSV
+                </a>
+        </div>
+    </div>
+  {% endif %}
+    {% if job_list %}
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                <tr>
+                    <th scope="col">
+                        Slurm ID
+                        <a href="?order_by=jobslurmid&direction=asc&{{filter_parameters}}">
+                            <span class="accessibility-link-text">Sort by Ascending Slurm ID</span>
+                            <i class="fas fa-sort-up"></i>
+                        </a>
+                        <a href="?order_by=jobslurmid&direction=des&{{filter_parameters}}">
+                            <span class="accessibility-link-text">Sort by Descending Slurm ID</span>
+                            <i class="fas fa-sort-down"></i>
+                        </a>
+                    </th>
+                    <th scope="col">
+                        Username
+                    </th>
+                    <th scope="col">
+                        Project
+                    </th>
+                    <th scope="col">
+                        Job Status
+                        <a href="?order_by=jobstatus&direction=asc&{{filter_parameters}}">
+                            <span class="accessibility-link-text">Sort by Ascending Job Status</span>
+                            <i class="fas fa-sort-up"></i>
+                        </a>
+                        <a href="?order_by=jobstatus&direction=des&{{filter_parameters}}">
+                            <span class="accessibility-link-text">Sort by Descending Job Status</span>
+                            <i class="fas fa-sort-down"></i>
+                        </a>
+                    </th>
+                    <th scope="col">
+                        Partition
+                    </th>
+                    <th scope="col">
+                        Submit Date
+                        <a href="?order_by=submitdate&direction=asc&{{filter_parameters}}">
+                            <span class="accessibility-link-text">Sort by Ascending Submit Date</span>
+                            <i class="fas fa-sort-up"></i>
+                        </a>
+                        <a href="?order_by=submitdate&direction=des&{{filter_parameters}}">
+                            <span class="accessibility-link-text">Sort by Descending Submit Date</span>
+                            <i class="fas fa-sort-down"></i>
+                        </a>
+                    </th>
+                    <th scope="col">
+                        Service Units
+                      {% include 'service_unit_popover.html' %}
+                      <a href="?order_by=amount&direction=asc&{{filter_parameters}}">
+                        <span class="accessibility-link-text">Sort by Ascending Amount</span>
+                        <i class="fas fa-sort-up"></i>
+                      </a>
+                      <a href="?order_by=amount&direction=des&{{filter_parameters}}">
+                        <span class="accessibility-link-text">Sort by Descending Amount</span>
+                        <i class="fas fa-sort-down"></i>
+                      </a>
+                    </th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for job in job_list %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'slurm-job-detail' job.jobslurmid %}">
+                                <span class="accessibility-link-text">Job {{ job.jobslurmid }}</span>
+                                {{ job.jobslurmid }}
+                            </a>
+                        </td>
+
+                        <td>{{ job.userid.username }}</td>
+                        <td>{{ job.accountid.name }}</td>
+                        <td>
+                            {% with status=job.jobstatus %}
+                                {% if status in status_danger_list %}
+                                    <span class="badge badge-danger">{{ status }}</span>
+                                {% elif "CANCEL" in status %}
+                                    <span class="badge badge-danger">CANCELLED</span>
+                                {% elif status == "COMPLETING" %}
+                                    <span class="badge badge-success">COMPLETED</span>
+                                {% elif status == "RUNNING" %}
+                                    <span class="badge badge-primary">{{ status }}</span>
+                                {% elif status in status_warning_list %}
+                                    <span class="badge badge-warning">{{ status }}</span>
+                                {% else %}
+                                    <span class="badge badge-info">{{ status }}</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td>{{ job.partition }}</td>
+                        <td>{{ job.submitdate | date:"M. d, Y" }}</td>
+                        <td>{{ job.amount }}</td>
+
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% if is_paginated %} Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                <ul class="pagination float-right mr-3">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{filter_parameters_with_order_by}}">Previous</a></li>
+                    {% else %}
+                        <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+                    {% endif %}
+                    {% if page_obj.has_next %}
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{filter_parameters_with_order_by}}">Next</a></li>
+                    {% else %}
+                        <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
+                    {% endif %}
+                </ul>
+            {% endif %}
+        </div>
+    {% elif expand_accordion == "show" %}
+        <div class="alert alert-secondary">
+            No search results!
+        </div>
+    {% else %}
+        <div class="alert alert-secondary">
+            No jobs to display!
+        </div>
+    {% endif %}
+
+    <script>
+        $("#navbar-main > ul > li.active").removeClass("active");
+        $("#navbar-project-menu").addClass("active");
+        $("#navbar-jobs-list").addClass("active");
+
+        $(document).on('click', '#form_reset_button', function () {
+            resetForm($('#filter_form'));
+        });
+
+        $(".datepicker").datepicker();
+
+        function resetForm($form) {
+            $form.find('input:text, input:password, input:file, select, textarea').val('');
+            $form.find("input[type='number']").val('');
+        }
+
+        $("#expand_button").click(function () {
+
+            $('#collapseOne').collapse();
+            icon = $("#plus_minus");
+            icon.toggleClass("fa-plus fa-minus");
+
+        });
+    </script>
+
+{% endblock %}
+{% endtimezone %}
