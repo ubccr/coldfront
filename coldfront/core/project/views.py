@@ -1687,12 +1687,15 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 receiver_list,
                 cc
             )
-
-            messages.success(self.request, 'Email sent to {} {} ({})'.format(
+            success_text = 'Email sent to {} {} ({}).'.format(
                 project_review_obj.project.pi.first_name,
                 project_review_obj.project.pi.last_name,
-                project_review_obj.project.pi.username)
+                project_review_obj.project.pi.username
             )
+            if cc:
+                success_text += ' CCed: {}'.format(', '.join(cc))
+
+            messages.success(self.request, success_text)
         else:
             messages.error(self.request, 'Failed to send email: Email not enabled')
 
@@ -1764,11 +1767,15 @@ class ProjectRequestEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView)
                 cc
             )
 
-            messages.success(self.request, 'Email sent to {} {} ({})'.format(
+            success_text = 'Email sent to {} {} ({}).'.format(
                 project_obj.pi.first_name,
                 project_obj.pi.last_name,
-                project_obj.pi.username)
+                project_obj.pi.username
             )
+            if cc:
+                success_text += ' CCed: {}'.format(', '.join(cc))
+
+            messages.success(self.request, success_text)
         else:
             messages.error(self.request, 'Failed to send email: Email not enabled')
 
