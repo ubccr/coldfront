@@ -56,8 +56,6 @@ class TestGetSurveyResponses(TestCase):
                                              status=project_status)
 
             survey_answers = {
-                'project_name': project.name,
-                'project_title': project.title,
                 'scope_and_intent': 'sample scope',
                 'computational_aspects': 'sample aspects',
             }
@@ -90,6 +88,10 @@ class TestGetSurveyResponses(TestCase):
         out.seek(0)
         output = json.loads(''.join(out.readlines()))
         for index, item in enumerate(output):
+            project_name = item.pop('project_name')
+            project_title = item.pop('project_title')
+            self.assertEquals(project_name, self.fixtures[index].project.name)
+            self.assertEquals(project_title, self.fixtures[index].project.title)
             self.assertDictEqual(item, self.fixtures[index].survey_answers)
 
         err.seek(0)
@@ -104,6 +106,10 @@ class TestGetSurveyResponses(TestCase):
         out.seek(0)
         reader = DictReader(out.readlines())
         for index, item in enumerate(reader):
+            project_name = item.pop('project_name')
+            project_title = item.pop('project_title')
+            self.assertEquals(project_name, self.fixtures[index].project.name)
+            self.assertEquals(project_title, self.fixtures[index].project.title)
             self.assertDictEqual(item, self.fixtures[index].survey_answers)
 
         err.seek(0)
@@ -118,8 +124,11 @@ class TestGetSurveyResponses(TestCase):
         out.seek(0)
         reader = DictReader(out.readlines())
         for index, item in enumerate(reader):
-            self.assertDictEqual(
-                item, self.filtered_fixtures[index].survey_answers)
+            project_name = item.pop('project_name')
+            project_title = item.pop('project_title')
+            self.assertEquals(project_name, self.filtered_fixtures[index].project.name)
+            self.assertEquals(project_title, self.filtered_fixtures[index].project.title)
+            self.assertDictEqual(item, self.filtered_fixtures[index].survey_answers)
 
         err.seek(0)
         self.assertEqual(err.read(), '')
