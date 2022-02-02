@@ -12,7 +12,6 @@ from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 from django.contrib.auth.models import Permission
 from django.contrib.auth.models import User
-from django.contrib.messages import get_messages
 from django.urls import reverse
 from http import HTTPStatus
 from unittest.mock import patch
@@ -61,12 +60,6 @@ class TestAllocationRenewalRequestDetailView(TestBase):
                 request_time=utc_now_offset_aware())
 
     @staticmethod
-    def get_message_strings(response):
-        """Return messages included in the given response as a list of
-        strings."""
-        return [str(m) for m in get_messages(response.wsgi_request)]
-
-    @staticmethod
     def no_op(*args, **kwargs):
         """Do nothing."""
         pass
@@ -87,33 +80,19 @@ class TestAllocationRenewalRequestDetailView(TestBase):
     def test_permissions_get(self):
         """Test that the correct users have permissions to perform GET
         requests."""
-
-        def assert_has_access(user, has_access=True, expected_messages=[]):
-            """Assert that the given user has or does not have access to
-            the URL. Optionally assert that any messages were sent to
-            the user."""
-            self.client.login(username=user.username, password=self.password)
-            url = self.pi_allocation_renewal_request_detail_url(
-                self.allocation_renewal_request.pk)
-            status_code = HTTPStatus.OK if has_access else HTTPStatus.FORBIDDEN
-            response = self.client.get(url)
-            if expected_messages:
-                actual_messages = self.get_message_strings(response)
-                for message in expected_messages:
-                    self.assertIn(message, actual_messages)
-            self.assertEqual(response.status_code, status_code)
-            self.client.logout()
+        url = self.pi_allocation_renewal_request_detail_url(
+            self.allocation_renewal_request.pk)
 
         # Superusers should have access.
         self.user.is_superuser = True
         self.user.save()
-        assert_has_access(self.user)
+        self.assert_has_access(url, self.user)
         self.user.is_superuser = False
         self.user.save()
 
         # The request's PI should have access.
         self.assertEqual(self.allocation_renewal_request.pi, self.user)
-        assert_has_access(self.user)
+        self.assert_has_access(url, self.user)
 
         # The request's requester should have access. (Set a different PI so
         # that the user is not also the PI.)
@@ -128,7 +107,7 @@ class TestAllocationRenewalRequestDetailView(TestBase):
         self.allocation_renewal_request.save()
         self.assertNotEqual(self.allocation_renewal_request.pi, self.user)
         self.assertEqual(self.allocation_renewal_request.requester, self.user)
-        assert_has_access(self.user)
+        self.assert_has_access(url, self.user)
 
         # Users with the permission to view should have access. (Re-fetch the
         # user to avoid permission caching.)
@@ -141,7 +120,7 @@ class TestAllocationRenewalRequestDetailView(TestBase):
         self.assertNotEqual(self.allocation_renewal_request.pi, new_pi)
         self.assertNotEqual(self.allocation_renewal_request.requester, new_pi)
         self.assertTrue(new_pi.has_perm(f'allocation.{permission.codename}'))
-        assert_has_access(new_pi)
+        self.assert_has_access(url, new_pi)
 
         # Any other user should not have access. (Re-fetch the user to avoid
         # permission caching.)
@@ -153,8 +132,8 @@ class TestAllocationRenewalRequestDetailView(TestBase):
         expected_messages = [
             'You do not have permission to view the previous page.',
         ]
-        assert_has_access(
-            new_pi, has_access=False, expected_messages=expected_messages)
+        self.assert_has_access(
+            url, new_pi, has_access=False, expected_messages=expected_messages)
 
     def test_permissions_post(self):
         """Test that the correct users have permissions to perform POST

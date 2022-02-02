@@ -39,6 +39,7 @@ class TestStaffGroup(TestCase):
         self.assertTrue(Group.objects.filter(name='staff_group').exists())
 
         perm_codename_lst = [
+            'view_allocationadditionrequest',
             'view_allocationrenewalrequest',
             'view_vectorprojectallocationrequest',
             'view_savioprojectallocationrequest',

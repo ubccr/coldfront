@@ -12,6 +12,7 @@ class Command(BaseCommand):
             new_group.permissions.clear()
 
         perm_codename_lst = [
+            'view_allocationadditionrequest',
             'view_allocationrenewalrequest',
             'view_vectorprojectallocationrequest',
             'view_savioprojectallocationrequest',

@@ -1,0 +1,10 @@
+Dear managers of {{ project_name }},
+
+Your request to purchase {{ added_sus }} service units for Project {{ project_name }}'s allowance has been processed. Your current total allowance, after subtracting (and resetting) usage, is {{ total_sus }} service units.
+
+You may manage your project at {{ project_url }}.
+
+If you have any questions, contact us at {{ support_email }}.
+
+Thank you,
+{{ signature }}

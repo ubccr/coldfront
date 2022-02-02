@@ -27,7 +27,8 @@ urlpatterns = [
 ]
 
 
-# TODO: Once finalized, move these imports above.
+# New Project Requests
+# TODO: Integrate this section with the rest.
 from coldfront.core.project.views import ProjectRequestView
 from coldfront.core.project.views import SavioProjectRequestDetailView
 from coldfront.core.project.views import SavioProjectRequestListView
@@ -154,6 +155,8 @@ urlpatterns += [
 ]
 
 
+# Allocation Renewal Requests
+# TODO: Integrate this section with the rest.
 from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestListView
 from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestDetailView
 from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestReviewDenyView
@@ -197,4 +200,39 @@ urlpatterns += [
     #      AllocationRenewalRequestUndenyView.as_view(),
     #      name='pi-allocation-renewal-request-review-undeny'),
 
+]
+
+
+# Purchase Service Units
+# TODO: Integrate this section with the rest.
+from coldfront.core.project.views_.addition_views.approval_views import AllocationAdditionRequestDetailView
+from coldfront.core.project.views_.addition_views.approval_views import AllocationAdditionRequestListView
+from coldfront.core.project.views_.addition_views.approval_views import AllocationAdditionReviewDenyView
+from coldfront.core.project.views_.addition_views.approval_views import AllocationAdditionReviewMemorandumSignedView
+from coldfront.core.project.views_.addition_views.request_views import AllocationAdditionRequestLandingView
+from coldfront.core.project.views_.addition_views.request_views import AllocationAdditionRequestView
+
+
+urlpatterns += [
+    path('<int:pk>/purchase-service-units-landing/',
+         AllocationAdditionRequestLandingView.as_view(),
+         name='purchase-service-units-landing'),
+    path('<int:pk>/purchase-service-units/',
+         AllocationAdditionRequestView.as_view(),
+         name='purchase-service-units'),
+    path('service-units-purchase-pending-request-list/',
+         AllocationAdditionRequestListView.as_view(completed=False),
+         name='service-units-purchase-pending-request-list'),
+    path('service-units-purchase-completed-request-list/',
+         AllocationAdditionRequestListView.as_view(completed=True),
+         name='service-units-purchase-completed-request-list'),
+    path('service-units-purchase-request/<int:pk>/',
+         AllocationAdditionRequestDetailView.as_view(),
+         name='service-units-purchase-request-detail'),
+    path('service-units-purchase-request/<int:pk>/memorandum-signed',
+         AllocationAdditionReviewMemorandumSignedView.as_view(),
+         name='service-units-purchase-request-review-memorandum-signed'),
+    path('service-units-purchase-request/<int:pk>/deny',
+         AllocationAdditionReviewDenyView.as_view(),
+         name='service-units-purchase-request-review-deny'),
 ]

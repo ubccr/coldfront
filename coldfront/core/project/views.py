@@ -67,6 +67,8 @@ from coldfront.core.project.utils import (add_vector_user_to_designated_savio_pr
                                           send_project_request_pooling_email,
                                           VectorProjectApprovalRunner,
                                           vector_request_denial_reason,)
+from coldfront.core.project.utils_.addition_utils import can_project_purchase_service_units
+from coldfront.core.project.utils_.permissions_utils import is_user_manager_or_pi_of_project
 from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestRunner
 from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
 from coldfront.core.project.utils_.renewal_utils import is_any_project_pi_renewable
@@ -246,8 +248,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['cluster_accounts_requestable'] = cluster_accounts_requestable
         context['cluster_accounts_tooltip'] = cluster_accounts_tooltip
 
-        # Only display the "Renew Allowance" button for applicable allocation
-        # types.
+        # Display the "Renew Allowance" button for eligible allocation types.
         # TODO: Display these for ic_ and pc_ when ready.
         context['renew_allowance_current_visible'] = \
             self.object.name.startswith('fc_')
@@ -259,6 +260,12 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 context['renew_allowance_current_visible'] and
                 is_any_project_pi_renewable(
                     self.object, get_current_allocation_period()))
+
+        # Display the "Purchase Service Units" button for eligible allocation
+        # types, for those allowed to update the project.
+        context['purchase_sus_visible'] = (
+            can_project_purchase_service_units(self.object) and
+            context.get('is_allowed_to_update_project', False))
 
         return context
 
@@ -1831,6 +1838,7 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
 
 # TODO: Once finalized, move these imports above.
 from coldfront.core.allocation.models import AllocationRenewalRequest
+from coldfront.core.project.forms import MemorandumSignedForm
 from coldfront.core.project.forms import ReviewDenyForm
 from coldfront.core.project.forms import ReviewStatusForm
 from coldfront.core.project.forms import SavioProjectAllocationTypeForm
@@ -1843,7 +1851,6 @@ from coldfront.core.project.forms import SavioProjectPoolAllocationsForm
 from coldfront.core.project.forms import SavioProjectPooledProjectSelectionForm
 from coldfront.core.project.forms import SavioProjectRechargeExtraFieldsForm
 from coldfront.core.project.forms import SavioProjectReviewAllocationDatesForm
-from coldfront.core.project.forms import SavioProjectReviewMemorandumSignedForm
 from coldfront.core.project.forms import SavioProjectReviewSetupForm
 from coldfront.core.project.forms import SavioProjectSurveyForm
 from coldfront.core.project.forms import VectorProjectDetailsForm
@@ -2841,7 +2848,7 @@ class SavioProjectReviewMemorandumSignedView(LoginRequiredMixin,
                                              UserPassesTestMixin,
                                              SavioProjectRequestMixin,
                                              FormView):
-    form_class = SavioProjectReviewMemorandumSignedForm
+    form_class = MemorandumSignedForm
     template_name = (
         'project/project_request/savio/project_review_memorandum_signed.html')
     login_url = '/'
