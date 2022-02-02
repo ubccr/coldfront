@@ -25,10 +25,8 @@ Project List
 <div>
   {% if user.is_superuser or user.userprofile.is_pi %}
     <p>
-      You have {{ project_requests_remaining }} project request{{ project_requests_remaining|pluralize }} remaining.
       You can use the PI Search function below to search for a project your PI is in and request to be added to it.
-      {% if project_requests_remaining < 1 %} You can make a request to increase your max projects by us sending an
-      email.{% endif %}
+      {% if project_requests_remaining < 1 %} You have reached the max projects you can have.{% endif %}
     </p>
   {% else %}
     <p>
