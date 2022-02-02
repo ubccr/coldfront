@@ -1,5 +1,9 @@
 from coldfront.core.allocation.models import AllocationAdditionRequest
 from coldfront.core.allocation.models import AllocationAdditionRequestStatusChoice
+from coldfront.core.project.models import ProjectUser
+from coldfront.core.project.models import ProjectUserRoleChoice
+from coldfront.core.project.models import ProjectUserStatusChoice
+from coldfront.core.user.utils import access_agreement_signed
 from coldfront.core.utils.tests.test_base import TestBase
 from decimal import Decimal
 from django.contrib.auth.models import Permission
@@ -32,13 +36,16 @@ class TestViewMixin(object):
             username='user_a')
         self.user_a.set_password(self.password)
         self.user_a.save()
+        self.sign_user_access_agreement(self.user_a)
         self.user_b = User.objects.create(
             email='user_b@email.com',
             first_name='User',
             last_name='B',
             username='user_b')
+
         self.user_b.set_password(self.password)
         self.user_b.save()
+        self.sign_user_access_agreement(self.user_b)
 
         # Create two Projects.
         self.project_a = self.create_active_project_with_pi(
@@ -88,6 +95,71 @@ class TestViewMixin(object):
         response = self.client.get(self.url)
         self.assertContains(response, self.project_a.name)
         self.assertContains(response, self.project_b.name)
+
+    def test_permissions_get(self):
+        """Test that the correct users have permissions to perform GET
+        requests."""
+        url = self.url
+
+        # Superusers should have access.
+        self.user.is_superuser = True
+        self.user.save()
+        self.assert_has_access(url, self.user)
+        self.user.is_superuser = False
+        self.user.save()
+
+        # Users who have not signed the access agreement should not have
+        # access.
+        tmp = self.user_b.userprofile.access_agreement_signed_date
+        self.user_b.userprofile.access_agreement_signed_date = None
+        self.user_b.userprofile.save()
+        self.assert_has_access(url, self.user_b, has_access=False)
+        self.user_b.userprofile.access_agreement_signed_date = tmp
+        self.user_b.userprofile.save()
+
+        # Users who are active PIs or Managers of Projects should have access.
+        self.assert_has_access(url, self.user_a)
+        manager_role = ProjectUserRoleChoice.objects.get(name='Manager')
+        ProjectUser.objects.filter(user=self.user_b).update(role=manager_role)
+        self.assert_has_access(url, self.user_b)
+
+        # Non-Active PIs and Managers of Projects should not have access.
+        users = [self.user_a, self.user_b]
+        pending_remove_status = ProjectUserStatusChoice.objects.get(
+            name='Pending - Remove')
+        ProjectUser.objects.filter(
+            user__in=users).update(status=pending_remove_status)
+        self.assert_has_access(url, self.user_a, has_access=False)
+        self.assert_has_access(url, self.user_b, has_access=False)
+
+        # Active Users of Projects should not have access.
+        user_role = ProjectUserRoleChoice.objects.get(name='User')
+        active_status = ProjectUserStatusChoice.objects.get(name='Active')
+        ProjectUser.objects.filter(
+            user__in=users).update(role=user_role, status=active_status)
+        self.assert_has_access(url, self.user_a, has_access=False)
+        self.assert_has_access(url, self.user_b, has_access=False)
+
+        # Users with the permission to view should have access.
+        ProjectUser.objects.filter(user__in=users).delete()
+        permission = Permission.objects.get(
+            codename='view_allocationadditionrequest')
+        self.user_a.user_permissions.add(permission)
+        self.assertTrue(
+            self.user_a.has_perm(f'allocation.{permission.codename}'))
+        self.assert_has_access(url, self.user_a)
+
+        # Any other user should not have access.
+        self.user_a.user_permissions.remove(permission)
+        self.user_a = User.objects.get(pk=self.user.pk)
+        self.assertFalse(
+            self.user_a.has_perm(f'allocation.{permission.codename}'))
+        expected_messages = [
+            'You must be an active PI or manager of a Project.',
+        ]
+        self.assert_has_access(
+            url, self.user_a, has_access=False,
+            expected_messages=expected_messages)
 
     def test_requests_visible_to_pis_and_managers(self):
         """Test that PIs and Managers can only see requests associated

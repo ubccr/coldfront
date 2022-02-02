@@ -4,6 +4,7 @@ from coldfront.core.allocation.models import AllocationAdditionRequest
 from coldfront.core.project.forms import MemorandumSignedForm
 from coldfront.core.project.forms import SavioProjectRechargeExtraFieldsForm
 from coldfront.core.project.forms import ReviewDenyForm
+from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.utils_.addition_utils import AllocationAdditionDenialRunner
 from coldfront.core.project.utils_.addition_utils import AllocationAdditionProcessingRunner
 from coldfront.core.project.utils_.permissions_utils import is_user_manager_or_pi_of_project
@@ -189,7 +190,8 @@ class AllocationAdditionRequestDetailView(LoginRequiredMixin,
         messages.error(self.request, message)
 
 
-class AllocationAdditionRequestListView(LoginRequiredMixin, TemplateView):
+class AllocationAdditionRequestListView(LoginRequiredMixin,
+                                        UserPassesTestMixin, TemplateView):
     """A view that lists pending or completed requests to purchase more
     Service Units under Projects."""
 
@@ -242,6 +244,26 @@ class AllocationAdditionRequestListView(LoginRequiredMixin, TemplateView):
         else:
             order_by = 'id'
         return order_by
+
+    def test_func(self):
+        """Allow superusers and users with permission to view
+        AllocationAdditionRequests. Allow active PIs and Managers of any
+        Project who have signed the User Access Agreement."""
+        user = self.request.user
+        permission = 'allocation.view_allocationadditionrequest'
+        if user.is_superuser or user.has_perm(permission):
+            return True
+        if not access_agreement_signed(user):
+            message = 'You must sign the User Access Agreement.'
+            messages.error(self.request, message)
+            return False
+        if ProjectUser.objects.filter(
+                user=user,
+                role__name__in=['Principal Investigator', 'Manager'],
+                status__name='Active').exists():
+            return True
+        message = 'You must be an active PI or manager of a Project.'
+        messages.error(self.request, message)
 
 
 class AllocationAdditionReviewBase(LoginRequiredMixin, UserPassesTestMixin,
