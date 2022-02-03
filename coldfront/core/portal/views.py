@@ -32,7 +32,6 @@ def home(request):
                         'Active',
                         'Waiting For Admin Approval',
                         'Review Pending',
-                        'Denied',
                         'Expired'
                     ]
                 )
@@ -44,7 +43,7 @@ def home(request):
 
         allocation_list = Allocation.objects.filter(
             Q(status__name__in=['Active', 'New', 'Renewal Requested', ]) &
-            Q(project__status__name__in=['Active', 'New', 'Review Pending', 'Denied', 'Expired']) &
+            Q(project__status__name__in=['Active', 'New', 'Review Pending', 'Expired']) &
             Q(project__projectuser__user=request.user) &
             Q(project__projectuser__status__name__in=['Active', ]) &
             Q(allocationuser__user=request.user) &

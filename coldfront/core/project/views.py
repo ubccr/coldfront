@@ -196,7 +196,6 @@ class ProjectListView(LoginRequiredMixin, ListView):
                         'Active',
                         'Waiting For Admin Approval',
                         'Review Pending',
-                        'Denied',
                         'Expired',
                     ]
                 ).order_by(order_by)
@@ -212,7 +211,6 @@ class ProjectListView(LoginRequiredMixin, ListView):
                             'Active',
                             'Waiting For Admin Approval',
                             'Review Pending',
-                            'Denied',
                             'Expired',
                         ]
                     ) &
@@ -246,7 +244,6 @@ class ProjectListView(LoginRequiredMixin, ListView):
                         'Active',
                         'Waiting For Admin Approval',
                         'Review Pending',
-                        'Denied',
                         'Expired',
                     ]
                 ) &
@@ -391,6 +388,119 @@ class ProjectArchivedListView(LoginRequiredMixin, ListView):
         else:
             projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
                 Q(status__name__in=['Archived', ]) &
+                Q(projectuser__user=self.request.user) &
+                Q(projectuser__status__name='Active')
+            ).order_by(order_by)
+
+        return projects
+
+    def get_context_data(self, **kwargs):
+
+        context = super().get_context_data(**kwargs)
+        projects_count = self.get_queryset().count()
+        context['projects_count'] = projects_count
+        context['expand'] = False
+
+        project_search_form = ProjectSearchForm(self.request.GET)
+        if project_search_form.is_valid():
+            context['project_search_form'] = project_search_form
+            data = project_search_form.cleaned_data
+            filter_parameters = ''
+            for key, value in data.items():
+                if value:
+                    if isinstance(value, list):
+                        for ele in value:
+                            filter_parameters += '{}={}&'.format(key, ele)
+                    else:
+                        filter_parameters += '{}={}&'.format(key, value)
+            context['project_search_form'] = project_search_form
+        else:
+            filter_parameters = None
+            context['project_search_form'] = ProjectSearchForm()
+
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            filter_parameters_with_order_by = filter_parameters + \
+                'order_by=%s&direction=%s&' % (order_by, direction)
+        else:
+            filter_parameters_with_order_by = filter_parameters
+
+        if filter_parameters:
+            context['expand_accordion'] = 'show'
+
+        context['filter_parameters'] = filter_parameters
+        context['filter_parameters_with_order_by'] = filter_parameters_with_order_by
+
+        project_list = context.get('project_list')
+        paginator = Paginator(project_list, self.paginate_by)
+
+        page = self.request.GET.get('page')
+
+        try:
+            project_list = paginator.page(page)
+        except PageNotAnInteger:
+            project_list = paginator.page(1)
+        except EmptyPage:
+            project_list = paginator.page(paginator.num_pages)
+
+        return context
+
+
+class ProjectDeniedListView(LoginRequiredMixin, ListView):
+
+    model = Project
+    template_name = 'project/project_denied_list.html'
+    prefetch_related = ['pi', 'status', 'field_of_science', ]
+    context_object_name = 'project_list'
+    paginate_by = 10
+
+    def get_queryset(self):
+
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            if direction == 'asc':
+                direction = ''
+            else:
+                direction = '-'
+            order_by = direction + order_by
+        else:
+            order_by = 'id'
+
+        project_search_form = ProjectSearchForm(self.request.GET)
+
+        if project_search_form.is_valid():
+            data = project_search_form.cleaned_data
+            if data.get('show_all_projects') and (self.request.user.is_superuser or self.request.user.has_perm('project.can_view_all_projects')):
+                projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
+                    status__name__in=['Denied', ]).order_by(order_by)
+            else:
+
+                projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
+                    Q(status__name__in=['Denied', ]) &
+                    Q(projectuser__user=self.request.user) &
+                    Q(projectuser__status__name='Active')
+                ).order_by(order_by)
+
+            # Last Name
+            if data.get('last_name'):
+                projects = projects.filter(
+                    pi__last_name__icontains=data.get('last_name'))
+
+            # Username
+            if data.get('username'):
+                projects = projects.filter(
+                    pi__username__icontains=data.get('username'))
+
+            # Field of Science
+            if data.get('field_of_science'):
+                projects = projects.filter(
+                    field_of_science__description__icontains=data.get('field_of_science'))
+
+        else:
+            projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
+                Q(status__name__in=['Denied', ]) &
                 Q(projectuser__user=self.request.user) &
                 Q(projectuser__status__name='Active')
             ).order_by(order_by)
