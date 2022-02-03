@@ -58,6 +58,9 @@ ALLOCATION_DEFAULT_ALLOCATION_LENGTH = import_from_settings(
 PROJECT_DEFAULT_PROJECT_LENGTH = import_from_settings(
     'PROJECT_DEFAULT_PROJECT_LENGTH', 365
 )
+PROJECT_CLASS_PROJECT_END_DATES = import_from_settings(
+    'PROJECT_CLASS_PROJECT_END_DATES', [(1, 19), (5, 11), (8, 23)]
+)
 
 if EMAIL_ENABLED:
     EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
@@ -94,7 +97,6 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
         allocation_submitted = self.request.GET.get('allocation_submitted')
         context['display_modal'] = 'false'
         if allocation_submitted:
@@ -516,8 +518,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         form.instance.status = ProjectStatusChoice.objects.get(name='Waiting For Admin Approval')
         if form.instance.type.name == 'Class':
             list_of_actual_dates = []
-            list_of_semester_start_dates = [(1, 19), (5, 11), (8, 23)]
-            for date in list_of_semester_start_dates:
+            for date in PROJECT_CLASS_PROJECT_END_DATES:
                 actual_date = datetime.date(datetime.date.today().year, date[0], date[1])
                 list_of_actual_dates.append(actual_date)
 

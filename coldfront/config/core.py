@@ -18,6 +18,10 @@ CENTER_BASE_URL = ENV.str('CENTER_BASE_URL', default='')
 #------------------------------------------------------------------------------
 PROJECT_ENABLE_PROJECT_REVIEW = ENV.bool('PROJECT_ENABLE_PROJECT_REVIEW', default=True)
 PROJECT_DEFAULT_PROJECT_LENGTH = ENV.int('PROJECT_DEFAULT_PROJECT_LENGTH', default=365)
+PROJECT_CLASS_PROJECT_END_DATES = ENV.list(
+    'PROJECT_CLASS_PROJECT_END_DATES',
+    default=[(1, 19), (5, 11), (8, 23)]
+)
 
 #------------------------------------------------------------------------------
 # Allocation related
