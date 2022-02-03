@@ -13,6 +13,7 @@ from django.urls import reverse
 from urllib.parse import urljoin
 
 # Get an instance of a logger
+
 logger = logging.getLogger(__name__)
 
 

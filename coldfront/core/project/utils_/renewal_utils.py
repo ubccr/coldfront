@@ -1020,11 +1020,13 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         date_time = utc_now_offset_aware()
         for project_user in project.projectuser_set.all():
             user = project_user.user
-            set_project_user_allocation_value(user, project, value)
-            ProjectUserTransaction.objects.create(
-                project_user=project_user,
-                date_time=date_time,
-                allocation=Decimal(value))
+            allocation_updated = set_project_user_allocation_value(
+                user, project, value)
+            if allocation_updated:
+                ProjectUserTransaction.objects.create(
+                    project_user=project_user,
+                    date_time=date_time,
+                    allocation=Decimal(value))
 
     def upgrade_pi_user(self):
         """Set the is_pi field of the request's PI UserProfile to

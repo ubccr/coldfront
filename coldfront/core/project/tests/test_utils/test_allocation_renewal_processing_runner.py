@@ -1,5 +1,6 @@
 from coldfront.api.statistics.utils import create_project_allocation
 from coldfront.api.statistics.utils import create_user_project_allocation
+from coldfront.api.statistics.utils import set_project_user_allocation_value
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
@@ -35,6 +36,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import mail
 from django.core.management import call_command
+from django.db import IntegrityError
 from django.db.models import Q
 from django.test import override_settings
 from django.test import TestCase
@@ -578,10 +580,21 @@ class TestRunnerMixin(object):
         change in service units."""
         request = self.request_obj
         project = request.post_project
+
+        # Create AllocationUsers and set 'Service Units'.
+        project_users = project.projectuser_set.all()
+        self.assertTrue(project_users)
+        allocation = get_project_compute_allocation(project)
+        AllocationUser.objects.filter(allocation=allocation).delete()
+        for project_user in project_users:
+            create_user_project_allocation(
+                project_user.user, project,
+                self.project_service_units[project])
+
         queryset = ProjectUserTransaction.objects.filter(
             project_user__project=project)
         old_count = queryset.count()
-        num_project_users = ProjectUser.objects.filter(project=project).count()
+        num_project_users = project_users.count()
         pre_time = utc_now_offset_aware()
 
         num_service_units = Decimal('1000.00')

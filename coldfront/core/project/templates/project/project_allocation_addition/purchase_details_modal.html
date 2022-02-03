@@ -1,0 +1,30 @@
+{% load crispy_forms_tags %}
+
+
+<div
+    id="purchase-details-modal"
+    class="modal fade bd-example-modal-lg"
+    tabindex="-1"
+    role="dialog"
+    aria-labelledby="purchase-details-modal"
+    aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <p class="modal-title">Purchase Details</p>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        {{ purchase_details_form|crispy }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  $("#view-purchase-details").on("click", function() {
+    $("#purchase-details-modal").modal("show");
+  });
+</script>

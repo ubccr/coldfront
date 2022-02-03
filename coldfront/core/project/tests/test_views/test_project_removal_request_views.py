@@ -176,7 +176,7 @@ class TestProjectRemoveSelf(TestBase):
             status_code = HTTPStatus.FOUND if has_access else HTTPStatus.FORBIDDEN
             response = self.client.post(url, {})
             if expected_messages:
-                actual_messages = get_message_strings(response)
+                actual_messages = self.get_message_strings(response)
                 for message in expected_messages:
                     self.assertIn(message, actual_messages)
             self.assertEqual(response.status_code, status_code)

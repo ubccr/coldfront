@@ -10,7 +10,6 @@ from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
-from django.contrib.messages import get_messages
 from django.urls import reverse
 from http import HTTPStatus
 import iso8601
@@ -63,15 +62,10 @@ class TestAllocationRenewalRequestReviewEligibilityView(TestBase):
                 request_time=utc_now_offset_aware())
 
     @staticmethod
-    def get_message_strings(response):
-        """Return messages included in the given response as a list of
-        strings."""
-        return [str(m) for m in get_messages(response.wsgi_request)]
-
-    @staticmethod
     def pi_allocation_renewal_request_review_eligibility_url(pk):
-        """Return the URL for the view for denying the
-        AllocationRenewalRequest with the given primary key."""
+        """Return the URL for the view for reviewing the eligibility of
+        the PI of the AllocationRenewalRequest with the given primary
+        key."""
         return reverse(
             'pi-allocation-renewal-request-review-eligibility',
             kwargs={'pk': pk})

@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand
 
 from coldfront.core.allocation.models import (AttributeType,
+                                              AllocationAdditionRequestStatusChoice,
                                               AllocationAttributeType,
                                               AllocationRenewalRequestStatusChoice,
                                               AllocationStatusChoice,
@@ -62,4 +63,13 @@ class Command(BaseCommand):
         ]
         for choice in choices:
             AllocationRenewalRequestStatusChoice.objects.get_or_create(
+                name=choice)
+
+        choices = [
+            'Under Review',
+            'Denied',
+            'Complete',
+        ]
+        for choice in choices:
+            AllocationAdditionRequestStatusChoice.objects.get_or_create(
                 name=choice)
