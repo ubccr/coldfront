@@ -517,8 +517,11 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         form.instance.pi = self.request.user
         form.instance.status = ProjectStatusChoice.objects.get(name='Waiting For Admin Approval')
         if form.instance.type.name == 'Class':
+            if not isinstance(PROJECT_CLASS_PROJECT_END_DATES[0], tuple):
+                end_dates = [tuple(map(int, x.split(':'))) for x in PROJECT_CLASS_PROJECT_END_DATES]
+
             list_of_actual_dates = []
-            for date in PROJECT_CLASS_PROJECT_END_DATES:
+            for date in end_dates:
                 actual_date = datetime.date(datetime.date.today().year, date[0], date[1])
                 list_of_actual_dates.append(actual_date)
 
