@@ -7,7 +7,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ifxbilling', '0003_auto_20210510_1631'),
+        ('ifxbilling', '0001_initial'),
         ('allocation', '0011_delete_allocationaccount'),
         ('ifx', '0001_initial'),
     ]
