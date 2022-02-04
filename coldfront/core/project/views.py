@@ -18,6 +18,7 @@ from django.db.models import Q
 from django.forms import formset_factory
 from django.http import (HttpResponse, HttpResponseForbidden,
                          HttpResponseRedirect, JsonResponse)
+from django.forms.models import model_to_dict
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -46,6 +47,7 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserStatusChoice)
 from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
+from coldfront.core.resource.models import Resource
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.common import get_domain_url, import_from_settings
@@ -61,18 +63,6 @@ if EMAIL_ENABLED:
     EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
         'EMAIL_DIRECTOR_EMAIL_ADDRESS')
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
-
-try:
-    PROJECT_SERIALIZE_DATA = [
-            json.loads(serializers.serialize('json', Project.objects.all())),
-            serializers.serialize('json', User.objects.all()),
-            serializers.serialize('json', Publication.objects.all()),
-            serializers.serialize('json', Grant.objects.all()),
-            serializers.serialize('json', Allocation.objects.all())
-            # Resource does not appear to be finished. Once it is, serialize it here
-        ]
-except:
-    pass
 
 class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     model = Project
@@ -501,8 +491,36 @@ class ProjectImportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         if self.request.user.userprofile.is_pi:
             return True
-    
+
     def post(self, request, *args, **kwargs):
+        def _same_obj_exists(cur_obj, new_obj) -> bool:
+            '''
+            Pass through all fields of cur_obj to see if the deserialized object is
+            the same object. If it is, return true, otherwise, return false.
+            '''
+            cur_vals = model_to_dict(cur_obj)
+            new_vals = model_to_dict(new_obj)
+            
+            unique_keys = []
+
+            for key in cur_obj._meta.fields:
+                if key.unique and key.name != 'id':
+                    unique_keys.append(key.name)
+
+            for key in unique_keys:
+                if cur_vals[key] == new_vals[key]:
+                    return True
+
+            # id keys will be updated later in the code
+            for key in cur_vals.keys():
+                cur_val = cur_vals[key]
+                new_val = new_vals[key]
+
+                if key != "id" and cur_val != new_val:
+                    return False
+            
+            return True
+
         form = ProjectImportForm(request.POST, request.FILES)
 
         # print(form.is_valid())
@@ -522,6 +540,12 @@ class ProjectImportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 return HttpResponseRedirect(reverse('project-list'))
             
             
+            # The original project ID. The actual project ID will be changed.
+            orig_proj_id = 0
+
+            # Keys are original resource PK, values are the new ones
+            resource_translation = {}
+
             for member in grouped_data:
                 # data_obj has the complete data of the Django model
                 data_obj = serializers.deserialize('json', member)  # TODO: Do something with this object
@@ -532,9 +556,10 @@ class ProjectImportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     if (type(obj.object) == Project):
                         # obj.object.pk = None
                         project_obj = obj.object
+                        orig_proj_id = int(project_obj.pk)
                         project_obj.pk = None
                         
-                        obj.save()
+                        obj.save(False)
 
                         # Assign current user.
                         project_user_obj = ProjectUser.objects.create(
@@ -545,8 +570,44 @@ class ProjectImportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                         )
 
                         continue
+                    
+                    orig_pk = obj.object.pk
 
-                    obj.save()
+                    max_pk = 0
+
+                    abort_obj_import = False
+
+                    # Pass through all objects of this type
+                    for cur_obj in (type(obj.object)).objects.all():
+                        # Put comparison logic here
+                        if _same_obj_exists(cur_obj, obj.object):
+                            abort_obj_import = True
+                            break
+
+                        if cur_obj.pk > max_pk:
+                            max_pk = cur_obj.pk
+
+                    if abort_obj_import:
+                        continue    # Another same object exists. Abort operation.
+
+                    try:
+                        if obj.object.project_id == orig_proj_id:
+                            obj.object.project_id = int(project_obj.pk)
+                    except AttributeError:
+                        pass    # Not all objects have the project id
+                            
+                    max_pk += 1
+
+                    obj.object.pk = max_pk
+
+                    if (type(obj.object) == Resource):
+                        # Create new entry in translation
+                        resource_translation[orig_pk] = max_pk
+
+                        # Resources may have linked resources. Properly map them.
+                        # for linked_resource in obj.object.
+
+                    obj.save(False)
 
 
         return HttpResponseRedirect(reverse('project-list'))
@@ -587,14 +648,14 @@ class ProjectExportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             serialize_data = [
-                fix_serialize_data(Project.objects.all()),
+                fix_serialize_data(Project.objects.filter(pk__exact=self.kwargs.get('pk'))),    # Get current project
                 fix_serialize_data(User.objects.all()),
                 fix_serialize_data(Publication.objects.all()),
                 fix_serialize_data(Grant.objects.all()),
+                fix_serialize_data(Resource.objects.all()),
                 fix_serialize_data(Allocation.objects.all())
-                # Resource does not appear to be finished. Once it is, serialize it here
             ]
-            response = JsonResponse(serialize_data, content_type='application/json', safe=False)
+            response = JsonResponse(serialize_data, content_type='application/json', safe=False, json_dumps_params={'indent': 2})
             response['Content-Disposition'] = 'attachment; filename="project.json"'
             
             return response
