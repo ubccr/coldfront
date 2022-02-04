@@ -1903,10 +1903,7 @@ class ProjectRequestEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView)
         return reverse('project-review-list')
 
 
-class ProjectRequestAccessEmailView(LoginRequiredMixin, UserPassesTestMixin, View):
-
-    def test_func(self):
-        return True
+class ProjectRequestAccessEmailView(LoginRequiredMixin, View):
 
     def post(self, request):
         project_obj = get_object_or_404(Project, pk=request.POST.get('project_pk'))
