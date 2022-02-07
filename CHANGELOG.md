@@ -20,6 +20,7 @@
 - SECURITY BUG FIX: Check permissions on notification updates [#348](https://github.com/ubccr/coldfront/pull/348) 
 - Allow site-level control of how resources ordered within an allocation [#334](https://github.com/ubccr/coldfront/issues/334)
 - LDAP user search plugin: Add ldap connect timeout config option [#351](https://github.com/ubccr/coldfront/pull/351)
+- Upgrade to Django v3.2 [#295](https://github.com/ubccr/coldfront/issues/295)
 
 ## [1.0.4] - 2021-03-25
 
