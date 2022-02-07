@@ -11,6 +11,9 @@
 
 
 {% block content %}
+  <script type='text/javascript' src="{% static 'selectize/selectize.min.js' %}"></script>
+  <link rel='stylesheet' type='text/css' href="{% static 'selectize/selectize.bootstrap3.css' %}"/>
+
   <h1>Job List</h1>
 
   <div class="table-responsive">
@@ -270,8 +273,6 @@
 
       });
   </script>
-  <script type='text/javascript' src="{% static 'selectize/selectize.min.js' %}"></script>
-  <link rel='stylesheet' type='text/css' href="{% static 'selectize/selectize.bootstrap3.css' %}"/>
 
   <script>
       $('select').selectize({
