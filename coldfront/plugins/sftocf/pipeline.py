@@ -324,7 +324,7 @@ class ColdFrontDB:
     def push_cf(self, filepaths, clean, dryrun=False):
         for f in filepaths:
             errors = False
-            server, tier, usernames, userdicts = self.return_server_tier_usernames(f)
+            server, tier, usernames, groupdict = self.return_server_tier_usernames(f)
 
             user_models = get_user_model().objects.only("id","username")\
                     .filter(username__in=usernames)
@@ -359,7 +359,7 @@ class ColdFrontDB:
             )
         except AllocationUser.DoesNotExist:
             logger.info("creating allocation user:")
-            allocationuser_obj, _ = AllocationUser.objects.create(
+            AllocationUser.objects.create(
                 allocation=allocation,
                 created=timezone.now(),
                 status=AllocationUserStatusChoice.objects.get(name='Active'),
@@ -446,7 +446,7 @@ def confirm_dirpath_exists(dpath):
         logger.info(f"created new directory {dpath}")
 
 @record_process
-def collect_starfish_usage(server, volume, volumepath, to_collect):
+def collect_starfish_usage(server, volume, volumepath, projects):
     """
 
     Returns
