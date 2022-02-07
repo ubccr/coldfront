@@ -2,4 +2,4 @@ from django.apps import AppConfig
 
 
 class MokeyOidcConfig(AppConfig):
-    name = 'mokey_oidc'
+    name = 'coldfront.plugins.mokey_oidc'
