@@ -246,30 +246,39 @@
         </div>
     {% endif %}
 
-    <script>
-        $("#navbar-main > ul > li.active").removeClass("active");
-        $("#navbar-project-menu").addClass("active");
-        $("#navbar-jobs-list").addClass("active");
+  <script>
+      $("#navbar-main > ul > li.active").removeClass("active");
+      $("#navbar-project-menu").addClass("active");
+      $("#navbar-jobs-list").addClass("active");
 
-        $(document).on('click', '#form_reset_button', function () {
-            resetForm($('#filter_form'));
-        });
+      $(document).on('click', '#form_reset_button', function () {
+          resetForm($('#filter_form'));
+      });
 
-        $(".datepicker").datepicker();
+      $(".datepicker").datepicker();
 
-        function resetForm($form) {
-            $form.find('input:text, input:password, input:file, select, textarea').val('');
-            $form.find("input[type='number']").val('');
-        }
+      function resetForm($form) {
+          $form.find('input:text, input:password, input:file, select, textarea').val('');
+          $form.find("input[type='number']").val('');
+      }
 
-        $("#expand_button").click(function () {
+      $("#expand_button").click(function () {
 
-            $('#collapseOne').collapse();
-            icon = $("#plus_minus");
-            icon.toggleClass("fa-plus fa-minus");
+          $('#collapseOne').collapse();
+          icon = $("#plus_minus");
+          icon.toggleClass("fa-plus fa-minus");
 
-        });
-    </script>
+      });
+  </script>
+  <script type='text/javascript' src="{% static 'selectize/selectize.min.js' %}"></script>
+  <link rel='stylesheet' type='text/css' href="{% static 'selectize/selectize.bootstrap3.css' %}"/>
+
+  <script>
+      $('select').selectize({
+          create: true,
+          sortField: 'text'
+      })
+  </script>
 
 {% endblock %}
 {% endtimezone %}

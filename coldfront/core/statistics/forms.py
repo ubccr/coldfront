@@ -1,5 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
+from coldfront.core.project.models import Project, ProjectUser
 
 
 class JobSearchForm(forms.Form):
@@ -36,8 +37,12 @@ class JobSearchForm(forms.Form):
     jobslurmid = forms.CharField(label='Slurm ID',
                                    max_length=150, required=False)
 
-    project_name = forms.CharField(label='Project Name',
-                                   max_length=100, required=False)
+    project_name = forms.CharField(
+        label='Project Name',
+        max_length=100,
+        required=False,
+        widget=forms.Select())
+
     username = forms.CharField(
         label='Username', max_length=100, required=False)
 
@@ -126,14 +131,20 @@ class JobSearchForm(forms.Form):
         user = kwargs.pop('user', None)
         is_pi = kwargs.pop('is_pi', None)
         super(JobSearchForm, self).__init__(*args, **kwargs)
+        queryset = Project.objects.all()
 
         if user:
-            if not (user.is_superuser or
-                    user.has_perm('statistics.view_job')):
-                self.fields.pop('show_all_jobs')
-
+            if not (user.is_superuser or user.has_perm('statistics.view_job')):
                 if not is_pi:
                     self.fields.pop('username')
+
+                self.fields.pop('show_all_jobs')
+
+                set = ProjectUser.objects.filter(user=user,
+                                                 status__name='Active').\
+                    distinct('project').values_list('project__name')
+                queryset = \
+                    Project.objects.filter(name__in=set)
 
         self.fields['submitdate'].label = ''
         self.fields['submit_modifier'].label = ''
@@ -143,3 +154,6 @@ class JobSearchForm(forms.Form):
         self.fields['end_modifier'].label = ''
         self.fields['amount'].label = ''
         self.fields['amount_modifier'].label = ''
+
+        self.fields['project_name'].widget.choices = \
+            [('', '-----')] + [(project.name, project.name) for project in queryset]
