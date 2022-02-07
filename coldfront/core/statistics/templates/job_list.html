@@ -62,7 +62,9 @@
                             <div>{{ job_search_form.status|as_crispy_field }}</div>
                             <div>{{ job_search_form.jobslurmid|as_crispy_field }}</div>
                             <div>{{ job_search_form.project_name|as_crispy_field }}</div>
-                            <div>{{ job_search_form.username|as_crispy_field }}</div>
+                            {% if is_pi %}
+                              <div>{{ job_search_form.username|as_crispy_field }}</div>
+                            {% endif %}
                             <div>{{ job_search_form.partition|as_crispy_field }}</div>
                             <div class="row">
                               <div class="col-sm-2 ">Service Units {% include 'service_unit_popover.html' %}</div>

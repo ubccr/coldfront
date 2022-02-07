@@ -12,7 +12,7 @@ from django.views import View
 from django.views.generic import DetailView, ListView, TemplateView
 from django.utils.html import strip_tags
 
-from coldfront.core.project.models import Project
+from coldfront.core.project.models import Project, ProjectUser
 from coldfront.core.statistics.models import Job
 from coldfront.core.statistics.forms import JobSearchForm
 
@@ -53,7 +53,12 @@ class SlurmJobListView(LoginRequiredMixin,
         else:
             order_by = '-submitdate'
 
-        job_search_form = JobSearchForm(self.request.GET, user=self.request.user)
+        is_pi = ProjectUser.objects.filter(
+            role__name__in=['Manager', 'Principal Investigator'],
+            user=self.request.user)
+        job_search_form = JobSearchForm(self.request.GET,
+                                        user=self.request.user,
+                                        is_pi=is_pi)
 
         if job_search_form.is_valid():
             data = job_search_form.cleaned_data
@@ -85,7 +90,13 @@ class SlurmJobListView(LoginRequiredMixin,
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        job_search_form = JobSearchForm(self.request.GET, user=self.request.user)
+        is_pi = ProjectUser.objects.filter(
+            role__name__in=['Manager', 'Principal Investigator'],
+            user=self.request.user)
+        job_search_form = JobSearchForm(self.request.GET,
+                                        user=self.request.user,
+                                        is_pi=is_pi)
+
         if job_search_form.is_valid():
             context['job_search_form'] = job_search_form
             data = job_search_form.cleaned_data
@@ -144,6 +155,8 @@ class SlurmJobListView(LoginRequiredMixin,
         context['can_view_all_jobs'] = \
             self.request.user.is_superuser or \
             self.request.user.has_perm('statistics.view_job')
+
+        context['is_pi'] = not (self.request.user.is_superuser or self.request.user.has_perm('statistics.view_job')) and is_pi
 
         return context
 

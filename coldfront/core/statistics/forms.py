@@ -124,12 +124,16 @@ class JobSearchForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
+        is_pi = kwargs.pop('is_pi', None)
         super(JobSearchForm, self).__init__(*args, **kwargs)
 
         if user:
             if not (user.is_superuser or
                     user.has_perm('statistics.view_job')):
                 self.fields.pop('show_all_jobs')
+
+                if not is_pi:
+                    self.fields.pop('username')
 
         self.fields['submitdate'].label = ''
         self.fields['submit_modifier'].label = ''
