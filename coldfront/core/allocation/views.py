@@ -50,7 +50,8 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
 from coldfront.core.allocation.signals import (allocation_activate,
                                                allocation_activate_user,
                                                allocation_disable,
-                                               allocation_remove_user)
+                                               allocation_remove_user,
+                                               allocation_change_approved,)
 from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
                                              get_user_resources)
 from coldfront.core.project.models import (Project, ProjectUser,
@@ -1844,6 +1845,11 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                             allocation_change_obj.allocation.project.pi.username)
                         )
 
+                        allocation_change_approved.send(
+                            sender=self.__class__,
+                            allocation_pk=allocation_change_obj.allocation.pk,
+                            allocation_change_pk=allocation_change_obj.pk,)
+
                         resource_name = allocation_change_obj.allocation.get_parent_resource
                         domain_url = get_domain_url(self.request)
                         allocation_url = '{}{}'.format(domain_url, reverse(
@@ -1859,10 +1865,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                             }
 
                             email_receiver_list = []
-
                             for allocation_user in allocation_change_obj.allocation.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
-                                allocation_activate_user.send(
-                                    sender=self.__class__, allocation_user_pk=allocation_user.pk)
                                 if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
                                     email_receiver_list.append(allocation_user.user.email)
 
@@ -1904,6 +1907,11 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                                 allocation_change_obj.allocation.project.pi.username)
                             )
 
+                            allocation_change_approved.send(
+                                sender=self.__class__,
+                                allocation_pk=allocation_change_obj.allocation.pk,
+                                allocation_change_pk=allocation_change_obj.pk,)
+
                             resource_name = allocation_change_obj.allocation.get_parent_resource
                             domain_url = get_domain_url(self.request)
                             allocation_url = '{}{}'.format(domain_url, reverse(
@@ -1919,10 +1927,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                                 }
 
                                 email_receiver_list = []
-
                                 for allocation_user in allocation_change_obj.allocation.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
-                                    allocation_activate_user.send(
-                                        sender=self.__class__, allocation_user_pk=allocation_user.pk)
                                     if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
                                         email_receiver_list.append(allocation_user.user.email)
 
@@ -2375,6 +2380,11 @@ class AllocationChangeActivateView(LoginRequiredMixin, UserPassesTestMixin, View
             allocation_change_obj.allocation.project.pi.username)
         )
 
+        allocation_change_approved.send(
+            sender=self.__class__,
+            allocation_pk=allocation_change_obj.allocation.pk,
+            allocation_change_pk=allocation_change_obj.pk,)
+
         resource_name = allocation_change_obj.allocation.get_parent_resource
         domain_url = get_domain_url(self.request)
         allocation_url = '{}{}'.format(domain_url, reverse(
@@ -2392,8 +2402,6 @@ class AllocationChangeActivateView(LoginRequiredMixin, UserPassesTestMixin, View
             email_receiver_list = []
 
             for allocation_user in allocation_change_obj.allocation.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
-                allocation_activate_user.send(
-                    sender=self.__class__, allocation_user_pk=allocation_user.pk)
                 if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
                     email_receiver_list.append(allocation_user.user.email)
 
