@@ -1757,7 +1757,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
         allocation_change_form.fields['justification'].disabled = True
         if allocation_change_obj.status.name != 'Pending': 
             allocation_change_form.fields['end_date_extension'].disabled = True
-        if allocation_change_obj.allocation.project.pi == self.request.user:
+        if not self.request.user.is_staff and not self.request.user.is_superuser:
             allocation_change_form.fields['end_date_extension'].disabled = True
 
         note_form = AllocationChangeNoteForm(
@@ -1781,6 +1781,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
         allocation_change_form = AllocationChangeForm(request.POST,
             initial={'justification': allocation_change_obj.justification,
                      'end_date_extension': allocation_change_obj.end_date_extension})
+        allocation_change_form.fields['justification'].required = False
 
         allocation_attributes_to_change = self.get_allocation_attributes_to_change(
             allocation_change_obj)
@@ -2136,8 +2137,8 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 request, 'You cannot request a change to a locked allocation.')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
-        if allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid']:
-            messages.error(request, 'You cannot request a change to an allocation with status {}.'.format(
+        if allocation_obj.status.name not in ['Active', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid']:
+            messages.error(request, 'You cannot request a change to an allocation with status "{}".'.format(
                 allocation_obj.status.name))
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
@@ -2237,7 +2238,29 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                             )
                     messages.success(
                         request, 'Allocation change request successfully submitted.')
-                    
+
+                    pi_name = '{} {} ({})'.format(allocation_obj.project.pi.first_name,
+                                                allocation_obj.project.pi.last_name, allocation_obj.project.pi.username)
+                    resource_name = allocation_obj.get_parent_resource
+                    domain_url = get_domain_url(self.request)
+                    url = '{}{}'.format(domain_url, reverse('allocation-change-list'))
+
+                    if EMAIL_ENABLED:
+                        template_context = {
+                            'pi': pi_name,
+                            'resource': resource_name,
+                            'url': url
+                        }
+
+                        send_email_template(
+                            'New Allocation Change Request: {} - {}'.format(
+                                pi_name, resource_name),
+                            'email/new_allocation_change_request.txt',
+                            template_context,
+                            EMAIL_SENDER,
+                            [EMAIL_TICKET_SYSTEM_ADDRESS, ]
+                        )
+
                     return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
                 else:
@@ -2272,7 +2295,29 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                         )
                     messages.success(
                         request, 'Allocation change request successfully submitted.')
-                    
+
+                pi_name = '{} {} ({})'.format(allocation_obj.project.pi.first_name,
+                                            allocation_obj.project.pi.last_name, allocation_obj.project.pi.username)
+                resource_name = allocation_obj.get_parent_resource
+                domain_url = get_domain_url(self.request)
+                url = '{}{}'.format(domain_url, reverse('allocation-change-list'))
+
+                if EMAIL_ENABLED:
+                    template_context = {
+                        'pi': pi_name,
+                        'resource': resource_name,
+                        'url': url
+                    }
+
+                    send_email_template(
+                        'New Allocation Change Request: {} - {}'.format(
+                            pi_name, resource_name),
+                        'email/new_allocation_change_request.txt',
+                        template_context,
+                        EMAIL_SENDER,
+                        [EMAIL_TICKET_SYSTEM_ADDRESS, ]
+                    )
+
                     return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
                 else:
