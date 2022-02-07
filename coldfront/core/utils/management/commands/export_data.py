@@ -99,6 +99,11 @@ class Command(BaseCommand):
             help='Ending date for jobs. '
                  'Must take the form of "MM-DD-YYYY".',
             type=valid_date)
+        job_avg_queue_time_parser.add_argument(
+            '--allowance_type',
+            choices=['ac_', 'co_', 'fc_', 'ic_', 'pc_'],
+            help='Filter projects by the given allowance type.',
+            type=str)
 
     def handle(self, *args, **options):
         """Call the handler for the provided subcommand."""
@@ -206,6 +211,7 @@ class Command(BaseCommand):
         """Handle the 'job_avg_queue_time' subcommand."""
         start_date = options.get('start_date', None)
         end_date = options.get('end_date', None)
+        allowance_type = options.get('allowance_type', None)
 
         if bool(start_date) ^ bool(end_date):
             message = 'Must either input NO dates or BOTH ' \
@@ -225,6 +231,9 @@ class Command(BaseCommand):
 
             query_set = query_set.filter(submitdate__gte=start_date,
                                          submitdate__lte=end_date)
+
+        if allowance_type:
+            query_set = query_set.filter(accountid__name__startswith=allowance_type)
 
         query_set = query_set.values_list('queue_time', flat=True)
         avg_queue_time = sum(query_set, datetime.timedelta()) / query_set.count()
