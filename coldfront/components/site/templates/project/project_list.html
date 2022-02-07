@@ -146,7 +146,7 @@ Project List
                   {% endif %}
                 </td>
               {% elif project.needs_review %}
-                <td class="text-danger">
+                <td class="text-warning">
                   {{ project.status.name }}
                   {% if user.username in project.list_of_manager_usernames %}
                     <a href="{% url 'project-review' project.pk %}">

@@ -110,10 +110,8 @@ Project Detail
     <p class="card-text text-justify"><strong>Project Type: </strong>{{ project.type.name }}</p>
     <p class="card-text text-justify"><strong>Project Status: </strong>
     {% if project.status.name == 'Active' %}
-      {% if project.can_be_reviewed %}
+      {% if project.can_be_reviewed or project.needs_review%}
         <span class="text-warning">{{ project.status.name }}</span>
-      {% elif project.needs_review %}
-        <span class="text-danger">{{ project.status.name }} </span>
       {% else %}
         <span class="text-success">{{ project.status.name}}</span>
       {% endif %}
