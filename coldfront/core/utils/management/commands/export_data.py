@@ -1,19 +1,17 @@
 import csv
 import json
-from csv import DictWriter
 import datetime
 from sys import stdout, stderr
 
 import pytz
-from django.core import serializers
 
-from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand, CommandError
-from django.db.models import Value, F, CharField, DateTimeField, Func, \
+from django.db.models import Value, F, CharField, Func, \
     DurationField, ExpressionWrapper
-from django.db.models.functions import Cast, TruncSecond
 
 from coldfront.config import settings
+from coldfront.core.allocation.models import AllocationAttributeType, \
+    AllocationUserAttribute
 from coldfront.core.statistics.models import Job
 
 """An admin command that exports the results of useful database queries
@@ -66,7 +64,7 @@ class Command(BaseCommand):
             help='Export results in the given format.',
             type=str)
         user_list_parser.add_argument(
-            '--date',
+            '--start_date',
             help='Date that users last submitted a job. '
                  'Must take the form of "MM-DD-YYYY".',
             type=valid_date)
@@ -82,7 +80,7 @@ class Command(BaseCommand):
             help='Export results in the given format.',
             type=str)
         new_user_account_parser.add_argument(
-            '--date',
+            '--start_date',
             help='Date that users last created an account. '
                  'Must take the form of "MM-DD-YYYY".',
             type=valid_date)
@@ -127,15 +125,18 @@ class Command(BaseCommand):
 
     def handle_user_list(self, *args, **options):
         """Handle the 'user_list' subcommand."""
-        date = options.get('date', None)
+        date = options.get('start_date', None)
         format = options.get('format', None)
 
-        query_set = Job.objects.annotate(str_submitdate=Func(
-            F('submitdate'),
-            Value('MM-dd-yyyy hh:mm:ss'),
-            function='to_char',
-            output_field=CharField()
-        ))
+        query_set = Job.objects.annotate(
+            submit_date=Func(
+                F('submitdate'),
+                Value('MM-dd-yyyy hh:mm:ss'),
+                function='to_char',
+                output_field=CharField()
+            ),
+            username=F('userid__username')
+        )
 
         if date:
             date = self.convert_time_to_utc(date)
@@ -145,48 +146,58 @@ class Command(BaseCommand):
             distinct('userid')
 
         if format == 'csv':
-            query_set = query_set.values_list('userid__username', 'jobslurmid', 'str_submitdate')
-            header = ['user__username', 'last_job_id', 'last_job_submitdate']
+            query_set = query_set.values_list('username', 'jobslurmid', 'submit_date')
+            header = ['username', 'jobslurmid', 'submit_date']
             self.to_csv(query_set,
                         header=header,
                         output=options.get('stdout', stdout),
                         error=options.get('stderr', stderr))
 
         else:
-            query_set = query_set.values('userid__username', 'jobslurmid', 'str_submitdate')
+            query_set = query_set.values('username', 'jobslurmid', 'submit_date')
             self.to_json(query_set,
                          output=options.get('stdout', stdout),
                          error=options.get('stderr', stderr))
 
     def handle_new_user_account(self, *args, **options):
         """Handle the 'new_user_account' subcommand."""
-        date = options.get('date', None)
+        date = options.get('start_date', None)
         format = options.get('format', None)
 
-        query_set = User.objects.annotate(str_date_joined=Func(
-            F('date_joined'),
-            Value('MM-dd-yyyy hh:mm:ss'),
-            function='to_char',
-            output_field=CharField()
-        ))
+        cluster_account_status = AllocationAttributeType.objects.get(
+            name='Cluster Account Status')
+
+        query_set = AllocationUserAttribute.objects.filter(
+            allocation_attribute_type=cluster_account_status,
+            value='Active')
+
+        query_set = query_set.annotate(
+            date_created=Func(
+                F('created'),
+                Value('MM-dd-yyyy hh:mm:ss'),
+                function='to_char',
+                output_field=CharField()
+            ),
+            username=F('allocation_user__user__username')
+        )
 
         if date:
             date = self.convert_time_to_utc(date)
-            query_set = query_set.filter(date_joined__gte=date)
+            query_set = query_set.filter(created__gte=date)
 
-        query_set = query_set.order_by('username', '-date_joined'). \
+        query_set = query_set.order_by('username', '-created'). \
             distinct('username')
 
         if format == 'csv':
-            query_set = query_set.values_list('username', 'str_date_joined')
-            header = ['username', 'str_date_joined']
+            query_set = query_set.values_list('username', 'date_created')
+            header = ['username', 'date_created']
             self.to_csv(query_set,
                         header=header,
                         output=options.get('stdout', stdout),
                         error=options.get('stderr', stderr))
 
         else:
-            query_set = query_set.values('username', 'str_date_joined')
+            query_set = query_set.values('username', 'date_created')
             self.to_json(query_set,
                          output=options.get('stdout', stdout),
                          error=options.get('stderr', stderr))
