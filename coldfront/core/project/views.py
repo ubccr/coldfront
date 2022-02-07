@@ -1260,7 +1260,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
     def get(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        project_review_form = ProjectReviewForm(project_obj.pk)
+        project_review_form = ProjectReviewForm()
 
         context = {}
         context['project'] = project_obj
@@ -1279,7 +1279,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
     def post(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        project_review_form = ProjectReviewForm(project_obj.pk, request.POST)
+        project_review_form = ProjectReviewForm(request.POST)
 
         project_review_status_choice = ProjectReviewStatusChoice.objects.get(
             name='Pending')
@@ -1313,9 +1313,13 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
             form_data = project_review_form.cleaned_data
+            project_updates = form_data.get('project_updates')
+            if form_data.get('no_project_updates'):
+                project_updates = 'No new project updates.'
+
             project_review_obj = ProjectReview.objects.create(
                 project=project_obj,
-                reason_for_not_updating_project=form_data.get('reason'),
+                project_updates=project_updates,
                 allocation_renewals=','.join(allocation_renewals),
                 status=project_review_status_choice)
 
@@ -1340,7 +1344,13 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         else:
             messages.error(
                 request, 'There was an error in processing your project review.')
-            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+
+            errors = project_review_form.errors.get('__all__')
+            if errors and len(errors):
+                for error in errors:
+                    messages.error(request, error)
+
+            return HttpResponseRedirect(reverse('project-review', kwargs={'pk': project_obj.pk}))
 
 
 class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):

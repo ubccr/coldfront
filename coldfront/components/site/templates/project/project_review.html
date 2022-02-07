@@ -94,4 +94,21 @@ Review Project
   <input class="btn btn-primary" type="submit" value="Submit" />
   <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button">Back to Project</a>
 </form>
+
+<script>
+  $(document).ready(function () {
+    if ($('#id_no_project_updates').is(':checked')) {
+      $('#div_id_project_updates').hide();
+    }
+
+    $('#id_no_project_updates').change(function (e) {
+      if (e.target.checked) {
+        $('#div_id_project_updates').hide();
+      } else {
+        $('#div_id_project_updates').show();
+      }
+    })
+  })
+</script>
+
 {% endblock %}
