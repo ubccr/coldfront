@@ -143,11 +143,11 @@ class JobSearchForm(forms.Form):
 
                 self.fields.pop('show_all_jobs')
 
-                set = ProjectUser.objects.filter(user=user,
+                active_projects = ProjectUser.objects.filter(user=user,
                                                  status__name='Active').\
                     distinct('project').values_list('project__name')
                 queryset = \
-                    Project.objects.filter(name__in=set)
+                    Project.objects.filter(name__in=active_projects)
 
         self.fields['submitdate'].label = ''
         self.fields['submit_modifier'].label = ''
@@ -159,4 +159,4 @@ class JobSearchForm(forms.Form):
         self.fields['amount_modifier'].label = ''
 
         self.fields['project_name'].widget.choices = \
-            [('', '-----')] + [(project.name, project.name) for project in queryset]
+            [('', '-----')] + [(project.name, project.name) for project in queryset.iterator()]
