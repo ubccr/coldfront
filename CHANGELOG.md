@@ -1,6 +1,6 @@
 # ColdFront Changelog
 
-## [1.1.0]
+## [1.1.0] - 2022-02-08
 
 - Add a checkbox to 'select all' users on the project to enable/disable notifications [#291](https://github.com/ubccr/coldfront/issues/291)
 - Archived grant not viewable by PI [#259](https://github.com/ubccr/coldfront/issues/259)
