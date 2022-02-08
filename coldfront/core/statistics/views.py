@@ -55,7 +55,7 @@ class SlurmJobListView(LoginRequiredMixin,
 
         is_pi = ProjectUser.objects.filter(
             role__name__in=['Manager', 'Principal Investigator'],
-            user=self.request.user)
+            user=self.request.user).exists()
         job_search_form = JobSearchForm(self.request.GET,
                                         user=self.request.user,
                                         is_pi=is_pi)
@@ -92,7 +92,7 @@ class SlurmJobListView(LoginRequiredMixin,
 
         is_pi = ProjectUser.objects.filter(
             role__name__in=['Manager', 'Principal Investigator'],
-            user=self.request.user)
+            user=self.request.user).exists()
         job_search_form = JobSearchForm(self.request.GET,
                                         user=self.request.user,
                                         is_pi=is_pi)
@@ -156,7 +156,7 @@ class SlurmJobListView(LoginRequiredMixin,
             self.request.user.is_superuser or \
             self.request.user.has_perm('statistics.view_job')
 
-        context['is_pi'] = not (self.request.user.is_superuser or self.request.user.has_perm('statistics.view_job')) and is_pi
+        context['show_username'] = (self.request.user.is_superuser or self.request.user.has_perm('statistics.view_job')) or is_pi
 
         return context
 
