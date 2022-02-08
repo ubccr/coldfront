@@ -48,7 +48,10 @@ class JobSearchForm(forms.Form):
 
     partition = forms.CharField(label='Partition', max_length=100, required=False)
 
-    amount = forms.FloatField(label='Service Units', required=False)
+    amount = forms.FloatField(label='Service Units',
+                              required=False,
+                              widget=forms.NumberInput(
+                                  attrs={'placeholder': 'Number of Service Units'}))
 
     amount_modifier = forms.ChoiceField(
         choices=AMOUNT_MODIFIER,
