@@ -250,6 +250,11 @@
     {% endif %}
 
   <script>
+      $('select').selectize({
+          create: true,
+          sortField: 'text'
+      })
+
       $("#navbar-main > ul > li.active").removeClass("active");
       $("#navbar-project-menu").addClass("active");
       $("#navbar-jobs-list").addClass("active");
@@ -263,6 +268,8 @@
       function resetForm($form) {
           $form.find('input:text, input:password, input:file, select, textarea').val('');
           $form.find("input[type='number']").val('');
+
+          for (let i = 0; i < 6; i++) {$('select')[i].selectize.clear();}
       }
 
       $("#expand_button").click(function () {
@@ -272,13 +279,6 @@
           icon.toggleClass("fa-plus fa-minus");
 
       });
-  </script>
-
-  <script>
-      $('select').selectize({
-          create: true,
-          sortField: 'text'
-      })
   </script>
 
 {% endblock %}
