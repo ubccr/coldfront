@@ -629,6 +629,8 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         if form.instance.type.name == 'Class':
             if not isinstance(PROJECT_CLASS_PROJECT_END_DATES[0], tuple):
                 end_dates = [tuple(map(int, x.split(':'))) for x in PROJECT_CLASS_PROJECT_END_DATES]
+            else:
+                end_dates = PROJECT_CLASS_PROJECT_END_DATES
 
             list_of_actual_dates = []
             for date in end_dates:
