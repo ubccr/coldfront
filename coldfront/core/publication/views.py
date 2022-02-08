@@ -221,12 +221,14 @@ class PublicationAddView(LoginRequiredMixin, UserPassesTestMixin, View):
                         pk=form_data.get('source_pk'))
                     publication_obj, created = Publication.objects.get_or_create(
                         project=project_obj,
-                        title=form_data.get('title'),
-                        author=form_data.get('author'),
-                        year=form_data.get('year'),
-                        journal=form_data.get('journal'),
                         unique_id=form_data.get('unique_id'),
-                        source=source_obj
+                        defaults = {
+                            'title':form_data.get('title'),
+                            'author':form_data.get('author'),
+                            'year':form_data.get('year'),
+                            'journal':form_data.get('journal'),
+                            'source':source_obj                            
+                        }                        
                     )
                     if created:
                         publications_added += 1
