@@ -58,6 +58,7 @@ INSTALLED_APPS += [
 
 # Savio-specific Additional Apps
 INSTALLED_APPS += [
+    'flags',
     'formtools',
 ]
 
