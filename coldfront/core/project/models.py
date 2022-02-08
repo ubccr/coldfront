@@ -99,7 +99,7 @@ We do not have information about your research. Please provide a detailed descri
     @property
     def needs_review(self):
 
-        if self.status.name in ['Archived', 'Expired', ]:
+        if self.status.name in ['Archived', 'Expired', 'Review Pending']:
             return False
 
         if self.force_review is True:
@@ -109,7 +109,7 @@ We do not have information about your research. Please provide a detailed descri
 
     @property
     def can_be_reviewed(self):
-        if self.status.name in ['Archived', 'Denied', ]:
+        if self.status.name in ['Archived', 'Denied', 'Review Pending']:
             return False
 
         if self.force_review is True:
