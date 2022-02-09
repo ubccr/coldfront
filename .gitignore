@@ -25,7 +25,10 @@ coldfront.env
 __pycache__
 environment.yml
 sf_query_holysfdb01_20210930.json
-coldfront/plugins/sftocf/data/*.json
 coldfront/fixtures*
-coldfront/plugins/sftocf/sfc.log
+coldfront/plugins/sftocf/data/*.json
+coldfront/plugins/sftocf/**/*.csv
+coldfront/plugins/sftocf/data/missing_ifxusers.csv
+coldfront/plugins/sftocf/**/*.log
 VERSION
+coldfront.db-journal
