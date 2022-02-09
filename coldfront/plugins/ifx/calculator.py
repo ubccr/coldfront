@@ -220,13 +220,24 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
         cursor = connection.cursor()
         cursor.execute(sql, [allocation.id, product_usage.year, product_usage.month, allocation.id, product_usage.year, product_usage.month])
         total = 0
+        count = 0
         for row in cursor.fetchall():
             allocation_user_fractions[row[0]] = {
                 'quantity': row[1]
             }
             total += row[1]
+            count += 1
+
+        if total == 0 and count == 0:
+            raise Exception(f'Allocation {allocation} of usage {product_usage} has no user at all.  This should be impossible.')
+
         for uid in allocation_user_fractions.keys():
-            allocation_user_fractions[uid]['fraction'] = Decimal(allocation_user_fractions[uid]['quantity']) / Decimal(total)
+            # For the situation where there is an allocation, and the PI is an allocation user, but no data is used
+            # set fraction to 1 / count where count is probably just one.
+            if total == 0:
+                allocation_user_fractions[uid]['fraction'] = Decimal(1 / count)
+            else:
+                allocation_user_fractions[uid]['fraction'] = Decimal(allocation_user_fractions[uid]['quantity']) / Decimal(total)
 
         logger.debug('Allocation user fractions %s', str(allocation_user_fractions))
         return allocation_user_fractions
