@@ -13,8 +13,8 @@ Test title
 
 <div class="card mb-3">
   <div class="card-header">
-    <h3 class="d-inline">{{project_review.project}}</h3>
-    <a href="{% url 'project-detail' project_review.project.pk%}" role="button"><i class="far fa-folder-open" aria-hidden="true"></i><span class="sr-only">Details</span></a>
+    <h3 class="d-inline">{{project_review.project}} </h3>
+    <a target="_blank" href="{% url 'project-detail' project_review.project.pk%}" role="button"><i class="far fa-folder-open" aria-hidden="true"></i><span class="sr-only">Details</span></a>
   </div>
   <div class="card-body">
     <div class="table-responsive">
