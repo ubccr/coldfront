@@ -576,6 +576,18 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
         if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
             return True
 
+    def dispatch(self, request, *args, **kwargs):
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        if project_obj.status.name in ['Denied', 'Waiting For Admin Approval', 'Review Pending']:
+            messages.error(
+                request,
+                'Cannot archive a project with status "{}".'.format(project_obj.status.name)
+            )
+            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+
+
+        return super().dispatch(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         pk = self.kwargs.get('pk')

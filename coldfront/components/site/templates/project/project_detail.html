@@ -48,7 +48,9 @@ Project Detail
       <div class="float-right">
         {% if not project.status.name in 'Archived, Denied, Expired' %}
           <a class="btn btn-info" href="{% url 'project-update' project.pk %}" role="button"><i class="far fa-edit" aria-hidden="true"></i> Update Project Information</a>
-          <a class="btn btn-info" href="{% url 'project-archive' project.id %}" role="button"><i class="fas fa-file-archive" aria-hidden="true"></i> Archive Project</a>
+          {% if not project.status.name in 'Waiting For Admin Approval, Review Pending' %}
+            <a class="btn btn-info" href="{% url 'project-archive' project.id %}" role="button"><i class="fas fa-file-archive" aria-hidden="true"></i> Archive Project</a>
+          {% endif %}
         {% endif %}
       </div>
     </div>
