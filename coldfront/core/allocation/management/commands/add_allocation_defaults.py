@@ -67,7 +67,7 @@ class Command(BaseCommand):
                 defaults={
                     'has_usage': False,
                     'is_required': False,
-                    'is_unique': False,
+                    'is_unique': True,
                     'is_private': True,
                 })
 
