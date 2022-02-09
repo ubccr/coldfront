@@ -385,7 +385,9 @@ GOOGLE_OAUTH2_KEY_FILE = "/tmp/credentials.json"
 # django-flags settings
 #------------------------------------------------------------------------------
 
-FLAGS = {}
+FLAGS = {
+    'LRC_ONLY': [],
+}
 
 #------------------------------------------------------------------------------
 # Deployment-specific settings
