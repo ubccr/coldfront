@@ -112,7 +112,7 @@ Password for all users is also `test1234`.
 10. Run a command to create database objects needed for accounting.
 
 ```
-python manage.py add_brc_accounting_defaults
+python manage.py add_accounting_defaults
 ```
 
 ## Vagrant VM Install

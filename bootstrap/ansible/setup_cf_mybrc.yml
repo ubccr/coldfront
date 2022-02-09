@@ -146,9 +146,9 @@
         virtualenv: "{{ git_prefix }}/venv"
       become_user: "{{ djangooperator }}"
 
-    - name: CF MyBRC Django app add_brc_accounting_defaults
+    - name: CF MyBRC Django app add_accounting_defaults
       django_manage:
-        command: add_brc_accounting_defaults
+        command: add_accounting_defaults
         app_path: "{{ git_prefix }}/{{ reponame }}"
         settings: "config.settings"
         pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"

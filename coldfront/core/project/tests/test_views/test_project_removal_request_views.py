@@ -32,7 +32,7 @@ class TestBase(TestCase):
             'import_field_of_science_data',
             'add_default_project_choices',
             'create_staff_group',
-            'add_brc_accounting_defaults',
+            'add_accounting_defaults',
         ]
         sys.stdout = open(os.devnull, 'w')
         for command in commands:
