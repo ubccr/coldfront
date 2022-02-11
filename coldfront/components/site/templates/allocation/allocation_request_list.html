@@ -49,7 +49,7 @@ Allocation Review New and Pending Requests
                     </span>
                   </td>
                 {% elif allocation.project.needs_review %}
-                  <td class="text-danger">
+                  <td class="text-warning">
                     {{ allocation.project.status.name }}
                     <span class="badge badge-warning">Needs Review</span>
                   </td>
