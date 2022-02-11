@@ -1,6 +1,6 @@
 # ColdFront Changelog
 
-## [Unreleased]
+## [1.1.0] - 2022-02-08
 
 - Add a checkbox to 'select all' users on the project to enable/disable notifications [#291](https://github.com/ubccr/coldfront/issues/291)
 - Archived grant not viewable by PI [#259](https://github.com/ubccr/coldfront/issues/259)
@@ -21,18 +21,19 @@
 - Allow site-level control of how resources ordered within an allocation [#334](https://github.com/ubccr/coldfront/issues/334)
 - LDAP user search plugin: Add ldap connect timeout config option [#351](https://github.com/ubccr/coldfront/pull/351)
 - Upgrade to Django v3.2 [#295](https://github.com/ubccr/coldfront/issues/295)
+- Fix error on duplicate publication entry [#369](https://github.com/ubccr/coldfront/issues/369)
 
 ## [1.0.4] - 2021-03-25
 
-- Fix [#235](https://github.com/ubccr/coldfront/issues/235)
-- Fix [#271](https://github.com/ubccr/coldfront/issues/271)
-- Fix [#279](https://github.com/ubccr/coldfront/issues/279)
+- Slurm plugin: disabled resource should not show up in slurm files [#235](https://github.com/ubccr/coldfront/issues/235)
+- Fix ldap config [#271](https://github.com/ubccr/coldfront/issues/271)
+- Add sample csv data to pip packaging [#279](https://github.com/ubccr/coldfront/issues/279)
 - Add LDAP User Search plugin configs
 
 ## [1.0.3] - 2021-03-02
 
-- Refactor ColdFront settings. See [PR #264](https://github.com/ubccr/coldfront/pull/264)
-- Lots of documenation updates. [See here](https://coldfront.readthedocs.io)
+- Refactor ColdFront settings [#264](https://github.com/ubccr/coldfront/pull/264)
+- Lots of documenation updates now hosted on readthedocs. [see here](https://coldfront.readthedocs.io)
 - Fix setuptools for pip installs
 
 ## [1.0.2] - 2021-02-15
@@ -73,4 +74,5 @@
 [1.0.2]: https://github.com/ubccr/coldfront/releases/tag/v1.0.2
 [1.0.3]: https://github.com/ubccr/coldfront/releases/tag/v1.0.3
 [1.0.4]: https://github.com/ubccr/coldfront/releases/tag/v1.0.4
-[Unreleased]: https://github.com/ubccr/coldfront/compare/v1.0.4...HEAD
+[1.1.0]: https://github.com/ubccr/coldfront/releases/tag/v1.1.0
+[Unreleased]: https://github.com/ubccr/coldfront/compare/v1.1.0...HEAD
