@@ -47,6 +47,7 @@ from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email, send_email_template
+from coldfront.core.project.utils import get_new_end_date_from_list
 
 logger = logging.getLogger(__name__)
 
@@ -640,38 +641,35 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         form.instance.status = ProjectStatusChoice.objects.get(name='Waiting For Admin Approval')
         if form.instance.type.name == 'Class':
             if not isinstance(PROJECT_CLASS_PROJECT_END_DATES[0], tuple):
-                end_dates = [tuple(map(int, x.split(':'))) for x in PROJECT_CLASS_PROJECT_END_DATES]
+                expire_dates = [
+                    tuple(map(int, x.split(':'))) for x in PROJECT_CLASS_PROJECT_END_DATES
+                ]
             else:
-                end_dates = PROJECT_CLASS_PROJECT_END_DATES
+                expire_dates = PROJECT_CLASS_PROJECT_END_DATES
 
-            list_of_actual_dates = []
-            for date in end_dates:
+            full_expire_dates = []
+            for date in expire_dates:
                 actual_date = datetime.date(datetime.date.today().year, date[0], date[1])
-                list_of_actual_dates.append(actual_date)
+                full_expire_dates.append(actual_date)
 
-            todays_date = datetime.date.today()
-            if todays_date < list_of_actual_dates[1]:
-                if todays_date < list_of_actual_dates[0]:
-                    end_date = list_of_actual_dates[0]
-                    index = 0
-                else:
-                    end_date = list_of_actual_dates[1]
-                    index = 1
-            else:
-                if todays_date >= list_of_actual_dates[2]:
-                    end_date = list_of_actual_dates[0] + datetime.timedelta(days=365)
-                    index = 3
-                else:
-                    end_date = list_of_actual_dates[2]
-                    index = 2
+            end_date = get_new_end_date_from_list(
+                full_expire_dates,
+                datetime.date.today(),
+                30
+            )
 
-            if (end_date - todays_date).days <= 30:
-                index += 1
-                end_date = list_of_actual_dates[index % 3]
-                if index > 2:
-                    end_date += datetime.timedelta(days=365)
+            if end_date is None:
+                logger.error(
+                    'End date for new project request was set to None on date {}'
+                    .format(datetime.date.today())
+                )
+                messages.error(
+                    self.request,
+                    'Something went wrong while submitting this project request. Please try again later.'
+                )
+                return super().form_invalid(form)
 
-            form.instance.end_date = end_date
+            project_obj.end_date = end_date
         else:
             form.instance.end_date = datetime.datetime.today() + datetime.timedelta(
                 days=PROJECT_DEFAULT_PROJECT_LENGTH
@@ -1533,50 +1531,31 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
         project_status_obj = ProjectStatusChoice.objects.get(name="Active")
 
         if project_obj.type.name == 'Class':
-            list_of_actual_dates = []
-            list_of_semester_start_dates = [(1, 19), (5, 11), (8, 23)]
-            for date in list_of_semester_start_dates:
-                actual_date = datetime.date(datetime.date.today().year, date[0], date[1])
-                list_of_actual_dates.append(actual_date)
-
-            todays_date = datetime.date.today()
-            if project_obj.end_date < todays_date:
-                if todays_date < list_of_actual_dates[1]:
-                    if todays_date < list_of_actual_dates[0]:
-                        end_date = list_of_actual_dates[0]
-                        index = 0
-                    else:
-                        end_date = list_of_actual_dates[1]
-                        index = 1
-                else:
-                    if todays_date >= list_of_actual_dates[2]:
-                        end_date = list_of_actual_dates[0] + datetime.timedelta(days=365)
-                        index = 3
-                    else:
-                        end_date = list_of_actual_dates[2]
-                        index = 2
-
-                if (end_date - todays_date).days <= 30:
-                    index += 1
-                    end_date = list_of_actual_dates[index % 3]
-                    if index > 2:
-                        end_date += datetime.timedelta(days=365)
+            if not isinstance(PROJECT_CLASS_PROJECT_END_DATES[0], tuple):
+                expire_dates = [
+                    tuple(map(int, x.split(':'))) for x in PROJECT_CLASS_PROJECT_END_DATES
+                ]
             else:
-                # These conditionals assume the project is expiring soon and sets the end date to
-                # the next given date. A class project that had a forced review will also have
-                # its end date set to the next given date even if it wasn't close to expiring.
-                if todays_date < list_of_actual_dates[1]:
-                    if todays_date <= list_of_actual_dates[0]:
-                        end_date = list_of_actual_dates[1]
-                    else:
-                        end_date = list_of_actual_dates[2]
-                elif todays_date > list_of_actual_dates[1]:
-                    if todays_date <= list_of_actual_dates[2]:
-                        end_date = list_of_actual_dates[0] + datetime.timedelta(days=365)
-                    else:
-                        end_date = list_of_actual_dates[1] + datetime.timedelta(days=365)
-                else:
-                    end_date = list_of_actual_dates[2]
+                expire_dates = PROJECT_CLASS_PROJECT_END_DATES
+
+            full_expire_dates = []
+            for date in expire_dates:
+                actual_date = datetime.date(datetime.date.today().year, date[0], date[1])
+                full_expire_dates.append(actual_date)
+
+            end_date = get_new_end_date_from_list(
+                full_expire_dates,
+                project_review_obj.created.date(),
+                30
+            )
+
+            if end_date is None:
+                logger.error(
+                    'New end date for project {} was set to None with project review creation date {} during project review approval'
+                    .format(project_obj.title, project_review_obj.created.date())
+                )
+                messages.error(request, 'Something went wrong while approving the review.')
+                return HttpResponseRedirect(reverse('project-review-list'))
 
             project_obj.end_date = end_date
         else:
