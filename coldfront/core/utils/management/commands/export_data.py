@@ -276,7 +276,9 @@ class Command(BaseCommand):
         if format == 'csv':
             header = dict(projects[0].__dict__)
             header.pop('_state')
-            self.to_csv(projects,
+            query_set = projects.values_list(*header)
+
+            self.to_csv(query_set,
                         header=header,
                         output=kwargs.get('stdout', stdout),
                         error=kwargs.get('stderr', stderr))

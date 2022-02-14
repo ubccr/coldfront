@@ -21,6 +21,7 @@ from coldfront.core.statistics.models import Job
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
+from coldfront.core.project.models import Project, ProjectStatusChoice
 
 
 class TestBase2(TestBase):
@@ -456,3 +457,133 @@ class TestJobAvgQueueTime(TestBase2):
 
             err.seek(0)
             self.assertEqual(err.read(), '')
+
+
+class TestProjects(TestBase):
+    """ Test class to test export data subcommand projects runs correctly """
+
+    def setUp(self):
+        super().setUp()
+
+        # create sample projects
+        active_status = ProjectStatusChoice.objects.get(name='Active')
+        inactive_status = ProjectStatusChoice.objects.get(name='Inactive')
+        prefixes = ['fc', 'ac', 'co']
+
+        active_projects, inactive_projects = [], []
+        for index in range(10):
+            project = Project.objects.create(name=f'{prefixes[index % len(prefixes)]}_project_{index}',
+                                             status=active_status)
+            active_projects.append(project)
+
+        for index in range(10, 20):
+            project = Project.objects.create(name=f'{prefixes[index % len(prefixes)]}_project_{index}',
+                                             status=inactive_status)
+            inactive_projects.append(project)
+
+        self.active_projects = active_projects
+        self.inactive_projects = inactive_projects
+
+        self.total_projects = []
+        self.total_projects.extend(active_projects)
+        self.total_projects.extend(inactive_projects)
+
+        self.fc_projects = list(filter(
+            lambda x: x.name.startswith('fc_'), self.total_projects))
+
+    def test_projects_default(self):
+        out, err = StringIO(''), StringIO('')
+        call_command('export_data', 'projects',
+                     '--format=csv', stdout=out, stderr=err)
+
+        sys.stdout = sys.__stdout__
+        out.seek(0)
+
+        query_set = self.total_projects
+
+        output = DictReader(out.readlines())
+        count = 0
+        for index, item in enumerate(output):
+            count += 1
+            compare = dict(query_set[index].__dict__)
+            compare.pop('_state')
+
+            self.assertListEqual(list(compare.keys()), list(item.keys()))
+
+            for key in item.keys():
+                self.assertEqual(str(compare[key]), item[key])
+
+        self.assertEqual(len(query_set), count)
+
+    def test_projects_active_filter(self):
+        out, err = StringIO(''), StringIO('')
+        call_command('export_data', 'projects',
+                     '--format=csv', '--active_only', stdout=out, stderr=err)
+
+        sys.stdout = sys.__stdout__
+        out.seek(0)
+
+        query_set = self.active_projects
+
+        output = DictReader(out.readlines())
+        count = 0
+        for index, item in enumerate(output):
+            count += 1
+            compare = dict(query_set[index].__dict__)
+            compare.pop('_state')
+
+            self.assertListEqual(list(compare.keys()), list(item.keys()))
+
+            for key in item.keys():
+                self.assertEqual(str(compare[key]), item[key])
+
+        self.assertEqual(len(query_set), count)
+
+    def test_projects_allowance_filter(self):
+        out, err = StringIO(''), StringIO('')
+        call_command('export_data', 'projects',
+                     '--format=csv', '--allowance_type=fc_', stdout=out, stderr=err)
+
+        sys.stdout = sys.__stdout__
+        out.seek(0)
+
+        query_set = self.fc_projects
+
+        output = DictReader(out.readlines())
+        count = 0
+        for index, item in enumerate(output):
+            count += 1
+            compare = dict(query_set[index].__dict__)
+            compare.pop('_state')
+
+            self.assertListEqual(list(compare.keys()), list(item.keys()))
+
+            for key in item.keys():
+                self.assertEqual(str(compare[key]), str(item[key]))
+
+        self.assertEqual(len(query_set), count)
+
+    def test_projects_format(self):
+        # NOTE: csv is tested in other tests, only check json here
+        out, err = StringIO(''), StringIO('')
+        call_command('export_data', 'projects',
+                     '--format=json',  stdout=out, stderr=err)
+
+        sys.stdout = sys.__stdout__
+        out.seek(0)
+
+        query_set = self.total_projects
+
+        output = json.loads(''.join(out.readlines()))
+        count = 0
+        for index, item in enumerate(output):
+            count += 1
+            compare = dict(query_set[index].__dict__)
+            compare.pop('_state')
+
+            self.assertListEqual(list(compare.keys()), list(item.keys()))
+
+            for key in item.keys():
+                self.assertEqual(str(compare[key]), str(item[key]))
+
+        self.assertEqual(len(query_set), count)
