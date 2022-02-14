@@ -10,7 +10,7 @@ from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.api.statistics.utils import get_accounting_allocation_objects
 from coldfront.api.statistics.utils import set_project_allocation_value
 from coldfront.api.statistics.utils import set_project_user_allocation_value
-from coldfront.core.allocation.models import AllocationAttributeType
+from coldfront.core.allocation.models import AllocationAttributeType, Allocation
 
 
 class Command(BaseCommand):
@@ -30,11 +30,9 @@ class Command(BaseCommand):
                             help='User given reason for adding SUs.',
                             type=str,
                             required=True)
-
         parser.add_argument('--dry_run',
                             help='Display updates without performing them.',
-                            type=str,
-                            required=False)
+                            action='store_true')
 
     def handle(self, *args, **options):
         """ Set user password for all users in test database """
@@ -44,25 +42,25 @@ class Command(BaseCommand):
         reason = options.get('reason')
         dry_run = options.get('dry_run', None)
 
-        date_time = utc_now_offset_aware()
-
-        allocation_objects = get_accounting_allocation_objects(project)
-
-        if not allocation_objects.allocation.resources.filter(name='Savio Compute').exists():
+        if not Allocation.objects.get(project=project).resources.filter(name='Savio Compute').exists():
             raise CommandError('Can only add SUs to projects that '
-                               'have an allocatino to Savio Compute.')
+                               'have an allocation in Savio Compute.')
 
+        date_time = utc_now_offset_aware()
+        allocation_objects = get_accounting_allocation_objects(project)
         current_allocation = Decimal(allocation_objects.allocation_attribute.value)
 
         # Compute the new Service Units value.
         allocation = addition + current_allocation
 
         if dry_run:
-            f'Would add {addition} additional SUs to project ' \
-            f'{project.name}. This would increase {project.name} ' \
-            f'SUs from {current_allocation} to {allocation}. ' \
-            f'The reason for updating SUs for {project.name}' \
-            f'is given as: {reason}'
+            message = f'Would add {addition} additional SUs to project ' \
+                      f'{project.name}. This would increase {project.name} ' \
+                      f'SUs from {current_allocation} to {allocation}. ' \
+                      f'The reason for updating SUs for {project.name} ' \
+                      f'would be: {reason}.'
+
+            self.stdout.write(self.style.WARNING(message))
 
         else:
             # Set the value for the Project.
@@ -109,3 +107,9 @@ class Command(BaseCommand):
                         allocation_user_attribute.history.latest("id")
                     historical_allocation_user_attribute.history_change_reason = reason
                     historical_allocation_user_attribute.save()
+
+            message = f"Successfully added {addition} SUs to {project.name}" \
+                      f", updating {project.name}'s SUs from " \
+                      f"{current_allocation} to {allocation}."
+
+            self.stdout.write(self.style.SUCCESS(message))
