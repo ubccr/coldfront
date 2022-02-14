@@ -76,6 +76,7 @@ Resource Detail
   </div>
 </div>
 
+<!-- Start Resource Attributes -->
 {% if attributes or request.user.is_superuser %}
   <div class="card mb-3">
     <div class="card-header">
@@ -116,46 +117,61 @@ Resource Detail
   </div>
 {% endif %}
 
-{% if child_resources or request.user.is_superuser %}
-  <div class="card mb-3">
-    <div class="card-header">
-      <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Child Resources</h3>
-    </div>
-    <div class="card-body">
-      {% if child_resources %}
-        <div class="table-responsive">
-          <table class="table table-bordered table-sm">
-            <thead>
-              <tr>
-                <th scope="col">Resource Name</th>
-                <th scope="col">WarrantyExpire</th>
-                <th scope="col">ServiceEnd</th>
-                <th scope="col">Vendor</th>
-                <th scope="col">Serial #</th>
-                <th scope="col">Model</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for child in child_resources %}
-                  <tr>
-                    <td><a href="{% url 'resource-detail' child.object.pk %}">{{child.object}}</a></td>
-                    <td>{{child.WarrantyExpirationDate}}</td>
-                    <td>{{child.ServiceEnd}}</td>
-                    <td>{{child.Vendor}}</td>
-                    <td>{{child.SerialNumber}}</td>
-                    <td>{{child.Model}}</td>
-                  </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+<!-- Start Child Resources -->
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Child Resources</h3>
+  </div>
+
+  <div class="card-body">
+    {% if child_resources %}
+      <div class="table-responsive">
+        <table id="child_resource_table" class="table table-bordered table-sm">
+          <thead>
+            <tr>
+              <th scope="col">Resource Name</th>
+              <th scope="col">WarrantyExpire</th>
+              <th scope="col">ServiceEnd</th>
+              <th scope="col">Vendor</th>
+              <th scope="col">Serial #</th>
+              <th scope="col">Model</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for child in child_resources %}
+                <tr>
+                  <td><a href="{% url 'resource-detail' child.object.pk %}">{{child.object}}</a></td>
+                  <td>{{child.WarrantyExpirationDate}}</td>
+                  <td>{{child.ServiceEnd}}</td>
+                  <td>{{child.Vendor}}</td>
+                  <td>{{child.SerialNumber}}</td>
+                  <td>{{child.Model}}</td>
+                </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <div class="alert alert-info" role="alert">
+          <i class="fas fa-info-circle" aria-hidden="true"></i>
+          There are no child resources to display.
         </div>
       {% endif %}
-    </div>
   </div>
-{% endif %}
+</div>
 
 
 <script>
-
+  $(document).ready(function () { 
+    $('#child_resource_table').DataTable({
+      lengthMenu: [5, 10, 20, 50, 100],
+      "pageLength": 5,
+      "ordering": false,
+      'aoColumnDefs': [{
+        'bSortable': false,
+        'aTargets': ['nosort']
+      }]
+    });
+  });
 </script>
 {% endblock %}
