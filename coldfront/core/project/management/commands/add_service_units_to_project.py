@@ -1,8 +1,10 @@
 import logging
 from decimal import Decimal
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.management import BaseCommand, CommandError
 
+from coldfront.config import settings
 from coldfront.core.project.models import Project
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
@@ -34,31 +36,67 @@ class Command(BaseCommand):
                             help='Display updates without performing them.',
                             action='store_true')
 
+    def validate_inputs(self, options):
+        """Validate inputs to add_service_units_to_project command"""
+
+        # Checking if project exists
+        if not Project.objects.filter(name=options.get('project_name')).exists():
+            error_message = f"Requested project {options.get('project_name')}" \
+                            f" does not exist."
+            raise CommandError(error_message)
+
+        # Allocation must be in Savio Compute
+        project = Project.objects.get(name=options.get('project_name'))
+        try:
+            allocation_objects = get_accounting_allocation_objects(project)
+        except ObjectDoesNotExist as e:
+            error_message = 'Can only add SUs to projects that have an ' \
+                            'allocation in Savio Compute.'
+            raise CommandError(error_message)
+
+        addition = Decimal(options.get('amount'))
+        current_allocation = Decimal(allocation_objects.allocation_attribute.value)
+
+        # new service units value
+        allocation = addition + current_allocation
+
+        # checking SU values
+        if addition < settings.ALLOCATION_MIN or addition > settings.ALLOCATION_MAX:
+            error_message = f'Amount of SUs to add must be between ' \
+                            f'{settings.ALLOCATION_MIN} and ' \
+                            f'{settings.ALLOCATION_MAX}.'
+            raise CommandError(error_message)
+
+        if allocation > settings.ALLOCATION_MAX:
+            error_message = f'Total SUs for allocation {project.name} ' \
+                            f'cannot be greater than {settings.ALLOCATION_MAX}.'
+            raise CommandError(error_message)
+
+        if len(options.get('reason')) < 20:
+            error_message = f'Reason must be at least 20 characters.'
+            raise CommandError(error_message)
+
     def handle(self, *args, **options):
-        """ Set user password for all users in test database """
+        """ Add SUs to a given project """
+
+        self.validate_inputs(options)
 
         project = Project.objects.get(name=options.get('project_name'))
         addition = Decimal(options.get('amount'))
         reason = options.get('reason')
         dry_run = options.get('dry_run', None)
 
-        if not Allocation.objects.get(project=project).resources.filter(name='Savio Compute').exists():
-            raise CommandError('Can only add SUs to projects that '
-                               'have an allocation in Savio Compute.')
-
-        date_time = utc_now_offset_aware()
         allocation_objects = get_accounting_allocation_objects(project)
         current_allocation = Decimal(allocation_objects.allocation_attribute.value)
-
-        # Compute the new Service Units value.
         allocation = addition + current_allocation
+        date_time = utc_now_offset_aware()
 
         if dry_run:
             message = f'Would add {addition} additional SUs to project ' \
                       f'{project.name}. This would increase {project.name} ' \
                       f'SUs from {current_allocation} to {allocation}. ' \
                       f'The reason for updating SUs for {project.name} ' \
-                      f'would be: {reason}.'
+                      f'would be: "{reason}".'
 
             self.stdout.write(self.style.WARNING(message))
 
@@ -108,8 +146,9 @@ class Command(BaseCommand):
                     historical_allocation_user_attribute.history_change_reason = reason
                     historical_allocation_user_attribute.save()
 
-            message = f"Successfully added {addition} SUs to {project.name}" \
-                      f", updating {project.name}'s SUs from " \
-                      f"{current_allocation} to {allocation}."
+            message = f'Successfully added {addition} SUs to {project.name} ' \
+                      f'and its users, updating {project.name}\'s SUs from ' \
+                      f'{current_allocation} to {allocation}. The reason ' \
+                      f'was: "{reason}".'
 
             self.stdout.write(self.style.SUCCESS(message))

@@ -19,6 +19,37 @@ class TestAddServiceUnitsToProject(TestAllocationBase):
         """Set up test data."""
         super().setUp()
 
+    def record_historical_objects_len(self, project):
+        """ Records the lengths of all relevant historical objects to a dict"""
+        length_dict = {}
+        allocation_objects = get_accounting_allocation_objects(project)
+        historical_allocation_attribute = \
+            allocation_objects.allocation_attribute.history.all()
+
+        length_dict['historical_allocation_attribute'] = \
+            len(historical_allocation_attribute)
+
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name="Service Units")
+        for project_user in project.projectuser_set.all():
+            if project_user.role.name != 'User':
+                continue
+
+            allocation_user = \
+                allocation_objects.allocation.allocationuser_set.get(
+                    user=project_user.user)
+            allocation_user_attribute = \
+                allocation_user.allocationuserattribute_set.get(
+                    allocation_attribute_type=allocation_attribute_type,
+                    allocation=allocation_objects.allocation)
+            historical_allocation_user_attribute = \
+                allocation_user_attribute.history.all()
+
+            key = 'historical_allocation_user_attribute_' + project_user.user.username
+            length_dict[key] = len(historical_allocation_user_attribute)
+
+        return length_dict
+
     def allocation_values_test(self, project, value, user_value):
         allocation_objects = get_accounting_allocation_objects(project)
         self.assertEqual(allocation_objects.allocation_attribute.value, value)
@@ -48,13 +79,18 @@ class TestAddServiceUnitsToProject(TestAllocationBase):
 
             self.assertTrue(pre_time <= proj_user_transaction.date_time <= post_time)
 
+    def historical_objects_created(self, pre_length_dict, post_length_dict):
+        """Test that historical objects were created"""
+        for k, v in pre_length_dict.items():
+            self.assertEqual(v + 1, post_length_dict[k])
+
     def historical_objects_updated(self, project):
         allocation_objects = get_accounting_allocation_objects(project)
         historical_allocation_attribute = \
             allocation_objects.allocation_attribute.history.latest("id")
         historical_reason = historical_allocation_attribute.history_change_reason
 
-        self.assertEqual(historical_reason, 'This is a test')
+        self.assertEqual(historical_reason, 'This is a test for add_service_units command')
 
         allocation_attribute_type = AllocationAttributeType.objects.get(
             name="Service Units")
@@ -73,15 +109,16 @@ class TestAddServiceUnitsToProject(TestAllocationBase):
                 allocation_user_attribute.history.latest("id")
             historical_reason = \
                 historical_allocation_user_attribute.history_change_reason
-            self.assertEqual(historical_reason, 'This is a test')
+            self.assertEqual(historical_reason,
+                             'This is a test for add_service_units command')
 
     def test_dry_run(self):
         """Testing add_service_units_to_project dry run"""
         out, err = StringIO(''), StringIO('')
         call_command('add_service_units_to_project',
-                     '--project=project0',
+                     '--project_name=project0',
                      '--amount=1000',
-                     '--reason=This is a test',
+                     '--reason=This is a test for add_service_units command',
                      '--dry_run',
                      stdout=out,
                      stderr=err)
@@ -92,35 +129,37 @@ class TestAddServiceUnitsToProject(TestAllocationBase):
                           'project0. This would increase project0 ' \
                           'SUs from 1000.00 to 2000.00. ' \
                           'The reason for updating SUs for project0 ' \
-                          'would be: This is a test.'
+                          'would be: "This is a test for ' \
+                          'add_service_units command".'
 
         self.assertIn(dry_run_message, out.read())
         err.seek(0)
         self.assertEqual(err.read(), '')
 
-    def test_command(self):
+    def test_creates_and_updates_objects(self):
         """Testing add_service_units_to_project dry run"""
 
         # test allocation values before command
         project = Project.objects.get(name='project0')
         pre_time = utc_now_offset_aware()
+        pre_length_dict = self.record_historical_objects_len(project)
 
         self.allocation_values_test(project, '1000.00', '500.00')
 
         # run command
         out, err = StringIO(''), StringIO('')
         call_command('add_service_units_to_project',
-                     '--project=project0',
+                     '--project_name=project0',
                      '--amount=1000',
-                     '--reason=This is a test',
+                     '--reason=This is a test for add_service_units command',
                      stdout=out,
                      stderr=err)
         sys.stdout = sys.__stdout__
         out.seek(0)
 
-        message = "Successfully added 1000 SUs to project0" \
-                  ", updating project0's SUs from " \
-                  "1000.00 to 2000.00."
+        message = f'Successfully added 1000 SUs to project0 and its users, ' \
+                  f'updating project0\'s SUs from 1000.00 to 2000.00. The ' \
+                  f'reason was: "This is a test for add_service_units command".'
 
         self.assertIn(message, out.read())
         err.seek(0)
@@ -134,10 +173,12 @@ class TestAddServiceUnitsToProject(TestAllocationBase):
         # test ProjectTransaction created
         self.transactions_created(project, pre_time, post_time)
 
-        # test historical objects updated
+        # test historical objects created and updated
+        post_length_dict = self.record_historical_objects_len(project)
+        self.historical_objects_created(pre_length_dict, post_length_dict)
         self.historical_objects_updated(project)
 
-    def test_non_savio_compute(self):
+    def test_input_validations(self):
         project = Project.objects.get(name='project1')
         allocation = Allocation.objects.get(project=project)
 
@@ -159,9 +200,69 @@ class TestAddServiceUnitsToProject(TestAllocationBase):
         with self.assertRaises(CommandError):
             out, err = StringIO(''), StringIO('')
             call_command('add_service_units_to_project',
-                         '--project=project1',
+                         '--project_name=project1',
                          '--amount=1000',
-                         '--reason=This is a test',
+                         '--reason=This is a test for add_service_units command',
+                         stdout=out,
+                         stderr=err)
+            sys.stdout = sys.__stdout__
+            out.seek(0)
+            self.assertEqual(out.read(), '')
+            err.seek(0)
+            self.assertEqual(err.read(), '')
+
+        # testing a project that does not exist
+        with self.assertRaises(CommandError):
+            out, err = StringIO(''), StringIO('')
+            call_command('add_service_units_to_project',
+                         '--project_name=project555',
+                         '--amount=1000',
+                         '--reason=This is a test for add_service_units command',
+                         stdout=out,
+                         stderr=err)
+            sys.stdout = sys.__stdout__
+            out.seek(0)
+            self.assertEqual(out.read(), '')
+            err.seek(0)
+            self.assertEqual(err.read(), '')
+
+        # adding service units that are less than settings.ALLOCATION_MIN
+        with self.assertRaises(CommandError):
+            out, err = StringIO(''), StringIO('')
+            call_command('add_service_units_to_project',
+                         '--project_name=project0',
+                         '--amount=-1000',
+                         '--reason=This is a test for add_service_units command',
+                         stdout=out,
+                         stderr=err)
+            sys.stdout = sys.__stdout__
+            out.seek(0)
+            self.assertEqual(out.read(), '')
+            err.seek(0)
+            self.assertEqual(err.read(), '')
+
+        # adding service units that are greater than settings.ALLOCATION_MIN
+        with self.assertRaises(CommandError):
+            out, err = StringIO(''), StringIO('')
+            call_command('add_service_units_to_project',
+                         '--project_name=project0',
+                         '--amount=500000000',
+                         '--reason=This is a test for add_service_units command',
+                         stdout=out,
+                         stderr=err)
+            sys.stdout = sys.__stdout__
+            out.seek(0)
+            self.assertEqual(out.read(), '')
+            err.seek(0)
+            self.assertEqual(err.read(), '')
+
+        # reason is not long enough
+        with self.assertRaises(CommandError):
+            out, err = StringIO(''), StringIO('')
+            call_command('add_service_units_to_project',
+                         '--project_name=project0',
+                         '--amount=1000',
+                         '--reason=notlong',
                          stdout=out,
                          stderr=err)
             sys.stdout = sys.__stdout__
