@@ -64,6 +64,8 @@ more advanced configuration use `local_settings.py`.
 | SECRET_KEY           | This is used to provide cryptographic signing, and should be set to a unique, unpredictable value. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#secret-key). If you don't provide this one will be generated each time ColdFront starts. |
 | LANGUAGE_CODE        | A string representing the language code. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#language-code)
 | TIME_ZONE            | A string representing the time zone for this installation. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#std:setting-TIME_ZONE) |
+| Q_CLUSTER_RETRY    | The number of seconds Django Q broker will wait for a cluster to finish a task. [See here](https://django-q.readthedocs.io/en/latest/configure.html#retry) |
+| Q_CLUSTER_TIMEOUT    | The number of seconds a Django Q worker is allowed to spend on a task before it’s terminated. IMPORTANT NOTE: Q_CLUSTER_TIMEOUT must be less than Q_CLUSTER_RETRY. [See here](https://django-q.readthedocs.io/en/latest/configure.html#timeout) |
 
 ### Template settings
 
