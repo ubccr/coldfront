@@ -63,9 +63,9 @@ class TestAddServiceUnitsToProject(TestAllocationBase):
             self.assertEqual(allocation_objects.allocation_user_attribute.value,
                              user_value)
 
-    def transactions_created(self, project, pre_time, post_time):
+    def transactions_created(self, project, pre_time, post_time, amount):
         proj_transaction = ProjectTransaction.objects.get(project=project,
-                                                          allocation=2000.0)
+                                                          allocation=amount)
 
         self.assertTrue(pre_time <= proj_transaction.date_time <= post_time)
 
@@ -75,7 +75,7 @@ class TestAddServiceUnitsToProject(TestAllocationBase):
 
             proj_user_transaction = ProjectUserTransaction.objects.get(
                 project_user=project_user,
-                allocation=2000.0)
+                allocation=amount)
 
             self.assertTrue(pre_time <= proj_user_transaction.date_time <= post_time)
 
@@ -136,8 +136,8 @@ class TestAddServiceUnitsToProject(TestAllocationBase):
         err.seek(0)
         self.assertEqual(err.read(), '')
 
-    def test_creates_and_updates_objects(self):
-        """Testing add_service_units_to_project dry run"""
+    def test_creates_and_updates_objects_positive_SU(self):
+        """Testing add_service_units_to_project with positive SUs"""
 
         # test allocation values before command
         project = Project.objects.get(name='project0')
@@ -171,7 +171,49 @@ class TestAddServiceUnitsToProject(TestAllocationBase):
         self.allocation_values_test(project, '2000.00', '2000.00')
 
         # test ProjectTransaction created
-        self.transactions_created(project, pre_time, post_time)
+        self.transactions_created(project, pre_time, post_time, 2000.00)
+
+        # test historical objects created and updated
+        post_length_dict = self.record_historical_objects_len(project)
+        self.historical_objects_created(pre_length_dict, post_length_dict)
+        self.historical_objects_updated(project)
+
+    def test_creates_and_updates_objects_negative_SU(self):
+        """Testing add_service_units_to_project with negative SUs"""
+
+        # test allocation values before command
+        project = Project.objects.get(name='project0')
+        pre_time = utc_now_offset_aware()
+        pre_length_dict = self.record_historical_objects_len(project)
+
+        self.allocation_values_test(project, '1000.00', '500.00')
+
+        # run command
+        out, err = StringIO(''), StringIO('')
+        call_command('add_service_units_to_project',
+                     '--project_name=project0',
+                     '--amount=-800',
+                     '--reason=This is a test for add_service_units command',
+                     stdout=out,
+                     stderr=err)
+        sys.stdout = sys.__stdout__
+        out.seek(0)
+
+        message = f'Successfully added -800 SUs to project0 and its users, ' \
+                  f'updating project0\'s SUs from 1000.00 to 200.00. The ' \
+                  f'reason was: "This is a test for add_service_units command".'
+
+        self.assertIn(message, out.read())
+        err.seek(0)
+        self.assertEqual(err.read(), '')
+
+        post_time = utc_now_offset_aware()
+
+        # test allocation values after command
+        self.allocation_values_test(project, '200.00', '200.00')
+
+        # test ProjectTransaction created
+        self.transactions_created(project, pre_time, post_time, 200.00)
 
         # test historical objects created and updated
         post_length_dict = self.record_historical_objects_len(project)
