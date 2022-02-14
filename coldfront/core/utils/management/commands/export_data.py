@@ -13,6 +13,7 @@ from coldfront.config import settings
 from coldfront.core.allocation.models import AllocationAttributeType, \
     AllocationUserAttribute
 from coldfront.core.statistics.models import Job
+from coldfront.core.project.models import Project
 
 """An admin command that exports the results of useful database queries
 in user-friendly formats."""
@@ -104,6 +105,21 @@ class Command(BaseCommand):
             choices=['ac_', 'co_', 'fc_', 'ic_', 'pc_'],
             help='Filter projects by the given allowance type.',
             type=str)
+
+        project_subparser = subparsers.add_parser('projects',
+                                                  help='Export projects data')
+        project_subparser.add_argument('--allowance_type',
+                                       choices=['ac_', 'co_',
+                                                'fc_', 'ic_', 'pc_'],
+                                       help='Filter projects by the given allowance type.',
+                                       type=str)
+        project_subparser.add_argument('--format',
+                                       choices=['csv', 'json'],
+                                       required=True,
+                                       help='Export results in the given format.',
+                                       type=str)
+        project_subparser.add_argument('--active_only',
+                                       action='store_true')
 
     def handle(self, *args, **options):
         """Call the handler for the provided subcommand."""
@@ -245,6 +261,35 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(time_str))
 
+    def handle_projects(self, *args, **kwargs):
+        format = kwargs['format']
+        active_only = kwargs['active_only']
+        allowance_type = kwargs['allowance_type']
+        projects = Project.objects.all()
+
+        if allowance_type:
+            projects = projects.filter(name__istartswith=allowance_type)
+
+        if active_only:
+            projects = projects.filter(status__name__istartswith='Active')
+
+        if format == 'csv':
+            header = dict(projects[0].__dict__)
+            header.pop('_state')
+            self.to_csv(projects,
+                        header=header,
+                        output=kwargs.get('stdout', stdout),
+                        error=kwargs.get('stderr', stderr))
+
+        elif format == 'json':
+            query_set = [dict(project.__dict__) for project in projects]
+            for query in query_set:
+                query.pop("_state")
+
+            self.to_json(query_set,
+                         output=kwargs.get('stdout', stdout),
+                         error=kwargs.get('stderr', stderr))
+
     @staticmethod
     def to_csv(query_set, header=None, output=stdout, error=stderr):
         '''
@@ -293,7 +338,7 @@ class Command(BaseCommand):
             return
 
         try:
-            json_output = json.dumps(list(query_set))
+            json_output = json.dumps(list(query_set), indent=4, default=str)
             output.writelines(json_output)
         except Exception as e:
             error.write(str(e))
