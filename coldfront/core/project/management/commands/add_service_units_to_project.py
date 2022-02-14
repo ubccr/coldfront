@@ -14,7 +14,7 @@ from coldfront.core.allocation.models import AllocationAttributeType
 
 
 class Command(BaseCommand):
-    help = 'Command to set a common password for users in the test database.'
+    help = 'Command to add SUs to a given project.'
     logger = logging.getLogger(__name__)
 
     def add_arguments(self, parser):
