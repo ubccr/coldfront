@@ -226,12 +226,29 @@ class TestAddServiceUnitsToProject(TestAllocationBase):
             err.seek(0)
             self.assertEqual(err.read(), '')
 
-        # adding service units that are less than settings.ALLOCATION_MIN
+        # adding service units that results in allocation having less
+        # than settings.ALLOCATION_MIN
         with self.assertRaises(CommandError):
             out, err = StringIO(''), StringIO('')
             call_command('add_service_units_to_project',
                          '--project_name=project0',
-                         '--amount=-1000',
+                         '--amount=-100000',
+                         '--reason=This is a test for add_service_units command',
+                         stdout=out,
+                         stderr=err)
+            sys.stdout = sys.__stdout__
+            out.seek(0)
+            self.assertEqual(out.read(), '')
+            err.seek(0)
+            self.assertEqual(err.read(), '')
+
+        # adding service units that results in allocation having more
+        # than settings.ALLOCATION_MAX
+        with self.assertRaises(CommandError):
+            out, err = StringIO(''), StringIO('')
+            call_command('add_service_units_to_project',
+                         '--project_name=project0',
+                         '--amount=99999500',
                          '--reason=This is a test for add_service_units command',
                          stdout=out,
                          stderr=err)

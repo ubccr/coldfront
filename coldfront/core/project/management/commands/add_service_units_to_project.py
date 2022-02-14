@@ -61,15 +61,15 @@ class Command(BaseCommand):
         allocation = addition + current_allocation
 
         # checking SU values
-        if addition < settings.ALLOCATION_MIN or addition > settings.ALLOCATION_MAX:
-            error_message = f'Amount of SUs to add must be between ' \
-                            f'{settings.ALLOCATION_MIN} and ' \
-                            f'{settings.ALLOCATION_MAX}.'
+        if addition > settings.ALLOCATION_MAX:
+            error_message = f'Amount of SUs to add must cannot be greater ' \
+                            f'than {settings.ALLOCATION_MAX}.'
             raise CommandError(error_message)
 
-        if allocation > settings.ALLOCATION_MAX:
+        if allocation < settings.ALLOCATION_MIN or allocation > settings.ALLOCATION_MAX:
             error_message = f'Total SUs for allocation {project.name} ' \
-                            f'cannot be greater than {settings.ALLOCATION_MAX}.'
+                            f'cannot be less than {settings.ALLOCATION_MIN} ' \
+                            f'or greater than {settings.ALLOCATION_MAX}.'
             raise CommandError(error_message)
 
         if len(options.get('reason')) < 20:
