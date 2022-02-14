@@ -49,7 +49,7 @@ class Command(BaseCommand):
         project = Project.objects.get(name=options.get('project_name'))
         try:
             allocation_objects = get_accounting_allocation_objects(project)
-        except ObjectDoesNotExist as e:
+        except Allocation.DoesNotExist:
             error_message = 'Can only add SUs to projects that have an ' \
                             'allocation in Savio Compute.'
             raise CommandError(error_message)
