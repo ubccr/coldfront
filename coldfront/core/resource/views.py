@@ -10,6 +10,7 @@ from django.urls import reverse
 from django.views.generic import TemplateView, ListView
 from django.views.generic.edit import CreateView
 
+from coldfront.core.allocation.utils import get_user_resources
 from coldfront.core.resource.forms import ResourceSearchForm, ResourceAttributeDeleteForm
 from coldfront.core.resource.models import Resource, ResourceAttribute
 
@@ -21,10 +22,13 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
+        if self.request.user.is_superuser or self.request.user.is_staff:
             return True
 
-        if self.request.user.has_perm('allocation.can_view_all_allocations'):
+        pk = self.kwargs.get('pk')
+        resource_obj = get_object_or_404(Resource, pk=pk)
+
+        if resource_obj in get_user_resources(self.request.user):
             return True
 
         messages.error(
@@ -207,9 +211,48 @@ class ResourceListView(LoginRequiredMixin, ListView):
             if data.get('show_all_resources') and (self.request.user.is_superuser or self.request.user.is_staff):
                 resources = Resource.objects.all().order_by(order_by)
             else:
-                resources = Resource.objects.all().order_by(order_by)
+                resources = get_user_resources(self.request.user).order_by(order_by)
+
+            if data.get('model'):
+                resources = resources.filter(
+                    Q(resourceattribute__resource_attribute_type__name='Model') &
+                    Q(resourceattribute__value=data.get('model'))
+                )
+            if data.get('serialNumber'):
+                resources = resources.filter(
+                    Q(resourceattribute__resource_attribute_type__name='SerialNumber') &
+                    Q(resourceattribute__value=data.get('serialNumber'))
+                )
+            if data.get('installDate'):
+                resources = resources.filter(
+                    Q(resourceattribute__resource_attribute_type__name='InstallDate') &
+                    Q(resourceattribute__value=data.get('installDate').strftime('%m/%d/%Y'))
+                )
+            if data.get('serviceStart'):
+                resources = resources.filter(
+                    Q(resourceattribute__resource_attribute_type_name='ServiceStart') &
+                    Q(resourceattribute__value=data.get('serviceStart').strftime('%m/%d/%Y'))
+                )
+            if data.get('serviceEnd'):
+                resources = resources.filter(
+                    Q(resourceattribute__resource_attribute_type__name='ServiceEnd') &
+                    Q(resourceattribute__value=data.get('serviceEnd').strftime('%m/%d/%Y'))
+                )
+            if data.get('warrantyExpirationDate'):
+                resources = resources.filter(
+                    Q(resourceattribute__resource_attribute_type__name='WarrantyExpirationDate') &
+                    Q(resourceattribute__value=data.get('warrantyExpirationDate').strftime('%m/%d/%Y'))
+                )
+            if data.get('vendor'):
+                resources = resources.filter(
+                    Q(resourceattribute__resource_attribute_type__name='Vendor') &
+                    Q(resourceattribute__value=data.get('vendor'))
+                )
         else:
-            resources = Resource.objects.all().order_by(order_by)
+            if self.request.user.is_superuser or self.request.user.is_staff:
+                resources = Resource.objects.all().order_by(order_by)
+            else:
+                resources = get_user_resources(self.request.user).order_by(order_by)
 
         return resources.distinct()
 

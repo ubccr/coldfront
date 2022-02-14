@@ -4,6 +4,28 @@ from django import forms
 class ResourceSearchForm(forms.Form):
     """ Search form for the Resource list page.
     """
+    model = forms.CharField(
+        label='Model', max_length=100, required=False)
+    serialNumber = forms.CharField(
+        label='Serial Number', max_length=100, required=False)
+    vendor = forms.CharField(
+        label='Vendor', max_length=100, required=False)
+    installDate = forms.DateField(
+        label='Install Date',
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        required=False)
+    serviceStart = forms.DateField(
+        label='Service Start',
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        required=False)
+    serviceEnd =  forms.DateField(
+        label='Service End', 
+        widget=forms.DateInput(attrs={'class': 'datepicker'}), 
+        required=False)
+    warrantyExpirationDate = forms.DateField(
+        label='Warranty Expiration Date', 
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        required=False)
     show_all_resources = forms.BooleanField(initial=False, required=False)
 
 
