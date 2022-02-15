@@ -40,7 +40,8 @@ def _run_slurm_cmd(cmd, noop=True):
     """Run specified (sacctmgr) command.
 
     Honors the noop flag, in which case no command is executed,
-    but just logs what would have been run (and returns None).
+    but logs and returns a text string containing the command which would
+    have been run.
 
     Otherwise, on success, returns the std output of the 
     command (as a bytes sequence).  The cases wherein one
@@ -52,7 +53,7 @@ def _run_slurm_cmd(cmd, noop=True):
     """
     if noop:
         logger.warn('NOOP - Slurm cmd: %s', cmd)
-        return
+        return "{}\n".format(cmd)
 
     try:
         result = subprocess.run(
@@ -99,7 +100,7 @@ def slurm_add_cluster(cluster, specs=None, noop=False):
         specs = []
     cmd = SLURM_CMD_ADD_CLUSTER.format(shlex.quote(cluster))
     cmd += ' ' + ' '.join(map(lambda x: shlex.quote(x), specs))
-    _run_slurm_cmd(cmd, noop=noop)
+    return _run_slurm_cmd(cmd, noop=noop)
 
 def slurm_dump_cluster(cluster, fname, noop=False):
     """Run the sacctmgr command to dump the named cluster to named file.
@@ -117,7 +118,7 @@ def slurm_dump_cluster(cluster, fname, noop=False):
     cmd = SLURM_CMD_DUMP_CLUSTER.format(
         shlex.quote(cluster), 
         shlex.quote(fname))
-    _run_slurm_cmd(cmd, noop=noop)
+    return _run_slurm_cmd(cmd, noop=noop)
 
 def slurm_modify_cluster(cluster, specs=None, noop=False):
     """Run the sacctmgr command to modify the named cluster.
@@ -138,7 +139,7 @@ def slurm_modify_cluster(cluster, specs=None, noop=False):
         raise SlurmError('slurm_modify_cluster requires non-empty specs list')
     cmd = SLURM_CMD_MODIFY_CLUSTER.format(shlex.quote(cluster))
     cmd += ' ' + ' '.join(map(lambda x: shlex.quote(x), specs))
-    _run_slurm_cmd(cmd, noop=noop)
+    return _run_slurm_cmd(cmd, noop=noop)
 
 def slurm_remove_cluster(cluster, noop=False):
     """Run the sacctmgr command to remove the named cluster.
@@ -154,7 +155,7 @@ def slurm_remove_cluster(cluster, noop=False):
     errors, otherwise returns stdout of the command being run.
     """
     cmd = SLURM_CMD_REMOVE_CLUSTER.format(shlex.quote(cluster))
-    _run_slurm_cmd(cmd, noop=noop)
+    return _run_slurm_cmd(cmd, noop=noop)
 
 # Association commands
 def slurm_add_assoc(user, cluster, account, specs=None, noop=False):
@@ -181,7 +182,7 @@ def slurm_add_assoc(user, cluster, account, specs=None, noop=False):
             shlex.quote(account))
     if len(specs) > 0:
         cmd += ' ' + ' '.join(map(lambda x: shlex.quote(x), specs))
-    _run_slurm_cmd(cmd, noop=noop)
+    return _run_slurm_cmd(cmd, noop=noop)
 
 def slurm_check_assoc(user, cluster, account):
     """Checks if an association for (user,cluster,account) exists in Slurm.
@@ -226,8 +227,9 @@ def slurm_modify_assoc(user, cluster, account, specs=None, noop=False):
         shlex.quote(cluster),
         shlex.quote(account),
         shlex.quote(user),)
+    specs.sort()
     cmd += ' ' + ' '.join(map(lambda x: shlex.quote(x), specs))
-    _run_slurm_cmd(cmd, noop=noop)
+    return _run_slurm_cmd(cmd, noop=noop)
 
 def slurm_remove_assoc(user, cluster, account, noop=False):
     """Run the sacctmgr command to remove association for (user,cluster,account).
@@ -246,7 +248,7 @@ def slurm_remove_assoc(user, cluster, account, noop=False):
         shlex.quote(user), 
         shlex.quote(cluster), 
         shlex.quote(account))
-    _run_slurm_cmd(cmd, noop=noop)
+    return _run_slurm_cmd(cmd, noop=noop)
 
 # QoS commands
 def slurm_remove_qos(user, cluster, account, qos, noop=False):
@@ -272,7 +274,7 @@ def slurm_remove_qos(user, cluster, account, qos, noop=False):
         shlex.quote(cluster), 
         shlex.quote(account), 
         shlex.quote(qos))
-    _run_slurm_cmd(cmd, noop=noop)
+    return _run_slurm_cmd(cmd, noop=noop)
 
 # Account commands
 def slurm_add_account(cluster, account, specs=None, parent=None, noop=False):
@@ -300,7 +302,7 @@ def slurm_add_account(cluster, account, specs=None, parent=None, noop=False):
     if parent is not None:
         if parent.name != 'root':
             cmd += 'Parent={}'.format(shlex.quote(parent.name))
-    _run_slurm_cmd(cmd, noop=noop)
+    return _run_slurm_cmd(cmd, noop=noop)
 
 def slurm_modify_account(cluster, account, specs=None, noop=False):
     """Run the sacctmgr command to modify the named account in cluster.
@@ -324,7 +326,7 @@ def slurm_modify_account(cluster, account, specs=None, noop=False):
         shlex.quote(cluster),
         shlex.quote(account))
     cmd += ' ' + ' '.join(map(lambda x: shlex.quote(x), specs))
-    _run_slurm_cmd(cmd, noop=noop)
+    return _run_slurm_cmd(cmd, noop=noop)
 
 def slurm_remove_account(cluster, account, noop=False):
     """Run the sacctmgr command to remove the named Slurm account in cluster.
@@ -342,7 +344,7 @@ def slurm_remove_account(cluster, account, noop=False):
     cmd = SLURM_CMD_REMOVE_ACCOUNT.format(
         shlex.quote(account), 
         shlex.quote(cluster))
-    _run_slurm_cmd(cmd, noop=noop)
+    return _run_slurm_cmd(cmd, noop=noop)
 
 def slurm_block_account(cluster, account, noop=False):
     """Run the sacctmgr command to disable the named Slurm account in cluster.
@@ -362,5 +364,5 @@ def slurm_block_account(cluster, account, noop=False):
     cmd = SLURM_CMD_BLOCK_ACCOUNT.format(
         shlex.quote(account), 
         shlex.quote(cluster))
-    _run_slurm_cmd(cmd, noop=noop)
+    return _run_slurm_cmd(cmd, noop=noop)
 
