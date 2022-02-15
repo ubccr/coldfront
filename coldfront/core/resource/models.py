@@ -7,8 +7,14 @@ from django.db import models
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 from django.utils.module_loading import import_string
+from coldfront.core.utils.common import import_from_settings
 
 logger = logging.getLogger(__name__)
+
+RESOURCE_ENABLE_ACCOUNT_CHECKING = import_from_settings(
+    'RESOURCE_ENABLE_ACCOUNT_CHECKING', True
+)
+
 
 class AttributeType(TimeStampedModel):
     name = models.CharField(max_length=128, unique=True)
@@ -123,6 +129,9 @@ class Resource(TimeStampedModel):
         return None
 
     def check_user_account_exists(self, username, resource):
+        if not RESOURCE_ENABLE_ACCOUNT_CHECKING:
+            return True
+
         resource_acc = self.resource_accounts.get(resource)
 
         if resource_acc is None:
