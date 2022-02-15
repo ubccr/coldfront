@@ -1,0 +1,7710 @@
+[
+{
+  "model": "contenttypes.contenttype",
+  "pk": 1,
+  "fields": {
+    "app_label": "admin",
+    "model": "logentry"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 2,
+  "fields": {
+    "app_label": "auth",
+    "model": "permission"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 3,
+  "fields": {
+    "app_label": "auth",
+    "model": "group"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 4,
+  "fields": {
+    "app_label": "auth",
+    "model": "user"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 5,
+  "fields": {
+    "app_label": "contenttypes",
+    "model": "contenttype"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 6,
+  "fields": {
+    "app_label": "sessions",
+    "model": "session"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 7,
+  "fields": {
+    "app_label": "django_q",
+    "model": "schedule"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 8,
+  "fields": {
+    "app_label": "django_q",
+    "model": "task"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 9,
+  "fields": {
+    "app_label": "django_q",
+    "model": "failure"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 10,
+  "fields": {
+    "app_label": "django_q",
+    "model": "success"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 11,
+  "fields": {
+    "app_label": "django_q",
+    "model": "ormq"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 12,
+  "fields": {
+    "app_label": "user",
+    "model": "userprofile"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 13,
+  "fields": {
+    "app_label": "field_of_science",
+    "model": "fieldofscience"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 14,
+  "fields": {
+    "app_label": "project",
+    "model": "project"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 15,
+  "fields": {
+    "app_label": "project",
+    "model": "projectreviewstatuschoice"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 16,
+  "fields": {
+    "app_label": "project",
+    "model": "projectstatuschoice"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 17,
+  "fields": {
+    "app_label": "project",
+    "model": "projectuserrolechoice"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 18,
+  "fields": {
+    "app_label": "project",
+    "model": "projectuserstatuschoice"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 19,
+  "fields": {
+    "app_label": "project",
+    "model": "projectusermessage"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 20,
+  "fields": {
+    "app_label": "project",
+    "model": "projectreview"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 21,
+  "fields": {
+    "app_label": "project",
+    "model": "projectadmincomment"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 22,
+  "fields": {
+    "app_label": "project",
+    "model": "historicalprojectuser"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 23,
+  "fields": {
+    "app_label": "project",
+    "model": "historicalprojectreview"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 24,
+  "fields": {
+    "app_label": "project",
+    "model": "historicalproject"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 25,
+  "fields": {
+    "app_label": "project",
+    "model": "projectuser"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 26,
+  "fields": {
+    "app_label": "resource",
+    "model": "attributetype"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 27,
+  "fields": {
+    "app_label": "resource",
+    "model": "resourcetype"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 28,
+  "fields": {
+    "app_label": "resource",
+    "model": "resourceattributetype"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 29,
+  "fields": {
+    "app_label": "resource",
+    "model": "resource"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 30,
+  "fields": {
+    "app_label": "resource",
+    "model": "historicalresourcetype"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 31,
+  "fields": {
+    "app_label": "resource",
+    "model": "historicalresourceattributetype"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 32,
+  "fields": {
+    "app_label": "resource",
+    "model": "historicalresourceattribute"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 33,
+  "fields": {
+    "app_label": "resource",
+    "model": "historicalresource"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 34,
+  "fields": {
+    "app_label": "resource",
+    "model": "resourceattribute"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 35,
+  "fields": {
+    "app_label": "allocation",
+    "model": "allocation"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 36,
+  "fields": {
+    "app_label": "allocation",
+    "model": "allocationattribute"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 37,
+  "fields": {
+    "app_label": "allocation",
+    "model": "allocationattributetype"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 38,
+  "fields": {
+    "app_label": "allocation",
+    "model": "allocationstatuschoice"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 39,
+  "fields": {
+    "app_label": "allocation",
+    "model": "allocationuserstatuschoice"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 40,
+  "fields": {
+    "app_label": "allocation",
+    "model": "attributetype"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 41,
+  "fields": {
+    "app_label": "allocation",
+    "model": "allocationattributeusage"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 42,
+  "fields": {
+    "app_label": "allocation",
+    "model": "historicalallocationuser"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 43,
+  "fields": {
+    "app_label": "allocation",
+    "model": "historicalallocationattributeusage"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 44,
+  "fields": {
+    "app_label": "allocation",
+    "model": "historicalallocationattributetype"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 45,
+  "fields": {
+    "app_label": "allocation",
+    "model": "historicalallocationattribute"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 46,
+  "fields": {
+    "app_label": "allocation",
+    "model": "historicalallocation"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 47,
+  "fields": {
+    "app_label": "allocation",
+    "model": "allocationusernote"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 48,
+  "fields": {
+    "app_label": "allocation",
+    "model": "allocationuser"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 49,
+  "fields": {
+    "app_label": "allocation",
+    "model": "allocationadminnote"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 50,
+  "fields": {
+    "app_label": "allocation",
+    "model": "allocationaccount"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 51,
+  "fields": {
+    "app_label": "grant",
+    "model": "grantfundingagency"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 52,
+  "fields": {
+    "app_label": "grant",
+    "model": "grantstatuschoice"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 53,
+  "fields": {
+    "app_label": "grant",
+    "model": "historicalgrant"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 54,
+  "fields": {
+    "app_label": "grant",
+    "model": "grant"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 55,
+  "fields": {
+    "app_label": "publication",
+    "model": "publicationsource"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 56,
+  "fields": {
+    "app_label": "publication",
+    "model": "historicalpublication"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 57,
+  "fields": {
+    "app_label": "publication",
+    "model": "publication"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 58,
+  "fields": {
+    "app_label": "research_output",
+    "model": "researchoutput"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 59,
+  "fields": {
+    "app_label": "research_output",
+    "model": "historicalresearchoutput"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "1dx4ww1wa98bu81yff90fkgfsw47wc54",
+  "fields": {
+    "session_data": "NjZiZGFlODRiYzU5NDc0MzJmNzc1NGZlZTBhZWNmZGQ1NmNlYzhlOTp7Il9hdXRoX3VzZXJfaWQiOiI2IiwiX2F1dGhfdXNlcl9iYWNrZW5kIjoiZGphbmdvLmNvbnRyaWIuYXV0aC5iYWNrZW5kcy5Nb2RlbEJhY2tlbmQiLCJfYXV0aF91c2VyX2hhc2giOiI4NjZhYTE1YWE4MTU0ZjhhNzU1MTU0ZTRiY2NmYmJhMDE3YjY0NTE4In0=",
+    "expire_date": "2022-02-14T17:20:55.084Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "995xj6l9w3ci6r29krd4984lhacob3l3",
+  "fields": {
+    "session_data": "NjZiZGFlODRiYzU5NDc0MzJmNzc1NGZlZTBhZWNmZGQ1NmNlYzhlOTp7Il9hdXRoX3VzZXJfaWQiOiI2IiwiX2F1dGhfdXNlcl9iYWNrZW5kIjoiZGphbmdvLmNvbnRyaWIuYXV0aC5iYWNrZW5kcy5Nb2RlbEJhY2tlbmQiLCJfYXV0aF91c2VyX2hhc2giOiI4NjZhYTE1YWE4MTU0ZjhhNzU1MTU0ZTRiY2NmYmJhMDE3YjY0NTE4In0=",
+    "expire_date": "2022-02-14T20:38:56.296Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "eqjk5stjtj2hy29348ug3nv6x3a8jbom",
+  "fields": {
+    "session_data": "NGY5YTQzMmY2ZmE3M2UyZjE2YmQwY2ZjZWUwNDAyY2RjMGEyN2ZiYTp7Il9hdXRoX3VzZXJfaWQiOiI2IiwiX2F1dGhfdXNlcl9iYWNrZW5kIjoiZGphbmdvLmNvbnRyaWIuYXV0aC5iYWNrZW5kcy5Nb2RlbEJhY2tlbmQiLCJfYXV0aF91c2VyX2hhc2giOiI4NWExZDA3ZTQ0Nzk0ZTIyOGYyMDI1Yzc0M2U5NTZlNWM3M2NjNTc2In0=",
+    "expire_date": "2022-02-14T16:02:13.415Z"
+  }
+},
+{
+  "model": "django_q.schedule",
+  "pk": 1,
+  "fields": {
+    "name": null,
+    "func": "coldfront.core.allocation.tasks.update_statuses",
+    "hook": null,
+    "args": "()",
+    "kwargs": "{}",
+    "schedule_type": "D",
+    "minutes": null,
+    "repeats": -1,
+    "next_run": "2022-02-13T00:00:00Z",
+    "task": null
+  }
+},
+{
+  "model": "django_q.schedule",
+  "pk": 2,
+  "fields": {
+    "name": null,
+    "func": "coldfront.core.allocation.tasks.send_expiry_emails",
+    "hook": null,
+    "args": "()",
+    "kwargs": "{}",
+    "schedule_type": "D",
+    "minutes": null,
+    "repeats": -1,
+    "next_run": "2022-02-13T00:00:00Z",
+    "task": null
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 1,
+  "fields": {
+    "created": "2022-02-12T00:52:02.328Z",
+    "modified": "2022-02-12T00:52:02.328Z",
+    "parent_id": null,
+    "is_selectable": false,
+    "description": "Mathematical and Physical Sciences",
+    "fos_nsf_id": 100,
+    "fos_nsf_abbrev": "MPS",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 2,
+  "fields": {
+    "created": "2022-02-12T00:52:02.329Z",
+    "modified": "2022-02-12T00:52:02.330Z",
+    "parent_id": 1,
+    "is_selectable": false,
+    "description": "Mathematical Sciences",
+    "fos_nsf_id": 110,
+    "fos_nsf_abbrev": "DMS",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 3,
+  "fields": {
+    "created": "2022-02-12T00:52:02.331Z",
+    "modified": "2022-02-12T00:52:02.332Z",
+    "parent_id": 2,
+    "is_selectable": true,
+    "description": "Classical Analysis",
+    "fos_nsf_id": 111,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 4,
+  "fields": {
+    "created": "2022-02-12T00:52:02.333Z",
+    "modified": "2022-02-12T00:52:02.334Z",
+    "parent_id": 2,
+    "is_selectable": true,
+    "description": "Modern Analysis",
+    "fos_nsf_id": 112,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 5,
+  "fields": {
+    "created": "2022-02-12T00:52:02.334Z",
+    "modified": "2022-02-12T00:52:02.336Z",
+    "parent_id": 2,
+    "is_selectable": true,
+    "description": "Geometric Analysis",
+    "fos_nsf_id": 113,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 6,
+  "fields": {
+    "created": "2022-02-12T00:52:02.336Z",
+    "modified": "2022-02-12T00:52:02.337Z",
+    "parent_id": 2,
+    "is_selectable": true,
+    "description": "Topology and Foundations",
+    "fos_nsf_id": 114,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 7,
+  "fields": {
+    "created": "2022-02-12T00:52:02.338Z",
+    "modified": "2022-02-12T00:52:02.339Z",
+    "parent_id": 2,
+    "is_selectable": true,
+    "description": "Algebra and Number Theory",
+    "fos_nsf_id": 115,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 8,
+  "fields": {
+    "created": "2022-02-12T00:52:02.340Z",
+    "modified": "2022-02-12T00:52:02.341Z",
+    "parent_id": 2,
+    "is_selectable": true,
+    "description": "Applied Mathematics",
+    "fos_nsf_id": 116,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 9,
+  "fields": {
+    "created": "2022-02-12T00:52:02.342Z",
+    "modified": "2022-02-12T00:52:02.343Z",
+    "parent_id": 2,
+    "is_selectable": true,
+    "description": "Statistics and Probability",
+    "fos_nsf_id": 117,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 10,
+  "fields": {
+    "created": "2022-02-12T00:52:02.343Z",
+    "modified": "2022-02-12T00:52:02.344Z",
+    "parent_id": 2,
+    "is_selectable": true,
+    "description": "Computational Mathematics",
+    "fos_nsf_id": 118,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 11,
+  "fields": {
+    "created": "2022-02-12T00:52:02.345Z",
+    "modified": "2022-02-12T00:52:02.346Z",
+    "parent_id": 1,
+    "is_selectable": false,
+    "description": "Astronomical Sciences",
+    "fos_nsf_id": 120,
+    "fos_nsf_abbrev": "AST",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 12,
+  "fields": {
+    "created": "2022-02-12T00:52:02.347Z",
+    "modified": "2022-02-12T00:52:02.348Z",
+    "parent_id": 11,
+    "is_selectable": true,
+    "description": "Extragalactic Astronomy and Cosmology",
+    "fos_nsf_id": 121,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 13,
+  "fields": {
+    "created": "2022-02-12T00:52:02.349Z",
+    "modified": "2022-02-12T00:52:02.350Z",
+    "parent_id": 11,
+    "is_selectable": true,
+    "description": "Planetary Astronomy",
+    "fos_nsf_id": 122,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 14,
+  "fields": {
+    "created": "2022-02-12T00:52:02.350Z",
+    "modified": "2022-02-12T00:52:02.351Z",
+    "parent_id": 11,
+    "is_selectable": true,
+    "description": "Stellar Astronomy and Astrophysics",
+    "fos_nsf_id": 123,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 15,
+  "fields": {
+    "created": "2022-02-12T00:52:02.352Z",
+    "modified": "2022-02-12T00:52:02.353Z",
+    "parent_id": 11,
+    "is_selectable": true,
+    "description": "Galactic Astronomy",
+    "fos_nsf_id": 124,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 16,
+  "fields": {
+    "created": "2022-02-12T00:52:02.354Z",
+    "modified": "2022-02-12T00:52:02.355Z",
+    "parent_id": 1,
+    "is_selectable": false,
+    "description": "Physics",
+    "fos_nsf_id": 130,
+    "fos_nsf_abbrev": "PHY",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 17,
+  "fields": {
+    "created": "2022-02-12T00:52:02.356Z",
+    "modified": "2022-02-12T00:52:02.357Z",
+    "parent_id": 16,
+    "is_selectable": true,
+    "description": "Elementary Particle Physics",
+    "fos_nsf_id": 131,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 18,
+  "fields": {
+    "created": "2022-02-12T00:52:02.357Z",
+    "modified": "2022-02-12T00:52:02.358Z",
+    "parent_id": 16,
+    "is_selectable": true,
+    "description": "Nuclear Physics",
+    "fos_nsf_id": 132,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 19,
+  "fields": {
+    "created": "2022-02-12T00:52:02.359Z",
+    "modified": "2022-02-12T00:52:02.360Z",
+    "parent_id": 16,
+    "is_selectable": true,
+    "description": "Atomic, Molecular, and Optical Physics",
+    "fos_nsf_id": 133,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 20,
+  "fields": {
+    "created": "2022-02-12T00:52:02.361Z",
+    "modified": "2022-02-12T00:52:02.362Z",
+    "parent_id": 16,
+    "is_selectable": true,
+    "description": "Theoretical Physics",
+    "fos_nsf_id": 134,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 21,
+  "fields": {
+    "created": "2022-02-12T00:52:02.363Z",
+    "modified": "2022-02-12T00:52:02.364Z",
+    "parent_id": 16,
+    "is_selectable": true,
+    "description": "Gravitational Physics",
+    "fos_nsf_id": 135,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 22,
+  "fields": {
+    "created": "2022-02-12T00:52:02.364Z",
+    "modified": "2022-02-12T00:52:02.365Z",
+    "parent_id": 1,
+    "is_selectable": false,
+    "description": "Chemistry",
+    "fos_nsf_id": 140,
+    "fos_nsf_abbrev": "CHE",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 23,
+  "fields": {
+    "created": "2022-02-12T00:52:02.366Z",
+    "modified": "2022-02-12T00:52:02.367Z",
+    "parent_id": 22,
+    "is_selectable": true,
+    "description": "Analytical and Surface Chemistry",
+    "fos_nsf_id": 141,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 24,
+  "fields": {
+    "created": "2022-02-12T00:52:02.368Z",
+    "modified": "2022-02-12T00:52:02.369Z",
+    "parent_id": 22,
+    "is_selectable": true,
+    "description": "Inorganic, Bioinorganic, and Organometallic Chemistry",
+    "fos_nsf_id": 142,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 25,
+  "fields": {
+    "created": "2022-02-12T00:52:02.369Z",
+    "modified": "2022-02-12T00:52:02.370Z",
+    "parent_id": 22,
+    "is_selectable": true,
+    "description": "Organic and Macromolecular Chemistry",
+    "fos_nsf_id": 143,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 26,
+  "fields": {
+    "created": "2022-02-12T00:52:02.371Z",
+    "modified": "2022-02-12T00:52:02.372Z",
+    "parent_id": 22,
+    "is_selectable": true,
+    "description": "Physical Chemistry",
+    "fos_nsf_id": 144,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 27,
+  "fields": {
+    "created": "2022-02-12T00:52:02.372Z",
+    "modified": "2022-02-12T00:52:02.373Z",
+    "parent_id": 1,
+    "is_selectable": false,
+    "description": "Materials Research",
+    "fos_nsf_id": 150,
+    "fos_nsf_abbrev": "DMR",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 28,
+  "fields": {
+    "created": "2022-02-12T00:52:02.374Z",
+    "modified": "2022-02-12T00:52:02.375Z",
+    "parent_id": 27,
+    "is_selectable": true,
+    "description": "Solid State Chemistry and Polymers",
+    "fos_nsf_id": 152,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 29,
+  "fields": {
+    "created": "2022-02-12T00:52:02.376Z",
+    "modified": "2022-02-12T00:52:02.377Z",
+    "parent_id": 27,
+    "is_selectable": true,
+    "description": "Condensed Matter Physics",
+    "fos_nsf_id": 154,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 30,
+  "fields": {
+    "created": "2022-02-12T00:52:02.377Z",
+    "modified": "2022-02-12T00:52:02.379Z",
+    "parent_id": 27,
+    "is_selectable": true,
+    "description": "Metals, Ceramics, and Electronic Materials",
+    "fos_nsf_id": 156,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 31,
+  "fields": {
+    "created": "2022-02-12T00:52:02.379Z",
+    "modified": "2022-02-12T00:52:02.379Z",
+    "parent_id": null,
+    "is_selectable": false,
+    "description": "Computer and Information Science and Engineering",
+    "fos_nsf_id": 300,
+    "fos_nsf_abbrev": "CIE",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 32,
+  "fields": {
+    "created": "2022-02-12T00:52:02.380Z",
+    "modified": "2022-02-12T00:52:02.381Z",
+    "parent_id": 31,
+    "is_selectable": false,
+    "description": "Computer and Computation Research",
+    "fos_nsf_id": 310,
+    "fos_nsf_abbrev": "CCR",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 33,
+  "fields": {
+    "created": "2022-02-12T00:52:02.382Z",
+    "modified": "2022-02-12T00:52:02.383Z",
+    "parent_id": 32,
+    "is_selectable": true,
+    "description": "Computer and Computation Theory",
+    "fos_nsf_id": 311,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 34,
+  "fields": {
+    "created": "2022-02-12T00:52:02.384Z",
+    "modified": "2022-02-12T00:52:02.385Z",
+    "parent_id": 32,
+    "is_selectable": true,
+    "description": "Numeric and Symbolic Computation",
+    "fos_nsf_id": 312,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 35,
+  "fields": {
+    "created": "2022-02-12T00:52:02.385Z",
+    "modified": "2022-02-12T00:52:02.386Z",
+    "parent_id": 32,
+    "is_selectable": true,
+    "description": "Computer Systems Architecture",
+    "fos_nsf_id": 313,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 36,
+  "fields": {
+    "created": "2022-02-12T00:52:02.387Z",
+    "modified": "2022-02-12T00:52:02.388Z",
+    "parent_id": 32,
+    "is_selectable": true,
+    "description": "Software Systems",
+    "fos_nsf_id": 314,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 37,
+  "fields": {
+    "created": "2022-02-12T00:52:02.389Z",
+    "modified": "2022-02-12T00:52:02.390Z",
+    "parent_id": 32,
+    "is_selectable": true,
+    "description": "Software Engineering",
+    "fos_nsf_id": 315,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 38,
+  "fields": {
+    "created": "2022-02-12T00:52:02.390Z",
+    "modified": "2022-02-12T00:52:02.392Z",
+    "parent_id": 31,
+    "is_selectable": false,
+    "description": "Information, Robotics, and Intelligent Systems",
+    "fos_nsf_id": 320,
+    "fos_nsf_abbrev": "IRI",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 39,
+  "fields": {
+    "created": "2022-02-12T00:52:02.392Z",
+    "modified": "2022-02-12T00:52:02.393Z",
+    "parent_id": 38,
+    "is_selectable": true,
+    "description": "Knowledge Models and Cognitive Systems",
+    "fos_nsf_id": 321,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 40,
+  "fields": {
+    "created": "2022-02-12T00:52:02.394Z",
+    "modified": "2022-02-12T00:52:02.395Z",
+    "parent_id": 38,
+    "is_selectable": true,
+    "description": "Robotics and Machine Intelligence",
+    "fos_nsf_id": 322,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 41,
+  "fields": {
+    "created": "2022-02-12T00:52:02.396Z",
+    "modified": "2022-02-12T00:52:02.397Z",
+    "parent_id": 38,
+    "is_selectable": true,
+    "description": "Interactive Systems",
+    "fos_nsf_id": 323,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 42,
+  "fields": {
+    "created": "2022-02-12T00:52:02.398Z",
+    "modified": "2022-02-12T00:52:02.399Z",
+    "parent_id": 38,
+    "is_selectable": true,
+    "description": "Information Technology and Organizations",
+    "fos_nsf_id": 324,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 43,
+  "fields": {
+    "created": "2022-02-12T00:52:02.399Z",
+    "modified": "2022-02-12T00:52:02.400Z",
+    "parent_id": 31,
+    "is_selectable": false,
+    "description": "Microelectronic Information Processing Systems",
+    "fos_nsf_id": 330,
+    "fos_nsf_abbrev": "MIP",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 44,
+  "fields": {
+    "created": "2022-02-12T00:52:02.401Z",
+    "modified": "2022-02-12T00:52:02.402Z",
+    "parent_id": 43,
+    "is_selectable": true,
+    "description": "Microelectronic Systems Architecture",
+    "fos_nsf_id": 331,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 45,
+  "fields": {
+    "created": "2022-02-12T00:52:02.403Z",
+    "modified": "2022-02-12T00:52:02.404Z",
+    "parent_id": 43,
+    "is_selectable": true,
+    "description": "Circuits and Signal Processing",
+    "fos_nsf_id": 332,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 46,
+  "fields": {
+    "created": "2022-02-12T00:52:02.405Z",
+    "modified": "2022-02-12T00:52:02.406Z",
+    "parent_id": 43,
+    "is_selectable": true,
+    "description": "Experimental Systems",
+    "fos_nsf_id": 333,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 47,
+  "fields": {
+    "created": "2022-02-12T00:52:02.407Z",
+    "modified": "2022-02-12T00:52:02.408Z",
+    "parent_id": 43,
+    "is_selectable": true,
+    "description": "Systems Prototyping and Fabrication",
+    "fos_nsf_id": 334,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 48,
+  "fields": {
+    "created": "2022-02-12T00:52:02.408Z",
+    "modified": "2022-02-12T00:52:02.409Z",
+    "parent_id": 43,
+    "is_selectable": true,
+    "description": "Design, Tools, and Test",
+    "fos_nsf_id": 335,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 49,
+  "fields": {
+    "created": "2022-02-12T00:52:02.410Z",
+    "modified": "2022-02-12T00:52:02.411Z",
+    "parent_id": 31,
+    "is_selectable": false,
+    "description": "Advanced Scientific Computing",
+    "fos_nsf_id": 340,
+    "fos_nsf_abbrev": "ASC",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 50,
+  "fields": {
+    "created": "2022-02-12T00:52:02.412Z",
+    "modified": "2022-02-12T00:52:02.413Z",
+    "parent_id": 49,
+    "is_selectable": true,
+    "description": "Performance Evaluation and Benchmarking",
+    "fos_nsf_id": 341,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 51,
+  "fields": {
+    "created": "2022-02-12T00:52:02.414Z",
+    "modified": "2022-02-12T00:52:02.415Z",
+    "parent_id": 49,
+    "is_selectable": true,
+    "description": "Algorithm Development",
+    "fos_nsf_id": 342,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 52,
+  "fields": {
+    "created": "2022-02-12T00:52:02.415Z",
+    "modified": "2022-02-12T00:52:02.417Z",
+    "parent_id": 49,
+    "is_selectable": true,
+    "description": "Visualization, Graphics, and Image Processing",
+    "fos_nsf_id": 343,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 53,
+  "fields": {
+    "created": "2022-02-12T00:52:02.417Z",
+    "modified": "2022-02-12T00:52:02.418Z",
+    "parent_id": 49,
+    "is_selectable": true,
+    "description": "Software Development",
+    "fos_nsf_id": 344,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 54,
+  "fields": {
+    "created": "2022-02-12T00:52:02.419Z",
+    "modified": "2022-02-12T00:52:02.420Z",
+    "parent_id": 49,
+    "is_selectable": true,
+    "description": "Distributed and Parallel Processing, Vectorization",
+    "fos_nsf_id": 345,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 55,
+  "fields": {
+    "created": "2022-02-12T00:52:02.421Z",
+    "modified": "2022-02-12T00:52:02.422Z",
+    "parent_id": 31,
+    "is_selectable": true,
+    "description": "Networking and Communications Research",
+    "fos_nsf_id": 350,
+    "fos_nsf_abbrev": "NCR",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 56,
+  "fields": {
+    "created": "2022-02-12T00:52:02.422Z",
+    "modified": "2022-02-12T00:52:02.423Z",
+    "parent_id": 31,
+    "is_selectable": false,
+    "description": "Cross-Disciplinary Activities",
+    "fos_nsf_id": 360,
+    "fos_nsf_abbrev": "CDA",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 57,
+  "fields": {
+    "created": "2022-02-12T00:52:02.424Z",
+    "modified": "2022-02-12T00:52:02.425Z",
+    "parent_id": 56,
+    "is_selectable": true,
+    "description": "Research Instrumentation",
+    "fos_nsf_id": 361,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 58,
+  "fields": {
+    "created": "2022-02-12T00:52:02.426Z",
+    "modified": "2022-02-12T00:52:02.427Z",
+    "parent_id": 56,
+    "is_selectable": true,
+    "description": "Institutional Infrastructure",
+    "fos_nsf_id": 362,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 59,
+  "fields": {
+    "created": "2022-02-12T00:52:02.428Z",
+    "modified": "2022-02-12T00:52:02.429Z",
+    "parent_id": 56,
+    "is_selectable": true,
+    "description": "Educational Infrastructure",
+    "fos_nsf_id": 363,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 60,
+  "fields": {
+    "created": "2022-02-12T00:52:02.429Z",
+    "modified": "2022-02-12T00:52:02.431Z",
+    "parent_id": 56,
+    "is_selectable": true,
+    "description": "Cross-Directorate Activities",
+    "fos_nsf_id": 364,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 61,
+  "fields": {
+    "created": "2022-02-12T00:52:02.431Z",
+    "modified": "2022-02-12T00:52:02.432Z",
+    "parent_id": 56,
+    "is_selectable": true,
+    "description": "Special Projects",
+    "fos_nsf_id": 365,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 31
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 62,
+  "fields": {
+    "created": "2022-02-12T00:52:02.433Z",
+    "modified": "2022-02-12T00:52:02.433Z",
+    "parent_id": null,
+    "is_selectable": false,
+    "description": "Biological Sciences",
+    "fos_nsf_id": 401,
+    "fos_nsf_abbrev": "BIO",
+    "directorate_fos_id": 62
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 63,
+  "fields": {
+    "created": "2022-02-12T00:52:02.434Z",
+    "modified": "2022-02-12T00:52:02.434Z",
+    "parent_id": null,
+    "is_selectable": false,
+    "description": "Social, Behavioral, and Economic Sciences",
+    "fos_nsf_id": 402,
+    "fos_nsf_abbrev": "SBE",
+    "directorate_fos_id": 63
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 64,
+  "fields": {
+    "created": "2022-02-12T00:52:02.435Z",
+    "modified": "2022-02-12T00:52:02.436Z",
+    "parent_id": 62,
+    "is_selectable": false,
+    "description": "Molecular Biosciences",
+    "fos_nsf_id": 410,
+    "fos_nsf_abbrev": "MCB",
+    "directorate_fos_id": 62
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 65,
+  "fields": {
+    "created": "2022-02-12T00:52:02.436Z",
+    "modified": "2022-02-12T00:52:02.438Z",
+    "parent_id": 64,
+    "is_selectable": true,
+    "description": "Biochemistry and Molecular Structure and Function",
+    "fos_nsf_id": 411,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 62
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 66,
+  "fields": {
+    "created": "2022-02-12T00:52:02.438Z",
+    "modified": "2022-02-12T00:52:02.439Z",
+    "parent_id": 64,
+    "is_selectable": true,
+    "description": "Biophysics",
+    "fos_nsf_id": 412,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 62
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 67,
+  "fields": {
+    "created": "2022-02-12T00:52:02.440Z",
+    "modified": "2022-02-12T00:52:02.441Z",
+    "parent_id": 64,
+    "is_selectable": true,
+    "description": "Genetics and Nucleic Acids",
+    "fos_nsf_id": 413,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 62
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 68,
+  "fields": {
+    "created": "2022-02-12T00:52:02.442Z",
+    "modified": "2022-02-12T00:52:02.443Z",
+    "parent_id": 64,
+    "is_selectable": true,
+    "description": "Cell Biology",
+    "fos_nsf_id": 414,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 62
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 69,
+  "fields": {
+    "created": "2022-02-12T00:52:02.443Z",
+    "modified": "2022-02-12T00:52:02.445Z",
+    "parent_id": 62,
+    "is_selectable": false,
+    "description": "Environmental Biology",
+    "fos_nsf_id": 430,
+    "fos_nsf_abbrev": "DEB",
+    "directorate_fos_id": 62
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 70,
+  "fields": {
+    "created": "2022-02-12T00:52:02.445Z",
+    "modified": "2022-02-12T00:52:02.446Z",
+    "parent_id": 69,
+    "is_selectable": true,
+    "description": "Ecological Studies",
+    "fos_nsf_id": 431,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 62
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 71,
+  "fields": {
+    "created": "2022-02-12T00:52:02.447Z",
+    "modified": "2022-02-12T00:52:02.448Z",
+    "parent_id": 69,
+    "is_selectable": true,
+    "description": "Systematic and Population Biology",
+    "fos_nsf_id": 433,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 62
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 72,
+  "fields": {
+    "created": "2022-02-12T00:52:02.449Z",
+    "modified": "2022-02-12T00:52:02.450Z",
+    "parent_id": 63,
+    "is_selectable": false,
+    "description": "Behavioral and Neural Sciences",
+    "fos_nsf_id": 440,
+    "fos_nsf_abbrev": "BNS",
+    "directorate_fos_id": 63
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 73,
+  "fields": {
+    "created": "2022-02-12T00:52:02.450Z",
+    "modified": "2022-02-12T00:52:02.451Z",
+    "parent_id": 72,
+    "is_selectable": true,
+    "description": "Anthropology",
+    "fos_nsf_id": 441,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 63
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 74,
+  "fields": {
+    "created": "2022-02-12T00:52:02.452Z",
+    "modified": "2022-02-12T00:52:02.453Z",
+    "parent_id": 72,
+    "is_selectable": true,
+    "description": "Language, Cognition, and Social Behavior",
+    "fos_nsf_id": 442,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 63
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 75,
+  "fields": {
+    "created": "2022-02-12T00:52:02.453Z",
+    "modified": "2022-02-12T00:52:02.454Z",
+    "parent_id": 63,
+    "is_selectable": false,
+    "description": "Social and Economic Science",
+    "fos_nsf_id": 450,
+    "fos_nsf_abbrev": "SES",
+    "directorate_fos_id": 63
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 76,
+  "fields": {
+    "created": "2022-02-12T00:52:02.455Z",
+    "modified": "2022-02-12T00:52:02.456Z",
+    "parent_id": 75,
+    "is_selectable": true,
+    "description": "Economics",
+    "fos_nsf_id": 451,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 63
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 77,
+  "fields": {
+    "created": "2022-02-12T00:52:02.457Z",
+    "modified": "2022-02-12T00:52:02.458Z",
+    "parent_id": 75,
+    "is_selectable": true,
+    "description": "Geography and Regional Science",
+    "fos_nsf_id": 452,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 63
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 78,
+  "fields": {
+    "created": "2022-02-12T00:52:02.458Z",
+    "modified": "2022-02-12T00:52:02.459Z",
+    "parent_id": 75,
+    "is_selectable": true,
+    "description": "Sociology",
+    "fos_nsf_id": 453,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 63
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 79,
+  "fields": {
+    "created": "2022-02-12T00:52:02.460Z",
+    "modified": "2022-02-12T00:52:02.461Z",
+    "parent_id": 75,
+    "is_selectable": true,
+    "description": "Methodology, Measurement, and Statistics",
+    "fos_nsf_id": 454,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 63
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 80,
+  "fields": {
+    "created": "2022-02-12T00:52:02.462Z",
+    "modified": "2022-02-12T00:52:02.463Z",
+    "parent_id": 75,
+    "is_selectable": true,
+    "description": "Political Science",
+    "fos_nsf_id": 455,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 63
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 81,
+  "fields": {
+    "created": "2022-02-12T00:52:02.464Z",
+    "modified": "2022-02-12T00:52:02.465Z",
+    "parent_id": 75,
+    "is_selectable": true,
+    "description": "Law and Social Sciences",
+    "fos_nsf_id": 456,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 63
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 82,
+  "fields": {
+    "created": "2022-02-12T00:52:02.465Z",
+    "modified": "2022-02-12T00:52:02.466Z",
+    "parent_id": 75,
+    "is_selectable": true,
+    "description": "Decision, Risk, and Management Science",
+    "fos_nsf_id": 457,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 63
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 83,
+  "fields": {
+    "created": "2022-02-12T00:52:02.467Z",
+    "modified": "2022-02-12T00:52:02.468Z",
+    "parent_id": 62,
+    "is_selectable": true,
+    "description": "Biological Instrumentation and Resources",
+    "fos_nsf_id": 460,
+    "fos_nsf_abbrev": "BIR",
+    "directorate_fos_id": 62
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 84,
+  "fields": {
+    "created": "2022-02-12T00:52:02.469Z",
+    "modified": "2022-02-12T00:52:02.470Z",
+    "parent_id": 62,
+    "is_selectable": false,
+    "description": "Integrative Biology and Neuroscience",
+    "fos_nsf_id": 470,
+    "fos_nsf_abbrev": "IBN",
+    "directorate_fos_id": 62
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 85,
+  "fields": {
+    "created": "2022-02-12T00:52:02.471Z",
+    "modified": "2022-02-12T00:52:02.472Z",
+    "parent_id": 84,
+    "is_selectable": true,
+    "description": "Developmental Biology",
+    "fos_nsf_id": 471,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 62
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 86,
+  "fields": {
+    "created": "2022-02-12T00:52:02.473Z",
+    "modified": "2022-02-12T00:52:02.474Z",
+    "parent_id": 84,
+    "is_selectable": true,
+    "description": "Neuroscience Biology",
+    "fos_nsf_id": 472,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 62
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 87,
+  "fields": {
+    "created": "2022-02-12T00:52:02.474Z",
+    "modified": "2022-02-12T00:52:02.476Z",
+    "parent_id": 84,
+    "is_selectable": true,
+    "description": "Physiology and Behavior",
+    "fos_nsf_id": 473,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 62
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 88,
+  "fields": {
+    "created": "2022-02-12T00:52:02.476Z",
+    "modified": "2022-02-12T00:52:02.478Z",
+    "parent_id": 63,
+    "is_selectable": true,
+    "description": "Science Resources Studies",
+    "fos_nsf_id": 480,
+    "fos_nsf_abbrev": "SRS",
+    "directorate_fos_id": 63
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 89,
+  "fields": {
+    "created": "2022-02-12T00:52:02.478Z",
+    "modified": "2022-02-12T00:52:02.479Z",
+    "parent_id": 63,
+    "is_selectable": true,
+    "description": "International Programs",
+    "fos_nsf_id": 490,
+    "fos_nsf_abbrev": "INT",
+    "directorate_fos_id": 63
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 90,
+  "fields": {
+    "created": "2022-02-12T00:52:02.480Z",
+    "modified": "2022-02-12T00:52:02.480Z",
+    "parent_id": null,
+    "is_selectable": false,
+    "description": "Geosciences",
+    "fos_nsf_id": 500,
+    "fos_nsf_abbrev": "GEO",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 91,
+  "fields": {
+    "created": "2022-02-12T00:52:02.481Z",
+    "modified": "2022-02-12T00:52:02.482Z",
+    "parent_id": 90,
+    "is_selectable": false,
+    "description": "Atmospheric Sciences",
+    "fos_nsf_id": 510,
+    "fos_nsf_abbrev": "ATM",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 92,
+  "fields": {
+    "created": "2022-02-12T00:52:02.483Z",
+    "modified": "2022-02-12T00:52:02.484Z",
+    "parent_id": 91,
+    "is_selectable": true,
+    "description": "Meteorology",
+    "fos_nsf_id": 511,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 93,
+  "fields": {
+    "created": "2022-02-12T00:52:02.484Z",
+    "modified": "2022-02-12T00:52:02.486Z",
+    "parent_id": 91,
+    "is_selectable": true,
+    "description": "Atmospheric Chemistry",
+    "fos_nsf_id": 512,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 94,
+  "fields": {
+    "created": "2022-02-12T00:52:02.486Z",
+    "modified": "2022-02-12T00:52:02.487Z",
+    "parent_id": 91,
+    "is_selectable": true,
+    "description": "Climate Dynamics",
+    "fos_nsf_id": 514,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 95,
+  "fields": {
+    "created": "2022-02-12T00:52:02.488Z",
+    "modified": "2022-02-12T00:52:02.489Z",
+    "parent_id": 91,
+    "is_selectable": true,
+    "description": "Global Atmospheric Research",
+    "fos_nsf_id": 515,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 96,
+  "fields": {
+    "created": "2022-02-12T00:52:02.490Z",
+    "modified": "2022-02-12T00:52:02.491Z",
+    "parent_id": 91,
+    "is_selectable": true,
+    "description": "Aeronomy",
+    "fos_nsf_id": 516,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 97,
+  "fields": {
+    "created": "2022-02-12T00:52:02.491Z",
+    "modified": "2022-02-12T00:52:02.492Z",
+    "parent_id": 91,
+    "is_selectable": true,
+    "description": "Magnetospheric Physics",
+    "fos_nsf_id": 517,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 98,
+  "fields": {
+    "created": "2022-02-12T00:52:02.493Z",
+    "modified": "2022-02-12T00:52:02.494Z",
+    "parent_id": 91,
+    "is_selectable": true,
+    "description": "Solar Terrestrial Research",
+    "fos_nsf_id": 518,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 99,
+  "fields": {
+    "created": "2022-02-12T00:52:02.495Z",
+    "modified": "2022-02-12T00:52:02.496Z",
+    "parent_id": 90,
+    "is_selectable": false,
+    "description": "Earth Sciences",
+    "fos_nsf_id": 520,
+    "fos_nsf_abbrev": "EAR",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 100,
+  "fields": {
+    "created": "2022-02-12T00:52:02.497Z",
+    "modified": "2022-02-12T00:52:02.498Z",
+    "parent_id": 99,
+    "is_selectable": true,
+    "description": "Geology and Paleontology",
+    "fos_nsf_id": 521,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 101,
+  "fields": {
+    "created": "2022-02-12T00:52:02.498Z",
+    "modified": "2022-02-12T00:52:02.499Z",
+    "parent_id": 99,
+    "is_selectable": true,
+    "description": "Surficial Processes",
+    "fos_nsf_id": 522,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 102,
+  "fields": {
+    "created": "2022-02-12T00:52:02.500Z",
+    "modified": "2022-02-12T00:52:02.501Z",
+    "parent_id": 99,
+    "is_selectable": true,
+    "description": "Tectonics",
+    "fos_nsf_id": 523,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 103,
+  "fields": {
+    "created": "2022-02-12T00:52:02.502Z",
+    "modified": "2022-02-12T00:52:02.503Z",
+    "parent_id": 99,
+    "is_selectable": true,
+    "description": "Seismology",
+    "fos_nsf_id": 524,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 104,
+  "fields": {
+    "created": "2022-02-12T00:52:02.504Z",
+    "modified": "2022-02-12T00:52:02.505Z",
+    "parent_id": 99,
+    "is_selectable": true,
+    "description": "Geophysics",
+    "fos_nsf_id": 525,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 105,
+  "fields": {
+    "created": "2022-02-12T00:52:02.505Z",
+    "modified": "2022-02-12T00:52:02.506Z",
+    "parent_id": 99,
+    "is_selectable": true,
+    "description": "Petrogenesis and Mineral Resources",
+    "fos_nsf_id": 526,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 106,
+  "fields": {
+    "created": "2022-02-12T00:52:02.507Z",
+    "modified": "2022-02-12T00:52:02.508Z",
+    "parent_id": 99,
+    "is_selectable": true,
+    "description": "Volcanology and Mantle Geochemistry",
+    "fos_nsf_id": 527,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 107,
+  "fields": {
+    "created": "2022-02-12T00:52:02.509Z",
+    "modified": "2022-02-12T00:52:02.510Z",
+    "parent_id": 99,
+    "is_selectable": true,
+    "description": "Experimental and Theoretical Geochemistry",
+    "fos_nsf_id": 528,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 108,
+  "fields": {
+    "created": "2022-02-12T00:52:02.511Z",
+    "modified": "2022-02-12T00:52:02.512Z",
+    "parent_id": 90,
+    "is_selectable": false,
+    "description": "Ocean Sciences",
+    "fos_nsf_id": 530,
+    "fos_nsf_abbrev": "OCE",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 109,
+  "fields": {
+    "created": "2022-02-12T00:52:02.512Z",
+    "modified": "2022-02-12T00:52:02.513Z",
+    "parent_id": 108,
+    "is_selectable": true,
+    "description": "Biological Oceanography",
+    "fos_nsf_id": 531,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 110,
+  "fields": {
+    "created": "2022-02-12T00:52:02.514Z",
+    "modified": "2022-02-12T00:52:02.515Z",
+    "parent_id": 108,
+    "is_selectable": true,
+    "description": "Chemical Oceanography",
+    "fos_nsf_id": 532,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 111,
+  "fields": {
+    "created": "2022-02-12T00:52:02.516Z",
+    "modified": "2022-02-12T00:52:02.517Z",
+    "parent_id": 108,
+    "is_selectable": true,
+    "description": "Physical Oceanography",
+    "fos_nsf_id": 533,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 112,
+  "fields": {
+    "created": "2022-02-12T00:52:02.518Z",
+    "modified": "2022-02-12T00:52:02.519Z",
+    "parent_id": 108,
+    "is_selectable": true,
+    "description": "Marine Geology and Geophysics",
+    "fos_nsf_id": 534,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 113,
+  "fields": {
+    "created": "2022-02-12T00:52:02.519Z",
+    "modified": "2022-02-12T00:52:02.520Z",
+    "parent_id": 90,
+    "is_selectable": false,
+    "description": "Polar Programs",
+    "fos_nsf_id": 540,
+    "fos_nsf_abbrev": "DPP",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 114,
+  "fields": {
+    "created": "2022-02-12T00:52:02.521Z",
+    "modified": "2022-02-12T00:52:02.522Z",
+    "parent_id": 113,
+    "is_selectable": true,
+    "description": "Polar Glaciology",
+    "fos_nsf_id": 541,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 115,
+  "fields": {
+    "created": "2022-02-12T00:52:02.523Z",
+    "modified": "2022-02-12T00:52:02.524Z",
+    "parent_id": 113,
+    "is_selectable": true,
+    "description": "Polar Aeronomy and Astrophysics",
+    "fos_nsf_id": 542,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 116,
+  "fields": {
+    "created": "2022-02-12T00:52:02.525Z",
+    "modified": "2022-02-12T00:52:02.526Z",
+    "parent_id": 113,
+    "is_selectable": true,
+    "description": "Polar Biology and Medicine",
+    "fos_nsf_id": 543,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 117,
+  "fields": {
+    "created": "2022-02-12T00:52:02.526Z",
+    "modified": "2022-02-12T00:52:02.528Z",
+    "parent_id": 113,
+    "is_selectable": true,
+    "description": "Polar Earth Sciences",
+    "fos_nsf_id": 544,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 118,
+  "fields": {
+    "created": "2022-02-12T00:52:02.528Z",
+    "modified": "2022-02-12T00:52:02.529Z",
+    "parent_id": 113,
+    "is_selectable": true,
+    "description": "Polar Meteorology",
+    "fos_nsf_id": 545,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 119,
+  "fields": {
+    "created": "2022-02-12T00:52:02.530Z",
+    "modified": "2022-02-12T00:52:02.531Z",
+    "parent_id": 113,
+    "is_selectable": true,
+    "description": "Polar Ocean and Climate Systems",
+    "fos_nsf_id": 546,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 90
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 120,
+  "fields": {
+    "created": "2022-02-12T00:52:02.532Z",
+    "modified": "2022-02-12T00:52:02.532Z",
+    "parent_id": null,
+    "is_selectable": false,
+    "description": "Engineering",
+    "fos_nsf_id": 600,
+    "fos_nsf_abbrev": "ENG",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 121,
+  "fields": {
+    "created": "2022-02-12T00:52:02.533Z",
+    "modified": "2022-02-12T00:52:02.534Z",
+    "parent_id": 120,
+    "is_selectable": false,
+    "description": "Chemical, Thermal Systems",
+    "fos_nsf_id": 610,
+    "fos_nsf_abbrev": "CTS",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 122,
+  "fields": {
+    "created": "2022-02-12T00:52:02.534Z",
+    "modified": "2022-02-12T00:52:02.536Z",
+    "parent_id": 121,
+    "is_selectable": true,
+    "description": "Chemical and Reaction Processes",
+    "fos_nsf_id": 611,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 123,
+  "fields": {
+    "created": "2022-02-12T00:52:02.536Z",
+    "modified": "2022-02-12T00:52:02.537Z",
+    "parent_id": 121,
+    "is_selectable": true,
+    "description": "Interfacial, Transport, and Separations Processes",
+    "fos_nsf_id": 612,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 124,
+  "fields": {
+    "created": "2022-02-12T00:52:02.538Z",
+    "modified": "2022-02-12T00:52:02.539Z",
+    "parent_id": 121,
+    "is_selectable": true,
+    "description": "Thermal Systems",
+    "fos_nsf_id": 613,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 125,
+  "fields": {
+    "created": "2022-02-12T00:52:02.540Z",
+    "modified": "2022-02-12T00:52:02.541Z",
+    "parent_id": 121,
+    "is_selectable": true,
+    "description": "Fluid, Particulate, and Hydraulic Systems",
+    "fos_nsf_id": 614,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 126,
+  "fields": {
+    "created": "2022-02-12T00:52:02.542Z",
+    "modified": "2022-02-12T00:52:02.543Z",
+    "parent_id": 120,
+    "is_selectable": false,
+    "description": "Mechanical and Structural Systems",
+    "fos_nsf_id": 620,
+    "fos_nsf_abbrev": "MSS",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 127,
+  "fields": {
+    "created": "2022-02-12T00:52:02.543Z",
+    "modified": "2022-02-12T00:52:02.545Z",
+    "parent_id": 126,
+    "is_selectable": true,
+    "description": "Dynamic Systems and Control",
+    "fos_nsf_id": 621,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 128,
+  "fields": {
+    "created": "2022-02-12T00:52:02.545Z",
+    "modified": "2022-02-12T00:52:02.546Z",
+    "parent_id": 126,
+    "is_selectable": true,
+    "description": "Structures and Building Systems",
+    "fos_nsf_id": 622,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 129,
+  "fields": {
+    "created": "2022-02-12T00:52:02.547Z",
+    "modified": "2022-02-12T00:52:02.548Z",
+    "parent_id": 126,
+    "is_selectable": true,
+    "description": "Mechanics and Materials",
+    "fos_nsf_id": 623,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 130,
+  "fields": {
+    "created": "2022-02-12T00:52:02.549Z",
+    "modified": "2022-02-12T00:52:02.550Z",
+    "parent_id": 126,
+    "is_selectable": true,
+    "description": "Surface Engineering and Tribology",
+    "fos_nsf_id": 625,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 131,
+  "fields": {
+    "created": "2022-02-12T00:52:02.550Z",
+    "modified": "2022-02-12T00:52:02.552Z",
+    "parent_id": 120,
+    "is_selectable": false,
+    "description": "Electrical and Communication Systems",
+    "fos_nsf_id": 630,
+    "fos_nsf_abbrev": "ECS",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 132,
+  "fields": {
+    "created": "2022-02-12T00:52:02.552Z",
+    "modified": "2022-02-12T00:52:02.553Z",
+    "parent_id": 131,
+    "is_selectable": true,
+    "description": "Quantum Electronics, Waves, and Beams",
+    "fos_nsf_id": 631,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 133,
+  "fields": {
+    "created": "2022-02-12T00:52:02.554Z",
+    "modified": "2022-02-12T00:52:02.555Z",
+    "parent_id": 131,
+    "is_selectable": true,
+    "description": "Solid-State and Microstructures",
+    "fos_nsf_id": 632,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 134,
+  "fields": {
+    "created": "2022-02-12T00:52:02.556Z",
+    "modified": "2022-02-12T00:52:02.557Z",
+    "parent_id": 131,
+    "is_selectable": true,
+    "description": "Communications and Computational Systems",
+    "fos_nsf_id": 633,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 135,
+  "fields": {
+    "created": "2022-02-12T00:52:02.557Z",
+    "modified": "2022-02-12T00:52:02.559Z",
+    "parent_id": 131,
+    "is_selectable": true,
+    "description": "Engineering Systems",
+    "fos_nsf_id": 634,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 136,
+  "fields": {
+    "created": "2022-02-12T00:52:02.559Z",
+    "modified": "2022-02-12T00:52:02.560Z",
+    "parent_id": 131,
+    "is_selectable": true,
+    "description": "Emerging Technologies Initiation",
+    "fos_nsf_id": 635,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 137,
+  "fields": {
+    "created": "2022-02-12T00:52:02.561Z",
+    "modified": "2022-02-12T00:52:02.562Z",
+    "parent_id": 120,
+    "is_selectable": false,
+    "description": "Design and Manufacturing Systems",
+    "fos_nsf_id": 640,
+    "fos_nsf_abbrev": "DDM",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 138,
+  "fields": {
+    "created": "2022-02-12T00:52:02.563Z",
+    "modified": "2022-02-12T00:52:02.564Z",
+    "parent_id": 137,
+    "is_selectable": true,
+    "description": "Operations Research and Production Systems",
+    "fos_nsf_id": 641,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 139,
+  "fields": {
+    "created": "2022-02-12T00:52:02.564Z",
+    "modified": "2022-02-12T00:52:02.566Z",
+    "parent_id": 137,
+    "is_selectable": true,
+    "description": "Design and Computer-Integrated Engineering",
+    "fos_nsf_id": 642,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 140,
+  "fields": {
+    "created": "2022-02-12T00:52:02.566Z",
+    "modified": "2022-02-12T00:52:02.567Z",
+    "parent_id": 137,
+    "is_selectable": true,
+    "description": "Manufacturing Processes and Equipment",
+    "fos_nsf_id": 643,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 141,
+  "fields": {
+    "created": "2022-02-12T00:52:02.568Z",
+    "modified": "2022-02-12T00:52:02.569Z",
+    "parent_id": 120,
+    "is_selectable": false,
+    "description": "Biological and Critical Systems",
+    "fos_nsf_id": 650,
+    "fos_nsf_abbrev": "BCS",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 142,
+  "fields": {
+    "created": "2022-02-12T00:52:02.570Z",
+    "modified": "2022-02-12T00:52:02.571Z",
+    "parent_id": 141,
+    "is_selectable": true,
+    "description": "Bioengineering Aiding the Disabled",
+    "fos_nsf_id": 651,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 143,
+  "fields": {
+    "created": "2022-02-12T00:52:02.571Z",
+    "modified": "2022-02-12T00:52:02.572Z",
+    "parent_id": 141,
+    "is_selectable": true,
+    "description": "Environmental and Ocean Systems",
+    "fos_nsf_id": 652,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 144,
+  "fields": {
+    "created": "2022-02-12T00:52:02.573Z",
+    "modified": "2022-02-12T00:52:02.574Z",
+    "parent_id": 141,
+    "is_selectable": true,
+    "description": "Earthquake Hazard Mitigation",
+    "fos_nsf_id": 653,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 145,
+  "fields": {
+    "created": "2022-02-12T00:52:02.575Z",
+    "modified": "2022-02-12T00:52:02.576Z",
+    "parent_id": 141,
+    "is_selectable": true,
+    "description": "Natural and Man-Made Hazard Mitigation",
+    "fos_nsf_id": 654,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 146,
+  "fields": {
+    "created": "2022-02-12T00:52:02.577Z",
+    "modified": "2022-02-12T00:52:02.578Z",
+    "parent_id": 120,
+    "is_selectable": true,
+    "description": "Engineering Centers",
+    "fos_nsf_id": 660,
+    "fos_nsf_abbrev": "ECD",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 147,
+  "fields": {
+    "created": "2022-02-12T00:52:02.578Z",
+    "modified": "2022-02-12T00:52:02.580Z",
+    "parent_id": 120,
+    "is_selectable": true,
+    "description": "Engineering Infrastructure Development",
+    "fos_nsf_id": 670,
+    "fos_nsf_abbrev": "EID",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 148,
+  "fields": {
+    "created": "2022-02-12T00:52:02.580Z",
+    "modified": "2022-02-12T00:52:02.581Z",
+    "parent_id": 120,
+    "is_selectable": true,
+    "description": "Industrial Science and Technological Innovation",
+    "fos_nsf_id": 680,
+    "fos_nsf_abbrev": "ISI",
+    "directorate_fos_id": 120
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 149,
+  "fields": {
+    "created": "2022-02-12T00:52:02.582Z",
+    "modified": "2022-02-12T00:52:02.582Z",
+    "parent_id": null,
+    "is_selectable": true,
+    "description": "Other",
+    "fos_nsf_id": 900,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 149
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 150,
+  "fields": {
+    "created": "2022-02-12T00:52:02.583Z",
+    "modified": "2022-02-12T00:52:02.584Z",
+    "parent_id": 149,
+    "is_selectable": true,
+    "description": "Science and Engineering Education",
+    "fos_nsf_id": 910,
+    "fos_nsf_abbrev": "SEE",
+    "directorate_fos_id": 149
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 151,
+  "fields": {
+    "created": "2022-02-12T00:52:02.585Z",
+    "modified": "2022-02-12T00:52:02.586Z",
+    "parent_id": 149,
+    "is_selectable": true,
+    "description": "Small Business Innovation Research",
+    "fos_nsf_id": 920,
+    "fos_nsf_abbrev": "SBR",
+    "directorate_fos_id": 149
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 152,
+  "fields": {
+    "created": "2022-02-12T00:52:02.586Z",
+    "modified": "2022-02-12T00:52:02.587Z",
+    "parent_id": 149,
+    "is_selectable": true,
+    "description": "Industrial Partners Research",
+    "fos_nsf_id": 930,
+    "fos_nsf_abbrev": "IND",
+    "directorate_fos_id": 149
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 153,
+  "fields": {
+    "created": "2022-02-12T00:52:02.588Z",
+    "modified": "2022-02-12T00:52:02.589Z",
+    "parent_id": 149,
+    "is_selectable": true,
+    "description": "Center Systems Staff",
+    "fos_nsf_id": 940,
+    "fos_nsf_abbrev": "STA",
+    "directorate_fos_id": 149
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 154,
+  "fields": {
+    "created": "2022-02-12T00:52:02.590Z",
+    "modified": "2022-02-12T00:52:02.591Z",
+    "parent_id": 149,
+    "is_selectable": true,
+    "description": "Training",
+    "fos_nsf_id": 950,
+    "fos_nsf_abbrev": "TRA",
+    "directorate_fos_id": 149
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 155,
+  "fields": {
+    "created": "2022-02-12T00:52:02.592Z",
+    "modified": "2022-02-12T00:52:02.593Z",
+    "parent_id": 149,
+    "is_selectable": true,
+    "description": "Block Grants",
+    "fos_nsf_id": 960,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 149
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 156,
+  "fields": {
+    "created": "2022-02-12T00:52:02.593Z",
+    "modified": "2022-02-12T00:52:02.593Z",
+    "parent_id": null,
+    "is_selectable": false,
+    "description": "Humanities/Arts",
+    "fos_nsf_id": 700,
+    "fos_nsf_abbrev": "HUA",
+    "directorate_fos_id": 156
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 157,
+  "fields": {
+    "created": "2022-02-12T00:52:02.594Z",
+    "modified": "2022-02-12T00:52:02.595Z",
+    "parent_id": 156,
+    "is_selectable": true,
+    "description": "Humanities",
+    "fos_nsf_id": 710,
+    "fos_nsf_abbrev": "HUM",
+    "directorate_fos_id": 156
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 158,
+  "fields": {
+    "created": "2022-02-12T00:52:02.596Z",
+    "modified": "2022-02-12T00:52:02.597Z",
+    "parent_id": 156,
+    "is_selectable": true,
+    "description": "Arts",
+    "fos_nsf_id": 720,
+    "fos_nsf_abbrev": "ART",
+    "directorate_fos_id": 156
+  }
+},
+{
+  "model": "project.projectstatuschoice",
+  "pk": 1,
+  "fields": {
+    "created": "2022-02-12T00:52:02.612Z",
+    "modified": "2022-02-12T00:52:02.612Z",
+    "name": "New"
+  }
+},
+{
+  "model": "project.projectstatuschoice",
+  "pk": 2,
+  "fields": {
+    "created": "2022-02-12T00:52:02.612Z",
+    "modified": "2022-02-12T00:52:02.613Z",
+    "name": "Active"
+  }
+},
+{
+  "model": "project.projectstatuschoice",
+  "pk": 3,
+  "fields": {
+    "created": "2022-02-12T00:52:02.613Z",
+    "modified": "2022-02-12T00:52:02.613Z",
+    "name": "Archived"
+  }
+},
+{
+  "model": "project.projectreviewstatuschoice",
+  "pk": 1,
+  "fields": {
+    "created": "2022-02-12T00:52:02.614Z",
+    "modified": "2022-02-12T00:52:02.615Z",
+    "name": "Completed"
+  }
+},
+{
+  "model": "project.projectreviewstatuschoice",
+  "pk": 2,
+  "fields": {
+    "created": "2022-02-12T00:52:02.615Z",
+    "modified": "2022-02-12T00:52:02.615Z",
+    "name": "Pending"
+  }
+},
+{
+  "model": "project.projectuserrolechoice",
+  "pk": 1,
+  "fields": {
+    "created": "2022-02-12T00:52:02.616Z",
+    "modified": "2022-02-12T00:52:02.616Z",
+    "name": "User"
+  }
+},
+{
+  "model": "project.projectuserrolechoice",
+  "pk": 2,
+  "fields": {
+    "created": "2022-02-12T00:52:02.617Z",
+    "modified": "2022-02-12T00:52:02.617Z",
+    "name": "Manager"
+  }
+},
+{
+  "model": "project.projectuserstatuschoice",
+  "pk": 1,
+  "fields": {
+    "created": "2022-02-12T00:52:02.618Z",
+    "modified": "2022-02-12T00:52:02.618Z",
+    "name": "Active"
+  }
+},
+{
+  "model": "project.projectuserstatuschoice",
+  "pk": 2,
+  "fields": {
+    "created": "2022-02-12T00:52:02.619Z",
+    "modified": "2022-02-12T00:52:02.619Z",
+    "name": "Pending - Add"
+  }
+},
+{
+  "model": "project.projectuserstatuschoice",
+  "pk": 3,
+  "fields": {
+    "created": "2022-02-12T00:52:02.620Z",
+    "modified": "2022-02-12T00:52:02.620Z",
+    "name": "Pending - Remove"
+  }
+},
+{
+  "model": "project.projectuserstatuschoice",
+  "pk": 4,
+  "fields": {
+    "created": "2022-02-12T00:52:02.621Z",
+    "modified": "2022-02-12T00:52:02.621Z",
+    "name": "Denied"
+  }
+},
+{
+  "model": "project.projectuserstatuschoice",
+  "pk": 5,
+  "fields": {
+    "created": "2022-02-12T00:52:02.621Z",
+    "modified": "2022-02-12T00:52:02.622Z",
+    "name": "Removed"
+  }
+},
+{
+  "model": "resource.attributetype",
+  "pk": 1,
+  "fields": {
+    "created": "2022-02-12T00:52:02.623Z",
+    "modified": "2022-02-12T00:52:02.623Z",
+    "name": "Active/Inactive"
+  }
+},
+{
+  "model": "resource.attributetype",
+  "pk": 2,
+  "fields": {
+    "created": "2022-02-12T00:52:02.624Z",
+    "modified": "2022-02-12T00:52:02.624Z",
+    "name": "Date"
+  }
+},
+{
+  "model": "resource.attributetype",
+  "pk": 3,
+  "fields": {
+    "created": "2022-02-12T00:52:02.625Z",
+    "modified": "2022-02-12T00:52:02.625Z",
+    "name": "Int"
+  }
+},
+{
+  "model": "resource.attributetype",
+  "pk": 4,
+  "fields": {
+    "created": "2022-02-12T00:52:02.626Z",
+    "modified": "2022-02-12T00:52:02.626Z",
+    "name": "Public/Private"
+  }
+},
+{
+  "model": "resource.attributetype",
+  "pk": 5,
+  "fields": {
+    "created": "2022-02-12T00:52:02.626Z",
+    "modified": "2022-02-12T00:52:02.627Z",
+    "name": "Text"
+  }
+},
+{
+  "model": "resource.attributetype",
+  "pk": 6,
+  "fields": {
+    "created": "2022-02-12T00:52:02.627Z",
+    "modified": "2022-02-12T00:52:02.627Z",
+    "name": "Yes/No"
+  }
+},
+{
+  "model": "resource.resourcetype",
+  "pk": 1,
+  "fields": {
+    "created": "2022-02-12T00:52:02.648Z",
+    "modified": "2022-02-12T00:52:02.648Z",
+    "name": "Cloud",
+    "description": "Cloud Computing"
+  }
+},
+{
+  "model": "resource.resourcetype",
+  "pk": 2,
+  "fields": {
+    "created": "2022-02-12T00:52:02.650Z",
+    "modified": "2022-02-12T00:52:02.650Z",
+    "name": "Cluster",
+    "description": "Cluster servers"
+  }
+},
+{
+  "model": "resource.resourcetype",
+  "pk": 3,
+  "fields": {
+    "created": "2022-02-12T00:52:02.651Z",
+    "modified": "2022-02-12T00:52:02.651Z",
+    "name": "Cluster Partition",
+    "description": "Cluster Partition "
+  }
+},
+{
+  "model": "resource.resourcetype",
+  "pk": 4,
+  "fields": {
+    "created": "2022-02-12T00:52:02.652Z",
+    "modified": "2022-02-12T00:52:02.652Z",
+    "name": "Server",
+    "description": "Extra servers providing various services"
+  }
+},
+{
+  "model": "resource.resourcetype",
+  "pk": 5,
+  "fields": {
+    "created": "2022-02-12T00:52:02.653Z",
+    "modified": "2022-02-12T00:52:02.653Z",
+    "name": "Software License",
+    "description": "Software license purchased by users"
+  }
+},
+{
+  "model": "resource.resourcetype",
+  "pk": 6,
+  "fields": {
+    "created": "2022-02-12T00:52:02.654Z",
+    "modified": "2022-02-12T00:52:02.654Z",
+    "name": "Storage",
+    "description": "NAS storage"
+  }
+},
+{
+  "model": "resource.resourceattributetype",
+  "pk": 1,
+  "fields": {
+    "created": "2022-02-12T00:52:02.629Z",
+    "modified": "2022-02-12T00:52:02.629Z",
+    "attribute_type": 3,
+    "name": "Core Count",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resource.resourceattributetype",
+  "pk": 2,
+  "fields": {
+    "created": "2022-02-12T00:52:02.630Z",
+    "modified": "2022-02-12T00:52:02.630Z",
+    "attribute_type": 3,
+    "name": "expiry_time",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resource.resourceattributetype",
+  "pk": 3,
+  "fields": {
+    "created": "2022-02-12T00:52:02.631Z",
+    "modified": "2022-02-12T00:52:02.632Z",
+    "attribute_type": 6,
+    "name": "fee_applies",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resource.resourceattributetype",
+  "pk": 4,
+  "fields": {
+    "created": "2022-02-12T00:52:02.633Z",
+    "modified": "2022-02-12T00:52:02.633Z",
+    "attribute_type": 3,
+    "name": "Node Count",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resource.resourceattributetype",
+  "pk": 5,
+  "fields": {
+    "created": "2022-02-12T00:52:02.635Z",
+    "modified": "2022-02-12T00:52:02.635Z",
+    "attribute_type": 5,
+    "name": "Owner",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resource.resourceattributetype",
+  "pk": 6,
+  "fields": {
+    "created": "2022-02-12T00:52:02.636Z",
+    "modified": "2022-02-12T00:52:02.636Z",
+    "attribute_type": 3,
+    "name": "quantity_default_value",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resource.resourceattributetype",
+  "pk": 7,
+  "fields": {
+    "created": "2022-02-12T00:52:02.637Z",
+    "modified": "2022-02-12T00:52:02.637Z",
+    "attribute_type": 5,
+    "name": "quantity_label",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resource.resourceattributetype",
+  "pk": 8,
+  "fields": {
+    "created": "2022-02-12T00:52:02.639Z",
+    "modified": "2022-02-12T00:52:02.639Z",
+    "attribute_type": 5,
+    "name": "eula",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resource.resourceattributetype",
+  "pk": 9,
+  "fields": {
+    "created": "2022-02-12T00:52:02.640Z",
+    "modified": "2022-02-12T00:52:02.640Z",
+    "attribute_type": 6,
+    "name": "OnDemand",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resource.resourceattributetype",
+  "pk": 10,
+  "fields": {
+    "created": "2022-02-12T00:52:02.641Z",
+    "modified": "2022-02-12T00:52:02.641Z",
+    "attribute_type": 2,
+    "name": "ServiceEnd",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resource.resourceattributetype",
+  "pk": 11,
+  "fields": {
+    "created": "2022-02-12T00:52:02.643Z",
+    "modified": "2022-02-12T00:52:02.643Z",
+    "attribute_type": 2,
+    "name": "ServiceStart",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resource.resourceattributetype",
+  "pk": 12,
+  "fields": {
+    "created": "2022-02-12T00:52:02.644Z",
+    "modified": "2022-02-12T00:52:02.644Z",
+    "attribute_type": 5,
+    "name": "slurm_cluster",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resource.resourceattributetype",
+  "pk": 13,
+  "fields": {
+    "created": "2022-02-12T00:52:02.646Z",
+    "modified": "2022-02-12T00:52:02.646Z",
+    "attribute_type": 5,
+    "name": "slurm_specs",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resource.resourceattributetype",
+  "pk": 14,
+  "fields": {
+    "created": "2022-02-12T00:52:02.647Z",
+    "modified": "2022-02-12T00:52:02.647Z",
+    "attribute_type": 4,
+    "name": "Status",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false
+  }
+},
+{
+  "model": "resource.resourceattribute",
+  "pk": 1,
+  "fields": {
+    "created": "2022-02-14T15:20:16.310Z",
+    "modified": "2022-02-14T15:20:16.315Z",
+    "resource_attribute_type": 12,
+    "resource": 1,
+    "value": "synctest"
+  }
+},
+{
+  "model": "allocation.allocationstatuschoice",
+  "pk": 1,
+  "fields": {
+    "created": "2022-02-12T00:52:02.665Z",
+    "modified": "2022-02-12T00:52:02.665Z",
+    "name": "Active"
+  }
+},
+{
+  "model": "allocation.allocationstatuschoice",
+  "pk": 2,
+  "fields": {
+    "created": "2022-02-12T00:52:02.666Z",
+    "modified": "2022-02-12T00:52:02.666Z",
+    "name": "Denied"
+  }
+},
+{
+  "model": "allocation.allocationstatuschoice",
+  "pk": 3,
+  "fields": {
+    "created": "2022-02-12T00:52:02.667Z",
+    "modified": "2022-02-12T00:52:02.667Z",
+    "name": "Expired"
+  }
+},
+{
+  "model": "allocation.allocationstatuschoice",
+  "pk": 4,
+  "fields": {
+    "created": "2022-02-12T00:52:02.667Z",
+    "modified": "2022-02-12T00:52:02.667Z",
+    "name": "New"
+  }
+},
+{
+  "model": "allocation.allocationstatuschoice",
+  "pk": 5,
+  "fields": {
+    "created": "2022-02-12T00:52:02.668Z",
+    "modified": "2022-02-12T00:52:02.668Z",
+    "name": "Paid"
+  }
+},
+{
+  "model": "allocation.allocationstatuschoice",
+  "pk": 6,
+  "fields": {
+    "created": "2022-02-12T00:52:02.669Z",
+    "modified": "2022-02-12T00:52:02.669Z",
+    "name": "Payment Pending"
+  }
+},
+{
+  "model": "allocation.allocationstatuschoice",
+  "pk": 7,
+  "fields": {
+    "created": "2022-02-12T00:52:02.670Z",
+    "modified": "2022-02-12T00:52:02.670Z",
+    "name": "Payment Requested"
+  }
+},
+{
+  "model": "allocation.allocationstatuschoice",
+  "pk": 8,
+  "fields": {
+    "created": "2022-02-12T00:52:02.671Z",
+    "modified": "2022-02-12T00:52:02.671Z",
+    "name": "Payment Declined"
+  }
+},
+{
+  "model": "allocation.allocationstatuschoice",
+  "pk": 9,
+  "fields": {
+    "created": "2022-02-12T00:52:02.672Z",
+    "modified": "2022-02-12T00:52:02.672Z",
+    "name": "Renewal Requested"
+  }
+},
+{
+  "model": "allocation.allocationstatuschoice",
+  "pk": 10,
+  "fields": {
+    "created": "2022-02-12T00:52:02.672Z",
+    "modified": "2022-02-12T00:52:02.673Z",
+    "name": "Revoked"
+  }
+},
+{
+  "model": "allocation.allocationstatuschoice",
+  "pk": 11,
+  "fields": {
+    "created": "2022-02-12T00:52:02.673Z",
+    "modified": "2022-02-12T00:52:02.673Z",
+    "name": "Unpaid"
+  }
+},
+{
+  "model": "allocation.allocation",
+  "pk": 1,
+  "fields": {
+    "created": "2022-02-12T00:52:06.813Z",
+    "modified": "2022-02-12T00:52:06.813Z",
+    "project": 1,
+    "status": 1,
+    "quantity": 1,
+    "start_date": "2022-02-11",
+    "end_date": "2023-02-11",
+    "justification": "blah blah blah",
+    "description": null,
+    "is_locked": false,
+    "resources": [
+      1
+    ]
+  }
+},
+{
+  "model": "allocation.allocation",
+  "pk": 2,
+  "fields": {
+    "created": "2022-02-12T00:52:06.829Z",
+    "modified": "2022-02-12T00:52:06.829Z",
+    "project": 2,
+    "status": 1,
+    "quantity": 1,
+    "start_date": "2022-02-11",
+    "end_date": "2023-02-11",
+    "justification": "up, up, and away",
+    "description": null,
+    "is_locked": false,
+    "resources": [
+      1
+    ]
+  }
+},
+{
+  "model": "allocation.attributetype",
+  "pk": 1,
+  "fields": {
+    "created": "2022-02-12T00:52:02.656Z",
+    "modified": "2022-02-12T00:52:02.656Z",
+    "name": "Date"
+  }
+},
+{
+  "model": "allocation.attributetype",
+  "pk": 2,
+  "fields": {
+    "created": "2022-02-12T00:52:02.657Z",
+    "modified": "2022-02-12T00:52:02.657Z",
+    "name": "Float"
+  }
+},
+{
+  "model": "allocation.attributetype",
+  "pk": 3,
+  "fields": {
+    "created": "2022-02-12T00:52:02.658Z",
+    "modified": "2022-02-12T00:52:02.658Z",
+    "name": "Int"
+  }
+},
+{
+  "model": "allocation.attributetype",
+  "pk": 4,
+  "fields": {
+    "created": "2022-02-12T00:52:02.658Z",
+    "modified": "2022-02-12T00:52:02.658Z",
+    "name": "Text"
+  }
+},
+{
+  "model": "allocation.attributetype",
+  "pk": 5,
+  "fields": {
+    "created": "2022-02-12T00:52:02.663Z",
+    "modified": "2022-02-12T00:52:02.663Z",
+    "name": "Yes/No"
+  }
+},
+{
+  "model": "allocation.allocationattributetype",
+  "pk": 1,
+  "fields": {
+    "created": "2022-02-12T00:52:02.677Z",
+    "modified": "2022-02-12T00:52:02.677Z",
+    "attribute_type": 4,
+    "name": "Cloud Account Name",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": false
+  }
+},
+{
+  "model": "allocation.allocationattributetype",
+  "pk": 2,
+  "fields": {
+    "created": "2022-02-12T00:52:02.679Z",
+    "modified": "2022-02-12T00:52:02.679Z",
+    "attribute_type": 5,
+    "name": "CLOUD_USAGE_NOTIFICATION",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": true
+  }
+},
+{
+  "model": "allocation.allocationattributetype",
+  "pk": 3,
+  "fields": {
+    "created": "2022-02-12T00:52:02.680Z",
+    "modified": "2022-02-12T00:52:02.680Z",
+    "attribute_type": 3,
+    "name": "Core Usage (Hours)",
+    "has_usage": true,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": false
+  }
+},
+{
+  "model": "allocation.allocationattributetype",
+  "pk": 4,
+  "fields": {
+    "created": "2022-02-12T00:52:02.682Z",
+    "modified": "2022-02-12T00:52:02.682Z",
+    "attribute_type": 2,
+    "name": "Cloud Storage Quota (TB)",
+    "has_usage": true,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": false
+  }
+},
+{
+  "model": "allocation.allocationattributetype",
+  "pk": 5,
+  "fields": {
+    "created": "2022-02-12T00:52:02.683Z",
+    "modified": "2022-02-12T00:52:02.683Z",
+    "attribute_type": 5,
+    "name": "EXPIRE NOTIFICATION",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": true
+  }
+},
+{
+  "model": "allocation.allocationattributetype",
+  "pk": 6,
+  "fields": {
+    "created": "2022-02-12T00:52:02.685Z",
+    "modified": "2022-02-12T00:52:02.685Z",
+    "attribute_type": 4,
+    "name": "freeipa_group",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": false
+  }
+},
+{
+  "model": "allocation.allocationattributetype",
+  "pk": 7,
+  "fields": {
+    "created": "2022-02-12T00:52:02.686Z",
+    "modified": "2022-02-12T00:52:02.686Z",
+    "attribute_type": 5,
+    "name": "Is Course?",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": true
+  }
+},
+{
+  "model": "allocation.allocationattributetype",
+  "pk": 8,
+  "fields": {
+    "created": "2022-02-12T00:52:02.688Z",
+    "modified": "2022-02-12T00:52:02.688Z",
+    "attribute_type": 2,
+    "name": "Paid",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": false
+  }
+},
+{
+  "model": "allocation.allocationattributetype",
+  "pk": 9,
+  "fields": {
+    "created": "2022-02-12T00:52:02.689Z",
+    "modified": "2022-02-12T00:52:02.689Z",
+    "attribute_type": 2,
+    "name": "Paid Cloud Support (Hours)",
+    "has_usage": true,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": true
+  }
+},
+{
+  "model": "allocation.allocationattributetype",
+  "pk": 10,
+  "fields": {
+    "created": "2022-02-12T00:52:02.691Z",
+    "modified": "2022-02-12T00:52:02.691Z",
+    "attribute_type": 2,
+    "name": "Paid Network Support (Hours)",
+    "has_usage": true,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": true
+  }
+},
+{
+  "model": "allocation.allocationattributetype",
+  "pk": 11,
+  "fields": {
+    "created": "2022-02-12T00:52:02.692Z",
+    "modified": "2022-02-12T00:52:02.692Z",
+    "attribute_type": 2,
+    "name": "Paid Storage Support (Hours)",
+    "has_usage": true,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": true
+  }
+},
+{
+  "model": "allocation.allocationattributetype",
+  "pk": 12,
+  "fields": {
+    "created": "2022-02-12T00:52:02.694Z",
+    "modified": "2022-02-12T00:52:02.694Z",
+    "attribute_type": 3,
+    "name": "Purchase Order Number",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": true
+  }
+},
+{
+  "model": "allocation.allocationattributetype",
+  "pk": 13,
+  "fields": {
+    "created": "2022-02-12T00:52:02.695Z",
+    "modified": "2022-02-12T00:52:02.695Z",
+    "attribute_type": 1,
+    "name": "send_expiry_email_on_date",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": true
+  }
+},
+{
+  "model": "allocation.allocationattributetype",
+  "pk": 14,
+  "fields": {
+    "created": "2022-02-12T00:52:02.697Z",
+    "modified": "2022-02-12T00:52:02.697Z",
+    "attribute_type": 4,
+    "name": "slurm_account_name",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": false
+  }
+},
+{
+  "model": "allocation.allocationattributetype",
+  "pk": 15,
+  "fields": {
+    "created": "2022-02-12T00:52:02.698Z",
+    "modified": "2022-02-12T00:52:02.698Z",
+    "attribute_type": 4,
+    "name": "slurm_specs",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": true
+  }
+},
+{
+  "model": "allocation.allocationattributetype",
+  "pk": 16,
+  "fields": {
+    "created": "2022-02-12T00:52:02.699Z",
+    "modified": "2022-02-12T00:52:02.699Z",
+    "attribute_type": 4,
+    "name": "slurm_user_specs",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": true
+  }
+},
+{
+  "model": "allocation.allocationattributetype",
+  "pk": 17,
+  "fields": {
+    "created": "2022-02-12T00:52:02.701Z",
+    "modified": "2022-02-12T00:52:02.701Z",
+    "attribute_type": 3,
+    "name": "Storage Quota (GB)",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": false
+  }
+},
+{
+  "model": "allocation.allocationattributetype",
+  "pk": 18,
+  "fields": {
+    "created": "2022-02-12T00:52:02.702Z",
+    "modified": "2022-02-12T00:52:02.702Z",
+    "attribute_type": 4,
+    "name": "Storage_Group_Name",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": false
+  }
+},
+{
+  "model": "allocation.allocationattributetype",
+  "pk": 19,
+  "fields": {
+    "created": "2022-02-12T00:52:02.704Z",
+    "modified": "2022-02-12T00:52:02.704Z",
+    "attribute_type": 5,
+    "name": "SupportersQOS",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": false
+  }
+},
+{
+  "model": "allocation.allocationattributetype",
+  "pk": 20,
+  "fields": {
+    "created": "2022-02-12T00:52:02.705Z",
+    "modified": "2022-02-12T00:52:02.705Z",
+    "attribute_type": 1,
+    "name": "SupportersQOSExpireDate",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": false
+  }
+},
+{
+  "model": "allocation.allocationattribute",
+  "pk": 1,
+  "fields": {
+    "created": "2022-02-12T00:52:06.815Z",
+    "modified": "2022-02-14T20:23:56.154Z",
+    "allocation_attribute_type": 14,
+    "allocation": 1,
+    "value": "amexp_alloc"
+  }
+},
+{
+  "model": "allocation.allocationattribute",
+  "pk": 2,
+  "fields": {
+    "created": "2022-02-12T00:52:06.816Z",
+    "modified": "2022-02-14T20:23:49.635Z",
+    "allocation_attribute_type": 15,
+    "allocation": 1,
+    "value": "GrpTRESMins=cpu=1000000:GrpTRES=nodes=10,mem=200000:GrpJob=20"
+  }
+},
+{
+  "model": "allocation.allocationattribute",
+  "pk": 3,
+  "fields": {
+    "created": "2022-02-12T00:52:06.818Z",
+    "modified": "2022-02-14T20:23:23.508Z",
+    "allocation_attribute_type": 16,
+    "allocation": 1,
+    "value": "MaxJobs=5:MaxJobsAccrue=5"
+  }
+},
+{
+  "model": "allocation.allocationattribute",
+  "pk": 4,
+  "fields": {
+    "created": "2022-02-12T00:52:06.831Z",
+    "modified": "2022-02-14T20:23:12.139Z",
+    "allocation_attribute_type": 14,
+    "allocation": 2,
+    "value": "superhero_alloc"
+  }
+},
+{
+  "model": "allocation.allocationattribute",
+  "pk": 5,
+  "fields": {
+    "created": "2022-02-12T00:52:06.832Z",
+    "modified": "2022-02-14T20:22:15.189Z",
+    "allocation_attribute_type": 15,
+    "allocation": 2,
+    "value": "GrpTRESMins=cpu=5000000:GrpTRES=nodes=10,mem=200000:GrpJob=20"
+  }
+},
+{
+  "model": "allocation.allocationattribute",
+  "pk": 6,
+  "fields": {
+    "created": "2022-02-12T00:52:06.834Z",
+    "modified": "2022-02-14T20:21:45.137Z",
+    "allocation_attribute_type": 16,
+    "allocation": 2,
+    "value": "MaxJobs=5:MaxJobsAccrue=5"
+  }
+},
+{
+  "model": "allocation.allocationuserstatuschoice",
+  "pk": 1,
+  "fields": {
+    "created": "2022-02-12T00:52:02.674Z",
+    "modified": "2022-02-12T00:52:02.674Z",
+    "name": "Active"
+  }
+},
+{
+  "model": "allocation.allocationuserstatuschoice",
+  "pk": 2,
+  "fields": {
+    "created": "2022-02-12T00:52:02.675Z",
+    "modified": "2022-02-12T00:52:02.675Z",
+    "name": "Error"
+  }
+},
+{
+  "model": "allocation.allocationuserstatuschoice",
+  "pk": 3,
+  "fields": {
+    "created": "2022-02-12T00:52:02.676Z",
+    "modified": "2022-02-12T00:52:02.676Z",
+    "name": "Removed"
+  }
+},
+{
+  "model": "grant.grantfundingagency",
+  "pk": 1,
+  "fields": {
+    "created": "2022-02-12T00:52:02.599Z",
+    "modified": "2022-02-12T00:52:02.599Z",
+    "name": "Department of Defense (DoD)"
+  }
+},
+{
+  "model": "grant.grantfundingagency",
+  "pk": 2,
+  "fields": {
+    "created": "2022-02-12T00:52:02.600Z",
+    "modified": "2022-02-12T00:52:02.600Z",
+    "name": "Department of Energy (DOE)"
+  }
+},
+{
+  "model": "grant.grantfundingagency",
+  "pk": 3,
+  "fields": {
+    "created": "2022-02-12T00:52:02.601Z",
+    "modified": "2022-02-12T00:52:02.601Z",
+    "name": "Environmental Protection Agency (EPA)"
+  }
+},
+{
+  "model": "grant.grantfundingagency",
+  "pk": 4,
+  "fields": {
+    "created": "2022-02-12T00:52:02.602Z",
+    "modified": "2022-02-12T00:52:02.602Z",
+    "name": "National Aeronautics and Space Administration (NASA)"
+  }
+},
+{
+  "model": "grant.grantfundingagency",
+  "pk": 5,
+  "fields": {
+    "created": "2022-02-12T00:52:02.602Z",
+    "modified": "2022-02-12T00:52:02.602Z",
+    "name": "National Institutes of Health (NIH)"
+  }
+},
+{
+  "model": "grant.grantfundingagency",
+  "pk": 6,
+  "fields": {
+    "created": "2022-02-12T00:52:02.603Z",
+    "modified": "2022-02-12T00:52:02.603Z",
+    "name": "National Science Foundation (NSF)"
+  }
+},
+{
+  "model": "grant.grantfundingagency",
+  "pk": 7,
+  "fields": {
+    "created": "2022-02-12T00:52:02.604Z",
+    "modified": "2022-02-12T00:52:02.604Z",
+    "name": "New York State Department of Health (DOH)"
+  }
+},
+{
+  "model": "grant.grantfundingagency",
+  "pk": 8,
+  "fields": {
+    "created": "2022-02-12T00:52:02.605Z",
+    "modified": "2022-02-12T00:52:02.605Z",
+    "name": "New York State (NYS)"
+  }
+},
+{
+  "model": "grant.grantfundingagency",
+  "pk": 9,
+  "fields": {
+    "created": "2022-02-12T00:52:02.606Z",
+    "modified": "2022-02-12T00:52:02.606Z",
+    "name": "Empire State Development (ESD)"
+  }
+},
+{
+  "model": "grant.grantfundingagency",
+  "pk": 10,
+  "fields": {
+    "created": "2022-02-12T00:52:02.606Z",
+    "modified": "2022-02-12T00:52:02.606Z",
+    "name": "Empire State Development's Division of Science, Technology and Innovation (NYSTAR)"
+  }
+},
+{
+  "model": "grant.grantfundingagency",
+  "pk": 11,
+  "fields": {
+    "created": "2022-02-12T00:52:02.607Z",
+    "modified": "2022-02-12T00:52:02.607Z",
+    "name": "Other"
+  }
+},
+{
+  "model": "grant.grantstatuschoice",
+  "pk": 1,
+  "fields": {
+    "created": "2022-02-12T00:52:02.608Z",
+    "modified": "2022-02-12T00:52:02.608Z",
+    "name": "Active"
+  }
+},
+{
+  "model": "grant.grantstatuschoice",
+  "pk": 2,
+  "fields": {
+    "created": "2022-02-12T00:52:02.609Z",
+    "modified": "2022-02-12T00:52:02.609Z",
+    "name": "Archived"
+  }
+},
+{
+  "model": "grant.grantstatuschoice",
+  "pk": 3,
+  "fields": {
+    "created": "2022-02-12T00:52:02.610Z",
+    "modified": "2022-02-12T00:52:02.610Z",
+    "name": "Pending"
+  }
+},
+{
+  "model": "publication.publicationsource",
+  "pk": 2,
+  "fields": {
+    "created": "2022-02-12T00:52:02.709Z",
+    "modified": "2022-02-12T00:52:02.709Z",
+    "name": "doi",
+    "url": "https://doi.org/"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 1,
+  "fields": {
+    "name": "Can add log entry",
+    "content_type": 1,
+    "codename": "add_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 2,
+  "fields": {
+    "name": "Can change log entry",
+    "content_type": 1,
+    "codename": "change_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 3,
+  "fields": {
+    "name": "Can delete log entry",
+    "content_type": 1,
+    "codename": "delete_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 4,
+  "fields": {
+    "name": "Can view log entry",
+    "content_type": 1,
+    "codename": "view_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 5,
+  "fields": {
+    "name": "Can add permission",
+    "content_type": 2,
+    "codename": "add_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 6,
+  "fields": {
+    "name": "Can change permission",
+    "content_type": 2,
+    "codename": "change_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 7,
+  "fields": {
+    "name": "Can delete permission",
+    "content_type": 2,
+    "codename": "delete_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 8,
+  "fields": {
+    "name": "Can view permission",
+    "content_type": 2,
+    "codename": "view_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 9,
+  "fields": {
+    "name": "Can add group",
+    "content_type": 3,
+    "codename": "add_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 10,
+  "fields": {
+    "name": "Can change group",
+    "content_type": 3,
+    "codename": "change_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 11,
+  "fields": {
+    "name": "Can delete group",
+    "content_type": 3,
+    "codename": "delete_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 12,
+  "fields": {
+    "name": "Can view group",
+    "content_type": 3,
+    "codename": "view_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 13,
+  "fields": {
+    "name": "Can add user",
+    "content_type": 4,
+    "codename": "add_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 14,
+  "fields": {
+    "name": "Can change user",
+    "content_type": 4,
+    "codename": "change_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 15,
+  "fields": {
+    "name": "Can delete user",
+    "content_type": 4,
+    "codename": "delete_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 16,
+  "fields": {
+    "name": "Can view user",
+    "content_type": 4,
+    "codename": "view_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 17,
+  "fields": {
+    "name": "Can add content type",
+    "content_type": 5,
+    "codename": "add_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 18,
+  "fields": {
+    "name": "Can change content type",
+    "content_type": 5,
+    "codename": "change_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 19,
+  "fields": {
+    "name": "Can delete content type",
+    "content_type": 5,
+    "codename": "delete_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 20,
+  "fields": {
+    "name": "Can view content type",
+    "content_type": 5,
+    "codename": "view_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 21,
+  "fields": {
+    "name": "Can add session",
+    "content_type": 6,
+    "codename": "add_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 22,
+  "fields": {
+    "name": "Can change session",
+    "content_type": 6,
+    "codename": "change_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 23,
+  "fields": {
+    "name": "Can delete session",
+    "content_type": 6,
+    "codename": "delete_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 24,
+  "fields": {
+    "name": "Can view session",
+    "content_type": 6,
+    "codename": "view_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 25,
+  "fields": {
+    "name": "Can add Scheduled task",
+    "content_type": 7,
+    "codename": "add_schedule"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 26,
+  "fields": {
+    "name": "Can change Scheduled task",
+    "content_type": 7,
+    "codename": "change_schedule"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 27,
+  "fields": {
+    "name": "Can delete Scheduled task",
+    "content_type": 7,
+    "codename": "delete_schedule"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 28,
+  "fields": {
+    "name": "Can view Scheduled task",
+    "content_type": 7,
+    "codename": "view_schedule"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 29,
+  "fields": {
+    "name": "Can add task",
+    "content_type": 8,
+    "codename": "add_task"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 30,
+  "fields": {
+    "name": "Can change task",
+    "content_type": 8,
+    "codename": "change_task"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 31,
+  "fields": {
+    "name": "Can delete task",
+    "content_type": 8,
+    "codename": "delete_task"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 32,
+  "fields": {
+    "name": "Can view task",
+    "content_type": 8,
+    "codename": "view_task"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 33,
+  "fields": {
+    "name": "Can add Failed task",
+    "content_type": 9,
+    "codename": "add_failure"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 34,
+  "fields": {
+    "name": "Can change Failed task",
+    "content_type": 9,
+    "codename": "change_failure"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 35,
+  "fields": {
+    "name": "Can delete Failed task",
+    "content_type": 9,
+    "codename": "delete_failure"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 36,
+  "fields": {
+    "name": "Can view Failed task",
+    "content_type": 9,
+    "codename": "view_failure"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 37,
+  "fields": {
+    "name": "Can add Successful task",
+    "content_type": 10,
+    "codename": "add_success"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 38,
+  "fields": {
+    "name": "Can change Successful task",
+    "content_type": 10,
+    "codename": "change_success"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 39,
+  "fields": {
+    "name": "Can delete Successful task",
+    "content_type": 10,
+    "codename": "delete_success"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 40,
+  "fields": {
+    "name": "Can view Successful task",
+    "content_type": 10,
+    "codename": "view_success"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 41,
+  "fields": {
+    "name": "Can add Queued task",
+    "content_type": 11,
+    "codename": "add_ormq"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 42,
+  "fields": {
+    "name": "Can change Queued task",
+    "content_type": 11,
+    "codename": "change_ormq"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 43,
+  "fields": {
+    "name": "Can delete Queued task",
+    "content_type": 11,
+    "codename": "delete_ormq"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 44,
+  "fields": {
+    "name": "Can view Queued task",
+    "content_type": 11,
+    "codename": "view_ormq"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 45,
+  "fields": {
+    "name": "Can add user profile",
+    "content_type": 12,
+    "codename": "add_userprofile"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 46,
+  "fields": {
+    "name": "Can change user profile",
+    "content_type": 12,
+    "codename": "change_userprofile"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 47,
+  "fields": {
+    "name": "Can delete user profile",
+    "content_type": 12,
+    "codename": "delete_userprofile"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 48,
+  "fields": {
+    "name": "Can view user profile",
+    "content_type": 12,
+    "codename": "view_userprofile"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 49,
+  "fields": {
+    "name": "Can add field of science",
+    "content_type": 13,
+    "codename": "add_fieldofscience"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 50,
+  "fields": {
+    "name": "Can change field of science",
+    "content_type": 13,
+    "codename": "change_fieldofscience"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 51,
+  "fields": {
+    "name": "Can delete field of science",
+    "content_type": 13,
+    "codename": "delete_fieldofscience"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 52,
+  "fields": {
+    "name": "Can view field of science",
+    "content_type": 13,
+    "codename": "view_fieldofscience"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 53,
+  "fields": {
+    "name": "Can add project",
+    "content_type": 14,
+    "codename": "add_project"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 54,
+  "fields": {
+    "name": "Can change project",
+    "content_type": 14,
+    "codename": "change_project"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 55,
+  "fields": {
+    "name": "Can delete project",
+    "content_type": 14,
+    "codename": "delete_project"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 56,
+  "fields": {
+    "name": "Can view project",
+    "content_type": 14,
+    "codename": "view_project"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 57,
+  "fields": {
+    "name": "Can view all projects",
+    "content_type": 14,
+    "codename": "can_view_all_projects"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 58,
+  "fields": {
+    "name": "Can review pending project reviews",
+    "content_type": 14,
+    "codename": "can_review_pending_project_reviews"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 59,
+  "fields": {
+    "name": "Can add project review status choice",
+    "content_type": 15,
+    "codename": "add_projectreviewstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 60,
+  "fields": {
+    "name": "Can change project review status choice",
+    "content_type": 15,
+    "codename": "change_projectreviewstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 61,
+  "fields": {
+    "name": "Can delete project review status choice",
+    "content_type": 15,
+    "codename": "delete_projectreviewstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 62,
+  "fields": {
+    "name": "Can view project review status choice",
+    "content_type": 15,
+    "codename": "view_projectreviewstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 63,
+  "fields": {
+    "name": "Can add project status choice",
+    "content_type": 16,
+    "codename": "add_projectstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 64,
+  "fields": {
+    "name": "Can change project status choice",
+    "content_type": 16,
+    "codename": "change_projectstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 65,
+  "fields": {
+    "name": "Can delete project status choice",
+    "content_type": 16,
+    "codename": "delete_projectstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 66,
+  "fields": {
+    "name": "Can view project status choice",
+    "content_type": 16,
+    "codename": "view_projectstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 67,
+  "fields": {
+    "name": "Can add project user role choice",
+    "content_type": 17,
+    "codename": "add_projectuserrolechoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 68,
+  "fields": {
+    "name": "Can change project user role choice",
+    "content_type": 17,
+    "codename": "change_projectuserrolechoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 69,
+  "fields": {
+    "name": "Can delete project user role choice",
+    "content_type": 17,
+    "codename": "delete_projectuserrolechoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 70,
+  "fields": {
+    "name": "Can view project user role choice",
+    "content_type": 17,
+    "codename": "view_projectuserrolechoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 71,
+  "fields": {
+    "name": "Can add project user status choice",
+    "content_type": 18,
+    "codename": "add_projectuserstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 72,
+  "fields": {
+    "name": "Can change project user status choice",
+    "content_type": 18,
+    "codename": "change_projectuserstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 73,
+  "fields": {
+    "name": "Can delete project user status choice",
+    "content_type": 18,
+    "codename": "delete_projectuserstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 74,
+  "fields": {
+    "name": "Can view project user status choice",
+    "content_type": 18,
+    "codename": "view_projectuserstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 75,
+  "fields": {
+    "name": "Can add project user message",
+    "content_type": 19,
+    "codename": "add_projectusermessage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 76,
+  "fields": {
+    "name": "Can change project user message",
+    "content_type": 19,
+    "codename": "change_projectusermessage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 77,
+  "fields": {
+    "name": "Can delete project user message",
+    "content_type": 19,
+    "codename": "delete_projectusermessage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 78,
+  "fields": {
+    "name": "Can view project user message",
+    "content_type": 19,
+    "codename": "view_projectusermessage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 79,
+  "fields": {
+    "name": "Can add project review",
+    "content_type": 20,
+    "codename": "add_projectreview"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 80,
+  "fields": {
+    "name": "Can change project review",
+    "content_type": 20,
+    "codename": "change_projectreview"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 81,
+  "fields": {
+    "name": "Can delete project review",
+    "content_type": 20,
+    "codename": "delete_projectreview"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 82,
+  "fields": {
+    "name": "Can view project review",
+    "content_type": 20,
+    "codename": "view_projectreview"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 83,
+  "fields": {
+    "name": "Can add project admin comment",
+    "content_type": 21,
+    "codename": "add_projectadmincomment"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 84,
+  "fields": {
+    "name": "Can change project admin comment",
+    "content_type": 21,
+    "codename": "change_projectadmincomment"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 85,
+  "fields": {
+    "name": "Can delete project admin comment",
+    "content_type": 21,
+    "codename": "delete_projectadmincomment"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 86,
+  "fields": {
+    "name": "Can view project admin comment",
+    "content_type": 21,
+    "codename": "view_projectadmincomment"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 87,
+  "fields": {
+    "name": "Can add historical project user",
+    "content_type": 22,
+    "codename": "add_historicalprojectuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 88,
+  "fields": {
+    "name": "Can change historical project user",
+    "content_type": 22,
+    "codename": "change_historicalprojectuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 89,
+  "fields": {
+    "name": "Can delete historical project user",
+    "content_type": 22,
+    "codename": "delete_historicalprojectuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 90,
+  "fields": {
+    "name": "Can view historical project user",
+    "content_type": 22,
+    "codename": "view_historicalprojectuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 91,
+  "fields": {
+    "name": "Can add historical project review",
+    "content_type": 23,
+    "codename": "add_historicalprojectreview"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 92,
+  "fields": {
+    "name": "Can change historical project review",
+    "content_type": 23,
+    "codename": "change_historicalprojectreview"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 93,
+  "fields": {
+    "name": "Can delete historical project review",
+    "content_type": 23,
+    "codename": "delete_historicalprojectreview"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 94,
+  "fields": {
+    "name": "Can view historical project review",
+    "content_type": 23,
+    "codename": "view_historicalprojectreview"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 95,
+  "fields": {
+    "name": "Can add historical project",
+    "content_type": 24,
+    "codename": "add_historicalproject"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 96,
+  "fields": {
+    "name": "Can change historical project",
+    "content_type": 24,
+    "codename": "change_historicalproject"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 97,
+  "fields": {
+    "name": "Can delete historical project",
+    "content_type": 24,
+    "codename": "delete_historicalproject"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 98,
+  "fields": {
+    "name": "Can view historical project",
+    "content_type": 24,
+    "codename": "view_historicalproject"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 99,
+  "fields": {
+    "name": "Can add project user",
+    "content_type": 25,
+    "codename": "add_projectuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 100,
+  "fields": {
+    "name": "Can change project user",
+    "content_type": 25,
+    "codename": "change_projectuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 101,
+  "fields": {
+    "name": "Can delete project user",
+    "content_type": 25,
+    "codename": "delete_projectuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 102,
+  "fields": {
+    "name": "Can view project user",
+    "content_type": 25,
+    "codename": "view_projectuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 103,
+  "fields": {
+    "name": "Can add attribute type",
+    "content_type": 26,
+    "codename": "add_attributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 104,
+  "fields": {
+    "name": "Can change attribute type",
+    "content_type": 26,
+    "codename": "change_attributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 105,
+  "fields": {
+    "name": "Can delete attribute type",
+    "content_type": 26,
+    "codename": "delete_attributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 106,
+  "fields": {
+    "name": "Can view attribute type",
+    "content_type": 26,
+    "codename": "view_attributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 107,
+  "fields": {
+    "name": "Can add resource type",
+    "content_type": 27,
+    "codename": "add_resourcetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 108,
+  "fields": {
+    "name": "Can change resource type",
+    "content_type": 27,
+    "codename": "change_resourcetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 109,
+  "fields": {
+    "name": "Can delete resource type",
+    "content_type": 27,
+    "codename": "delete_resourcetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 110,
+  "fields": {
+    "name": "Can view resource type",
+    "content_type": 27,
+    "codename": "view_resourcetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 111,
+  "fields": {
+    "name": "Can add resource attribute type",
+    "content_type": 28,
+    "codename": "add_resourceattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 112,
+  "fields": {
+    "name": "Can change resource attribute type",
+    "content_type": 28,
+    "codename": "change_resourceattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 113,
+  "fields": {
+    "name": "Can delete resource attribute type",
+    "content_type": 28,
+    "codename": "delete_resourceattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 114,
+  "fields": {
+    "name": "Can view resource attribute type",
+    "content_type": 28,
+    "codename": "view_resourceattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 115,
+  "fields": {
+    "name": "Can add resource",
+    "content_type": 29,
+    "codename": "add_resource"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 116,
+  "fields": {
+    "name": "Can change resource",
+    "content_type": 29,
+    "codename": "change_resource"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 117,
+  "fields": {
+    "name": "Can delete resource",
+    "content_type": 29,
+    "codename": "delete_resource"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 118,
+  "fields": {
+    "name": "Can view resource",
+    "content_type": 29,
+    "codename": "view_resource"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 119,
+  "fields": {
+    "name": "Can add historical resource type",
+    "content_type": 30,
+    "codename": "add_historicalresourcetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 120,
+  "fields": {
+    "name": "Can change historical resource type",
+    "content_type": 30,
+    "codename": "change_historicalresourcetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 121,
+  "fields": {
+    "name": "Can delete historical resource type",
+    "content_type": 30,
+    "codename": "delete_historicalresourcetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 122,
+  "fields": {
+    "name": "Can view historical resource type",
+    "content_type": 30,
+    "codename": "view_historicalresourcetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 123,
+  "fields": {
+    "name": "Can add historical resource attribute type",
+    "content_type": 31,
+    "codename": "add_historicalresourceattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 124,
+  "fields": {
+    "name": "Can change historical resource attribute type",
+    "content_type": 31,
+    "codename": "change_historicalresourceattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 125,
+  "fields": {
+    "name": "Can delete historical resource attribute type",
+    "content_type": 31,
+    "codename": "delete_historicalresourceattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 126,
+  "fields": {
+    "name": "Can view historical resource attribute type",
+    "content_type": 31,
+    "codename": "view_historicalresourceattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 127,
+  "fields": {
+    "name": "Can add historical resource attribute",
+    "content_type": 32,
+    "codename": "add_historicalresourceattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 128,
+  "fields": {
+    "name": "Can change historical resource attribute",
+    "content_type": 32,
+    "codename": "change_historicalresourceattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 129,
+  "fields": {
+    "name": "Can delete historical resource attribute",
+    "content_type": 32,
+    "codename": "delete_historicalresourceattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 130,
+  "fields": {
+    "name": "Can view historical resource attribute",
+    "content_type": 32,
+    "codename": "view_historicalresourceattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 131,
+  "fields": {
+    "name": "Can add historical resource",
+    "content_type": 33,
+    "codename": "add_historicalresource"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 132,
+  "fields": {
+    "name": "Can change historical resource",
+    "content_type": 33,
+    "codename": "change_historicalresource"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 133,
+  "fields": {
+    "name": "Can delete historical resource",
+    "content_type": 33,
+    "codename": "delete_historicalresource"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 134,
+  "fields": {
+    "name": "Can view historical resource",
+    "content_type": 33,
+    "codename": "view_historicalresource"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 135,
+  "fields": {
+    "name": "Can add resource attribute",
+    "content_type": 34,
+    "codename": "add_resourceattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 136,
+  "fields": {
+    "name": "Can change resource attribute",
+    "content_type": 34,
+    "codename": "change_resourceattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 137,
+  "fields": {
+    "name": "Can delete resource attribute",
+    "content_type": 34,
+    "codename": "delete_resourceattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 138,
+  "fields": {
+    "name": "Can view resource attribute",
+    "content_type": 34,
+    "codename": "view_resourceattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 139,
+  "fields": {
+    "name": "Can add allocation",
+    "content_type": 35,
+    "codename": "add_allocation"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 140,
+  "fields": {
+    "name": "Can change allocation",
+    "content_type": 35,
+    "codename": "change_allocation"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 141,
+  "fields": {
+    "name": "Can delete allocation",
+    "content_type": 35,
+    "codename": "delete_allocation"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 142,
+  "fields": {
+    "name": "Can view allocation",
+    "content_type": 35,
+    "codename": "view_allocation"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 143,
+  "fields": {
+    "name": "Can view all allocations",
+    "content_type": 35,
+    "codename": "can_view_all_allocations"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 144,
+  "fields": {
+    "name": "Can review allocation requests",
+    "content_type": 35,
+    "codename": "can_review_allocation_requests"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 145,
+  "fields": {
+    "name": "Can manage invoice",
+    "content_type": 35,
+    "codename": "can_manage_invoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 146,
+  "fields": {
+    "name": "Can add allocation attribute",
+    "content_type": 36,
+    "codename": "add_allocationattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 147,
+  "fields": {
+    "name": "Can change allocation attribute",
+    "content_type": 36,
+    "codename": "change_allocationattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 148,
+  "fields": {
+    "name": "Can delete allocation attribute",
+    "content_type": 36,
+    "codename": "delete_allocationattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 149,
+  "fields": {
+    "name": "Can view allocation attribute",
+    "content_type": 36,
+    "codename": "view_allocationattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 150,
+  "fields": {
+    "name": "Can add allocation attribute type",
+    "content_type": 37,
+    "codename": "add_allocationattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 151,
+  "fields": {
+    "name": "Can change allocation attribute type",
+    "content_type": 37,
+    "codename": "change_allocationattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 152,
+  "fields": {
+    "name": "Can delete allocation attribute type",
+    "content_type": 37,
+    "codename": "delete_allocationattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 153,
+  "fields": {
+    "name": "Can view allocation attribute type",
+    "content_type": 37,
+    "codename": "view_allocationattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 154,
+  "fields": {
+    "name": "Can add allocation status choice",
+    "content_type": 38,
+    "codename": "add_allocationstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 155,
+  "fields": {
+    "name": "Can change allocation status choice",
+    "content_type": 38,
+    "codename": "change_allocationstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 156,
+  "fields": {
+    "name": "Can delete allocation status choice",
+    "content_type": 38,
+    "codename": "delete_allocationstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 157,
+  "fields": {
+    "name": "Can view allocation status choice",
+    "content_type": 38,
+    "codename": "view_allocationstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 158,
+  "fields": {
+    "name": "Can add allocation user status choice",
+    "content_type": 39,
+    "codename": "add_allocationuserstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 159,
+  "fields": {
+    "name": "Can change allocation user status choice",
+    "content_type": 39,
+    "codename": "change_allocationuserstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 160,
+  "fields": {
+    "name": "Can delete allocation user status choice",
+    "content_type": 39,
+    "codename": "delete_allocationuserstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 161,
+  "fields": {
+    "name": "Can view allocation user status choice",
+    "content_type": 39,
+    "codename": "view_allocationuserstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 162,
+  "fields": {
+    "name": "Can add attribute type",
+    "content_type": 40,
+    "codename": "add_attributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 163,
+  "fields": {
+    "name": "Can change attribute type",
+    "content_type": 40,
+    "codename": "change_attributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 164,
+  "fields": {
+    "name": "Can delete attribute type",
+    "content_type": 40,
+    "codename": "delete_attributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 165,
+  "fields": {
+    "name": "Can view attribute type",
+    "content_type": 40,
+    "codename": "view_attributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 166,
+  "fields": {
+    "name": "Can add allocation attribute usage",
+    "content_type": 41,
+    "codename": "add_allocationattributeusage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 167,
+  "fields": {
+    "name": "Can change allocation attribute usage",
+    "content_type": 41,
+    "codename": "change_allocationattributeusage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 168,
+  "fields": {
+    "name": "Can delete allocation attribute usage",
+    "content_type": 41,
+    "codename": "delete_allocationattributeusage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 169,
+  "fields": {
+    "name": "Can view allocation attribute usage",
+    "content_type": 41,
+    "codename": "view_allocationattributeusage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 170,
+  "fields": {
+    "name": "Can add historical allocation user",
+    "content_type": 42,
+    "codename": "add_historicalallocationuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 171,
+  "fields": {
+    "name": "Can change historical allocation user",
+    "content_type": 42,
+    "codename": "change_historicalallocationuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 172,
+  "fields": {
+    "name": "Can delete historical allocation user",
+    "content_type": 42,
+    "codename": "delete_historicalallocationuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 173,
+  "fields": {
+    "name": "Can view historical allocation user",
+    "content_type": 42,
+    "codename": "view_historicalallocationuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 174,
+  "fields": {
+    "name": "Can add historical allocation attribute usage",
+    "content_type": 43,
+    "codename": "add_historicalallocationattributeusage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 175,
+  "fields": {
+    "name": "Can change historical allocation attribute usage",
+    "content_type": 43,
+    "codename": "change_historicalallocationattributeusage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 176,
+  "fields": {
+    "name": "Can delete historical allocation attribute usage",
+    "content_type": 43,
+    "codename": "delete_historicalallocationattributeusage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 177,
+  "fields": {
+    "name": "Can view historical allocation attribute usage",
+    "content_type": 43,
+    "codename": "view_historicalallocationattributeusage"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 178,
+  "fields": {
+    "name": "Can add historical allocation attribute type",
+    "content_type": 44,
+    "codename": "add_historicalallocationattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 179,
+  "fields": {
+    "name": "Can change historical allocation attribute type",
+    "content_type": 44,
+    "codename": "change_historicalallocationattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 180,
+  "fields": {
+    "name": "Can delete historical allocation attribute type",
+    "content_type": 44,
+    "codename": "delete_historicalallocationattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 181,
+  "fields": {
+    "name": "Can view historical allocation attribute type",
+    "content_type": 44,
+    "codename": "view_historicalallocationattributetype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 182,
+  "fields": {
+    "name": "Can add historical allocation attribute",
+    "content_type": 45,
+    "codename": "add_historicalallocationattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 183,
+  "fields": {
+    "name": "Can change historical allocation attribute",
+    "content_type": 45,
+    "codename": "change_historicalallocationattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 184,
+  "fields": {
+    "name": "Can delete historical allocation attribute",
+    "content_type": 45,
+    "codename": "delete_historicalallocationattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 185,
+  "fields": {
+    "name": "Can view historical allocation attribute",
+    "content_type": 45,
+    "codename": "view_historicalallocationattribute"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 186,
+  "fields": {
+    "name": "Can add historical allocation",
+    "content_type": 46,
+    "codename": "add_historicalallocation"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 187,
+  "fields": {
+    "name": "Can change historical allocation",
+    "content_type": 46,
+    "codename": "change_historicalallocation"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 188,
+  "fields": {
+    "name": "Can delete historical allocation",
+    "content_type": 46,
+    "codename": "delete_historicalallocation"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 189,
+  "fields": {
+    "name": "Can view historical allocation",
+    "content_type": 46,
+    "codename": "view_historicalallocation"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 190,
+  "fields": {
+    "name": "Can add allocation user note",
+    "content_type": 47,
+    "codename": "add_allocationusernote"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 191,
+  "fields": {
+    "name": "Can change allocation user note",
+    "content_type": 47,
+    "codename": "change_allocationusernote"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 192,
+  "fields": {
+    "name": "Can delete allocation user note",
+    "content_type": 47,
+    "codename": "delete_allocationusernote"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 193,
+  "fields": {
+    "name": "Can view allocation user note",
+    "content_type": 47,
+    "codename": "view_allocationusernote"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 194,
+  "fields": {
+    "name": "Can add allocation user",
+    "content_type": 48,
+    "codename": "add_allocationuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 195,
+  "fields": {
+    "name": "Can change allocation user",
+    "content_type": 48,
+    "codename": "change_allocationuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 196,
+  "fields": {
+    "name": "Can delete allocation user",
+    "content_type": 48,
+    "codename": "delete_allocationuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 197,
+  "fields": {
+    "name": "Can view allocation user",
+    "content_type": 48,
+    "codename": "view_allocationuser"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 198,
+  "fields": {
+    "name": "Can add allocation admin note",
+    "content_type": 49,
+    "codename": "add_allocationadminnote"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 199,
+  "fields": {
+    "name": "Can change allocation admin note",
+    "content_type": 49,
+    "codename": "change_allocationadminnote"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 200,
+  "fields": {
+    "name": "Can delete allocation admin note",
+    "content_type": 49,
+    "codename": "delete_allocationadminnote"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 201,
+  "fields": {
+    "name": "Can view allocation admin note",
+    "content_type": 49,
+    "codename": "view_allocationadminnote"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 202,
+  "fields": {
+    "name": "Can add allocation account",
+    "content_type": 50,
+    "codename": "add_allocationaccount"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 203,
+  "fields": {
+    "name": "Can change allocation account",
+    "content_type": 50,
+    "codename": "change_allocationaccount"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 204,
+  "fields": {
+    "name": "Can delete allocation account",
+    "content_type": 50,
+    "codename": "delete_allocationaccount"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 205,
+  "fields": {
+    "name": "Can view allocation account",
+    "content_type": 50,
+    "codename": "view_allocationaccount"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 206,
+  "fields": {
+    "name": "Can add grant funding agency",
+    "content_type": 51,
+    "codename": "add_grantfundingagency"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 207,
+  "fields": {
+    "name": "Can change grant funding agency",
+    "content_type": 51,
+    "codename": "change_grantfundingagency"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 208,
+  "fields": {
+    "name": "Can delete grant funding agency",
+    "content_type": 51,
+    "codename": "delete_grantfundingagency"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 209,
+  "fields": {
+    "name": "Can view grant funding agency",
+    "content_type": 51,
+    "codename": "view_grantfundingagency"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 210,
+  "fields": {
+    "name": "Can add grant status choice",
+    "content_type": 52,
+    "codename": "add_grantstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 211,
+  "fields": {
+    "name": "Can change grant status choice",
+    "content_type": 52,
+    "codename": "change_grantstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 212,
+  "fields": {
+    "name": "Can delete grant status choice",
+    "content_type": 52,
+    "codename": "delete_grantstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 213,
+  "fields": {
+    "name": "Can view grant status choice",
+    "content_type": 52,
+    "codename": "view_grantstatuschoice"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 214,
+  "fields": {
+    "name": "Can add historical grant",
+    "content_type": 53,
+    "codename": "add_historicalgrant"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 215,
+  "fields": {
+    "name": "Can change historical grant",
+    "content_type": 53,
+    "codename": "change_historicalgrant"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 216,
+  "fields": {
+    "name": "Can delete historical grant",
+    "content_type": 53,
+    "codename": "delete_historicalgrant"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 217,
+  "fields": {
+    "name": "Can view historical grant",
+    "content_type": 53,
+    "codename": "view_historicalgrant"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 218,
+  "fields": {
+    "name": "Can add grant",
+    "content_type": 54,
+    "codename": "add_grant"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 219,
+  "fields": {
+    "name": "Can change grant",
+    "content_type": 54,
+    "codename": "change_grant"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 220,
+  "fields": {
+    "name": "Can delete grant",
+    "content_type": 54,
+    "codename": "delete_grant"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 221,
+  "fields": {
+    "name": "Can view grant",
+    "content_type": 54,
+    "codename": "view_grant"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 222,
+  "fields": {
+    "name": "Can view all grants",
+    "content_type": 54,
+    "codename": "can_view_all_grants"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 223,
+  "fields": {
+    "name": "Can add publication source",
+    "content_type": 55,
+    "codename": "add_publicationsource"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 224,
+  "fields": {
+    "name": "Can change publication source",
+    "content_type": 55,
+    "codename": "change_publicationsource"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 225,
+  "fields": {
+    "name": "Can delete publication source",
+    "content_type": 55,
+    "codename": "delete_publicationsource"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 226,
+  "fields": {
+    "name": "Can view publication source",
+    "content_type": 55,
+    "codename": "view_publicationsource"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 227,
+  "fields": {
+    "name": "Can add historical publication",
+    "content_type": 56,
+    "codename": "add_historicalpublication"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 228,
+  "fields": {
+    "name": "Can change historical publication",
+    "content_type": 56,
+    "codename": "change_historicalpublication"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 229,
+  "fields": {
+    "name": "Can delete historical publication",
+    "content_type": 56,
+    "codename": "delete_historicalpublication"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 230,
+  "fields": {
+    "name": "Can view historical publication",
+    "content_type": 56,
+    "codename": "view_historicalpublication"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 231,
+  "fields": {
+    "name": "Can add publication",
+    "content_type": 57,
+    "codename": "add_publication"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 232,
+  "fields": {
+    "name": "Can change publication",
+    "content_type": 57,
+    "codename": "change_publication"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 233,
+  "fields": {
+    "name": "Can delete publication",
+    "content_type": 57,
+    "codename": "delete_publication"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 234,
+  "fields": {
+    "name": "Can view publication",
+    "content_type": 57,
+    "codename": "view_publication"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 235,
+  "fields": {
+    "name": "Can add research output",
+    "content_type": 58,
+    "codename": "add_researchoutput"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 236,
+  "fields": {
+    "name": "Can change research output",
+    "content_type": 58,
+    "codename": "change_researchoutput"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 237,
+  "fields": {
+    "name": "Can delete research output",
+    "content_type": 58,
+    "codename": "delete_researchoutput"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 238,
+  "fields": {
+    "name": "Can view research output",
+    "content_type": 58,
+    "codename": "view_researchoutput"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 239,
+  "fields": {
+    "name": "Can add historical research output",
+    "content_type": 59,
+    "codename": "add_historicalresearchoutput"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 240,
+  "fields": {
+    "name": "Can change historical research output",
+    "content_type": 59,
+    "codename": "change_historicalresearchoutput"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 241,
+  "fields": {
+    "name": "Can delete historical research output",
+    "content_type": 59,
+    "codename": "delete_historicalresearchoutput"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 242,
+  "fields": {
+    "name": "Can view historical research output",
+    "content_type": 59,
+    "codename": "view_historicalresearchoutput"
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 1,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "gwash",
+    "first_name": "George",
+    "last_name": "Washington",
+    "email": "gwash@example.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2022-02-12T00:52:06.795Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 2,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "lincoln",
+    "first_name": "Abe",
+    "last_name": "Lincoln",
+    "email": "lincoln@example.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2022-02-12T00:52:06.797Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 3,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "superman",
+    "first_name": "Clark",
+    "last_name": "Kent",
+    "email": "superman@example.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2022-02-12T00:52:06.798Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 4,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "spiderman",
+    "first_name": "Peter",
+    "last_name": "Parker",
+    "email": "spiderman@example.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2022-02-12T00:52:06.800Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 5,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "bond007",
+    "first_name": "James",
+    "last_name": "Bond",
+    "email": "bond007@example.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2022-02-12T00:52:06.801Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 6,
+  "fields": {
+    "password": "pbkdf2_sha256$150000$8NV7zXzFJ2Fb$fq48On/SUNxWOxS4gz10U61g/YyhJYK3aoRTsbnJtX0=",
+    "last_login": "2022-02-14T20:18:35.627Z",
+    "is_superuser": true,
+    "username": "cfadmin",
+    "first_name": "",
+    "last_name": "",
+    "email": "payerle@umd.edu",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2022-02-14T14:49:40.959Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 1,
+  "fields": {
+    "user": 1,
+    "is_pi": true
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 2,
+  "fields": {
+    "user": 2,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 3,
+  "fields": {
+    "user": 3,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 4,
+  "fields": {
+    "user": 4,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 5,
+  "fields": {
+    "user": 5,
+    "is_pi": false
+  }
+},
+{
+  "model": "user.userprofile",
+  "pk": 6,
+  "fields": {
+    "user": 6,
+    "is_pi": false
+  }
+},
+{
+  "model": "project.historicalproject",
+  "pk": 1,
+  "fields": {
+    "id": 1,
+    "created": "2022-02-12T00:52:06.807Z",
+    "modified": "2022-02-12T00:52:06.808Z",
+    "title": "The American Experiment",
+    "description": "Can a nation be governed by the people",
+    "force_review": false,
+    "requires_review": true,
+    "pi": 1,
+    "field_of_science": 80,
+    "status": 2,
+    "history_date": "2022-02-12T00:52:06.807Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "project.historicalproject",
+  "pk": 2,
+  "fields": {
+    "id": 2,
+    "created": "2022-02-12T00:52:06.822Z",
+    "modified": "2022-02-12T00:52:06.822Z",
+    "title": "Heroes",
+    "description": "Keep the planet safe",
+    "force_review": false,
+    "requires_review": true,
+    "pi": 3,
+    "field_of_science": 149,
+    "status": 2,
+    "history_date": "2022-02-12T00:52:06.822Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "project.project",
+  "pk": 1,
+  "fields": {
+    "created": "2022-02-12T00:52:06.807Z",
+    "modified": "2022-02-12T00:52:06.807Z",
+    "title": "The American Experiment",
+    "pi": 1,
+    "description": "Can a nation be governed by the people",
+    "field_of_science": 80,
+    "status": 2,
+    "force_review": false,
+    "requires_review": true
+  }
+},
+{
+  "model": "project.project",
+  "pk": 2,
+  "fields": {
+    "created": "2022-02-12T00:52:06.822Z",
+    "modified": "2022-02-12T00:52:06.822Z",
+    "title": "Heroes",
+    "pi": 3,
+    "description": "Keep the planet safe",
+    "field_of_science": 149,
+    "status": 2,
+    "force_review": false,
+    "requires_review": true
+  }
+},
+{
+  "model": "project.historicalprojectuser",
+  "pk": 1,
+  "fields": {
+    "id": 1,
+    "created": "2022-02-12T00:52:06.809Z",
+    "modified": "2022-02-12T00:52:06.810Z",
+    "enable_notifications": true,
+    "user": 1,
+    "project": 1,
+    "role": 2,
+    "status": 1,
+    "history_date": "2022-02-12T00:52:06.809Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "project.historicalprojectuser",
+  "pk": 2,
+  "fields": {
+    "id": 2,
+    "created": "2022-02-12T00:52:06.811Z",
+    "modified": "2022-02-12T00:52:06.812Z",
+    "enable_notifications": true,
+    "user": 2,
+    "project": 1,
+    "role": 1,
+    "status": 1,
+    "history_date": "2022-02-12T00:52:06.812Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "project.historicalprojectuser",
+  "pk": 3,
+  "fields": {
+    "id": 3,
+    "created": "2022-02-12T00:52:06.823Z",
+    "modified": "2022-02-12T00:52:06.824Z",
+    "enable_notifications": true,
+    "user": 3,
+    "project": 2,
+    "role": 2,
+    "status": 1,
+    "history_date": "2022-02-12T00:52:06.824Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "project.historicalprojectuser",
+  "pk": 4,
+  "fields": {
+    "id": 4,
+    "created": "2022-02-12T00:52:06.825Z",
+    "modified": "2022-02-12T00:52:06.826Z",
+    "enable_notifications": true,
+    "user": 4,
+    "project": 2,
+    "role": 1,
+    "status": 1,
+    "history_date": "2022-02-12T00:52:06.826Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "project.historicalprojectuser",
+  "pk": 5,
+  "fields": {
+    "id": 5,
+    "created": "2022-02-12T00:52:06.827Z",
+    "modified": "2022-02-12T00:52:06.828Z",
+    "enable_notifications": true,
+    "user": 5,
+    "project": 2,
+    "role": 1,
+    "status": 1,
+    "history_date": "2022-02-12T00:52:06.828Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "project.projectuser",
+  "pk": 1,
+  "fields": {
+    "created": "2022-02-12T00:52:06.809Z",
+    "modified": "2022-02-12T00:52:06.809Z",
+    "user": 1,
+    "project": 1,
+    "role": 2,
+    "status": 1,
+    "enable_notifications": true
+  }
+},
+{
+  "model": "project.projectuser",
+  "pk": 2,
+  "fields": {
+    "created": "2022-02-12T00:52:06.811Z",
+    "modified": "2022-02-12T00:52:06.811Z",
+    "user": 2,
+    "project": 1,
+    "role": 1,
+    "status": 1,
+    "enable_notifications": true
+  }
+},
+{
+  "model": "project.projectuser",
+  "pk": 3,
+  "fields": {
+    "created": "2022-02-12T00:52:06.823Z",
+    "modified": "2022-02-12T00:52:06.823Z",
+    "user": 3,
+    "project": 2,
+    "role": 2,
+    "status": 1,
+    "enable_notifications": true
+  }
+},
+{
+  "model": "project.projectuser",
+  "pk": 4,
+  "fields": {
+    "created": "2022-02-12T00:52:06.825Z",
+    "modified": "2022-02-12T00:52:06.825Z",
+    "user": 4,
+    "project": 2,
+    "role": 1,
+    "status": 1,
+    "enable_notifications": true
+  }
+},
+{
+  "model": "project.projectuser",
+  "pk": 5,
+  "fields": {
+    "created": "2022-02-12T00:52:06.827Z",
+    "modified": "2022-02-12T00:52:06.827Z",
+    "user": 5,
+    "project": 2,
+    "role": 1,
+    "status": 1,
+    "enable_notifications": true
+  }
+},
+{
+  "model": "resource.historicalresourcetype",
+  "pk": 1,
+  "fields": {
+    "id": 1,
+    "created": "2022-02-12T00:52:02.648Z",
+    "modified": "2022-02-12T00:52:02.649Z",
+    "name": "Cloud",
+    "description": "Cloud Computing",
+    "history_date": "2022-02-12T00:52:02.649Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "resource.historicalresourcetype",
+  "pk": 2,
+  "fields": {
+    "id": 2,
+    "created": "2022-02-12T00:52:02.650Z",
+    "modified": "2022-02-12T00:52:02.650Z",
+    "name": "Cluster",
+    "description": "Cluster servers",
+    "history_date": "2022-02-12T00:52:02.650Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "resource.historicalresourcetype",
+  "pk": 3,
+  "fields": {
+    "id": 3,
+    "created": "2022-02-12T00:52:02.651Z",
+    "modified": "2022-02-12T00:52:02.651Z",
+    "name": "Cluster Partition",
+    "description": "Cluster Partition ",
+    "history_date": "2022-02-12T00:52:02.651Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "resource.historicalresourcetype",
+  "pk": 4,
+  "fields": {
+    "id": 4,
+    "created": "2022-02-12T00:52:02.652Z",
+    "modified": "2022-02-12T00:52:02.652Z",
+    "name": "Server",
+    "description": "Extra servers providing various services",
+    "history_date": "2022-02-12T00:52:02.652Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "resource.historicalresourcetype",
+  "pk": 5,
+  "fields": {
+    "id": 5,
+    "created": "2022-02-12T00:52:02.653Z",
+    "modified": "2022-02-12T00:52:02.653Z",
+    "name": "Software License",
+    "description": "Software license purchased by users",
+    "history_date": "2022-02-12T00:52:02.653Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "resource.historicalresourcetype",
+  "pk": 6,
+  "fields": {
+    "id": 6,
+    "created": "2022-02-12T00:52:02.654Z",
+    "modified": "2022-02-12T00:52:02.654Z",
+    "name": "Storage",
+    "description": "NAS storage",
+    "history_date": "2022-02-12T00:52:02.654Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "resource.historicalresourceattributetype",
+  "pk": 1,
+  "fields": {
+    "id": 1,
+    "created": "2022-02-12T00:52:02.629Z",
+    "modified": "2022-02-12T00:52:02.629Z",
+    "name": "Core Count",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false,
+    "attribute_type": 3,
+    "history_date": "2022-02-12T00:52:02.629Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "resource.historicalresourceattributetype",
+  "pk": 2,
+  "fields": {
+    "id": 2,
+    "created": "2022-02-12T00:52:02.630Z",
+    "modified": "2022-02-12T00:52:02.630Z",
+    "name": "expiry_time",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false,
+    "attribute_type": 3,
+    "history_date": "2022-02-12T00:52:02.630Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "resource.historicalresourceattributetype",
+  "pk": 3,
+  "fields": {
+    "id": 3,
+    "created": "2022-02-12T00:52:02.631Z",
+    "modified": "2022-02-12T00:52:02.632Z",
+    "name": "fee_applies",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false,
+    "attribute_type": 6,
+    "history_date": "2022-02-12T00:52:02.632Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "resource.historicalresourceattributetype",
+  "pk": 4,
+  "fields": {
+    "id": 4,
+    "created": "2022-02-12T00:52:02.633Z",
+    "modified": "2022-02-12T00:52:02.633Z",
+    "name": "Node Count",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false,
+    "attribute_type": 3,
+    "history_date": "2022-02-12T00:52:02.633Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "resource.historicalresourceattributetype",
+  "pk": 5,
+  "fields": {
+    "id": 5,
+    "created": "2022-02-12T00:52:02.635Z",
+    "modified": "2022-02-12T00:52:02.635Z",
+    "name": "Owner",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false,
+    "attribute_type": 5,
+    "history_date": "2022-02-12T00:52:02.635Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "resource.historicalresourceattributetype",
+  "pk": 6,
+  "fields": {
+    "id": 6,
+    "created": "2022-02-12T00:52:02.636Z",
+    "modified": "2022-02-12T00:52:02.636Z",
+    "name": "quantity_default_value",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false,
+    "attribute_type": 3,
+    "history_date": "2022-02-12T00:52:02.636Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "resource.historicalresourceattributetype",
+  "pk": 7,
+  "fields": {
+    "id": 7,
+    "created": "2022-02-12T00:52:02.637Z",
+    "modified": "2022-02-12T00:52:02.638Z",
+    "name": "quantity_label",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false,
+    "attribute_type": 5,
+    "history_date": "2022-02-12T00:52:02.638Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "resource.historicalresourceattributetype",
+  "pk": 8,
+  "fields": {
+    "id": 8,
+    "created": "2022-02-12T00:52:02.639Z",
+    "modified": "2022-02-12T00:52:02.639Z",
+    "name": "eula",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false,
+    "attribute_type": 5,
+    "history_date": "2022-02-12T00:52:02.639Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "resource.historicalresourceattributetype",
+  "pk": 9,
+  "fields": {
+    "id": 9,
+    "created": "2022-02-12T00:52:02.640Z",
+    "modified": "2022-02-12T00:52:02.640Z",
+    "name": "OnDemand",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false,
+    "attribute_type": 6,
+    "history_date": "2022-02-12T00:52:02.640Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "resource.historicalresourceattributetype",
+  "pk": 10,
+  "fields": {
+    "id": 10,
+    "created": "2022-02-12T00:52:02.641Z",
+    "modified": "2022-02-12T00:52:02.642Z",
+    "name": "ServiceEnd",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false,
+    "attribute_type": 2,
+    "history_date": "2022-02-12T00:52:02.642Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "resource.historicalresourceattributetype",
+  "pk": 11,
+  "fields": {
+    "id": 11,
+    "created": "2022-02-12T00:52:02.643Z",
+    "modified": "2022-02-12T00:52:02.643Z",
+    "name": "ServiceStart",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false,
+    "attribute_type": 2,
+    "history_date": "2022-02-12T00:52:02.643Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "resource.historicalresourceattributetype",
+  "pk": 12,
+  "fields": {
+    "id": 12,
+    "created": "2022-02-12T00:52:02.644Z",
+    "modified": "2022-02-12T00:52:02.644Z",
+    "name": "slurm_cluster",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false,
+    "attribute_type": 5,
+    "history_date": "2022-02-12T00:52:02.644Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "resource.historicalresourceattributetype",
+  "pk": 13,
+  "fields": {
+    "id": 13,
+    "created": "2022-02-12T00:52:02.646Z",
+    "modified": "2022-02-12T00:52:02.646Z",
+    "name": "slurm_specs",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false,
+    "attribute_type": 5,
+    "history_date": "2022-02-12T00:52:02.646Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "resource.historicalresourceattributetype",
+  "pk": 14,
+  "fields": {
+    "id": 14,
+    "created": "2022-02-12T00:52:02.647Z",
+    "modified": "2022-02-12T00:52:02.647Z",
+    "name": "Status",
+    "is_required": false,
+    "is_unique_per_resource": false,
+    "is_value_unique": false,
+    "attribute_type": 4,
+    "history_date": "2022-02-12T00:52:02.647Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "resource.historicalresource",
+  "pk": 1,
+  "fields": {
+    "id": 1,
+    "created": "2022-02-12T00:52:06.803Z",
+    "modified": "2022-02-12T00:52:06.803Z",
+    "name": "SlurmSync Test Cluster",
+    "description": "Test cluster for SlurmSyncTest",
+    "is_available": true,
+    "is_public": true,
+    "is_allocatable": true,
+    "requires_payment": false,
+    "parent_resource": null,
+    "resource_type": 2,
+    "history_date": "2022-02-12T00:52:06.803Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "resource.resource",
+  "pk": 1,
+  "fields": {
+    "created": "2022-02-12T00:52:06.803Z",
+    "modified": "2022-02-12T00:52:06.803Z",
+    "parent_resource": null,
+    "resource_type": 2,
+    "name": "SlurmSync Test Cluster",
+    "description": "Test cluster for SlurmSyncTest",
+    "is_available": true,
+    "is_public": true,
+    "is_allocatable": true,
+    "requires_payment": false,
+    "allowed_groups": [],
+    "allowed_users": [],
+    "linked_resources": []
+  }
+},
+{
+  "model": "resource.historicalresourceattribute",
+  "pk": 1,
+  "fields": {
+    "id": 1,
+    "created": "2022-02-14T15:20:16.310Z",
+    "modified": "2022-02-14T15:20:16.316Z",
+    "value": "synctest",
+    "resource_attribute_type": 12,
+    "resource": 1,
+    "history_date": "2022-02-14T15:20:16.315Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": 6
+  }
+},
+{
+  "model": "allocation.historicalallocation",
+  "pk": 1,
+  "fields": {
+    "id": 1,
+    "created": "2022-02-12T00:52:06.813Z",
+    "modified": "2022-02-12T00:52:06.813Z",
+    "quantity": 1,
+    "start_date": "2022-02-11",
+    "end_date": "2023-02-11",
+    "justification": "blah blah blah",
+    "description": null,
+    "is_locked": false,
+    "project": 1,
+    "status": 1,
+    "history_date": "2022-02-12T00:52:06.813Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocation",
+  "pk": 2,
+  "fields": {
+    "id": 2,
+    "created": "2022-02-12T00:52:06.829Z",
+    "modified": "2022-02-12T00:52:06.829Z",
+    "quantity": 1,
+    "start_date": "2022-02-11",
+    "end_date": "2023-02-11",
+    "justification": "up, up, and away",
+    "description": null,
+    "is_locked": false,
+    "project": 2,
+    "status": 1,
+    "history_date": "2022-02-12T00:52:06.829Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocationattributetype",
+  "pk": 1,
+  "fields": {
+    "id": 1,
+    "created": "2022-02-12T00:52:02.677Z",
+    "modified": "2022-02-12T00:52:02.677Z",
+    "name": "Cloud Account Name",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": false,
+    "attribute_type": 4,
+    "history_date": "2022-02-12T00:52:02.677Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocationattributetype",
+  "pk": 2,
+  "fields": {
+    "id": 2,
+    "created": "2022-02-12T00:52:02.679Z",
+    "modified": "2022-02-12T00:52:02.679Z",
+    "name": "CLOUD_USAGE_NOTIFICATION",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": true,
+    "attribute_type": 5,
+    "history_date": "2022-02-12T00:52:02.679Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocationattributetype",
+  "pk": 3,
+  "fields": {
+    "id": 3,
+    "created": "2022-02-12T00:52:02.680Z",
+    "modified": "2022-02-12T00:52:02.680Z",
+    "name": "Core Usage (Hours)",
+    "has_usage": true,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": false,
+    "attribute_type": 3,
+    "history_date": "2022-02-12T00:52:02.680Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocationattributetype",
+  "pk": 4,
+  "fields": {
+    "id": 4,
+    "created": "2022-02-12T00:52:02.682Z",
+    "modified": "2022-02-12T00:52:02.682Z",
+    "name": "Cloud Storage Quota (TB)",
+    "has_usage": true,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": false,
+    "attribute_type": 2,
+    "history_date": "2022-02-12T00:52:02.682Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocationattributetype",
+  "pk": 5,
+  "fields": {
+    "id": 5,
+    "created": "2022-02-12T00:52:02.683Z",
+    "modified": "2022-02-12T00:52:02.684Z",
+    "name": "EXPIRE NOTIFICATION",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": true,
+    "attribute_type": 5,
+    "history_date": "2022-02-12T00:52:02.683Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocationattributetype",
+  "pk": 6,
+  "fields": {
+    "id": 6,
+    "created": "2022-02-12T00:52:02.685Z",
+    "modified": "2022-02-12T00:52:02.685Z",
+    "name": "freeipa_group",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": false,
+    "attribute_type": 4,
+    "history_date": "2022-02-12T00:52:02.685Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocationattributetype",
+  "pk": 7,
+  "fields": {
+    "id": 7,
+    "created": "2022-02-12T00:52:02.686Z",
+    "modified": "2022-02-12T00:52:02.687Z",
+    "name": "Is Course?",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": true,
+    "attribute_type": 5,
+    "history_date": "2022-02-12T00:52:02.686Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocationattributetype",
+  "pk": 8,
+  "fields": {
+    "id": 8,
+    "created": "2022-02-12T00:52:02.688Z",
+    "modified": "2022-02-12T00:52:02.688Z",
+    "name": "Paid",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": false,
+    "attribute_type": 2,
+    "history_date": "2022-02-12T00:52:02.688Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocationattributetype",
+  "pk": 9,
+  "fields": {
+    "id": 9,
+    "created": "2022-02-12T00:52:02.689Z",
+    "modified": "2022-02-12T00:52:02.689Z",
+    "name": "Paid Cloud Support (Hours)",
+    "has_usage": true,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": true,
+    "attribute_type": 2,
+    "history_date": "2022-02-12T00:52:02.689Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocationattributetype",
+  "pk": 10,
+  "fields": {
+    "id": 10,
+    "created": "2022-02-12T00:52:02.691Z",
+    "modified": "2022-02-12T00:52:02.691Z",
+    "name": "Paid Network Support (Hours)",
+    "has_usage": true,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": true,
+    "attribute_type": 2,
+    "history_date": "2022-02-12T00:52:02.691Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocationattributetype",
+  "pk": 11,
+  "fields": {
+    "id": 11,
+    "created": "2022-02-12T00:52:02.692Z",
+    "modified": "2022-02-12T00:52:02.692Z",
+    "name": "Paid Storage Support (Hours)",
+    "has_usage": true,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": true,
+    "attribute_type": 2,
+    "history_date": "2022-02-12T00:52:02.692Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocationattributetype",
+  "pk": 12,
+  "fields": {
+    "id": 12,
+    "created": "2022-02-12T00:52:02.694Z",
+    "modified": "2022-02-12T00:52:02.694Z",
+    "name": "Purchase Order Number",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": true,
+    "attribute_type": 3,
+    "history_date": "2022-02-12T00:52:02.694Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocationattributetype",
+  "pk": 13,
+  "fields": {
+    "id": 13,
+    "created": "2022-02-12T00:52:02.695Z",
+    "modified": "2022-02-12T00:52:02.695Z",
+    "name": "send_expiry_email_on_date",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": true,
+    "attribute_type": 1,
+    "history_date": "2022-02-12T00:52:02.695Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocationattributetype",
+  "pk": 14,
+  "fields": {
+    "id": 14,
+    "created": "2022-02-12T00:52:02.697Z",
+    "modified": "2022-02-12T00:52:02.697Z",
+    "name": "slurm_account_name",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": false,
+    "attribute_type": 4,
+    "history_date": "2022-02-12T00:52:02.697Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocationattributetype",
+  "pk": 15,
+  "fields": {
+    "id": 15,
+    "created": "2022-02-12T00:52:02.698Z",
+    "modified": "2022-02-12T00:52:02.698Z",
+    "name": "slurm_specs",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": true,
+    "attribute_type": 4,
+    "history_date": "2022-02-12T00:52:02.698Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocationattributetype",
+  "pk": 16,
+  "fields": {
+    "id": 16,
+    "created": "2022-02-12T00:52:02.699Z",
+    "modified": "2022-02-12T00:52:02.700Z",
+    "name": "slurm_user_specs",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": true,
+    "attribute_type": 4,
+    "history_date": "2022-02-12T00:52:02.700Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocationattributetype",
+  "pk": 17,
+  "fields": {
+    "id": 17,
+    "created": "2022-02-12T00:52:02.701Z",
+    "modified": "2022-02-12T00:52:02.701Z",
+    "name": "Storage Quota (GB)",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": false,
+    "attribute_type": 3,
+    "history_date": "2022-02-12T00:52:02.701Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocationattributetype",
+  "pk": 18,
+  "fields": {
+    "id": 18,
+    "created": "2022-02-12T00:52:02.702Z",
+    "modified": "2022-02-12T00:52:02.703Z",
+    "name": "Storage_Group_Name",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": false,
+    "attribute_type": 4,
+    "history_date": "2022-02-12T00:52:02.703Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocationattributetype",
+  "pk": 19,
+  "fields": {
+    "id": 19,
+    "created": "2022-02-12T00:52:02.704Z",
+    "modified": "2022-02-12T00:52:02.704Z",
+    "name": "SupportersQOS",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": false,
+    "attribute_type": 5,
+    "history_date": "2022-02-12T00:52:02.704Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocationattributetype",
+  "pk": 20,
+  "fields": {
+    "id": 20,
+    "created": "2022-02-12T00:52:02.705Z",
+    "modified": "2022-02-12T00:52:02.706Z",
+    "name": "SupportersQOSExpireDate",
+    "has_usage": false,
+    "is_required": false,
+    "is_unique": false,
+    "is_private": false,
+    "attribute_type": 1,
+    "history_date": "2022-02-12T00:52:02.705Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocationattribute",
+  "pk": 1,
+  "fields": {
+    "id": 1,
+    "created": "2022-02-12T00:52:06.815Z",
+    "modified": "2022-02-12T00:52:06.815Z",
+    "value": "amexp_alloc",
+    "allocation_attribute_type": 14,
+    "allocation": 1,
+    "history_date": "2022-02-12T00:52:06.815Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocationattribute",
+  "pk": 2,
+  "fields": {
+    "id": 2,
+    "created": "2022-02-12T00:52:06.816Z",
+    "modified": "2022-02-12T00:52:06.817Z",
+    "value": "GrpTRESMins=cpu=1000000 GrpTRES=nodes=10,mem=200000 GrpJob=20",
+    "allocation_attribute_type": 15,
+    "allocation": 1,
+    "history_date": "2022-02-12T00:52:06.817Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocationattribute",
+  "pk": 3,
+  "fields": {
+    "id": 3,
+    "created": "2022-02-12T00:52:06.818Z",
+    "modified": "2022-02-12T00:52:06.818Z",
+    "value": "MaxJobs=5 MaxJobsAccrue=5",
+    "allocation_attribute_type": 16,
+    "allocation": 1,
+    "history_date": "2022-02-12T00:52:06.818Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocationattribute",
+  "pk": 4,
+  "fields": {
+    "id": 4,
+    "created": "2022-02-12T00:52:06.831Z",
+    "modified": "2022-02-12T00:52:06.831Z",
+    "value": "superhero_alloc",
+    "allocation_attribute_type": 14,
+    "allocation": 2,
+    "history_date": "2022-02-12T00:52:06.831Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocationattribute",
+  "pk": 5,
+  "fields": {
+    "id": 5,
+    "created": "2022-02-12T00:52:06.832Z",
+    "modified": "2022-02-12T00:52:06.833Z",
+    "value": "GrpTRESMins=cpu=5000000 GrpTRES=nodes=10,mem=200000 GrpJob=20",
+    "allocation_attribute_type": 15,
+    "allocation": 2,
+    "history_date": "2022-02-12T00:52:06.832Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocationattribute",
+  "pk": 6,
+  "fields": {
+    "id": 6,
+    "created": "2022-02-12T00:52:06.834Z",
+    "modified": "2022-02-12T00:52:06.834Z",
+    "value": "MaxJobs=5 MaxJobsAccrue=5",
+    "allocation_attribute_type": 16,
+    "allocation": 2,
+    "history_date": "2022-02-12T00:52:06.834Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": null
+  }
+},
+{
+  "model": "allocation.historicalallocationattribute",
+  "pk": 7,
+  "fields": {
+    "id": 6,
+    "created": "2022-02-12T00:52:06.834Z",
+    "modified": "2022-02-14T20:21:45.139Z",
+    "value": "MaxJobs=5:MaxJobsAccrue=5",
+    "allocation_attribute_type": 16,
+    "allocation": 2,
+    "history_date": "2022-02-14T20:21:45.139Z",
+    "history_change_reason": null,
+    "history_type": "~",
+    "history_user": 6
+  }
+},
+{
+  "model": "allocation.historicalallocationattribute",
+  "pk": 8,
+  "fields": {
+    "id": 5,
+    "created": "2022-02-12T00:52:06.832Z",
+    "modified": "2022-02-14T20:22:15.191Z",
+    "value": "GrpTRESMins=cpu=5000000:GrpTRES=nodes=10,mem=200000:GrpJob=20",
+    "allocation_attribute_type": 15,
+    "allocation": 2,
+    "history_date": "2022-02-14T20:22:15.190Z",
+    "history_change_reason": null,
+    "history_type": "~",
+    "history_user": 6
+  }
+},
+{
+  "model": "allocation.historicalallocationattribute",
+  "pk": 9,
+  "fields": {
+    "id": 4,
+    "created": "2022-02-12T00:52:06.831Z",
+    "modified": "2022-02-14T20:23:12.141Z",
+    "value": "superhero_alloc",
+    "allocation_attribute_type": 14,
+    "allocation": 2,
+    "history_date": "2022-02-14T20:23:12.141Z",
+    "history_change_reason": null,
+    "history_type": "~",
+    "history_user": 6
+  }
+},
+{
+  "model": "allocation.historicalallocationattribute",
+  "pk": 10,
+  "fields": {
+    "id": 3,
+    "created": "2022-02-12T00:52:06.818Z",
+    "modified": "2022-02-14T20:23:23.509Z",
+    "value": "MaxJobs=5:MaxJobsAccrue=5",
+    "allocation_attribute_type": 16,
+    "allocation": 1,
+    "history_date": "2022-02-14T20:23:23.509Z",
+    "history_change_reason": null,
+    "history_type": "~",
+    "history_user": 6
+  }
+},
+{
+  "model": "allocation.historicalallocationattribute",
+  "pk": 11,
+  "fields": {
+    "id": 2,
+    "created": "2022-02-12T00:52:06.816Z",
+    "modified": "2022-02-14T20:23:49.636Z",
+    "value": "GrpTRESMins=cpu=1000000:GrpTRES=nodes=10,mem=200000:GrpJob=20",
+    "allocation_attribute_type": 15,
+    "allocation": 1,
+    "history_date": "2022-02-14T20:23:49.635Z",
+    "history_change_reason": null,
+    "history_type": "~",
+    "history_user": 6
+  }
+},
+{
+  "model": "allocation.historicalallocationattribute",
+  "pk": 12,
+  "fields": {
+    "id": 1,
+    "created": "2022-02-12T00:52:06.815Z",
+    "modified": "2022-02-14T20:23:56.156Z",
+    "value": "amexp_alloc",
+    "allocation_attribute_type": 14,
+    "allocation": 1,
+    "history_date": "2022-02-14T20:23:56.156Z",
+    "history_change_reason": null,
+    "history_type": "~",
+    "history_user": 6
+  }
+},
+{
+  "model": "allocation.historicalallocationuser",
+  "pk": 1,
+  "fields": {
+    "id": 1,
+    "created": "2022-02-14T15:46:10.405Z",
+    "modified": "2022-02-14T15:46:10.413Z",
+    "allocation": 1,
+    "user": 1,
+    "status": 1,
+    "history_date": "2022-02-14T15:46:10.413Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": 6
+  }
+},
+{
+  "model": "allocation.historicalallocationuser",
+  "pk": 2,
+  "fields": {
+    "id": 2,
+    "created": "2022-02-14T15:46:27.417Z",
+    "modified": "2022-02-14T15:46:27.420Z",
+    "allocation": 1,
+    "user": 2,
+    "status": 1,
+    "history_date": "2022-02-14T15:46:27.420Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": 6
+  }
+},
+{
+  "model": "allocation.historicalallocationuser",
+  "pk": 3,
+  "fields": {
+    "id": 3,
+    "created": "2022-02-14T15:46:41.625Z",
+    "modified": "2022-02-14T15:46:41.633Z",
+    "allocation": 2,
+    "user": 3,
+    "status": 1,
+    "history_date": "2022-02-14T15:46:41.633Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": 6
+  }
+},
+{
+  "model": "allocation.historicalallocationuser",
+  "pk": 4,
+  "fields": {
+    "id": 4,
+    "created": "2022-02-14T15:46:57.503Z",
+    "modified": "2022-02-14T15:46:57.510Z",
+    "allocation": 2,
+    "user": 5,
+    "status": 1,
+    "history_date": "2022-02-14T15:46:57.509Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": 6
+  }
+},
+{
+  "model": "allocation.historicalallocationuser",
+  "pk": 5,
+  "fields": {
+    "id": 5,
+    "created": "2022-02-14T15:47:13.286Z",
+    "modified": "2022-02-14T15:47:13.293Z",
+    "allocation": 2,
+    "user": 4,
+    "status": 1,
+    "history_date": "2022-02-14T15:47:13.293Z",
+    "history_change_reason": null,
+    "history_type": "+",
+    "history_user": 6
+  }
+},
+{
+  "model": "allocation.allocationuser",
+  "pk": 1,
+  "fields": {
+    "created": "2022-02-14T15:46:10.405Z",
+    "modified": "2022-02-14T15:46:10.411Z",
+    "allocation": 1,
+    "user": 1,
+    "status": 1
+  }
+},
+{
+  "model": "allocation.allocationuser",
+  "pk": 2,
+  "fields": {
+    "created": "2022-02-14T15:46:27.417Z",
+    "modified": "2022-02-14T15:46:27.420Z",
+    "allocation": 1,
+    "user": 2,
+    "status": 1
+  }
+},
+{
+  "model": "allocation.allocationuser",
+  "pk": 3,
+  "fields": {
+    "created": "2022-02-14T15:46:41.625Z",
+    "modified": "2022-02-14T15:46:41.631Z",
+    "allocation": 2,
+    "user": 3,
+    "status": 1
+  }
+},
+{
+  "model": "allocation.allocationuser",
+  "pk": 4,
+  "fields": {
+    "created": "2022-02-14T15:46:57.503Z",
+    "modified": "2022-02-14T15:46:57.508Z",
+    "allocation": 2,
+    "user": 5,
+    "status": 1
+  }
+},
+{
+  "model": "allocation.allocationuser",
+  "pk": 5,
+  "fields": {
+    "created": "2022-02-14T15:47:13.286Z",
+    "modified": "2022-02-14T15:47:13.292Z",
+    "allocation": 2,
+    "user": 4,
+    "status": 1
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 1,
+  "fields": {
+    "action_time": "2022-02-14T15:20:16.318Z",
+    "user": 6,
+    "content_type": 34,
+    "object_id": "1",
+    "object_repr": "slurm_cluster: synctest (SlurmSync Test Cluster (Cluster))",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 2,
+  "fields": {
+    "action_time": "2022-02-14T15:46:10.416Z",
+    "user": 6,
+    "content_type": 48,
+    "object_id": "1",
+    "object_repr": "gwash (SlurmSync Test Cluster)",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 3,
+  "fields": {
+    "action_time": "2022-02-14T15:46:27.421Z",
+    "user": 6,
+    "content_type": 48,
+    "object_id": "2",
+    "object_repr": "lincoln (SlurmSync Test Cluster)",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 4,
+  "fields": {
+    "action_time": "2022-02-14T15:46:41.636Z",
+    "user": 6,
+    "content_type": 48,
+    "object_id": "3",
+    "object_repr": "superman (SlurmSync Test Cluster)",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 5,
+  "fields": {
+    "action_time": "2022-02-14T15:46:57.512Z",
+    "user": 6,
+    "content_type": 48,
+    "object_id": "4",
+    "object_repr": "bond007 (SlurmSync Test Cluster)",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 6,
+  "fields": {
+    "action_time": "2022-02-14T15:47:13.296Z",
+    "user": 6,
+    "content_type": 48,
+    "object_id": "5",
+    "object_repr": "spiderman (SlurmSync Test Cluster)",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 7,
+  "fields": {
+    "action_time": "2022-02-14T20:21:45.140Z",
+    "user": 6,
+    "content_type": 36,
+    "object_id": "6",
+    "object_repr": "slurm_user_specs",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"value\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 8,
+  "fields": {
+    "action_time": "2022-02-14T20:22:15.191Z",
+    "user": 6,
+    "content_type": 36,
+    "object_id": "5",
+    "object_repr": "slurm_specs",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"value\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 9,
+  "fields": {
+    "action_time": "2022-02-14T20:23:12.142Z",
+    "user": 6,
+    "content_type": 36,
+    "object_id": "4",
+    "object_repr": "slurm_account_name",
+    "action_flag": 2,
+    "change_message": "[]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 10,
+  "fields": {
+    "action_time": "2022-02-14T20:23:23.510Z",
+    "user": 6,
+    "content_type": 36,
+    "object_id": "3",
+    "object_repr": "slurm_user_specs",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"value\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 11,
+  "fields": {
+    "action_time": "2022-02-14T20:23:49.636Z",
+    "user": 6,
+    "content_type": 36,
+    "object_id": "2",
+    "object_repr": "slurm_specs",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"value\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 12,
+  "fields": {
+    "action_time": "2022-02-14T20:23:56.157Z",
+    "user": 6,
+    "content_type": 36,
+    "object_id": "1",
+    "object_repr": "slurm_account_name",
+    "action_flag": 2,
+    "change_message": "[]"
+  }
+}
+]
