@@ -50,7 +50,7 @@ class Command(BaseCommand):
             help='Select allocation data from this month if different from --month',
         )
         parser.add_argument(
-            '--products',
+            '--product-names',
             dest='productstr',
             help='Create for specified products (comma separated list)'
         )
