@@ -1,0 +1,7 @@
+Dear managers of {{ project_name }},
+
+This is a notification that the project {{ project_name }} expired on {{ expiry_date }} and has therefore been
+deactivated. Accounts under this project will no longer be able to access its compute resources.
+
+Thank you,
+{{ signature }}
