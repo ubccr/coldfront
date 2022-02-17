@@ -182,7 +182,7 @@ class Command(BaseCommand):
         if settings.EMAIL_ENABLED:
             context = {
                 'project_name': project.name,
-                'expiry_date': expiry_date,
+                'expiry_date': expiry_date.strftime('%m-%d-%Y'),
                 'support_email': settings.CENTER_HELP_EMAIL,
                 'signature': settings.EMAIL_SIGNATURE,
             }
