@@ -62,8 +62,8 @@ class Command(BaseCommand):
 
     def deactivate_project(self, project, allocation, dry_run):
         """
-        Sets project status to Inactive and corresponding compute Allocation to
-        expired. Sets allocation start date to the current date and removes
+        Sets project status to Inactive and corresponding compute allocation to
+        Expired. Sets allocation start date to the current date and removes
         the end date.
 
         If dry_run is True, write to stdout without changing object fields.
@@ -177,6 +177,8 @@ class Command(BaseCommand):
         """
         Send emails to managers/PIs of the project that have notifications
         enabled about the project deactivation.
+
+        If dry_run is True, write the emails to stdout instead.
         """
 
         if settings.EMAIL_ENABLED:
