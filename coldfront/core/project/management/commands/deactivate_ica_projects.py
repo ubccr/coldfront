@@ -36,7 +36,7 @@ class Command(BaseCommand):
             action='store_true',
             help='Display updates without performing them.')
         parser.add_argument(
-            '--send-emails',
+            '--send_emails',
             action='store_true',
             default=False,
             help='Send emails to PIs/managers about project deactivation.')
@@ -53,9 +53,9 @@ class Command(BaseCommand):
             allocation = get_project_compute_allocation(project)
             expiry_date = allocation.end_date
 
-            if allocation.end_date < current_date:
-                self.deactivate_project(project, allocation, options['dry_run'])
+            if expiry_date < current_date.date():
                 self.reset_service_units(project, options['dry_run'])
+                self.deactivate_project(project, allocation, options['dry_run'])
 
                 if options['send_emails']:
                     self.send_emails(project, expiry_date, options['dry_run'])
