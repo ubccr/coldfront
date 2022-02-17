@@ -14,6 +14,9 @@ from io import StringIO
 import os
 import sys
 
+from coldfront.api.allocation.tests.test_allocation_base import \
+    TestAllocationBase
+from coldfront.api.statistics.utils import get_accounting_allocation_objects
 from coldfront.config import settings
 from coldfront.core.allocation.models import AllocationAttributeType, \
     AllocationUserAttribute
@@ -24,7 +27,7 @@ from coldfront.core.utils.tests.test_base import TestBase
 from coldfront.core.project.models import Project, ProjectStatusChoice
 
 
-class TestBase2(TestBase):
+class TestBaseExportData(TestBase):
     def setUp(self):
         """Setup test data"""
         super().setUp()
@@ -68,7 +71,7 @@ class TestBase2(TestBase):
                                        userid=self.user1)
 
 
-class TestUserList(TestBase2):
+class TestUserList(TestBaseExportData):
     """ Test class to test export data subcommand user_list runs correctly """
 
     def setUp(self):
@@ -212,58 +215,70 @@ class TestUserList(TestBase2):
         self.assertEqual(err.read(), '')
 
 
-# class TestNewUserAccount(TestBase2):
-#     """Test class to test export data subcommand new_user_account runs
-#     correctly."""
-#
-#     def setUp(self):
-#         """Setup test data"""
-#         super().setUp()
-#
-#     def convert_time_to_utc(self, time):
-#         """Convert naive LA time to UTC time"""
-#         local_tz = pytz.timezone('America/Los_Angeles')
-#         tz = pytz.timezone(settings.TIME_ZONE)
-#         naive_dt = datetime.datetime.combine(time, datetime.datetime.min.time())
-#         new_time = local_tz.localize(naive_dt).astimezone(tz).isoformat()
-#
-#         return new_time
-#
-#     def test_test_new_user_account_json_no_date(self):
-#         """Testing new_user_account subcommand with NO date arg passed,
-#         exporting as JSON"""
-#
-#         out, err = StringIO(''), StringIO('')
-#         call_command('export_data', 'new_user_account', '--format=json',
-#                      stdout=out, stderr=err)
-#         sys.stdout = sys.__stdout__
-#
-#         out.seek(0)
-#         output = json.loads(''.join(out.readlines()))
-#
-#         cluster_account_status = AllocationAttributeType.objects.get(
-#             name='Cluster Account Status')
-#
-#         user_list = AllocationUserAttribute.objects.filter(
-#             allocation_attribute_type=cluster_account_status,
-#             value='Active')
-#
-#         user_list = User.objects.annotate(
-#             date_created=Func(
-#                 F('created'),
-#                 Value('MM-dd-yyyy hh:mm:ss'),
-#                 function='to_char',
-#                 output_field=CharField()),
-#             username=F('allocation_user__user__username')).\
-#             order_by('username', '-created'). \
-#             distinct('username').values('username', 'date_created')
-#
-#         for index, item in enumerate(output):
-#             self.assertDictEqual(item, user_list[index])
-#
-#         err.seek(0)
-#         self.assertEqual(err.read(), '')
-#
+class TestNewUserAccount(TestAllocationBase):
+    """Test class to test export data subcommand new_user_account runs
+    correctly."""
+
+    def setUp(self):
+        """Setup test data"""
+        super().setUp()
+
+        project = Project.objects.get(name='project0')
+        cluster_account_status = AllocationAttributeType.objects.get(
+            name='Cluster Account Status')
+
+        for project_user in project.projectuser_set.all():
+            if project_user.role.name != 'User':
+                continue
+
+
+
+
+
+    def convert_time_to_utc(self, time):
+        """Convert naive LA time to UTC time"""
+        local_tz = pytz.timezone('America/Los_Angeles')
+        tz = pytz.timezone(settings.TIME_ZONE)
+        naive_dt = datetime.datetime.combine(time, datetime.datetime.min.time())
+        new_time = local_tz.localize(naive_dt).astimezone(tz).isoformat()
+
+        return new_time
+
+    def test_test_new_user_account_json_no_date(self):
+        """Testing new_user_account subcommand with NO date arg passed,
+        exporting as JSON"""
+
+        out, err = StringIO(''), StringIO('')
+        call_command('export_data', 'new_user_account', '--format=json',
+                     stdout=out, stderr=err)
+        sys.stdout = sys.__stdout__
+
+        out.seek(0)
+        output = json.loads(''.join(out.readlines()))
+
+        cluster_account_status = AllocationAttributeType.objects.get(
+            name='Cluster Account Status')
+
+        user_list = AllocationUserAttribute.objects.filter(
+            allocation_attribute_type=cluster_account_status,
+            value='Active')
+
+        user_list = User.objects.annotate(
+            date_created=Func(
+                F('created'),
+                Value('MM-dd-yyyy hh:mm:ss'),
+                function='to_char',
+                output_field=CharField()),
+            username=F('allocation_user__user__username')).\
+            order_by('username', '-created'). \
+            distinct('username').values('username', 'date_created')
+
+        for index, item in enumerate(output):
+            self.assertDictEqual(item, user_list[index])
+
+        err.seek(0)
+        self.assertEqual(err.read(), '')
+
 #     def test_test_new_user_account_json_with_date(self):
 #         """Testing new_user_account subcommand with ONE date arg passed,
 #         exporting as JSON"""
@@ -374,7 +389,7 @@ class TestUserList(TestBase2):
 #             self.assertEqual(err.read(), '')
 
 
-class TestJobAvgQueueTime(TestBase2):
+class TestJobAvgQueueTime(TestBaseExportData):
     """ Test class to test export data subcommand job_avg_queue_time
     runs correctly """
 
