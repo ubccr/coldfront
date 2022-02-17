@@ -183,6 +183,7 @@ class Command(BaseCommand):
             context = {
                 'project_name': project.name,
                 'expiry_date': expiry_date,
+                'support_email': settings.CENTER_HELP_EMAIL,
                 'signature': settings.EMAIL_SIGNATURE,
             }
 
