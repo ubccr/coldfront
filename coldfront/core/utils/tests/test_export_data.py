@@ -72,19 +72,19 @@ class TestBaseExportData(TestBase):
                                        userid=self.user1)
 
 
-class TestUserList(TestBaseExportData):
-    """ Test class to test export data subcommand user_list runs correctly """
+class TestUserSubmittedJob(TestBaseExportData):
+    """ Test class to test export data subcommand users_submitted_jobs runs correctly """
 
     def setUp(self):
         """Setup test data"""
         super().setUp()
 
-    def test_user_list_json_no_date(self):
-        """Testing user_list subcommand with NO date arg passed,
+    def test_users_submitted_jobs_json_no_date(self):
+        """Testing users_submitted_jobs subcommand with NO date arg passed,
         exporting as JSON"""
 
         out, err = StringIO(''), StringIO('')
-        call_command('export_data', 'user_list', '--format=json',
+        call_command('export_data', 'users_submitted_jobs', '--format=json',
                      stdout=out, stderr=err)
         sys.stdout = sys.__stdout__
 
@@ -104,15 +104,15 @@ class TestUserList(TestBaseExportData):
         err.seek(0)
         self.assertEqual(err.read(), '')
 
-    def test_user_list_json_with_date(self):
-        """Testing user_list subcommand with date arg passed,
+    def test_users_submitted_jobs_json_with_date(self):
+        """Testing users_submitted_jobs subcommand with date arg passed,
         exporting as JSON"""
 
         start_date = datetime.datetime.strftime(
             self.current_time - datetime.timedelta(days=6), '%m-%d-%Y')
 
         out, err = StringIO(''), StringIO('')
-        call_command('export_data', 'user_list', '--format=json',
+        call_command('export_data', 'users_submitted_jobs', '--format=json',
                      f'--start_date={start_date}', stdout=out, stderr=err)
         sys.stdout = sys.__stdout__
 
@@ -132,12 +132,12 @@ class TestUserList(TestBaseExportData):
         err.seek(0)
         self.assertEqual(err.read(), '')
 
-    def test_user_list_csv_no_date(self):
-        """Testing user_list subcommand with NO date arg passed,
+    def test_users_submitted_jobs_csv_no_date(self):
+        """Testing users_submitted_jobs subcommand with NO date arg passed,
         exporting as CSV"""
 
         out, err = StringIO(''), StringIO('')
-        call_command('export_data', 'user_list', '--format=csv',
+        call_command('export_data', 'users_submitted_jobs', '--format=csv',
                      stdout=out, stderr=err)
         sys.stdout = sys.__stdout__
 
@@ -158,15 +158,15 @@ class TestUserList(TestBaseExportData):
         err.seek(0)
         self.assertEqual(err.read(), '')
 
-    def test_user_list_csv_with_date(self):
-        """Testing user_list subcommand with date arg passed,
+    def test_users_submitted_jobs_csv_with_date(self):
+        """Testing users_submitted_jobs subcommand with date arg passed,
         exporting as CSV"""
 
         start_date = datetime.datetime.strftime(
             self.current_time - datetime.timedelta(days=6), '%m-%d-%Y')
 
         out, err = StringIO(''), StringIO('')
-        call_command('export_data', 'user_list', '--format=csv',
+        call_command('export_data', 'users_submitted_jobs', '--format=csv',
                      f'--start_date={start_date}', stdout=out, stderr=err)
         sys.stdout = sys.__stdout__
 
@@ -188,8 +188,8 @@ class TestUserList(TestBaseExportData):
         self.assertEqual(err.read(), '')
 
 
-class TestNewUserAccount(TestAllocationBase):
-    """Test class to test export data subcommand new_user_account runs
+class TestNewClusterAccount(TestAllocationBase):
+    """Test class to test export data subcommand new_cluster_account runs
     correctly."""
 
     def setUp(self):
@@ -224,11 +224,11 @@ class TestNewUserAccount(TestAllocationBase):
         new_time = local_tz.localize(naive_dt).astimezone(tz)
         return new_time
 
-    def test_new_user_account_json_no_date(self):
-        """Testing new_user_account subcommand with NO date arg passed,
+    def test_new_cluster_account_json_no_date(self):
+        """Testing new_cluster_account subcommand with NO date arg passed,
         exporting as JSON"""
         out, err = StringIO(''), StringIO('')
-        call_command('export_data', 'new_user_account', '--format=json',
+        call_command('export_data', 'new_cluster_account', '--format=json',
                      stdout=out, stderr=err)
         sys.stdout = sys.__stdout__
 
@@ -246,8 +246,8 @@ class TestNewUserAccount(TestAllocationBase):
         err.seek(0)
         self.assertEqual(err.read(), '')
 
-    def test_new_user_account_json_with_date(self):
-        """Testing new_user_account subcommand with ONE date arg passed,
+    def test_new_cluster_account_json_with_date(self):
+        """Testing new_cluster_account subcommand with ONE date arg passed,
         exporting as JSON"""
 
         start_date = datetime.datetime.strftime(
@@ -267,7 +267,7 @@ class TestNewUserAccount(TestAllocationBase):
         self.assertEqual(allocation_user_attr_obj.created, new_date)
 
         out, err = StringIO(''), StringIO('')
-        call_command('export_data', 'new_user_account', '--format=json',
+        call_command('export_data', 'new_cluster_account', '--format=json',
                      f'--start_date={start_date}', stdout=out, stderr=err)
         sys.stdout = sys.__stdout__
 
@@ -286,12 +286,12 @@ class TestNewUserAccount(TestAllocationBase):
         err.seek(0)
         self.assertEqual(err.read(), '')
 
-    def test_new_user_account_csv_no_date(self):
-        """Testing new_user_account subcommand with NO date arg passed,
+    def test_new_cluster_account_csv_no_date(self):
+        """Testing new_cluster_account subcommand with NO date arg passed,
         exporting as CSV"""
 
         out, err = StringIO(''), StringIO('')
-        call_command('export_data', 'new_user_account', '--format=csv',
+        call_command('export_data', 'new_cluster_account', '--format=csv',
                      stdout=out, stderr=err)
         sys.stdout = sys.__stdout__
 
@@ -312,8 +312,8 @@ class TestNewUserAccount(TestAllocationBase):
             err.seek(0)
             self.assertEqual(err.read(), '')
 
-    def test_new_user_account_csv_with_date(self):
-        """Testing new_user_account subcommand with ONE date arg passed,
+    def test_new_cluster_account_csv_with_date(self):
+        """Testing new_cluster_account subcommand with ONE date arg passed,
         exporting as CSV"""
 
         start_date = datetime.datetime.strftime(
@@ -333,7 +333,7 @@ class TestNewUserAccount(TestAllocationBase):
         self.assertEqual(allocation_user_attr_obj.created, new_date)
 
         out, err = StringIO(''), StringIO('')
-        call_command('export_data', 'new_user_account', '--format=csv',
+        call_command('export_data', 'new_cluster_account', '--format=csv',
                      f'--start_date={start_date}', stdout=out, stderr=err)
         sys.stdout = sys.__stdout__
 

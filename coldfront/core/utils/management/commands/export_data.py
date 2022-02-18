@@ -35,33 +35,33 @@ class Command(BaseCommand):
     @staticmethod
     def add_subparsers(subparsers):
         """Add subcommands and their respective parsers."""
-        user_list_parser = \
-            subparsers.add_parser('user_list',
+        users_submitted_jobs_parser = \
+            subparsers.add_parser('users_submitted_jobs',
                                   help='Export list of users who have '
                                        'submitted a job since a given date.')
-        user_list_parser.add_argument(
+        users_submitted_jobs_parser.add_argument(
             '--format',
             choices=['csv', 'json'],
             required=True,
             help='Export results in the given format.',
             type=str)
-        user_list_parser.add_argument(
+        users_submitted_jobs_parser.add_argument(
             '--start_date',
-            help='Date that users last submitted a job. '
+            help='Date since users last submitted a job. '
                  'Must take the form of "MM-DD-YYYY".',
             type=valid_date)
 
-        new_user_account_parser = \
-            subparsers.add_parser('new_user_account',
+        new_cluster_account_parser = \
+            subparsers.add_parser('new_cluster_account',
                                   help='Export list of new user accounts '
                                        'created since a given date.')
-        new_user_account_parser.add_argument(
+        new_cluster_account_parser.add_argument(
             '--format',
             choices=['csv', 'json'],
             required=True,
             help='Export results in the given format.',
             type=str)
-        new_user_account_parser.add_argument(
+        new_cluster_account_parser.add_argument(
             '--start_date',
             help='Date that users last created an account. '
                  'Must take the form of "MM-DD-YYYY".',
@@ -108,8 +108,8 @@ class Command(BaseCommand):
         handler = getattr(self, f'handle_{subcommand}')
         handler(*args, **options)
 
-    def handle_user_list(self, *args, **options):
-        """Handle the 'user_list' subcommand."""
+    def handle_users_submitted_jobs(self, *args, **options):
+        """Handle the 'users_submitted_jobs' subcommand."""
         date = options.get('start_date', None)
         format = options.get('format', None)
 
@@ -144,8 +144,8 @@ class Command(BaseCommand):
                          output=options.get('stdout', stdout),
                          error=options.get('stderr', stderr))
 
-    def handle_new_user_account(self, *args, **options):
-        """Handle the 'new_user_account' subcommand."""
+    def handle_new_cluster_account(self, *args, **options):
+        """Handle the 'new_cluster_account' subcommand."""
         date = options.get('start_date', None)
         format = options.get('format', None)
 
