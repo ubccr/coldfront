@@ -35,25 +35,6 @@ class Command(BaseCommand):
     @staticmethod
     def add_subparsers(subparsers):
         """Add subcommands and their respective parsers."""
-        # TODO: Delete these samples and their handlers.
-        sample_a_parser = subparsers.add_parser(
-            'sample_a', help='Export sample data (a).')
-        sample_a_parser.add_argument(
-            '--allowance_type',
-            choices=['ac_', 'co_', 'fc_', 'ic_', 'pc_'],
-            help='Filter projects by the given allowance type.',
-            type=str)
-
-        sample_b_parser = subparsers.add_parser(
-            'sample_b', help='Export sample data (b).')
-        sample_b_parser.add_argument(
-            'format',
-            choices=['csv', 'json'],
-            help='Export results in the given format.',
-            type=str)
-
-        # TODO: Add parsers here.
-
         user_list_parser = \
             subparsers.add_parser('user_list',
                                   help='Export list of users who have '
@@ -127,23 +108,6 @@ class Command(BaseCommand):
         handler = getattr(self, f'handle_{subcommand}')
         handler(*args, **options)
 
-    def handle_sample_a(self, *args, **options):
-        """Handle the 'sample_a' subcommand."""
-        if options['allowance_type']:
-            allowance_type = options['allowance_type']
-        else:
-            allowance_type = ''
-        message = f'Allowance Type: {allowance_type}'
-        self.stdout.write(self.style.SUCCESS(message))
-        # Etc.
-
-    def handle_sample_b(self, *args, **options):
-        """Handle the 'sample_b' subcommand."""
-        fmt = options['format']
-        message = f'Format: {fmt}'
-        self.stderr.write(self.style.ERROR(message))
-        # Etc.
-
     def handle_user_list(self, *args, **options):
         """Handle the 'user_list' subcommand."""
         date = options.get('start_date', None)
@@ -152,7 +116,7 @@ class Command(BaseCommand):
         query_set = Job.objects.annotate(
             submit_date=Func(
                 F('submitdate'),
-                Value('MM-dd-yyyy hh:mi:ss'),
+                Value('MM-dd-yyyy HH24:mi:ss'),
                 function='to_char',
                 output_field=CharField()
             ),
@@ -195,7 +159,7 @@ class Command(BaseCommand):
         query_set = query_set.annotate(
             date_created=Func(
                 F('created'),
-                Value('MM-dd-yyyy hh:mi:ss'),
+                Value('MM-dd-yyyy HH24:mi:ss'),
                 function='to_char',
                 output_field=CharField()
             ),
