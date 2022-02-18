@@ -8,7 +8,8 @@ from coldfront.core.project.models import (Project, ProjectAdminComment,
                                             ProjectUser, ProjectUserMessage,
                                             ProjectUserRoleChoice,
                                             ProjectUserStatusChoice)
-from coldfront.core.statistics.models import ProjectTransaction
+from coldfront.core.statistics.models import (ProjectTransaction,
+                                              ProjectUserTransaction)
 
 
 @admin.register(ProjectStatusChoice)
@@ -26,6 +27,13 @@ class ProjectUserStatusChoiceAdmin(admin.ModelAdmin):
     list_display = ('name',)
 
 
+class ProjectUserTransactionInline(admin.TabularInline):
+    model = ProjectUserTransaction
+    extra = 0
+    fields = ('date_time', 'allocation',),
+    readonly_fields = ('date_time', 'allocation')
+
+
 @admin.register(ProjectUser)
 class ProjectUserAdmin(SimpleHistoryAdmin):
     fields_change = ('user', 'project', 'role', 'status', 'created', 'modified', )
@@ -34,6 +42,7 @@ class ProjectUserAdmin(SimpleHistoryAdmin):
                     'modified',)
     list_filter = ('role', 'status')
     search_fields = ['user__username', 'user__first_name', 'user__last_name']
+    inlines = [ProjectUserTransactionInline]
     raw_id_fields = ('user', 'project')
 
     def project_title(self, obj):
@@ -58,10 +67,9 @@ class ProjectUserAdmin(SimpleHistoryAdmin):
     def get_inline_instances(self, request, obj=None):
         if obj is None:
             # We are adding an object
-            return super().get_inline_instances(request)
-        else:
             return []
-            # return [inline(self.model, self.admin_site) for inline in self.inlines_change]
+        else:
+            return super().get_inline_instances(request)
 
 
 class ProjectUserInline(admin.TabularInline):
