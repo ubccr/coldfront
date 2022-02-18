@@ -37,16 +37,22 @@ class Command(BaseCommand):
                             action='store_true')
 
     def validate_inputs(self, options):
-        """Validate inputs to add_service_units_to_project command"""
+        """
+        Validate inputs to add_service_units_to_project command
+
+        Returns a tuple of the project object, allocation objects, current
+        SU amount, and new SU amount
+        """
 
         # Checking if project exists
-        if not Project.objects.filter(name=options.get('project_name')).exists():
+        project_query = Project.objects.filter(name=options.get('project_name'))
+        if not project_query.exists():
             error_message = f"Requested project {options.get('project_name')}" \
                             f" does not exist."
             raise CommandError(error_message)
 
         # Allocation must be in Savio Compute
-        project = Project.objects.get(name=options.get('project_name'))
+        project = project_query.first()
         try:
             allocation_objects = get_accounting_allocation_objects(project)
         except Allocation.DoesNotExist:
@@ -62,7 +68,7 @@ class Command(BaseCommand):
 
         # checking SU values
         if addition > settings.ALLOCATION_MAX:
-            error_message = f'Amount of SUs to add must cannot be greater ' \
+            error_message = f'Amount of SUs to add cannot be greater ' \
                             f'than {settings.ALLOCATION_MAX}.'
             raise CommandError(error_message)
 
@@ -76,19 +82,18 @@ class Command(BaseCommand):
             error_message = f'Reason must be at least 20 characters.'
             raise CommandError(error_message)
 
+        return project, allocation_objects, current_allocation, allocation
+
     def handle(self, *args, **options):
         """ Add SUs to a given project """
 
-        self.validate_inputs(options)
+        # validate inputs
+        project, allocation_objects, current_allocation, allocation = \
+            self.validate_inputs(options)
 
-        project = Project.objects.get(name=options.get('project_name'))
         addition = Decimal(options.get('amount'))
         reason = options.get('reason')
         dry_run = options.get('dry_run', None)
-
-        allocation_objects = get_accounting_allocation_objects(project)
-        current_allocation = Decimal(allocation_objects.allocation_attribute.value)
-        allocation = addition + current_allocation
         date_time = utc_now_offset_aware()
 
         if dry_run:
