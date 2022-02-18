@@ -152,7 +152,7 @@ class Command(BaseCommand):
         query_set = Job.objects.annotate(
             submit_date=Func(
                 F('submitdate'),
-                Value('MM-dd-yyyy hh:mm:ss'),
+                Value('MM-dd-yyyy hh:mi:ss'),
                 function='to_char',
                 output_field=CharField()
             ),
@@ -195,7 +195,7 @@ class Command(BaseCommand):
         query_set = query_set.annotate(
             date_created=Func(
                 F('created'),
-                Value('MM-dd-yyyy hh:mm:ss'),
+                Value('MM-dd-yyyy hh:mi:ss'),
                 function='to_char',
                 output_field=CharField()
             ),
