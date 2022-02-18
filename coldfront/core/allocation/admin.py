@@ -416,16 +416,20 @@ class AllocationUserAttributeAdmin(SimpleHistoryAdmin):
 
 @admin.register(AllocationUserAttributeUsage)
 class AllocationUserAttributeUsageAdmin(SimpleHistoryAdmin):
-    list_display = ('allocation_user_attribute', 'project',
+    list_display = ('allocation_user_attribute', 'user', 'project',
                     'resource', 'value',)
     readonly_fields = ('allocation_user_attribute',)
     fields = ('allocation_user_attribute', 'value',)
     list_filter = ('allocation_user_attribute__allocation_attribute_type',
                    'allocation_user_attribute__allocation__resources', ValueFilter, )
-    search_fields = ('allocation_user_attribute__allocation__project__name',)
+    search_fields = ('allocation_user_attribute__allocation__project__name',
+                     'allocation_user_attribute__allocation_user__user__username')
 
     def resource(self, obj):
         return obj.allocation_user_attribute.allocation.resources.first().name
 
     def project(self, obj):
         return obj.allocation_user_attribute.allocation.project.name
+
+    def user(self, obj):
+        return obj.allocation_user_attribute.allocation_user.user.username
