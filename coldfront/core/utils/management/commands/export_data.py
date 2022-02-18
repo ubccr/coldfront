@@ -35,17 +35,17 @@ class Command(BaseCommand):
     @staticmethod
     def add_subparsers(subparsers):
         """Add subcommands and their respective parsers."""
-        users_submitted_jobs_parser = \
-            subparsers.add_parser('users_submitted_jobs',
+        users_who_submitted_jobs_parser = \
+            subparsers.add_parser('users_who_submitted_jobs',
                                   help='Export list of users who have '
                                        'submitted a job since a given date.')
-        users_submitted_jobs_parser.add_argument(
+        users_who_submitted_jobs_parser.add_argument(
             '--format',
             choices=['csv', 'json'],
             required=True,
             help='Export results in the given format.',
             type=str)
-        users_submitted_jobs_parser.add_argument(
+        users_who_submitted_jobs_parser.add_argument(
             '--start_date',
             help='Date since users last submitted a job. '
                  'Must take the form of "MM-DD-YYYY".',
@@ -108,8 +108,8 @@ class Command(BaseCommand):
         handler = getattr(self, f'handle_{subcommand}')
         handler(*args, **options)
 
-    def handle_users_submitted_jobs(self, *args, **options):
-        """Handle the 'users_submitted_jobs' subcommand."""
+    def handle_users_who_submitted_jobs(self, *args, **options):
+        """Handle the 'users_who_submitted_jobs' subcommand."""
         date = options.get('start_date', None)
         format = options.get('format', None)
 

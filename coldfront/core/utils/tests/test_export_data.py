@@ -72,19 +72,19 @@ class TestBaseExportData(TestBase):
                                        userid=self.user1)
 
 
-class TestUserSubmittedJob(TestBaseExportData):
-    """ Test class to test export data subcommand users_submitted_jobs runs correctly """
+class TestUsersWhoSubmittedJob(TestBaseExportData):
+    """ Test class to test export data subcommand users_who_submitted_jobs runs correctly """
 
     def setUp(self):
         """Setup test data"""
         super().setUp()
 
-    def test_users_submitted_jobs_json_no_date(self):
-        """Testing users_submitted_jobs subcommand with NO date arg passed,
+    def test_users_who_submitted_jobs_json_no_date(self):
+        """Testing users_who_submitted_jobs subcommand with NO date arg passed,
         exporting as JSON"""
 
         out, err = StringIO(''), StringIO('')
-        call_command('export_data', 'users_submitted_jobs', '--format=json',
+        call_command('export_data', 'users_who_submitted_jobs', '--format=json',
                      stdout=out, stderr=err)
         sys.stdout = sys.__stdout__
 
@@ -104,15 +104,15 @@ class TestUserSubmittedJob(TestBaseExportData):
         err.seek(0)
         self.assertEqual(err.read(), '')
 
-    def test_users_submitted_jobs_json_with_date(self):
-        """Testing users_submitted_jobs subcommand with date arg passed,
+    def test_users_who_submitted_jobs_json_with_date(self):
+        """Testing users_who_submitted_jobs subcommand with date arg passed,
         exporting as JSON"""
 
         start_date = datetime.datetime.strftime(
             self.current_time - datetime.timedelta(days=6), '%m-%d-%Y')
 
         out, err = StringIO(''), StringIO('')
-        call_command('export_data', 'users_submitted_jobs', '--format=json',
+        call_command('export_data', 'users_who_submitted_jobs', '--format=json',
                      f'--start_date={start_date}', stdout=out, stderr=err)
         sys.stdout = sys.__stdout__
 
@@ -132,12 +132,12 @@ class TestUserSubmittedJob(TestBaseExportData):
         err.seek(0)
         self.assertEqual(err.read(), '')
 
-    def test_users_submitted_jobs_csv_no_date(self):
-        """Testing users_submitted_jobs subcommand with NO date arg passed,
+    def test_users_who_submitted_jobs_csv_no_date(self):
+        """Testing users_who_submitted_jobs subcommand with NO date arg passed,
         exporting as CSV"""
 
         out, err = StringIO(''), StringIO('')
-        call_command('export_data', 'users_submitted_jobs', '--format=csv',
+        call_command('export_data', 'users_who_submitted_jobs', '--format=csv',
                      stdout=out, stderr=err)
         sys.stdout = sys.__stdout__
 
@@ -158,15 +158,15 @@ class TestUserSubmittedJob(TestBaseExportData):
         err.seek(0)
         self.assertEqual(err.read(), '')
 
-    def test_users_submitted_jobs_csv_with_date(self):
-        """Testing users_submitted_jobs subcommand with date arg passed,
+    def test_users_who_submitted_jobs_csv_with_date(self):
+        """Testing users_who_submitted_jobs subcommand with date arg passed,
         exporting as CSV"""
 
         start_date = datetime.datetime.strftime(
             self.current_time - datetime.timedelta(days=6), '%m-%d-%Y')
 
         out, err = StringIO(''), StringIO('')
-        call_command('export_data', 'users_submitted_jobs', '--format=csv',
+        call_command('export_data', 'users_who_submitted_jobs', '--format=csv',
                      f'--start_date={start_date}', stdout=out, stderr=err)
         sys.stdout = sys.__stdout__
 
