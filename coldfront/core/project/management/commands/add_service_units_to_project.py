@@ -1,7 +1,6 @@
 import logging
 from decimal import Decimal
 
-from django.core.exceptions import ObjectDoesNotExist
 from django.core.management import BaseCommand, CommandError
 
 from coldfront.config import settings
@@ -86,8 +85,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         """ Add SUs to a given project """
-
-        # validate inputs
         project, allocation_objects, current_allocation, allocation = \
             self.validate_inputs(options)
 
@@ -97,8 +94,9 @@ class Command(BaseCommand):
         date_time = utc_now_offset_aware()
 
         if dry_run:
+            verb = 'increase' if addition > 0 else 'decrease'
             message = f'Would add {addition} additional SUs to project ' \
-                      f'{project.name}. This would increase {project.name} ' \
+                      f'{project.name}. This would {verb} {project.name} ' \
                       f'SUs from {current_allocation} to {allocation}. ' \
                       f'The reason for updating SUs for {project.name} ' \
                       f'would be: "{reason}".'
