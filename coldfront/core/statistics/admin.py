@@ -7,12 +7,17 @@ from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
 
 
+@admin.register(ProjectTransaction)
 class ProjectTransactionAdmin(admin.ModelAdmin):
     list_display = ('date_time', 'project', 'allocation', )
 
+    search_fields = ('project__name',)
 
+
+@admin.register(ProjectUserTransaction)
 class ProjectUserTransactionAdmin(admin.ModelAdmin):
     list_display = ('date_time', 'get_project', 'get_user', 'allocation', )
+    search_fields = ('project_user__project__name',)
 
     def get_project(self, obj):
         return obj.project_user.project
@@ -42,5 +47,3 @@ class JobAdmin(admin.ModelAdmin):
 
 admin.register(CPU)
 admin.register(Node)
-admin.site.register(ProjectTransaction, ProjectTransactionAdmin)
-admin.site.register(ProjectUserTransaction, ProjectUserTransactionAdmin)
