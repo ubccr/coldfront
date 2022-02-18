@@ -20,6 +20,7 @@ from coldfront.api.statistics.utils import get_accounting_allocation_objects
 from coldfront.config import settings
 from coldfront.core.allocation.models import AllocationAttributeType, \
     AllocationUserAttribute
+from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.statistics.models import Job
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -223,17 +224,28 @@ class TestNewUserAccount(TestAllocationBase):
         """Setup test data"""
         super().setUp()
 
-        project = Project.objects.get(name='project0')
-        cluster_account_status = AllocationAttributeType.objects.get(
-            name='Cluster Account Status')
+        for i, project in enumerate(Project.objects.all()):
+            allocation_object = get_accounting_allocation_objects(project)
+            cluster_account_status = AllocationAttributeType.objects.get(
+                name='Cluster Account Status')
+            current_time = utc_now_offset_aware()
 
-        for project_user in project.projectuser_set.all():
-            if project_user.role.name != 'User':
-                continue
+            for j, project_user in enumerate(project.projectuser_set.all()):
+                if project_user.role.name != 'User':
+                    continue
 
+                allocation_user_objects = get_accounting_allocation_objects(
+                    project, user=project_user.user)
 
+                cluster_account_attribute = AllocationUserAttribute.objects.create(
+                    allocation_attribute_type=cluster_account_status,
+                    allocation=allocation_object.allocation,
+                    allocation_user=allocation_user_objects.allocation_user,
+                    value='Active')
 
-
+                cluster_account_attribute.created = \
+                    current_time - datetime.timedelta(days=(i+j+1)*2)
+                cluster_account_attribute.save()
 
     def convert_time_to_utc(self, time):
         """Convert naive LA time to UTC time"""
@@ -258,23 +270,21 @@ class TestNewUserAccount(TestAllocationBase):
 
         cluster_account_status = AllocationAttributeType.objects.get(
             name='Cluster Account Status')
+        correct_output = []
 
-        user_list = AllocationUserAttribute.objects.filter(
-            allocation_attribute_type=cluster_account_status,
-            value='Active')
-
-        user_list = User.objects.annotate(
-            date_created=Func(
-                F('created'),
-                Value('MM-dd-yyyy hh:mm:ss'),
-                function='to_char',
-                output_field=CharField()),
-            username=F('allocation_user__user__username')).\
-            order_by('username', '-created'). \
-            distinct('username').values('username', 'date_created')
+        for i in range(2):
+            cluster_account_attribute = \
+                AllocationUserAttribute.objects.filter(
+                    allocation_user__user__username=f'user{i}',
+                    allocation_attribute_type=cluster_account_status)\
+                    .order_by('-created').first()
+            created_date_str = \
+                cluster_account_attribute.created.strftime('%m-%d-%Y %H:%M:%S')
+            correct_output.append({'date_created': created_date_str,
+                                   'username': f'user{i}'})
 
         for index, item in enumerate(output):
-            self.assertDictEqual(item, user_list[index])
+            self.assertDictEqual(item, correct_output[index])
 
         err.seek(0)
         self.assertEqual(err.read(), '')
