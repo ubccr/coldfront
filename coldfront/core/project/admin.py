@@ -8,6 +8,7 @@ from coldfront.core.project.models import (Project, ProjectAdminComment,
                                             ProjectUser, ProjectUserMessage,
                                             ProjectUserRoleChoice,
                                             ProjectUserStatusChoice)
+from coldfront.core.statistics.models import ProjectTransaction
 
 
 @admin.register(ProjectStatusChoice)
@@ -84,6 +85,13 @@ class ProjectUserMessageInline(admin.TabularInline):
     readonly_fields = ('author', 'created')
 
 
+class ProjectTransactionInline(admin.TabularInline):
+    model = ProjectTransaction
+    extra = 0
+    fields = ('date_time', 'allocation',),
+    readonly_fields = ('date_time', 'allocation')
+
+
 @admin.register(Project)
 class ProjectAdmin(SimpleHistoryAdmin):
     fields_change = ('title', 'description', 'status', 'requires_review', 'force_review', 'created', 'modified', )
@@ -92,7 +100,8 @@ class ProjectAdmin(SimpleHistoryAdmin):
     search_fields = ['projectuser__user__username',
                      'projectuser__user__last_name', 'projectuser__user__last_name', 'title']
     list_filter = ('status', 'force_review')
-    inlines = [ProjectUserInline, ProjectAdminCommentInline, ProjectUserMessageInline]
+    inlines = [ProjectUserInline, ProjectAdminCommentInline,
+               ProjectUserMessageInline, ProjectTransactionInline]
     raw_id_fields = []
 
     def PIs(self, obj):
