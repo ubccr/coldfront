@@ -1,18 +1,13 @@
 import csv
 import datetime
 import json
-from csv import DictReader
-
 import pytz
-from django.db.models import F, Func, Value, CharField
-from django.test import TestCase
-
-from django.contrib.auth.models import User, Group
-from django.core.management import call_command, CommandError
-
-from io import StringIO
-import os
 import sys
+from csv import DictReader
+from io import StringIO
+
+from django.contrib.auth.models import User
+from django.core.management import call_command, CommandError
 
 from coldfront.api.allocation.tests.test_allocation_base import \
     TestAllocationBase
@@ -20,7 +15,6 @@ from coldfront.api.statistics.utils import get_accounting_allocation_objects
 from coldfront.config import settings
 from coldfront.core.allocation.models import AllocationAttributeType, \
     AllocationUserAttribute
-from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.statistics.models import Job
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -56,16 +50,22 @@ class TestBaseExportData(TestBase):
             user.set_password(self.password)
             user.save()
 
-            # create test jobs
+        # create test jobs
         self.current_time = datetime.datetime.now(tz=datetime.timezone.utc)
 
-        self.job1 = Job.objects.create(jobslurmid='12345',
+        self.job1 = Job.objects.create(jobslurmid='1',
                                        submitdate=self.current_time - datetime.timedelta(days=5),
                                        startdate=self.current_time - datetime.timedelta(days=4),
                                        enddate=self.current_time - datetime.timedelta(days=3),
                                        userid=self.user1)
 
-        self.job2 = Job.objects.create(jobslurmid='98765',
+        self.job2 = Job.objects.create(jobslurmid='2',
+                                       submitdate=self.current_time - datetime.timedelta(days=7),
+                                       startdate=self.current_time - datetime.timedelta(days=6),
+                                       enddate=self.current_time - datetime.timedelta(days=5),
+                                       userid=self.user2)
+
+        self.job3 = Job.objects.create(jobslurmid='3',
                                        submitdate=self.current_time - datetime.timedelta(days=12),
                                        startdate=self.current_time - datetime.timedelta(days=10),
                                        enddate=self.current_time - datetime.timedelta(days=9),
@@ -82,11 +82,6 @@ class TestUserList(TestBaseExportData):
     def test_user_list_json_no_date(self):
         """Testing user_list subcommand with NO date arg passed,
         exporting as JSON"""
-        Job.objects.create(jobslurmid='33333',
-                           submitdate=self.current_time - datetime.timedelta(days=1),
-                           startdate=self.current_time - datetime.timedelta(days=2),
-                           enddate=self.current_time - datetime.timedelta(days=3),
-                           userid=self.user2)
 
         out, err = StringIO(''), StringIO('')
         call_command('export_data', 'user_list', '--format=json',
@@ -96,17 +91,15 @@ class TestUserList(TestBaseExportData):
         out.seek(0)
         output = json.loads(''.join(out.readlines()))
 
-        job_list = Job.objects.annotate(submit_date=Func(
-            F('submitdate'),
-            Value('MM-dd-yyyy hh:mm:ss'),
-            function='to_char',
-            output_field=CharField()),
-            username=F('userid__username')).\
-            order_by('userid', '-submitdate').distinct('userid').\
-            values('username', 'jobslurmid', 'submit_date')
-
-        for index, item in enumerate(output):
-            self.assertDictEqual(item, job_list[index])
+        self.assertEqual(len(output), 2)
+        for index in range(2):
+            item = output[index]
+            self.assertEqual(item['username'], f'user{index+1}')
+            self.assertEqual(item['jobslurmid'], f'{index+1}')
+            job = Job.objects.get(jobslurmid=f'{index+1}')
+            submit_date_str = datetime.datetime.strftime(job.submitdate,
+                                                         '%m-%d-%Y %H:%M:%S')
+            self.assertEqual(item['submit_date'], submit_date_str)
 
         err.seek(0)
         self.assertEqual(err.read(), '')
@@ -126,18 +119,15 @@ class TestUserList(TestBaseExportData):
         out.seek(0)
         output = json.loads(''.join(out.readlines()))
 
-        job_list = Job.objects.annotate(submit_date=Func(
-            F('submitdate'),
-            Value('MM-dd-yyyy hh:mm:ss'),
-            function='to_char',
-            output_field=CharField()),
-            username=F('userid__username')). \
-            order_by('userid', '-submitdate').distinct('userid'). \
-            values('username', 'jobslurmid', 'submit_date').\
-            get(jobslurmid='12345')
-
-        for index, item in enumerate(output):
-            self.assertDictEqual(item, job_list)
+        self.assertEqual(len(output), 1)
+        for index in range(1):
+            item = output[index]
+            self.assertEqual(item['username'], f'user{index+1}')
+            self.assertEqual(item['jobslurmid'], f'{index+1}')
+            job = Job.objects.get(jobslurmid=f'{index+1}')
+            submit_date_str = datetime.datetime.strftime(job.submitdate,
+                                                         '%m-%d-%Y %H:%M:%S')
+            self.assertEqual(item['submit_date'], submit_date_str)
 
         err.seek(0)
         self.assertEqual(err.read(), '')
@@ -145,11 +135,6 @@ class TestUserList(TestBaseExportData):
     def test_user_list_csv_no_date(self):
         """Testing user_list subcommand with NO date arg passed,
         exporting as CSV"""
-        Job.objects.create(jobslurmid='33333',
-                           submitdate=self.current_time - datetime.timedelta(days=1),
-                           startdate=self.current_time - datetime.timedelta(days=2),
-                           enddate=self.current_time - datetime.timedelta(days=3),
-                           userid=self.user2)
 
         out, err = StringIO(''), StringIO('')
         call_command('export_data', 'user_list', '--format=csv',
@@ -159,22 +144,16 @@ class TestUserList(TestBaseExportData):
         out.seek(0)
         reader = csv.reader(out.readlines())
 
-        job_list = Job.objects.annotate(submit_date=Func(
-            F('submitdate'),
-            Value('MM-dd-yyyy hh:mm:ss'),
-            function='to_char',
-            output_field=CharField()),
-            username=F('userid__username')).\
-            order_by('userid', '-submitdate').distinct('userid').\
-            values_list('username', 'jobslurmid', 'submit_date')
-
         for index, item in enumerate(reader):
             if index == 0:
-                lst = ['username', 'jobslurmid', 'submit_date']
+                self.assertEqual(item, ['username', 'jobslurmid', 'submit_date'])
             else:
-                lst = list(job_list[index-1])
-
-            self.assertEqual(item, lst)
+                self.assertEqual(item[0], f'user{index}')
+                self.assertEqual(item[1], f'{index}')
+                job = Job.objects.get(jobslurmid=f'{index}')
+                submit_date_str = datetime.datetime.strftime(job.submitdate,
+                                                         '%m-%d-%Y %H:%M:%S')
+                self.assertEqual(item[2], submit_date_str)
 
         err.seek(0)
         self.assertEqual(err.read(), '')
@@ -194,23 +173,16 @@ class TestUserList(TestBaseExportData):
         out.seek(0)
         reader = csv.reader(out.readlines())
 
-        job_list = Job.objects.annotate(submit_date=Func(
-            F('submitdate'),
-            Value('MM-dd-yyyy hh:mm:ss'),
-            function='to_char',
-            output_field=CharField()),
-            username=F('userid__username')). \
-            order_by('userid', '-submitdate').distinct('userid'). \
-            values_list('username', 'jobslurmid', 'submit_date').\
-            get(jobslurmid='12345')
-
         for index, item in enumerate(reader):
             if index == 0:
-                lst = ['username', 'jobslurmid', 'submit_date']
+                self.assertEqual(item, ['username', 'jobslurmid', 'submit_date'])
             else:
-                lst = list(job_list)
-
-            self.assertEqual(item, lst)
+                self.assertEqual(item[0], f'user{index}')
+                self.assertEqual(item[1], f'{index}')
+                job = Job.objects.get(jobslurmid=f'{index}')
+                submit_date_str = datetime.datetime.strftime(job.submitdate,
+                                                             '%m-%d-%Y %H:%M:%S')
+                self.assertEqual(item[2], submit_date_str)
 
         err.seek(0)
         self.assertEqual(err.read(), '')
@@ -222,44 +194,39 @@ class TestNewUserAccount(TestAllocationBase):
 
     def setUp(self):
         """Setup test data"""
+        self.pre_time = utc_now_offset_aware().replace(tzinfo=None)
+
         super().setUp()
 
-        for i, project in enumerate(Project.objects.all()):
-            allocation_object = get_accounting_allocation_objects(project)
-            cluster_account_status = AllocationAttributeType.objects.get(
-                name='Cluster Account Status')
-            current_time = utc_now_offset_aware()
+        self.cluster_account_status = AllocationAttributeType.objects.get(
+            name='Cluster Account Status')
 
-            for j, project_user in enumerate(project.projectuser_set.all()):
-                if project_user.role.name != 'User':
-                    continue
+        project = Project.objects.get(name='project0')
+        allocation_object = get_accounting_allocation_objects(project)
+        for j, project_user in enumerate(project.projectuser_set.all()):
+            if project_user.role.name != 'User':
+                continue
 
-                allocation_user_objects = get_accounting_allocation_objects(
-                    project, user=project_user.user)
+            allocation_user_objects = get_accounting_allocation_objects(
+                project, user=project_user.user)
 
-                cluster_account_attribute = AllocationUserAttribute.objects.create(
-                    allocation_attribute_type=cluster_account_status,
-                    allocation=allocation_object.allocation,
-                    allocation_user=allocation_user_objects.allocation_user,
-                    value='Active')
-
-                cluster_account_attribute.created = \
-                    current_time - datetime.timedelta(days=(i+j+1)*2)
-                cluster_account_attribute.save()
+            AllocationUserAttribute.objects.create(
+                allocation_attribute_type=self.cluster_account_status,
+                allocation=allocation_object.allocation,
+                allocation_user=allocation_user_objects.allocation_user,
+                value='Active')
 
     def convert_time_to_utc(self, time):
         """Convert naive LA time to UTC time"""
         local_tz = pytz.timezone('America/Los_Angeles')
         tz = pytz.timezone(settings.TIME_ZONE)
         naive_dt = datetime.datetime.combine(time, datetime.datetime.min.time())
-        new_time = local_tz.localize(naive_dt).astimezone(tz).isoformat()
-
+        new_time = local_tz.localize(naive_dt).astimezone(tz)
         return new_time
 
-    def test_test_new_user_account_json_no_date(self):
+    def test_new_user_account_json_no_date(self):
         """Testing new_user_account subcommand with NO date arg passed,
         exporting as JSON"""
-
         out, err = StringIO(''), StringIO('')
         call_command('export_data', 'new_user_account', '--format=json',
                      stdout=out, stderr=err)
@@ -268,135 +235,124 @@ class TestNewUserAccount(TestAllocationBase):
         out.seek(0)
         output = json.loads(''.join(out.readlines()))
 
-        cluster_account_status = AllocationAttributeType.objects.get(
-            name='Cluster Account Status')
-        correct_output = []
-
-        for i in range(2):
-            cluster_account_attribute = \
-                AllocationUserAttribute.objects.filter(
-                    allocation_user__user__username=f'user{i}',
-                    allocation_attribute_type=cluster_account_status)\
-                    .order_by('-created').first()
-            created_date_str = \
-                cluster_account_attribute.created.strftime('%m-%d-%Y %H:%M:%S')
-            correct_output.append({'date_created': created_date_str,
-                                   'username': f'user{i}'})
-
+        post_time = utc_now_offset_aware().replace(tzinfo=None)
         for index, item in enumerate(output):
-            self.assertDictEqual(item, correct_output[index])
+            self.assertEqual(item['username'], f'user{index}')
+            date_created = \
+                datetime.datetime.strptime(item['date_created'],
+                                           '%m-%d-%Y %H:%M:%S')
+            self.assertTrue(self.pre_time <= date_created <= post_time)
 
         err.seek(0)
         self.assertEqual(err.read(), '')
 
-#     def test_test_new_user_account_json_with_date(self):
-#         """Testing new_user_account subcommand with ONE date arg passed,
-#         exporting as JSON"""
-#
-#         start_date = datetime.datetime.strftime(
-#             self.current_time - datetime.timedelta(days=4), '%m-%d-%Y')
-#
-#         new_date = self.convert_time_to_utc(self.current_time -
-#                                             datetime.timedelta(days=10))
-#         self.user2.date_joined = new_date
-#         self.user2.save()
-#         self.assertEqual(self.user2.date_joined, new_date)
-#
-#         out, err = StringIO(''), StringIO('')
-#         call_command('export_data', 'new_user_account', '--format=json',
-#                      f'--date={start_date}', stdout=out, stderr=err)
-#         sys.stdout = sys.__stdout__
-#
-#         out.seek(0)
-#         output = json.loads(''.join(out.readlines()))
-#
-#         user_list = User.objects.annotate(str_date_joined=Func(
-#             F('date_joined'),
-#             Value('MM-dd-yyyy hh:mm:ss'),
-#             function='to_char',
-#             output_field=CharField()
-#         )).order_by('username', '-date_joined'). \
-#             distinct('username').values('username', 'str_date_joined').get(
-#             username=self.user1.username
-#         )
-#
-#         for index, item in enumerate(output):
-#             self.assertDictEqual(item, user_list)
-#
-#         err.seek(0)
-#         self.assertEqual(err.read(), '')
-#
-#     def test_test_new_user_account_csv_no_date(self):
-#         """Testing new_user_account subcommand with NO date arg passed,
-#         exporting as CSV"""
-#
-#         out, err = StringIO(''), StringIO('')
-#         call_command('export_data', 'new_user_account', '--format=csv',
-#                      stdout=out, stderr=err)
-#         sys.stdout = sys.__stdout__
-#
-#         out.seek(0)
-#         reader = csv.reader(out.readlines())
-#
-#         user_list = User.objects.annotate(str_date_joined=Func(
-#             F('date_joined'),
-#             Value('MM-dd-yyyy hh:mm:ss'),
-#             function='to_char',
-#             output_field=CharField()
-#         )).order_by('username', '-date_joined'). \
-#             distinct('username').values_list('username', 'str_date_joined')
-#
-#         for index, item in enumerate(reader):
-#             if index == 0:
-#                 lst = ['username', 'str_date_joined']
-#             else:
-#                 lst = list(user_list[index-1])
-#
-#             self.assertEqual(item, lst)
-#
-#             err.seek(0)
-#             self.assertEqual(err.read(), '')
-#
-#     def test_test_new_user_account_csv_with_date(self):
-#         """Testing new_user_account subcommand with ONE date arg passed,
-#         exporting as CSV"""
-#         start_date = datetime.datetime.strftime(
-#             self.current_time - datetime.timedelta(days=4), '%m-%d-%Y')
-#
-#         new_date = self.convert_time_to_utc(self.current_time -
-#                                             datetime.timedelta(days=10))
-#         self.user2.date_joined = new_date
-#         self.user2.save()
-#         self.assertEqual(self.user2.date_joined, new_date)
-#
-#         out, err = StringIO(''), StringIO('')
-#         call_command('export_data', 'new_user_account', '--format=csv',
-#                      f'--date={start_date}', stdout=out, stderr=err)
-#         sys.stdout = sys.__stdout__
-#
-#         out.seek(0)
-#         reader = csv.reader(out.readlines())
-#
-#         user_list = User.objects.annotate(str_date_joined=Func(
-#             F('date_joined'),
-#             Value('MM-dd-yyyy hh:mm:ss'),
-#             function='to_char',
-#             output_field=CharField()
-#         )).order_by('username', '-date_joined'). \
-#             distinct('username').values_list('username', 'str_date_joined').get(
-#             username=self.user1.username
-#         )
-#
-#         for index, item in enumerate(reader):
-#             if index == 0:
-#                 lst = ['username', 'str_date_joined']
-#             else:
-#                 lst = list(user_list)
-#
-#             self.assertEqual(item, lst)
-#
-#             err.seek(0)
-#             self.assertEqual(err.read(), '')
+    def test_new_user_account_json_with_date(self):
+        """Testing new_user_account subcommand with ONE date arg passed,
+        exporting as JSON"""
+
+        start_date = datetime.datetime.strftime(
+            self.pre_time - datetime.timedelta(days=4), '%m-%d-%Y')
+
+        new_date = self.convert_time_to_utc(self.pre_time -
+                                            datetime.timedelta(days=10))
+
+        allocation_user_attr_obj = AllocationUserAttribute.objects.get(
+            allocation_attribute_type=self.cluster_account_status,
+            allocation__project__name='project0',
+            allocation_user__user__username='user0',
+            value='Active')
+
+        allocation_user_attr_obj.created = new_date
+        allocation_user_attr_obj.save()
+        self.assertEqual(allocation_user_attr_obj.created, new_date)
+
+        out, err = StringIO(''), StringIO('')
+        call_command('export_data', 'new_user_account', '--format=json',
+                     f'--start_date={start_date}', stdout=out, stderr=err)
+        sys.stdout = sys.__stdout__
+
+        out.seek(0)
+        output = json.loads(''.join(out.readlines()))
+
+        # this should only output the cluster account creation for user1
+        post_time = utc_now_offset_aware().replace(tzinfo=None)
+        self.assertEqual(len(output), 1)
+        self.assertEqual(output[0]['username'], 'user1')
+        date_created = \
+            datetime.datetime.strptime(output[0]['date_created'],
+                                       '%m-%d-%Y %H:%M:%S')
+        self.assertTrue(self.pre_time <= date_created <= post_time)
+
+        err.seek(0)
+        self.assertEqual(err.read(), '')
+
+    def test_new_user_account_csv_no_date(self):
+        """Testing new_user_account subcommand with NO date arg passed,
+        exporting as CSV"""
+
+        out, err = StringIO(''), StringIO('')
+        call_command('export_data', 'new_user_account', '--format=csv',
+                     stdout=out, stderr=err)
+        sys.stdout = sys.__stdout__
+
+        out.seek(0)
+        reader = csv.reader(out.readlines())
+
+        post_time = utc_now_offset_aware().replace(tzinfo=None)
+        for index, item in enumerate(reader):
+            if index == 0:
+                self.assertEqual(item, ['username', 'date_created'])
+            else:
+                self.assertEqual(item[0], f'user{index - 1}')
+                date_created = \
+                    datetime.datetime.strptime(item[1],
+                                               '%m-%d-%Y %H:%M:%S')
+                self.assertTrue(self.pre_time <= date_created <= post_time)
+
+            err.seek(0)
+            self.assertEqual(err.read(), '')
+
+    def test_new_user_account_csv_with_date(self):
+        """Testing new_user_account subcommand with ONE date arg passed,
+        exporting as CSV"""
+
+        start_date = datetime.datetime.strftime(
+            self.pre_time - datetime.timedelta(days=4), '%m-%d-%Y')
+
+        new_date = self.convert_time_to_utc(self.pre_time -
+                                            datetime.timedelta(days=10))
+
+        allocation_user_attr_obj = AllocationUserAttribute.objects.get(
+            allocation_attribute_type=self.cluster_account_status,
+            allocation__project__name='project0',
+            allocation_user__user__username='user0',
+            value='Active')
+
+        allocation_user_attr_obj.created = new_date
+        allocation_user_attr_obj.save()
+        self.assertEqual(allocation_user_attr_obj.created, new_date)
+
+        out, err = StringIO(''), StringIO('')
+        call_command('export_data', 'new_user_account', '--format=csv',
+                     f'--start_date={start_date}', stdout=out, stderr=err)
+        sys.stdout = sys.__stdout__
+
+        out.seek(0)
+        reader = csv.reader(out.readlines())
+
+        post_time = utc_now_offset_aware().replace(tzinfo=None)
+        for index, item in enumerate(reader):
+            if index == 0:
+                self.assertEqual(item, ['username', 'date_created'])
+            else:
+                self.assertEqual(item[0], 'user1')
+                date_created = \
+                    datetime.datetime.strptime(item[1],
+                                               '%m-%d-%Y %H:%M:%S')
+                self.assertTrue(self.pre_time <= date_created <= post_time)
+
+        err.seek(0)
+        self.assertEqual(err.read(), '')
 
 
 class TestJobAvgQueueTime(TestBaseExportData):
@@ -414,7 +370,7 @@ class TestJobAvgQueueTime(TestBaseExportData):
         sys.stdout = sys.__stdout__
         out.seek(0)
 
-        self.assertIn('36hrs 0mins 0secs', out.read())
+        self.assertIn('32hrs 0mins 0secs', out.read())
 
         err.seek(0)
         self.assertEqual(err.read(), '')
