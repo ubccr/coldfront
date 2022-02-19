@@ -188,8 +188,7 @@ class Command(BaseCommand):
                 'signature': settings.EMAIL_SIGNATURE,
             }
 
-            recipients = list(project.managers_and_pis_with_notifications()
-                              .values_list('user__email', flat=True))
+            recipients = project.managers_and_pis_emails()
 
             if dry_run:
                 msg_plain = \

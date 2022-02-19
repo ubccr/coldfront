@@ -388,8 +388,7 @@ class TestDeactivateICAProjects(TestBase):
         # run command
         output, error = self.call_deactivate_command('--send_emails')
 
-        recipients = list(project.managers_and_pis_with_notifications()
-                          .values_list('user__email', flat=True))
+        recipients = project.managers_and_pis_emails()
 
         # Testing that the correct text is output to stdout
         message = f'Sent deactivation notification email to ' \
