@@ -3,15 +3,14 @@ from decimal import Decimal
 from django.template.loader import render_to_string
 
 from coldfront.api.statistics.utils import get_accounting_allocation_objects, \
-    set_project_allocation_value, set_project_user_allocation_value
+    set_project_allocation_value, set_project_user_allocation_value, \
+    set_project_usage_value, set_project_user_usage_value
 from coldfront.config import settings
-from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectStatusChoice
 from django.core.management.base import BaseCommand
-from django.db.models import Q
 import logging
 
 from coldfront.core.statistics.models import ProjectTransaction, \
@@ -25,9 +24,8 @@ their corresponding compute Allocations to 'Expired'."""
 
 class Command(BaseCommand):
 
-    help = (
-        'Set expired ICA Projects to \'Inactive\' and their corresponding '
-        'compute Allocations to \'Expired\'.')
+    help = ('Expire ICA projects whose end dates have passed and optionally '
+            'notify project owners')
     logger = logging.getLogger(__name__)
 
     def add_arguments(self, parser):
@@ -47,13 +45,13 @@ class Command(BaseCommand):
         the Allocation and AllocationUsers.
         """
         current_date = utc_now_offset_aware()
-        ica_projects = Project.objects.filter(name__icontains='ic_')
+        ica_projects = Project.objects.filter(name__startswith='ic_')
 
         for project in ica_projects:
             allocation = get_project_compute_allocation(project)
             expiry_date = allocation.end_date
 
-            if expiry_date < current_date.date():
+            if expiry_date and expiry_date < current_date.date():
                 self.reset_service_units(project, options['dry_run'])
                 self.deactivate_project(project, allocation, options['dry_run'])
 
@@ -62,9 +60,8 @@ class Command(BaseCommand):
 
     def deactivate_project(self, project, allocation, dry_run):
         """
-        Sets project status to Inactive and corresponding compute allocation to
-        Expired. Sets allocation start date to the current date and removes
-        the end date.
+        Expire ICA projects whose end dates have passed and optionally
+        notify project owners
 
         If dry_run is True, write to stdout without changing object fields.
         """
@@ -95,6 +92,13 @@ class Command(BaseCommand):
             self.logger.info(message)
             self.stdout.write(self.style.SUCCESS(message))
 
+    def set_historical_reason(self, obj, reason):
+        """Set the latest historical object reason"""
+        obj.refresh_from_db()
+        historical_obj = obj.history.latest('id')
+        historical_obj.history_change_reason = reason
+        historical_obj.save()
+
     def reset_service_units(self, project, dry_run):
         """
         Resets service units for a project and its users to 0.00. Creates
@@ -120,6 +124,7 @@ class Command(BaseCommand):
         else:
             # Set the value for the Project.
             set_project_allocation_value(project, updated_su)
+            set_project_usage_value(project, updated_su)
 
             # Create a transaction to record the change.
             ProjectTransaction.objects.create(
@@ -128,40 +133,34 @@ class Command(BaseCommand):
                 allocation=updated_su)
 
             # Set the reason for the change in the newly-created historical object.
-            allocation_objects.allocation_attribute.refresh_from_db()
-            historical_allocation_attribute = \
-                allocation_objects.allocation_attribute.history.latest("id")
-            historical_allocation_attribute.history_change_reason = reason
-            historical_allocation_attribute.save()
+            self.set_historical_reason(
+                allocation_objects.allocation_attribute, reason)
 
             # Do the same for each ProjectUser.
-            allocation_attribute_type = AllocationAttributeType.objects.get(
-                name="Service Units")
             for project_user in project.projectuser_set.all():
                 user = project_user.user
                 # Attempt to set the value for the ProjectUser. The method returns whether
                 # it succeeded; it may not because not every ProjectUser has a
                 # corresponding AllocationUser (e.g., PIs). Only proceed with further steps
                 # if an update occurred.
+
                 allocation_updated = set_project_user_allocation_value(
                     user, project, updated_su)
-                if allocation_updated:
+                allocation_usage_updated = set_project_user_usage_value(
+                    user, project, updated_su)
+
+                if allocation_updated and allocation_usage_updated:
                     # Create a transaction to record the change.
                     ProjectUserTransaction.objects.create(
                         project_user=project_user,
                         date_time=current_date,
                         allocation=updated_su)
                     # Set the reason for the change in the newly-created historical object.
-                    allocation_user = \
-                        allocation_objects.allocation.allocationuser_set.get(user=user)
-                    allocation_user_attribute = \
-                        allocation_user.allocationuserattribute_set.get(
-                            allocation_attribute_type=allocation_attribute_type,
-                            allocation=allocation_objects.allocation)
-                    historical_allocation_user_attribute = \
-                        allocation_user_attribute.history.latest("id")
-                    historical_allocation_user_attribute.history_change_reason = reason
-                    historical_allocation_user_attribute.save()
+
+                    allocation_user_obj = get_accounting_allocation_objects(
+                        project, user=user)
+                    self.set_historical_reason(
+                        allocation_user_obj.allocation_user_attribute, reason)
 
             message = f'Successfully reset SUs for {project.name} ' \
                       f'and its users, updating {project.name}\'s SUs from ' \
@@ -189,17 +188,8 @@ class Command(BaseCommand):
                 'signature': settings.EMAIL_SIGNATURE,
             }
 
-            pi_condition = Q(
-                role__name='Principal Investigator', status__name='Active',
-                enable_notifications=True)
-            manager_condition = Q(role__name='Manager', status__name='Active')
-
-            recipients = list(
-                project.projectuser_set.filter(
-                    pi_condition | manager_condition
-                ).values_list(
-                    'user__email', flat=True
-                ))
+            recipients = list(project.managers_and_pis_with_notifications()
+                              .values_list('user__email', flat=True))
 
             if dry_run:
                 msg_plain = \

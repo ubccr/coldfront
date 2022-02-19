@@ -9,7 +9,8 @@ from django.core.management import call_command
 from django.db.models import Q
 
 from coldfront.api.statistics.utils import create_project_allocation, \
-    create_user_project_allocation, AccountingAllocationObjects
+    create_user_project_allocation, AccountingAllocationObjects, \
+    get_accounting_allocation_objects
 from coldfront.config import settings
 from coldfront.core.allocation.models import Allocation, \
     AllocationAttributeType, AllocationAttribute, \
@@ -24,7 +25,7 @@ from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 
 
-class TestDeactivateICAProject(TestBase):
+class TestDeactivateICAProjects(TestBase):
     """Class for testing the management command deactivate_ica_projects"""
 
     def setUp(self):
@@ -88,6 +89,16 @@ class TestDeactivateICAProject(TestBase):
 
         # Clear the mail outbox.
         mail.outbox = []
+
+    @staticmethod
+    def call_deactivate_command(*args):
+        """Call the command with the given arguments, returning the messages
+        written to stdout and stderr."""
+        out, err = StringIO(), StringIO()
+        args = ['deactivate_ica_projects', *args]
+        kwargs = {'stdout': out, 'stderr': err}
+        call_command(*args, **kwargs)
+        return out.getvalue(), err.getvalue()
 
     def get_accounting_allocation_objects(self, project, user=None):
         """Return a namedtuple of database objects related to accounting and
@@ -189,15 +200,11 @@ class TestDeactivateICAProject(TestBase):
             if project_user.role.name != 'User':
                 continue
 
-            allocation_user = \
-                allocation_objects.allocation.allocationuser_set.get(
-                    user=project_user.user)
-            allocation_user_attribute = \
-                allocation_user.allocationuserattribute_set.get(
-                    allocation_attribute_type=allocation_attribute_type,
-                    allocation=allocation_objects.allocation)
+            allocation_user_obj = self.get_accounting_allocation_objects(
+                project, user=project_user.user)
+
             historical_allocation_user_attribute = \
-                allocation_user_attribute.history.all()
+                allocation_user_obj.allocation_user_attribute.history.all()
 
             key = 'historical_allocation_user_attribute_' + project_user.user.username
             length_dict[key] = len(historical_allocation_user_attribute)
@@ -248,32 +255,26 @@ class TestDeactivateICAProject(TestBase):
         """
         Tests that the relevant historical objects have the correct reason
         """
+
         reason = 'Resetting SUs while deactivating expired ICA project.'
         allocation_objects = self.get_accounting_allocation_objects(project)
-        historical_allocation_attribute = \
-            allocation_objects.allocation_attribute.history.latest("id")
-        historical_reason = historical_allocation_attribute.history_change_reason
 
-        self.assertEqual(historical_reason, reason)
+        alloc_attr_hist_reason = \
+            allocation_objects.allocation_attribute.history.\
+                latest('id').history_change_reason
+        self.assertEqual(alloc_attr_hist_reason, reason)
 
-        allocation_attribute_type = AllocationAttributeType.objects.get(
-            name="Service Units")
         for project_user in project.projectuser_set.all():
             if project_user.role.name != 'User':
                 continue
 
-            allocation_user = \
-                allocation_objects.allocation.allocationuser_set.get(
-                    user=project_user.user)
-            allocation_user_attribute = \
-                allocation_user.allocationuserattribute_set.get(
-                    allocation_attribute_type=allocation_attribute_type,
-                    allocation=allocation_objects.allocation)
-            historical_allocation_user_attribute = \
-                allocation_user_attribute.history.latest("id")
-            historical_reason = \
-                historical_allocation_user_attribute.history_change_reason
-            self.assertEqual(historical_reason, reason)
+            allocation_user_obj = self.get_accounting_allocation_objects(
+                project, user=project_user.user)
+
+            alloc_attr_hist_reason = \
+                allocation_user_obj.allocation_user_attribute.history. \
+                    latest('id').history_change_reason
+            self.assertEqual(alloc_attr_hist_reason, reason)
 
     def project_allocation_updates(self, project, allocation, pre_time, post_time):
         """Tests that the project and allocation were correctly updated"""
@@ -284,33 +285,17 @@ class TestDeactivateICAProject(TestBase):
 
     def test_dry_run_no_expired_projects(self):
         """Testing a dry run in which no ICA projects are expired"""
-        out, err = StringIO(''), StringIO('')
-        call_command('deactivate_ica_projects',
-                     '--dry_run',
-                     '--send_emails',
-                     stdout=out,
-                     stderr=err)
-        sys.stdout = sys.__stdout__
-        out.seek(0)
-
-        self.assertIn(out.read(), '')
-        err.seek(0)
-        self.assertEqual(err.read(), '')
+        output, error = self.call_deactivate_command('--dry_run',
+                                                     '--send_emails')
+        self.assertIn(output, '')
+        self.assertEqual(error, '')
 
     def test_dry_run_with_expired_projects(self):
         """Testing a dry run in which an ICA project is expired"""
         self.create_expired_project('ic_project0')
 
-        out, err = StringIO(''), StringIO('')
-        call_command('deactivate_ica_projects',
-                     '--dry_run',
-                     '--send_emails',
-                     stdout=out,
-                     stderr=err)
-        sys.stdout = sys.__stdout__
-        out.seek(0)
-
-        console_output = out.read()
+        output, error = self.call_deactivate_command('--dry_run',
+                                                     '--send_emails')
 
         project = Project.objects.get(name='ic_project0')
         allocation = get_project_compute_allocation(project)
@@ -335,10 +320,9 @@ class TestDeactivateICAProject(TestBase):
                     f'to access its compute resources.']
 
         for message in messages:
-            self.assertIn(message, console_output)
+            self.assertIn(message, output)
 
-        err.seek(0)
-        self.assertEqual(err.read(), '')
+        self.assertEqual(error, '')
 
     def test_creates_and_updates_objects(self):
         """Testing deactivate_ica_projects WITHOUT send_emails flag"""
@@ -354,13 +338,7 @@ class TestDeactivateICAProject(TestBase):
         self.allocation_values_test(project, '1000.00', '500.00')
 
         # run command
-        out, err = StringIO(''), StringIO('')
-        call_command('deactivate_ica_projects',
-                     stdout=out,
-                     stderr=err)
-        sys.stdout = sys.__stdout__
-        out.seek(0)
-        console_output = out.read()
+        output, error = self.call_deactivate_command()
 
         messages = [
             f'Updated Project {project.name} ({project.pk})\'s status to '
@@ -374,9 +352,8 @@ class TestDeactivateICAProject(TestBase):
             f'project.".']
 
         for message in messages:
-            self.assertIn(message, console_output)
-        err.seek(0)
-        self.assertEqual(err.read(), '')
+            self.assertIn(message, output)
+        self.assertEqual(error, '')
 
         post_time = utc_now_offset_aware()
         project.refresh_from_db()
@@ -409,30 +386,17 @@ class TestDeactivateICAProject(TestBase):
         old_end_date = allocation.end_date
 
         # run command
-        out, err = StringIO(''), StringIO('')
-        call_command('deactivate_ica_projects',
-                     '--send_emails',
-                     stdout=out,
-                     stderr=err)
-        sys.stdout = sys.__stdout__
-        out.seek(0)
+        output, error = self.call_deactivate_command('--send_emails')
 
-        pi_condition = Q(
-            role__name='Principal Investigator', status__name='Active',
-            enable_notifications=True)
-        manager_condition = Q(role__name='Manager', status__name='Active')
-
-        recipients = list(
-            project.projectuser_set.filter(
-                pi_condition | manager_condition
-            ).values_list(
-                'user__email', flat=True
-            ))
+        recipients = list(project.managers_and_pis_with_notifications()
+                          .values_list('user__email', flat=True))
 
         # Testing that the correct text is output to stdout
         message = f'Sent deactivation notification email to ' \
                   f'{len(recipients)} users.'
-        self.assertIn(message, out.read())
+
+        self.assertIn(message, output)
+        self.assertEqual(error, '')
 
         # Testing that the correct number of emails were sent
         self.assertEqual(len(mail.outbox), len(recipients))
