@@ -26,7 +26,7 @@ class ResourceSearchForm(forms.Form):
         label='Warranty Expiration Date', 
         widget=forms.DateInput(attrs={'class': 'datepicker'}),
         required=False)
-    show_all_resources = forms.BooleanField(initial=False, required=False)
+    show_allocatable_resources = forms.BooleanField(initial=False, required=False)
 
 
 class ResourceAttributeDeleteForm(forms.Form):

@@ -13,7 +13,7 @@
     {% if perms.allocation.can_view_all_allocations %}
       <a class="dropdown-item" href="{% url 'allocation-list' %}?show_all_allocations=on">All Allocations</a>
     {% endif %}
-    <a class="dropdown-item" href="{% url 'resource-list' %}?show_all_resources=on">All Resources</a>
+    <a class="dropdown-item" href="{% url 'resource-list' %}">All Resources</a>
     {% if perms.project.can_review_pending_project_reviews %}
       <a id="navbar-project-reviews" class="dropdown-item" href="{% url 'project-review-list' %}">Project Reviews</a>
     {% endif %}

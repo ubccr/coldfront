@@ -10,7 +10,6 @@ from django.urls import reverse
 from django.views.generic import TemplateView, ListView
 from django.views.generic.edit import CreateView
 
-from coldfront.core.allocation.utils import get_user_resources
 from coldfront.core.resource.forms import ResourceSearchForm, ResourceAttributeDeleteForm
 from coldfront.core.resource.models import Resource, ResourceAttribute
 
@@ -22,17 +21,7 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser or self.request.user.is_staff:
-            return True
-
-        pk = self.kwargs.get('pk')
-        resource_obj = get_object_or_404(Resource, pk=pk)
-
-        if resource_obj in get_user_resources(self.request.user):
-            return True
-
-        messages.error(
-            self.request, 'You do not have permission to review resource.')
+        return True
 
     def get_child_resources(self, resource_obj):
         child_resources = [resource for resource in resource_obj.resource_set.all(
@@ -208,11 +197,10 @@ class ResourceListView(LoginRequiredMixin, ListView):
 
         if resource_search_form.is_valid():
             data = resource_search_form.cleaned_data
-            if data.get('show_all_resources') and (self.request.user.is_superuser or self.request.user.is_staff):
-                resources = Resource.objects.all().order_by(order_by)
-            else:
-                resources = get_user_resources(self.request.user).order_by(order_by)
+            resources = Resource.objects.all().order_by(order_by)
 
+            if data.get('show_allocatable_resources'):
+                resources = resources.filter(is_allocatable=True)
             if data.get('model'):
                 resources = resources.filter(
                     Q(resourceattribute__resource_attribute_type__name='Model') &
@@ -249,11 +237,7 @@ class ResourceListView(LoginRequiredMixin, ListView):
                     Q(resourceattribute__value=data.get('vendor'))
                 )
         else:
-            if self.request.user.is_superuser or self.request.user.is_staff:
-                resources = Resource.objects.all().order_by(order_by)
-            else:
-                resources = get_user_resources(self.request.user).order_by(order_by)
-
+            resources = Resource.objects.all().order_by(order_by)
         return resources.distinct()
 
     def get_context_data(self, **kwargs):
