@@ -23,7 +23,7 @@
     {% endif %}
     
     {% if perms.allocation.change_allocationuserstatuschoice %}
-      <a id="navbar-users-pending" class="dropdown-item" href="{% url 'allocation-users-pending-list' %}">Users Pending</a>
+      <a id="navbar-users-pending" class="dropdown-item" href="{% url 'allocation-user-request-list' %}">Users Pending</a>
     {% endif %}
     {% if perms.grant.can_view_all_grants %}
       <a id="navbar-grant-report" class="dropdown-item" href="{% url 'grant-report' %}">Grant Report</a>

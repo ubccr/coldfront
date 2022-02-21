@@ -26,7 +26,7 @@ from coldfront.core.allocation.models import (Allocation,
                                               AllocationUserStatusChoice)
 from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user)
-from coldfront.core.allocation.utils import send_pending_users_email
+from coldfront.core.allocation.utils import send_allocation_user_request_email
 from coldfront.core.grant.models import Grant
 from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectAddUsersToAllocationForm,
@@ -805,7 +805,8 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
             no_accounts = {}
             managers_rejected = []
-            resource_pending_users = {}
+            resources_requiring_user_request = {}
+            requestor_user = User.objects.get(username=request.user)
             for form in formset:
                 user_form_data = form.cleaned_data
 
@@ -858,12 +859,12 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                                     no_accounts[username].append(resource_name)
                                 continue
 
-                            has_manual_addition = allocation.get_parent_resource.get_attribute(
-                                'manually_handle_users'
+                            requires_user_request = allocation.get_parent_resource.get_attribute(
+                                'requires_user_request'
                             )
-                            if has_manual_addition is not None and has_manual_addition == 'True':
-                                resource_pending_users.setdefault(resource_name, [])
-                                resource_pending_users[resource_name].append(username)
+                            if requires_user_request is not None and requires_user_request == 'Yes':
+                                resources_requiring_user_request.setdefault(resource_name, set())
+                                resources_requiring_user_request[resource_name].add(username)
 
                                 allocation_user_status_choice = AllocationUserStatusChoice.objects.get(
                                     name='Pending - Add'
@@ -881,6 +882,17 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                                     status=allocation_user_status_choice)
                             allocation_activate_user.send(sender=self.__class__,
                                                         allocation_user_pk=allocation_user_obj.pk)
+
+                            requires_user_request = allocation.get_parent_resource.get_attribute(
+                                'requires_user_request'
+                            )
+
+                            allocation.create_user_request(
+                                requestor_user=requestor_user,
+                                allocation_user=allocation_user_obj,
+                                allocation_user_status=allocation_user_status_choice
+
+                            )
 
             warning_message = ''
             for username, no_account_list in no_accounts.items():
@@ -901,8 +913,8 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                     """.format(', '.join(managers_rejected), project_obj.max_managers)
                 )
 
-            for resource_name, users in resource_pending_users.items():
-                send_pending_users_email(self.request, users, resource_name)
+            for resource_name, users in resources_requiring_user_request.items():
+                send_allocation_user_request_email(self.request, users, resource_name)
 
             messages.success(
                 request, 'Added {} users to project.'.format(added_users_count))
@@ -1040,7 +1052,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             allocation_user_removed_status_choice = AllocationUserStatusChoice.objects.get(
                 name='Removed')
 
-            resources_requiring_manual_removal = {}
+            resources_requiring_user_request = {}
             for form in formset:
                 user_form_data = form.cleaned_data
                 if user_form_data['selected']:
@@ -1056,17 +1068,18 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     allocations_to_remove_user_from = project_obj.allocation_set.filter(
                         status__name__in=['Active', 'New', 'Renewal Requested'])
                     for allocation in allocations_to_remove_user_from:
+                        # TODO: Take a look at how this is being queried for user reviews.
                         for allocation_user_obj in allocation.allocationuser_set.filter(user=user_obj, status__name__in=['Active', 'Pending - Add', 'Pending - Remove']):
                             resource = allocation.get_parent_resource
-                            has_manual_removal = resource.get_attribute(
-                                'manually_handle_users'
+                            requires_user_requests = resource.get_attribute(
+                                'requires_user_request'
                             )
 
-                            # Users will still be removed from allocations that do not require
-                            # manual removal.
-                            if has_manual_removal is not None and has_manual_removal == 'True':
-                                resources_requiring_manual_removal.setdefault(resource.name, [])
-                                resources_requiring_manual_removal[resource.name].append(
+                            # Users will still be removed from allocations that do not require a
+                            # user review.
+                            if requires_user_requests is not None and requires_user_requests == 'Yes':
+                                resources_requiring_user_request.setdefault(resource.name, set())
+                                resources_requiring_user_request[resource.name].add(
                                     allocation_user_obj.user.username
                                 )
                                 remove_user_from_project = False
@@ -1089,7 +1102,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                 messages.success(
                     request, 'Removed {} users from project.'.format(remove_users_count))
 
-            for resource_name, users in resources_requiring_manual_removal.items():
+            for resource_name, users in resources_requiring_user_request.items():
                 messages.warning(
                     request, 'User(s) {} in resource {} must be removed from the allocation first.'
                     .format(', '.join(users), resource_name)

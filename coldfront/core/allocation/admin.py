@@ -13,6 +13,8 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationUser,
                                               AllocationUserNote,
                                               AllocationUserStatusChoice,
+                                              AllocationUserRequestStatusChoice,
+                                              AllocationUserRequest,
                                               AttributeType)
 
 
@@ -433,3 +435,77 @@ class AllocationAttributeUsageAdmin(SimpleHistoryAdmin):
 @admin.register(AllocationAccount)
 class AllocationAccountAdmin(SimpleHistoryAdmin):
     list_display = ('name', 'user', )
+
+
+@admin.register(AllocationUserRequestStatusChoice)
+class AllocationUserRequestStatusChoiceAdmin(admin.ModelAdmin):
+    list_display = ('name', )
+
+
+@admin.register(AllocationUserRequest)
+class AllocationUserRequestAdmin(SimpleHistoryAdmin):
+    list_display = (
+        'pk',
+        'project',
+        'allocation_id',
+        'resource',
+        'requestor',
+        'allocation_user_status',
+        'user',
+        'review_status',
+        'created',
+        'modified'
+    )
+
+    readonly_fields_change = (
+        'requestor_user',
+        'allocation_user',
+        'allocation_user_status',
+        'created',
+        'modified'
+    )
+
+    list_filter = (
+        'status',
+        'allocation_user__status',
+        'allocation_user__allocation__resources'
+    )
+
+    raw_id_fields = (
+        'requestor_user',
+        'allocation_user'
+    )
+
+    def project(self, obj):
+        return textwrap.shorten(obj.allocation_user.allocation.project.title, width=50)
+
+    def allocation_id(self, obj):
+        return obj.allocation_user.allocation.pk
+
+    def resource(self, obj):
+        return obj.allocation_user.allocation.resources.first().name
+
+    def review_status(self, obj):
+        return obj.status.name
+
+    def requestor(self, obj):
+        return '{} {} ({})'.format(
+            obj.requestor_user.first_name,
+            obj.requestor_user.last_name,
+            obj.requestor_user.username
+        )
+
+    def user(self, obj):
+        return '{} {} ({})'.format(
+            obj.allocation_user.user.first_name,
+            obj.allocation_user.user.last_name,
+            obj.allocation_user.user.username
+        )
+
+    def get_readonly_fields(self, request, obj):
+        # If a new object is being created then make the fields in the readonly_fields_change
+        # list editable.
+        if obj is None:
+            return super().get_readonly_fields(request, obj)
+        else:
+            return self.readonly_fields_change

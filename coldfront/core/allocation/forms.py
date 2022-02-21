@@ -537,6 +537,7 @@ class AllocationSearchForm(forms.Form):
 
 
 class AllocationReviewUserForm(forms.Form):
+    # No relation to AllocationUserReview model.
     ALLOCATION_REVIEW_USER_CHOICES = (
         ('keep_in_allocation_and_project', 'Keep in allocation and project'),
         ('keep_in_project_only', 'Remove from this allocation only'),

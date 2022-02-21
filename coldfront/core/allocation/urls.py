@@ -40,10 +40,12 @@ urlpatterns = [
          name='allocation-account-list'),
     path('invoice-export/', allocation_views.AllocationInvoiceExportView.as_view(),
          name='invoice-export'),
-    path('allocation-users-pending', allocation_views.AllocationPendingUsersView.as_view(),
-         name='allocation-users-pending-list'),
-    path('allocation-user/<int:pk>/approve', allocation_views.AllocationApproveUserView.as_view(),
-         name='allocation-approve-user'),
-    path('allocation-user/<int:pk>/deny', allocation_views.AllocationDenyUserView.as_view(),
-         name='allocation-deny-user')
+    path('allocation-user-request-list', allocation_views.AllocationUserRequestListView.as_view(),
+         name='allocation-user-request-list'),
+    path('allocation-user/<int:pk>/approve', allocation_views.AllocationUserApproveRequestView.as_view(),
+         name='allocation-user-approve-request'),
+    path('allocation-user/<int:pk>/deny', allocation_views.AllocationUserDenyRequestView.as_view(),
+         name='allocation-user-deny-request'),
+    path('allocation-user/<int:pk>/info', allocation_views.AllocationUserRequestInfoView.as_view(),
+         name='allocation-user-request-info'),
 ]

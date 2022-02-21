@@ -81,10 +81,11 @@ def compute_prorated_amount(total_cost):
     cost_per_day = total_cost / one_year.days
     return round(cost_per_day * difference.days + cost_per_day)
 
-def send_pending_users_email(request, usernames, parent_resource_name):
+
+def send_allocation_user_request_email(request, usernames, parent_resource_name):
     if EMAIL_ENABLED:
         domain_url = get_domain_url(request)
-        url = '{}{}'.format(domain_url, reverse('allocation-users-pending-list'))
+        url = '{}{}'.format(domain_url, reverse('allocation-user-request-list'))
         template_context = {
             'center_name': EMAIL_CENTER_NAME,
             'resource': parent_resource_name,
@@ -93,11 +94,11 @@ def send_pending_users_email(request, usernames, parent_resource_name):
             'users': usernames
         }
 
-        email_receiver_list = ['mkusz_iu.edu']
+        email_receiver_list = [EMAIL_TICKET_SYSTEM_ADDRESS]
 
         send_email_template(
-            'New Pending User(s)',
-            'email/new_pending_users.txt',
+            'New Allocation User Request(s)',
+            'email/new_allocation_user_requests.txt',
             template_context,
             EMAIL_SENDER,
             email_receiver_list

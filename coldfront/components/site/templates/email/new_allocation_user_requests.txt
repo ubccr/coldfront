@@ -1,6 +1,6 @@
 Hello,
 
-There are new users in the pending users queue for a {{ resource }} resource:
+There are new allocation user requests for a {{ resource }} resource:
 {% for user in users %}{{ user }}
 {% endfor %}
 Please visit {{ url }} at your earliest convenience.
