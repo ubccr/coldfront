@@ -138,6 +138,10 @@ class Allocation(TimeStampedModel):
             *ALLOCATION_RESOURCE_ORDERING)])
 
     @property
+    def get_resources_as_list(self):
+        return [ele for ele in self.resources.all().order_by('-is_allocatable')]
+
+    @property
     def get_parent_resource(self):
         if self.resources.count() == 1:
             return self.resources.first()
