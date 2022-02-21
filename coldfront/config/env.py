@@ -19,4 +19,3 @@ for e in env_paths:
         ENV.read_env(e())
     except FileNotFoundError:
         pass
-

@@ -1,0 +1,137 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Request Allocation Change
+{% endblock %}
+
+
+{% block content %}
+
+<h2>Request change to {{ allocation.get_parent_resource }} for project: {{ allocation.project.title }}</h2>
+<hr>
+
+<p class="text-justify">
+  Request changes to an existing allocation using the form below. For each change
+  you must provide a justification.
+</p>
+
+<form action="{% url 'allocation-change' allocation.pk %}" method="post">
+  <div class="card mb-3">
+    <div class="card-header">
+        <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>   
+    </div>
+
+    <div class="card-body">
+        {% csrf_token %}
+        <div class="table-responsive">
+          <table class="table table-bordered table-sm">
+            <tr>
+              <th scope="row" class="text-nowrap">Project:</th>
+              <td><a href="{% url 'project-detail' allocation.project.pk %}">{{ allocation.project }}</a></td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">Resource{{ allocation.resources.all|pluralize }} in allocation:</th>
+              <td>{{ allocation.get_resources_as_string }}</td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">Justification:</th>
+              <td>{{ allocation.justification }}</td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">Status:</th>
+              <td>{{ allocation.status }}</td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">Start Date:</th>
+              <td>{{ allocation.start_date }}</td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">End Date:</th>
+                <td>
+                  {{ allocation.end_date }}
+                  {% if allocation.is_locked and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
+                  <span class="badge badge-warning"><i class="far fa-clock" aria-hidden="true"></i>
+                    Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} - Not renewable
+                  </span>
+                  {% endif %}
+                </td>
+            </tr>
+            {% if allocation.is_changeable %}
+              <tr>
+                <th scope="row" class="text-nowrap">Request End Date Extension:</th>
+                <td>
+                    {{ form.end_date_extension }}
+                </td>
+              </tr>
+            {% endif %}
+            <tr>
+              <th scope="row" class="text-nowrap">Description:</th>
+              <td>{{ allocation.description }}</td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">Created:</th>
+              <td>{{ allocation.created|date:"M. d, Y" }}</td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">Last Modified:</th>
+              <td>{{ allocation.modified|date:"M. d, Y" }}</td>
+            </tr>
+            <tr>
+              {% if allocation.is_locked %}
+                <th scope="row" class="text-nowrap">Locked</th>
+                <td><i class="fas fa-lock" aria-hidden="true"></i></td>
+              {% else %}
+                <th scope="row" class="text-nowrap">Unlocked</th>
+                <td><i class="fas fa-lock-open" aria-hidden="true"></i></td>
+              {% endif %}
+            </tr>
+          </table>
+        </div>
+    </div>
+  </div>
+
+  {% if formset %}
+      <div class="card mb-3">
+        <div class="card-header">
+          <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Attributes</h3>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-bordered table-sm">
+              <thead>
+                <tr>
+                  <th scope="col">Attribute</th>
+                  <th scope="col">Current Value</th>
+                  <th scope="col">Request New Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for form in formset %}
+                    <tr>
+                      <td>{{form.name.value}}</td>
+                      <td>{{form.value.value}}</td>
+                      <td>{{form.new_value}}</td>
+                    </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {{ formset.management_form }}
+        </div>
+      </div>
+    {% endif %}
+
+    <div>
+      {{form.justification | as_crispy_field }}
+      <input class="btn btn-success" type="submit" value="Submit" />
+      <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation.pk %}" role="button">Back to
+        Allocation</a><br>
+    </div>
+</form>
+
+<script>
+</script>
+{% endblock %}
