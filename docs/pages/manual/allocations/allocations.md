@@ -5,21 +5,21 @@ Allocations in ColdFront are what provides the users access to a resource.  Allo
 
 - Allocations fall under projects in ColdFront.  
 - A user must be a member of the project to be added to an allocation
-- All project members do not need to be on all allocations
-- Allocations can have many attributes and there are standard attributes configured in the base installation of ColdFront
+- All project members do not need to be on all project allocations
+- Allocations can have many attributes and there are standard allocation attributes configured in the base installation of ColdFront
 - Additional attributes can be added to ColdFront using the ColdFront Administration Dashboard
 - The types of attributes used on an allocation depend on what type of resource the allocation is for  
 For example:  Cluster resource would have Slurm attributes, a Software License resource might have a UNIX group attribute, a Storage resource might have quota or directory attributes.
 - NOTE: resources also have attributes that are inherited by the allocation.  This allows you to set an attribute once on the resource and not have to set it on every allocation for that resource.
 - Attributes can be "public" which means they're visible to PIs and users on the allocation or they can be "private" and only viewable to administrators.
-- Allocations must have an expiration date, at this time
-- Emails are triggered to all users on an allocation when the expiration date is 60 days away, 30 days, 7 days, and then expired
-- Users (not PIs or Managers) can turn off email notifications at the project level
+- Allocations must have an expiration date.
+- Emails are triggered to all users on an allocation when the expiration date is 60 days away, 30 days, 7 days, and then expired, unless the user turns off notifications on the project.
+- PIs and Managers can not turn off email notifications for themselves but can for project users.
 - Once an allocation expires, access to that resource can be either removed or locked, depending on your Center's policy  
 For example: When an allocation for a Slurm cluster expires, the Slurm plugin will remove the account and association, preventing users from running or submitting new jobs
 
 ## Allocation details
-Access to ColdFront is role based so users see a read-only view of the allocation details for any allocations they are on.  PIs see the same allocation details as users and can also add project users to the allocation, if they're not already on it.  
+Access to ColdFront is role based so users see a read-only view of the allocation details for any allocations they are on.  PIs and managers see the same allocation details as users and can also add project users to the allocation, if they're not already on it, and remove users from an allocation.  
 
 ### PI and Manager View
 PIs and managers are able to view important details of the allocation including start and end dates, creation and last modified dates, users on the allocation and public allocation attributes.  PIs and managers are able to add or remove users from allocations.  
