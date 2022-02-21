@@ -1258,7 +1258,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 name='Pending - Add'
             )
             for user in users:
-                # TODO: check if the PI is added correctly when a different manager requests an allocation.
                 if user.username == self.request.user.username or user.username == data_manager or user.username == allocation_obj.project.pi.username:
                     allocation_user_obj = AllocationUser.objects.create(
                         allocation=allocation_obj,
