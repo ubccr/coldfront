@@ -271,7 +271,7 @@ class ColdFrontDB:
         except IfxUser.DoesNotExist:
             filepath = './coldfront/plugins/sftocf/data/missing_ifxusers.csv'
             datestr = datetime.today().strftime("%Y%m%d")
-            pattern = "{},{}".format(userdict["username"], datestr)
+            pattern = "{},{},{}".format(userdict['groupname'], userdict["username"], datestr)
             write_update_file_line(filepath, pattern)
             raise
         project = Project.objects.get(title=userdict["groupname"])
