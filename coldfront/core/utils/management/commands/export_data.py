@@ -37,8 +37,9 @@ class Command(BaseCommand):
         """Add subcommands and their respective parsers."""
         latest_jobs_by_user_parser = \
             subparsers.add_parser('latest_jobs_by_user',
-                                  help='Export list of users who have '
-                                       'submitted a job since a given date.')
+                                  help='Export list of users and their latest '
+                                       'job if they have submitted a job since '
+                                       'a given date.')
         latest_jobs_by_user_parser.add_argument(
             '--format',
             choices=['csv', 'json'],
