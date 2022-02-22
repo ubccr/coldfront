@@ -35,33 +35,33 @@ class Command(BaseCommand):
     @staticmethod
     def add_subparsers(subparsers):
         """Add subcommands and their respective parsers."""
-        users_who_submitted_jobs_parser = \
-            subparsers.add_parser('users_who_submitted_jobs',
+        latest_jobs_by_user_parser = \
+            subparsers.add_parser('latest_jobs_by_user',
                                   help='Export list of users who have '
                                        'submitted a job since a given date.')
-        users_who_submitted_jobs_parser.add_argument(
+        latest_jobs_by_user_parser.add_argument(
             '--format',
             choices=['csv', 'json'],
             required=True,
             help='Export results in the given format.',
             type=str)
-        users_who_submitted_jobs_parser.add_argument(
+        latest_jobs_by_user_parser.add_argument(
             '--start_date',
             help='Date since users last submitted a job. '
                  'Must take the form of "MM-DD-YYYY".',
             type=valid_date)
 
-        new_cluster_account_parser = \
-            subparsers.add_parser('new_cluster_account',
+        new_cluster_accounts_parser = \
+            subparsers.add_parser('new_cluster_accounts',
                                   help='Export list of new user accounts '
                                        'created since a given date.')
-        new_cluster_account_parser.add_argument(
+        new_cluster_accounts_parser.add_argument(
             '--format',
             choices=['csv', 'json'],
             required=True,
             help='Export results in the given format.',
             type=str)
-        new_cluster_account_parser.add_argument(
+        new_cluster_accounts_parser.add_argument(
             '--start_date',
             help='Date that users last created an account. '
                  'Must take the form of "MM-DD-YYYY".',
@@ -69,7 +69,7 @@ class Command(BaseCommand):
 
         job_avg_queue_time_parser = \
             subparsers.add_parser('job_avg_queue_time',
-                                  help='Export average queue time for jobs'
+                                  help='Export average queue time for jobs '
                                        'between the given dates.')
         job_avg_queue_time_parser.add_argument(
             '--start_date',
@@ -108,10 +108,13 @@ class Command(BaseCommand):
         handler = getattr(self, f'handle_{subcommand}')
         handler(*args, **options)
 
-    def handle_users_who_submitted_jobs(self, *args, **options):
-        """Handle the 'users_who_submitted_jobs' subcommand."""
+    def handle_latest_jobs_by_user(self, *args, **options):
+        """Handle the 'latest_jobs_by_user' subcommand."""
         date = options.get('start_date', None)
         format = options.get('format', None)
+        output = options.get('stdout', stdout)
+        error = options.get('stderr', stderr)
+        fields = ['username', 'jobslurmid', 'submit_date']
 
         query_set = Job.objects.annotate(
             submit_date=Func(
@@ -131,23 +134,25 @@ class Command(BaseCommand):
             distinct('userid')
 
         if format == 'csv':
-            query_set = query_set.values_list('username', 'jobslurmid', 'submit_date')
-            header = ['username', 'jobslurmid', 'submit_date']
+            query_set = query_set.values_list(*fields)
             self.to_csv(query_set,
-                        header=header,
-                        output=options.get('stdout', stdout),
-                        error=options.get('stderr', stderr))
+                        header=[*fields],
+                        output=output,
+                        error=error)
 
         else:
-            query_set = query_set.values('username', 'jobslurmid', 'submit_date')
+            query_set = query_set.values(*fields)
             self.to_json(query_set,
-                         output=options.get('stdout', stdout),
-                         error=options.get('stderr', stderr))
+                         output=output,
+                         error=error)
 
-    def handle_new_cluster_account(self, *args, **options):
-        """Handle the 'new_cluster_account' subcommand."""
+    def handle_new_cluster_accounts(self, *args, **options):
+        """Handle the 'new_cluster_accounts' subcommand."""
         date = options.get('start_date', None)
         format = options.get('format', None)
+        output = options.get('stdout', stdout)
+        error = options.get('stderr', stderr)
+        fields = ['username', 'date_created']
 
         cluster_account_status = AllocationAttributeType.objects.get(
             name='Cluster Account Status')
@@ -174,18 +179,17 @@ class Command(BaseCommand):
             distinct('username')
 
         if format == 'csv':
-            query_set = query_set.values_list('username', 'date_created')
-            header = ['username', 'date_created']
+            query_set = query_set.values_list(*fields)
             self.to_csv(query_set,
-                        header=header,
-                        output=options.get('stdout', stdout),
-                        error=options.get('stderr', stderr))
+                        header=[*fields],
+                        output=output,
+                        error=error)
 
         else:
-            query_set = query_set.values('username', 'date_created')
+            query_set = query_set.values(*fields)
             self.to_json(query_set,
-                         output=options.get('stdout', stdout),
-                         error=options.get('stderr', stderr))
+                         output=output,
+                         error=error)
 
     def handle_job_avg_queue_time(self, *args, **options):
         """Handle the 'job_avg_queue_time' subcommand."""
@@ -193,24 +197,23 @@ class Command(BaseCommand):
         end_date = options.get('end_date', None)
         allowance_type = options.get('allowance_type', None)
 
-        if bool(start_date) ^ bool(end_date):
-            message = 'Must either input NO dates or BOTH ' \
-                      'start_date and end_date'
-            raise CommandError(message)
-
-        elif end_date and start_date and end_date < start_date:
+        if start_date and end_date and end_date < start_date:
             message = 'start_date must be before end_date.'
             raise CommandError(message)
 
-        query_set = Job.objects.annotate(queue_time=ExpressionWrapper(
+        # only select jobs that have valid start and submit dates
+        query_set = Job.objects.exclude(startdate=None, submitdate=None)
+
+        query_set = query_set.annotate(queue_time=ExpressionWrapper(
             F('startdate') - F('submitdate'), output_field=DurationField()))
 
-        if start_date and end_date:
+        if start_date:
             start_date = self.convert_time_to_utc(start_date)
-            end_date = self.convert_time_to_utc(end_date)
+            query_set = query_set.filter(submitdate__gte=start_date)
 
-            query_set = query_set.filter(submitdate__gte=start_date,
-                                         submitdate__lte=end_date)
+        if end_date:
+            end_date = self.convert_time_to_utc(end_date)
+            query_set = query_set.filter(submitdate__lte=end_date)
 
         if allowance_type:
             query_set = query_set.filter(accountid__name__startswith=allowance_type)
