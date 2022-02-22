@@ -23,12 +23,35 @@ class Command(BaseCommand):
         # of clusters, while LRC has another).
         resource_fields_by_flag_name = {
             'BRC_ONLY': [
+                # TODO: For legacy reasons, 'Savio' and 'Vector' are left
+                # TODO: un-capitalized. Update them and references to them.
                 ('Savio Compute', 'Savio cluster compute access'),
                 ('Vector Compute', 'Vector cluster compute access'),
                 ('ABC Compute', 'ABC cluster compute access'),
             ],
             'LRC_ONLY': [
-                ('Lawrencium Compute', 'Lawrencium cluster compute access'),
+                ('ALICE Compute', 'ALICE cluster compute access'),
+                ('ALSACC Compute', 'ALSACC cluster compute access'),
+                ('BALDUR Compute', 'BALDUR cluster compute access'),
+                ('CATAMOUNT Compute', 'CATAMOUNT cluster compute access'),
+                ('COSMIC Compute', 'COSMIC cluster compute access'),
+                ('CUMULUS Compute', 'CUMULUS cluster compute access'),
+                ('DIRAC Compute', 'DIRAC cluster compute access'),
+                ('ETNA Compute', 'ETNA cluster compute access'),
+                ('EXPLORER Compute', 'EXPLORER cluster compute access'),
+                ('HBAR Compute', 'HBAR cluster compute access'),
+                ('JBEI Compute', 'JBEI cluster compute access'),
+                ('JCAP Compute', 'JCAP cluster compute access'),
+                ('JGI Compute', 'JGI cluster compute access'),
+                ('LAWRENCIUM Compute', 'LAWRENCIUM cluster compute access'),
+                ('MHG Compute', 'MHG cluster compute access'),
+                ('MUSIGNY Compute', 'MUSIGNY cluster compute access'),
+                ('NANO Compute', 'NANO cluster compute access'),
+                ('NATGAS Compute', 'NATGAS cluster compute access'),
+                ('SCS Compute', 'SCS cluster compute access'),
+                ('VOLTAIRE Compute', 'VOLTAIRE cluster compute access'),
+                ('VULCAN Compute', 'VULCAN cluster compute access'),
+                ('XMAS Compute', 'XMAS cluster compute access'),
             ],
         }
         resources = []
@@ -59,7 +82,8 @@ class Command(BaseCommand):
         allocation_attribute_type.save()
 
         # Each Allocation has at most one '{cluster_name} Allocation Type'
-        # attribute of type Text.
+        # attribute of type Text. Note: Allocation types are only relevant for
+        # certain clusters.
         attribute_type, _ = AttributeType.objects.get_or_create(name='Text')
         cluster_names_by_flag_name = {
             'BRC_ONLY': 'Savio',
