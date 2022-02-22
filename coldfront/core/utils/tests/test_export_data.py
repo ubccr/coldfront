@@ -109,7 +109,7 @@ class TestLatestJobsByUser(TestBaseExportData):
         """Setup test data"""
         super().setUp()
 
-    def test_latest_jobs_by_user_json_no_date(self):
+    def test_json_no_date(self):
         """Testing latest_jobs_by_user subcommand with NO date arg passed,
         exporting as JSON"""
 
@@ -130,7 +130,7 @@ class TestLatestJobsByUser(TestBaseExportData):
 
         self.assertEqual(error, '')
 
-    def test_latest_jobs_by_user_json_with_date(self):
+    def test_json_with_date(self):
         """Testing latest_jobs_by_user subcommand with date arg passed,
         exporting as JSON"""
 
@@ -155,7 +155,7 @@ class TestLatestJobsByUser(TestBaseExportData):
 
         self.assertEqual(error, '')
 
-    def test_latest_jobs_by_user_csv_no_date(self):
+    def test_csv_no_date(self):
         """Testing latest_jobs_by_user subcommand with NO date arg passed,
         exporting as CSV"""
 
@@ -177,7 +177,7 @@ class TestLatestJobsByUser(TestBaseExportData):
 
         self.assertEqual(error, '')
 
-    def test_latest_jobs_by_user_csv_with_date(self):
+    def test_with_date(self):
         """Testing latest_jobs_by_user subcommand with date arg passed,
         exporting as CSV"""
 
@@ -241,7 +241,7 @@ class TestNewClusterAccounts(TestAllocationBase):
         new_time = local_tz.localize(naive_dt).astimezone(tz)
         return new_time
 
-    def test_new_cluster_accounts_json_no_date(self):
+    def test_json_no_date(self):
         """Testing new_cluster_accounts subcommand with NO date arg passed,
         exporting as JSON"""
         output, error = call_deactivate_command('export_data',
@@ -259,7 +259,7 @@ class TestNewClusterAccounts(TestAllocationBase):
 
         self.assertEqual(error, '')
 
-    def test_new_cluster_accounts_json_with_date(self):
+    def test_json_with_date(self):
         """Testing new_cluster_accounts subcommand with ONE date arg passed,
         exporting as JSON"""
 
@@ -296,7 +296,7 @@ class TestNewClusterAccounts(TestAllocationBase):
 
         self.assertEqual(error, '')
 
-    def test_new_cluster_accounts_csv_no_date(self):
+    def test_csv_no_date(self):
         """Testing new_cluster_accounts subcommand with NO date arg passed,
         exporting as CSV"""
         output, error = call_deactivate_command('export_data',
@@ -317,7 +317,7 @@ class TestNewClusterAccounts(TestAllocationBase):
 
             self.assertEqual(error, '')
 
-    def test_new_cluster_accounts_csv_with_date(self):
+    def test_csv_with_date(self):
         """Testing new_cluster_accounts subcommand with ONE date arg passed,
         exporting as CSV"""
 
@@ -365,7 +365,7 @@ class TestJobAvgQueueTime(TestBaseExportData):
         """Setup test data"""
         super().setUp()
 
-    def test_job_avg_queue_time_no_dates(self):
+    def test_no_dates(self):
         """Testing job_avg_queue_time with NO date args passed"""
         output, error = call_deactivate_command('export_data',
                                                 'job_avg_queue_time')
@@ -373,7 +373,7 @@ class TestJobAvgQueueTime(TestBaseExportData):
         self.assertIn('48hrs 0mins 0secs', output)
         self.assertEqual(error, '')
 
-    def test_job_avg_queue_time_with_two_dates(self):
+    def test_two_dates(self):
         """Testing job_avg_queue_time with BOTH date args passed"""
         start_date = datetime.datetime.strftime(
             self.current_time - datetime.timedelta(days=6), ABR_DATE_FORMAT)
@@ -387,7 +387,7 @@ class TestJobAvgQueueTime(TestBaseExportData):
         self.assertIn('24hrs 0mins 0secs', output)
         self.assertEqual(error, '')
 
-    def test_job_avg_queue_time_with_start_date(self):
+    def test_start_date(self):
         """Testing job_avg_queue_time with only start date arg passed"""
         start_date = datetime.datetime.strftime(
             self.current_time - datetime.timedelta(days=6), ABR_DATE_FORMAT)
@@ -398,7 +398,7 @@ class TestJobAvgQueueTime(TestBaseExportData):
         self.assertIn('24hrs 0mins 0secs', output)
         self.assertEqual(error, '')
 
-    def test_job_avg_queue_time_with_end_date(self):
+    def test_end_date(self):
         """Testing job_avg_queue_time with only end date arg passed"""
         end_date = datetime.datetime.strftime(
             self.current_time - datetime.timedelta(days=6), ABR_DATE_FORMAT)
@@ -409,7 +409,7 @@ class TestJobAvgQueueTime(TestBaseExportData):
         self.assertIn('60hrs 0mins 0secs', output)
         self.assertEqual(error, '')
 
-    def test_job_avg_queue_time_errors(self):
+    def test_errors(self):
         # invalid date error
         start_date = datetime.datetime.strftime(
             self.current_time - datetime.timedelta(days=6), '%Y-%d-%m')
@@ -466,7 +466,7 @@ class TestProjects(TestBase):
         self.fc_projects = list(filter(
             lambda x: x.name.startswith('fc_'), self.total_projects))
 
-    def test_projects_default(self):
+    def test_default(self):
         out, err = StringIO(''), StringIO('')
         call_command('export_data', 'projects',
                      '--format=csv', stdout=out, stderr=err)
@@ -490,7 +490,7 @@ class TestProjects(TestBase):
 
         self.assertEqual(len(query_set), count)
 
-    def test_projects_active_filter(self):
+    def test_active_filter(self):
         out, err = StringIO(''), StringIO('')
         call_command('export_data', 'projects',
                      '--format=csv', '--active_only', stdout=out, stderr=err)
@@ -514,7 +514,7 @@ class TestProjects(TestBase):
 
         self.assertEqual(len(query_set), count)
 
-    def test_projects_allowance_filter(self):
+    def test_allowance_filter(self):
         out, err = StringIO(''), StringIO('')
         call_command('export_data', 'projects',
                      '--format=csv', '--allowance_type=fc_', stdout=out, stderr=err)
@@ -538,7 +538,7 @@ class TestProjects(TestBase):
 
         self.assertEqual(len(query_set), count)
 
-    def test_projects_format(self):
+    def test_format(self):
         # NOTE: csv is tested in other tests, only check json here
         out, err = StringIO(''), StringIO('')
         call_command('export_data', 'projects',
