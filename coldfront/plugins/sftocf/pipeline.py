@@ -266,6 +266,7 @@ class ColdFrontDB:
     def update_usage(self, userdict, server_tier):
         # get ids needed to locate correct allocationuser entry
         # user = LabUser(userdict["username"], userdict["groupname"])
+        usage, unit = split_num_string(userdict["size_sum_hum"])
         try:
             user = get_user_model().objects.get(username=userdict["username"])
         except IfxUser.DoesNotExist:
@@ -289,7 +290,7 @@ class ColdFrontDB:
         except AllocationUser.DoesNotExist:
             filepath = './coldfront/plugins/sftocf/data/missing_allocationusers.csv'
             logger.info("creating allocation user:")
-            allocationuser_obj, _ = AllocationUser.objects.create(
+            allocationuser_obj = AllocationUser.objects.create(
                 allocation=allocation,
                 created=timezone.now(),
                 status=AllocationUserStatusChoice.objects.get(name='Active'),
@@ -300,7 +301,6 @@ class ColdFrontDB:
             )
 
         allocationuser.usage_bytes = userdict["size_sum"]
-        usage, unit = split_num_string(userdict["size_sum_hum"])
         allocationuser.usage = usage
         allocationuser.unit = unit
         # automatically updates "modified" field & adds old record to history
