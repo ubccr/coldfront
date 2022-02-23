@@ -267,7 +267,7 @@ class AllocationForm(forms.Form):
                 'use_indefinitely': cleaned_data.get('use_indefinitely'),
                 'end_date': cleaned_data.get('end_date'),
             },
-            'Slate Project': {
+            'Slate-Project': {
                 'first_name': cleaned_data.get('first_name'),
                 'last_name': cleaned_data.get('last_name'),
                 'campus_affiliation': cleaned_data.get('campus_affiliation'),
@@ -313,7 +313,7 @@ class AllocationForm(forms.Form):
                         continue
                     elif key == 'use_indefinitely':
                         continue
-                elif resource_name == 'Slate Project':
+                elif resource_name == 'Slate-Project':
                     if key == 'account_number' and resources[resource_name]['storage_space'] <= 15:
                         continue
                 elif resource_name == 'Priority Boost':
@@ -384,7 +384,7 @@ class AllocationForm(forms.Form):
                         key,
                         format_html(
                             """
-                            Data Manager must have a Slate Project account. They can create one
+                            Data Manager must have a Slate-Project account. They can create one
                             <a href="https://access.iu.edu/Accounts/Create">here</a>
                             """
                         )
@@ -418,11 +418,14 @@ class AllocationForm(forms.Form):
                             ', '.join(invalid_users)
                             ))
                         continue
-            elif resource_name == 'Slate Project':
+            elif resource_name == 'Slate-Project':
                 if key == 'data_manager':
                     if users and value != self.request_user.username:
                         raise_error = True
-                        self.add_error('users', 'Only the data manager can add users to a Slate Project resource')
+                        self.add_error(
+                            'users',
+                            'Only the data manager can add users to a Slate-Project resource'
+                        )
                         continue
 
         if raise_error:

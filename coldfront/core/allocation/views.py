@@ -160,7 +160,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             project_user = allocation_obj.project.projectuser_set.get(
                 user=self.request.user)
             if project_user.role.name == 'Manager':
-                if allocation_obj.get_parent_resource.name == "Slate Project":
+                if allocation_obj.get_parent_resource.name == "Slate-Project":
                     if allocation_obj.data_manager == self.request.user.username:
                         context['is_allowed_to_update_project'] = True
                 else:
@@ -1124,7 +1124,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             return self.form_invalid(form)
 
         usernames = form_data.get('users')
-        if resource_obj.name == 'Slate Project':
+        if resource_obj.name == 'Slate-Project':
             usernames.append(data_manager)
 
         usernames.append(project_obj.pi.username)
@@ -1183,8 +1183,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         if INVOICE_ENABLED and resource_obj.requires_payment:
             allocation_status_obj = AllocationStatusChoice.objects.get(
                 name=INVOICE_DEFAULT_STATUS)
-            if resource_obj.name == "Slate Project" and account_number == '':
-                # If a Slate Project request doesnt have an account number then it shouldn't be
+            if resource_obj.name == "Slate-Project" and account_number == '':
+                # If a Slate-Project request doesnt have an account number then it shouldn't be
                 # placed in the invoice list.
                 allocation_status_obj = AllocationStatusChoice.objects.get(
                     name='New')
@@ -1337,7 +1337,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk'))
 
-        if allocation_obj.get_parent_resource.name == 'Slate Project':
+        if allocation_obj.get_parent_resource.name == 'Slate-Project':
             if allocation_obj.data_manager != self.request.user.username:
                 messages.error(
                     self.request,
@@ -1536,7 +1536,7 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk'))
 
-        if allocation_obj.get_parent_resource.name == 'Slate Project':
+        if allocation_obj.get_parent_resource.name == 'Slate-Project':
             if allocation_obj.data_manager != self.request.user.username:
                 messages.error(
                     self.request,
@@ -1590,7 +1590,7 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
     def check_data_manager_exists(self, allocation_obj):
         if allocation_obj.data_manager:
-            if allocation_obj.get_parent_resource.name == 'Slate Project':
+            if allocation_obj.get_parent_resource.name == 'Slate-Project':
                 return True
 
         return False
@@ -2499,7 +2499,7 @@ class AllocationInvoiceExportView(LoginRequiredMixin, UserPassesTestMixin, View)
 
                 rows.append(row)
             rows.insert(0, header)
-        elif resource == "Slate Project":
+        elif resource == "Slate-Project":
             header = [
                 'Name',
                 'Acount*'

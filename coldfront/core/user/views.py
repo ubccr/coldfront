@@ -63,7 +63,7 @@ class UserProfile(TemplateView):
                 status__name='Active'
             )
             for allocation in allocations:
-                if allocation.get_parent_resource.name == 'Slate Project':
+                if allocation.get_parent_resource.name == 'Slate-Project':
                     statistics['slate_quota'] += allocation.storage_space
 
         return statistics

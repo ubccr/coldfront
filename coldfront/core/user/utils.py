@@ -129,7 +129,7 @@ def generate_allocated_slate_storage_chart_data(user):
             status__name='Active'
         )
         for allocation in allocations:
-            if allocation.get_parent_resource.name == 'Slate Project':
+            if allocation.get_parent_resource.name == 'Slate-Project':
                 label = str(allocation.pk)
                 allocated_slate_storage_data_columns.append([label, allocation.storage_space])
                 allocated_slate_storage_data_names[label] = 'ID: {}'.format(label)

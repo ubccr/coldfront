@@ -612,7 +612,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         """
         disable_select_list = [False] * len(allocations)
         for i, allocation in enumerate(allocations):
-            if allocation.get_parent_resource.name == 'Slate Project':
+            if allocation.get_parent_resource.name == 'Slate-Project':
                 if allocation.data_manager != request.user.username:
                     disable_select_list[i] = True
 
@@ -670,8 +670,8 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
 
         help_text = 'Select allocations to add selected users to. If a user does not have an account on a resource in an allocation they will not be added.'
         for allocation_info in initial_data:
-            if allocation_info['resource'] == 'Slate Project':
-                help_text += ' Only Slate Project allocations you are a data manager of can be selected.'
+            if allocation_info['resource'] == 'Slate-Project':
+                help_text += ' Only Slate-Project allocations you are a data manager of can be selected.'
                 break
 
         allocation_formset = formset_factory(
@@ -745,7 +745,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         """
         disable_select_list = [False] * len(allocations)
         for i, allocation in enumerate(allocations):
-            if allocation.get_parent_resource.name == 'Slate Project':
+            if allocation.get_parent_resource.name == 'Slate-Project':
                 if allocation.data_manager != request.user.username:
                     disable_select_list[i] = True
 
@@ -975,7 +975,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
     def get_data_managers(self, project_obj):
         data_manager_list = [
             allocation.data_manager for allocation in project_obj.allocation_set.filter(
-                resources__name="Slate Project"
+                resources__name="Slate-Project"
             )
         ]
 
@@ -1132,7 +1132,7 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def check_user_is_data_manager(self, project_obj, project_user_obj):
         data_manager_list = [
             allocation.data_manager for allocation in project_obj.allocation_set.filter(
-                resources__name="Slate Project"
+                resources__name="Slate-Project"
             )
         ]
 
