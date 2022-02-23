@@ -2604,8 +2604,8 @@ class AllocationUserApproveRequestView(LoginRequiredMixin, UserPassesTestMixin, 
                 print(email_receiver_list)
 
                 send_email_template(
-                    'Add User Request Accepted',
-                    'email/add_allocation_user_request_accepted.txt',
+                    'Add User Request Approved',
+                    'email/add_allocation_user_request_approved.txt',
                     template_context,
                     EMAIL_SENDER,
                     [EMAIL_TICKET_SYSTEM_ADDRESS, ]
@@ -2617,8 +2617,8 @@ class AllocationUserApproveRequestView(LoginRequiredMixin, UserPassesTestMixin, 
                 print(email_receiver_list)
 
                 send_email_template(
-                    'Remove User Request Accepted',
-                    'email/remove_allocation_user_request_accepted.txt',
+                    'Remove User Request Approved',
+                    'email/remove_allocation_user_request_approved.txt',
                     template_context,
                     EMAIL_SENDER,
                     [EMAIL_TICKET_SYSTEM_ADDRESS, ]
