@@ -467,7 +467,7 @@ class AllocationUserRequestAdmin(SimpleHistoryAdmin):
 
     list_filter = (
         'status',
-        'allocation_user__status',
+        'allocation_user_status',
         'allocation_user__allocation__resources'
     )
 
