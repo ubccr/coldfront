@@ -520,7 +520,7 @@ Request New Allocation
     var description = $('#id_resource_description');
     description.html(resource_descriptions[resource_id])
 
-    if (resource_name === 'Slate Project') {
+    if (resource_name === 'Slate-Project') {
       checkDataManager();
     }
 
@@ -830,7 +830,7 @@ Request New Allocation
         $('#id_account_number').val(resources_form_account_number[resource_id]);
       }
       $('#div_id_account_number').show();
-      if (resource_name === 'Slate Project') {
+      if (resource_name === 'Slate-Project') {
         if ($('#id_storage_space').val() <= 15) {
           $('#div_id_account_number').hide();
         }
