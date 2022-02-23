@@ -2601,27 +2601,25 @@ class AllocationUserApproveRequestView(LoginRequiredMixin, UserPassesTestMixin, 
                     allocation_user.user.email,
                     allocation_user_request.requestor_user.email
                 ]
-                print(email_receiver_list)
 
                 send_email_template(
                     'Add User Request Approved',
                     'email/add_allocation_user_request_approved.txt',
                     template_context,
                     EMAIL_SENDER,
-                    [EMAIL_TICKET_SYSTEM_ADDRESS, ]
+                    email_receiver_list
                 )
             else:
                 email_receiver_list = [
                     allocation_user_request.requestor_user.email
                 ]
-                print(email_receiver_list)
 
                 send_email_template(
                     'Remove User Request Approved',
                     'email/remove_allocation_user_request_approved.txt',
                     template_context,
                     EMAIL_SENDER,
-                    [EMAIL_TICKET_SYSTEM_ADDRESS, ]
+                    email_receiver_list
                 )
 
         messages.success(request, 'User {}\'s status has been APPROVED'.format(allocation_user.user.username))
@@ -2683,27 +2681,25 @@ class AllocationUserDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
                 email_receiver_list = [
                     allocation_user_request.requestor_user.email
                 ]
-                print(email_receiver_list)
 
                 send_email_template(
                     'Add User Request Denied',
                     'email/add_allocation_user_request_denied.txt',
                     template_context,
                     EMAIL_SENDER,
-                    [EMAIL_TICKET_SYSTEM_ADDRESS, ]
+                    email_receiver_list
                 )
             else:
                 email_receiver_list = [
                     allocation_user_request.requestor_user.email
                 ]
-                print(email_receiver_list)
 
                 send_email_template(
                     'Remove User Request Denied',
                     'email/remove_allocation_user_request_denied.txt',
                     template_context,
                     EMAIL_SENDER,
-                    [EMAIL_TICKET_SYSTEM_ADDRESS, ]
+                    email_receiver_list
                 )
 
         messages.success(request, 'User {}\'s status has been DENIED'.format(allocation_user.user.username))
