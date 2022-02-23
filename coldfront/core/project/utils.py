@@ -128,16 +128,7 @@ def send_project_join_notification_email(project, project_user):
                'review_url': review_project_join_requests_url(project),
                'url': __project_detail_url(project)}
 
-    pi_condition = Q(
-        role__name='Principal Investigator', status__name='Active',
-        enable_notifications=True)
-    manager_condition = Q(role__name='Manager', status__name='Active')
-    receiver_list = list(
-        project.projectuser_set.filter(
-            pi_condition | manager_condition
-        ).values_list(
-            'user__email', flat=True
-        ))
+    receiver_list = project.managers_and_pis_emails()
 
     msg_plain = \
         render_to_string('email/new_project_join_request.txt',
@@ -438,18 +429,7 @@ def send_project_request_pooling_email(request):
     }
 
     sender = settings.EMAIL_SENDER
-
-    pi_condition = Q(
-        role__name='Principal Investigator', status__name='Active',
-        enable_notifications=True)
-    manager_condition = Q(role__name='Manager', status__name='Active')
-    receiver_list = list(
-        request.project.projectuser_set.filter(
-            pi_condition | manager_condition
-        ).values_list(
-            'user__email', flat=True
-        ))
-
+    receiver_list = request.project.managers_and_pis_emails()
     send_email_template(subject, template_name, context, sender, receiver_list)
 
 
