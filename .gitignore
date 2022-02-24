@@ -26,3 +26,4 @@ environment.yml
 coldfront/fixtures*
 VERSION
 !*/.gitignore
+coldfront.db-journal

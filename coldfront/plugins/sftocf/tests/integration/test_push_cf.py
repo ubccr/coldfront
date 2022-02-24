@@ -27,10 +27,14 @@ class UploadTests(TestCase):
         content = read_json(f"{self.pref}poisson_lab_holysfdb10.json")
         statdicts = content['contents']
         errors = False
+        unames = [d['username'] for d in content['contents']]
+        models = get_user_model().objects.only("id","username")\
+                .filter(username__in=unames)
+        allocation = Allocation.objects.get(project_id=1)
         for statdict in statdicts:
             try:
                 server_tier = content['server'] + "/" + content['tier']
-                self.cfconn.update_usage(statdict, server_tier)
+                self.cfconn.update_usage(models, statdict, allocation)
             except Exception as e:
                 logger.debug("EXCEPTION FOR ENTRY: {}".format(e),  exc_info=True)
                 print("ERROR:", e)
