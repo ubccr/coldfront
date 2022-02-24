@@ -497,7 +497,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Project
     template_name_suffix = '_update_form'
-    fields = ['title', 'description', 'field_of_science', 'private', ]
+    fields = ['title', 'description', 'slurm_account_name', 'field_of_science', 'private', ]
     success_message = 'Project updated.'
 
     def test_func(self):
@@ -520,6 +520,13 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if not self.object.slurm_account_name == '':
+            self.fields.remove('slurm_account_name')
+
+        return super().get(request, *args, **kwargs)
 
     def get_success_url(self):
         return reverse('project-detail', kwargs={'pk': self.object.pk})
