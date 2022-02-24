@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import GroupAdmin, UserAdmin
 from django.contrib.auth.models import Group, User
 
-from coldfront.core.user.models import EmailAddress
+from coldfront.core.user.admin import EmailAddressInline
 
 
 class UserInLine(admin.TabularInline):
@@ -17,14 +17,9 @@ class GroupsAdmin(GroupAdmin):
     inlines = [UserInLine]
 
 
-class EmailAddressInLine(admin.TabularInline):
-    model = EmailAddress
-    extra = 0
-
-
 class UsersAdmin(UserAdmin):
     list_display = ["username", "email", "first_name", "last_name", "is_staff"]
-    inlines = [EmailAddressInLine]
+    inlines = [EmailAddressInline]
 
 
 admin.site.unregister(Group)

@@ -99,3 +99,8 @@ class EmailAddressAdmin(admin.ModelAdmin):
             error_message = (
                 f'Skipped deleting {num_primary} primary EmailAddresses.')
             messages.error(request, error_message)
+
+
+class EmailAddressInline(admin.TabularInline):
+    model = EmailAddress
+    extra = 0
