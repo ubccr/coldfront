@@ -9,7 +9,6 @@ from pathlib import Path
 from datetime import datetime
 
 from django.utils import timezone
-from django_q.tasks import async_task
 from ifxuser.models import IfxUser, Organization
 from django.contrib.auth import get_user_model
 from dateutil.relativedelta import relativedelta
