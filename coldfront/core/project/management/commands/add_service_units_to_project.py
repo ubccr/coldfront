@@ -83,6 +83,13 @@ class Command(BaseCommand):
 
         return project, allocation_objects, current_allocation, allocation
 
+    def set_historical_reason(self, obj, reason):
+        """Set the latest historical object reason"""
+        obj.refresh_from_db()
+        historical_obj = obj.history.latest('id')
+        historical_obj.history_change_reason = reason
+        historical_obj.save()
+
     def handle(self, *args, **options):
         """ Add SUs to a given project """
         project, allocation_objects, current_allocation, allocation = \
@@ -114,11 +121,8 @@ class Command(BaseCommand):
                 allocation=allocation)
 
             # Set the reason for the change in the newly-created historical object.
-            allocation_objects.allocation_attribute.refresh_from_db()
-            historical_allocation_attribute = \
-                allocation_objects.allocation_attribute.history.latest("id")
-            historical_allocation_attribute.history_change_reason = reason
-            historical_allocation_attribute.save()
+            self.set_historical_reason(
+                allocation_objects.allocation_attribute, reason)
 
             # Do the same for each ProjectUser.
             allocation_attribute_type = AllocationAttributeType.objects.get(
@@ -137,21 +141,17 @@ class Command(BaseCommand):
                         project_user=project_user,
                         date_time=date_time,
                         allocation=allocation)
+
                     # Set the reason for the change in the newly-created historical object.
-                    allocation_user = \
-                        allocation_objects.allocation.allocationuser_set.get(user=user)
-                    allocation_user_attribute = \
-                        allocation_user.allocationuserattribute_set.get(
-                            allocation_attribute_type=allocation_attribute_type,
-                            allocation=allocation_objects.allocation)
-                    historical_allocation_user_attribute = \
-                        allocation_user_attribute.history.latest("id")
-                    historical_allocation_user_attribute.history_change_reason = reason
-                    historical_allocation_user_attribute.save()
+                    allocation_user_obj = get_accounting_allocation_objects(
+                        project, user=user)
+                    self.set_historical_reason(
+                        allocation_user_obj.allocation_user_attribute, reason)
 
             message = f'Successfully added {addition} SUs to {project.name} ' \
                       f'and its users, updating {project.name}\'s SUs from ' \
                       f'{current_allocation} to {allocation}. The reason ' \
                       f'was: "{reason}".'
 
+            self.logger.info(message)
             self.stdout.write(self.style.SUCCESS(message))
