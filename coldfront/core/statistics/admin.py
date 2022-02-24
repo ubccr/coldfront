@@ -32,7 +32,7 @@ class ProjectUserTransactionAdmin(admin.ModelAdmin):
 
 @admin.register(Job)
 class JobAdmin(admin.ModelAdmin):
-    list_display = ('jobslurmid', 'userid', 'accountid', 'jobstatus', 'partition')
+    list_display = ('jobslurmid', 'user', 'project', 'jobstatus', 'partition')
     search_fields = ['jobslurmid', 'userid__username', 'accountid__name', 'jobstatus', 'partition']
 
     def has_add_permission(self, request, obj=None):
@@ -43,6 +43,12 @@ class JobAdmin(admin.ModelAdmin):
 
     def has_change_permission(self, request, obj=None):
         return False
+
+    def user(self, obj):
+        return obj.userid.username
+
+    def project(self, obj):
+        return obj.accountid.name
 
 
 admin.register(CPU)

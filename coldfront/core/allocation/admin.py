@@ -56,7 +56,7 @@ class AllocationAdmin(SimpleHistoryAdmin):
         'project', 'justification', 'created', 'modified',)
     fields_change = ('project', 'resources', 'quantity', 'justification',
                      'status', 'start_date', 'end_date', 'description', 'created', 'modified', 'is_locked')
-    list_display = ('pk', 'project_title', 'project_pis', 'resource', 'quantity',
+    list_display = ('pk', 'project', 'project_pis', 'resource', 'quantity',
                     'justification', 'start_date', 'end_date', 'status', 'created', 'modified', )
     inlines = [AllocationUserInline,
                AllocationAttributeInline,
@@ -76,8 +76,8 @@ class AllocationAdmin(SimpleHistoryAdmin):
     def project_pis(self, obj):
         return ', '.join(obj.project.pis().values_list('username', flat=True))
 
-    def project_title(self, obj):
-        return textwrap.shorten(obj.project.title, width=50)
+    def project(self, obj):
+        return obj.project.name
 
     def get_fields(self, request, obj):
         if obj is None:
@@ -192,7 +192,6 @@ class AllocationAttributeAdmin(SimpleHistoryAdmin):
 
     def project(self, obj):
         return obj.allocation.project.name
-        #return textwrap.shorten(obj.allocation.project.title, width=50)
 
     def project_title(self, obj):
         return obj.allocation.project.title
@@ -252,7 +251,7 @@ class AllocationUserAdmin(SimpleHistoryAdmin):
         return ', '.join(project.pis().values_list('username', flat=True))
 
     def project(self, obj):
-        return textwrap.shorten(obj.allocation.project.title, width=50)
+        return obj.allocation.project.name
 
     def get_fields(self, request, obj):
         if obj is None:
@@ -393,7 +392,6 @@ class AllocationUserAttributeAdmin(SimpleHistoryAdmin):
 
     def project(self, obj):
         return obj.allocation.project.name
-        #return textwrap.shorten(obj.allocation.project.title, width=50)
 
     def user(self, obj):
         return textwrap.shorten(obj.allocation_user.user.username, width=50)
