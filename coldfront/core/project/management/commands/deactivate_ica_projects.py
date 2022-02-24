@@ -155,8 +155,8 @@ class Command(BaseCommand):
                         project_user=project_user,
                         date_time=current_date,
                         allocation=updated_su)
-                    # Set the reason for the change in the newly-created historical object.
 
+                    # Set the reason for the change in the newly-created historical object.
                     allocation_user_obj = get_accounting_allocation_objects(
                         project, user=user)
                     self.set_historical_reason(
@@ -169,8 +169,6 @@ class Command(BaseCommand):
 
             self.logger.info(message)
             self.stdout.write(self.style.SUCCESS(message))
-
-        return current_allocation
 
     def send_emails(self, project, expiry_date, dry_run):
         """
