@@ -13,6 +13,7 @@ from coldfront.core.project.models import ProjectStatusChoice
 from django.core.management.base import BaseCommand
 import logging
 
+from coldfront.core.project.utils_.addition_utils import set_service_units
 from coldfront.core.statistics.models import ProjectTransaction, \
     ProjectUserTransaction
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -92,13 +93,6 @@ class Command(BaseCommand):
             self.logger.info(message)
             self.stdout.write(self.style.SUCCESS(message))
 
-    def set_historical_reason(self, obj, reason):
-        """Set the latest historical object reason"""
-        obj.refresh_from_db()
-        historical_obj = obj.history.latest('id')
-        historical_obj.history_change_reason = reason
-        historical_obj.save()
-
     def reset_service_units(self, project, dry_run):
         """
         Resets service units for a project and its users to 0.00. Creates
@@ -109,7 +103,6 @@ class Command(BaseCommand):
         """
         allocation_objects = get_accounting_allocation_objects(project)
         current_allocation = Decimal(allocation_objects.allocation_attribute.value)
-        current_date = utc_now_offset_aware()
         reason = 'Resetting SUs while deactivating expired ICA project.'
         updated_su = Decimal('0.00')
 
@@ -122,45 +115,11 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING(message))
 
         else:
-            # Set the value for the Project.
-            set_project_allocation_value(project, updated_su)
-            set_project_usage_value(project, updated_su)
-
-            # Create a transaction to record the change.
-            ProjectTransaction.objects.create(
-                project=project,
-                date_time=current_date,
-                allocation=updated_su)
-
-            # Set the reason for the change in the newly-created historical object.
-            self.set_historical_reason(
-                allocation_objects.allocation_attribute, reason)
-
-            # Do the same for each ProjectUser.
-            for project_user in project.projectuser_set.all():
-                user = project_user.user
-                # Attempt to set the value for the ProjectUser. The method returns whether
-                # it succeeded; it may not because not every ProjectUser has a
-                # corresponding AllocationUser (e.g., PIs). Only proceed with further steps
-                # if an update occurred.
-
-                allocation_updated = set_project_user_allocation_value(
-                    user, project, updated_su)
-                allocation_usage_updated = set_project_user_usage_value(
-                    user, project, updated_su)
-
-                if allocation_updated and allocation_usage_updated:
-                    # Create a transaction to record the change.
-                    ProjectUserTransaction.objects.create(
-                        project_user=project_user,
-                        date_time=current_date,
-                        allocation=updated_su)
-
-                    # Set the reason for the change in the newly-created historical object.
-                    allocation_user_obj = get_accounting_allocation_objects(
-                        project, user=user)
-                    self.set_historical_reason(
-                        allocation_user_obj.allocation_user_attribute, reason)
+            set_service_units(project,
+                              allocation_objects,
+                              updated_su,
+                              reason,
+                              True)
 
             message = f'Successfully reset SUs for {project.name} ' \
                       f'and its users, updating {project.name}\'s SUs from ' \

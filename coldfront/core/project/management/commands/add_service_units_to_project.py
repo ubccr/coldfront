@@ -5,6 +5,7 @@ from django.core.management import BaseCommand, CommandError
 
 from coldfront.config import settings
 from coldfront.core.project.models import Project
+from coldfront.core.project.utils_.addition_utils import set_service_units
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -98,7 +99,6 @@ class Command(BaseCommand):
         addition = Decimal(options.get('amount'))
         reason = options.get('reason')
         dry_run = options.get('dry_run', None)
-        date_time = utc_now_offset_aware()
 
         if dry_run:
             verb = 'increase' if addition > 0 else 'decrease'
@@ -111,42 +111,11 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING(message))
 
         else:
-            # Set the value for the Project.
-            set_project_allocation_value(project, allocation)
-
-            # Create a transaction to record the change.
-            ProjectTransaction.objects.create(
-                project=project,
-                date_time=date_time,
-                allocation=allocation)
-
-            # Set the reason for the change in the newly-created historical object.
-            self.set_historical_reason(
-                allocation_objects.allocation_attribute, reason)
-
-            # Do the same for each ProjectUser.
-            allocation_attribute_type = AllocationAttributeType.objects.get(
-                name="Service Units")
-            for project_user in project.projectuser_set.all():
-                user = project_user.user
-                # Attempt to set the value for the ProjectUser. The method returns whether
-                # it succeeded; it may not because not every ProjectUser has a
-                # corresponding AllocationUser (e.g., PIs). Only proceed with further steps
-                # if an update occurred.
-                allocation_updated = set_project_user_allocation_value(
-                    user, project, allocation)
-                if allocation_updated:
-                    # Create a transaction to record the change.
-                    ProjectUserTransaction.objects.create(
-                        project_user=project_user,
-                        date_time=date_time,
-                        allocation=allocation)
-
-                    # Set the reason for the change in the newly-created historical object.
-                    allocation_user_obj = get_accounting_allocation_objects(
-                        project, user=user)
-                    self.set_historical_reason(
-                        allocation_user_obj.allocation_user_attribute, reason)
+            set_service_units(project,
+                              allocation_objects,
+                              allocation,
+                              reason,
+                              False)
 
             message = f'Successfully added {addition} SUs to {project.name} ' \
                       f'and its users, updating {project.name}\'s SUs from ' \
