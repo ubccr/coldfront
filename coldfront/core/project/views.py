@@ -528,6 +528,21 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
 
         return super().get(request, *args, **kwargs)
 
+    def form_valid(self, form):
+        form_data = form.cleaned_data
+        slurm_account_name = form_data.get('slurm_account_name')
+        if len(slurm_account_name) < 3:
+            form.add_error(None, 'Please fix the errors below')
+            form.add_error('slurm_account_name', 'Must have a minimum length of four characters')
+            return self.form_invalid(form)
+
+        if not slurm_account_name.isalpha():
+            form.add_error(None, 'Please fix the errors below')
+            form.add_error('slurm_account_name', 'Must not contain numbers or special characters')
+            return self.form_invalid(form)
+
+        return super().form_valid(form)
+
     def get_success_url(self):
         return reverse('project-detail', kwargs={'pk': self.object.pk})
 
