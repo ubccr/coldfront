@@ -1,4 +1,3 @@
-import csv
 import datetime
 import json
 from decimal import Decimal
@@ -11,8 +10,6 @@ from io import StringIO
 from django.contrib.auth.models import User
 from django.core.management import call_command, CommandError
 
-from coldfront.api.allocation.tests.test_allocation_base import \
-    TestAllocationBase
 from coldfront.api.statistics.utils import get_accounting_allocation_objects, \
     create_project_allocation, create_user_project_allocation
 from coldfront.config import settings
