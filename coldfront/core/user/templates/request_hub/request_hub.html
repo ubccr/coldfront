@@ -19,7 +19,10 @@
           <strong>
             Cluster Account Requests
             {% if num_active_cluster_account_requests %}
-              <span class="badge badge-warning">{{ num_active_cluster_account_requests }} active requests</span>
+
+              <span class="badge badge-warning">
+                <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                {{ num_active_cluster_account_requests }} active requests</span>
             {% endif %}
           </strong>
         </div>
@@ -141,7 +144,7 @@
               {% endif %}
             </div>
           </div>
-          <p></p>
+
           <div class="card border-light">
             <div class="card-body">
               {% if cluster_account_list_complete %}
@@ -248,9 +251,17 @@
 
               {% else %}
                 <div class="alert alert-info">
-                  No new or pending cluster account requests!
+                  No completed cluster account requests!
                 </div>
               {% endif %}
+
+            {% if user.is_superuser %}
+              <p></p>
+              <a class="btn btn-primary" href="{% url 'allocation-cluster-account-request-list' %}" role="button" style="float: right;">
+                <i class="fa fa-angle-double-right" aria-hidden="true"></i>
+                Go To Cluster Account Requests Main Page
+              </a>
+            {% endif %}
             </div>
           </div>
         </div>
