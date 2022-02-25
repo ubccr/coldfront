@@ -144,16 +144,12 @@ class Command(BaseCommand):
             }
 
             recipients = project.managers_and_pis_emails()
+            plural = '' if len(recipients) == 1 else 's'
 
             if dry_run:
-                msg_plain = \
-                    render_to_string('email/expired_ica_project.txt',
-                                     context)
-
-                message = f'Would send the following email to ' \
-                          f'{len(recipients)} users:'
+                message = f'Would send a notification email to ' \
+                          f'{len(recipients)} user{plural}.'
                 self.stdout.write(self.style.WARNING(message))
-                self.stdout.write(self.style.WARNING(msg_plain))
 
             else:
                 try:
@@ -165,7 +161,7 @@ class Command(BaseCommand):
                         recipients)
 
                     message = f'Sent deactivation notification email to ' \
-                              f'{len(recipients)} users.'
+                              f'{len(recipients)} user{plural}.'
                     self.stdout.write(self.style.SUCCESS(message))
 
                 except Exception as e:

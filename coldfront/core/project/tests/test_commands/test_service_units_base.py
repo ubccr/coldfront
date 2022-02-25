@@ -45,7 +45,7 @@ class TestSUBase(TestBase):
         mail.outbox = []
 
     @staticmethod
-    def call_deactivate_command(*args):
+    def call_command(*args):
         """
         Call the command with the given arguments, returning the messages
         written to stdout and stderr.

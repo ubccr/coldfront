@@ -53,11 +53,11 @@ class TestAddServiceUnitsToProject(TestSUBase):
 
     def test_dry_run(self):
         """Testing add_service_units_to_project dry run"""
-        output, error = self.call_deactivate_command('add_service_units_to_project',
-                                                     '--project_name=project0',
-                                                     '--amount=1000',
-                                                     f'--reason={self.reason}',
-                                                     '--dry_run')
+        output, error = self.call_command('add_service_units_to_project',
+                                          '--project_name=project0',
+                                          '--amount=1000',
+                                          f'--reason={self.reason}',
+                                          '--dry_run')
 
         dry_run_message = 'Would add 1000 additional SUs to project ' \
                           'project0. This would increase project0 ' \
@@ -79,10 +79,10 @@ class TestAddServiceUnitsToProject(TestSUBase):
         self.allocation_values_test(project, '1000.00', '500.00')
 
         # run command
-        output, error = self.call_deactivate_command('add_service_units_to_project',
-                                                     '--project_name=project0',
-                                                     '--amount=1000',
-                                                     f'--reason={self.reason}')
+        output, error = self.call_command('add_service_units_to_project',
+                                          '--project_name=project0',
+                                          '--amount=1000',
+                                          f'--reason={self.reason}')
 
         message = f'Successfully added 1000 SUs to project0 and its users, ' \
                   f'updating project0\'s SUs from 1000.00 to 2000.00. The ' \
@@ -114,10 +114,10 @@ class TestAddServiceUnitsToProject(TestSUBase):
         self.allocation_values_test(project, '1000.00', '500.00')
 
         # run command
-        output, error = self.call_deactivate_command('add_service_units_to_project',
-                                                     '--project_name=project0',
-                                                     '--amount=-800',
-                                                     f'--reason={self.reason}')
+        output, error = self.call_command('add_service_units_to_project',
+                                          '--project_name=project0',
+                                          '--amount=-800',
+                                          f'--reason={self.reason}')
 
         message = f'Successfully added -800 SUs to project0 and its users, ' \
                   f'updating project0\'s SUs from 1000.00 to 200.00. The ' \
@@ -163,20 +163,20 @@ class TestAddServiceUnitsToProject(TestSUBase):
         # part of Savio Compute
         with self.assertRaises(CommandError):
             output, error = \
-                self.call_deactivate_command('add_service_units_to_project',
-                                             '--project_name=project1',
-                                             '--amount=1000',
-                                             f'--reason={self.reason}')
+                self.call_command('add_service_units_to_project',
+                                  '--project_name=project1',
+                                  '--amount=1000',
+                                  f'--reason={self.reason}')
             self.assertEqual(output, '')
             self.assertEqual(error, '')
 
         # testing a project that does not exist
         with self.assertRaises(CommandError):
             output, error = \
-                self.call_deactivate_command('add_service_units_to_project',
-                                             '--project_name=project555',
-                                             '--amount=1000',
-                                             f'--reason={self.reason}')
+                self.call_command('add_service_units_to_project',
+                                  '--project_name=project555',
+                                  '--amount=1000',
+                                  f'--reason={self.reason}')
             self.assertEqual(output, '')
             self.assertEqual(error, '')
 
@@ -184,10 +184,10 @@ class TestAddServiceUnitsToProject(TestSUBase):
         # than settings.ALLOCATION_MIN
         with self.assertRaises(CommandError):
             output, error = \
-                self.call_deactivate_command('add_service_units_to_project',
-                                             '--project_name=project0',
-                                             '--amount=-100000',
-                                             f'--reason={self.reason}')
+                self.call_command('add_service_units_to_project',
+                                  '--project_name=project0',
+                                  '--amount=-100000',
+                                  f'--reason={self.reason}')
             self.assertEqual(output, '')
             self.assertEqual(error, '')
 
@@ -195,29 +195,29 @@ class TestAddServiceUnitsToProject(TestSUBase):
         # than settings.ALLOCATION_MAX
         with self.assertRaises(CommandError):
             output, error = \
-                self.call_deactivate_command('add_service_units_to_project',
-                                             '--project_name=project0',
-                                             '--amount=99999500',
-                                             f'--reason={self.reason}')
+                self.call_command('add_service_units_to_project',
+                                  '--project_name=project0',
+                                  '--amount=99999500',
+                                  f'--reason={self.reason}')
             self.assertEqual(output, '')
             self.assertEqual(error, '')
 
         # adding service units that are greater than settings.ALLOCATION_MAX
         with self.assertRaises(CommandError):
             output, error = \
-                self.call_deactivate_command('add_service_units_to_project',
-                                             '--project_name=project0',
-                                             '--amount=500000000',
-                                             f'--reason={self.reason}')
+                self.call_command('add_service_units_to_project',
+                                  '--project_name=project0',
+                                  '--amount=500000000',
+                                  f'--reason={self.reason}')
             self.assertEqual(output, '')
             self.assertEqual(error, '')
 
         # reason is not long enough
         with self.assertRaises(CommandError):
             output, error = \
-                self.call_deactivate_command('add_service_units_to_project',
-                                             '--project_name=project0',
-                                             '--amount=1000',
-                                             '--reason=notlong')
+                self.call_command('add_service_units_to_project',
+                                  '--project_name=project0',
+                                  '--amount=1000',
+                                  '--reason=notlong')
             self.assertEqual(output, '')
             self.assertEqual(error, '')

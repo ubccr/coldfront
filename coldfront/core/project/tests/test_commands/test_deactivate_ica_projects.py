@@ -101,9 +101,9 @@ class TestDeactivateICAProjects(TestSUBase):
 
     def test_dry_run_no_expired_projects(self):
         """Testing a dry run in which no ICA projects are expired"""
-        output, error = self.call_deactivate_command('deactivate_ica_projects',
-                                                     '--dry_run',
-                                                     '--send_emails')
+        output, error = self.call_command('deactivate_ica_projects',
+                                          '--dry_run',
+                                          '--send_emails')
         self.assertIn(output, '')
         self.assertEqual(error, '')
 
@@ -111,9 +111,9 @@ class TestDeactivateICAProjects(TestSUBase):
         """Testing a dry run in which an ICA project is expired"""
         self.create_expired_project('ic_project0')
 
-        output, error = self.call_deactivate_command('deactivate_ica_projects',
-                                                     '--dry_run',
-                                                     '--send_emails')
+        output, error = self.call_command('deactivate_ica_projects',
+                                          '--dry_run',
+                                          '--send_emails')
 
         project = Project.objects.get(name='ic_project0')
         allocation = get_project_compute_allocation(project)
@@ -128,14 +128,7 @@ class TestDeactivateICAProjects(TestSUBase):
                     f'would be: "Resetting SUs while deactivating expired '
                     f'ICA project."',
 
-                    'Would send the following email to 1 users:',
-                    f'Dear managers of {project.name},',
-
-                    f'This is a notification that the project {project.name} '
-                    f'expired on {allocation.end_date.strftime("%m-%d-%Y")} '
-                    f'and has therefore been deactivated. '
-                    f'Accounts under this project will no longer be able '
-                    f'to access its compute resources.']
+                    'Would send a notification email to 1 user.']
 
         for message in messages:
             self.assertIn(message, output)
@@ -156,7 +149,7 @@ class TestDeactivateICAProjects(TestSUBase):
         self.allocation_values_test(project, '1000.00', '500.00')
 
         # run command
-        output, error = self.call_deactivate_command('deactivate_ica_projects')
+        output, error = self.call_command('deactivate_ica_projects')
 
         messages = [
             f'Updated Project {project.name} ({project.pk})\'s status to '
@@ -208,8 +201,8 @@ class TestDeactivateICAProjects(TestSUBase):
         old_end_date = allocation.end_date
 
         # run command
-        output, error = self.call_deactivate_command('deactivate_ica_projects',
-                                                     '--send_emails')
+        output, error = self.call_command('deactivate_ica_projects',
+                                          '--send_emails')
 
         recipients = project.managers_and_pis_emails()
 
