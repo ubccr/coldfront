@@ -5,13 +5,8 @@ from django.core.management import BaseCommand, CommandError
 
 from coldfront.config import settings
 from coldfront.core.project.models import Project
-from coldfront.core.project.utils_.addition_utils import set_service_units
-from coldfront.core.statistics.models import ProjectTransaction
-from coldfront.core.statistics.models import ProjectUserTransaction
-from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.project.management.commands.utils import set_service_units
 from coldfront.api.statistics.utils import get_accounting_allocation_objects
-from coldfront.api.statistics.utils import set_project_allocation_value
-from coldfront.api.statistics.utils import set_project_user_allocation_value
 from coldfront.core.allocation.models import AllocationAttributeType, Allocation
 
 

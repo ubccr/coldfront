@@ -13,9 +13,7 @@ from coldfront.core.project.models import ProjectStatusChoice
 from django.core.management.base import BaseCommand
 import logging
 
-from coldfront.core.project.utils_.addition_utils import set_service_units
-from coldfront.core.statistics.models import ProjectTransaction, \
-    ProjectUserTransaction
+from coldfront.core.project.management.commands.utils import set_service_units
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.mail import send_email_template
 
@@ -107,7 +105,7 @@ class Command(BaseCommand):
         updated_su = Decimal('0.00')
 
         if dry_run:
-            message = f'Would reset {project.name} and its users\'s SUs from ' \
+            message = f'Would reset {project.name} and its users\' SUs from ' \
                       f'{current_allocation} to {updated_su}. The reason ' \
                       f'would be: "Resetting SUs while deactivating expired ' \
                       f'ICA project."'

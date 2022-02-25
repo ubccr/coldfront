@@ -123,7 +123,7 @@ class TestDeactivateICAProjects(TestSUBase):
                     f'status to Inactive and Allocation '
                     f'{allocation.pk}\'s status to Expired.',
 
-                    f'Would reset {project.name} and its users\'s SUs from '
+                    f'Would reset {project.name} and its users\' SUs from '
                     f'1000.00 to 0.00. The reason '
                     f'would be: "Resetting SUs while deactivating expired '
                     f'ICA project."',
