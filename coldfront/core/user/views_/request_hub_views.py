@@ -67,6 +67,22 @@ class RequestHub(LoginRequiredMixin,
 
         return cluster_account_list_active, cluster_account_list_complete
 
+    def get_removal_requests(self):
+        user = self.request.user
+
+        project_user_cond = Q(project_user__user=self.request.user)
+        requester_cond = Q(requester=self.request.user)
+
+        removal_request_active = ProjectUserRemovalRequest.objects.filter(
+            status__name__in=['Pending', 'Processing']).\
+            filter(project_user_cond | requester_cond)
+
+        removal_request_complete = ProjectUserRemovalRequest.objects.filter(
+            status__name='Complete').\
+            filter(project_user_cond | requester_cond)
+
+        return removal_request_active, removal_request_complete
+
     def test_func(self):
         """UserPassesTestMixin tests."""
         if self.request.user.is_superuser:
@@ -111,5 +127,15 @@ class RequestHub(LoginRequiredMixin,
 
         create_paginator(cluster_account_list_complete,
                          'cluster_account_list_complete')
+
+        removal_request_active, removal_request_complete = \
+            self.get_removal_requests()
+
+        create_paginator(removal_request_active,
+                         'removal_request_active')
+        context['num_removal_request_active'] = len(removal_request_active)
+
+        create_paginator(removal_request_complete,
+                         'removal_request_complete')
 
         return context
