@@ -44,7 +44,7 @@ Test title
           <td>
             {% if project_review.allocation_renewals %}
               {% for allocation_pk in project_review.allocation_renewals|split:"," %}
-                <a href="{% url 'allocation-detail' allocation_pk %}">{{ allocation_pk }}</a>
+                <a target="_blank" href="{% url 'allocation-detail' allocation_pk %}">{{ allocation_pk }}</a>
               {% endfor %}
             {% else %}
               No renewals
