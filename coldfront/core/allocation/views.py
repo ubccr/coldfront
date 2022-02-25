@@ -861,6 +861,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         usernames = form_data.get('users')
         usernames.append(project_obj.pi.username)
+        usernames.append(self.request.user.username)
         usernames = list(set(usernames))
 
         # If a resource has a user limit make sure it's not surpassed.
