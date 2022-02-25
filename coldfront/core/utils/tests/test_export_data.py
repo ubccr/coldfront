@@ -1,6 +1,8 @@
 import csv
 import datetime
 import json
+from decimal import Decimal
+
 import pytz
 import sys
 from csv import DictReader
@@ -11,7 +13,8 @@ from django.core.management import call_command, CommandError
 
 from coldfront.api.allocation.tests.test_allocation_base import \
     TestAllocationBase
-from coldfront.api.statistics.utils import get_accounting_allocation_objects
+from coldfront.api.statistics.utils import get_accounting_allocation_objects, \
+    create_project_allocation, create_user_project_allocation
 from coldfront.config import settings
 from coldfront.core.allocation.models import AllocationAttributeType, \
     AllocationUserAttribute
@@ -19,37 +22,11 @@ from coldfront.core.statistics.models import Job
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
-from coldfront.core.project.models import Project, ProjectStatusChoice
-
+from coldfront.core.project.models import Project, ProjectStatusChoice, \
+    ProjectUser, ProjectUserStatusChoice, ProjectUserRoleChoice
 
 DATE_FORMAT = '%m-%d-%Y %H:%M:%S'
 ABR_DATE_FORMAT = '%m-%d-%Y'
-
-
-def call_deactivate_command(*args):
-    """Call the command with the given arguments, returning the messages
-    written to stdout and stderr."""
-
-    out, err = StringIO(), StringIO()
-    args = [*args]
-    kwargs = {'stdout': out, 'stderr': err}
-    call_command(*args, **kwargs)
-
-    return out.getvalue(), err.getvalue()
-
-
-def convert_output(out, format):
-    if format == 'json':
-        output = json.loads(''.join(out))
-    elif format == 'csv':
-        output = [line.split(',') for line in
-                  out.replace('\r', '').split('\n')
-                  if line != '']
-    else:
-        raise CommandError('call_deactivate_command out_format must be either '
-                           '\"csv\" or \"json\"')
-
-    return output
 
 
 class TestBaseExportData(TestBase):
@@ -57,49 +34,110 @@ class TestBaseExportData(TestBase):
         """Setup test data"""
         super().setUp()
 
-        # Create a normal users
-        self.user1 = User.objects.create(
-            email='user1@email.com',
-            first_name='Normal',
-            last_name='User1',
-            username='user1')
-
-        self.user2 = User.objects.create(
-            email='user2@email.com',
-            first_name='Normal',
-            last_name='User2',
-            username='user2')
-
-        self.password = 'password'
-
-        for user in User.objects.all():
+        # Create two Users.
+        for i in range(2):
+            user = User.objects.create(
+                username=f'user{i}', email=f'user{i}@nonexistent.com')
             user_profile = UserProfile.objects.get(user=user)
-            user_profile.access_agreement_signed_date = utc_now_offset_aware()
+            user_profile.cluster_uid = f'{i}'
             user_profile.save()
+            setattr(self, f'user{i}', user)
+            setattr(self, f'user_profile{i}', user_profile)
 
-            user.set_password(self.password)
-            user.save()
+        # Create Projects and associate Users with them.
+        project_status = ProjectStatusChoice.objects.get(name='Active')
+        project_user_status = ProjectUserStatusChoice.objects.get(
+            name='Active')
+        user_role = ProjectUserRoleChoice.objects.get(name='User')
+
+        # Create a Project and ProjectUsers.
+        project = Project.objects.create(
+            name='project0', status=project_status)
+        setattr(self, 'project0', project)
+        for j in range(2):
+            ProjectUser.objects.create(
+                user=getattr(self, f'user{j}'), project=project,
+                role=user_role, status=project_user_status)
+
+        # Create a compute allocation for the Project.
+        allocation = Decimal('1000.00')
+        create_project_allocation(project, allocation)
+
+        # Create a compute allocation for each User on the Project.
+        for j in range(2):
+            create_user_project_allocation(
+                getattr(self, f'user{j}'), project, allocation / 2)
+
+        self.cluster_account_status = AllocationAttributeType.objects.get(
+            name='Cluster Account Status')
+
+        allocation_object = get_accounting_allocation_objects(self.project0)
+        for j, project_user in enumerate(project.projectuser_set.all()):
+            if project_user.role.name != 'User':
+                continue
+
+            allocation_user_objects = get_accounting_allocation_objects(
+                project, user=project_user.user)
+
+            AllocationUserAttribute.objects.create(
+                allocation_attribute_type=self.cluster_account_status,
+                allocation=allocation_object.allocation,
+                allocation_user=allocation_user_objects.allocation_user,
+                value='Active')
 
         # create test jobs
         self.current_time = datetime.datetime.now(tz=datetime.timezone.utc)
 
         self.job1 = Job.objects.create(jobslurmid='1',
-                                       submitdate=self.current_time - datetime.timedelta(days=5),
-                                       startdate=self.current_time - datetime.timedelta(days=4),
-                                       enddate=self.current_time - datetime.timedelta(days=3),
-                                       userid=self.user1)
+                                       submitdate=self.current_time - datetime.timedelta(
+                                           days=5),
+                                       startdate=self.current_time - datetime.timedelta(
+                                           days=4),
+                                       enddate=self.current_time - datetime.timedelta(
+                                           days=3),
+                                       userid=self.user0)
 
         self.job2 = Job.objects.create(jobslurmid='2',
-                                       submitdate=self.current_time - datetime.timedelta(days=8),
-                                       startdate=self.current_time - datetime.timedelta(days=6),
-                                       enddate=self.current_time - datetime.timedelta(days=4),
-                                       userid=self.user2)
+                                       submitdate=self.current_time - datetime.timedelta(
+                                           days=8),
+                                       startdate=self.current_time - datetime.timedelta(
+                                           days=6),
+                                       enddate=self.current_time - datetime.timedelta(
+                                           days=4),
+                                       userid=self.user1)
 
         self.job3 = Job.objects.create(jobslurmid='3',
-                                       submitdate=self.current_time - datetime.timedelta(days=13),
-                                       startdate=self.current_time - datetime.timedelta(days=10),
-                                       enddate=self.current_time - datetime.timedelta(days=7),
-                                       userid=self.user1)
+                                       submitdate=self.current_time - datetime.timedelta(
+                                           days=13),
+                                       startdate=self.current_time - datetime.timedelta(
+                                           days=10),
+                                       enddate=self.current_time - datetime.timedelta(
+                                           days=7),
+                                       userid=self.user0)
+
+    def call_command(self, *args):
+        """Call the command with the given arguments, returning the messages
+        written to stdout and stderr."""
+
+        out, err = StringIO(), StringIO()
+        args = [*args]
+        kwargs = {'stdout': out, 'stderr': err}
+        call_command(*args, **kwargs)
+
+        return out.getvalue(), err.getvalue()
+
+    def convert_output(self, out, format):
+        if format == 'json':
+            output = json.loads(''.join(out))
+        elif format == 'csv':
+            output = [line.split(',') for line in
+                      out.replace('\r', '').split('\n')
+                      if line != '']
+        else:
+            raise CommandError('convert_output out_format must be either '
+                               '\"csv\" or \"json\"')
+
+        return output
 
 
 class TestLatestJobsByUser(TestBaseExportData):
@@ -113,17 +151,17 @@ class TestLatestJobsByUser(TestBaseExportData):
         """Testing latest_jobs_by_user subcommand with NO date arg passed,
         exporting as JSON"""
 
-        output, error = call_deactivate_command('export_data',
-                                                'latest_jobs_by_user',
-                                                '--format=json')
-        output = convert_output(output, 'json')
+        output, error = self.call_command('export_data',
+                                          'latest_jobs_by_user',
+                                          '--format=json')
+        output = self.convert_output(output, 'json')
 
         self.assertEqual(len(output), 2)
         for index in range(2):
             item = output[index]
-            self.assertEqual(item['username'], f'user{index+1}')
-            self.assertEqual(item['jobslurmid'], f'{index+1}')
-            job = Job.objects.get(jobslurmid=f'{index+1}')
+            self.assertEqual(item['username'], f'user{index}')
+            self.assertEqual(item['jobslurmid'], f'{index + 1}')
+            job = Job.objects.get(jobslurmid=f'{index + 1}')
             submit_date_str = datetime.datetime.strftime(job.submitdate,
                                                          DATE_FORMAT)
             self.assertEqual(item['submit_date'], submit_date_str)
@@ -137,18 +175,18 @@ class TestLatestJobsByUser(TestBaseExportData):
         start_date = datetime.datetime.strftime(
             self.current_time - datetime.timedelta(days=6), ABR_DATE_FORMAT)
 
-        output, error = call_deactivate_command('export_data',
-                                                'latest_jobs_by_user',
-                                                '--format=json',
-                                                f'--start_date={start_date}')
-        output = convert_output(output, 'json')
+        output, error = self.call_command('export_data',
+                                          'latest_jobs_by_user',
+                                          '--format=json',
+                                          f'--start_date={start_date}')
+        output = self.convert_output(output, 'json')
 
         self.assertEqual(len(output), 1)
         for index in range(1):
             item = output[index]
-            self.assertEqual(item['username'], f'user{index+1}')
-            self.assertEqual(item['jobslurmid'], f'{index+1}')
-            job = Job.objects.get(jobslurmid=f'{index+1}')
+            self.assertEqual(item['username'], f'user{index}')
+            self.assertEqual(item['jobslurmid'], f'{index + 1}')
+            job = Job.objects.get(jobslurmid=f'{index + 1}')
             submit_date_str = datetime.datetime.strftime(job.submitdate,
                                                          DATE_FORMAT)
             self.assertEqual(item['submit_date'], submit_date_str)
@@ -159,16 +197,17 @@ class TestLatestJobsByUser(TestBaseExportData):
         """Testing latest_jobs_by_user subcommand with NO date arg passed,
         exporting as CSV"""
 
-        output, error = call_deactivate_command('export_data',
-                                                'latest_jobs_by_user',
-                                                '--format=csv')
-        output = convert_output(output, 'csv')
+        output, error = self.call_command('export_data',
+                                          'latest_jobs_by_user',
+                                          '--format=csv')
+        output = self.convert_output(output, 'csv')
 
         for index, item in enumerate(output):
             if index == 0:
-                self.assertEqual(item, ['username', 'jobslurmid', 'submit_date'])
+                self.assertEqual(item,
+                                 ['username', 'jobslurmid', 'submit_date'])
             else:
-                self.assertEqual(item[0], f'user{index}')
+                self.assertEqual(item[0], f'user{index - 1}')
                 self.assertEqual(item[1], f'{index}')
                 job = Job.objects.get(jobslurmid=f'{index}')
                 submit_date_str = datetime.datetime.strftime(job.submitdate,
@@ -184,17 +223,18 @@ class TestLatestJobsByUser(TestBaseExportData):
         start_date = datetime.datetime.strftime(
             self.current_time - datetime.timedelta(days=6), ABR_DATE_FORMAT)
 
-        output, error = call_deactivate_command('export_data',
-                                                'latest_jobs_by_user',
-                                                '--format=csv',
-                                                f'--start_date={start_date}')
-        output = convert_output(output, 'csv')
+        output, error = self.call_command('export_data',
+                                          'latest_jobs_by_user',
+                                          '--format=csv',
+                                          f'--start_date={start_date}')
+        output = self.convert_output(output, 'csv')
 
         for index, item in enumerate(output):
             if index == 0:
-                self.assertEqual(item, ['username', 'jobslurmid', 'submit_date'])
+                self.assertEqual(item,
+                                 ['username', 'jobslurmid', 'submit_date'])
             else:
-                self.assertEqual(item[0], f'user{index}')
+                self.assertEqual(item[0], f'user{index - 1}')
                 self.assertEqual(item[1], f'{index}')
                 job = Job.objects.get(jobslurmid=f'{index}')
                 submit_date_str = datetime.datetime.strftime(job.submitdate,
@@ -204,34 +244,16 @@ class TestLatestJobsByUser(TestBaseExportData):
         self.assertEqual(error, '')
 
 
-class TestNewClusterAccounts(TestAllocationBase):
+class TestNewClusterAccounts(TestBaseExportData):
     """Test class to test export data subcommand new_cluster_accounts runs
     correctly."""
 
     def setUp(self):
         """Setup test data"""
-        self.pre_time = utc_now_offset_aware().replace(tzinfo=None,
-                                                       microsecond=0)
-
         super().setUp()
 
-        self.cluster_account_status = AllocationAttributeType.objects.get(
-            name='Cluster Account Status')
-
-        project = Project.objects.get(name='project0')
-        allocation_object = get_accounting_allocation_objects(project)
-        for j, project_user in enumerate(project.projectuser_set.all()):
-            if project_user.role.name != 'User':
-                continue
-
-            allocation_user_objects = get_accounting_allocation_objects(
-                project, user=project_user.user)
-
-            AllocationUserAttribute.objects.create(
-                allocation_attribute_type=self.cluster_account_status,
-                allocation=allocation_object.allocation,
-                allocation_user=allocation_user_objects.allocation_user,
-                value='Active')
+        self.pre_time = utc_now_offset_aware().replace(tzinfo=None,
+                                                       microsecond=0)
 
     def convert_time_to_utc(self, time):
         """Convert naive LA time to UTC time"""
@@ -244,10 +266,10 @@ class TestNewClusterAccounts(TestAllocationBase):
     def test_json_no_date(self):
         """Testing new_cluster_accounts subcommand with NO date arg passed,
         exporting as JSON"""
-        output, error = call_deactivate_command('export_data',
-                                                'new_cluster_accounts',
-                                                '--format=json')
-        output = convert_output(output, 'json')
+        output, error = self.call_command('export_data',
+                                          'new_cluster_accounts',
+                                          '--format=json')
+        output = self.convert_output(output, 'json')
 
         post_time = utc_now_offset_aware().replace(tzinfo=None, microsecond=0)
         for index, item in enumerate(output):
@@ -279,11 +301,11 @@ class TestNewClusterAccounts(TestAllocationBase):
         allocation_user_attr_obj.save()
         self.assertEqual(allocation_user_attr_obj.created, new_date)
 
-        output, error = call_deactivate_command('export_data',
-                                                'new_cluster_accounts',
-                                                '--format=json',
-                                                f'--start_date={start_date}')
-        output = convert_output(output, 'json')
+        output, error = self.call_command('export_data',
+                                          'new_cluster_accounts',
+                                          '--format=json',
+                                          f'--start_date={start_date}')
+        output = self.convert_output(output, 'json')
 
         # this should only output the cluster account creation for user1
         post_time = utc_now_offset_aware().replace(tzinfo=None, microsecond=0)
@@ -299,10 +321,10 @@ class TestNewClusterAccounts(TestAllocationBase):
     def test_csv_no_date(self):
         """Testing new_cluster_accounts subcommand with NO date arg passed,
         exporting as CSV"""
-        output, error = call_deactivate_command('export_data',
-                                                'new_cluster_accounts',
-                                                '--format=csv')
-        output = convert_output(output, 'csv')
+        output, error = self.call_command('export_data',
+                                          'new_cluster_accounts',
+                                          '--format=csv')
+        output = self.convert_output(output, 'csv')
 
         post_time = utc_now_offset_aware().replace(tzinfo=None, microsecond=0)
         for index, item in enumerate(output):
@@ -337,11 +359,11 @@ class TestNewClusterAccounts(TestAllocationBase):
         allocation_user_attr_obj.save()
         self.assertEqual(allocation_user_attr_obj.created, new_date)
 
-        output, error = call_deactivate_command('export_data',
-                                                'new_cluster_accounts',
-                                                '--format=csv',
-                                                f'--start_date={start_date}')
-        output = convert_output(output, 'csv')
+        output, error = self.call_command('export_data',
+                                          'new_cluster_accounts',
+                                          '--format=csv',
+                                          f'--start_date={start_date}')
+        output = self.convert_output(output, 'csv')
 
         post_time = utc_now_offset_aware().replace(tzinfo=None, microsecond=0)
         for index, item in enumerate(output):
@@ -367,8 +389,8 @@ class TestJobAvgQueueTime(TestBaseExportData):
 
     def test_no_dates(self):
         """Testing job_avg_queue_time with NO date args passed"""
-        output, error = call_deactivate_command('export_data',
-                                                'job_avg_queue_time')
+        output, error = self.call_command('export_data',
+                                          'job_avg_queue_time')
 
         self.assertIn('48hrs 0mins 0secs', output)
         self.assertEqual(error, '')
@@ -380,10 +402,10 @@ class TestJobAvgQueueTime(TestBaseExportData):
         end_date = datetime.datetime.strftime(
             self.current_time - datetime.timedelta(days=4), ABR_DATE_FORMAT)
 
-        output, error = call_deactivate_command('export_data',
-                                                'job_avg_queue_time',
-                                                f'--start_date={start_date}',
-                                                f'--end_date={end_date}')
+        output, error = self.call_command('export_data',
+                                          'job_avg_queue_time',
+                                          f'--start_date={start_date}',
+                                          f'--end_date={end_date}')
         self.assertIn('24hrs 0mins 0secs', output)
         self.assertEqual(error, '')
 
@@ -392,9 +414,9 @@ class TestJobAvgQueueTime(TestBaseExportData):
         start_date = datetime.datetime.strftime(
             self.current_time - datetime.timedelta(days=6), ABR_DATE_FORMAT)
 
-        output, error = call_deactivate_command('export_data',
-                                                'job_avg_queue_time',
-                                                f'--start_date={start_date}')
+        output, error = self.call_command('export_data',
+                                          'job_avg_queue_time',
+                                          f'--start_date={start_date}')
         self.assertIn('24hrs 0mins 0secs', output)
         self.assertEqual(error, '')
 
@@ -403,9 +425,9 @@ class TestJobAvgQueueTime(TestBaseExportData):
         end_date = datetime.datetime.strftime(
             self.current_time - datetime.timedelta(days=6), ABR_DATE_FORMAT)
 
-        output, error = call_deactivate_command('export_data',
-                                                'job_avg_queue_time',
-                                                f'--end_date={end_date}')
+        output, error = self.call_command('export_data',
+                                          'job_avg_queue_time',
+                                          f'--end_date={end_date}')
         self.assertIn('60hrs 0mins 0secs', output)
         self.assertEqual(error, '')
 
@@ -417,19 +439,19 @@ class TestJobAvgQueueTime(TestBaseExportData):
             self.current_time - datetime.timedelta(days=4), ABR_DATE_FORMAT)
 
         with self.assertRaises(CommandError):
-            output, error = call_deactivate_command('export_data',
-                                                    'job_avg_queue_time',
-                                                    f'--start_date={start_date}',
-                                                    f'--end_date={end_date}')
+            output, error = self.call_command('export_data',
+                                              'job_avg_queue_time',
+                                              f'--start_date={start_date}',
+                                              f'--end_date={end_date}')
             self.assertEqual(output, '')
             self.assertEqual(error, '')
 
         # end date is before start date
         with self.assertRaises(CommandError):
-            output, error = call_deactivate_command('export_data',
-                                                    'job_avg_queue_time',
-                                                    f'--start_date={end_date}',
-                                                    f'--end_date={start_date}')
+            output, error = self.call_command('export_data',
+                                              'job_avg_queue_time',
+                                              f'--start_date={end_date}',
+                                              f'--end_date={start_date}')
             self.assertEqual(output, '')
             self.assertEqual(error, '')
 
@@ -447,13 +469,15 @@ class TestProjects(TestBase):
 
         active_projects, inactive_projects = [], []
         for index in range(10):
-            project = Project.objects.create(name=f'{prefixes[index % len(prefixes)]}_project_{index}',
-                                             status=active_status)
+            project = Project.objects.create(
+                name=f'{prefixes[index % len(prefixes)]}_project_{index}',
+                status=active_status)
             active_projects.append(project)
 
         for index in range(10, 20):
-            project = Project.objects.create(name=f'{prefixes[index % len(prefixes)]}_project_{index}',
-                                             status=inactive_status)
+            project = Project.objects.create(
+                name=f'{prefixes[index % len(prefixes)]}_project_{index}',
+                status=inactive_status)
             inactive_projects.append(project)
 
         self.active_projects = active_projects
@@ -517,7 +541,8 @@ class TestProjects(TestBase):
     def test_allowance_filter(self):
         out, err = StringIO(''), StringIO('')
         call_command('export_data', 'projects',
-                     '--format=csv', '--allowance_type=fc_', stdout=out, stderr=err)
+                     '--format=csv', '--allowance_type=fc_', stdout=out,
+                     stderr=err)
 
         sys.stdout = sys.__stdout__
         out.seek(0)
@@ -542,7 +567,7 @@ class TestProjects(TestBase):
         # NOTE: csv is tested in other tests, only check json here
         out, err = StringIO(''), StringIO('')
         call_command('export_data', 'projects',
-                     '--format=json',  stdout=out, stderr=err)
+                     '--format=json', stdout=out, stderr=err)
 
         sys.stdout = sys.__stdout__
         out.seek(0)
