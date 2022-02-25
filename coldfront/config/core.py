@@ -28,6 +28,10 @@ PROJECT_CLASS_PROJECT_END_DATES = ENV.list(
 #------------------------------------------------------------------------------
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = ENV.bool('ALLOCATION_ENABLE_ALLOCATION_RENEWAL', default=True)
 ALLOCATION_FUNCS_ON_EXPIRE = ['coldfront.core.allocation.utils.test_allocation_function', ]
+#------------------------------------------------------------------------------
+# Resource related
+#------------------------------------------------------------------------------
+RESOURCE_ENABLE_ACCOUNT_CHECKING = ENV.bool('RESOURCE_ENABLE_ACCOUNT_CHECKING', default=True)
 
 # This is in days
 ALLOCATION_DEFAULT_ALLOCATION_LENGTH = ENV.int('ALLOCATION_DEFAULT_ALLOCATION_LENGTH', default=365)
