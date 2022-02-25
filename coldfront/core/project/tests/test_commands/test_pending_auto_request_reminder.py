@@ -149,16 +149,7 @@ class TestPendingJoinRequestReminderCommand(TestCase):
         call_command('pending_join_request_reminder', stdout=out, stderr=err)
         sys.stdout = sys.__stdout__
 
-        pi_condition = Q(
-            role__name='Principal Investigator', status__name='Active',
-            enable_notifications=True)
-        manager_condition = Q(role__name='Manager', status__name='Active')
-        manager_emails = list(
-            self.project1.projectuser_set.filter(
-                pi_condition | manager_condition
-            ).values_list(
-                'user__email', flat=True
-            ))
+        manager_emails = self.project1.managers_and_pis_emails()
 
         for email in mail.outbox:
             for addr in email.to:
@@ -208,16 +199,7 @@ class TestPendingJoinRequestReminderCommand(TestCase):
         call_command('pending_join_request_reminder', stdout=out, stderr=err)
         sys.stdout = sys.__stdout__
 
-        pi_condition = Q(
-            role__name='Principal Investigator', status__name='Active',
-            enable_notifications=True)
-        manager_condition = Q(role__name='Manager', status__name='Active')
-        manager_emails = list(
-            self.project1.projectuser_set.filter(
-                pi_condition | manager_condition
-            ).values_list(
-                'user__email', flat=True
-            ))
+        manager_emails = self.project1.managers_and_pis_emails()
 
         for email in mail.outbox:
             for addr in email.to:
@@ -297,23 +279,7 @@ class TestPendingJoinRequestReminderCommand(TestCase):
         call_command('pending_join_request_reminder', stdout=out, stderr=err)
         sys.stdout = sys.__stdout__
 
-        pi_condition = Q(
-            role__name='Principal Investigator', status__name='Active',
-            enable_notifications=True)
-        manager_condition = Q(role__name='Manager', status__name='Active')
-        manager_emails1 = list(
-            self.project1.projectuser_set.filter(
-                pi_condition | manager_condition
-            ).values_list(
-                'user__email', flat=True
-            ))
-
-        manager_emails2 = list(
-            project2.projectuser_set.filter(
-                pi_condition | manager_condition
-            ).values_list(
-                'user__email', flat=True
-            ))
+        manager_emails1 = self.project1.managers_and_pis_emails()
 
         for email in mail.outbox:
             for addr in email.to:
@@ -381,16 +347,7 @@ class TestPendingJoinRequestReminderCommand(TestCase):
         call_command('pending_join_request_reminder', stdout=out, stderr=err)
         sys.stdout = sys.__stdout__
 
-        pi_condition = Q(
-            role__name='Principal Investigator', status__name='Active',
-            enable_notifications=True)
-        manager_condition = Q(role__name='Manager', status__name='Active')
-        manager_emails = list(
-            self.project1.projectuser_set.filter(
-                pi_condition | manager_condition
-            ).values_list(
-                'user__email', flat=True
-            ))
+        manager_emails = self.project1.managers_and_pis_emails()
 
         for email in mail.outbox:
             for addr in email.to:

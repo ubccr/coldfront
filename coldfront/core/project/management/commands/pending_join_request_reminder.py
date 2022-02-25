@@ -60,16 +60,8 @@ class Command(BaseCommand):
                     'review_url': review_project_join_requests_url(project),
                     'signature': settings.EMAIL_SIGNATURE,
                 }
-                pi_condition = Q(
-                    role__name='Principal Investigator', status__name='Active',
-                    enable_notifications=True)
-                manager_condition = Q(role__name='Manager', status__name='Active')
-                recipients = list(
-                    project.projectuser_set.filter(
-                        pi_condition | manager_condition
-                    ).values_list(
-                        'user__email', flat=True
-                    ))
+
+                recipients = project.managers_and_pis_emails()
                 try:
                     msg_plain = \
                         render_to_string('email/project_join_request/pending_project_join_requests.txt',

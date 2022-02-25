@@ -5,12 +5,8 @@ from django.core.management import BaseCommand, CommandError
 
 from coldfront.config import settings
 from coldfront.core.project.models import Project
-from coldfront.core.statistics.models import ProjectTransaction
-from coldfront.core.statistics.models import ProjectUserTransaction
-from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.project.management.commands.utils import set_service_units
 from coldfront.api.statistics.utils import get_accounting_allocation_objects
-from coldfront.api.statistics.utils import set_project_allocation_value
-from coldfront.api.statistics.utils import set_project_user_allocation_value
 from coldfront.core.allocation.models import AllocationAttributeType, Allocation
 
 
@@ -83,6 +79,13 @@ class Command(BaseCommand):
 
         return project, allocation_objects, current_allocation, allocation
 
+    def set_historical_reason(self, obj, reason):
+        """Set the latest historical object reason"""
+        obj.refresh_from_db()
+        historical_obj = obj.history.latest('id')
+        historical_obj.history_change_reason = reason
+        historical_obj.save()
+
     def handle(self, *args, **options):
         """ Add SUs to a given project """
         project, allocation_objects, current_allocation, allocation = \
@@ -91,7 +94,6 @@ class Command(BaseCommand):
         addition = Decimal(options.get('amount'))
         reason = options.get('reason')
         dry_run = options.get('dry_run', None)
-        date_time = utc_now_offset_aware()
 
         if dry_run:
             verb = 'increase' if addition > 0 else 'decrease'
@@ -104,54 +106,16 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING(message))
 
         else:
-            # Set the value for the Project.
-            set_project_allocation_value(project, allocation)
-
-            # Create a transaction to record the change.
-            ProjectTransaction.objects.create(
-                project=project,
-                date_time=date_time,
-                allocation=allocation)
-
-            # Set the reason for the change in the newly-created historical object.
-            allocation_objects.allocation_attribute.refresh_from_db()
-            historical_allocation_attribute = \
-                allocation_objects.allocation_attribute.history.latest("id")
-            historical_allocation_attribute.history_change_reason = reason
-            historical_allocation_attribute.save()
-
-            # Do the same for each ProjectUser.
-            allocation_attribute_type = AllocationAttributeType.objects.get(
-                name="Service Units")
-            for project_user in project.projectuser_set.all():
-                user = project_user.user
-                # Attempt to set the value for the ProjectUser. The method returns whether
-                # it succeeded; it may not because not every ProjectUser has a
-                # corresponding AllocationUser (e.g., PIs). Only proceed with further steps
-                # if an update occurred.
-                allocation_updated = set_project_user_allocation_value(
-                    user, project, allocation)
-                if allocation_updated:
-                    # Create a transaction to record the change.
-                    ProjectUserTransaction.objects.create(
-                        project_user=project_user,
-                        date_time=date_time,
-                        allocation=allocation)
-                    # Set the reason for the change in the newly-created historical object.
-                    allocation_user = \
-                        allocation_objects.allocation.allocationuser_set.get(user=user)
-                    allocation_user_attribute = \
-                        allocation_user.allocationuserattribute_set.get(
-                            allocation_attribute_type=allocation_attribute_type,
-                            allocation=allocation_objects.allocation)
-                    historical_allocation_user_attribute = \
-                        allocation_user_attribute.history.latest("id")
-                    historical_allocation_user_attribute.history_change_reason = reason
-                    historical_allocation_user_attribute.save()
+            set_service_units(project,
+                              allocation_objects,
+                              allocation,
+                              reason,
+                              False)
 
             message = f'Successfully added {addition} SUs to {project.name} ' \
                       f'and its users, updating {project.name}\'s SUs from ' \
                       f'{current_allocation} to {allocation}. The reason ' \
                       f'was: "{reason}".'
 
+            self.logger.info(message)
             self.stdout.write(self.style.SUCCESS(message))

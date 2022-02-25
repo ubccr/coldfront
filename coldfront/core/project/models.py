@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import MinLengthValidator
 from django.db import models
+from django.db.models import Q
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
@@ -176,6 +177,19 @@ We do not have information about your research. Please provide a detailed descri
         pi_role = ProjectUserRoleChoice.objects.get(
             name='Principal Investigator')
         return self.projectuser_set.filter(role=pi_role).count() > 1
+
+    def managers_and_pis_emails(self):
+        """Return a list of emails belonging to active managers and PIs that
+        have enable_notifications=True."""
+        pi_condition = Q(
+            role__name='Principal Investigator', status__name='Active',
+            enable_notifications=True)
+        manager_condition = Q(role__name='Manager', status__name='Active')
+
+        return list(
+            self.projectuser_set.filter(
+                pi_condition | manager_condition
+            ).distinct().values_list('user__email', flat=True))
 
     def __str__(self):
         return self.name
