@@ -32,241 +32,25 @@
       <div id="collapseOne" class="collapse show" data-parent="#accordion">
         <div class="card">
 
-          <div class="card border-light">
-            <div class="card-body">
-              {% if cluster_account_list_active %}
+          {% with queryset=cluster_account_list_active adj='active' page_num='0' %}
+            {% include 'request_hub/cluster_account_list.html' %}
+          {% endwith %}
 
-                <div class="card border-light">
-                  <div class="card-body">
-                    <h5 class="card-title">Active Cluster Account Requests</h5>
-                    <div class="table-responsive">
-                      <table class="table table-sm">
-                        <thead>
-                        <tr>
-                          <th scope="col">
-                            #
-                            <a href="?order_by=id&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-                            <a href="?order_by=id&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
-                          </th>
-                          <th scope="col">
-                            Date Requested/<br>Last Modified
-                            <a href="?order_by=created&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-                            <a href="?order_by=created&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
-                          </th>
-                          <th scope="col">
-                            User Email
-                            <a href="?order_by=allocation_user__user__email&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-                            <a href="?order_by=allocation_user__user__email&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
-                          </th>
-                          <th scope="col">
-                            Cluster Username
-                            <a href="?order_by=allocation_user__user__username&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-                            <a href="?order_by=allocation_user__user__username&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
-                          </th>
-                          <th scope="col">
-                            Project
-                            <a href="?order_by=allocation__project__name&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-                            <a href="?order_by=allocation__project__name=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
-                          </th>
-                          <th scope="col">
-                            Allocation
-                          </th>
-                          <th scope="col">
-                            Status
-                          </th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {% for cluster_account in cluster_account_list_active %}
-                          <tr>
-                            <td>{{ cluster_account.pk }}</td>
-                            <td>{{ cluster_account.modified|date:"M. d, Y" }}</td>
-                            <td>{{ cluster_account.allocation_user.user.email }}</td>
-                            <td>
-                              {% if cluster_account.allocation_user.user.userprofile.cluster_uid %}
-                                {{ cluster_account.allocation_user.user.username }}
-                              {% else %}
-                                <span class="badge badge-danger">
-                No cluster account.
-              </span>
-                              {% endif %}
-                            </td>
-                            <td>
-                              <a href="{% url 'project-detail' cluster_account.allocation.project.pk %}">
-                                {{ cluster_account.allocation.project.name }}
-                              </a>
-                            </td>
-                            <td>
-                              <a href="{% url 'allocation-detail' cluster_account.allocation.pk %}">
-                                <span class="accessibility-link-text">Allocation {{ allocation.pk }}</span>
-                                {{ cluster_account.allocation.pk }}
-                              </a>
-                            </td>
-                            <td>
-                              {% with status=cluster_account.value %}
-                                {% if status == "Pending - Add" %}
-                                  <span class="badge badge-warning">Pending</span>
-                                {% elif status == "Processing" %}
-                                  <span class="badge badge-warning">{{ status }}</span>
-                                {% elif status == "Active" %}
-                                  <span class="badge badge-success">{{ status }}</span>
-                                {% elif status == "Denied" %}
-                                  <span class="badge badge-danger">{{ status }}</span>
-                                {% endif %}
-                              {% endwith %}
-                            </td>
-                          </tr>
-                        {% endfor %}
-                        </tbody>
-                      </table>
-
-                      Page {{ cluster_account_list_active.number }} of {{ cluster_account_list_active.paginator.num_pages }}
-                      <ul class="pagination float-right mr-3">
-                        {% if cluster_account_list_active.has_previous %}
-                          <li class="page-item"><a class="page-link" href="?page0={{ cluster_account_list_active.previous_page_number }}">Previous</a></li>
-                        {% else %}
-                          <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
-                        {% endif %}
-                        {% if cluster_account_list_active.has_next %}
-                          <li class="page-item"><a class="page-link" href="?page0={{ cluster_account_list_active.next_page_number }}">Next</a></li>
-                        {% else %}
-                          <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
-                        {% endif %}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-              {% else %}
-                <div class="alert alert-info">
-                  No active cluster account requests!
-                </div>
-              {% endif %}
-            </div>
-          </div>
-
-          <div class="card border-light">
-            <div class="card-body">
-              {% if cluster_account_list_complete %}
-                <div class="card border-light">
-                  <div class="card-body">
-                    <h5 class="card-title">Completed Cluster Account Requests</h5>
-                    <div class="table-responsive">
-                      <table class="table table-sm">
-                        <thead>
-                        <tr>
-                          <th scope="col">
-                            #
-                            <a href="?order_by=id&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-                            <a href="?order_by=id&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
-                          </th>
-                          <th scope="col">
-                            Date Requested/<br>Last Modified
-                            <a href="?order_by=created&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-                            <a href="?order_by=created&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
-                          </th>
-                          <th scope="col">
-                            User Email
-                            <a href="?order_by=allocation_user__user__email&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-                            <a href="?order_by=allocation_user__user__email&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
-                          </th>
-                          <th scope="col">
-                            Cluster Username
-                            <a href="?order_by=allocation_user__user__username&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-                            <a href="?order_by=allocation_user__user__username&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
-                          </th>
-                          <th scope="col">
-                            Project
-                            <a href="?order_by=allocation__project__name&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-                            <a href="?order_by=allocation__project__name=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
-                          </th>
-                          <th scope="col">
-                            Allocation
-                          </th>
-                          <th scope="col">
-                            Status
-                          </th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {% for cluster_account in cluster_account_list_complete %}
-                          <tr>
-                            <td>{{ cluster_account.pk }}</td>
-                            <td>{{ cluster_account.modified|date:"M. d, Y" }}</td>
-                            <td>{{ cluster_account.allocation_user.user.email }}</td>
-                            <td>
-                              {% if cluster_account.allocation_user.user.userprofile.cluster_uid %}
-                                {{ cluster_account.allocation_user.user.username }}
-                              {% else %}
-                                <span class="badge badge-danger">
-                No cluster account.
-              </span>
-                              {% endif %}
-                            </td>
-                            <td>
-                              <a href="{% url 'project-detail' cluster_account.allocation.project.pk %}">
-                                {{ cluster_account.allocation.project.name }}
-                              </a>
-                            </td>
-                            <td>
-                              <a href="{% url 'allocation-detail' cluster_account.allocation.pk %}">
-                                <span class="accessibility-link-text">Allocation {{ allocation.pk }}</span>
-                                {{ cluster_account.allocation.pk }}
-                              </a>
-                            </td>
-                            <td>
-                              {% with status=cluster_account.value %}
-                                {% if status == "Pending - Add" %}
-                                  <span class="badge badge-warning">Pending</span>
-                                {% elif status == "Processing" %}
-                                  <span class="badge badge-warning">{{ status }}</span>
-                                {% elif status == "Active" %}
-                                  <span class="badge badge-success">{{ status }}</span>
-                                {% elif status == "Denied" %}
-                                  <span class="badge badge-danger">{{ status }}</span>
-                                {% endif %}
-                              {% endwith %}
-                            </td>
-                          </tr>
-                        {% endfor %}
-                        </tbody>
-                      </table>
-
-                      Page {{ cluster_account_list_complete.number }} of {{ cluster_account_list_complete.paginator.num_pages }}
-                      <ul class="pagination float-right mr-3">
-                        {% if cluster_account_list_complete.has_previous %}
-                          <li class="page-item"><a class="page-link" href="?page1={{ cluster_account_list_complete.previous_page_number }}">Previous</a></li>
-                        {% else %}
-                          <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
-                        {% endif %}
-                        {% if cluster_account_list_complete.has_next %}
-                          <li class="page-item"><a class="page-link" href="?page1={{ cluster_account_list_complete.next_page_number }}">Next</a></li>
-                        {% else %}
-                          <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
-                        {% endif %}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-              {% else %}
-                <div class="alert alert-info">
-                  No completed cluster account requests!
-                </div>
-              {% endif %}
+          {% with queryset=cluster_account_list_complete adj='complete' page_num='1' %}
+            {% include 'request_hub/cluster_account_list.html' %}
+          {% endwith %}
 
             {% if user.is_superuser %}
-              <p></p>
+              <div class="card-body">
               <a class="btn btn-primary" href="{% url 'allocation-cluster-account-request-list' %}" role="button" style="float: right;">
                 <i class="fa fa-angle-double-right" aria-hidden="true"></i>
                 Go To Cluster Account Requests Main Page
               </a>
+              </div>
             {% endif %}
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
 
 {% endblock %}

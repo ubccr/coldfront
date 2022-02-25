@@ -1,0 +1,112 @@
+<div class="card border-light">
+  <div class="card-body">
+    {% if queryset %}
+
+      <div class="card border-light">
+        <div class="card-body">
+          <h5 class="card-title"><span style="text-transform:capitalize;">{{ adj }} Cluster Account Requests</span></h5>
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead>
+              <tr>
+                <th scope="col">
+                  #
+                  <a href="?order_by=id&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+                  <a href="?order_by=id&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+                </th>
+                <th scope="col">
+                  Date Requested/<br>Last Modified
+                  <a href="?order_by=created&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+                  <a href="?order_by=created&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+                </th>
+                <th scope="col">
+                  User Email
+                  <a href="?order_by=allocation_user__user__email&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+                  <a href="?order_by=allocation_user__user__email&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+                </th>
+                <th scope="col">
+                  Cluster Username
+                  <a href="?order_by=allocation_user__user__username&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+                  <a href="?order_by=allocation_user__user__username&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+                </th>
+                <th scope="col">
+                  Project
+                  <a href="?order_by=allocation__project__name&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+                  <a href="?order_by=allocation__project__name=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+                </th>
+                <th scope="col">
+                  Allocation
+                </th>
+                <th scope="col">
+                  Status
+                </th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for cluster_account in queryset %}
+                <tr>
+                  <td>{{ cluster_account.pk }}</td>
+                  <td>{{ cluster_account.modified|date:"M. d, Y" }}</td>
+                  <td>{{ cluster_account.allocation_user.user.email }}</td>
+                  <td>
+                    {% if cluster_account.allocation_user.user.userprofile.cluster_uid %}
+                      {{ cluster_account.allocation_user.user.username }}
+                    {% else %}
+                      <span class="badge badge-danger">
+                No cluster account.
+              </span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <a href="{% url 'project-detail' cluster_account.allocation.project.pk %}">
+                      {{ cluster_account.allocation.project.name }}
+                    </a>
+                  </td>
+                  <td>
+                    <a href="{% url 'allocation-detail' cluster_account.allocation.pk %}">
+                      <span class="accessibility-link-text">Allocation {{ allocation.pk }}</span>
+                      {{ cluster_account.allocation.pk }}
+                    </a>
+                  </td>
+                  <td>
+                    {% with status=cluster_account.value %}
+                      {% if status == "Pending - Add" %}
+                        <span class="badge badge-warning">Pending</span>
+                      {% elif status == "Processing" %}
+                        <span class="badge badge-warning">{{ status }}</span>
+                      {% elif status == "Active" %}
+                        <span class="badge badge-success">{{ status }}</span>
+                      {% elif status == "Denied" %}
+                        <span class="badge badge-danger">{{ status }}</span>
+                      {% endif %}
+                    {% endwith %}
+                  </td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+
+            Page {{ queryset.number }} of {{ queryset.paginator.num_pages }}
+            <ul class="pagination float-right mr-3">
+              {% if queryset.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page{{ page_num }}={{ queryset.previous_page_number }}">Previous</a></li>
+              {% else %}
+                <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+              {% endif %}
+              {% if queryset.has_next %}
+                <li class="page-item"><a class="page-link" href="?page{{ page_num }}={{ queryset.next_page_number }}">Next</a></li>
+              {% else %}
+                <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
+              {% endif %}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+    {% else %}
+      <div class="alert alert-info">
+        No {{ adj }} cluster account requests!
+      </div>
+    {% endif %}
+  </div>
+</div>
