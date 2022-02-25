@@ -56,7 +56,7 @@ class AllocationAdmin(SimpleHistoryAdmin):
         'project', 'justification', 'created', 'modified',)
     fields_change = ('project', 'resources', 'quantity', 'justification',
                      'status', 'start_date', 'end_date', 'description', 'created', 'modified', 'is_locked')
-    list_display = ('pk', 'project_title', 'project_pis', 'resource', 'quantity',
+    list_display = ('pk', 'project', 'project_pis', 'resource', 'quantity',
                     'justification', 'start_date', 'end_date', 'status', 'created', 'modified', )
     inlines = [AllocationUserInline,
                AllocationAttributeInline,
@@ -76,8 +76,8 @@ class AllocationAdmin(SimpleHistoryAdmin):
     def project_pis(self, obj):
         return ', '.join(obj.project.pis().values_list('username', flat=True))
 
-    def project_title(self, obj):
-        return textwrap.shorten(obj.project.title, width=50)
+    def project(self, obj):
+        return obj.project.name
 
     def get_fields(self, request, obj):
         if obj is None:
@@ -156,8 +156,8 @@ class UsageValueFilter(admin.SimpleListFilter):
 @admin.register(AllocationAttribute)
 class AllocationAttributeAdmin(SimpleHistoryAdmin):
     readonly_fields_change = (
-        'allocation', 'allocation_attribute_type', 'created', 'modified', 'project_title')
-    fields_change = ('project_title', 'allocation',
+        'allocation', 'allocation_attribute_type', 'created', 'modified', 'project')
+    fields_change = ('project', 'allocation',
                      'allocation_attribute_type', 'value', 'created', 'modified',)
     list_display = ('pk', 'project', 'pis', 'resource', 'allocation_status',
                     'allocation_attribute_type', 'value', 'usage', 'created', 'modified',)
@@ -168,6 +168,7 @@ class AllocationAttributeAdmin(SimpleHistoryAdmin):
         'allocation__allocationuser__user__first_name',
         'allocation__allocationuser__user__last_name',
         'allocation__allocationuser__user__username',
+        'allocation__project__name',
     )
 
     def usage(self, obj):
@@ -190,7 +191,7 @@ class AllocationAttributeAdmin(SimpleHistoryAdmin):
             for pi_user in pi_users])
 
     def project(self, obj):
-        return textwrap.shorten(obj.allocation.project.title, width=50)
+        return obj.allocation.project.name
 
     def project_title(self, obj):
         return obj.allocation.project.title
@@ -250,7 +251,7 @@ class AllocationUserAdmin(SimpleHistoryAdmin):
         return ', '.join(project.pis().values_list('username', flat=True))
 
     def project(self, obj):
-        return textwrap.shorten(obj.allocation.project.title, width=50)
+        return obj.allocation.project.name
 
     def get_fields(self, request, obj):
         if obj is None:
@@ -334,12 +335,14 @@ class AllocationAttributeUsageAdmin(SimpleHistoryAdmin):
     fields = ('allocation_attribute', 'value',)
     list_filter = ('allocation_attribute__allocation_attribute_type',
                    'allocation_attribute__allocation__resources', ValueFilter, )
+    search_fields = ('allocation_attribute__allocation__resources__name',
+                     'allocation_attribute__allocation__project__name')
 
     def resource(self, obj):
         return obj.allocation_attribute.allocation.resources.first().name
 
     def project(self, obj):
-        return obj.allocation_attribute.allocation.project.title
+        return obj.allocation_attribute.allocation.project.name
 
     def project_pis(self, obj):
         project = obj.allocation_attribute.allocation.project
@@ -359,8 +362,8 @@ class AllocationUserAttributeUsageInline(admin.TabularInline):
 @admin.register(AllocationUserAttribute)
 class AllocationUserAttributeAdmin(SimpleHistoryAdmin):
     readonly_fields_change = (
-        'allocation_user', 'allocation', 'allocation_attribute_type', 'created', 'modified', 'project_title')
-    fields_change = ('project_title', 'allocation', 'allocation_user',
+        'allocation_user', 'allocation', 'allocation_attribute_type', 'created', 'modified', 'project')
+    fields_change = ('project', 'allocation', 'allocation_user',
                      'allocation_attribute_type', 'value', 'created', 'modified',)
     list_display = ('pk', 'user', 'project', 'resource',
                     'allocation_attribute_type', 'value', 'created', 'modified',)
@@ -370,7 +373,8 @@ class AllocationUserAttributeAdmin(SimpleHistoryAdmin):
     search_fields = (
         'allocation_user__user__first_name',
         'allocation_user__user__last_name',
-        'allocation_user__user__username'
+        'allocation_user__user__username',
+        'allocation_user__allocation__project__name',
     )
 
     def resource(self, obj):
@@ -387,7 +391,7 @@ class AllocationUserAttributeAdmin(SimpleHistoryAdmin):
             for pi_user in pi_users])
 
     def project(self, obj):
-        return textwrap.shorten(obj.allocation.project.title, width=50)
+        return obj.allocation.project.name
 
     def user(self, obj):
         return textwrap.shorten(obj.allocation_user.user.username, width=50)
@@ -410,15 +414,20 @@ class AllocationUserAttributeAdmin(SimpleHistoryAdmin):
 
 @admin.register(AllocationUserAttributeUsage)
 class AllocationUserAttributeUsageAdmin(SimpleHistoryAdmin):
-    list_display = ('allocation_user_attribute', 'project',
+    list_display = ('allocation_user_attribute', 'user', 'project',
                     'resource', 'value',)
     readonly_fields = ('allocation_user_attribute',)
     fields = ('allocation_user_attribute', 'value',)
     list_filter = ('allocation_user_attribute__allocation_attribute_type',
                    'allocation_user_attribute__allocation__resources', ValueFilter, )
+    search_fields = ('allocation_user_attribute__allocation__project__name',
+                     'allocation_user_attribute__allocation_user__user__username')
 
     def resource(self, obj):
         return obj.allocation_user_attribute.allocation.resources.first().name
 
     def project(self, obj):
-        return obj.allocation_user_attribute.allocation.project.title
+        return obj.allocation_user_attribute.allocation.project.name
+
+    def user(self, obj):
+        return obj.allocation_user_attribute.allocation_user.user.username
