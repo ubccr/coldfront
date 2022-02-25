@@ -17,7 +17,8 @@ class ProjectTransactionAdmin(admin.ModelAdmin):
 @admin.register(ProjectUserTransaction)
 class ProjectUserTransactionAdmin(admin.ModelAdmin):
     list_display = ('date_time', 'get_project', 'get_user', 'allocation', )
-    search_fields = ('project_user__project__name',)
+    search_fields = ('project_user__project__name',
+                     'project_user__user__username')
 
     def get_project(self, obj):
         return obj.project_user.project
