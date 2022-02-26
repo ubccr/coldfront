@@ -1,0 +1,64 @@
+<div class="mb-3" id="accordion{{ num }}">
+  <div class="card">
+    <div class="card-header">
+      <a id="expand_button{{ num }}" role="button" class="card-link " data-toggle="collapse" href="#collapse{{ num }}">
+
+        <div style="text-align: center;">
+          <strong>
+            {{ title}}
+            {% if num_active %}
+
+              <span class="badge badge-warning">
+                <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                {{ num_active }} active requests</span>
+            {% endif %}
+          </strong>
+        </div>
+
+      </a>
+    </div>
+    <div id="collapse{{ num }}" class="collapse show" data-parent="#accordion{{ num }}" style="transition: none;">
+      <div class="card">
+
+        {% with queryset=active_queryset adj='active' page_num=num %}
+          {% include list_template %}
+        {% endwith %}
+
+        {% with queryset=complete_queryset adj='completed' page_num=num|add:1 %}
+          {% include list_template %}
+        {% endwith %}
+
+        {% if user.is_superuser %}
+          <div class="card-body">
+            <a class="btn btn-primary" href="{% url button_path %}" role="button" style="float: right;">
+              <i class="fa fa-angle-double-right" aria-hidden="true"></i>
+              {{ button_text }}
+            </a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+    {# maintains collapse status on reload #}
+    $(document).ready(function () {
+        $(".collapse").on("shown.bs.collapse", function () {
+            localStorage.setItem("coll_" + this.id, true);
+        });
+
+        $(".collapse").on("hidden.bs.collapse", function () {
+            localStorage.removeItem("coll_" + this.id);
+        });
+
+        $(".collapse").each(function () {
+            if (localStorage.getItem("coll_" + this.id) === "true") {
+                $(this).collapse("show");
+            }
+            else {
+                $(this).collapse("hide");
+            }
+        });
+    });
+</script>
