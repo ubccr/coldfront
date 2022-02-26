@@ -18,6 +18,10 @@
     {% include 'request_hub/request_section.html' %}
   {% endwith %}
 
+  {% with request_obj=savio_project_request_obj %}
+    {% include 'request_hub/request_section.html' %}
+  {% endwith %}
+
   <script>
   {# maintains the scroll position when clicking through pagination pages #}
       document.addEventListener("DOMContentLoaded", function(event) {
