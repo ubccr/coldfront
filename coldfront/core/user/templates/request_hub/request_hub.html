@@ -23,18 +23,40 @@
   {% endwith %}
 
   <script>
-  {# maintains the scroll position when clicking through pagination pages #}
-      document.addEventListener("DOMContentLoaded", function(event) {
-          var scrollpos = localStorage.getItem('scrollpos');
-          if (scrollpos) window.scrollTo(0, scrollpos);
-      });
-
+    {# set variables to be used for scroll position #}
       window.onbeforeunload = function(e) {
           localStorage.setItem('scrollpos', window.scrollY);
+          localStorage.setItem('resetpos', true);
       };
 
-    $("#navbar-main > ul > li.active").removeClass("active");
-    $("#navbar-request-hub").addClass("active");
+      $("#navbar-main > ul > li.active").removeClass("active");
+      $("#navbar-request-hub").addClass("active");
+
+      $(document).ready(function () {
+          {# maintains collapse status on reload #}
+          $(".collapse").on("shown.bs.collapse", function () {
+              localStorage.setItem("coll_" + this.id, true);
+          });
+
+          $(".collapse").on("hidden.bs.collapse", function () {
+              localStorage.removeItem("coll_" + this.id);
+          });
+
+          $(".collapse").each(function () {
+              if (localStorage.getItem("coll_" + this.id) === "true") {
+                  $(this).collapse("show");
+              }
+              else {
+                  $(this).collapse("hide");
+              }
+          });
+
+          {# maintains scroll position on reload #}
+          var scrollpos = localStorage.getItem('scrollpos');
+          var resetpos = localStorage.getItem('resetpos');
+          if (scrollpos && resetpos) window.scrollTo(0, scrollpos);
+
+      });
   </script>
 
 {% endblock %}
