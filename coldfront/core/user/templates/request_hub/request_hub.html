@@ -10,90 +10,24 @@
 </div>
 
 
-  <div class="mb-3" id="accordion1">
-    <div class="card">
-      <div class="card-header">
-        <a id="expand_button1" role="button" class="card-link " data-toggle="collapse" href="#collapse1">
+  {% with num=0 title='Cluster Account Requests' num_active=num_active_cluster_account_requests list_template='request_hub/cluster_account_list.html' active_queryset=cluster_account_list_active complete_queryset=cluster_account_list_complete button_path='allocation-cluster-account-request-list' button_text='Go To Cluster Account Requests Main Page' %}
+    {% include 'request_hub/request_section.html' %}
+  {% endwith %}
 
-        <div style="text-align: center;">
-          <strong>
-            Cluster Account Requests
-            {% if num_active_cluster_account_requests %}
+  {% with num=2 title='Project Removal Requests' num_active=num_removal_request_active list_template='request_hub/removal_request_list.html' active_queryset=removal_request_active complete_queryset=removal_request_complete button_path='project-removal-request-list' button_text='Go To Project Removal Requests Main Page' %}
+    {% include 'request_hub/request_section.html' %}
+  {% endwith %}
 
-              <span class="badge badge-warning">
-                <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
-                {{ num_active_cluster_account_requests }} active requests</span>
-            {% endif %}
-          </strong>
-        </div>
+  <script>
+  {# maintains the scroll position when clicking through pagination pages #}
+      document.addEventListener("DOMContentLoaded", function(event) {
+          var scrollpos = localStorage.getItem('scrollpos');
+          if (scrollpos) window.scrollTo(0, scrollpos);
+      });
 
-        </a>
-      </div>
-      <div id="collapse1" class="collapse show" data-parent="#accordion1">
-        <div class="card">
-
-          {% with queryset=cluster_account_list_active adj='active' page_num='0' %}
-            {% include 'request_hub/cluster_account_list.html' %}
-          {% endwith %}
-
-          {% with queryset=cluster_account_list_complete adj='completed' page_num='1' %}
-            {% include 'request_hub/cluster_account_list.html' %}
-          {% endwith %}
-
-            {% if user.is_superuser %}
-              <div class="card-body">
-              <a class="btn btn-primary" href="{% url 'allocation-cluster-account-request-list' %}" role="button" style="float: right;">
-                <i class="fa fa-angle-double-right" aria-hidden="true"></i>
-                Go To Cluster Account Requests Main Page
-              </a>
-              </div>
-            {% endif %}
-            </div>
-          </div>
-        </div>
-      </div>
-
-  <div class="mb-3" id="accordion2">
-    <div class="card">
-      <div class="card-header">
-        <a id="expand_button2" role="button" class="card-link " data-toggle="collapse" href="#collapse2">
-
-          <div style="text-align: center;">
-            <strong>
-              Project Removal Requests
-              {% if num_removal_request_active %}
-
-                <span class="badge badge-warning">
-                <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
-                {{ num_active_cluster_account_requests }} active requests</span>
-              {% endif %}
-            </strong>
-          </div>
-
-        </a>
-      </div>
-      <div id="collapse2" class="collapse show" data-parent="#accordion2">
-        <div class="card">
-
-          {% with queryset=removal_request_active adj='active' page_num='2'%}
-            {% include 'request_hub/removal_request_list.html' %}
-          {% endwith %}
-
-          {% with queryset=removal_request_complete adj='completed' page_num='3' %}
-            {% include 'request_hub/removal_request_list.html' %}
-          {% endwith %}
-
-          {% if user.is_superuser %}
-            <div class="card-body">
-              <a class="btn btn-primary" href="{% url 'project-removal-request-list' %}" role="button" style="float: right;">
-                <i class="fa fa-angle-double-right" aria-hidden="true"></i>
-                Go To Project Removal Requests Main Page
-              </a>
-            </div>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-  </div>
+      window.onbeforeunload = function(e) {
+          localStorage.setItem('scrollpos', window.scrollY);
+      };
+  </script>
 
 {% endblock %}
