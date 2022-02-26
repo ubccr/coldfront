@@ -24,7 +24,8 @@ from coldfront.core.project.forms_.removal_forms import \
 from coldfront.core.project.models import (Project,
                                            ProjectUserStatusChoice,
                                            ProjectUserRemovalRequest,
-                                           ProjectUserRemovalRequestStatusChoice)
+                                           ProjectUserRemovalRequestStatusChoice,
+                                           SavioProjectAllocationRequest)
 from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestRunner
 from coldfront.core.utils.common import (import_from_settings,
                                          utc_now_offset_aware)
@@ -60,7 +61,6 @@ class RequestHub(LoginRequiredMixin,
     paginate_by = 5
     paginators = 0
     show_all_requests = False
-    cur_num = 0
 
     def create_paginator(self, queryset):
         """
@@ -88,17 +88,16 @@ class RequestHub(LoginRequiredMixin,
 
         cluster_account_status = AllocationAttributeType.objects.get(
             name='Cluster Account Status')
+        kwargs = {'allocation_user__user': user,
+                  'allocation_attribute_type': cluster_account_status}
 
         cluster_account_list_complete = AllocationUserAttribute.objects.filter(
-            allocation_attribute_type=cluster_account_status,
-            value__in=['Denied', 'Active'],
-            allocation_user__user=user)
+            value__in=['Denied', 'Active'], **kwargs)
 
         cluster_account_list_active = AllocationUserAttribute.objects.filter(
-            allocation_attribute_type=cluster_account_status,
-            value__in=['Pending - Add', 'Processing'],
-            allocation_user__user=user)
+            value__in=['Pending - Add', 'Processing'], **kwargs)
 
+        cluster_request_object.num = self.paginators
         cluster_request_object.active_queryset = \
             self.create_paginator(cluster_account_list_active)
 
@@ -114,8 +113,6 @@ class RequestHub(LoginRequiredMixin,
             'allocation-cluster-account-request-list'
         cluster_request_object.button_text = \
             'Go To Cluster Account Requests Main Page'
-        cluster_request_object.num = self.cur_num
-        self.cur_num += 2
 
         return cluster_request_object
 
@@ -124,17 +121,15 @@ class RequestHub(LoginRequiredMixin,
         removal_request_object = RequestListItem()
         user = self.request.user
 
-        project_user_cond = Q(project_user__user=user)
-        requester_cond = Q(requester=user)
+        args = [Q(project_user__user=user) | Q(requester=user)]
 
         removal_request_active = ProjectUserRemovalRequest.objects.filter(
-            status__name__in=['Pending', 'Processing']).\
-            filter(project_user_cond | requester_cond)
+            status__name__in=['Pending', 'Processing'], *args)
 
         removal_request_complete = ProjectUserRemovalRequest.objects.filter(
-            status__name='Complete').\
-            filter(project_user_cond | requester_cond)
+            status__name='Complete', *args)
 
+        removal_request_object.num = self.paginators
         removal_request_object.active_queryset = \
             self.create_paginator(removal_request_active)
 
@@ -150,16 +145,47 @@ class RequestHub(LoginRequiredMixin,
             'project-removal-request-list'
         removal_request_object.button_text = \
             'Go To Project Removal Requests Main Page'
-        removal_request_object.num = self.cur_num
-        self.cur_num += 2
 
         return removal_request_object
+
+    def get_savio_project_request(self):
+        """Populates a RequestListItem with data for savio project requests"""
+        savio_proj_request_object = RequestListItem()
+        user = self.request.user
+
+        args = [Q(pi=user) | Q(requester=user)]
+
+        project_request_active = SavioProjectAllocationRequest.objects.filter(
+            status__name__in=['Under Review', 'Approved - Processing'], *args)
+
+        project_request_complete = SavioProjectAllocationRequest.objects.filter(
+            status__name__in=['Approved - Complete', 'Denied'], *args)
+
+        savio_proj_request_object.num = self.paginators
+        savio_proj_request_object.active_queryset = \
+            self.create_paginator(project_request_active)
+
+        savio_proj_request_object.complete_queryset = \
+            self.create_paginator(project_request_complete)
+
+        savio_proj_request_object.num_active = project_request_active.count()
+
+        savio_proj_request_object.title = 'Savio Project Requests'
+        savio_proj_request_object.list_template = \
+            'request_hub/savio_project_request_list.html'
+        savio_proj_request_object.button_path = \
+            'savio-project-pending-request-list'
+        savio_proj_request_object.button_text = \
+            'Go To Savio Project Requests Main Page'
+
+        return savio_proj_request_object
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
         requests = ['cluster_account_request',
-                    'project_removal_request']
+                    'project_removal_request',
+                    'savio_project_request']
 
         for request in requests:
             context[f'{request}_obj'] = eval(f'self.get_{request}()')
