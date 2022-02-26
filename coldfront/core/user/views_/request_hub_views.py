@@ -1,44 +1,15 @@
-from itertools import chain
-
-from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.contrib.auth.models import User
-from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db.models import Q
-from django.http import HttpResponseRedirect
-from django.shortcuts import get_object_or_404, render
-from django.urls import reverse
-from django.views.generic import ListView
-from django.views.generic.base import TemplateView, View
-from django.views.generic.edit import FormView
-
-from coldfront.core.allocation.models import (Allocation,
-                                              AllocationAttributeType,
-                                              AllocationUserStatusChoice,
-                                              AllocationUserAttribute)
-
-from coldfront.core.project.forms_.removal_forms import \
-    (ProjectRemovalRequestSearchForm,
-     ProjectRemovalRequestUpdateStatusForm,
-     ProjectRemovalRequestCompletionForm)
-from coldfront.core.project.models import (Project,
-                                           ProjectUserStatusChoice,
-                                           ProjectUserRemovalRequest,
-                                           ProjectUserRemovalRequestStatusChoice,
-                                           SavioProjectAllocationRequest)
-from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestRunner
-from coldfront.core.utils.common import (import_from_settings,
-                                         utc_now_offset_aware)
-from coldfront.core.utils.mail import send_email_template
-
 import logging
 
-EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.db.models import Q
+from django.views.generic.base import TemplateView
 
-if EMAIL_ENABLED:
-    EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
-    EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
-    SUPPORT_EMAIL = import_from_settings('CENTER_HELP_EMAIL')
+from coldfront.core.allocation.models import (AllocationAttributeType,
+                                              AllocationUserAttribute)
+from coldfront.core.project.models import (ProjectUserRemovalRequest,
+                                           SavioProjectAllocationRequest)
+
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +29,7 @@ class RequestListItem:
 class RequestHub(LoginRequiredMixin,
                  TemplateView):
     template_name = 'request_hub/request_hub.html'
-    paginate_by = 5
+    paginate_by = 3
     paginators = 0
     show_all_requests = False
 
@@ -88,8 +59,10 @@ class RequestHub(LoginRequiredMixin,
 
         cluster_account_status = AllocationAttributeType.objects.get(
             name='Cluster Account Status')
-        kwargs = {'allocation_user__user': user,
-                  'allocation_attribute_type': cluster_account_status}
+        kwargs = {'allocation_attribute_type': cluster_account_status}
+
+        if not self.show_all_requests:
+            kwargs['allocation_user__user'] = user
 
         cluster_account_list_complete = AllocationUserAttribute.objects.filter(
             value__in=['Denied', 'Active'], **kwargs)
@@ -121,7 +94,9 @@ class RequestHub(LoginRequiredMixin,
         removal_request_object = RequestListItem()
         user = self.request.user
 
-        args = [Q(project_user__user=user) | Q(requester=user)]
+        args = []
+        if not self.show_all_requests:
+            args.append(Q(project_user__user=user) | Q(requester=user))
 
         removal_request_active = ProjectUserRemovalRequest.objects.filter(
             status__name__in=['Pending', 'Processing'], *args)
@@ -153,7 +128,9 @@ class RequestHub(LoginRequiredMixin,
         savio_proj_request_object = RequestListItem()
         user = self.request.user
 
-        args = [Q(pi=user) | Q(requester=user)]
+        args = []
+        if not self.show_all_requests:
+            args.append(Q(pi=user) | Q(requester=user))
 
         project_request_active = SavioProjectAllocationRequest.objects.filter(
             status__name__in=['Under Review', 'Approved - Processing'], *args)
