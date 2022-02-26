@@ -42,15 +42,47 @@ if EMAIL_ENABLED:
 logger = logging.getLogger(__name__)
 
 
+class RequestListItem:
+    def __init__(self):
+        num = None
+        title = None
+        num_active = None
+        list_template = None
+        active_queryset = None
+        complete_queryset = None
+        button_path = None
+        button_text = None
+
+
 class RequestHub(LoginRequiredMixin,
-                 UserPassesTestMixin,
                  TemplateView):
     template_name = 'request_hub/request_hub.html'
-    paginate_by = 2
+    paginate_by = 5
     paginators = 0
     show_all_requests = False
+    cur_num = 0
 
-    def get_cluster_account_requests(self):
+    def create_paginator(self, queryset):
+        """
+        Creates a paginator object for the given queryset
+        and updates the context with the created object.
+        """
+        paginator = Paginator(queryset, self.paginate_by)
+        page = self.request.GET.get(f'page{self.paginators}')
+        try:
+            queryset = paginator.page(page)
+        except PageNotAnInteger:
+            queryset = paginator.page(1)
+        except EmptyPage:
+            queryset = paginator.page(paginator.num_pages)
+
+        self.paginators += 1
+
+        return queryset
+
+    def get_cluster_account_request(self):
+        cluster_request_object = RequestListItem()
+
         user = self.request.user
 
         cluster_account_status = AllocationAttributeType.objects.get(
@@ -66,78 +98,58 @@ class RequestHub(LoginRequiredMixin,
             value__in=['Pending - Add', 'Processing'],
             allocation_user__user=user)
 
-        return cluster_account_list_active, cluster_account_list_complete
+        cluster_request_object.active_queryset = \
+            self.create_paginator(cluster_account_list_active)
 
-    def get_removal_requests(self):
-        user = self.request.user
+        cluster_request_object.complete_queryset = \
+            self.create_paginator(cluster_account_list_complete)
 
-        project_user_cond = Q(project_user__user=self.request.user)
-        requester_cond = Q(requester=self.request.user)
+        cluster_request_object.num_active = cluster_account_list_active.count()
 
-        removal_request_active = ProjectUserRemovalRequest.objects.filter(
-            status__name__in=['Pending', 'Processing']).\
-            filter(project_user_cond | requester_cond)
+        cluster_request_object.title = 'Cluster Account Requests'
+        cluster_request_object.list_template = 'request_hub/cluster_account_list.html'
+        cluster_request_object.button_path = 'allocation-cluster-account-request-list'
+        cluster_request_object.button_text = 'Go To Cluster Account Requests Main Page'
+        cluster_request_object.num = self.cur_num
+        self.cur_num += 2
 
-        removal_request_complete = ProjectUserRemovalRequest.objects.filter(
-            status__name='Complete').\
-            filter(project_user_cond | requester_cond)
+        return cluster_request_object
 
-        return removal_request_active, removal_request_complete
-
-    def test_func(self):
-        """UserPassesTestMixin tests."""
-        if self.request.user.is_superuser:
-            return True
-
-        if self.request.user.has_perm('project.view_projectuserremovalrequest'):
-            return True
-        #
-        # message = (
-        #     'You do not have permission to review project removal requests.')
-        # messages.error(self.request, message)
-
-        return True
+    # def get_project_removal_requests(self, context):
+    #     user = self.request.user
+    #
+    #     project_user_cond = Q(project_user__user=user)
+    #     requester_cond = Q(requester=user)
+    #
+    #     removal_request_active = ProjectUserRemovalRequest.objects.filter(
+    #         status__name__in=['Pending', 'Processing']).\
+    #         filter(project_user_cond | requester_cond)
+    #
+    #     removal_request_complete = ProjectUserRemovalRequest.objects.filter(
+    #         status__name='Complete').\
+    #         filter(project_user_cond | requester_cond)
+    #
+    #     context = self.create_paginator(removal_request_active,
+    #                                     context,
+    #                                     'removal_request_active')
+    #
+    #     context = self.create_paginator(removal_request_complete,
+    #                                     context,
+    #                                     'removal_request_complete')
+    #
+    #     context['num_active_removal_request'] = \
+    #         removal_request_active.count()
+    #
+    #     return context
 
     def get_context_data(self, **kwargs):
-        def create_paginator(queryset, context_name):
-            """
-            Creates a paginator object for the given queryset
-            and updates the context with the created object.
-            """
-            paginator = Paginator(queryset, self.paginate_by)
-            page = self.request.GET.get(f'page{self.paginators}')
-            try:
-                queryset = paginator.page(page)
-            except PageNotAnInteger:
-                queryset = paginator.page(1)
-            except EmptyPage:
-                queryset = paginator.page(paginator.num_pages)
-
-            context[context_name] = queryset
-
-            self.paginators += 1
-
         context = super().get_context_data(**kwargs)
 
-        cluster_account_list_active, cluster_account_list_complete = \
-            self.get_cluster_account_requests()
+        requests = ['cluster_account_request',]
+                    # 'project_removal_request']
 
-        create_paginator(cluster_account_list_active,
-                         'cluster_account_list_active')
-        context['num_active_cluster_account_requests'] = len(cluster_account_list_active)
-
-        create_paginator(cluster_account_list_complete,
-                         'cluster_account_list_complete')
-
-        removal_request_active, removal_request_complete = \
-            self.get_removal_requests()
-
-        create_paginator(removal_request_active,
-                         'removal_request_active')
-        context['num_removal_request_active'] = len(removal_request_active)
-
-        create_paginator(removal_request_complete,
-                         'removal_request_complete')
+        for request in requests:
+            context[f'{request}_obj'] = eval(f'self.get_{request}()')
 
         context['show_all'] = (self.request.user.is_superuser or
                                self.request.user.is_staff) and \
