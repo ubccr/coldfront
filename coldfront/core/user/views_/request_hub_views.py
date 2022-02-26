@@ -48,6 +48,7 @@ class RequestHub(LoginRequiredMixin,
     template_name = 'request_hub/request_hub.html'
     paginate_by = 2
     paginators = 0
+    show_all_requests = False
 
     def get_cluster_account_requests(self):
         user = self.request.user
@@ -137,5 +138,9 @@ class RequestHub(LoginRequiredMixin,
 
         create_paginator(removal_request_complete,
                          'removal_request_complete')
+
+        context['show_all'] = (self.request.user.is_superuser or
+                               self.request.user.is_staff) and \
+                              self.show_all_requests
 
         return context
