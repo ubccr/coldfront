@@ -28,6 +28,9 @@
       window.onbeforeunload = function(e) {
           localStorage.setItem('scrollpos', window.scrollY);
       };
+
+    $("#navbar-main > ul > li.active").removeClass("active");
+    $("#navbar-request-hub").addClass("active");
   </script>
 
 {% endblock %}
