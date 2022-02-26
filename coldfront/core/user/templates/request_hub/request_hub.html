@@ -10,10 +10,10 @@
 </div>
 
 
-  <div class="mb-3" id="accordion">
+  <div class="mb-3" id="accordion1">
     <div class="card">
       <div class="card-header">
-        <a id="expand_button" role="button" class="card-link " data-toggle="collapse" href="#collapseOne">
+        <a id="expand_button1" role="button" class="card-link " data-toggle="collapse" href="#collapse1">
 
         <div style="text-align: center;">
           <strong>
@@ -29,14 +29,14 @@
 
         </a>
       </div>
-      <div id="collapseOne" class="collapse show" data-parent="#accordion">
+      <div id="collapse1" class="collapse show" data-parent="#accordion1">
         <div class="card">
 
           {% with queryset=cluster_account_list_active adj='active' page_num='0' %}
             {% include 'request_hub/cluster_account_list.html' %}
           {% endwith %}
 
-          {% with queryset=cluster_account_list_complete adj='complete' page_num='1' %}
+          {% with queryset=cluster_account_list_complete adj='completed' page_num='1' %}
             {% include 'request_hub/cluster_account_list.html' %}
           {% endwith %}
 
@@ -52,5 +52,48 @@
           </div>
         </div>
       </div>
+
+  <div class="mb-3" id="accordion2">
+    <div class="card">
+      <div class="card-header">
+        <a id="expand_button2" role="button" class="card-link " data-toggle="collapse" href="#collapse2">
+
+          <div style="text-align: center;">
+            <strong>
+              Project Removal Requests
+              {% if num_removal_request_active %}
+
+                <span class="badge badge-warning">
+                <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                {{ num_active_cluster_account_requests }} active requests</span>
+              {% endif %}
+            </strong>
+          </div>
+
+        </a>
+      </div>
+      <div id="collapse2" class="collapse show" data-parent="#accordion2">
+        <div class="card">
+
+          {% with queryset=removal_request_active adj='active' page_num='2'%}
+            {% include 'request_hub/removal_request_list.html' %}
+          {% endwith %}
+
+          {% with queryset=removal_request_complete adj='completed' page_num='3' %}
+            {% include 'request_hub/removal_request_list.html' %}
+          {% endwith %}
+
+          {% if user.is_superuser %}
+            <div class="card-body">
+              <a class="btn btn-primary" href="{% url 'project-removal-request-list' %}" role="button" style="float: right;">
+                <i class="fa fa-angle-double-right" aria-hidden="true"></i>
+                Go To Project Removal Requests Main Page
+              </a>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
 
 {% endblock %}
