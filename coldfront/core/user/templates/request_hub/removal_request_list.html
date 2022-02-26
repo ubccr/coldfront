@@ -3,15 +3,13 @@
     {% if queryset %}
       <div class="card border-light">
         <div class="card-body">
-        <h5 class="card-title"><span style="text-transform:capitalize;">{{ adj }} Project Removal Requests</span></h5>
+        <h5 class="card-title"><span style="text-transform:capitalize;">{{ adj }} {{ title }}</span></h5>
         <div class="table-responsive">
           <table class="table table-sm">
             <thead>
             <tr>
               <th scope="col">
                 #
-                <a href="?order_by=id&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-                <a href="?order_by=id&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
               </th>
               <th scope="col">
                 {% if adj == 'active' %}
@@ -19,28 +17,18 @@
                 {% else %}
                   Date Completed
                 {% endif %}
-                <a href="?order_by=created&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-                <a href="?order_by=created&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
               </th>
               <th scope="col">
                 User Email
-                <a href="?order_by=project_user__user__email&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-                <a href="?order_by=project_user__user__email&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
               </th>
               <th scope="col">
                 User
-                <a href="?order_by=project_user__user__username&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-                <a href="?order_by=project_user__user__username&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
               </th>
               <th scope="col">
                 Requester
-                <a href="?order_by=requester__username&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-                <a href="?order_by=requester__username&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
               </th>
               <th scope="col">
                 Project
-                <a href="?order_by=project_user__project__name&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-                <a href="?order_by=project_user__project__name=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
               </th>
               <th scope="col">
                 Status
@@ -93,15 +81,9 @@
         </div>
       </div>
       {% else %}
-        {% if adj == 'active' %}
-          <div class="alert alert-info">
-            No active project removal requests!
-          </div>
-        {% else %}
-          <div class="alert alert-info">
-            No completed project removal requests!
-          </div>
-        {% endif %}
+        <div class="alert alert-info">
+          No {{ adj }} project removal requests!
+        </div>
       {% endif %}
   </div>
 </div>
