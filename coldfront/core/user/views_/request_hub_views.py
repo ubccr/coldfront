@@ -81,6 +81,7 @@ class RequestHub(LoginRequiredMixin,
         return queryset
 
     def get_cluster_account_request(self):
+        """Populates a RequestListItem with data for cluster account requests"""
         cluster_request_object = RequestListItem()
 
         user = self.request.user
@@ -107,46 +108,58 @@ class RequestHub(LoginRequiredMixin,
         cluster_request_object.num_active = cluster_account_list_active.count()
 
         cluster_request_object.title = 'Cluster Account Requests'
-        cluster_request_object.list_template = 'request_hub/cluster_account_list.html'
-        cluster_request_object.button_path = 'allocation-cluster-account-request-list'
-        cluster_request_object.button_text = 'Go To Cluster Account Requests Main Page'
+        cluster_request_object.list_template = \
+            'request_hub/cluster_account_list.html'
+        cluster_request_object.button_path = \
+            'allocation-cluster-account-request-list'
+        cluster_request_object.button_text = \
+            'Go To Cluster Account Requests Main Page'
         cluster_request_object.num = self.cur_num
         self.cur_num += 2
 
         return cluster_request_object
 
-    # def get_project_removal_requests(self, context):
-    #     user = self.request.user
-    #
-    #     project_user_cond = Q(project_user__user=user)
-    #     requester_cond = Q(requester=user)
-    #
-    #     removal_request_active = ProjectUserRemovalRequest.objects.filter(
-    #         status__name__in=['Pending', 'Processing']).\
-    #         filter(project_user_cond | requester_cond)
-    #
-    #     removal_request_complete = ProjectUserRemovalRequest.objects.filter(
-    #         status__name='Complete').\
-    #         filter(project_user_cond | requester_cond)
-    #
-    #     context = self.create_paginator(removal_request_active,
-    #                                     context,
-    #                                     'removal_request_active')
-    #
-    #     context = self.create_paginator(removal_request_complete,
-    #                                     context,
-    #                                     'removal_request_complete')
-    #
-    #     context['num_active_removal_request'] = \
-    #         removal_request_active.count()
-    #
-    #     return context
+    def get_project_removal_request(self):
+        """Populates a RequestListItem with data for project removal requests"""
+        removal_request_object = RequestListItem()
+        user = self.request.user
+
+        project_user_cond = Q(project_user__user=user)
+        requester_cond = Q(requester=user)
+
+        removal_request_active = ProjectUserRemovalRequest.objects.filter(
+            status__name__in=['Pending', 'Processing']).\
+            filter(project_user_cond | requester_cond)
+
+        removal_request_complete = ProjectUserRemovalRequest.objects.filter(
+            status__name='Complete').\
+            filter(project_user_cond | requester_cond)
+
+        removal_request_object.active_queryset = \
+            self.create_paginator(removal_request_active)
+
+        removal_request_object.complete_queryset = \
+            self.create_paginator(removal_request_complete)
+
+        removal_request_object.num_active = removal_request_active.count()
+
+        removal_request_object.title = 'Project Removal Requests'
+        removal_request_object.list_template = \
+            'request_hub/removal_request_list.html'
+        removal_request_object.button_path = \
+            'project-removal-request-list'
+        removal_request_object.button_text = \
+            'Go To Project Removal Requests Main Page'
+        removal_request_object.num = self.cur_num
+        self.cur_num += 2
+
+        return removal_request_object
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        requests = ['cluster_account_request',]
-                    # 'project_removal_request']
+        requests = ['cluster_account_request',
+                    'project_removal_request']
 
         for request in requests:
             context[f'{request}_obj'] = eval(f'self.get_{request}()')

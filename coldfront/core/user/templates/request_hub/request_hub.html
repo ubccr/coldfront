@@ -14,9 +14,9 @@
     {% include 'request_hub/request_section.html' %}
   {% endwith %}
 
-{#  {% with num=2 title='Project Removal Requests' num_active=num_active_removal_request list_template='request_hub/removal_request_list.html' active_queryset=removal_request_active complete_queryset=removal_request_complete button_path='project-removal-request-list' button_text='Go To Project Removal Requests Main Page' %}#}
-{#    {% include 'request_hub/request_section.html' %}#}
-{#  {% endwith %}#}
+  {% with request_obj=project_removal_request_obj %}
+    {% include 'request_hub/request_section.html' %}
+  {% endwith %}
 
   <script>
   {# maintains the scroll position when clicking through pagination pages #}
