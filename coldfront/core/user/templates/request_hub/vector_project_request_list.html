@@ -1,0 +1,72 @@
+<div class="card border-light">
+  <div class="card-body">
+    {% if vector_project_request_list %}
+      <div class="card border-light">
+      <div class="card-body">
+      <h5 class="card-title"><span style="text-transform:capitalize;">{{ adj }} {{ title }}</span></h5>
+      <div class="table-responsive">
+        <table class="table table-sm">
+          <thead>
+          <tr>
+            <th scope="col">
+              #
+            </th>
+            <th scope="col">
+              Date Requested/<br>Last Modified
+            </th>
+            <th scope="col">
+              Requester Email
+            </th>
+            <th scope="col">
+              Project
+            </th>
+            <th scope="col">
+              PI
+            </th>
+            <th scope="col">
+              Status
+            </th>
+          </tr>
+          </thead>
+          <tbody>
+          {% for vector_project_request in vector_project_request_list %}
+            <tr>
+              <td>
+                <a href="{% url 'vector-project-request-detail' vector_project_request.pk %}">
+                  {{ vector_project_request.pk }}
+                </a>
+              </td>
+              <td>{{ vector_project_request.modified|date:"M. d, Y" }}</td>
+              <td>{{ vector_project_request.requester.email }}</td>
+              <td>{{ vector_project_request.project.name }}</td>
+              <td>{{ vector_project_request.pi.email }}</td>
+              <td>
+                {% with status=vector_project_request.status.name %}
+                  {% if status == 'Under Review' %}
+                    <span class="badge badge-warning">{{ status }}</span>
+                  {% elif status == 'Approved - Processing' %}
+                    <span class="badge badge-warning">{{ status }}</span>
+                  {% elif status == 'Approved - Complete' %}
+                    <span class="badge badge-success">{{ status }}</span>
+                  {% else %}
+                    <span class="badge badge-danger">{{ status }}</span>
+                  {% endif %}
+                {% endwith %}
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        {% with pag_obj=queryset %}
+          {% include 'common/pagination.html' %}
+        {% endwith %}
+      </div>
+      </div>
+      </div>
+    {% else %}
+      <div class="alert alert-info">
+        No {{ adj }} Vector project requests!
+      </div>
+    {% endif %}
+  </div>
+</div>
