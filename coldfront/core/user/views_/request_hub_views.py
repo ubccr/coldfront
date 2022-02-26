@@ -8,7 +8,8 @@ from django.views.generic.base import TemplateView
 from coldfront.core.allocation.models import (AllocationAttributeType,
                                               AllocationUserAttribute)
 from coldfront.core.project.models import (ProjectUserRemovalRequest,
-                                           SavioProjectAllocationRequest)
+                                           SavioProjectAllocationRequest,
+                                           VectorProjectAllocationRequest)
 
 
 logger = logging.getLogger(__name__)
@@ -29,7 +30,7 @@ class RequestListItem:
 class RequestHub(LoginRequiredMixin,
                  TemplateView):
     template_name = 'request_hub/request_hub.html'
-    paginate_by = 3
+    paginate_by = 10
     paginators = 0
     show_all_requests = False
 
@@ -157,18 +158,56 @@ class RequestHub(LoginRequiredMixin,
 
         return savio_proj_request_object
 
+    def get_vector_project_request(self):
+        """Populates a RequestListItem with data for vector project requests"""
+        vector_proj_request_object = RequestListItem()
+        user = self.request.user
+
+        args = []
+        if not self.show_all_requests:
+            args.append(Q(pi=user) | Q(requester=user))
+
+        project_request_active = VectorProjectAllocationRequest.objects.filter(
+            status__name__in=['Under Review', 'Approved - Processing'], *args)
+
+        project_request_complete = VectorProjectAllocationRequest.objects.filter(
+            status__name__in=['Approved - Complete', 'Denied'], *args)
+
+        vector_proj_request_object.num = self.paginators
+        vector_proj_request_object.active_queryset = \
+            self.create_paginator(project_request_active)
+
+        vector_proj_request_object.complete_queryset = \
+            self.create_paginator(project_request_complete)
+
+        vector_proj_request_object.num_active = project_request_active.count()
+
+        vector_proj_request_object.title = 'Vector Project Requests'
+        vector_proj_request_object.list_template = \
+            'request_hub/vector_project_request_list.html'
+        vector_proj_request_object.button_path = \
+            'vector-project-pending-request-list'
+        vector_proj_request_object.button_text = \
+            'Go To Vector Project Requests Main Page'
+
+        return vector_proj_request_object
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
         requests = ['cluster_account_request',
                     'project_removal_request',
-                    'savio_project_request']
+                    'savio_project_request',
+                    'vector_project_request']
 
         for request in requests:
             context[f'{request}_obj'] = eval(f'self.get_{request}()')
 
-        context['show_all'] = (self.request.user.is_superuser or
-                               self.request.user.is_staff) and \
-                              self.show_all_requests
+        context['show_all'] = ((self.request.user.is_superuser or
+                               self.request.user.is_staff) and
+                               self.show_all_requests)
+
+        context['admin_staff'] = (self.request.user.is_superuser or
+                                  self.request.user.is_staff)
 
         return context

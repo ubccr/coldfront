@@ -2,10 +2,26 @@
 
 <div class="row">
   <div class="col-lg-12">
-    <h2>Request Hub</h2>
+    <h1>Request Hub</h1>
     <hr>
+    {% if show_all %}
+      <p>
+        Below are all of the requests in the myBRC Portal. Click on a request
+        section to view requests of that type. To perform actions on a specific request,
+        click the button to go to the request's main page and perform the actions there.
+        Click <a href="{% url 'request-hub' %}">here</a> to view only your requests.
+      </p>
+    {% else %}
+      <p>
+        Below are all of your requests in the myBRC Portal. Click on a request
+        section to view your requests of that type.
 
-    <p>Below are all your active requests. To view your completed requests, click to view completed requests in the appropriate section</p>
+      {% if admin_staff %}
+          Click <a href="{% url 'request-hub-admin' %}">here</a> to view all requests in the myBRC Portal.
+      {% endif %}
+      </p>
+    {% endif %}
+  <hr>
   </div>
 </div>
 
@@ -19,6 +35,10 @@
   {% endwith %}
 
   {% with request_obj=savio_project_request_obj %}
+    {% include 'request_hub/request_section.html' %}
+  {% endwith %}
+
+  {% with request_obj=vector_project_request_obj %}
     {% include 'request_hub/request_section.html' %}
   {% endwith %}
 
