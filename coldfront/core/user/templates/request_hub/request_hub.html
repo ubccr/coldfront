@@ -46,6 +46,10 @@
     {% include 'request_hub/request_section.html' %}
   {% endwith %}
 
+  {% with request_obj=su_purchase_request_obj %}
+    {% include 'request_hub/request_section.html' %}
+  {% endwith %}
+
   {% with request_obj=vector_project_request_obj %}
     {% include 'request_hub/request_section.html' %}
   {% endwith %}

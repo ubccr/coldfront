@@ -7,12 +7,14 @@ from django.views.generic.base import TemplateView
 
 from coldfront.core.allocation.models import (AllocationAttributeType,
                                               AllocationUserAttribute,
-                                              AllocationRenewalRequest)
+                                              AllocationRenewalRequest,
+                                              AllocationAdditionRequest)
 from coldfront.core.project.models import (ProjectUserRemovalRequest,
                                            SavioProjectAllocationRequest,
                                            VectorProjectAllocationRequest,
                                            ProjectUserJoinRequest)
-
+from coldfront.core.project.utils_.permissions_utils import \
+    is_user_manager_or_pi_of_project
 
 logger = logging.getLogger(__name__)
 
@@ -262,6 +264,49 @@ class RequestHub(LoginRequiredMixin,
 
         return proj_renewal_request_object
 
+    def get_su_purchase_request(self):
+        """Populates a RequestListItem with data for SU purchase requests"""
+        su_pruchase_request_object = RequestListItem()
+        user = self.request.user
+
+        su_pruchase_request_active = AllocationAdditionRequest.objects.filter(
+            status__name__in=['Under Review'])
+
+        su_pruchase_request_complete = AllocationAdditionRequest.objects.filter(
+            status__name__in=['Complete', 'Denied'])
+
+        if not self.show_all_requests:
+            request_ids = [
+                r.id for r in su_pruchase_request_active
+                if is_user_manager_or_pi_of_project(user, r.project)]
+            su_pruchase_request_active = \
+                su_pruchase_request_active.filter(id__in=request_ids)
+
+            request_ids = [
+                r.id for r in su_pruchase_request_complete
+                if is_user_manager_or_pi_of_project(user, r.project)]
+            su_pruchase_request_complete = \
+                su_pruchase_request_complete.filter(id__in=request_ids)
+
+        su_pruchase_request_object.num = self.paginators
+        su_pruchase_request_object.active_queryset = \
+            self.create_paginator(su_pruchase_request_active)
+
+        su_pruchase_request_object.complete_queryset = \
+            self.create_paginator(su_pruchase_request_complete)
+
+        su_pruchase_request_object.num_active = su_pruchase_request_active.count()
+
+        su_pruchase_request_object.title = 'Service Unit Purchase Requests'
+        su_pruchase_request_object.table = \
+            'project/project_allocation_addition/request_list_table.html'
+        su_pruchase_request_object.button_path = \
+            'service-units-purchase-pending-request-list'
+        su_pruchase_request_object.button_text = \
+            'Go To Service Unit Purchase Requests Main Page'
+
+        return su_pruchase_request_object
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
@@ -270,7 +315,8 @@ class RequestHub(LoginRequiredMixin,
                     'savio_project_request',
                     'vector_project_request',
                     'project_join_request',
-                    'project_renewal_request']
+                    'project_renewal_request',
+                    'su_purchase_request']
 
         for request in requests:
             context[f'{request}_obj'] = eval(f'self.get_{request}()')
