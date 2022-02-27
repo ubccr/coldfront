@@ -1,5 +1,3 @@
-import logging
-
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
@@ -15,8 +13,6 @@ from coldfront.core.project.models import (ProjectUserRemovalRequest,
                                            ProjectUserJoinRequest)
 from coldfront.core.project.utils_.permissions_utils import \
     is_user_manager_or_pi_of_project
-
-logger = logging.getLogger(__name__)
 
 
 class RequestListItem:
