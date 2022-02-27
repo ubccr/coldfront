@@ -22,7 +22,7 @@ class RequestListItem:
         num = None
         title = None
         num_active = None
-        list_template = None
+        table = None
         active_queryset = None
         complete_queryset = None
         button_path = None
@@ -83,8 +83,8 @@ class RequestHub(LoginRequiredMixin,
         cluster_request_object.num_active = cluster_account_list_active.count()
 
         cluster_request_object.title = 'Cluster Account Requests'
-        cluster_request_object.list_template = \
-            'request_hub/cluster_account_list.html'
+        cluster_request_object.table = \
+            'allocation/allocation_cluster_account_request_list_table.html'
         cluster_request_object.button_path = \
             'allocation-cluster-account-request-list'
         cluster_request_object.button_text = \
@@ -117,8 +117,8 @@ class RequestHub(LoginRequiredMixin,
         removal_request_object.num_active = removal_request_active.count()
 
         removal_request_object.title = 'Project Removal Requests'
-        removal_request_object.list_template = \
-            'request_hub/removal_request_list.html'
+        removal_request_object.table = \
+            'project/project_removal/project_removal_request_list_table.html'
         removal_request_object.button_path = \
             'project-removal-request-list'
         removal_request_object.button_text = \
@@ -151,8 +151,8 @@ class RequestHub(LoginRequiredMixin,
         savio_proj_request_object.num_active = project_request_active.count()
 
         savio_proj_request_object.title = 'Savio Project Requests'
-        savio_proj_request_object.list_template = \
-            'request_hub/savio_project_request_list.html'
+        savio_proj_request_object.table = \
+            'project/project_request/savio/project_request_list_table.html'
         savio_proj_request_object.button_path = \
             'savio-project-pending-request-list'
         savio_proj_request_object.button_text = \
@@ -185,8 +185,8 @@ class RequestHub(LoginRequiredMixin,
         vector_proj_request_object.num_active = project_request_active.count()
 
         vector_proj_request_object.title = 'Vector Project Requests'
-        vector_proj_request_object.list_template = \
-            'request_hub/vector_project_request_list.html'
+        vector_proj_request_object.table = \
+            'project/project_request/vector/project_request_list_table.html'
         vector_proj_request_object.button_path = \
             'vector-project-pending-request-list'
         vector_proj_request_object.button_text = \
@@ -219,8 +219,8 @@ class RequestHub(LoginRequiredMixin,
         proj_join_request_object.num_active = project_join_request_active.count()
 
         proj_join_request_object.title = 'Project Join Requests'
-        proj_join_request_object.list_template = \
-            'request_hub/project_join_request_list.html'
+        proj_join_request_object.table = \
+            'project/project_join_request_list_table.html'
         proj_join_request_object.button_path = \
             'project-join-request-list'
         proj_join_request_object.button_text = \
@@ -253,8 +253,8 @@ class RequestHub(LoginRequiredMixin,
         proj_renewal_request_object.num_active = project_renewal_request_active.count()
 
         proj_renewal_request_object.title = 'Project Renewal Requests'
-        proj_renewal_request_object.list_template = \
-            'request_hub/project_renewal_request_list.html'
+        proj_renewal_request_object.table = \
+            'project/project_renewal/project_renewal_request_list_table.html'
         proj_renewal_request_object.button_path = \
             'pi-allocation-renewal-pending-request-list'
         proj_renewal_request_object.button_text = \
