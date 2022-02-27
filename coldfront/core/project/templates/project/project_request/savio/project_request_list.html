@@ -15,13 +15,13 @@ Savio Project {{ request_filter|title }} Requests
 
 <p>
   {% if request_filter == 'completed' %}
-    View completed requests for new Savio projects. You may also view pending
+    Viewing completed requests for new Savio projects. You may also view pending
     requests
     <a href="{% url 'savio-project-pending-request-list' %}">
       <span class="accessibility-link-text">Pending Requests</span>
       here</a>.
   {% else %}
-    View pending requests for new Savio projects. You may also view completed
+    Viewing pending requests for new Savio projects. You may also view completed
     requests
     <a href="{% url 'savio-project-completed-request-list' %}">
       <span class="accessibility-link-text">Completed Requests</span>
