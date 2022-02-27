@@ -20,14 +20,12 @@
                 Click <a href="{% url 'request-hub-admin' %}">here</a> to view all requests in the myBRC Portal.
               {% endif %}
           {% endif %}
-
         </td>
       </tr>
       <tr><td></td></tr>
       </tbody>
     </table>
   </div>
-
   <div class="card mb-3 bg-light">
     <div class="card-header">
       <div class="float-right">
@@ -42,7 +40,6 @@
       </div>
     </div>
   </div>
-
 
   {% with request_obj=cluster_account_request_obj %}
     {% include 'request_hub/request_section.html' %}
