@@ -20,6 +20,15 @@ logger = logging.getLogger(__name__)
 
 
 class RequestListItem:
+    """
+    Object to keep track of all variables used in for each request type
+    in the request hub
+    """
+
+    __slots__ = ['num', 'title', 'num_active', 'table',
+                 'active_queryset', 'complete_queryset',
+                 'button_path', 'button_text']
+
     def __init__(self):
         num = None
         title = None
@@ -295,7 +304,7 @@ class RequestHub(LoginRequiredMixin,
 
     def get_su_purchase_request(self):
         """Populates a RequestListItem with data for SU purchase requests"""
-        su_pruchase_request_object = RequestListItem()
+        su_purchase_request_object = RequestListItem()
         user = self.request.user
 
         su_purchase_request_active = AllocationAdditionRequest.objects.filter(
@@ -317,24 +326,24 @@ class RequestHub(LoginRequiredMixin,
             su_purchase_request_complete = \
                 su_purchase_request_complete.filter(id__in=request_ids)
 
-        su_pruchase_request_object.num = self.paginators
-        su_pruchase_request_object.active_queryset = \
+        su_purchase_request_object.num = self.paginators
+        su_purchase_request_object.active_queryset = \
             self.create_paginator(su_purchase_request_active)
 
-        su_pruchase_request_object.complete_queryset = \
+        su_purchase_request_object.complete_queryset = \
             self.create_paginator(su_purchase_request_complete)
 
-        su_pruchase_request_object.num_active = su_purchase_request_active.count()
+        su_purchase_request_object.num_active = su_purchase_request_active.count()
 
-        su_pruchase_request_object.title = 'Service Unit Purchase Requests'
-        su_pruchase_request_object.table = \
+        su_purchase_request_object.title = 'Service Unit Purchase Requests'
+        su_purchase_request_object.table = \
             'project/project_allocation_addition/request_list_table.html'
-        su_pruchase_request_object.button_path = \
+        su_purchase_request_object.button_path = \
             'service-units-purchase-pending-request-list'
-        su_pruchase_request_object.button_text = \
+        su_purchase_request_object.button_text = \
             'Go To Service Unit Purchase Requests Main Page'
 
-        return su_pruchase_request_object
+        return su_purchase_request_object
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
