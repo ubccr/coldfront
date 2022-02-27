@@ -6,10 +6,12 @@ from django.db.models import Q
 from django.views.generic.base import TemplateView
 
 from coldfront.core.allocation.models import (AllocationAttributeType,
-                                              AllocationUserAttribute)
+                                              AllocationUserAttribute,
+                                              AllocationRenewalRequest)
 from coldfront.core.project.models import (ProjectUserRemovalRequest,
                                            SavioProjectAllocationRequest,
-                                           VectorProjectAllocationRequest)
+                                           VectorProjectAllocationRequest,
+                                           ProjectUserJoinRequest)
 
 
 logger = logging.getLogger(__name__)
@@ -192,13 +194,83 @@ class RequestHub(LoginRequiredMixin,
 
         return vector_proj_request_object
 
+    def get_project_join_request(self):
+        """Populates a RequestListItem with data for project join requests"""
+        proj_join_request_object = RequestListItem()
+        user = self.request.user
+
+        args = []
+        if not self.show_all_requests:
+            args.append(Q(project_user__user=user))
+
+        project_join_request_active = ProjectUserJoinRequest.objects.filter(
+            project_user__status__name='Pending - Add', *args)
+
+        project_join_request_complete = ProjectUserJoinRequest.objects.filter(
+            project_user__status__name__in=['Active', 'Denied'], *args)
+
+        proj_join_request_object.num = self.paginators
+        proj_join_request_object.active_queryset = \
+            self.create_paginator(project_join_request_active)
+
+        proj_join_request_object.complete_queryset = \
+            self.create_paginator(project_join_request_complete)
+
+        proj_join_request_object.num_active = project_join_request_active.count()
+
+        proj_join_request_object.title = 'Project Join Requests'
+        proj_join_request_object.list_template = \
+            'request_hub/project_join_request_list.html'
+        proj_join_request_object.button_path = \
+            'project-join-request-list'
+        proj_join_request_object.button_text = \
+            'Go To Project Join Requests Main Page'
+
+        return proj_join_request_object
+
+    def get_project_renewal_request(self):
+        """Populates a RequestListItem with data for project renewal requests"""
+        proj_renewal_request_object = RequestListItem()
+        user = self.request.user
+
+        args = []
+        if not self.show_all_requests:
+            args.append(Q(requester=user) | Q(pi=user))
+
+        project_renewal_request_active = AllocationRenewalRequest.objects.filter(
+            status__name__in=['Approved', 'Under Review'], *args)
+
+        project_renewal_request_complete = AllocationRenewalRequest.objects.filter(
+            status__name__in=['Complete', 'Denied'], *args)
+
+        proj_renewal_request_object.num = self.paginators
+        proj_renewal_request_object.active_queryset = \
+            self.create_paginator(project_renewal_request_active)
+
+        proj_renewal_request_object.complete_queryset = \
+            self.create_paginator(project_renewal_request_complete)
+
+        proj_renewal_request_object.num_active = project_renewal_request_active.count()
+
+        proj_renewal_request_object.title = 'Project Renewal Requests'
+        proj_renewal_request_object.list_template = \
+            'request_hub/project_renewal_request_list.html'
+        proj_renewal_request_object.button_path = \
+            'pi-allocation-renewal-pending-request-list'
+        proj_renewal_request_object.button_text = \
+            'Go To Project Renewal Requests Main Page'
+
+        return proj_renewal_request_object
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
         requests = ['cluster_account_request',
                     'project_removal_request',
                     'savio_project_request',
-                    'vector_project_request']
+                    'vector_project_request',
+                    'project_join_request',
+                    'project_renewal_request']
 
         for request in requests:
             context[f'{request}_obj'] = eval(f'self.get_{request}()')
@@ -209,5 +281,7 @@ class RequestHub(LoginRequiredMixin,
 
         context['admin_staff'] = (self.request.user.is_superuser or
                                   self.request.user.is_staff)
+
+        context['pi_manager'] = None
 
         return context
