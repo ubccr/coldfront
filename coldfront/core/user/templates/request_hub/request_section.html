@@ -21,11 +21,57 @@
       <div class="card">
 
         {% with queryset=request_obj.active_queryset adj='active' page_num=request_obj.num title=request_obj.title %}
-          {% include request_obj.list_template %}
+          <div class="card border-light">
+            <div class="card-body">
+              {% if queryset %}
+                <div class="card border-light">
+                  <div class="card-body">
+                    <h5 class="card-title"><span style="text-transform:capitalize;">{{ adj }} {{ title }}</span></h5>
+                    <div class="table-responsive">
+
+                      {% include request_obj.table %}
+
+                      {% with pag_obj=queryset %}
+                        {% include 'common/pagination.html' %}
+                      {% endwith %}
+
+                    </div>
+                  </div>
+                </div>
+              {% else %}
+                <div class="alert alert-info">
+                  No {{ adj }} <span style="text-transform:lowercase;">{{ title }}</span>!
+                </div>
+              {% endif %}
+            </div>
+          </div>
         {% endwith %}
 
         {% with queryset=request_obj.complete_queryset adj='completed' page_num=request_obj.num|add:1 title=request_obj.title %}
-          {% include request_obj.list_template %}
+          <div class="card border-light">
+            <div class="card-body">
+              {% if queryset %}
+                <div class="card border-light">
+                  <div class="card-body">
+                    <h5 class="card-title"><span style="text-transform:capitalize;">{{ adj }} {{ title }}</span></h5>
+                    <div class="table-responsive">
+
+                      {% include request_obj.table %}
+
+                      {% with pag_obj=queryset %}
+                        {% include 'common/pagination.html' %}
+                      {% endwith %}
+
+                    </div>
+                  </div>
+                </div>
+              {% else %}
+                <div class="alert alert-info">
+                  No {{ adj }} <span style="text-transform:lowercase;">{{ title }}</span>!
+                </div>
+              {% endif %}
+            </div>
+          </div>
         {% endwith %}
 
         {% if user.is_superuser %}
