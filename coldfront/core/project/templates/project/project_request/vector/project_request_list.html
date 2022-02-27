@@ -15,9 +15,9 @@ Vector Project {{ request_filter|title }} Requests
 
 <p>
   {% if request_filter == 'completed' %}
-    View completed requests for new Vector projects. You may also view pending requests <a href="{% url 'vector-project-pending-request-list' %}">here</a>.
+    Viewing completed requests for new Vector projects. You may also view pending requests <a href="{% url 'vector-project-pending-request-list' %}">here</a>.
   {% else %}
-    View pending requests for new Vector projects. You may also view completed requests <a href="{% url 'vector-project-completed-request-list' %}">here</a>.
+    Viewing pending requests for new Vector projects. You may also view completed requests <a href="{% url 'vector-project-completed-request-list' %}">here</a>.
   {% endif %}
 </p>
 
