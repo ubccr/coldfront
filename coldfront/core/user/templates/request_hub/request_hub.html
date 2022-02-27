@@ -1,29 +1,46 @@
 {% extends "common/base.html" %} {% load common_tags %} {% block content %}
 
-<div class="row">
-  <div class="col-lg-12">
-    <h1>Request Hub</h1>
-    <hr>
-    {% if show_all %}
-      <p>
-        Below are all of the requests in the myBRC Portal. Click on a request
-        section to view requests of that type. To perform actions on a specific request,
-        click the button to go to the request's main page and perform the actions there.
-        Click <a href="{% url 'request-hub' %}">here</a> to view only your requests.
-      </p>
-    {% else %}
-      <p>
-        Below are all of your requests in the myBRC Portal. Click on a request
-        section to view your requests of that type.
+  <h1>Request Hub</h1>
 
-      {% if admin_staff %}
-          Click <a href="{% url 'request-hub-admin' %}">here</a> to view all requests in the myBRC Portal.
-      {% endif %}
-      </p>
-    {% endif %}
-  <hr>
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <tbody>
+      <tr>
+        <td>
+          {% if show_all %}
+              Below are all of the requests in the myBRC Portal. Click on a request
+              section to view requests of that type. To perform actions on a specific request,
+              click the button to go to the request's main page and perform the actions there.
+              Click <a href="{% url 'request-hub' %}">here</a> to view only your requests.
+          {% else %}
+              Below are all of your requests in the myBRC Portal. Click on a request
+              section to view your requests of that type.
+
+              {% if admin_staff %}
+                Click <a href="{% url 'request-hub-admin' %}">here</a> to view all requests in the myBRC Portal.
+              {% endif %}
+          {% endif %}
+
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <div class="float-right">
+            <button id="collapse_all_button" type="button" class="btn btn-primary">
+              Collapse All
+              <i class="fas fa-minus" aria-hidden="true"></i>
+            </button>
+            <button id="expand_all_button" type="button" class="btn btn-primary">
+              Expand All
+              <i class="fas fa-plus" aria-hidden="true"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+      <tr><td></td></tr>
+      </tbody>
+    </table>
   </div>
-</div>
 
 
   {% with request_obj=cluster_account_request_obj %}
@@ -87,6 +104,20 @@
           var scrollpos = localStorage.getItem('scrollpos');
           var resetpos = localStorage.getItem('resetpos');
           if (scrollpos && resetpos) window.scrollTo(0, scrollpos);
+
+          $(document).on('click', '#expand_all_button', function() {
+              var matches = document.querySelectorAll("[id^='collapse-']");
+              matches.forEach(function (item, index) {
+                  $(item).collapse("show");
+              });
+          });
+
+          $(document).on('click', '#collapse_all_button', function() {
+              var matches = document.querySelectorAll("[id^='collapse-']");
+              matches.forEach(function (item, index) {
+                  $(item).collapse("hide");
+              });
+          });
 
       });
   </script>

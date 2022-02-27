@@ -17,7 +17,7 @@
 
       </a>
     </div>
-    <div id="collapse{{ request_obj.num }}" class="collapse hide" data-parent="#accordion{{ request_obj.num }}" style="transition: none;">
+    <div id="collapse-{{ request_obj.num }}" class="collapse hide" data-parent="#accordion{{ request_obj.num }}" style="transition: none;">
       <div class="card">
 
         {% with queryset=request_obj.active_queryset adj='active' page_num=request_obj.num title=request_obj.title %}
