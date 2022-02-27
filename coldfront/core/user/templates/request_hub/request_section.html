@@ -25,7 +25,7 @@
                     <h5 class="card-title"><span style="text-transform:capitalize;">{{ adj }} {{ title }}</span></h5>
                     <div class="table-responsive">
                       {% include request_obj.table %}
-                      {% with pag_obj=queryset %}
+                      {% with page_obj=queryset %}
                         {% include 'common/pagination.html' %}
                       {% endwith %}
                     </div>
@@ -48,7 +48,7 @@
                     <h5 class="card-title"><span style="text-transform:capitalize;">{{ adj }} {{ title }}</span></h5>
                     <div class="table-responsive">
                       {% include request_obj.table %}
-                      {% with pag_obj=queryset %}
+                      {% with page_obj=queryset %}
                         {% include 'common/pagination.html' %}
                       {% endwith %}
                     </div>
