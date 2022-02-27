@@ -248,7 +248,8 @@ class RequestHub(LoginRequiredMixin,
         proj_join_request_object.complete_queryset = \
             self.create_paginator(project_join_request_complete)
 
-        proj_join_request_object.num_active = project_join_request_active.count()
+        proj_join_request_object.num_active = \
+            project_join_request_active.count()
 
         proj_join_request_object.title = 'Project Join Requests'
         proj_join_request_object.table = \
@@ -286,7 +287,8 @@ class RequestHub(LoginRequiredMixin,
         proj_renewal_request_object.complete_queryset = \
             self.create_paginator(project_renewal_request_complete)
 
-        proj_renewal_request_object.num_active = project_renewal_request_active.count()
+        proj_renewal_request_object.num_active = \
+            project_renewal_request_active.count()
 
         proj_renewal_request_object.title = 'Project Renewal Requests'
         proj_renewal_request_object.table = \
@@ -329,7 +331,8 @@ class RequestHub(LoginRequiredMixin,
         su_purchase_request_object.complete_queryset = \
             self.create_paginator(su_purchase_request_complete)
 
-        su_purchase_request_object.num_active = su_purchase_request_active.count()
+        su_purchase_request_object.num_active = \
+            su_purchase_request_active.count()
 
         su_purchase_request_object.title = 'Service Unit Purchase Requests'
         su_purchase_request_object.table = \
