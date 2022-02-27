@@ -1,0 +1,73 @@
+<table class="table table-sm">
+  <thead>
+  <tr>
+    <th scope="col">
+      #
+      <a href="?order_by=id&direction=asc&{{filter_parameters}}">
+        <i class="fas fa-sort-up"></i>
+      </a>
+      <a href="?order_by=id&direction=des&{{filter_parameters}}">
+        <i class="fas fa-sort-down"></i>
+      </a>
+    </th>
+    <th scope="col">
+      Date Requested/<br>Last Modified
+      <a href="?order_by=modified&direction=asc&{{filter_parameters}}">
+        <i class="fas fa-sort-up"></i>
+      </a>
+      <a href="?order_by=modified&direction=des&{{filter_parameters}}">
+        <i class="fas fa-sort-down"></i>
+      </a>
+    </th>
+    <th scope="col">
+      Requester Email
+      <a href="?order_by=requester__email&direction=asc&{{filter_parameters}}">
+        <i class="fas fa-sort-up"></i>
+      </a>
+      <a href="?order_by=requester__email&direction=des&{{filter_parameters}}">
+        <i class="fas fa-sort-down"></i>
+      </a>
+    </th>
+    <th scope="col">
+      Project
+      <a href="?order_by=project&direction=asc&{{filter_parameters}}">
+        <i class="fas fa-sort-up"></i>
+      </a>
+      <a href="?order_by=project&direction=des&{{filter_parameters}}">
+        <i class="fas fa-sort-down"></i>
+      </a>
+    </th>
+    <th scope="col">Number of Service Units</th>
+    <th scope="col">Status</th>
+  </tr>
+  </thead>
+  <tbody>
+  {% for addition_request in queryset %}
+    <tr>
+      <td>
+        <a href="{% url 'service-units-purchase-request-detail' addition_request.pk %}">
+            <span class="accessibility-link-text">
+              Request {{ addition_request.pk }}
+            </span>
+          {{ addition_request.pk }}
+        </a>
+      </td>
+      <td>{{ addition_request.modified|date:"M. d, Y" }}</td>
+      <td>{{ addition_request.requester.email }}</td>
+      <td>{{ addition_request.project.name }}</td>
+      <td>{{ addition_request.num_service_units }}</td>
+      <td>
+        {% with status=addition_request.status.name %}
+          {% if status == 'Under Review' %}
+            <span class="badge badge-warning">{{ status }}</span>
+          {% elif status == 'Complete' %}
+            <span class="badge badge-success">{{ status }}</span>
+          {% else %}
+            <span class="badge badge-danger">{{ status }}</span>
+          {% endif %}
+        {% endwith %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
