@@ -30,7 +30,15 @@
     {% include 'request_hub/request_section.html' %}
   {% endwith %}
 
+  {% with request_obj=project_join_request_obj %}
+    {% include 'request_hub/request_section.html' %}
+  {% endwith %}
+
   {% with request_obj=project_removal_request_obj %}
+    {% include 'request_hub/request_section.html' %}
+  {% endwith %}
+
+  {% with request_obj=project_renewal_request_obj %}
     {% include 'request_hub/request_section.html' %}
   {% endwith %}
 
@@ -39,14 +47,6 @@
   {% endwith %}
 
   {% with request_obj=vector_project_request_obj %}
-    {% include 'request_hub/request_section.html' %}
-  {% endwith %}
-
-  {% with request_obj=project_join_request_obj %}
-    {% include 'request_hub/request_section.html' %}
-  {% endwith %}
-
-  {% with request_obj=project_renewal_request_obj %}
     {% include 'request_hub/request_section.html' %}
   {% endwith %}
 
