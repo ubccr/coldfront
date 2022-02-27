@@ -46,10 +46,10 @@
   </tr>
   </thead>
   <tbody>
-  {% for removal_request in removal_request_list %}
+  {% for removal_request in queryset %}
     <tr>
       <td>{{ removal_request.pk }}</td>
-      {% if request_filter == 'pending' %}
+      {% if request_filter == 'pending' or adj == 'active' %}
         <td>{{ removal_request.request_time|date:"M. d, Y" }}</td>
       {% else %}
         <td>{{ removal_request.completion_time|date:"M. d, Y" }}</td>
