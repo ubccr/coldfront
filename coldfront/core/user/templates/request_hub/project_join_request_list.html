@@ -1,0 +1,58 @@
+<div class="card border-light">
+  <div class="card-body">
+    {% if queryset %}
+      <div class="card border-light">
+      <div class="card-body">
+      <h5 class="card-title"><span style="text-transform:capitalize;">{{ adj }} {{ title }}</span></h5>
+      <div class="table-responsive">
+        <table class="table table-sm">
+          <thead>
+          <tr>
+            <th scope="col">
+              #
+            </th>
+            <th scope="col">
+              Username
+            </th>
+            <th scope="col">
+              User Email
+            </th>
+            <th scope="col">
+              Project
+            </th>
+            <th scope="col">
+              Date Requested
+            </th>
+          </tr>
+          </thead>
+          <tbody>
+          {% for join_request in queryset %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>
+                {{ join_request.project_user.user.username }}
+              </td>
+              <td>{{ join_request.project_user.user.email }}</td>
+              <td>
+                <a href="{% url 'project-detail' join_request.project_user.project.pk %}">
+                  {{ join_request.project_user.project.name }}
+                </a>
+              </td>
+              <td>{{ join_request.created|date:"M. d, Y" }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        {% with pag_obj=queryset %}
+          {% include 'common/pagination.html' %}
+        {% endwith %}
+      </div>
+      </div>
+      </div>
+    {% else %}
+      <div class="alert alert-info">
+        No {{ adj }} project join requests!
+      </div>
+    {% endif %}
+  </div>
+</div>
