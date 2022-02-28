@@ -33,6 +33,9 @@ email_subject_prefix: '[MyBRC-User-Portal]'
 
 google_sheets_credentials: '/tmp/credentials.json'
 
+# The URL of the Sentry instance to send errors to.
+sentry_dsn: ""
+
 #####################################
 #STAGING SETTINGS
 #####################################
@@ -51,9 +54,9 @@ google_sheets_credentials: '/tmp/credentials.json'
 #ssl_certificate_key_file: /etc/ssl/ssl_certificate_key.file
 #ssl_certificate_chain_file: /etc/ssl/ssl_certification_chain.file
 
-ip_range_with_api_access: 0.0.0.0/24
+#ip_range_with_api_access: 0.0.0.0/24
 
-request_approval_cc_list: []
+#request_approval_cc_list: []
 
 #####################################
 #PROD SETTINGS
@@ -73,6 +76,6 @@ request_approval_cc_list: []
 #ssl_certificate_key_file: /etc/ssl/ssl_certificate_key.file
 #ssl_certificate_chain_file: /etc/ssl/ssl_certification_chain.file
 
-ip_range_with_api_access: 10.0.0.0/8
+#ip_range_with_api_access: 10.0.0.0/8
 
-request_approval_cc_list: ['wfeinstein@lbl.gov']
+#request_approval_cc_list: ['wfeinstein@lbl.gov']
