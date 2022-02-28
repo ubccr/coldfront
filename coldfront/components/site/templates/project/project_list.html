@@ -18,17 +18,23 @@ Project List
       <a class="btn btn-primary" href="{% url 'project-create' %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add a project</a>
     {% endif %}
     <div class="float-right">
+      <a class="btn btn-primary" href="{% url 'project-denied-list' %}" role="button"><i class="fas fa-archive" aria-hidden="true"></i> View denied projects</a>
       <a class="btn btn-primary" href="{% url 'project-archived-list' %}" role="button"><i class="fas fa-archive" aria-hidden="true"></i> View archived projects</a>
     </div>
   </div>
 </div>
 <div>
-  <p>
-    You have {{ project_requests_remaining }} project request{{ project_requests_remaining|pluralize }} remaining.
-    You can use the PI Search function below to search for a project your PI is in and request to be added to it.
-    {% if project_requests_remaining < 1 %} You can make a request to increase your max projects by us sending an
-    email.{% endif %}
-  </p>
+  {% if user.is_superuser or user.userprofile.is_pi %}
+    <p>
+      You can use the PI Search function below to search for a project your PI is in and request to be added to it.
+      {% if project_requests_remaining < 1 %} You have reached the max projects you can have.{% endif %}
+    </p>
+  {% else %}
+    <p>
+      You do not have permission to make a project request. You can use the PI Search function below to search for
+      a project your PI is in and request to be added to it.
+    </p>
+  {% endif %}
 </div>
 
 <h2>PI Search</h2>
@@ -113,6 +119,9 @@ Project List
             <a href="?order_by=status&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Status asc</span></a>
             <a href="?order_by=status&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Status desc</span></a>
           </th>
+          <th scope="col" class="text-nowrap">
+            End Date
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -120,9 +129,55 @@ Project List
           <tr>
             <td><a href="/project/{{project.id}}/">{{ project.id }}</a></td>
             <td>{{ project.pi.username }}</td>
-            <td style="text-align: justify; text-justify: inter-word;">{{ project.title }}</td>
+            <td style="text-align: justify; text-justify: inter-word;">{{ project.title|truncatechars:30 }}</td>
             <td>{{ project.field_of_science.description }}</td>
-            <td>{{ project.status.name }}</td>
+            {% if project.status.name == 'Active' %}
+              {% if project.can_be_reviewed %}
+                <td class="text-warning">
+                  {{ project.status.name }}
+                  {% if user.username in project.list_of_manager_usernames %}
+                    <a href="{% url 'project-review' project.pk %}">
+                      <span class="badge badge-warning">
+                        <i class="fas fa-redo-alt" aria-hidden="true"></i>
+                        Expires in {{ project.expires_in }} day{{ project.expires_in|pluralize }} - click to renew
+                      </span>
+
+                    </a>
+                  {% endif %}
+                </td>
+              {% elif project.needs_review %}
+                <td class="text-warning">
+                  {{ project.status.name }}
+                  {% if user.username in project.list_of_manager_usernames %}
+                    <a href="{% url 'project-review' project.pk %}">
+                      <span class="badge badge-warning">
+                        <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                        Needs Review - click to review
+                      </span>
+                    </a>
+                  {% endif %}
+                </td>
+              {% else %}
+                <td class="text-success">{{ project.status.name}}</td>
+              {% endif %}
+            {% elif project.status.name in 'Archived, Denied, Expired' %}
+              <td class="text-danger">
+                {{ project.status.name }}
+                  {% if user.username in project.list_of_manager_usernames %}
+                    {% if project.status.name == 'Expired' %}
+                      <a href="{% url 'project-review' project.pk %}">
+                        <span class="badge badge-warning">
+                          <i class="fas fa-redo-alt" aria-hidden="true"></i>
+                          Click to renew
+                        </span>
+                      </a>
+                    {% endif %}
+                  {% endif %}
+              </td>
+            {% else %}
+              <td class="text-info">{{ project.status.name }}</td>
+            {% endif %}
+            <td>{{ project.end_date }}</td>
           </tr>
         {% endfor %}
       </tbody>

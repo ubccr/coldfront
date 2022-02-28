@@ -1,0 +1,18 @@
+Dear {{ center_name }} user,
+
+Your project review for "{{ project_title }}" has been approved. You can view your project here: {{ project_url }}
+{% if renewed_allocation_urls %}
+Renewed allocations:
+{% for url in renewed_allocation_urls %}
+{{ url }}
+{% endfor %}
+{% endif %}
+If you are a student or collaborator under this project, you are receiving this notice as a courtesy. If you would like
+to opt out of future notifications, instructions can be found here: {{ opt_out_instruction_url }}
+
+If you have any questions please email us at {{ help_email }}
+
+This is an unmonitored email, replies to this email will not be seen.
+
+Thank you,
+{{signature}}

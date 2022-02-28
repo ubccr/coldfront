@@ -4,10 +4,12 @@ from django.contrib import admin
 from simple_history.admin import SimpleHistoryAdmin
 
 from coldfront.core.project.models import (Project, ProjectAdminComment,
-                                            ProjectReview, ProjectStatusChoice,
-                                            ProjectUser, ProjectUserMessage,
-                                            ProjectUserRoleChoice,
-                                            ProjectUserStatusChoice)
+                                           ProjectReview, ProjectStatusChoice,
+                                           ProjectUser, ProjectUserMessage,
+                                           ProjectUserRoleChoice,
+                                           ProjectUserStatusChoice,
+                                           ProjectTypeChoice,
+                                           ProjectReviewStatusChoice)
 
 
 @admin.register(ProjectStatusChoice)
@@ -88,9 +90,9 @@ class ProjectUserMessageInline(admin.TabularInline):
 
 @admin.register(Project)
 class ProjectAdmin(SimpleHistoryAdmin):
-    fields_change = ('title', 'pi', 'description', 'private', 'status', 'requires_review', 'force_review', 'created', 'modified', )
+    fields_change = ('title', 'pi', 'description', 'private', 'type', 'status', 'requires_review', 'force_review', 'created', 'end_date', 'modified', )
     readonly_fields_change = ('created', 'modified', )
-    list_display = ('pk', 'title', 'PI', 'created', 'modified', 'status')
+    list_display = ('pk', 'title', 'PI', 'created', 'modified', 'end_date', 'status')
     search_fields = ['pi__username', 'projectuser__user__username',
                      'projectuser__user__last_name', 'projectuser__user__last_name', 'title']
     list_filter = ('status', 'force_review')
@@ -132,10 +134,19 @@ class ProjectAdmin(SimpleHistoryAdmin):
 
 @admin.register(ProjectReview)
 class ProjectReviewAdmin(SimpleHistoryAdmin):
-    list_display = ('pk', 'project', 'PI', 'reason_for_not_updating_project', 'created', 'status')
+    list_display = ('pk', 'project', 'PI', 'allocation_renewals', 'project_updates', 'created', 'status')
     search_fields = ['project__pi__username', 'project__pi__first_name', 'project__pi__last_name',]
     list_filter = ('status', )
 
     def PI(self, obj):
         return '{} {} ({})'.format(obj.project.pi.first_name, obj.project.pi.last_name, obj.project.pi.username)
 
+
+@admin.register(ProjectTypeChoice)
+class ProjectTypeChoiceAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+
+
+@admin.register(ProjectReviewStatusChoice)
+class ProjectReviewStatusChoiceAdmin(admin.ModelAdmin):
+    list_display = ('name',)

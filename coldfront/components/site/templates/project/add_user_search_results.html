@@ -67,9 +67,6 @@
       {% if matches %}
         <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Selected Users to Project</button>
       {% endif %}
-      {% if after_project_creation == 'false' %}
-        <a class="btn btn-secondary" href="{% url 'project-detail' pk %}" role="button">Back to Project</a><br>  
-      {% endif %}
     </div>
   {% else %}
     <div class="alert alert-info text-center">

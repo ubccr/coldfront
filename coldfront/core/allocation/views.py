@@ -14,7 +14,7 @@ from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.forms import formset_factory
 from django.http import HttpResponseRedirect, JsonResponse
-from django.http.response import HttpResponse, StreamingHttpResponse
+from django.http.response import StreamingHttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse, reverse_lazy
 from django.utils.html import format_html, mark_safe
@@ -222,9 +222,14 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         if form.is_valid():
             form_data = form.cleaned_data
+            status = form.cleaned_data.get('status')
             end_date = form_data.get('end_date')
             start_date = form_data.get('start_date')
             description = form_data.get('description')
+
+            if initial_data.get('status') != status and allocation_obj.project.status.name != "Active":
+                messages.error(request, 'Project must be approved first before you can update this allocation\'s status!')
+                return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
             allocation_obj.description = description
             allocation_obj.save()
@@ -503,9 +508,9 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 request, 'You cannot request a new allocation because you have to review your project first.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
-        if project_obj.status.name not in ['Active', 'New', ]:
+        if project_obj.status.name in ['Archived', 'Denied', 'Review Pending', 'Expired', ]:
             messages.error(
-                request, 'You cannot request a new allocation to an archived project.')
+                request, 'You cannot request a new allocation to a(n) {} project.'.format(project_obj.status.name))
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
         return super().dispatch(request, *args, **kwargs)
@@ -856,6 +861,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         usernames = form_data.get('users')
         usernames.append(project_obj.pi.username)
+        usernames.append(self.request.user.username)
         usernames = list(set(usernames))
 
         # If a resource has a user limit make sure it's not surpassed.
@@ -1209,7 +1215,7 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
                 request, 'You cannot modify this allocation because it is locked! Contact support for details.')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
-        if allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', 'Paid', 'Payment Pending', 'Payment Requested']:
+        if allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', 'Paid', 'Payment Pending', 'Payment Requested', 'Expired']:
             messages.error(request, 'You cannot remove users from a allocation with status {}.'.format(
                 allocation_obj.status.name))
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
@@ -1429,7 +1435,8 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         allocation_list = Allocation.objects.filter(
-            status__name__in=['New', 'Renewal Requested', 'Paid', ])
+            status__name__in=['New', 'Renewal Requested', 'Paid', ]
+        ).exclude(project__status__name='Review Pending')
         context['allocation_list'] = allocation_list
         context['PROJECT_ENABLE_PROJECT_REVIEW'] = PROJECT_ENABLE_PROJECT_REVIEW
         return context
@@ -1449,6 +1456,16 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
 
         messages.error(
             self.request, 'You do not have permission to activate a allocation request.')
+
+    def dispatch(self, request, *args, **kwargs):
+        allocation_obj = get_object_or_404(Allocation, pk=kwargs.get('pk'))
+        project_obj = allocation_obj.project
+
+        if project_obj.status.name != 'Active':
+            messages.error(request, 'Project must be approved first before you can approve this allocation!')
+            return HttpResponseRedirect(reverse('allocation-request-list'))
+
+        return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, pk):
         allocation_obj = get_object_or_404(Allocation, pk=pk)
@@ -1480,14 +1497,6 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
             'allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
         if EMAIL_ENABLED:
-            template_context = {
-                'center_name': EMAIL_CENTER_NAME,
-                'resource': resource_name,
-                'allocation_url': allocation_url,
-                'signature': EMAIL_SIGNATURE,
-                'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
-            }
-
             email_receiver_list = []
 
             for allocation_user in allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
@@ -1496,9 +1505,43 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
                 if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
                     email_receiver_list.append(allocation_user.user.email)
 
+            template_context = {
+                'center_name': EMAIL_CENTER_NAME,
+                'resource': resource_name,
+                'allocation_url': allocation_url,
+                'signature': EMAIL_SIGNATURE,
+                'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
+            }
+
+            resource_email_template_lookup_table = {
+                'Carbonate DL': {
+                    'template': 'email/allocation_carbonate_dl_activated.txt',
+                    'template_context': {
+                        'help_url': 'radl@iu.edu',
+                    },
+                },
+                'Carbonate GPU': {
+                    'template': 'email/allocation_carbonate_gpu_activated.txt',
+                    'template_context': {
+                        'help_url': 'radl@iu.edu',
+                    },
+                },
+            }
+
+            resource_email_template = resource_email_template_lookup_table.get(
+                allocation_obj.get_parent_resource.name
+            )
+            if resource_email_template is None:
+                email_template = 'email/allocation_activated.txt'
+            else:
+                email_template = resource_email_template['template']
+                template_context.update(resource_email_template['template_context'])
+
+            
+
             send_email_template(
                 'Allocation Activated',
-                'email/allocation_activated.txt',
+                email_template,
                 template_context,
                 EMAIL_SENDER,
                 email_receiver_list
@@ -1521,6 +1564,16 @@ class AllocationDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         messages.error(
             self.request, 'You do not have permission to deny a allocation request.')
+
+    def dispatch(self, request, *args, **kwargs):
+        allocation_obj = get_object_or_404(Allocation, pk=kwargs.get('pk'))
+        project_obj = allocation_obj.project
+
+        if project_obj.status.name != 'Active':
+            messages.error(request, 'Project must be approved first before you can deny this allocation!')
+            return HttpResponseRedirect(reverse('allocation-request-list'))
+
+        return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, pk):
         allocation_obj = get_object_or_404(Allocation, pk=pk)
@@ -1811,7 +1864,13 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
 
         if form.is_valid():
             form_data = form.cleaned_data
-            allocation_obj.status = form_data.get('status')
+            status = form_data.get('status')
+
+            if initial_data.get('status') != status and allocation_obj.project.status.name != "Active":
+                messages.error(request, 'Project must be approved first before you can update this allocation\'s status!')
+                return HttpResponseRedirect(reverse('allocation-invoice-detail', kwargs={'pk': pk}))
+
+            allocation_obj.status = status
             allocation_obj.save()
             messages.success(request, 'Allocation updated!')
         else:

@@ -13,7 +13,18 @@ from coldfront.core.utils.common import import_from_settings
 
 PROJECT_ENABLE_PROJECT_REVIEW = import_from_settings('PROJECT_ENABLE_PROJECT_REVIEW', False)
 
+
 class ProjectStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ('name',)
+
+
+class ProjectTypeChoice(TimeStampedModel):
     name = models.CharField(max_length=64)
 
     def __str__(self):
@@ -42,6 +53,11 @@ We do not have information about your research. Please provide a detailed descri
     )
 
     field_of_science = models.ForeignKey(FieldOfScience, on_delete=models.CASCADE, default=FieldOfScience.DEFAULT_PK)
+    type = models.ForeignKey(
+        ProjectTypeChoice,
+        on_delete=models.CASCADE,
+        help_text="This cannot be changed once your project is submitted."
+    )
     private = models.BooleanField(
         default=False,
         help_text="A private project will not show up in the PI search results if someone searchs for you/your PI."
@@ -49,6 +65,7 @@ We do not have information about your research. Please provide a detailed descri
     status = models.ForeignKey(ProjectStatusChoice, on_delete=models.CASCADE)
     force_review = models.BooleanField(default=False)
     requires_review = models.BooleanField(default=True)
+    end_date = models.DateField()
     history = HistoricalRecords()
 
     def clean(self):
@@ -82,13 +99,21 @@ We do not have information about your research. Please provide a detailed descri
     @property
     def needs_review(self):
 
-        if self.status.name == 'Archived':
+        if self.status.name in ['Archived', 'Expired', 'Review Pending']:
             return False
-
-        now = datetime.datetime.now(datetime.timezone.utc)
 
         if self.force_review is True:
             return True
+
+        return False
+
+    @property
+    def can_be_reviewed(self):
+        if self.status.name in ['Archived', 'Denied', 'Review Pending']:
+            return False
+
+        if self.force_review is True:
+            return False
 
         if not PROJECT_ENABLE_PROJECT_REVIEW:
             return False
@@ -96,21 +121,21 @@ We do not have information about your research. Please provide a detailed descri
         if self.requires_review is False:
             return False
 
-        if self.projectreview_set.exists():
-            last_review = self.projectreview_set.order_by('-created')[0]
-            last_review_over_365_days = (now - last_review.created).days > 365
-        else:
-            last_review = None
-
-        days_since_creation = (now - self.created).days
-
-        if days_since_creation > 365 and last_review is None:
-            return True
-
-        if last_review and last_review_over_365_days:
+        if self.expires_in <= 30:
             return True
 
         return False
+
+    @property
+    def expires_in(self):
+        return (self.end_date - datetime.date.today()).days
+
+    @property
+    def list_of_manager_usernames(self):
+        project_managers = self.projectuser_set.filter(
+            role=ProjectUserRoleChoice.objects.get(name='Manager')
+        )
+        return [manager.user.username for manager in project_managers]
 
     def __str__(self):
         return self.title
@@ -120,7 +145,7 @@ We do not have information about your research. Please provide a detailed descri
 
         permissions = (
             ("can_view_all_projects", "Can view all projects"),
-            ("can_review_pending_project_reviews", "Can review pending project reviews"),
+            ("can_review_pending_projects", "Can review pending project requests/reviews"),
         )
 
 
@@ -155,7 +180,8 @@ class ProjectReviewStatusChoice(TimeStampedModel):
 class ProjectReview(TimeStampedModel):
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     status = models.ForeignKey(ProjectReviewStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
-    reason_for_not_updating_project = models.TextField(blank=True, null=True)
+    project_updates = models.TextField(blank=True, null=True)
+    allocation_renewals = models.TextField(blank=True, null=True)
     history = HistoricalRecords()
 
 

@@ -1,0 +1,31 @@
+Dear {{ center_name }} user,
+
+Your allocation request for {{ resource }} has been activated. You now have access to this resource.
+
+To view your allocations information, please go to {{ allocation_url }}
+If you are a student or collaborator under this project, you are receiving this notice as a courtesy. If you would like
+to opt out of future notifications, instructions can be found here: {{ opt_out_instruction_url }}
+
+It may take up to 2 hours for these changes to propagate through the system. There are a few things to keep in mind about this system.
+-- The DL partition consists of 8 nodes with dual P100 GPUs and 4 nodes with dual V100 GPUs.
+-- The GPU partition consists of 24 nodes with four V100 GPUs per node.
+-- The system is managed via the Slurm scheduler. You can log into a Carbonate login node and submit jobs to one of the available partitions.
+-- The DL partitions are dl (containing 7x P100 nodes and 4x V100 nodes), and dl-debug (containing a P100 node).
+-- The GPU partitions are gpu (containing 22x V100 nodes), and gpu-debug (containing two V100 nodes).
+-- You will need to specify the required GPU resource for each job using the gpus tag. For example to request 2 GPUs per requested node: #SBATCH --gpus-per-node=2 
+-- We have built a suite of Deep Learning software that is available via a system module. These are the significant versions:
+deeplearning/2.3.0 has Python 3 and Tensorflow 2.3.0, among other packages 
+deeplearning/2.4.1 has Python 3 and Tensorflow 2.4.1, among other packages
+
+For more information on the DL and GPU nodes themselves you can refer to the Knowledge Base article https://kb.iu.edu/d/avjk.
+Another article https://kb.iu.edu/d/awrz, contains more information on the Slurm scheduler. If you need help using the Slurm scheduler
+please don’t hesitate to contact us at radl@iu.edu.
+
+You can now use the IU HPC Projects website (https://hpcprojects.uits.iu.edu/) to administer projects on high performance computing (HPC)
+resources supported by UITS Research Technologies. For example, you can add/remove members from your project. Please see https://kb.iu.edu/d/bgmo for more information.
+
+Please let us know if you see anything on the system that could be improved. We are happy to help get folks up and running on the system.
+We are also happy to help with DL application development and optimization, just contact us at {{ help_url }}. Thanks!
+
+Thank you,
+{{ signature }}
