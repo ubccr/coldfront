@@ -17,7 +17,6 @@
         <li id="navbar-project-menu" class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">Project</a>
           <div class="dropdown-menu">
-            <a id="navbar-jobs-list" class="dropdown-item" href="{% url 'slurm-job-list' %}">Jobs</a>
             <a id="navbar-project" class="dropdown-item" href="{% url 'project-list' %}">Projects</a>
             {% if request.user.is_superuser %}
             <a id="navbar-allocation" class="dropdown-item" href="{% url 'allocation-list' %}">Allocations</a>
@@ -30,15 +29,15 @@
 <!--            {% endif %}-->
           </div>
         </li>
+        <li id="navbar-jobs-list" class="nav-item">
+          <a class="nav-link" href="{% url 'slurm-job-list' %}">Jobs</a>
+        </li>
         {% if request.user.is_superuser %}
         {% include 'common/navbar_admin.html' %}
         {% elif request.user.is_staff %}
         {% include 'common/navbar_nonadmin_staff.html' %}
         {% elif perms.project.can_review_pending_project_reviews or perms.grant.can_view_all_grants %}
         {% include 'common/navbar_director.html' %}
-        {% endif %}
-        {% if request.user.is_superuser or perms.allocation.can_manage_invoice %}
-        {% include 'common/navbar_invoice.html' %}
         {% endif %}
         <li id="navbar-help" class="nav-item">
           <a class="nav-link" href="{% settings_value 'CENTER_HELP_URL' %}">Help</a>
