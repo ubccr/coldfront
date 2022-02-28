@@ -21,16 +21,16 @@ class RequestListItem:
     in the request hub
     """
 
-    __slots__ = ['num', 'title', 'num_active', 'table',
-                 'active_queryset', 'complete_queryset',
+    __slots__ = ['num', 'title', 'num_pending', 'table',
+                 'pending_queryset', 'complete_queryset',
                  'button_path', 'button_text']
 
     def __init__(self):
         num = None
         title = None
-        num_active = None
+        num_pending = None
         table = None
-        active_queryset = None
+        pending_queryset = None
         complete_queryset = None
         button_path = None
         button_text = None
@@ -79,19 +79,19 @@ class RequestHub(LoginRequiredMixin,
                 value__in=['Denied', 'Active'], **kwargs).order_by(
                 'modified')
 
-        cluster_account_list_active = \
+        cluster_account_list_pending = \
             AllocationUserAttribute.objects.filter(
                 value__in=['Pending - Add', 'Processing'], **kwargs).order_by(
                 'modified')
 
         cluster_request_object.num = self.paginators
-        cluster_request_object.active_queryset = \
-            self.create_paginator(cluster_account_list_active)
+        cluster_request_object.pending_queryset = \
+            self.create_paginator(cluster_account_list_pending)
 
         cluster_request_object.complete_queryset = \
             self.create_paginator(cluster_account_list_complete)
 
-        cluster_request_object.num_active = cluster_account_list_active.count()
+        cluster_request_object.num_pending = cluster_account_list_pending.count()
 
         cluster_request_object.title = 'Cluster Account Requests'
         cluster_request_object.table = \
@@ -112,7 +112,7 @@ class RequestHub(LoginRequiredMixin,
         if not self.show_all_requests:
             args.append(Q(project_user__user=user) | Q(requester=user))
 
-        removal_request_active = \
+        removal_request_pending = \
             ProjectUserRemovalRequest.objects.filter(
                 status__name__in=['Pending', 'Processing'], *args).order_by(
                 'modified')
@@ -123,13 +123,13 @@ class RequestHub(LoginRequiredMixin,
                 'modified')
 
         removal_request_object.num = self.paginators
-        removal_request_object.active_queryset = \
-            self.create_paginator(removal_request_active)
+        removal_request_object.pending_queryset = \
+            self.create_paginator(removal_request_pending)
 
         removal_request_object.complete_queryset = \
             self.create_paginator(removal_request_complete)
 
-        removal_request_object.num_active = removal_request_active.count()
+        removal_request_object.num_pending = removal_request_pending.count()
 
         removal_request_object.title = 'Project Removal Requests'
         removal_request_object.table = \
@@ -150,7 +150,7 @@ class RequestHub(LoginRequiredMixin,
         if not self.show_all_requests:
             args.append(Q(pi=user) | Q(requester=user))
 
-        project_request_active = \
+        project_request_pending = \
             SavioProjectAllocationRequest.objects.filter(
                 status__name__in=['Under Review', 'Approved - Processing'],
                 *args).order_by(
@@ -163,13 +163,13 @@ class RequestHub(LoginRequiredMixin,
                 'modified')
 
         savio_proj_request_object.num = self.paginators
-        savio_proj_request_object.active_queryset = \
-            self.create_paginator(project_request_active)
+        savio_proj_request_object.pending_queryset = \
+            self.create_paginator(project_request_pending)
 
         savio_proj_request_object.complete_queryset = \
             self.create_paginator(project_request_complete)
 
-        savio_proj_request_object.num_active = project_request_active.count()
+        savio_proj_request_object.num_pending = project_request_pending.count()
 
         savio_proj_request_object.title = 'Savio Project Requests'
         savio_proj_request_object.table = \
@@ -190,7 +190,7 @@ class RequestHub(LoginRequiredMixin,
         if not self.show_all_requests:
             args.append(Q(pi=user) | Q(requester=user))
 
-        project_request_active = \
+        project_request_pending = \
             VectorProjectAllocationRequest.objects.filter(
                 status__name__in=['Under Review', 'Approved - Processing'],
                 *args).order_by(
@@ -203,13 +203,13 @@ class RequestHub(LoginRequiredMixin,
                 'modified')
 
         vector_proj_request_object.num = self.paginators
-        vector_proj_request_object.active_queryset = \
-            self.create_paginator(project_request_active)
+        vector_proj_request_object.pending_queryset = \
+            self.create_paginator(project_request_pending)
 
         vector_proj_request_object.complete_queryset = \
             self.create_paginator(project_request_complete)
 
-        vector_proj_request_object.num_active = project_request_active.count()
+        vector_proj_request_object.num_pending = project_request_pending.count()
 
         vector_proj_request_object.title = 'Vector Project Requests'
         vector_proj_request_object.table = \
@@ -230,26 +230,26 @@ class RequestHub(LoginRequiredMixin,
         if not self.show_all_requests:
             args.append(Q(project_user__user=user))
 
-        project_join_request_active = \
+        project_join_request_pending = \
             ProjectUserJoinRequest.objects.filter(
                 project_user__status__name='Pending - Add', *args).order_by(
                 'modified')
 
         project_join_request_complete = \
             ProjectUserJoinRequest.objects.filter(
-                project_user__status__name__in=['Active', 'Denied'],
+                project_user__status__name__in=['pending', 'Denied'],
                 *args).order_by(
                 'modified')
 
         proj_join_request_object.num = self.paginators
-        proj_join_request_object.active_queryset = \
-            self.create_paginator(project_join_request_active)
+        proj_join_request_object.pending_queryset = \
+            self.create_paginator(project_join_request_pending)
 
         proj_join_request_object.complete_queryset = \
             self.create_paginator(project_join_request_complete)
 
-        proj_join_request_object.num_active = \
-            project_join_request_active.count()
+        proj_join_request_object.num_pending = \
+            project_join_request_pending.count()
 
         proj_join_request_object.title = 'Project Join Requests'
         proj_join_request_object.table = \
@@ -270,7 +270,7 @@ class RequestHub(LoginRequiredMixin,
         if not self.show_all_requests:
             args.append(Q(requester=user) | Q(pi=user))
 
-        project_renewal_request_active = \
+        project_renewal_request_pending = \
             AllocationRenewalRequest.objects.filter(
                 status__name__in=['Approved', 'Under Review'], *args).order_by(
                 'modified')
@@ -281,14 +281,14 @@ class RequestHub(LoginRequiredMixin,
                 'modified')
 
         proj_renewal_request_object.num = self.paginators
-        proj_renewal_request_object.active_queryset = \
-            self.create_paginator(project_renewal_request_active)
+        proj_renewal_request_object.pending_queryset = \
+            self.create_paginator(project_renewal_request_pending)
 
         proj_renewal_request_object.complete_queryset = \
             self.create_paginator(project_renewal_request_complete)
 
-        proj_renewal_request_object.num_active = \
-            project_renewal_request_active.count()
+        proj_renewal_request_object.num_pending = \
+            project_renewal_request_pending.count()
 
         proj_renewal_request_object.title = 'Project Renewal Requests'
         proj_renewal_request_object.table = \
@@ -305,7 +305,7 @@ class RequestHub(LoginRequiredMixin,
         su_purchase_request_object = RequestListItem()
         user = self.request.user
 
-        su_purchase_request_active = AllocationAdditionRequest.objects.filter(
+        su_purchase_request_pending = AllocationAdditionRequest.objects.filter(
             status__name__in=['Under Review']).order_by('modified')
 
         su_purchase_request_complete = AllocationAdditionRequest.objects.filter(
@@ -313,10 +313,10 @@ class RequestHub(LoginRequiredMixin,
 
         if not self.show_all_requests:
             request_ids = [
-                r.id for r in su_purchase_request_active
+                r.id for r in su_purchase_request_pending
                 if is_user_manager_or_pi_of_project(user, r.project)]
-            su_purchase_request_active = \
-                su_purchase_request_active.filter(id__in=request_ids)
+            su_purchase_request_pending = \
+                su_purchase_request_pending.filter(id__in=request_ids)
 
             request_ids = [
                 r.id for r in su_purchase_request_complete
@@ -325,14 +325,14 @@ class RequestHub(LoginRequiredMixin,
                 su_purchase_request_complete.filter(id__in=request_ids)
 
         su_purchase_request_object.num = self.paginators
-        su_purchase_request_object.active_queryset = \
-            self.create_paginator(su_purchase_request_active)
+        su_purchase_request_object.pending_queryset = \
+            self.create_paginator(su_purchase_request_pending)
 
         su_purchase_request_object.complete_queryset = \
             self.create_paginator(su_purchase_request_complete)
 
-        su_purchase_request_object.num_active = \
-            su_purchase_request_active.count()
+        su_purchase_request_object.num_pending = \
+            su_purchase_request_pending.count()
 
         su_purchase_request_object.title = 'Service Unit Purchase Requests'
         su_purchase_request_object.table = \
