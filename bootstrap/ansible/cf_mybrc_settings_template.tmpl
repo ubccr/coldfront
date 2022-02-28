@@ -44,3 +44,10 @@ API_LOG_PATH = '{{ log_path }}/{{ api_log_file }}'
 
 # A list of admin email addresses to CC when certain requests are approved.
 REQUEST_APPROVAL_CC_LIST = {{ request_approval_cc_list }}
+
+# Use a secure cookie for the session cookie (HTTPS only).
+{% if ssl_enabled | bool %}
+SESSION_COOKIE_SECURE = True
+{% else %}
+SESSION_COOKIE_SECURE = False
+{% endif %}
