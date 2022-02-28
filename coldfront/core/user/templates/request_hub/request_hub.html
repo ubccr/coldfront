@@ -1,4 +1,6 @@
-{% extends "common/base.html" %} {% load common_tags %} {% block content %}
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% block content %}
 
   <h1>Request Hub</h1>
 
@@ -104,15 +106,13 @@
           if (scrollpos && resetpos) window.scrollTo(0, scrollpos);
 
           $(document).on('click', '#expand_all_button', function() {
-              var matches = document.querySelectorAll("[id^='collapse-']");
-              matches.forEach(function (item, index) {
+              document.querySelectorAll("[id^='collapse-']").forEach(function (item, index) {
                   $(item).collapse("show");
               });
           });
 
           $(document).on('click', '#collapse_all_button', function() {
-              var matches = document.querySelectorAll("[id^='collapse-']");
-              matches.forEach(function (item, index) {
+              document.querySelectorAll("[id^='collapse-']").forEach(function (item, index) {
                   $(item).collapse("hide");
               });
           });
