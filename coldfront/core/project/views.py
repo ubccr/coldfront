@@ -18,7 +18,6 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 from django.utils.html import format_html
-from django.utils.module_loading import import_string
 
 from coldfront.core.allocation.models import (Allocation,
                                               AllocationStatusChoice,
@@ -825,12 +824,14 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         context = cobmined_user_search_obj.search()
         context['after_project_creation'] = after_project_creation
 
-        ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
-        search_class_obj = ldap_search()
+        ldap_user_info_enabled = False
+        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+            from coldfront.plugins.ldap_user_info.utils import get_user_info
+            ldap_user_info_enabled = True
+
         matches = context.get('matches')
         for match in matches:
-            attributes = search_class_obj.search_a_user(match.get('username'), ['title'])
-            if attributes['title'][0] == 'group':
+            if ldap_user_info_enabled and get_user_info(match.get('username'), ['title'])['title'][0] == 'group':
                 match.update({'role': ProjectUserRoleChoice.objects.get(name='Group')})
             else:
                 match.update({'role': ProjectUserRoleChoice.objects.get(name='User')})

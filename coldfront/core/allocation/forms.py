@@ -3,7 +3,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.forms.widgets import RadioSelect
 from django.shortcuts import get_object_or_404
-from django.utils.module_loading import import_string
+from django.conf import settings
 
 from coldfront.core.allocation.models import (AllocationAccount,
                                               AllocationAttributeType,
@@ -150,19 +150,16 @@ class AllocationForm(forms.Form):
         self.fields['it_pros'].help_text = 'Format: name1,name2,name3,etc'
         self.fields['project_directory_name'].help_text = 'Must be alphanumeric and not exceed 10 characters in length'
 
-        ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
-        search_class_obj = ldap_search()
-        attributes = search_class_obj.search_a_user(
-            request_user.username,
-            ['department', 'division', 'ou', 'givenName', 'sn', 'mail']
-        )
+        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+            from coldfront.plugins.ldap_user_info.utils import get_user_info
+            attributes = get_user_info(request_user.username, ['department', 'division', 'ou', 'givenName', 'sn', 'mail'])
 
-        self.fields['department_full_name'].initial = attributes['department'][0]
-        self.fields['department_short_name'].initial = attributes['division'][0]
-        self.fields['first_name'].initial = attributes['givenName'][0]
-        self.fields['last_name'].initial = attributes['sn'][0]
-        self.fields['campus_affiliation'].initial = attributes['ou'][0]
-        self.fields['email'].initial = attributes['mail'][0]
+            self.fields['department_full_name'].initial = attributes['department'][0]
+            self.fields['department_short_name'].initial = attributes['division'][0]
+            self.fields['first_name'].initial = attributes['givenName'][0]
+            self.fields['last_name'].initial = attributes['sn'][0]
+            self.fields['campus_affiliation'].initial = attributes['ou'][0]
+            self.fields['email'].initial = attributes['mail'][0]
 
         self.helper = FormHelper()
         self.helper.layout = Layout(
@@ -282,8 +279,10 @@ class AllocationForm(forms.Form):
         if resource is None:
             return
 
-        ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
-        search_class_obj = ldap_search()
+        ldap_user_info_enabled = False
+        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+            from coldfront.plugins.ldap_user_info.utils import check_if_user_exists
+            ldap_user_info_enabled = True
 
         raise_error = False
         required_field_text = 'This field is required'
@@ -368,16 +367,22 @@ class AllocationForm(forms.Form):
                         self.add_error(key, 'Please enter a storage amount greater than or equal to 200GB')
                         continue
                 elif key in ['primary_contact', 'secondary_contact', 'fiscal_officer']:
-                    attributes = search_class_obj.search_a_user(value, ['memberOf'])
-                    if attributes['memberOf'][0] == '':
+                    user_exists = True
+                    if ldap_user_info_enabled:
+                        user_exists = check_if_user_exists(value)
+
+                    if not user_exists:
                         raise_error = True
                         self.add_error(key, 'This username is not valid')
                         continue
                 elif key == 'it_pros':
                     invalid_users = []
                     for username in value.split(','):
-                        attributes = search_class_obj.search_a_user(username, ['memberOf'])
-                        if attributes['memberOf'][0] == '':
+                        user_exists = True
+                        if ldap_user_info_enabled:
+                            user_exists = check_if_user_exists(username)
+
+                        if not user_exists:
                             invalid_users.append(username)
 
                     if invalid_users:
