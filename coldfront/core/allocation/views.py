@@ -875,21 +875,19 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 ))
                 return self.form_invalid(form)
 
-
         users = [User.objects.get(username=username) for username in usernames]
-        resource = resource_obj.get_attribute('check_user_account')
-        if resource and not resource_obj.check_user_account_exists(project_obj.pi.username, resource):
+        resource_account = resource_obj.get_attribute('check_user_account')
+        if resource_account and not resource_obj.check_user_account_exists(self.request.user.username, resource_account):
             form.add_error(
                 None,
                 format_html('You do not have an account on {}. You will need to create one\
                 <a href="https://access.iu.edu/Accounts/Create">here</a> in order to submit a\
-                resource request for this resource.'.format(resource))
+                resource request for this resource.'.format(resource_account))
             )
             return self.form_invalid(form)
 
         denied_users = []
         resource_name = ''
-        resource = resource_obj.get_attribute('check_user_account')
         for user in users:
             username = user.username
             if resource_obj.name == 'Priority Boost':
@@ -898,19 +896,19 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     resource_name = system
                     users.remove(user)
             else:
-                if resource is not None:
-                    if not resource_obj.check_user_account_exists(username, resource):
+                if resource_account is not None:
+                    if not resource_obj.check_user_account_exists(username, resource_account):
                         denied_users.append(username)
-                        resource_name = resource
+                        resource_name = resource_account
                         users.remove(user)
 
         if denied_users:
             messages.warning(self.request, format_html(
-                'The following users do not have an account on {}: {}. They were not added to the\
-                resource. They will need to create an account\
-                <a href="https://access.iu.edu/Accounts/Create">here</a>.'.format(
-                    resource_name, ', '.join(denied_users)
-                )
+                'The following users do not have an account on {} and were not added: {}. Please\
+                direct them to\
+                <a href="https://access.iu.edu/Accounts/Create">https://access.iu.edu/Accounts/Create</a>\
+                to create an account.'
+                .format(resource_account, ', '.join(denied_users))
             ))
 
         if INVOICE_ENABLED and resource_obj.requires_payment:
@@ -1176,9 +1174,15 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     'Added user(s) {} to allocation.'.format(', '.join(added_users))
                 )
             if denied_users:
-                messages.warning(
-                    request,
-                    'Did not add user(s) {} to allocation. An account is needed for this resource: https://access.iu.edu/Accounts/Create.'.format(', '.join(denied_users))
+                user_text = 'user'
+                if len(denied_users) > 1:
+                    user_text += 's'
+                messages.warning(request, format_html(
+                    'Did not add {} {} to allocation. An account is needed for this resource.\
+                    Please direct them to\
+                    <a href="https://access.iu.edu/Accounts/Create">https://access.iu.edu/Accounts/Create</a>\
+                    to create one'.format(user_text, ', '.join(denied_users))
+                    )
                 )
         else:
             for error in formset.errors:

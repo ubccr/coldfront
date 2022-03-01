@@ -917,6 +917,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             request.user, project_obj.pk, request.POST, prefix='allocationform')
 
         added_users_count = 0
+        display_warning = False
         if formset.is_valid() and allocation_form.is_valid():
             project_user_active_status_choice = ProjectUserStatusChoice.objects.get(
                 name='Active')
@@ -961,9 +962,10 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                     for allocation in Allocation.objects.filter(pk__in=allocation_form_data):
                         # If the user does not have an account on the resource in the allocation then do not add them to it.
                         if not allocation.check_user_account_exists_on_resource(username):
+                            display_warning = True
                             # Make sure there are no duplicates for a user if there's more than one instance of a resource.
-                            if allocation.get_parent_resource.name not in no_accounts[username]:
-                                no_accounts[username].append(allocation.get_parent_resource.name)
+                            if allocation.get_parent_resource.get_attribute('check_user_account') not in no_accounts[username]:
+                                no_accounts[username].append(allocation.get_parent_resource.get_attribute('check_user_account'))
                             continue
 
                         if allocation.allocationuser_set.filter(user=user_obj).exists():
@@ -979,15 +981,25 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                         allocation_activate_user.send(sender=self.__class__,
                                                       allocation_user_pk=allocation_user_obj.pk)
 
-            warning_message = ''
-            for username, no_account_list in no_accounts.items():
-                if no_account_list:
-                    warning_message += 'User {} was not added to allocation(s) {} due do not having an account on those resources. '.format(username, ', '.join(no_account_list))
-            if warning_message != '':
-                warning_message = format_html(warning_message + 'Please direct them to <a href="https://access.iu.edu/Accounts/Create">https://access.iu.edu/Accounts/Create</a> to create one.\n')
-                messages.warning(
-                    request, warning_message
-                )
+            if display_warning:
+                warning_message = 'The following users were not added to the selected resources due to missing accounts:<ul>'
+                for username, no_account_list in no_accounts.items():
+                    resource_text = 'resource'
+                    if no_account_list:
+                        if len(no_account_list) > 1:
+                            resource_text += 's'
+                        warning_message += '<li>{} is missing an account for {} {}</li>'.format(
+                            username,
+                            resource_text,
+                            ', '.join(no_account_list)
+                        )
+                warning_message += '</ul>'
+                if warning_message != '':
+                    warning_message += 'They cannot be added until they create one. Please direct them to <a href="https://access.iu.edu/Accounts/Create">https://access.iu.edu/Accounts/Create</a> to create one.'
+
+                    messages.warning(
+                        request, format_html(warning_message)
+                    )
             messages.success(
                 request, 'Added {} users to project.'.format(added_users_count))
         else:
