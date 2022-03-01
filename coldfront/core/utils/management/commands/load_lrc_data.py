@@ -6,7 +6,6 @@ from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.models import AllocationUser
 from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.allocation.utils import get_or_create_active_allocation_user
-from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.allocation.utils import next_allocation_start_datetime
 from coldfront.core.allocation.utils import set_allocation_user_attribute_value
 from coldfront.core.billing.models import BillingActivity
@@ -16,6 +15,7 @@ from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
+from coldfront.core.project.utils import get_project_compute_allocation
 from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils import get_compute_resource_names
 from coldfront.core.statistics.models import ProjectTransaction
@@ -112,11 +112,16 @@ class Command(BaseCommand):
 
     def handle_all(self, *args, **options):
         """Handle the 'all' subcommand."""
-        self.handle_users(options['passwd_file'])
-        self.handle_projects_and_project_users(options['group_file'])
-        self.handle_project_pis_and_managers()
-        self.handle_allocations()
-        self.handle_billing_ids(options['billing_file'])
+        ordered_subcommands = [
+            'users',
+            'projects_and_project_users',
+            'project_pis_and_managers',
+            'allocations',
+            'billing_ids',
+        ]
+        for subcommand in ordered_subcommands:
+            handler = getattr(self, f'handle_{subcommand}')
+            handler(*args, **options)
 
     def handle_allocations(self, *args, **options):
         """Handle the 'allocations' subcommand."""
@@ -200,6 +205,14 @@ class Command(BaseCommand):
                     f'Project {project_name} unexpectedly does not exist.')
                 continue
 
+            try:
+                allocation = get_project_compute_allocation(project)
+            except Allocation.DoesNotExist:
+                self.logger.error(
+                    f'Project {project_name} unexpectedly does not have an '
+                    f'Allocation to a Compute Resource.')
+                continue
+
             job_usage_fee_id_users = job_usage_fee_id_users_by_project[
                 project_name]
             max_user_count = 0
@@ -228,14 +241,6 @@ class Command(BaseCommand):
                     max_user_count = len(usernames)
                     most_used_billing_activity = billing_activity
 
-                try:
-                    allocation = get_project_compute_allocation(project)
-                except Allocation.DoesNotExist:
-                    self.logger.error(
-                        f'Project {project_name} unexpectedly does not have '
-                        f'an Allocation to a Compute Resource.')
-                    continue
-
                 for username in usernames:
                     try:
                         user = User.objects.get(username=username)
@@ -261,7 +266,8 @@ class Command(BaseCommand):
                         continue
 
                     set_allocation_user_attribute_value(
-                        allocation_user, 'Billing Activity', billing_id)
+                        allocation_user, 'Billing Activity',
+                        str(billing_activity.pk))
                     self.logger.info(
                         f'Set User {username}\'s billing ID for the monthly '
                         f'job usage fee under Project {project_name} to '
@@ -327,7 +333,7 @@ class Command(BaseCommand):
                     f'Project {project_name} unexpectedly does not exist.')
                 continue
 
-            for email, attributes in user_data:
+            for email, attributes in user_data.items():
                 # Create or update User objects.
                 try:
                     user = User.objects.get(email=email)
@@ -337,6 +343,11 @@ class Command(BaseCommand):
                     # username.
                     user = User.objects.create(username=email, email=email)
                     self.logger.info(f'User {user.username} was created.')
+                except User.MultipleObjectsReturned:
+                    self.logger.error(
+                        f'Email {email} unexpectedly belongs to multiple '
+                        f'users.')
+                    continue
                 # Prefer existing names (from the cluster) over those from the
                 # spreadsheet.
                 user.first_name = user.first_name or attributes['first_name']
@@ -690,7 +701,9 @@ class Command(BaseCommand):
                         project_name, departmental_cluster_names):
                     self.logger.debug(f'Skipping group {project_name}.')
                     continue
-                usernames = set([u.lower() for u in fields[3].split(',')])
+                usernames = set([
+                    u.strip().lower() for u in fields[3].split(',')
+                    if u.strip()])
                 project_and_project_users_data[project_name] = usernames
         return project_and_project_users_data
 
@@ -775,7 +788,7 @@ class Command(BaseCommand):
         project_name = project_name.lower()
         return (
             project_name.startswith(LAWRENCIUM_PROJECT_PREFIXES) or
-            project_name not in departmental_cluster_names)
+            project_name in departmental_cluster_names)
 
     def set_up_departmental_project_allocations(self,
                                                 usernames_by_project_name):
@@ -839,8 +852,7 @@ class Command(BaseCommand):
 
         resource = Resource.objects.get(name='LAWRENCIUM Compute')
 
-        for project in Project.objects.filter(
-                name__startswith=LAWRENCIUM_PROJECT_PREFIXES):
+        for project in Project.objects.all():
             if project.name.startswith('ac_'):
                 end_date = None
                 num_service_units = settings.ALLOCATION_MAX
@@ -852,8 +864,6 @@ class Command(BaseCommand):
                     next_allocation_start_datetime() - timedelta(seconds=1))
                 num_service_units = settings.ALLOCATION_MIN
             else:
-                self.logger.error(
-                    f'Unaccounted Lawrencium project: {project.name}.')
                 continue
             allocation_kwargs['end_date'] = end_date
             allocation_kwargs['num_service_units'] = num_service_units
