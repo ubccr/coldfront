@@ -109,11 +109,11 @@
             {%  elif allocation.status.name == "Renewal Requested" %}
             <td><a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-danger btn-block">Renewal
                 Requested</a></td>
-            {%  elif allocation.expires_in >= 0 and  allocation.expires_in <= 30 %}
+            {%  elif allocation.expires_in >= 0 and  allocation.expires_in <= 7 %}
             <td><a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-danger btn-block">Expires in <span
                   class="badge badge-light">{{allocation.expires_in}}</span> day{{allocation.expires_in|pluralize }}</a>
             </td>
-            {% elif allocation.expires_in > 30 and allocation.expires_in <= 90 %}
+            {% elif allocation.expires_in > 7 and allocation.expires_in <= 30 %}
             <td><a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-warning btn-block">Expires in <span
                   class="badge badge-light">{{allocation.expires_in}}</span> day{{allocation.expires_in|pluralize }}</a>
             </td>
