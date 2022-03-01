@@ -2165,5 +2165,9 @@ class AllocationInvoiceExportView(LoginRequiredMixin, UserPassesTestMixin, View)
             response['Content-Disposition'] = f'attachment; filename="{file_name}"'
             return response
         else:
-            messages.error(request, 'Please current the errors for the following fields: {}'.format(' '.join(form.errors)))
+            messages.error(
+                request,
+                'Please correct the errors for the following fields: {}'
+                .format(' '.join(form.errors))
+            )
             return HttpResponseRedirect(reverse('allocation-invoice-list'))
