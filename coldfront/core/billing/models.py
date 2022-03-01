@@ -43,3 +43,8 @@ class BillingActivity(TimeStampedModel):
         unique_together = ('billing_project', 'identifier')
         verbose_name = 'Billing Activity'
         verbose_name_plural = 'Billing Activities'
+
+    def full_id(self):
+        """Return a string representing the fully-formed billing ID
+        represented by the instance."""
+        return f'{self.billing_project.identifier}-{self.identifier}'

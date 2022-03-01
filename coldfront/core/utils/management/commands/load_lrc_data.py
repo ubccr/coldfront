@@ -285,9 +285,7 @@ class Command(BaseCommand):
                     allocation_attribute_type=allocation_attribute_type,
                     allocation=allocation,
                     defaults=allocation_attribute_defaults)
-            default_billing_id = '-'.join([
-                most_used_billing_activity.billing_project.identifier,
-                most_used_billing_activity.identifier])
+            default_billing_id = most_used_billing_activity.full_id()
             self.logger.info(
                 f'Set Project {project_name}\'s default billing ID to '
                 f'{default_billing_id}.')
