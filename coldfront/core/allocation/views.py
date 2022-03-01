@@ -29,6 +29,7 @@ from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationForm,
                                              AllocationInvoiceNoteDeleteForm,
                                              AllocationInvoiceUpdateForm,
+                                             AllocationInvoiceExportForm,
                                              AllocationRemoveUserForm,
                                              AllocationReviewUserForm,
                                              AllocationSearchForm,
@@ -1815,6 +1816,11 @@ class AllocationInvoiceListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
             self.request, 'You do not have permission to manage invoices.')
         return False
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['AllocationInvoiceExportForm'] = AllocationInvoiceExportForm()
+        return context
+
     def get_queryset(self):
 
         allocations = Allocation.objects.filter(
@@ -2068,81 +2074,96 @@ class AllocationInvoiceExportView(LoginRequiredMixin, UserPassesTestMixin, View)
 
         messages.error(self.request, 'You do not have permission to download invoices.')
 
-    def get(self, request):
-        file_name = request.GET["file_name"]
-        resource = request.GET["resource"]
+    def post(self, request):
+        file_name = request.POST["file_name"]
+        resource = request.POST["resource"]
 
-        if file_name[-4:] != ".csv":
-            file_name += ".csv"
+        initial_data = {
+            'file_name': file_name,
+            'resource': resource
+        }
+        form = AllocationInvoiceExportForm(
+            request.POST, initial=initial_data)
 
-        invoices = Allocation.objects.prefetch_related('project', 'status').filter(
-            Q(status__name__in=['Payment Pending', ]) &
-            Q(resources__name=resource)
-        ).order_by('-created')
+        if form.is_valid():
+            data = form.cleaned_data
+            file_name = data.get('file_name')
+            resource = data.get('resource')
 
-        rows = []
-        if resource == "RStudio Connect":
-            header = [
-                'Name',
-                'Account*',
-                'Object*',
-                'Sub-Acct',
-                'Product',
-                'Quantity',
-                'Unit cost',
-                'Amount*',
-                'Invoice',
-                'Line Description',
-                'Income Account',
-                'Income Sub-acct',
-                'Income Object Code',
-                'Income sub-object code',
-                'Project',
-                'Org Ref ID'
-            ]
+            if file_name[-4:] != ".csv":
+                file_name += ".csv"
 
-            for invoice in invoices:
-                row = [
-                    ' '.join((invoice.project.pi.first_name, invoice.project.pi.last_name)),
-                    invoice.account_number,
-                    '4616',
-                    invoice.sub_account_number,
-                    '',
-                    1,
-                    '',
-                    invoice.total_cost,
-                    '',
-                    'RStudio Connect FY 22',
-                    '63-101-08',
-                    'SMSAL',
-                    1500,
-                    '',
-                    '',
-                    ''
+            invoices = Allocation.objects.prefetch_related('project', 'status').filter(
+                Q(status__name__in=['Payment Pending', ]) &
+                Q(resources__name=resource)
+            ).order_by('-created')
+
+            rows = []
+            if resource == "RStudio Connect":
+                header = [
+                    'Name',
+                    'Account*',
+                    'Object*',
+                    'Sub-Acct',
+                    'Product',
+                    'Quantity',
+                    'Unit cost',
+                    'Amount*',
+                    'Invoice',
+                    'Line Description',
+                    'Income Account',
+                    'Income Sub-acct',
+                    'Income Object Code',
+                    'Income sub-object code',
+                    'Project',
+                    'Org Ref ID'
                 ]
 
-                rows.append(row)
-            rows.insert(0, header)
-        elif resource == "Slate Project":
-            header = [
-                'Name',
-                'Acount*'
-            ] 
+                for invoice in invoices:
+                    row = [
+                        ' '.join((invoice.project.pi.first_name, invoice.project.pi.last_name)),
+                        invoice.account_number,
+                        '4616',
+                        invoice.sub_account_number,
+                        '',
+                        1,
+                        '',
+                        invoice.total_cost,
+                        '',
+                        'RStudio Connect FY 22',
+                        '63-101-08',
+                        'SMSAL',
+                        1500,
+                        '',
+                        '',
+                        ''
+                    ]
 
-            for invoice in invoices:
-                row = [
-                    ' '.join((invoice.project.pi.first_name, invoice.project.pi.last_name)),
-                    invoice.account_number
+                    rows.append(row)
+                rows.insert(0, header)
+            elif resource == "Slate-Project":
+                header = [
+                    'Name',
+                    'Account*'
                 ]
 
-                rows.append(row)
-            rows.insert(0, header)
+                for invoice in invoices:
+                    row = [
+                        ' '.join((invoice.project.pi.first_name, invoice.project.pi.last_name)),
+                        invoice.account_number
+                    ]
 
-        pseudo_buffer = Echo()
-        writer = csv.writer(pseudo_buffer)
-        response = StreamingHttpResponse(
-            (writer.writerow(row) for row in rows),
-            content_type='text/csv'
-        )
-        response['Content-Disposition'] = f'attachment; filename="{file_name}"'
-        return response
+                    rows.append(row)
+                rows.insert(0, header)
+
+            pseudo_buffer = Echo()
+            writer = csv.writer(pseudo_buffer)
+            response = StreamingHttpResponse(
+                (writer.writerow(row) for row in rows),
+                content_type='text/csv'
+            )
+            response['Content-Disposition'] = f'attachment; filename="{file_name}"'
+            return response
+        else:
+            messages.error(request, 'Please current the errors for the following fields: {}'.format(' '.join(form.errors)))
+            return HttpResponseRedirect(reverse('allocation-invoice-list'))

@@ -422,6 +422,16 @@ class AllocationInvoiceUpdateForm(forms.Form):
         'Payment Pending', 'Payment Requested', 'Payment Declined', 'Paid']).order_by('name'), empty_label=None)
 
 
+class AllocationInvoiceExportForm(forms.Form):
+    RESOURCE_CHOICES = (
+        ('RStudio Connect', 'RStudio Connect'),
+        ('Slate-Project', 'Slate Project')
+    )
+
+    file_name = forms.CharField(max_length=64, initial='invoices')
+    resource = forms.ChoiceField(choices=RESOURCE_CHOICES)
+
+
 class AllocationAddUserForm(forms.Form):
     username = forms.CharField(max_length=150, disabled=True)
     first_name = forms.CharField(max_length=30, required=False, disabled=True)
