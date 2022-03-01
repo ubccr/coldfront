@@ -6,6 +6,7 @@ from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.models import AllocationUser
 from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.allocation.utils import get_or_create_active_allocation_user
+from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.allocation.utils import next_allocation_start_datetime
 from coldfront.core.allocation.utils import set_allocation_user_attribute_value
 from coldfront.core.billing.models import BillingActivity
@@ -15,7 +16,6 @@ from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
-from coldfront.core.project.utils import get_project_compute_allocation
 from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils import get_compute_resource_names
 from coldfront.core.statistics.models import ProjectTransaction

@@ -40,7 +40,6 @@ from django.core.exceptions import MultipleObjectsReturned
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.urls import reverse
-from flags.state import flag_enabled
 from urllib.parse import urljoin
 
 import iso8601
@@ -48,37 +47,6 @@ import logging
 
 
 logger = logging.getLogger(__name__)
-
-
-def get_project_compute_resource_name(project_obj):
-    """Return the name of the '{cluster_name} Compute' Resource that
-    corresponds to the given Project.
-
-    The name is based on currently-enabled flags (i.e., BRC, LRC). If
-    one cannot be determined, return the empty string."""
-    if flag_enabled('BRC_ONLY'):
-        if project_obj.name == 'abc':
-            resource_name = 'ABC Compute'
-        elif project_obj.name.startswith('vector_'):
-            resource_name = 'Vector Compute'
-        else:
-            resource_name = 'Savio Compute'
-        return resource_name
-    if flag_enabled('LRC_ONLY'):
-        if project_obj.name.startswith(('ac_', 'lr_', 'pc_')):
-            resource_name = 'Lawrencium Compute'
-        else:
-            # TODO: Verify this behavior.
-            resource_name = project_obj.name
-        return resource_name
-    return ''
-
-
-def get_project_compute_allocation(project_obj):
-    """Return the given Project's Allocation to a
-    '{cluster_name} Compute' Resource."""
-    resource_name = get_project_compute_resource_name(project_obj)
-    return project_obj.allocation_set.get(resources__name=resource_name)
 
 
 def __project_detail_url(project):
