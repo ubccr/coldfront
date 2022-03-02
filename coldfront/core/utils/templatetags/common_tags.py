@@ -48,8 +48,6 @@ def convert_status_to_icon(project):
         return mark_safe('<h4><span class="badge badge-success"><i class="fas fa-check-circle"></i></span></h4>')
 
 
-
-
 @register.filter('get_value_from_dict')
 def get_value_from_dict(dict_data, key):
     """
@@ -57,3 +55,8 @@ def get_value_from_dict(dict_data, key):
     """
     if key:
         return dict_data.get(key)
+
+
+@register.filter
+def split(string, char):
+    return string.split(char)

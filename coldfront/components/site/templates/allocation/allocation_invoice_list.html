@@ -24,31 +24,13 @@ Allocation Invoice List
         </button>
       </div>
       <div class="modal-body">
-        <form id="id_export_form">
-          <div class="table-responsive">
-            <table class="table table-sm">
-              <tr style="border-top: none;">
-                <th class="text-nowrap" style="border-top: none;" scope="row">File Name:</th>
-                <td style="border-top: none;">
-                  <input class="form-control" id="id_file_name" type="text" name="file_name" value="export"/>
-                </td>
-              </tr>
-              <tr>
-                <th class="text-nowrap" style="border-top: none;" scope="row">Resource:</th>
-                <td style="border-top: none;">
-                  <select id="id_resource" class="form-control select" name="resource">
-                    <option value="RStudio Connect">RStudio Connect</option>
-                    <option value="Slate-Project">Slate-Project</option>
-                  </select>
-                </td>
-              </tr>
-            </table>
+        <form id="id_export_form" action="{% url 'invoice-export' %}" method="post">
+          {% csrf_token %}
+          {{ AllocationInvoiceExportForm|crispy }}
+          <div class="float-right form-inline">
+            <button id="id_export_button" type="submit" class="btn btn-success float-right"><i class="fas fa-download" aria-hidden="true"></i> Export</button>
           </div>
         </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        <button id="id_export_button" type="submit" class="btn btn-success float-right"><i class="fas fa-download" aria-hidden="true"></i>Export</button>
       </div>
     </div>
   </div>
@@ -84,35 +66,8 @@ Allocation Invoice List
 {% endif %}
 
 <script>
-  function getCookie(name) {
-    var cookieValue = null;
-    if (document.cookie && document.cookie != '') {
-      var cookies = document.cookie.split(';');
-      for (var i = 0; i < cookies.length; i++) {
-        var cookie = jQuery.trim(cookies[i]);
-        // Does this cookie string begin with the name we want?
-        if (cookie.substring(0, name.length + 1) == (name + '=')) {
-          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-          break;
-        }
-      }
-    }
-    return cookieValue;
-  }
-
-  $(document).ready(function () {
-    $('#id_export_button').click(function (e) {
-      e.preventDefault();
-      $(function () {
-        file_name = $('#id_file_name').val();
-        resource = $('#id_resource').val();
-        export_url = "{% url 'invoice-export' %}"
-        window.location = export_url + "?file_name="
-        + encodeURIComponent(file_name)
-        + "&resource="
-        + encodeURIComponent(resource)
-      })
-    })
-  })
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-invoice").addClass("active");
+  $("#navbar-allocation-invoice-list").addClass("active");
 </script>
 {% endblock %}

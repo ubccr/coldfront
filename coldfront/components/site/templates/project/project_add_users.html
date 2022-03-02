@@ -23,7 +23,10 @@ Add Users to Project
           <a class="btn btn-secondary" style="width: 15%;" href="{% url 'allocation-create' project_pk=pk %}" role="button">Skip this step</a><br>
         </div>
       {% else %}
-        <button id="search-button" type="submit" class="btn btn-success btn-block"><i class="fas fa-search" aria-hidden="true"></i> Search</button>
+        <div class="form-inline" style="display: flex;">
+          <button id="search-button" type="submit" style="width: 84%; margin-right: 1%;" class="btn btn-success"><i class="fas fa-search" aria-hidden="true"></i> Search</button>
+          <a class="btn btn-secondary" style="width: 15%;" href="{% url 'project-detail' pk %}" role="button">Back to Project</a>
+        </div>
       {% endif %}
     </form>
   </div>

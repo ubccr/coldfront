@@ -109,35 +109,21 @@ class ProjectUserUpdateForm(forms.Form):
 
 
 class ProjectReviewForm(forms.Form):
-    reason = forms.CharField(label='Reason for not updating project information', widget=forms.Textarea(attrs={
-                             'placeholder': 'If you have no new information to provide, you are required to provide a statement explaining this in this box. Thank you!'}), required=False)
+    no_project_updates = forms.BooleanField(label='No new project updates', required=False)
+    project_updates = forms.CharField(
+        label='Project updates',
+        widget=forms.Textarea(),
+        required=False
+    )
     acknowledgement = forms.BooleanField(
         label='By checking this box I acknowledge that I have updated my project to the best of my knowledge', initial=False, required=True)
 
-    def __init__(self, project_pk, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        project_obj = get_object_or_404(Project, pk=project_pk)
-        now = datetime.datetime.now(datetime.timezone.utc)
-
-        if project_obj.grant_set.exists():
-            latest_grant = project_obj.grant_set.order_by('-modified')[0]
-            grant_updated_in_last_year = (
-                now - latest_grant.created).days < 365
-        else:
-            grant_updated_in_last_year = None
-
-        if project_obj.publication_set.exists():
-            latest_publication = project_obj.publication_set.order_by(
-                '-created')[0]
-            publication_updated_in_last_year = (
-                now - latest_publication.created).days < 365
-        else:
-            publication_updated_in_last_year = None
-
-        if grant_updated_in_last_year or publication_updated_in_last_year:
-            self.fields['reason'].widget = forms.HiddenInput()
-        else:
-            self.fields['reason'].required = True
+    def clean(self):
+        cleaned_data = super().clean()
+        project_updates = cleaned_data.get('project_updates')
+        no_project_updates = cleaned_data.get('no_project_updates')
+        if not no_project_updates and project_updates == '':
+            raise forms.ValidationError('Please fill out the project updates field.')
 
 
 class ProjectReviewEmailForm(forms.Form):
@@ -156,3 +142,30 @@ class ProjectReviewEmailForm(forms.Form):
             project_review_obj.project.pi.first_name, project_review_obj.project.pi.last_name, EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL)
         self.fields['cc'].initial = ', '.join(
             [EMAIL_DIRECTOR_EMAIL_ADDRESS] + EMAIL_ADMIN_LIST)
+
+
+class ProjectRequestEmailForm(forms.Form):
+    cc = forms.CharField(
+        required=False
+    )
+    email_body = forms.CharField(
+        required=True,
+        widget=forms.Textarea
+    )
+
+    def __init__(self, pk, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['cc'].initial = ', '.join(
+            [EMAIL_DIRECTOR_EMAIL_ADDRESS] + EMAIL_ADMIN_LIST)
+
+
+class ProjectReviewAllocationForm(forms.Form):
+    pk = forms.IntegerField(disabled=True)
+    resource = forms.CharField(max_length=100, disabled=True)
+    users = forms.CharField(max_length=1000, disabled=True, required=False)
+    status = forms.CharField(max_length=50, disabled=True)
+    expires_on = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        disabled=True
+    )
+    renew = forms.BooleanField(initial=False, required=False)
