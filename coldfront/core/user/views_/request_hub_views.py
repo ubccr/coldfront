@@ -11,7 +11,7 @@ from coldfront.core.allocation.models import (AllocationAttributeType,
 from coldfront.core.project.models import (ProjectUserRemovalRequest,
                                            SavioProjectAllocationRequest,
                                            VectorProjectAllocationRequest,
-                                           ProjectUserJoinRequest)
+                                           ProjectUserJoinRequest, Project)
 from coldfront.core.project.utils_.permissions_utils import \
     is_user_manager_or_pi_of_project
 
@@ -24,7 +24,7 @@ class RequestListItem:
 
     __slots__ = ['num', 'title', 'num_pending', 'table',
                  'pending_queryset', 'complete_queryset',
-                 'button_path', 'button_text']
+                 'button_path', 'button_text', 'id']
 
     def __init__(self):
         num = None
@@ -35,11 +35,12 @@ class RequestListItem:
         complete_queryset = None
         button_path = None
         button_text = None
+        id = None
 
 
 class RequestHubView(LoginRequiredMixin,
-                 UserPassesTestMixin,
-                 TemplateView):
+                     UserPassesTestMixin,
+                     TemplateView):
     template_name = 'request_hub/request_hub.html'
     paginate_by = 10
     paginators = 0
@@ -52,8 +53,6 @@ class RequestHubView(LoginRequiredMixin,
                 return True
         else:
             return True
-
-        return False
 
     def create_paginator(self, queryset):
         """
@@ -112,6 +111,7 @@ class RequestHubView(LoginRequiredMixin,
             'allocation-cluster-account-request-list'
         cluster_request_object.button_text = \
             'Go To Cluster Account Requests Main Page'
+        cluster_request_object.id = 'cluster_account_request_section'
 
         return cluster_request_object
 
@@ -150,6 +150,7 @@ class RequestHubView(LoginRequiredMixin,
             'project-removal-request-list'
         removal_request_object.button_text = \
             'Go To Project Removal Requests Main Page'
+        removal_request_object.id = 'project_removal_request_section'
 
         return removal_request_object
 
@@ -190,6 +191,7 @@ class RequestHubView(LoginRequiredMixin,
             'savio-project-pending-request-list'
         savio_proj_request_object.button_text = \
             'Go To Savio Project Requests Main Page'
+        savio_proj_request_object.id = 'savio_project_request_section'
 
         return savio_proj_request_object
 
@@ -230,6 +232,7 @@ class RequestHubView(LoginRequiredMixin,
             'vector-project-pending-request-list'
         vector_proj_request_object.button_text = \
             'Go To Vector Project Requests Main Page'
+        vector_proj_request_object.id = 'vector_project_request_section'
 
         return vector_proj_request_object
 
@@ -240,18 +243,28 @@ class RequestHubView(LoginRequiredMixin,
 
         args = []
         if not self.show_all_requests:
-            args.append(Q(project_user__user=user))
+            project_set = set()
+            for project in Project.objects.all():
+                pi_condition = Q(
+                    role__name='Principal Investigator')
+                manager_condition = Q(role__name='Manager')
+
+                if project.projectuser_set.filter(user=user,
+                                                  status__name='Active').filter(
+                    Q(pi_condition | manager_condition)).count() > 0:
+                    project_set.add(project)
+
+            args.append(Q(project_user__user=user) | Q(project_user__project__in=project_set))
 
         project_join_request_pending = \
             ProjectUserJoinRequest.objects.filter(
-                project_user__status__name='Pending - Add', *args).order_by(
-                'modified')
+                project_user__status__name='Pending - Add',
+                *args).order_by('modified')
 
         project_join_request_complete = \
             ProjectUserJoinRequest.objects.filter(
-                project_user__status__name__in=['pending', 'Denied'],
-                *args).order_by(
-                'modified')
+                project_user__status__name__in=['Active', 'Denied'],
+                *args).order_by('modified')
 
         proj_join_request_object.num = self.paginators
         proj_join_request_object.pending_queryset = \
@@ -270,6 +283,7 @@ class RequestHubView(LoginRequiredMixin,
             'project-join-request-list'
         proj_join_request_object.button_text = \
             'Go To Project Join Requests Main Page'
+        proj_join_request_object.id = 'project_join_request_section'
 
         return proj_join_request_object
 
@@ -309,6 +323,7 @@ class RequestHubView(LoginRequiredMixin,
             'pi-allocation-renewal-pending-request-list'
         proj_renewal_request_object.button_text = \
             'Go To Project Renewal Requests Main Page'
+        proj_renewal_request_object.id = 'project_renewal_request_section'
 
         return proj_renewal_request_object
 
@@ -353,6 +368,7 @@ class RequestHubView(LoginRequiredMixin,
             'service-units-purchase-pending-request-list'
         su_purchase_request_object.button_text = \
             'Go To Service Unit Purchase Requests Main Page'
+        su_purchase_request_object.id = 'service_unit_purchase_request_section'
 
         return su_purchase_request_object
 
