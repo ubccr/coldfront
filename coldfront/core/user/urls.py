@@ -117,10 +117,10 @@ urlpatterns = [
 
     # Request Hub
     path('request-hub',
-         request_hub_views.RequestHub.as_view(show_all_requests=False),
+         request_hub_views.RequestHubView.as_view(show_all_requests=False),
          name='request-hub'),
 
     path('request-hub-admin',
-         request_hub_views.RequestHub.as_view(show_all_requests=True),
+         request_hub_views.RequestHubView.as_view(show_all_requests=True),
          name='request-hub-admin'),
 ]

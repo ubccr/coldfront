@@ -37,7 +37,7 @@ class RequestListItem:
         button_text = None
 
 
-class RequestHub(LoginRequiredMixin,
+class RequestHubView(LoginRequiredMixin,
                  UserPassesTestMixin,
                  TemplateView):
     template_name = 'request_hub/request_hub.html'
