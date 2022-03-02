@@ -238,8 +238,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             if not start_date:
                 start_date = datetime.datetime.now()
             if not end_date:
-                end_date = datetime.datetime.now(
-                ) + relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)
+                end_date = allocation_obj.project.end_date
 
             if allocation_obj.use_indefinitely:
                 end_date = None
