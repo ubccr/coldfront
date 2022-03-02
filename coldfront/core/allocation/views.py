@@ -635,6 +635,11 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 'type': 'text',
             },
             {
+                'data_manager': {},
+                'data_manager_label': {},
+                'type': 'text',
+            },
+            {
                 'campus_affiliation': {},
                 'campus_affiliation_label': {},
                 'type': 'choice',
@@ -1252,7 +1257,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     'Did not add {} {} to allocation. An account is needed for this resource.\
                     Please direct them to\
                     <a href="https://access.iu.edu/Accounts/Create">https://access.iu.edu/Accounts/Create</a>\
-                    to create one'.format(user_text, ', '.join(denied_users))
+                    to create one.'.format(user_text, ', '.join(denied_users))
                     )
                 )
         else:

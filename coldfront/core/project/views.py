@@ -1076,10 +1076,10 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                             resource_name = allocation.get_parent_resource.name
                             # If the user does not have an account on the resource in the allocation then do not add them to it.
                             if not allocation.check_user_account_exists_on_resource(username):
-                            display_warning = True
+                                display_warning = True
                                 # Make sure there are no duplicates for a user if there's more than one instance of a resource.
-                                if resource_name not in no_accounts[username]:
-                                    no_accounts[username].append(resource_name)
+                                if allocation.get_parent_resource.get_attribute('check_user_account') not in no_accounts[username]:
+                                    no_accounts[username].append(allocation.get_parent_resource.get_attribute('check_user_account'))
                                 continue
 
                             requires_user_request = allocation.get_parent_resource.get_attribute(
@@ -1120,13 +1120,8 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             if display_warning:
                 warning_message = 'The following users were not added to the selected resources due to missing accounts:<ul>'
                 for username, no_account_list in no_accounts.items():
-                    resource_text = 'resource'
-                    if no_account_list:
-                        if len(no_account_list) > 1:
-                            resource_text += 's'
-                        warning_message += '<li>{} is missing an account for {} {}</li>'.format(
+                        warning_message += '<li>{} is missing an account for {}</li>'.format(
                             username,
-                            resource_text,
                             ', '.join(no_account_list)
                         )
                 warning_message += '</ul>'

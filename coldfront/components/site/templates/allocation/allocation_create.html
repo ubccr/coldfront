@@ -80,6 +80,7 @@ Request New Allocation
   var resources_with_eula = {{ resources_with_eula | safe }};
 
   var resource_form = {{ resource_form | safe }}
+  var request_user_username = {{ request_user_username | safe }}
 
   $(document).ready(function () {
     moveRadioSelectErrors();
@@ -546,7 +547,6 @@ Request New Allocation
         }
         continue
       } else if (type === 'int') {
-        console.log(label)
         if (label[resource_id]) {
           var html_label = $('label[for="' + id + '"]');
           html_label.html(label[resource_id])
@@ -571,7 +571,6 @@ Request New Allocation
             $('#div_' + id).show();
           }
         } else {
-          console.log(id)
           $('#div_' + id).hide();
         }
         continue
@@ -608,6 +607,12 @@ Request New Allocation
       } else {
         $('#div_' + id).hide();
       }
+    }
+
+    if (resource_name === 'Slate-Project') {
+        if ($('#id_storage_space').val() <= 15) {
+          $('#div_id_account_number').hide();
+        }
     }
 
     if (resources_with_accounts.includes(parseInt(resource_id))) {
