@@ -1,4 +1,5 @@
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.views.generic.base import TemplateView
@@ -37,11 +38,22 @@ class RequestListItem:
 
 
 class RequestHub(LoginRequiredMixin,
+                 UserPassesTestMixin,
                  TemplateView):
     template_name = 'request_hub/request_hub.html'
     paginate_by = 10
     paginators = 0
     show_all_requests = False
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.show_all_requests:
+            if self.request.user.is_superuser or self.request.user.is_staff:
+                return True
+        else:
+            return True
+
+        return False
 
     def create_paginator(self, queryset):
         """
