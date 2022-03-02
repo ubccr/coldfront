@@ -1,0 +1,50 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+
+{% block title %}
+Allocation User Requests
+{% endblock %}
+
+{% block content %}
+<h2>Allocation User Requests</h2>
+
+{% if request_list %}
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th scope="col">First Name</th>
+          <th scope="col">Last Name</th>
+          <th scpoe="col">Username</th>
+          <th scope="col">Status</th>
+          <th scope="col">Resource</th>
+          <th scope="col">Project</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for request in request_list %}
+          <tr>
+            <td>{{ request.allocation_user.user.first_name }}</td>
+            <td>{{ request.allocation_user.user.last_name }}</td>
+            <td>{{ request.allocation_user.user.username }}</td>
+            <td>{{ request.allocation_user_status.name }}</td>
+            <td><a href="{% url 'allocation-detail' request.allocation_user.allocation.pk %}">{{ request.allocation_user.allocation.get_parent_resource }}</a></td>
+            <td><a href="{% url 'project-detail' request.allocation_user.allocation.project.pk %}">{{ request.allocation_user.allocation.project.title|truncatechars:50 }}</a></td>
+            <td>
+              <a href="{% url 'allocation-user-approve-request' request.pk %}" class="btn btn-success mr-1">Approve</a>
+              <a href="{% url 'allocation-user-deny-request' request.pk %}" class="btn btn-danger mr-1">Deny</a>
+              <a href="{% url 'allocation-user-request-info' request.pk %}" class="btn btn-secondary mr-1">Info</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <p class="alert alert-info">There are no allocation user requests!</p>
+{% endif %}
+
+{% endblock %}

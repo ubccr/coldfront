@@ -22,6 +22,7 @@ PROJECT_CLASS_PROJECT_END_DATES = ENV.list(
     'PROJECT_CLASS_PROJECT_END_DATES',
     default=[(1, 19), (5, 11), (8, 23)]
 )
+PROJECT_DEFAULT_MAX_MANAGERS = ENV.int('PROJECT_DEFAULT_MAX_MANAGERS', default=3)
 
 #------------------------------------------------------------------------------
 # Allocation related
@@ -36,6 +37,10 @@ RESOURCE_ENABLE_ACCOUNT_CHECKING = ENV.bool('RESOURCE_ENABLE_ACCOUNT_CHECKING', 
 # This is in days
 ALLOCATION_DEFAULT_ALLOCATION_LENGTH = ENV.int('ALLOCATION_DEFAULT_ALLOCATION_LENGTH', default=365)
 
+#------------------------------------------------------------------------------
+# Resource related
+#------------------------------------------------------------------------------
+SLATE_PROJECT_MAX_ALLOCATED_STORAGE = ENV.int('SLATE_PROJECT_MAX_ALLOCATED_STORAGE', default=60)
 
 #------------------------------------------------------------------------------
 # Allow user to select account name for allocation

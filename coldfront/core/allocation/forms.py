@@ -4,6 +4,8 @@ from django.core.exceptions import ValidationError
 from django.forms.widgets import RadioSelect
 from django.shortcuts import get_object_or_404
 from django.conf import settings
+from django.utils.html import format_html
+from django.utils.module_loading import import_string
 
 from coldfront.core.allocation.models import (AllocationAccount,
                                               AllocationAttributeType,
@@ -111,6 +113,7 @@ class AllocationForm(forms.Form):
     cost = forms.IntegerField(disabled=True, required=False)
     total_cost = forms.IntegerField(disabled=True, required=False)
     confirm_understanding = forms.BooleanField(required=False)
+    data_manager = forms.CharField(max_length=50, required=False)
 
     users = forms.MultipleChoiceField(
         widget=forms.CheckboxSelectMultiple, required=False)
@@ -119,6 +122,8 @@ class AllocationForm(forms.Form):
     def __init__(self, request_user, project_pk,  *args, **kwargs):
         super().__init__(*args, **kwargs)
         project_obj = get_object_or_404(Project, pk=project_pk)
+        self.project_obj = project_obj
+        self.request_user = request_user
         self.fields['resource'].queryset = get_user_resources(request_user)
         user_query_set = project_obj.projectuser_set.select_related('user').filter(
             status__name__in=['Active', ])
@@ -149,6 +154,7 @@ class AllocationForm(forms.Form):
         self.fields['applications_list'].help_text = 'Format: app1,app2,app3,etc'
         self.fields['it_pros'].help_text = 'Format: name1,name2,name3,etc'
         self.fields['project_directory_name'].help_text = 'Must be alphanumeric and not exceed 10 characters in length'
+        self.fields['data_manager'].help_text = 'Must be a project Manager. Only this user can add and remove users from this resource. They will automatically be added to the resource.'
 
         if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
             from coldfront.plugins.ldap_user_info.utils import get_user_info
@@ -190,6 +196,7 @@ class AllocationForm(forms.Form):
             'unit',
             'primary_contact',
             'secondary_contact',
+            'data_manager',
             'department_full_name',
             'department_short_name',
             'fiscal_officer',
@@ -217,6 +224,7 @@ class AllocationForm(forms.Form):
     def clean(self):
         cleaned_data = super().clean()
         resource_obj = cleaned_data.get('resource')
+        users = cleaned_data.get('users')
         resources = {
             'Carbonate DL': {
                 'leverage_multiple_gpus': cleaned_data.get('leverage_multiple_gpus'),
@@ -257,7 +265,7 @@ class AllocationForm(forms.Form):
                 'use_indefinitely': cleaned_data.get('use_indefinitely'),
                 'end_date': cleaned_data.get('end_date'),
             },
-            'Slate Project': {
+            'Slate-Project': {
                 'first_name': cleaned_data.get('first_name'),
                 'last_name': cleaned_data.get('last_name'),
                 'campus_affiliation': cleaned_data.get('campus_affiliation'),
@@ -267,6 +275,7 @@ class AllocationForm(forms.Form):
                 'store_ephi': cleaned_data.get('store_ephi'),
                 'storage_space': cleaned_data.get('storage_space'),
                 'account_number': cleaned_data.get('account_number'),
+                'data_manager': cleaned_data.get('data_manager')
             },
             'Priority Boost': {
                 'is_grand_challenge': cleaned_data.get('is_grand_challenge'),
@@ -304,7 +313,7 @@ class AllocationForm(forms.Form):
                         continue
                     elif key == 'use_indefinitely':
                         continue
-                elif resource_name == 'Slate Project':
+                elif resource_name == 'Slate-Project':
                     if key == 'account_number' and resources[resource_name]['storage_space'] <= 15:
                         continue
                 elif resource_name == 'Priority Boost':
@@ -357,6 +366,30 @@ class AllocationForm(forms.Form):
                     raise_error = True
                     self.add_error(key, 'Project directory name must be alphanumeric')
                     continue
+            elif key == 'data_manager':
+                manager_exists = self.project_obj.projectuser_set.filter(
+                    user__username=value,
+                    role__name='Manager',
+                    status__name='Active'
+                ).exists()
+                if not manager_exists:
+                    raise_error = True
+                    self.add_error(key, 'Data Manager must be a project Manager')
+                    continue
+
+                check_resource_account = resource_obj.get_attribute('check_user_account')
+                if check_resource_account and not resource_obj.check_user_account_exists(value, check_resource_account):
+                    raise_error = True
+                    self.add_error(
+                        key,
+                        format_html(
+                            """
+                            Data Manager must have a Slate-Project account. They can create one
+                            <a href="https://access.iu.edu/Accounts/Create">here</a>
+                            """
+                        )
+                    )
+                    continue
 
             # Value checks for a specific resource's required fields should go here.
             if resource_name == 'Geode-Projects':
@@ -390,6 +423,15 @@ class AllocationForm(forms.Form):
                         self.add_error(key, 'Username(s) {} are not valid'.format(
                             ', '.join(invalid_users)
                             ))
+                        continue
+            elif resource_name == 'Slate-Project':
+                if key == 'data_manager':
+                    if users and value != self.request_user.username:
+                        raise_error = True
+                        self.add_error(
+                            'users',
+                            'Only the data manager can add users to a Slate-Project resource'
+                        )
                         continue
 
         if raise_error:
@@ -452,6 +494,20 @@ class AllocationRemoveUserForm(forms.Form):
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
 
+    def __init__(self, *args, disable_selected, **kwargs):
+        super().__init__(*args, **kwargs)
+        if disable_selected:
+            self.fields['selected'].disabled = True
+
+
+class AllocationRemoveUserFormset(forms.BaseFormSet):
+    def get_form_kwargs(self, index):
+        """
+        Override so specific users can be prevented from being removed.
+        """
+        kwargs = super().get_form_kwargs(index)
+        disable_selected = kwargs['disable_selected'][index]
+        return {'disable_selected': disable_selected}
 
 class AllocationAttributeDeleteForm(forms.Form):
     pk = forms.IntegerField(required=False, disabled=True)
@@ -500,6 +556,7 @@ class AllocationSearchForm(forms.Form):
 
 
 class AllocationReviewUserForm(forms.Form):
+    # No relation to AllocationUserReview model.
     ALLOCATION_REVIEW_USER_CHOICES = (
         ('keep_in_allocation_and_project', 'Keep in allocation and project'),
         ('keep_in_project_only', 'Remove from this allocation only'),
