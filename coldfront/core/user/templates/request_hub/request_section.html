@@ -1,5 +1,5 @@
 <div class="mb-3" id="accordion{{ request_obj.num }}">
-  <div class="card">
+  <div class="card" id="{{ request_obj.id }}">
     <div class="card-header">
       <a id="expand_button{{ request_obj.num }}" role="button" class="card-link " data-toggle="collapse" href="#collapse-{{ request_obj.num }}">
         <div style="text-align: center;">
@@ -17,7 +17,7 @@
     <div id="collapse-{{ request_obj.num }}" class="collapse hide" data-parent="#accordion{{ request_obj.num }}" style="transition: none;">
       <div class="card">
         {% with queryset=request_obj.pending_queryset adj='pending' page_num=request_obj.num title=request_obj.title %}
-          <div class="card border-light">
+          <div class="card border-light" id="{{ request_obj.id }}_{{ adj }}">
             <div class="card-body">
               {% if queryset %}
                 <div class="card border-light">
@@ -40,7 +40,7 @@
           </div>
         {% endwith %}
         {% with queryset=request_obj.complete_queryset adj='completed' page_num=request_obj.num|add:1 title=request_obj.title %}
-          <div class="card border-light">
+          <div class="card border-light" id="{{ request_obj.id }}_{{ adj }}">
             <div class="card-body">
               {% if queryset %}
                 <div class="card border-light">
@@ -62,7 +62,7 @@
             </div>
           </div>
         {% endwith %}
-        {% if user.is_superuser %}
+        {% if admin_staff %}
           <div class="card-body">
             <a class="btn btn-primary" href="{% url request_obj.button_path %}" role="button" style="float: right;">
               <i class="fa fa-angle-double-right" aria-hidden="true"></i>
