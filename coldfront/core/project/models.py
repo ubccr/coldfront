@@ -66,6 +66,7 @@ We do not have information about your research. Please provide a detailed descri
     force_review = models.BooleanField(default=False)
     requires_review = models.BooleanField(default=True)
     end_date = models.DateField()
+    max_managers = models.IntegerField()
     history = HistoricalRecords()
 
     def clean(self):
@@ -136,6 +137,18 @@ We do not have information about your research. Please provide a detailed descri
             role=ProjectUserRoleChoice.objects.get(name='Manager')
         )
         return [manager.user.username for manager in project_managers]
+
+    def get_current_num_managers(self):
+        return self.projectuser_set.filter(
+            role=ProjectUserRoleChoice.objects.get(name='Manager'),
+            status=ProjectUserStatusChoice.objects.get(name='Active'),
+            ).count()
+
+    def check_exceeds_max_managers(self, num_added_managers=0):
+        """
+        Checks if the number of added managers exceeds the max allowed managers.
+        """
+        return (self.get_current_num_managers() + num_added_managers) > self.max_managers
 
     def __str__(self):
         return self.title

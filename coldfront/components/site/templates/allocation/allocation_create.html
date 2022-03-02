@@ -84,6 +84,10 @@ Request New Allocation
   $(document).ready(function () {
     moveRadioSelectErrors();
 
+    $('#id_data_manager').change(function () {
+      checkDataManager();
+    })
+
     var resource_label = $('label[for="id_resource"]');
     resource_label.html(
       'Resource<span class="asteriskField">*</span>\
@@ -328,6 +332,7 @@ Request New Allocation
       'system',
       'phi_association',
       'access_level',
+      'users',
     ];
     for (var i = 0; i < radioSelectFields.length; i++) {
       var invalidRadioSelectField = $('#error_1_id_' + radioSelectFields[i]);
@@ -336,6 +341,27 @@ Request New Allocation
           invalidRadioSelectField
         )
       }
+    }
+  }
+
+  function enableUserSelection() {
+    $('#selectAll').prop('disabled', false);
+    $('input[name="users"]').prop('disabled', false);
+  }
+
+  function disableUserSelection() {
+    $('#selectAll').prop('disabled', true);
+    $('#selectAll').prop('checked', false);
+    $('input[name="users"]').prop('checked', false);
+    $('input[name="users"]').prop('disabled', true);
+  }
+
+  function checkDataManager() {
+    var username = $('#id_data_manager').val();
+    if (request_user_username['username'] == username) {
+      enableUserSelection();
+    } else {
+      disableUserSelection();
     }
   }
 
@@ -423,6 +449,10 @@ Request New Allocation
 
     var description = $('#id_resource_description');
     description.html(resource_descriptions[resource_id])
+
+    if (resource_name === 'Slate-Project') {
+      checkDataManager();
+    }
 
     if (resource_name === 'Carbonate DL') {
       $('#additional_info_1').show();

@@ -1,0 +1,10 @@
+Hello,
+
+Your request to add user {{ user }} to allocation {{ allocation }} in project {{ project }} was denied.
+Allocation URL:
+{{ url }}
+
+This is an unmonitored email, replies to this email will not be seen.
+
+Thank you
+{{ signature }}
