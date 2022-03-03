@@ -1372,18 +1372,6 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         return False
 
-    def check_user_is_group(self, project_user_obj):
-        if project_user_obj.role == ProjectUserRoleChoice.objects.get(name='Group'):
-            return True
-
-        return False
-
-    def disable_role(self):
-        if self.check_user_is_data_manager and self.check_user_is_group:
-            return True
-
-        return False
-
     def get(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         project_user_pk = self.kwargs.get('project_user_pk')
@@ -1399,7 +1387,7 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     'role': project_user_obj.role,
                     'enable_notifications': project_user_obj.enable_notifications
                 },
-                disable_role=self.disable_role(),
+                disable_role=is_data_manager,
                 disable_enable_notifications=is_manager
             )
 
@@ -1419,7 +1407,6 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             messages.error(
                 request, 'You cannot update a user in a(n) {} project.'.format(project_obj.status.name))
             return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_user_pk}))
-
 
         if project_obj.projectuser_set.filter(id=project_user_pk).exists():
             project_user_obj = project_obj.projectuser_set.get(
@@ -1441,7 +1428,6 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 disable_role=is_data_manager,
                 disable_enable_notifications=is_manager
             )
-            project_user_update_form.role = ProjectUserRoleChoice.objects.get(name='Manager')
 
             # If nothing has changed then don't update it.
             if is_data_manager:
@@ -1477,6 +1463,9 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 project_user_obj.save()
 
                 messages.success(request, 'User details updated.')
+                return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_obj.pk, 'project_user_pk': project_user_obj.pk}))
+            else:
+                messages.error(request, project_user_update_form.errors)
                 return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_obj.pk, 'project_user_pk': project_user_obj.pk}))
 
 

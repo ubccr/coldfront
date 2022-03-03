@@ -81,4 +81,20 @@ Project User Detail
     </div>
   </div>
 </form>
+
+<script>
+  $('document').ready(function() {
+    if ($("#id_role option:selected").text() == 'Group') {
+      $("#id_role option:not(:selected)").prop('disabled', true);
+    } else {
+      var options = $("#id_role option");
+      for (let i = 0; i < options.length; i++) {
+        if (options[i].text == 'Group') {
+          options[i].disabled = true;
+        }
+      }
+    }
+  })
+</script>
+
 {% endblock%}
