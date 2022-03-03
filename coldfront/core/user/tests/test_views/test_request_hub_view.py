@@ -137,6 +137,13 @@ class TestRequestHubView(TestCase):
                 self.assertIn('No pending' if i == 0 else 'No completed',
                               str(div))
 
+    def assert_pending_request_badge_shown(self, section, response, num_requests):
+        soup = BeautifulSoup(response.content, 'html.parser')
+        divs = soup.find(id=section)
+        notification = f'{num_requests} pending request' \
+                       f'{"s" if num_requests > 1 else ""}'
+        self.assertIn(notification, str(divs))
+
     def test_access(self):
         """Testing access to RequestHubView"""
 
@@ -188,17 +195,24 @@ class TestRequestHubView(TestCase):
         """Testing that cluster account requests appear"""
 
         def assert_request_shown(user, url):
+            section = 'cluster_account_request_section'
             response = self.get_response(user, url)
             soup = BeautifulSoup(response.content, 'html.parser')
 
+            # notification badge is shown
+            self.assert_pending_request_badge_shown(
+                section, response, 1)
+
+            # pending request is shown
             pending_div = str(
-                soup.find(id=f'cluster_account_request_section_pending'))
+                soup.find(id=f'{section}_pending'))
             self.assertIn(str(pending_req.pk), pending_div)
             self.assertIn(pending_req.allocation_user.user.email, pending_div)
             self.assertIn(pending_req.value, pending_div)
 
+            # completed request is shown
             completed_div = str(
-                soup.find(id=f'cluster_account_request_section_completed'))
+                soup.find(id=f'{section}_completed'))
             self.assertIn(str(completed_req.pk), completed_div)
             self.assertIn(completed_req.allocation_user.user.email,
                           completed_div)
@@ -246,17 +260,24 @@ class TestRequestHubView(TestCase):
         def assert_request_shown(user, url):
             response = self.get_response(user, url)
             soup = BeautifulSoup(response.content, 'html.parser')
+            section = 'project_removal_request_section'
 
+            # notification badge is shown
+            self.assert_pending_request_badge_shown(
+                section, response, 1)
+
+            # pending request is shown
             pending_div = str(
-                soup.find(id=f'project_removal_request_section_pending'))
+                soup.find(id=f'{section}_pending'))
             self.assertIn(str(pending_req.pk), pending_div)
             self.assertIn(pending_req.project_user.user.username, pending_div)
             self.assertIn(pending_req.requester.username, pending_div)
             self.assertIn(pending_req.request_time.strftime("%b. %d, %Y"), pending_div)
             self.assertIn(pending_req.status.name, pending_div)
 
+            # completed request is shown
             completed_div = str(
-                soup.find(id=f'project_removal_request_section_completed'))
+                soup.find(id=f'{section}_completed'))
             self.assertIn(str(completed_req.pk), pending_div)
             self.assertIn(completed_req.project_user.user.username, completed_div)
             self.assertIn(completed_req.requester.username, completed_div)
@@ -305,17 +326,24 @@ class TestRequestHubView(TestCase):
         def assert_request_shown(user, url):
             response = self.get_response(user, url)
             soup = BeautifulSoup(response.content, 'html.parser')
+            section = 'savio_project_request_section'
 
+            # notification badge is shown
+            self.assert_pending_request_badge_shown(
+                section, response, 1)
+
+            # pending request is shown
             pending_div = str(
-                soup.find(id=f'savio_project_request_section_pending'))
+                soup.find(id=f'{section}_pending'))
             self.assertIn(str(pending_req.pk), pending_div)
             self.assertIn(pending_req.requester.email, pending_div)
             self.assertIn(pending_req.pi.email, pending_div)
             self.assertIn(pending_req.modified.strftime("%b. %d, %Y"), pending_div)
             self.assertIn(pending_req.status.name, pending_div)
 
+            # completed request is shown
             completed_div = str(
-                soup.find(id=f'savio_project_request_section_completed'))
+                soup.find(id=f'{section}_completed'))
             self.assertIn(str(completed_req.pk), completed_div)
             self.assertIn(completed_req.requester.email, completed_div)
             self.assertIn(completed_req.pi.email, completed_div)
@@ -365,17 +393,24 @@ class TestRequestHubView(TestCase):
         def assert_request_shown(user, url):
             response = self.get_response(user, url)
             soup = BeautifulSoup(response.content, 'html.parser')
+            section = 'vector_project_request_section'
 
+            # notification badge is shown
+            self.assert_pending_request_badge_shown(
+                section, response, 1)
+
+            # pending request is shown
             pending_div = str(
-                soup.find(id=f'vector_project_request_section_pending'))
+                soup.find(id=f'{section}_pending'))
             self.assertIn(str(pending_req.pk), pending_div)
             self.assertIn(pending_req.requester.email, pending_div)
             self.assertIn(pending_req.pi.email, pending_div)
             self.assertIn(pending_req.modified.strftime("%b. %d, %Y"), pending_div)
             self.assertIn(pending_req.status.name, pending_div)
 
+            # completed request is shown
             completed_div = str(
-                soup.find(id=f'vector_project_request_section_completed'))
+                soup.find(id=f'{section}_completed'))
             self.assertIn(str(completed_req.pk), completed_div)
             self.assertIn(completed_req.requester.email, completed_div)
             self.assertIn(completed_req.pi.email, completed_div)
@@ -421,22 +456,29 @@ class TestRequestHubView(TestCase):
     def test_project_join_requests(self):
         """Testing that project join requests appear correctly"""
 
-        def assert_request_shown(user, url, section):
+        def assert_request_shown(user, url, status):
             response = self.get_response(user, url)
             soup = BeautifulSoup(response.content, 'html.parser')
+            section = 'project_join_request_section'
 
-            if section == 'both' or section == 'pending':
+            # pending request is shown
+            if status == 'both' or status == 'pending':
+                # notification badge is shown
+                self.assert_pending_request_badge_shown(
+                    section, response, 1)
+
                 pending_div = str(
-                    soup.find(id=f'project_join_request_section_pending'))
+                    soup.find(id=f'{section}_pending'))
                 self.assertIn(str(pending_req.pk), pending_div)
                 self.assertIn(pending_req.project_user.user.username, pending_div)
                 self.assertIn(pending_req.project_user.project.name, pending_div)
                 self.assertIn(pending_req.created.strftime("%b. %d, %Y"), pending_div)
                 self.assertIn(pending_req.reason, pending_div)
 
-            if section == 'both' or section == 'completed':
+            # completed request is shown
+            if status == 'both' or status == 'completed':
                 completed_div = str(
-                    soup.find(id=f'project_join_request_section_completed'))
+                    soup.find(id=f'{section}_completed'))
                 self.assertIn(str(completed_req.pk), completed_div)
                 self.assertIn(completed_req.project_user.user.username, completed_div)
                 self.assertIn(completed_req.project_user.project.name, completed_div)
@@ -481,9 +523,15 @@ class TestRequestHubView(TestCase):
         def assert_request_shown(user, url):
             response = self.get_response(user, url)
             soup = BeautifulSoup(response.content, 'html.parser')
+            section = 'project_renewal_request_section'
 
+            # notification badge is shown
+            self.assert_pending_request_badge_shown(
+                section, response, 1)
+
+            # pending request is shown
             pending_div = str(
-                soup.find(id=f'project_renewal_request_section_pending'))
+                soup.find(id=f'{section}_pending'))
             self.assertIn(str(pending_req.pk), pending_div)
             self.assertIn(pending_req.requester.email, pending_div)
             self.assertIn(pending_req.pre_project.name, pending_div)
@@ -491,8 +539,9 @@ class TestRequestHubView(TestCase):
             self.assertIn(pending_req.modified.strftime("%b. %d, %Y"), pending_div)
             self.assertIn(pending_req.status.name, pending_div)
 
+            # completed request is shown
             completed_div = str(
-                soup.find(id=f'project_renewal_request_section_completed'))
+                soup.find(id=f'{section}_completed'))
             self.assertIn(str(completed_req.pk), completed_div)
             self.assertIn(completed_req.requester.email, completed_div)
             self.assertIn(completed_req.pre_project.name, completed_div)
@@ -542,9 +591,15 @@ class TestRequestHubView(TestCase):
         def assert_request_shown(user, url):
             response = self.get_response(user, url)
             soup = BeautifulSoup(response.content, 'html.parser')
+            section = 'service_unit_purchase_request_section'
 
+            # notification badge is shown
+            self.assert_pending_request_badge_shown(
+                section, response, 1)
+
+            # pending request is shown
             pending_div = str(
-                soup.find(id=f'service_unit_purchase_request_section_pending'))
+                soup.find(id=f'{section}_pending'))
             self.assertIn(str(pending_req.pk), pending_div)
             self.assertIn(pending_req.requester.email, pending_div)
             self.assertIn(pending_req.project.name, pending_div)
@@ -553,7 +608,7 @@ class TestRequestHubView(TestCase):
             self.assertIn(pending_req.status.name, pending_div)
 
             completed_div = str(
-                soup.find(id=f'service_unit_purchase_request_section_completed'))
+                soup.find(id=f'{section}_completed'))
             self.assertIn(str(completed_req.pk), completed_div)
             self.assertIn(completed_req.requester.email, completed_div)
             self.assertIn(completed_req.project.name, completed_div)
