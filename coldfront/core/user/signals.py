@@ -29,10 +29,14 @@ def create_user_profile(sender, instance, created, **kwargs):
                 )
                 max_projects = -1
 
+            department = ''
+            if attributes['department']:
+                department = attributes['department'][0]
+
             UserProfile.objects.create(
                 user=instance,
                 title=title,
-                department=attributes['department'][0],
+                department=department,
                 max_projects=max_projects
             )
         else:
@@ -50,6 +54,10 @@ def save_user_profile(sender, instance, **kwargs):
         from coldfront.plugins.ldap_user_info.utils import get_user_info
         attributes = get_user_info(instance.username, ['title', 'department'])
         instance.userprofile.title = attributes['title'][0]
-        instance.userprofile.department = attributes['department'][0]
+
+        department = ''
+        if attributes['department']:
+            department = attributes['department'][0]
+        instance.userprofile.department = department
 
     instance.userprofile.save()
