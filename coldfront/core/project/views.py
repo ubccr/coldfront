@@ -1,8 +1,10 @@
 import datetime
+from multiprocessing.managers import BaseManager
 import pprint
 import json
 from re import template
-from typing import Any, Optional
+from sys import prefix
+from typing import Any, List, Optional
 from django import http
 
 from django.conf import settings
@@ -36,9 +38,9 @@ from coldfront.core.allocation.signals import (allocation_activate_user,
 from coldfront.core.grant.models import Grant
 from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectAddUsersToAllocationForm,
-                                          ProjectRemoveUserForm,
+                                          ProjectRemoveUserForm, ProjectRenameForm,
                                           ProjectReviewEmailForm,
-                                          ProjectReviewForm, ProjectSearchForm,
+                                          ProjectReviewForm, ProjectSearchForm, ProjectSelectForm,
                                           ProjectUserUpdateForm, ProjectImportForm)
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectReviewStatusChoice,
@@ -374,6 +376,25 @@ class ProjectArchivedListView(LoginRequiredMixin, ListView):
         return context
 
 
+def archive_project(project: Project):
+    '''
+    Archives the specified project.
+
+    :param project: The project to archive.
+    '''
+    project_status_archive = ProjectStatusChoice.objects.get(
+        name='Archived')
+    allocation_status_expired = AllocationStatusChoice.objects.get(
+        name='Expired')
+    end_date = datetime.datetime.now()
+    project.status = project_status_archive
+    project.save()
+    for allocation in project.allocation_set.filter(status__name='Active'):
+        allocation.status = allocation_status_expired
+        allocation.end_date = end_date
+        allocation.save()
+
+
 class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'project/project_archive.html'
 
@@ -402,17 +423,7 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         project = get_object_or_404(Project, pk=pk)
-        project_status_archive = ProjectStatusChoice.objects.get(
-            name='Archived')
-        allocation_status_expired = AllocationStatusChoice.objects.get(
-            name='Expired')
-        end_date = datetime.datetime.now()
-        project.status = project_status_archive
-        project.save()
-        for allocation in project.allocation_set.filter(status__name='Active'):
-            allocation.status = allocation_status_expired
-            allocation.end_date = end_date
-            allocation.save()
+        archive_project(project)
         return redirect(reverse('project-detail', kwargs={'pk': project.pk}))
 
 
@@ -475,6 +486,134 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
+
+    def get_success_url(self):
+        return reverse('project-detail', kwargs={'pk': self.object.pk})
+
+def _assign_current_user(self, project_obj: Project):
+    '''
+    Assigns the current user to the project_obj
+
+    :param self: The self, called from Post
+    :param project_obj: The project object to add the user into
+    '''
+    project_user_obj = ProjectUser.objects.create(
+        user=self.request.user,
+        project=project_obj,
+        role=ProjectUserRoleChoice.objects.get(name='Manager'),
+        status=ProjectUserStatusChoice.objects.get(name='Active')
+    )
+
+class ProjectMergeView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    model = Project
+    template_name = 'project/project_merge.html'
+
+    def test_func(self) -> Optional[bool]:
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.userprofile.is_pi:
+            return True
+
+    def get_proj_list(self):
+
+        project_list = [
+            {
+                'id': project.id,
+                'pi': project.pi,
+                'title': project.title
+            }
+
+            for project in Project.objects.all()
+        ]
+
+        return project_list
+
+    def post(self, request, *args, **kwargs):   
+        def _combine_objects(from_ids: list, to_id: int, objects: BaseManager):
+            '''
+            Moves Django models from one project to another. Make sure the model has project_id.
+
+            :param from_ids: A list of ids representing the project to take the models from.
+            :param to_id: An id representing the project to give the models to.
+            :param objects: The BaseManager for the particular model, to be used to filter from_ids.
+            '''
+            members = objects.filter(project_id__in = from_ids)
+            for member in members:
+                member.project_id = to_id
+                # member.pk = None      # Uncomment if you want to keep the old projects
+                member.save()
+
+        proj_list = self.get_proj_list()
+        context = {}
+
+        formset = formset_factory(ProjectSelectForm, max_num=len(proj_list))
+        formset = formset(request.POST, initial=proj_list, prefix='projectform')
+
+        projs_to_merge = []
+        proj_ids = []
+
+        if formset.is_valid:
+            for form in formset:
+                proj_form_data = form
+                if proj_form_data['selected'].data:
+                    proj = Project.objects.get(
+                        id = proj_form_data.initial['id']
+                    )
+                    proj_ids.append(proj_form_data.initial['id'])
+
+                    projs_to_merge.append(proj)
+        
+        if projs_to_merge:
+            merged_proj: Project = Project.objects.create(
+                pi = self.request.user,
+                status = projs_to_merge[0].status,
+                title = request.POST['title'],
+                description = request.POST['description'],
+            )
+            # Title+descript on new page
+
+            # Grants
+            _combine_objects(proj_ids, merged_proj.id, Grant.objects)
+            
+            # Publications
+            _combine_objects(proj_ids, merged_proj.id, Publication.objects)
+
+            # User
+            # _combine_objects(proj_ids, merged_proj.id, User.objects)
+
+            # Allocations
+            old_resource_links: dict = Allocation.objects.filter(project_id__in = proj_ids).values('resources')
+            _combine_objects(proj_ids, merged_proj.id, Allocation.objects)
+
+            # Resources
+            # Resources are tied to allocations. Since the IDs of allocations are not
+            # being changed in merge, resources should remain attached to each allocation.
+            # THIS WILL NOT BE THE CASE IF WE DECIDE TO KEEP THE OLD ALLOCATIONS, as the
+            # new allocations will change IDs.
+            # _combine_objects(proj_ids, merged_proj.id, Resource.objects)
+
+            _assign_current_user(self, merged_proj)
+
+            # Archive all old projects when done. Remove this for loop if you want to
+            # keep them.
+            for proj in projs_to_merge:
+                archive_project(proj)
+
+        return HttpResponseRedirect(reverse('project-list'))
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        
+        proj_list = self.get_proj_list()
+        formset = formset_factory(
+            ProjectSelectForm, max_num=len(proj_list))
+        formset = formset(initial=proj_list, prefix='projectform')
+        context['formset'] = formset
+        context['projects'] = Project.objects.all()
+        context['rename'] = ProjectRenameForm
+        return context
 
     def get_success_url(self):
         return reverse('project-detail', kwargs={'pk': self.object.pk})
@@ -544,7 +683,8 @@ class ProjectImportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             orig_proj_id = 0
 
             # Keys are original resource PK, values are the new ones
-            resource_translation = {}
+            resource_trans_nums = {}
+            resource_trans_vals = {}
 
             for member in grouped_data:
                 # data_obj has the complete data of the Django model
@@ -554,20 +694,14 @@ class ProjectImportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     # obj is deserialized and can now be saved.
                     # Create a new project type
                     if (type(obj.object) == Project):
-                        # obj.object.pk = None
-                        project_obj = obj.object
+                        project_obj: Project = obj.object
                         orig_proj_id = int(project_obj.pk)
                         project_obj.pk = None
                         
-                        obj.save(False)
+                        obj.save()
 
                         # Assign current user.
-                        project_user_obj = ProjectUser.objects.create(
-                            user=self.request.user,
-                            project=project_obj,
-                            role=ProjectUserRoleChoice.objects.get(name='Manager'),
-                            status=ProjectUserStatusChoice.objects.get(name='Active')
-                        )
+                        _assign_current_user(self, project_obj)
 
                         continue
                     
@@ -595,6 +729,14 @@ class ProjectImportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                             obj.object.project_id = int(project_obj.pk)
                     except AttributeError:
                         pass    # Not all objects have the project id
+
+                    # TESTING
+                    try:
+                        obj.object.resources.add(resource_trans_vals[1])
+                    except AttributeError:
+                        pass
+                    except KeyError:
+                        pass
                             
                     max_pk += 1
 
@@ -602,12 +744,10 @@ class ProjectImportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
                     if (type(obj.object) == Resource):
                         # Create new entry in translation
-                        resource_translation[orig_pk] = max_pk
+                        resource_trans_nums[orig_pk] = max_pk
+                        resource_trans_vals[orig_pk] = obj.object
 
-                        # Resources may have linked resources. Properly map them.
-                        # for linked_resource in obj.object.
-
-                    obj.save(False)
+                    obj.save()
 
 
         return HttpResponseRedirect(reverse('project-list'))

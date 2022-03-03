@@ -13,6 +13,7 @@ Import Project
     {% csrf_token %}
     {{ project_import_form|crispy }}
     <br>
+    <p>Links between objects are NOT currently preserved.</p>
     <input class="btn btn-primary" type="submit" value="Import">
     <a class="btn btn-secondary" href="{% url 'project-list' %}" role="button">Cancel</a>
 </form>

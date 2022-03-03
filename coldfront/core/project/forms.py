@@ -1,7 +1,11 @@
 import datetime
+from dis import dis
 
 from django import forms
 from django.shortcuts import get_object_or_404
+from numpy import require
+from soupsieve import select
+from sympy import true
 
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserRoleChoice)
@@ -21,6 +25,28 @@ class ProjectImportForm(forms.Form):
     FILE_UPLOAD = "Upload Project File"
 
     file_upload = forms.FileField(label=FILE_UPLOAD)
+
+class ProjectRenameForm(forms.Form):
+    '''
+    Allows the editing of a project's title and description
+    '''
+    title = forms.CharField(max_length=255,required=True)
+    description = forms.CharField(
+        min_length=10,
+        initial = Project.DEFAULT_DESCRIPTION,
+        widget=forms.Textarea,
+        required=True
+    )
+
+class ProjectSelectForm(forms.Form):
+    '''
+    Project select
+    '''
+    # project = forms.ModelMultipleChoiceField(queryset=Project.objects.all(), required=False, widget=forms.CheckboxSelectMultiple)
+    id = forms.IntegerField(required=False, disabled=True)
+    pi = forms.CharField(required=False, disabled=True)
+    title = forms.CharField(required=False, disabled=True)
+    selected = forms.BooleanField(initial=False, required=False)
 
 
 class ProjectSearchForm(forms.Form):

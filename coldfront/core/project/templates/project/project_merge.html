@@ -1,0 +1,80 @@
+{% extends "common/base.html" %} 
+{% load crispy_forms_tags %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}
+Merge Projects
+{% endblock %}
+
+{% block content %}
+<h3>Merge Projects</h3>
+
+{% if formset %}
+<form enctype="multipart/form-data" method="post">
+  {% csrf_token %}
+  <div class="card border-light">
+    <div class="card-body">
+      <h4>Projects List</h4>
+
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th scope="col">
+                  <input type="checkbox" class="check" id="selectAll">
+                </th>
+                <th scope="col">ID</th>
+                <th scope="col">PI</th>
+                <th scope="col">Title</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for form in formset %}
+                <tr>
+                  <td>{{ form.selected }}</td>
+                  <td>{{ form.id.value }}</td>
+                  <td>{{ form.pi.value }}</td>
+                  <td>{{ form.title.value }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {{ formset.management_form }}
+    </div>
+  </div>
+  <div class="card border-light">
+    <div class="card-body">
+      <h4>Merged Project Name and Description</h4>
+      {{ rename|crispy }}
+    </div>
+  </div>
+  <div class="card border-light">
+    <div class="card-body">
+      <p>Links between objects are NOT currently preserved.</p>
+      <input class="btn btn-primary" type="submit" value="Merge">
+      <a class="btn btn-secondary" href="{% url 'project-list' %}" role="button">Cancel</a>
+    </div>
+  </div>
+</form>
+{% else %}
+  <a class="btn btn-secondary mb-3" href="{% url 'project-list' %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to project</a>
+  <div class="alert alert-info">
+    No projects to merge!
+  </div>
+{% endif %}
+
+  <script>
+    $("#selectAll").click(function () {
+      $("input[name^='projectform-']").prop('checked', $(this).prop('checked'));
+    });
+  
+    $("input[name^='projectform-']").click(function (ele) {
+      var id = $(this).attr('id');
+      if ( id != "selectAll") {
+        $("#selectAll").prop('checked', false);
+      }
+    });
+  </script>
+{% endblock %}
