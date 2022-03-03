@@ -8,7 +8,7 @@
             {% if request_obj.num_pending %}
               <span class="badge badge-warning">
                 <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
-                {{ request_obj.num_pending }} pending requests</span>
+                {{ request_obj.num_pending }} pending request{% if request_obj.num_pending > 1 %}s{% endif %} </span>
             {% endif %}
           </strong>
         </div>
