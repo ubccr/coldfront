@@ -134,11 +134,16 @@
   $('document').ready(function () {
     //$("select option[value*='3']").prop('disabled', true)
     for (var i = 0; i < matches; i++) {
-      if ($("#id_userform-" + i + "-role option:selected").val() == '3') {
+      if ($("#id_userform-" + i + "-role option:selected").text() == 'Group') {
         $("#id_userform-" + i + "-role option:not(:selected)").prop('disabled', true);
       }
       else {
-        $("#id_userform-" + i + "-role option[value*='3']").prop('disabled', true);
+        var options = $("#id_userform-" + i + "-role option");
+        for (let i = 0; i < options.length; i++) {
+          if (options[i].text == 'Group') {
+            options[i].disabled = true;
+          }
+        }
       }
     }
 
