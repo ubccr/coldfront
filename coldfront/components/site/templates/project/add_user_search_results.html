@@ -109,6 +109,7 @@
 <script>
   var current_num_managers = {{ current_num_managers | safe}}
   var max_managers = {{ max_managers | safe }}
+  var matches = {{ matches | length | safe }};
 
   function checkNumManagers() {
     var checked_users = $("input[name^='userform-']:checked");
@@ -131,6 +132,16 @@
   }
 
   $('document').ready(function () {
+    //$("select option[value*='3']").prop('disabled', true)
+    for (var i = 0; i < matches; i++) {
+      if ($("#id_userform-" + i + "-role option:selected").val() == '3') {
+        $("#id_userform-" + i + "-role option:not(:selected)").prop('disabled', true);
+      }
+      else {
+        $("#id_userform-" + i + "-role option[value*='3']").prop('disabled', true);
+      }
+    }
+
     $('#id_manager_warning').hide()
   })
 

@@ -861,6 +861,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
             from coldfront.plugins.ldap_user_info.utils import get_user_info
             ldap_user_info_enabled = True
 
+        # Initial data for ProjectAddUserForm
         matches = context.get('matches')
         for match in matches:
             if ldap_user_info_enabled and get_user_info(match.get('username'), ['title'])['title'][0] == 'group':
@@ -988,10 +989,18 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         context = cobmined_user_search_obj.search()
 
+        ldap_user_info_enabled = False
+        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+            from coldfront.plugins.ldap_user_info.utils import get_user_info
+            ldap_user_info_enabled = True
+
+        # Initial data for ProjectAddUserForm
         matches = context.get('matches')
         for match in matches:
-            match.update(
-                {'role': ProjectUserRoleChoice.objects.get(name='User')})
+            if ldap_user_info_enabled and get_user_info(match.get('username'), ['title'])['title'][0] == 'group':
+                match.update({'role': ProjectUserRoleChoice.objects.get(name='Group')})
+            else:
+                match.update({'role': ProjectUserRoleChoice.objects.get(name='User')})
 
         formset = formset_factory(ProjectAddUserForm, max_num=len(matches))
         formset = formset(request.POST, initial=matches, prefix='userform')
@@ -1363,6 +1372,18 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         return False
 
+    def check_user_is_group(self, project_user_obj):
+        if project_user_obj.role == ProjectUserRoleChoice.objects.get(name='Group'):
+            return True
+
+        return False
+
+    def disable_role(self):
+        if self.check_user_is_data_manager and self.check_user_is_group:
+            return True
+
+        return False
+
     def get(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         project_user_pk = self.kwargs.get('project_user_pk')
@@ -1378,7 +1399,7 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     'role': project_user_obj.role,
                     'enable_notifications': project_user_obj.enable_notifications
                 },
-                disable_role=is_data_manager,
+                disable_role=self.disable_role(),
                 disable_enable_notifications=is_manager
             )
 
