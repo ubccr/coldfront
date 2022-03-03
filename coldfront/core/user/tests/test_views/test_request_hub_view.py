@@ -1,12 +1,7 @@
-import os
-import sys
 import datetime
 from decimal import Decimal
-from http import HTTPStatus
 from bs4 import BeautifulSoup
 
-from django.core.management import call_command
-from django.test import TestCase
 from django.contrib.auth.models import User
 from django.urls import reverse
 
@@ -26,22 +21,15 @@ from coldfront.core.project.models import ProjectStatusChoice, \
     VectorProjectAllocationRequest, ProjectUserJoinRequest
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.utils.tests.test_base import TestBase
 
 
-class TestRequestHubView(TestCase):
+class TestRequestHubView(TestBase):
     """A class for testing RequestHubView."""
 
     def setUp(self):
         """Set up test data."""
-        sys.stdout = open(os.devnull, 'w')
-        call_command('import_field_of_science_data')
-        call_command('add_default_project_choices')
-        call_command('add_resource_defaults')
-        call_command('add_allocation_defaults')
-        call_command('add_brc_accounting_defaults')
-        call_command('create_staff_group')
-        call_command('create_allocation_periods')
-        sys.stdout = sys.__stdout__
+        super().setUp()
 
         self.password = 'password'
 
@@ -112,13 +100,6 @@ class TestRequestHubView(TestCase):
                          'project renewal request',
                          'service unit purchase request']
 
-    def assert_has_access(self, user, url, has_access):
-        self.client.login(username=user.username, password=self.password)
-        response = self.client.get(url)
-        status_code = HTTPStatus.OK if has_access else HTTPStatus.FORBIDDEN
-        self.assertEqual(response.status_code, status_code)
-        self.client.logout()
-
     def get_response(self, user, url):
         self.client.login(username=user.username, password=self.password)
         return self.client.get(url)
@@ -149,14 +130,14 @@ class TestRequestHubView(TestCase):
 
         # all users should have access to the normal view
         for user in User.objects.all():
-            self.assert_has_access(user, self.url, True)
+            self.assert_has_access(self.url, user, True)
 
         # only staff/admin should have access to request-hub-admin
-        self.assert_has_access(self.admin, self.admin_url, True)
-        self.assert_has_access(self.staff, self.admin_url, True)
-        self.assert_has_access(self.pi, self.admin_url, False)
-        self.assert_has_access(self.user0, self.admin_url, False)
-        self.assert_has_access(self.user1, self.admin_url, False)
+        self.assert_has_access(self.admin_url, self.admin, True)
+        self.assert_has_access(self.admin_url, self.staff, True)
+        self.assert_has_access(self.admin_url, self.pi, False)
+        self.assert_has_access(self.admin_url, self.user0, False)
+        self.assert_has_access(self.admin_url, self.user1, False)
 
     def test_admin_buttons(self):
         """Test that 'Go to main request page' buttons only appear for
