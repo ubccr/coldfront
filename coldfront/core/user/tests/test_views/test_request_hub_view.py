@@ -3,30 +3,29 @@ import sys
 import datetime
 from decimal import Decimal
 from http import HTTPStatus
-from io import StringIO
-
 from bs4 import BeautifulSoup
 
 from django.core.management import call_command
 from django.test import TestCase
+from django.contrib.auth.models import User
+from django.urls import reverse
 
 from coldfront.api.statistics.utils import create_project_allocation, \
     create_user_project_allocation, get_accounting_allocation_objects
 from coldfront.core.allocation.models import AllocationUserAttribute, \
-    AllocationAttributeType, Allocation
+    AllocationAttributeType, \
+    allocation_renewal_request_state_schema, AllocationPeriod, \
+    AllocationRenewalRequestStatusChoice, AllocationRenewalRequest, \
+    allocation_addition_request_state_schema, \
+    AllocationAdditionRequestStatusChoice, AllocationAdditionRequest
 from coldfront.core.project.models import ProjectStatusChoice, \
     ProjectUserStatusChoice, ProjectUserRoleChoice, Project, ProjectUser, \
     ProjectUserRemovalRequestStatusChoice, ProjectUserRemovalRequest, \
     SavioProjectAllocationRequest, ProjectAllocationRequestStatusChoice, \
     savio_project_request_state_schema, vector_project_request_state_schema, \
     VectorProjectAllocationRequest, ProjectUserJoinRequest
-from coldfront.core.user.models import EmailAddress, UserProfile
-from coldfront.core.user.tests.utils import TestUserBase
-from coldfront.core.user.utils import account_activation_url
-from django.contrib.auth.models import User
-from django.contrib.messages import get_messages
-from django.test import Client
-from django.urls import reverse
+from coldfront.core.user.models import UserProfile
+from coldfront.core.utils.common import utc_now_offset_aware
 
 
 class TestRequestHubView(TestCase):
@@ -41,6 +40,7 @@ class TestRequestHubView(TestCase):
         call_command('add_allocation_defaults')
         call_command('add_brc_accounting_defaults')
         call_command('create_staff_group')
+        call_command('create_allocation_periods')
         sys.stdout = sys.__stdout__
 
         self.password = 'password'
@@ -123,10 +123,12 @@ class TestRequestHubView(TestCase):
         self.client.login(username=user.username, password=self.password)
         return self.client.get(url)
 
-    def assert_no_requests(self, user, url):
+    def assert_no_requests(self, user, url, exclude=None):
         response = self.get_response(user, url)
         soup = BeautifulSoup(response.content, 'html.parser')
         for request in self.requests:
+            if request == exclude:
+                continue
             divs = soup.find(id=f'{request.replace(" ", "_")}_section'). \
                 find_all('div', {'class': 'alert alert-info'})
             self.assertEqual(len(divs), 2)
@@ -223,9 +225,21 @@ class TestRequestHubView(TestCase):
         completed_req = \
             AllocationUserAttribute.objects.create(value='Denied', **kwargs)
 
+        # assert the correct requests are shown
         assert_request_shown(self.user0, self.url)
         assert_request_shown(self.admin, self.admin_url)
         assert_request_shown(self.staff, self.admin_url)
+
+        # other request sections should be empty
+        self.assert_no_requests(self.user0, self.url, exclude='cluster account request')
+        self.assert_no_requests(self.admin, self.admin_url, exclude='cluster account request')
+        self.assert_no_requests(self.staff, self.admin_url, exclude='cluster account request')
+
+        # should not see any requests
+        self.assert_no_requests(self.user1, self.url)
+        self.assert_no_requests(self.pi, self.url)
+        self.assert_no_requests(self.staff, self.url)
+        self.assert_no_requests(self.admin, self.url)
 
     def test_project_removal_requests(self):
         """Testing that project removal requests appear"""
@@ -253,7 +267,7 @@ class TestRequestHubView(TestCase):
             ProjectUserRemovalRequestStatusChoice.objects.get(name='Processing')
         complete_status = \
             ProjectUserRemovalRequestStatusChoice.objects.get(name='Complete')
-        current_time = datetime.datetime.now()
+        current_time = utc_now_offset_aware()
 
         kwargs = {
             'project_user': self.project0_user0,
@@ -268,10 +282,22 @@ class TestRequestHubView(TestCase):
             **kwargs
         )
 
+        # assert the correct requests are shown
         assert_request_shown(self.user0, self.url)
         assert_request_shown(self.pi, self.url)
         assert_request_shown(self.admin, self.admin_url)
         assert_request_shown(self.staff, self.admin_url)
+
+        # other request sections should be empty
+        self.assert_no_requests(self.user0, self.url, exclude='project removal request')
+        self.assert_no_requests(self.pi, self.url, exclude='project removal request')
+        self.assert_no_requests(self.admin, self.admin_url, exclude='project removal request')
+        self.assert_no_requests(self.staff, self.admin_url, exclude='project removal request')
+
+        # should not see any requests
+        self.assert_no_requests(self.user1, self.url)
+        self.assert_no_requests(self.staff, self.url)
+        self.assert_no_requests(self.admin, self.url)
 
     def test_savio_project_requests(self):
         """Testing that savio project requests appear"""
@@ -317,10 +343,22 @@ class TestRequestHubView(TestCase):
         completed_req = SavioProjectAllocationRequest.objects.create(
             status=complete_status, **kwargs)
 
+        # assert the correct requests are shown
         assert_request_shown(self.user0, self.url)
         assert_request_shown(self.pi, self.url)
         assert_request_shown(self.admin, self.admin_url)
         assert_request_shown(self.staff, self.admin_url)
+
+        # other request sections should be empty
+        self.assert_no_requests(self.user0, self.url, exclude='savio project request')
+        self.assert_no_requests(self.pi, self.url, exclude='savio project request')
+        self.assert_no_requests(self.admin, self.admin_url, exclude='savio project request')
+        self.assert_no_requests(self.staff, self.admin_url, exclude='savio project request')
+
+        # should not see any requests
+        self.assert_no_requests(self.user1, self.url)
+        self.assert_no_requests(self.staff, self.url)
+        self.assert_no_requests(self.admin, self.url)
 
     def test_vector_project_requests(self):
         """Testing that vector project requests appear"""
@@ -363,10 +401,22 @@ class TestRequestHubView(TestCase):
         completed_req = VectorProjectAllocationRequest.objects.create(
             status=complete_status, **kwargs)
 
+        # assert the correct requests are shown
         assert_request_shown(self.user0, self.url)
         assert_request_shown(self.pi, self.url)
         assert_request_shown(self.admin, self.admin_url)
         assert_request_shown(self.staff, self.admin_url)
+
+        # other request sections should be empty
+        self.assert_no_requests(self.user0, self.url, exclude='vector project request')
+        self.assert_no_requests(self.pi, self.url, exclude='vector project request')
+        self.assert_no_requests(self.admin, self.admin_url, exclude='vector project request')
+        self.assert_no_requests(self.staff, self.admin_url, exclude='vector project request')
+
+        # should not see any requests
+        self.assert_no_requests(self.user1, self.url)
+        self.assert_no_requests(self.staff, self.url)
+        self.assert_no_requests(self.admin, self.url)
 
     def test_project_join_requests(self):
         """Testing that project join requests appear correctly"""
@@ -407,13 +457,142 @@ class TestRequestHubView(TestCase):
             project_user=self.project0_user0,
             reason='Request hub testing.')
 
+        # assert the correct requests are shown
         assert_request_shown(self.user0, self.url, 'completed')
         assert_request_shown(self.user1, self.url, 'pending')
         assert_request_shown(self.pi, self.url, 'both')
         assert_request_shown(self.admin, self.admin_url, 'both')
         assert_request_shown(self.staff, self.admin_url, 'both')
 
-    # def test_project_renewal_requests(self):
-    #     """Testing that project renewal requests appear correctly"""
-    #
-    #     AllocationRenewalRequest
+        # other request sections should be empty
+        self.assert_no_requests(self.user0, self.url, exclude='project join request')
+        self.assert_no_requests(self.user1, self.url, exclude='project join request')
+        self.assert_no_requests(self.pi, self.url, exclude='project join request')
+        self.assert_no_requests(self.admin, self.admin_url, exclude='project join request')
+        self.assert_no_requests(self.staff, self.admin_url, exclude='project join request')
+
+        # should not see any requests
+        self.assert_no_requests(self.staff, self.url)
+        self.assert_no_requests(self.admin, self.url)
+
+    def test_project_renewal_requests(self):
+        """Testing that project renewal requests appear correctly"""
+
+        def assert_request_shown(user, url):
+            response = self.get_response(user, url)
+            soup = BeautifulSoup(response.content, 'html.parser')
+
+            pending_div = str(
+                soup.find(id=f'project_renewal_request_section_pending'))
+            self.assertIn(str(pending_req.pk), pending_div)
+            self.assertIn(pending_req.requester.email, pending_div)
+            self.assertIn(pending_req.pre_project.name, pending_div)
+            self.assertIn(pending_req.post_project.name, pending_div)
+            self.assertIn(pending_req.modified.strftime("%b. %d, %Y"), pending_div)
+            self.assertIn(pending_req.status.name, pending_div)
+
+            completed_div = str(
+                soup.find(id=f'project_renewal_request_section_completed'))
+            self.assertIn(str(completed_req.pk), completed_div)
+            self.assertIn(completed_req.requester.email, completed_div)
+            self.assertIn(completed_req.pre_project.name, completed_div)
+            self.assertIn(completed_req.post_project.name, completed_div)
+            self.assertIn(completed_req.modified.strftime("%b. %d, %Y"), completed_div)
+            self.assertIn(completed_req.status.name, completed_div)
+        
+        kwargs = {
+            'pi': self.pi,
+            'requester': self.user0,
+            'allocation_period': AllocationPeriod.objects.get(name='AY21-22'),
+            'pre_project': self.project0,
+            'post_project': self.project0,
+            'num_service_units': 1000,
+            'request_time': utc_now_offset_aware(),
+            'state': allocation_renewal_request_state_schema()
+        }
+        pending_status = AllocationRenewalRequestStatusChoice.objects.get(
+            name='Approved')
+        complete_status = AllocationRenewalRequestStatusChoice.objects.get(
+            name='Complete')
+        pending_req = AllocationRenewalRequest.objects.create(
+            status=pending_status, **kwargs)
+        completed_req = AllocationRenewalRequest.objects.create(
+            status=complete_status, **kwargs)
+
+        # assert the correct requests are shown
+        assert_request_shown(self.user0, self.url)
+        assert_request_shown(self.pi, self.url)
+        assert_request_shown(self.admin, self.admin_url)
+        assert_request_shown(self.staff, self.admin_url)
+
+        # other request sections should be empty
+        self.assert_no_requests(self.user0, self.url, exclude='project renewal request')
+        self.assert_no_requests(self.pi, self.url, exclude='project renewal request')
+        self.assert_no_requests(self.admin, self.admin_url, exclude='project renewal request')
+        self.assert_no_requests(self.staff, self.admin_url, exclude='project renewal request')
+
+        # should not see any requests
+        self.assert_no_requests(self.user1, self.url)
+        self.assert_no_requests(self.staff, self.url)
+        self.assert_no_requests(self.admin, self.url)
+
+    def test_su_purchase_requests(self):
+        """Testing that su purchase requests appear correctly"""
+
+        def assert_request_shown(user, url):
+            response = self.get_response(user, url)
+            soup = BeautifulSoup(response.content, 'html.parser')
+
+            pending_div = str(
+                soup.find(id=f'service_unit_purchase_request_section_pending'))
+            self.assertIn(str(pending_req.pk), pending_div)
+            self.assertIn(pending_req.requester.email, pending_div)
+            self.assertIn(pending_req.project.name, pending_div)
+            self.assertIn(str(pending_req.num_service_units), pending_div)
+            self.assertIn(pending_req.modified.strftime("%b. %d, %Y"), pending_div)
+            self.assertIn(pending_req.status.name, pending_div)
+
+            completed_div = str(
+                soup.find(id=f'service_unit_purchase_request_section_completed'))
+            self.assertIn(str(completed_req.pk), completed_div)
+            self.assertIn(completed_req.requester.email, completed_div)
+            self.assertIn(completed_req.project.name, completed_div)
+            self.assertIn(str(completed_req.num_service_units), completed_div)
+            self.assertIn(completed_req.modified.strftime("%b. %d, %Y"), completed_div)
+            self.assertIn(completed_req.status.name, completed_div)
+
+        current_time = utc_now_offset_aware()
+        kwargs = {
+            'requester': self.pi,
+            'project': self.project0,
+            'num_service_units': 1000,
+            'request_time': current_time,
+            'state': allocation_addition_request_state_schema()
+        }
+
+        pending_status = AllocationAdditionRequestStatusChoice.objects.get(
+            name='Under Review')
+        complete_status = AllocationAdditionRequestStatusChoice.objects.get(
+            name='Complete')
+        pending_req = AllocationAdditionRequest.objects.create(
+            status=pending_status, **kwargs)
+        completed_req = AllocationAdditionRequest.objects.create(
+            status=complete_status,
+            completion_time=current_time + datetime.timedelta(days=4),
+            **kwargs)
+
+        # assert the correct requests are shown
+        assert_request_shown(self.pi, self.url)
+        assert_request_shown(self.admin, self.admin_url)
+        assert_request_shown(self.staff, self.admin_url)
+
+        # other request sections should be empty
+        self.assert_no_requests(self.pi, self.url, exclude='service unit purchase request')
+        self.assert_no_requests(self.admin, self.admin_url, exclude='service unit purchase request')
+        self.assert_no_requests(self.staff, self.admin_url, exclude='service unit purchase request')
+
+        # should not see any requests
+        self.assert_no_requests(self.user0, self.url)
+        self.assert_no_requests(self.user1, self.url)
+        self.assert_no_requests(self.staff, self.url)
+        self.assert_no_requests(self.admin, self.url)
