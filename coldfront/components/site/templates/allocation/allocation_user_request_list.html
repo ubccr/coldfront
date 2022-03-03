@@ -31,8 +31,8 @@ Allocation User Requests
             <td>{{ request.allocation_user.user.last_name }}</td>
             <td>{{ request.allocation_user.user.username }}</td>
             <td>{{ request.allocation_user_status.name }}</td>
-            <td><a href="{% url 'allocation-detail' request.allocation_user.allocation.pk %}">{{ request.allocation_user.allocation.get_parent_resource }}</a></td>
-            <td><a href="{% url 'project-detail' request.allocation_user.allocation.project.pk %}">{{ request.allocation_user.allocation.project.title|truncatechars:50 }}</a></td>
+            <td><a target="_blank" href="{% url 'allocation-detail' request.allocation_user.allocation.pk %}">{{ request.allocation_user.allocation.get_parent_resource }}</a></td>
+            <td><a target="_blank" href="{% url 'project-detail' request.allocation_user.allocation.project.pk %}">{{ request.allocation_user.allocation.project.title|truncatechars:50 }}</a></td>
             <td>
               <a href="{% url 'allocation-user-approve-request' request.pk %}" class="btn btn-success mr-1">Approve</a>
               <a href="{% url 'allocation-user-deny-request' request.pk %}" class="btn btn-danger mr-1">Deny</a>
