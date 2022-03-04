@@ -31,7 +31,7 @@ class TestRequestHubView(TestBase):
         """Set up test data."""
         super().setUp()
 
-        self.password = 'password'
+        # self.password = 'password'
 
         self.pi = User.objects.create(
             username='pi0', email='pi0@nonexistent.com')
@@ -92,7 +92,7 @@ class TestRequestHubView(TestBase):
         self.url = reverse('request-hub')
         self.admin_url = reverse('request-hub-admin')
 
-        self.requests = ['cluster account request',
+        self.requests = ['cluster access request',
                          'project removal request',
                          'savio project request',
                          'vector project request',
@@ -172,11 +172,11 @@ class TestRequestHubView(TestBase):
         self.assert_no_requests(self.admin, self.admin_url)
         self.assert_no_requests(self.staff, self.admin_url)
 
-    def test_cluster_account_requests(self):
-        """Testing that cluster account requests appear"""
+    def test_cluster_access_requests(self):
+        """Testing that cluster access requests appear"""
 
         def assert_request_shown(user, url):
-            section = 'cluster_account_request_section'
+            section = 'cluster_access_request_section'
             response = self.get_response(user, url)
             soup = BeautifulSoup(response.content, 'html.parser')
 
@@ -199,7 +199,7 @@ class TestRequestHubView(TestBase):
                           completed_div)
             self.assertIn(completed_req.value, completed_div)
 
-        # creating two cluster account requests for user0
+        # creating two cluster access requests for user0
         allocation_obj = \
             get_accounting_allocation_objects(self.project0)
         allocation_user_obj = \
@@ -226,9 +226,9 @@ class TestRequestHubView(TestBase):
         assert_request_shown(self.staff, self.admin_url)
 
         # other request sections should be empty
-        self.assert_no_requests(self.user0, self.url, exclude='cluster account request')
-        self.assert_no_requests(self.admin, self.admin_url, exclude='cluster account request')
-        self.assert_no_requests(self.staff, self.admin_url, exclude='cluster account request')
+        self.assert_no_requests(self.user0, self.url, exclude='cluster access request')
+        self.assert_no_requests(self.admin, self.admin_url, exclude='cluster access request')
+        self.assert_no_requests(self.staff, self.admin_url, exclude='cluster access request')
 
         # should not see any requests
         self.assert_no_requests(self.user1, self.url)
@@ -483,18 +483,17 @@ class TestRequestHubView(TestBase):
         # assert the correct requests are shown
         assert_request_shown(self.user0, self.url, 'completed')
         assert_request_shown(self.user1, self.url, 'pending')
-        assert_request_shown(self.pi, self.url, 'both')
         assert_request_shown(self.admin, self.admin_url, 'both')
         assert_request_shown(self.staff, self.admin_url, 'both')
 
         # other request sections should be empty
         self.assert_no_requests(self.user0, self.url, exclude='project join request')
         self.assert_no_requests(self.user1, self.url, exclude='project join request')
-        self.assert_no_requests(self.pi, self.url, exclude='project join request')
         self.assert_no_requests(self.admin, self.admin_url, exclude='project join request')
         self.assert_no_requests(self.staff, self.admin_url, exclude='project join request')
 
         # should not see any requests
+        self.assert_no_requests(self.pi, self.url)
         self.assert_no_requests(self.staff, self.url)
         self.assert_no_requests(self.admin, self.url)
 
