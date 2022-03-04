@@ -82,7 +82,7 @@ Cluster Account Review New and Pending Requests
 
 {% if cluster_account_list %}
 <div class="table-responsive">
-  {% with queryset=cluster_account_list %}
+  {% with queryset=cluster_account_list actions_visible=actions_visible %}
     {% include 'allocation/allocation_cluster_account_request_list_table.html' %}
   {% endwith %}
   {% if is_paginated %} Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
