@@ -26,6 +26,9 @@ if DEBUG is False and SECRET_KEY == 'vtri&lztlbinerr4+yg1yzm23ez@+ub6=4*63z1%d!)
 # This should be set to True in production when using HTTPS
 SESSION_COOKIE_SECURE = False
 
+# Sessions should last for one hour.
+SESSION_COOKIE_AGE = 60 * 60
+
 # ------------------------------------------------------------------------------
 # myBRC settings
 # ------------------------------------------------------------------------------
@@ -335,9 +338,9 @@ LOCAL_SETTINGS_EXPORT += [
 
 # XDMOD_API_URL = 'http://localhost'
 
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Enable myBRC REST API
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 EXTRA_APPS += [
     'rest_framework',
     'django_filters',
@@ -388,6 +391,13 @@ GOOGLE_OAUTH2_KEY_FILE = "/tmp/credentials.json"
 FLAGS = {
     'LRC_ONLY': [],
 }
+
+# -----------------------------------------------------------------------------
+# Miscellaneous settings
+# -----------------------------------------------------------------------------
+EXTRA_MIDDLEWARE += [
+    'coldfront.core.utils.middleware.ExceptionMiddleware',
+]
 
 #------------------------------------------------------------------------------
 # Deployment-specific settings

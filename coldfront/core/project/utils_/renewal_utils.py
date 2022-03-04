@@ -334,16 +334,7 @@ def send_new_allocation_renewal_request_pooling_notification_email(request):
     }
 
     sender = settings.EMAIL_SENDER
-    pi_condition = Q(
-        role__name='Principal Investigator', status__name='Active',
-        enable_notifications=True)
-    manager_condition = Q(role__name='Manager', status__name='Active')
-    receiver_list = list(
-        request.post_project.projectuser_set.filter(
-            pi_condition | manager_condition
-        ).values_list(
-            'user__email', flat=True
-        ))
+    receiver_list = request.post_project.managers_and_pis_emails()
 
     send_email_template(subject, template_name, context, sender, receiver_list)
 

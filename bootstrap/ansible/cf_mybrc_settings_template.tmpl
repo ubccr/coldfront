@@ -44,3 +44,31 @@ API_LOG_PATH = '{{ log_path }}/{{ api_log_file }}'
 
 # A list of admin email addresses to CC when certain requests are approved.
 REQUEST_APPROVAL_CC_LIST = {{ request_approval_cc_list }}
+
+# Use a secure cookie for the session cookie (HTTPS only).
+{% if ssl_enabled | bool %}
+SESSION_COOKIE_SECURE = True
+{% else %}
+SESSION_COOKIE_SECURE = False
+{% endif %}
+
+# Configure Sentry.
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.logging import ignore_logger
+
+
+{% if sentry_dsn|length > 0 %}
+SENTRY_DSN = '{{ sentry_dsn.strip() }}'
+{% else %}
+SENTRY_DSN = ''
+{% endif %}
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        traces_sample_rate=0.01,
+        send_default_pii=True)
+    # Ignore noisy loggers.
+    ignore_logger('coldfront.api')
+    ignore_logger('coldfront.core.utils.middleware')
