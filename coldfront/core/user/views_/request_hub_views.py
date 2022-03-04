@@ -23,7 +23,8 @@ class RequestListItem:
 
     __slots__ = ['num', 'title', 'num_pending', 'table',
                  'pending_queryset', 'complete_queryset',
-                 'button_path', 'button_text', 'id']
+                 'button_path', 'button_text', 'id',
+                 'help_text']
 
     def __init__(self):
         num = None
@@ -35,6 +36,7 @@ class RequestListItem:
         button_path = None
         button_text = None
         id = None
+        help_text = None
 
 
 class RequestHubView(LoginRequiredMixin,
@@ -103,14 +105,16 @@ class RequestHubView(LoginRequiredMixin,
 
         cluster_request_object.num_pending = cluster_account_list_pending.count()
 
-        cluster_request_object.title = 'Cluster Account Requests'
+        cluster_request_object.title = 'Cluster Access Requests'
         cluster_request_object.table = \
             'allocation/allocation_cluster_account_request_list_table.html'
         cluster_request_object.button_path = \
             'allocation-cluster-account-request-list'
         cluster_request_object.button_text = \
-            'Go To Cluster Account Requests Main Page'
-        cluster_request_object.id = 'cluster_account_request_section'
+            'Go To Cluster Access Requests Main Page'
+        cluster_request_object.id = 'cluster_access_request_section'
+        cluster_request_object.help_text = \
+            'Showing your cluster access requests.'
 
         return cluster_request_object
 
@@ -150,6 +154,9 @@ class RequestHubView(LoginRequiredMixin,
         removal_request_object.button_text = \
             'Go To Project Removal Requests Main Page'
         removal_request_object.id = 'project_removal_request_section'
+        removal_request_object.help_text = \
+            'Showing project removal requests that you requested or requests ' \
+            'in which you are the user being removed.'
 
         return removal_request_object
 
@@ -191,6 +198,9 @@ class RequestHubView(LoginRequiredMixin,
         savio_proj_request_object.button_text = \
             'Go To Savio Project Requests Main Page'
         savio_proj_request_object.id = 'savio_project_request_section'
+        savio_proj_request_object.help_text = \
+            'Showing Savio project requests that you requested or requests ' \
+            'in which you are the PI for the associated project.'
 
         return savio_proj_request_object
 
@@ -232,6 +242,9 @@ class RequestHubView(LoginRequiredMixin,
         vector_proj_request_object.button_text = \
             'Go To Vector Project Requests Main Page'
         vector_proj_request_object.id = 'vector_project_request_section'
+        vector_proj_request_object.help_text = \
+            'Showing Vector project requests that you requested or requests ' \
+            'in which you are the PI for the associated project.'
 
         return vector_proj_request_object
 
@@ -242,18 +255,7 @@ class RequestHubView(LoginRequiredMixin,
 
         args = []
         if not self.show_all_requests:
-            project_set = set()
-            for project in Project.objects.all():
-                pi_condition = Q(
-                    role__name='Principal Investigator')
-                manager_condition = Q(role__name='Manager')
-
-                if project.projectuser_set.filter(user=user,
-                                                  status__name='Active').filter(
-                    Q(pi_condition | manager_condition)).count() > 0:
-                    project_set.add(project)
-
-            args.append(Q(project_user__user=user) | Q(project_user__project__in=project_set))
+            args.append(Q(project_user__user=user))
 
         project_join_request_pending = \
             ProjectUserJoinRequest.objects.filter(
@@ -283,6 +285,8 @@ class RequestHubView(LoginRequiredMixin,
         proj_join_request_object.button_text = \
             'Go To Project Join Requests Main Page'
         proj_join_request_object.id = 'project_join_request_section'
+        proj_join_request_object.help_text = \
+            'Showing your project join requests.'
 
         return proj_join_request_object
 
@@ -323,6 +327,9 @@ class RequestHubView(LoginRequiredMixin,
         proj_renewal_request_object.button_text = \
             'Go To Project Renewal Requests Main Page'
         proj_renewal_request_object.id = 'project_renewal_request_section'
+        proj_renewal_request_object.help_text = \
+            'Showing project renewal requests that you requested or requests ' \
+            'in which you are the PI for the associated project.'
 
         return proj_renewal_request_object
 
@@ -368,6 +375,9 @@ class RequestHubView(LoginRequiredMixin,
         su_purchase_request_object.button_text = \
             'Go To Service Unit Purchase Requests Main Page'
         su_purchase_request_object.id = 'service_unit_purchase_request_section'
+        su_purchase_request_object.help_text = \
+            'Showing service unit purchase requests in which you are a PI ' \
+            'or manager for the associated project.'
 
         return su_purchase_request_object
 
