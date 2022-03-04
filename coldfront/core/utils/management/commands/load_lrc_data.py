@@ -21,8 +21,6 @@ from coldfront.core.resource.utils import get_compute_resource_names
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.user.models import UserProfile
-from coldfront.core.utils.management.commands.utils import get_gspread_worksheet
-from coldfront.core.utils.management.commands.utils import get_gspread_worksheet_data
 
 from collections import defaultdict
 from datetime import timedelta
@@ -34,6 +32,7 @@ from django.core.management.base import BaseCommand
 from coldfront.core.utils.common import utc_now_offset_aware
 from django.core.validators import validate_email
 
+import csv
 import logging
 import re
 
@@ -72,8 +71,10 @@ class Command(BaseCommand):
                 type=str)
 
         all_parser = subparsers.add_parser('all', help='Run all subcommands.')
-        for name in ('passwd_file', 'group_file', 'billing_file'):
-            add_file_argument(all_parser, name)
+        file_names = (
+            'passwd_file', 'group_file', 'pis_managers_file', 'billing_file')
+        for file_name in file_names:
+            add_file_argument(all_parser, file_name)
 
         allocations_parser = subparsers.add_parser(
             'allocations',
@@ -87,11 +88,12 @@ class Command(BaseCommand):
             help='Load IDs to be used for monthly billing from a file.')
         add_file_argument(billing_ids_parser, 'billing_file')
 
-        subparsers.add_parser(
+        project_pis_and_managers_parser = subparsers.add_parser(
             'project_pis_and_managers',
             help=(
                 'Load Project PIs and Managers from a pre-defined '
                 'spreadsheet.'))
+        add_file_argument(project_pis_and_managers_parser, 'pis_managers_file')
 
         projects_and_project_users_parser = subparsers.add_parser(
             'projects_and_project_users',
@@ -293,7 +295,8 @@ class Command(BaseCommand):
     def handle_project_pis_and_managers(self, *args, **options):
         """Handle the 'project_pis_and_managers' subcommand."""
         project_pis_and_managers_data = \
-            self.get_project_pis_and_managers_data()
+            self.get_project_pis_and_managers_data(
+                options['pis_managers_file'])
         self.create_project_pis_and_managers(project_pis_and_managers_data)
 
     def handle_projects_and_project_users(self, *args, **options):
@@ -333,6 +336,7 @@ class Command(BaseCommand):
 
             for email, attributes in user_data.items():
                 # Create or update User objects.
+                email = email.lower()
                 try:
                     user = User.objects.get(email=email)
                 except User.DoesNotExist:
@@ -348,8 +352,10 @@ class Command(BaseCommand):
                     continue
                 # Prefer existing names (from the cluster) over those from the
                 # spreadsheet.
-                user.first_name = user.first_name or attributes['first_name']
-                user.last_name = user.last_name or attributes['last_name']
+                user.first_name = (
+                    user.first_name or attributes['first_name'].title())
+                user.last_name = (
+                    user.last_name or attributes['last_name'].title())
                 user.save()
                 username = user.username
 
@@ -360,7 +366,8 @@ class Command(BaseCommand):
                     self.logger.info(
                         f'UserProfile for User {username} was created.')
                 user_profile.middle_name = (
-                    user_profile.middle_name or attributes['middle_name'])
+                    user_profile.middle_name or
+                    attributes['middle_name'].title())
                 # If the User was already a PI, do not demote them.
                 user_profile.is_pi = user_profile.is_pi or attributes['is_pi']
                 user_profile.save()
@@ -445,7 +452,7 @@ class Command(BaseCommand):
 
             user_profile_defaults = {
                 'cluster_uid': attributes['cluster_uid'],
-                'middle_name': attributes['middle_name'],
+                'middle_name': attributes['middle_name'].title(),
             }
             user_profile, created = UserProfile.objects.update_or_create(
                 user=user, defaults=user_profile_defaults)
@@ -541,142 +548,78 @@ class Command(BaseCommand):
             names['last'] = full_name[-1]
         return names
 
-    def get_project_pis_and_managers_data(self):
-        """Given a pre-defined spreadsheet containing the PIs and POCs
-        of Projects, return a mapping from a project's name to a dict
-        containing the project's POC names and emails and PI names and
-        emails."""
-        spreadsheet_id = '14YeWGBHYK-9fQ1QtxKzRhyqoPqJlvOZWD8VHocpBX50'
-        spreadsheet_tab = 'New-Additions'
-        spreadsheet_cols = {
-            'NAME': 1,
-            'POC_NAMES': 6,
-            'POC_EMAILS': 7,
-            'PI_NAMES': 8,
-            'PI_EMAILS': 9,
-        }
-        spreadsheet_row_start = 2
+    def get_project_pis_and_managers_data(self, pis_managers_file_path):
+        """Given a CSV file containing PIs and POCs for a Project,
+        return a mapping from a project's name to a dict containing the
+        project's POC names and emails and PI names and emails."""
 
-        worksheet = get_gspread_worksheet(
-            settings.GOOGLE_OAUTH2_KEY_FILE, spreadsheet_id, spreadsheet_tab)
-        row_start = spreadsheet_row_start
-        row_end = len(worksheet.col_values(spreadsheet_cols['NAME']))
-        col_start = 1
-        col_end = spreadsheet_cols['PI_EMAILS']
-        worksheet_data = get_gspread_worksheet_data(
-            worksheet, row_start, row_end, col_start, col_end)
+        def parse_users_from_string(s):
+            """Given a comma-separated string where each part is of the
+            form: 'First Middle Last <user@email.com>', return a list of
+            tuples of the form ('First Middle Last', 'user@email.com').
+            If the string cannot be parsed, or either the name or email
+            is invalid, ignore the entry and log an error."""
+            parts = [p for p in s.split(',') if p.strip()]
+            parsed = []
+            for part in parts:
+                left_chevron_pos = part.find('<')
+                if left_chevron_pos == -1:
+                    continue
+                _full_name = part[:left_chevron_pos].strip()
+                if not self.is_full_name_valid(_full_name):
+                    self.logger.error(
+                        f'The entry {fields} has an invalid name: '
+                        f'{_full_name}.')
+                    break
+                _email = part[left_chevron_pos + 1:-1]
+                if not self.is_email_address_valid(_email):
+                    self.logger.error(
+                        f'The entry {fields} has an invalid email: '
+                        f'{_email}.')
+                    break
+                parsed.append((_full_name, _email))
+            return parsed
+
+        def update_user_data(d, _email, _full_name, is_pi=False):
+            """Given a dict mapping a user's email address to a dict
+            containing their first, middle, and last names, and whether
+            they are a PI, update the dict with the given data."""
+            user_data = d.get(_email, {})
+            names = self.get_first_middle_last_names(_full_name)
+            user_data['first_name'] = names['first']
+            user_data['middle_name'] = names['middle']
+            user_data['last_name'] = names['last']
+            user_data['is_pi'] = is_pi
+            d[_email] = user_data
 
         departmental_cluster_names = self.get_departmental_cluster_names()
-
         project_pis_and_managers_data = {}
-        for row in worksheet_data:
-            project_name = row[spreadsheet_cols['NAME'] - 1].strip()
-            poc_names = row[spreadsheet_cols['POC_NAMES'] - 1].strip()
-            poc_emails = row[spreadsheet_cols['POC_EMAILS'] - 1].strip()
-            pi_names = row[spreadsheet_cols['PI_NAMES'] - 1].strip()
-            pi_emails = row[spreadsheet_cols['PI_EMAILS'] - 1].strip()
-            row_dict = {}
-
-            if not self.is_project_name_valid(
-                    project_name, departmental_cluster_names):
-                self.logger.info(f'Skipping Project {project_name}.')
-                continue
-
-            poc_names = [
-                poc_name.strip().title()
-                for poc_name in poc_names.split(',')
-                if poc_name.strip()]
-            if not poc_names:
-                self.logger.error(f'Row {row} has no POC names.')
-                continue
-            poc_names_valid = True
-            for full_name in poc_names:
-                if not self.is_full_name_valid(full_name):
-                    poc_names_valid = False
-                    break
-            if not poc_names_valid:
-                self.logger.error(f'Row {row} has an invalid POC name.')
-                continue
-
-            poc_emails = [
-                poc_email.strip().lower()
-                for poc_email in poc_emails.split(',')
-                if poc_email.strip()]
-            if not poc_emails:
-                self.logger.error(f'Row {row} has no POC emails.')
-                continue
-            poc_emails_valid = True
-            for email in poc_emails:
-                if not self.is_email_address_valid(email):
-                    poc_emails_valid = False
-                    break
-            if not poc_emails_valid:
-                self.logger.error(f'Row {row} has an invalid POC email.')
-                continue
-            if len(poc_emails) != len(poc_names):
-                self.logger.error(
-                    f'Row {row} has {len(poc_names)} POC names, but '
-                    f'{len(poc_emails)} POC emails.')
-                continue
-
-            for i in range(len(poc_emails)):
-                email, full_name = poc_emails[i], poc_names[i]
-                names = self.get_first_middle_last_names(full_name)
-                user_data = row_dict.get(email, {})
-                user_data['first_name'] = names['first']
-                user_data['middle_name'] = names['middle']
-                user_data['last_name'] = names['last']
-                user_data['is_pi'] = False
-                row_dict[email] = user_data
-
-            pi_names = [
-                pi_name.strip().title()
-                for pi_name in pi_names.split(',')
-                if pi_name.strip()]
-            if not pi_names:
-                self.logger.error(f'Row {row} has no PI names.')
-                continue
-            pi_names_valid = True
-            for full_name in pi_names:
-                if not self.is_full_name_valid(full_name):
-                    pi_names_valid = False
-                    break
-            if not pi_names_valid:
-                self.logger.error(f'Row {row} has an invalid PI name.')
-                continue
-
-            pi_emails = [
-                pi_email.strip().lower()
-                for pi_email in pi_emails.split(',')
-                if pi_email.strip()]
-            if not pi_emails:
-                self.logger.error(f'Row {row} has no PI emails.')
-                continue
-            pi_emails_valid = True
-            for email in pi_emails:
-                if not self.is_email_address_valid(email):
-                    pi_emails_valid = False
-                    break
-            if not pi_emails_valid:
-                self.logger.error(f'Row {row} has an invalid PI email.')
-                continue
-            if len(pi_emails) != len(pi_names):
-                self.logger.error(
-                    f'Row {row} has {len(pi_names)} PI names, but '
-                    f'{len(pi_emails)} PI emails.')
-                continue
-
-            for i in range(len(pi_emails)):
-                email, full_name = pi_emails[i], pi_names[i]
-                names = self.get_first_middle_last_names(full_name)
-                user_data = row_dict.get(email, {})
-                user_data['first_name'] = names['first']
-                user_data['middle_name'] = names['middle']
-                user_data['last_name'] = names['last']
-                user_data['is_pi'] = True
-                row_dict[email] = user_data
-
-            project_pis_and_managers_data[project_name] = row_dict
+        with open(pis_managers_file_path, 'r') as pis_managers_file:
+            reader = csv.reader(pis_managers_file)
+            next(reader)
+            for row in reader:
+                fields = [field.strip() for field in row]
+                if len(fields) != 10:
+                    self.logger.error(
+                        f'The entry {fields} does not have 10 fields.')
+                    continue
+                row_dict = {}
+                project_name = fields[1].strip()
+                if not self.is_project_name_valid(
+                        project_name, departmental_cluster_names):
+                    self.logger.info(f'Skipping Project {project_name}.')
+                    continue
+                # Process POCs before PIs because a PI may also be a POC, but
+                # should not be downgraded to one.
+                pocs = parse_users_from_string(fields[7].strip())
+                for j in range(len(pocs)):
+                    full_name, email = pocs[j]
+                    update_user_data(row_dict, email, full_name, is_pi=False)
+                pis = parse_users_from_string(fields[6].strip())
+                for j in range(len(pis)):
+                    full_name, email = pis[j]
+                    update_user_data(row_dict, email, full_name, is_pi=True)
+                project_pis_and_managers_data[project_name] = row_dict
 
         return project_pis_and_managers_data
 
