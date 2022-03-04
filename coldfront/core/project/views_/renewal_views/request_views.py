@@ -180,7 +180,7 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
         self.__set_data_from_previous_steps(current_step, context)
         return context
 
-    def get_form_kwargs(self, step):
+    def get_form_kwargs(self, step=None):
         kwargs = {}
         step = int(step)
         if step == self.step_numbers_by_form_name['pi_selection']:
@@ -220,12 +220,12 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
     def get_template_names(self):
         return [self.TEMPLATES[self.FORMS[int(self.steps.current)][0]]]
 
-    def done(self, form_list, form_dict, **kwargs):
+    def done(self, form_list, **kwargs):
         """Perform processing and store information in a request
         object."""
         redirect_url = '/'
         try:
-            form_data = self.__get_form_data(form_list, form_dict)
+            form_data = self.__get_form_data(form_list, kwargs['form_dict'])
             tmp = {}
             self.__set_data_from_previous_steps(len(self.FORMS), tmp)
             pi = tmp['PI'].user

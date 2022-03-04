@@ -1976,7 +1976,7 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
         self.__set_data_from_previous_steps(current_step, context)
         return context
 
-    def get_form_kwargs(self, step):
+    def get_form_kwargs(self, step=None):
         kwargs = {}
         step = int(step)
         # The names of steps that require the past data.
@@ -1995,7 +1995,7 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
     def get_template_names(self):
         return [self.TEMPLATES[self.FORMS[int(self.steps.current)][0]]]
 
-    def done(self, form_list, form_dict, **kwargs):
+    def done(self, form_list, **kwargs):
         """Perform processing and store information in a request
         object."""
         redirect_url = '/'
@@ -2003,7 +2003,7 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
             # Retrieve form data; include empty dictionaries for skipped steps.
             data = iter([form.cleaned_data for form in form_list])
             form_data = [{} for _ in range(len(self.form_list))]
-            for step in sorted(form_dict.keys()):
+            for step in sorted(kwargs['form_dict'].keys()):
                 form_data[int(step)] = next(data)
 
             request_kwargs = {
