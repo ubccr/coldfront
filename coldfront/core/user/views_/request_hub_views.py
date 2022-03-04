@@ -392,12 +392,16 @@ class RequestHubView(LoginRequiredMixin,
                     'project_renewal_request',
                     'su_purchase_request']
 
-        for request in requests:
-            context[f'{request}_obj'] = eval(f'self.get_{request}()')
-
         context['show_all'] = ((self.request.user.is_superuser or
                                 self.request.user.is_staff) and
                                self.show_all_requests)
+
+        for request in requests:
+            request_obj = eval(f'self.get_{request}()')
+            if context['show_all']:
+                request_obj.help_text = f'Showing all {request_obj.title} ' \
+                                        f'in MyBRC.'
+            context[f'{request}_obj'] = request_obj
 
         context['admin_staff'] = (self.request.user.is_superuser or
                                   self.request.user.is_staff)

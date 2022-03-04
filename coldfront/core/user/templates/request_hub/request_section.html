@@ -5,7 +5,7 @@
         <div style="text-align: left;">
           <strong>
             {{ request_obj.title}}
-            {% if not show_all %} {% include 'request_hub/help_text_popover.html' %} {% endif %}
+            {% include 'request_hub/help_text_popover.html' %}
             {% if request_obj.num_pending %}
               <span class="badge badge-warning float-right">
                 <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
