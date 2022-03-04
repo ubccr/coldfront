@@ -74,7 +74,7 @@
 
     {% if removal_request_list %}
         <div class="table-responsive">
-          {% with queryset=removal_request_list %}
+          {% with queryset=removal_request_list actions_visible=actions_visible %}
             {% include 'project/project_removal/project_removal_request_list_table.html' %}
           {% endwith %}
           {% if is_paginated %} Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}

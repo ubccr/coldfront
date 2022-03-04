@@ -38,7 +38,7 @@
     <th scope="col">
       Status
     </th>
-    {% if user.is_superuser and request_filter == 'pending'%}
+    {% if user.is_superuser and actions_visible %}
       <th scope="col">
         Actions
       </th>
@@ -74,7 +74,7 @@
           {% endif %}
         {% endwith %}
       </td>
-      {% if user.is_superuser and request_filter == 'pending' %}
+      {% if user.is_superuser and actions_visible %}
         <td class="text-nowrap">
           {% if removal_request.status.name == "Pending" %}
             <a href="{% url 'project-removal-request-update-status' removal_request.pk %}" class="btn btn-success mr-1">
