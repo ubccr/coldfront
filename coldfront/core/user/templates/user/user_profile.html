@@ -1,5 +1,7 @@
 {% extends "common/base.html" %}
 {% load static %}
+{% load feature_flags %}
+
 
 {% block title %}
 User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif %}
@@ -115,6 +117,13 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
             {% endif %}
           </td>
         </tr>
+        {% flag_enabled 'LRC_ONLY' as lrc_only %}
+        {% if lrc_only %}
+          <tr>
+            <th>Billing ID for Monthly User Account Fee</th>
+            <td>{{ monthly_user_account_fee_billing_id }}</td>
+          </tr>
+        {% endif %}
         <tr>
           <th>User Access Agreement:</th>
           <td>
