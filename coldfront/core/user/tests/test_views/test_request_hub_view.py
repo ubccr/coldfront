@@ -450,7 +450,6 @@ class TestRequestHubView(TestBase):
 
                 pending_div = str(
                     soup.find(id=f'{section}_pending'))
-                self.assertIn(str(pending_req.pk), pending_div)
                 self.assertIn(pending_req.project_user.user.username, pending_div)
                 self.assertIn(pending_req.project_user.project.name, pending_div)
                 self.assertIn(pending_req.created.strftime("%b. %d, %Y"), pending_div)
@@ -460,7 +459,6 @@ class TestRequestHubView(TestBase):
             if status == 'both' or status == 'completed':
                 completed_div = str(
                     soup.find(id=f'{section}_completed'))
-                self.assertIn(str(completed_req.pk), completed_div)
                 self.assertIn(completed_req.project_user.user.username, completed_div)
                 self.assertIn(completed_req.project_user.project.name, completed_div)
                 self.assertIn(completed_req.created.strftime("%b. %d, %Y"), completed_div)
