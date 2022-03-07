@@ -13,6 +13,9 @@
         <li><div class="dropdown-divider"></div></li>
         <li class="dropdown-submenu"><a class="dropdown-item dropdown-toggle" href="#">Requests</a>
             <ul class="dropdown-menu">
+                <li><a id="navbar-view-all-requests-admin" class="dropdown-item" href="{% url 'request-hub-admin' %}">
+                  All Requests
+                </a></li>
                 <li><a id="navbar-allocation-cluster-account-requests" class="dropdown-item" href="{% url 'allocation-cluster-account-request-list' %}?show_all_requests=on">
                     Cluster Account Requests
                 </a></li>
