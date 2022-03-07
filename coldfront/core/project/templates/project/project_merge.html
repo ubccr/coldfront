@@ -53,10 +53,18 @@ Merge Projects
   </div>
   <div class="card border-light">
     <div class="card-body">
-      <p>Links between objects are NOT currently preserved.</p>
+      <!-- <p>Links between objects are NOT currently preserved.</p> -->
+      <p id="not-enough-projs-notice" style="display:none;">
+        <span class="text-info"><i class="fas fa-exclamation-circle"></i>Notice:</span>
+        You do not have enough projects to merge.
+        Please <a href="{% url 'project-create' %}">create</a> or
+        <a href="{% url 'project-import' %}">import</a> more projects.
+      </p>
       <p>
-        <span class="text-danger"><i class="fas fa-exclamation-triangle"></i>WARNING: </span>Merging projects will archive the old projects and move all
+        <span class="text-danger"><i class="fas fa-exclamation-triangle"></i>WARNING:</span>
+        Merging projects will archive the old projects and move all
         publications, grants, resource, etc to the new merged project.
+        This operation is irrevocable!
       </p>
       <input class="btn btn-primary" type="submit" value="Merge">
       <a class="btn btn-secondary" href="{% url 'project-list' %}" role="button">Cancel</a>
@@ -127,18 +135,25 @@ Merge Projects
 
       if (selected_projects >= 2)
       {
-        $("#proj-rename").slideDown(animtime).css("width:100%;");
+        $("#proj-rename").slideDown(animtime);
         $(".btn-primary").prop('disabled', false);
+        $(".btn-primary").prop('title', "");
       }
       else
       {
         $("#proj-rename").slideUp(animtime);
         $(".btn-primary").prop('disabled', true);
+        $(".btn-primary").prop('title', "Select two or more projects.");
       }
     }
 
     $("document").ready(function() {
       autotoggle_rename(true);
+
+      if ($(".proj-title").length < 2)
+      {
+        $("#not-enough-projs-notice").show();
+      }
     });
 
     $("#selectAll").click(function () {

@@ -522,7 +522,8 @@ class ProjectMergeView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 'description': project.description
             }
 
-            for project in Project.objects.all()
+            for project in Project.objects.exclude(status=ProjectStatusChoice.objects.get(name='Archived'))
+            
         ]
 
         return project_list
