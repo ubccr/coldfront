@@ -87,6 +87,10 @@ class Command(BaseCommand):
             choices=['ac_', 'co_', 'fc_', 'ic_', 'pc_'],
             help='Filter projects by the given allowance type.',
             type=str)
+        job_avg_queue_time_parser.add_argument(
+            '--partition',
+            help='Filter jobs by the partition they requested.',
+            type=str)
 
         project_subparser = subparsers.add_parser('projects',
                                                   help='Export projects data')
@@ -197,6 +201,7 @@ class Command(BaseCommand):
         start_date = options.get('start_date', None)
         end_date = options.get('end_date', None)
         allowance_type = options.get('allowance_type', None)
+        partition = options.get('partition', None)
 
         if start_date and end_date and end_date < start_date:
             message = 'start_date must be before end_date.'
@@ -219,6 +224,25 @@ class Command(BaseCommand):
         if allowance_type:
             query_set = query_set.filter(accountid__name__startswith=allowance_type)
 
+        if partition:
+            message = 'Filtering on job partitions may take over a minute...'
+            self.stdout.write(self.style.WARNING(message))
+
+            # further reduce query_set size before splitting partition
+            query_set = query_set.filter(partition__icontains=partition)
+            ids = set()
+
+            for job in query_set.iterator():
+                if partition in job.partition.split(','):
+                    ids.add(job.jobslurmid)
+            query_set = query_set.filter(jobslurmid__in=ids)
+
+        if query_set.count() == 0:
+            message = 'No jobs found that satisfy the passed arguments'
+            raise CommandError(message)
+
+        message = 'Calculating average job queue time...'
+        self.stdout.write(self.style.WARNING(message))
         query_set = query_set.values_list('queue_time', flat=True)
         avg_queue_time = sum(query_set, datetime.timedelta()) / query_set.count()
 
