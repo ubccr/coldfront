@@ -26,18 +26,6 @@ class RequestListItem:
                  'button_path', 'button_text', 'id',
                  'help_text']
 
-    def __init__(self):
-        num = None
-        title = None
-        num_pending = None
-        table = None
-        pending_queryset = None
-        complete_queryset = None
-        button_path = None
-        button_text = None
-        id = None
-        help_text = None
-
 
 class RequestHubView(LoginRequiredMixin,
                      UserPassesTestMixin,
