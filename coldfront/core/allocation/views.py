@@ -212,6 +212,9 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         }
 
         form = AllocationUpdateForm(initial=initial_data)
+        if not self.request.user.is_superuser:
+            form.fields['is_locked'].disabled = True
+            form.fields['is_changeable'].disabled = True
 
         context = self.get_context_data()
         context['form'] = form
