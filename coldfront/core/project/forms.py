@@ -46,6 +46,7 @@ class ProjectSelectForm(forms.Form):
     id = forms.IntegerField(required=False, disabled=True)
     pi = forms.CharField(required=False, disabled=True)
     title = forms.CharField(required=False, disabled=True)
+    description = forms.CharField(required=False, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
 
 

@@ -522,7 +522,8 @@ class ProjectMergeView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             {
                 'id': project.id,
                 'pi': project.pi,
-                'title': project.title
+                'title': project.title,
+                'description': project.description
             }
 
             for project in Project.objects.all()
