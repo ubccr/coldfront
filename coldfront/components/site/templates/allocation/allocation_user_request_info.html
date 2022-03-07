@@ -26,6 +26,14 @@ Allocation User Request Info
           </td>
         </tr>
         <tr>
+          <th scope="row" class="text-nowrap">Requested User:</th>
+          <td>
+            {{ request_info.allocation_user.user.first_name }}
+            {{ request_info.allocation_user.user.last_name }}
+            ({{ request_info.allocation_user.user.username }})
+          </td>
+        </tr>
+        <tr>
           <th scope="row" class="text-nowrap">Status:</th>
           <td>
             {{ request_info.allocation_user.status.name }}
