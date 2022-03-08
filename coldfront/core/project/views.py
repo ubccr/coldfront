@@ -623,7 +623,7 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
 class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Project
     template_name_suffix = '_create_form'
-    fields = ['title', 'description', 'field_of_science', 'type', 'private', ]
+    fields = ['title', 'description', 'slurm_account_name', 'field_of_science', 'type', 'private', ]
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -723,7 +723,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Project
     template_name_suffix = '_update_form'
-    fields = ['title', 'description', 'field_of_science', 'private', ]
+    fields = ['title', 'description', 'slurm_account_name', 'field_of_science', 'private', ]
     success_message = 'Project updated.'
 
     def test_func(self):
@@ -746,6 +746,28 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if not self.object.slurm_account_name == '':
+            self.fields.remove('slurm_account_name')
+
+        return super().get(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        form_data = form.cleaned_data
+        slurm_account_name = form_data.get('slurm_account_name')
+        if len(slurm_account_name) < 3:
+            form.add_error(None, 'Please fix the errors below')
+            form.add_error('slurm_account_name', 'Must have a minimum length of four characters')
+            return self.form_invalid(form)
+
+        if not slurm_account_name.isalpha():
+            form.add_error(None, 'Please fix the errors below')
+            form.add_error('slurm_account_name', 'Must not contain numbers or special characters')
+            return self.form_invalid(form)
+
+        return super().form_valid(form)
 
     def get_success_url(self):
         return reverse('project-detail', kwargs={'pk': self.object.pk})
