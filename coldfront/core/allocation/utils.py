@@ -131,7 +131,7 @@ def get_project_compute_resource_name(project_obj):
             resource_name = 'LAWRENCIUM Compute'
         else:
             # TODO: Verify this behavior.
-            resource_name = project_obj.name
+            resource_name = f'{project_obj.name.upper()} Compute'
         return resource_name
     return ''
 

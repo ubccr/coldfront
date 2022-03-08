@@ -762,9 +762,11 @@ class Command(BaseCommand):
             project_users = ProjectUser.objects.prefetch_related(
                 'status', 'user__userprofile').filter(
                     project=project, status__name='Active')
+            usernames_on_cluster = usernames_by_project_name.get(
+                project.name, {})
             for project_user in project_users:
                 allocation_user_kwargs['has_project_access_on_cluster'] = (
-                    project_user.user.username in usernames_by_project_name)
+                    project_user.user.username in usernames_on_cluster)
                 self.set_up_project_allocation_user(
                     project_user, allocation, **allocation_user_kwargs)
 
@@ -816,9 +818,11 @@ class Command(BaseCommand):
             project_users = ProjectUser.objects.prefetch_related(
                 'status', 'user__userprofile').filter(
                     project=project, status__name='Active')
+            usernames_on_cluster = usernames_by_project_name.get(
+                project.name, {})
             for project_user in project_users:
                 allocation_user_kwargs['has_project_access_on_cluster'] = (
-                    project_user.user.username in usernames_by_project_name)
+                    project_user.user.username in usernames_on_cluster)
                 self.set_up_project_allocation_user(
                     project_user, allocation, **allocation_user_kwargs)
 

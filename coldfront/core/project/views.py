@@ -30,6 +30,7 @@ from coldfront.core.allocation.models import (Allocation,
                                               AllocationUserAttribute,
                                               AllocationUserStatusChoice)
 from coldfront.core.allocation.utils import (get_allocation_user_cluster_access_status,
+                                             get_project_compute_allocation,
                                              prorated_allocation_amount)
 from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user)
@@ -55,7 +56,6 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserRemovalRequest,
                                            ProjectUserRemovalRequestStatusChoice)
 from coldfront.core.project.utils import (add_vector_user_to_designated_savio_project,
-                                          get_project_compute_allocation,
                                           ProjectClusterAccessRequestRunner,
                                           ProjectDenialRunner,
                                           SavioProjectApprovalRunner,
