@@ -989,9 +989,9 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         if project_obj.slurm_account_name:
             value = project_obj.slurm_account_name
             if resource_obj.name == 'Carbonate DL':
-                value = 'dl' + project_obj.slurm_account_name
+                value = 'DL_' + project_obj.slurm_account_name
             elif resource_obj.name == 'Carbonate GPU':
-                value = 'gpu' + project_obj.slurm_account_name
+                value = 'GPU_' + project_obj.slurm_account_name
 
             slurm_account_name_attribute_type = AllocationAttributeType.objects.get(
                 name='slurm_account_name'
