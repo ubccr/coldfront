@@ -79,6 +79,7 @@ Request New Allocation
   var resources_with_accounts = {{ resources_with_accounts | safe }};
   var resources_with_eula = {{ resources_with_eula | safe }};
 
+  var resource_special_attributes = {{ resource_special_attributes | safe }}
   var resource_form = {{ resource_form | safe }}
   var request_user_username = {{ request_user_username | safe }}
 
@@ -88,6 +89,13 @@ Request New Allocation
     $('#id_data_manager').change(function () {
       checkDataManager();
     })
+
+    $('#div_id_resource').after(
+      '<p id="id_slurm_account_name_warning" class="alert alert-block alert-danger">\
+      Your project must have a Slurm account name in order to use this resource. You cannot submit until it has one.\
+      </p>'
+    )
+    $('#id_slurm_account_name_warning').hide();
 
     var resource_label = $('label[for="id_resource"]');
     resource_label.html(
@@ -498,6 +506,24 @@ Request New Allocation
       $('#additional_info_4').hide();
       $('#div_id_license_term').hide();
       $('#div_id_total_cost').hide();
+    }
+
+    $('#id_slurm_account_name_warning').hide();
+    $('#submit-id-submit').prop('disabled', false)
+    for (let i = 0; i < resource_special_attributes.length; i++) {
+      const attribute = resource_special_attributes[i];
+      const keys = Object.keys(attribute);
+      const attribute_key = keys[0];
+      const check_key = keys[1];
+      const attribute_value = attribute[attribute_key];
+      const check_value = attribute[check_key];
+
+      if (attribute_key === 'requires_slurm_account_name' && attribute_value[resource_id] === 'Yes') {
+        if (check_value[resource_id] === 'No') {
+          $('#id_slurm_account_name_warning').show();
+          $('#submit-id-submit').prop('disabled', true);
+        }
+      }
     }
 
     for (let i = 0; i < resource_form.length; i++) {

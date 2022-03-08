@@ -701,10 +701,28 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             },
         ]
 
-        resource_descriptions = {}
+        resource_special_attributes = [
+            {
+                'requires_slurm_account_name': {},
+                'has_requirement': {},
+            }
+        ]
 
+        resource_descriptions = {}
         for resource in user_resources:
             resource_descriptions[resource.id] = resource.description
+
+            for attribute in resource_special_attributes:
+                keys = list(attribute.keys())
+                field = keys[0]
+                check = keys[1]
+                if resource.resourceattribute_set.filter(resource_attribute_type__name=field).exists():
+                    value = resource.resourceattribute_set.get(resource_attribute_type__name=field).value
+                    attribute[field][resource.id] = value
+                    if project_obj.slurm_account_name != '':
+                        attribute[check][resource.id] = 'Yes'
+                    else:
+                        attribute[check][resource.id] = 'No'
 
             for field_set in resource_form:
                 keys = list(field_set.keys())
@@ -759,6 +777,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                         ).value
                         field_set[field][resource.id] = value
 
+        context['resource_special_attributes'] = resource_special_attributes
         context['resource_form'] = resource_form
 
         resources_with_eula = {}
@@ -834,6 +853,12 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         data_manager = form_data.get('data_manager')
         allocation_account = form_data.get('allocation_account', None)
         license_term = form_data.get('license_term', None)
+
+        if resource_obj.resourceattribute_set.filter(resource_attribute_type__name='requires_slurm_account_name').exists():
+            value = resource_obj.resourceattribute_set.get(resource_attribute_type__name='requires_slurm_account_name').value
+            if value == 'Yes' and project_obj.slurm_account_name == '':
+                form.add_error(None, 'Project must have a Slurm account name for this resource.')
+                return self.form_invalid(form)
 
         total_cost = None
         cost = resource_obj.get_attribute('cost')
@@ -971,6 +996,22 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             status=allocation_status_obj
         )
         allocation_obj.resources.add(resource_obj)
+
+        if project_obj.slurm_account_name:
+            value = project_obj.slurm_account_name
+            if resource_obj.name == 'Carbonate DL':
+                value = 'DL_' + project_obj.slurm_account_name
+            elif resource_obj.name == 'Carbonate GPU':
+                value = 'GPU_' + project_obj.slurm_account_name
+
+            slurm_account_name_attribute_type = AllocationAttributeType.objects.get(
+                name='slurm_account_name'
+            )
+            AllocationAttribute.objects.create(
+                allocation_attribute_type=slurm_account_name_attribute_type,
+                allocation=allocation_obj,
+                value=value
+            )
 
         if ALLOCATION_ACCOUNT_ENABLED and allocation_account and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING:
 
