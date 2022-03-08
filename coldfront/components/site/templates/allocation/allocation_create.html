@@ -518,7 +518,7 @@ Request New Allocation
       const attribute_value = attribute[attribute_key];
       const check_value = attribute[check_key];
 
-      if (attribute_key === 'requires_slurm_account_name' && attribute_value[resource_id] === 'Yes') {
+      if (attribute_key === 'slurm_cluster') {
         if (check_value[resource_id] === 'No') {
           $('#id_slurm_account_name_warning').show();
           $('#submit-id-submit').prop('disabled', true);

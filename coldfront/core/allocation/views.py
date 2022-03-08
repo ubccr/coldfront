@@ -703,7 +703,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         resource_special_attributes = [
             {
-                'requires_slurm_account_name': {},
+                'slurm_cluster': {},
                 'has_requirement': {},
             }
         ]
@@ -854,9 +854,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         allocation_account = form_data.get('allocation_account', None)
         license_term = form_data.get('license_term', None)
 
-        if resource_obj.resourceattribute_set.filter(resource_attribute_type__name='requires_slurm_account_name').exists():
-            value = resource_obj.resourceattribute_set.get(resource_attribute_type__name='requires_slurm_account_name').value
-            if value == 'Yes' and project_obj.slurm_account_name == '':
+        if resource_obj.resourceattribute_set.filter(resource_attribute_type__name='slurm_cluster').exists():
+            if project_obj.slurm_account_name == '':
                 form.add_error(None, 'Project must have a Slurm account name for this resource.')
                 return self.form_invalid(form)
 
@@ -997,21 +996,22 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         )
         allocation_obj.resources.add(resource_obj)
 
-        if project_obj.slurm_account_name:
-            value = project_obj.slurm_account_name
-            if resource_obj.name == 'Carbonate DL':
-                value = 'DL_' + project_obj.slurm_account_name
-            elif resource_obj.name == 'Carbonate GPU':
-                value = 'GPU_' + project_obj.slurm_account_name
+        if resource_obj.resourceattribute_set.filter(resource_attribute_type__name='slurm_cluster').exists():
+            if project_obj.slurm_account_name:
+                value = project_obj.slurm_account_name
+                if resource_obj.name == 'Carbonate DL':
+                    value = 'DL_' + project_obj.slurm_account_name
+                elif resource_obj.name == 'Carbonate GPU':
+                    value = 'GPU_' + project_obj.slurm_account_name
 
-            slurm_account_name_attribute_type = AllocationAttributeType.objects.get(
-                name='slurm_account_name'
-            )
-            AllocationAttribute.objects.create(
-                allocation_attribute_type=slurm_account_name_attribute_type,
-                allocation=allocation_obj,
-                value=value
-            )
+                slurm_account_name_attribute_type = AllocationAttributeType.objects.get(
+                    name='slurm_account_name'
+                )
+                AllocationAttribute.objects.create(
+                    allocation_attribute_type=slurm_account_name_attribute_type,
+                    allocation=allocation_obj,
+                    value=value
+                )
 
         if ALLOCATION_ACCOUNT_ENABLED and allocation_account and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING:
 
