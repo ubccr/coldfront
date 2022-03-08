@@ -1,0 +1,10 @@
+Hello,
+
+User {{ user }} has been added to allocation {{ allocation }} in project {{ project }}.
+Allocation URL:
+{{ url }}
+
+This is an unmonitored email, replies to this email will not be seen.
+
+Thank you
+{{ signature }}

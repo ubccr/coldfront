@@ -22,6 +22,15 @@ ALLOCATION_FUNCS_ON_EXPIRE = import_from_settings(
 SLURM_ACCOUNT_ATTRIBUTE_NAME = import_from_settings(
     'SLURM_ACCOUNT_ATTRIBUTE_NAME', 'slurm_account_name')
 
+EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
+if EMAIL_ENABLED:
+    EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
+    EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings(
+        'EMAIL_TICKET_SYSTEM_ADDRESS')
+    EMAIL_OPT_OUT_INSTRUCTION_URL = import_from_settings(
+        'EMAIL_OPT_OUT_INSTRUCTION_URL')
+    EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
+    EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
 
 class AllocationStatusChoice(TimeStampedModel):
     name = models.CharField(max_length=64)
@@ -144,6 +153,7 @@ class Allocation(TimeStampedModel):
         blank=True,
         null=True
     )
+    data_manager = models.CharField(max_length=50, blank=True, null=True)
     justification = models.TextField()
     description = models.CharField(max_length=512, blank=True, null=True)
     is_locked = models.BooleanField(default=False)
@@ -275,6 +285,31 @@ class Allocation(TimeStampedModel):
             return True
 
         return self.get_parent_resource.check_user_account_exists(username, resource)
+
+    def create_user_request(self, requestor_user, allocation_user, allocation_user_status):
+        """
+        Check if the allocation's resource has the 'requires_user_request' attribute set to
+        'Yes'. If it is then create a new AllocationUserRequest.
+
+        :param request_user: User who requested the change. User object required.
+        :param allocation_user: User who had the requested change. AllocationUser object required.
+        :param allocation_user_status: Type of requested change. AllocationUserStatusChoice object
+        required.
+        :returns: A new AllocationUserRequest object or None if the 'requires_user_request' resource
+        attribute is not 'Yes'.
+        """
+        requires_user_request = self.get_parent_resource.get_attribute('requires_user_request')
+        if requires_user_request is not None and requires_user_request == 'Yes':
+            allocation_user_request_obj = AllocationUserRequest.objects.create(
+                requestor_user=requestor_user,
+                allocation_user=allocation_user,
+                allocation_user_status=allocation_user_status,
+                status=AllocationUserRequestStatusChoice.objects.get(name='Pending')
+            )
+
+            return allocation_user_request_obj
+
+        return None
 
     def __str__(self):
         return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
@@ -414,3 +449,24 @@ class AllocationAccount(TimeStampedModel):
 
     class Meta:
         ordering = ['name', ]
+
+
+class AllocationUserRequestStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]
+
+
+class AllocationUserRequest(TimeStampedModel):
+    requestor_user = models.ForeignKey(User, on_delete=models.CASCADE)
+    allocation_user = models.ForeignKey(AllocationUser, on_delete=models.CASCADE)
+    allocation_user_status = models.ForeignKey(AllocationUserStatusChoice, on_delete=models.CASCADE)
+    status = models.ForeignKey(AllocationUserRequestStatusChoice, on_delete=models.CASCADE)
+    history = HistoricalRecords()
+
+    def __str__(self):
+        return '{} ({})'.format(self.allocation_user.user.username, self.allocation_user_status)

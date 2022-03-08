@@ -1,14 +1,20 @@
 from datetime import datetime
 import logging
 
+from django.conf import settings
 from django.contrib.auth.models import Group, User
 from django.core.exceptions import ValidationError
 from django.db import models
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
-from django.utils.module_loading import import_string
+from coldfront.core.utils.common import import_from_settings
 
 logger = logging.getLogger(__name__)
+
+RESOURCE_ENABLE_ACCOUNT_CHECKING = import_from_settings(
+    'RESOURCE_ENABLE_ACCOUNT_CHECKING', True
+)
+
 
 class AttributeType(TimeStampedModel):
     name = models.CharField(max_length=128, unique=True)
@@ -77,7 +83,7 @@ class Resource(TimeStampedModel):
         self.resource_accounts = {
             'Carbonate': 'CN=iu-entlmt-app-rt-carbonate-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu',
             'BigRed3': 'CN=iu-entlmt-app-rt-bigred3-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu',
-            'Slate Project': 'CN=iu-entlmt-app-rt-slateproj-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu',
+            'Slate-Project': 'CN=iu-entlmt-app-rt-slateproj-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu',
         }
 
     def get_missing_resource_attributes(self, required=False):
@@ -123,6 +129,15 @@ class Resource(TimeStampedModel):
         return None
 
     def check_user_account_exists(self, username, resource):
+        if not RESOURCE_ENABLE_ACCOUNT_CHECKING:
+            return True
+
+        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+            from coldfront.plugins.ldap_user_info.utils import get_user_info
+            attributes = get_user_info(username, ['memberOf'])
+        else:
+            return True
+
         resource_acc = self.resource_accounts.get(resource)
 
         if resource_acc is None:
@@ -132,9 +147,6 @@ class Resource(TimeStampedModel):
             )
             return True
 
-        ldap_search = import_string('coldfront.plugins.ldap_user_search.utils.LDAPSearch')
-        search_class_obj = ldap_search()
-        attributes = search_class_obj.search_a_user(username, ['memberOf'])
         if attributes['memberOf'] is not None and resource_acc in attributes['memberOf']:
             return True
 

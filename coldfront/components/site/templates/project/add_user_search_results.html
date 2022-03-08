@@ -1,6 +1,6 @@
 {% load crispy_forms_tags %}
 
-<form action="{% url 'project-add-users' pk %}" method="post">
+<form action="{% url 'project-add-users' pk %}" method="post" id="postForm">
   {% csrf_token %}
   <div class="mb-3">
     {% if number_of_usernames_found %}
@@ -26,8 +26,36 @@
     <div class="card bg-light mb-3 {{div_allocation_class}}">
       <div class="card-header">Available Allocations</div>
       <div class="card-body">
-        {{allocation_form|crispy}}
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th><input type="checkbox" class="check" id="selectAllAllocations"></th>
+                <th scope="col">#</th>
+                <th scope="col">Resource</th>
+                <th scope="col">Resource Type</th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for form in allocation_form %}
+                <tr>
+                  <td>{{ form.selected }}</td>
+                  <td><a href="{% url 'allocation-detail' form.pk.value %}" target="_blank">{{ form.pk.value }}</a></td>
+                  <td>{{ form.resource.value }}</td>
+                  <td>{{ form.resource_type.value }}</td>
+                  <td>{{ form.status.value }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>      
       </div>
+      <div class="card-footer">
+        <i class="fa fa-info-circle" aria-hidden="true"></i>
+        {{ help_text }}
+      </div>
+      {{ allocation_form.management_form }}
     </div>
 
     <div class="table-responsive">
@@ -58,6 +86,9 @@
         </tbody>
       </table>
     </div>
+    <div>
+      <p id="id_manager_warning" class="alert alert-danger">You have too many managers selected. The max allowed managers on this project is {{ max_managers }}.</p>
+    </div>
     {{ formset.management_form }}
 
     <input id="q" type="hidden" name="q" value="{{user_search_string}}">
@@ -65,10 +96,7 @@
     <input id="after_project_creation" type="hidden" name="after_project_creation" value="{{after_project_creation}}">
     <div class="mb-3">
       {% if matches %}
-        <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Selected Users to Project</button>
-      {% endif %}
-      {% if after_project_creation == 'false' %}
-        <a class="btn btn-secondary" href="{% url 'project-detail' pk %}" role="button">Back to Project</a><br>  
+        <button id="id_add_selected_users" type="submit" class="btn btn-primary"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Selected Users to Project</button>
       {% endif %}
     </div>
   {% else %}
@@ -79,8 +107,56 @@
 </form>
 
 <script>
+  var current_num_managers = {{ current_num_managers | safe}}
+  var max_managers = {{ max_managers | safe }}
+  var matches = {{ matches | length | safe }};
+
+  function checkNumManagers() {
+    var checked_users = $("input[name^='userform-']:checked");
+    var num_managers = 0;
+    for (var i=0; i < checked_users.length; i++) {
+      var name = checked_users[i].name.slice(0, -8) + 'role';
+      var role = $("select[name='" + name + "'] option:selected").text();
+      if (role === "Manager") {
+        num_managers += 1;
+      }
+    }
+
+    if (num_managers + current_num_managers > max_managers) {
+      $("#id_add_selected_users").prop('disabled', true);
+      $("#id_manager_warning").show()
+    } else {
+      $("#id_add_selected_users").prop('disabled', false);
+      $("#id_manager_warning").hide()
+    }
+  }
+
+  $('document').ready(function () {
+    //$("select option[value*='3']").prop('disabled', true)
+    for (var i = 0; i < matches; i++) {
+      if ($("#id_userform-" + i + "-role option:selected").text() == 'Group') {
+        $("#id_userform-" + i + "-role option:not(:selected)").prop('disabled', true);
+      }
+      else {
+        var options = $("#id_userform-" + i + "-role option");
+        for (let i = 0; i < options.length; i++) {
+          if (options[i].text == 'Group') {
+            options[i].disabled = true;
+          }
+        }
+      }
+    }
+
+    $('#id_manager_warning').hide()
+  })
+
+  $("select[name^='userform-']").change(function() {
+    checkNumManagers();
+  });
+
   $("#selectAll").click(function () {
     $("input[name^='userform-']").prop('checked', $(this).prop('checked'));
+    checkNumManagers();
   });
 
   $("input[name^='userform-']").click(function (ele) {
@@ -88,16 +164,17 @@
     if ( id != "selectAll") {
       $("#selectAll").prop('checked', false);
     }
+    checkNumManagers();
   });
 
-  $("#id_allocationform-allocation_1").click(function () {
-    $("input[name^='allocationform-']").prop('checked', $(this).prop('checked'));
+  $("#selectAllAllocations").click(function () {
+    $("input[name^='allocationform-']").not(":disabled").prop('checked', $(this).prop('checked'));
   });
 
   $("input[name^='allocationform-']").click(function (ele) {
     var id = $(this).attr('id');
-    if ( id != "id_allocationform-allocation_1") {
-      $("#id_allocationform-allocation_1").prop('checked', false);
+    if ( id != "selectAllAllocations") {
+      $("#selectAllAllocations").prop('checked', false);
     }
   });
 </script>
