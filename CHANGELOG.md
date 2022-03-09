@@ -1,6 +1,6 @@
 # ColdFront Changelog
 
-## [1.1.0] - 2022-02-08
+## [1.1.0] - 2022-03-09
 
 - Add a checkbox to 'select all' users on the project to enable/disable notifications [#291](https://github.com/ubccr/coldfront/issues/291)
 - Archived grant not viewable by PI [#259](https://github.com/ubccr/coldfront/issues/259)
@@ -22,6 +22,11 @@
 - LDAP user search plugin: Add ldap connect timeout config option [#351](https://github.com/ubccr/coldfront/pull/351)
 - Upgrade to Django v3.2 [#295](https://github.com/ubccr/coldfront/issues/295)
 - Fix error on duplicate publication entry [#369](https://github.com/ubccr/coldfront/issues/369)
+- Add resource list page [#323](https://github.com/ubccr/coldfront/issues/322)
+- Add resource detail page [#320](https://github.com/ubccr/coldfront/issues/320)
+- Fix adding publications with large number of authors [#283](https://github.com/ubccr/coldfront/issues/283)
+- Allow allocation users to see allocations of all statuses [#292](https://github.com/ubccr/coldfront/issues/292)
+- Show allocations for both Active and New projects [#365](https://github.com/ubccr/coldfront/pull/365)
 
 ## [1.0.4] - 2021-03-25
 
