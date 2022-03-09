@@ -25,7 +25,7 @@ Allocation Invoice List
       <tbody>
         {% for allocation in allocation_list %}
           <tr>
-            <td><a target="_blank" href="{% url 'allocation-invoice-detail' allocation.pk %}">{{allocation.pk}}</td>
+            <td><a href="{% url 'allocation-invoice-detail' allocation.pk %}">{{allocation.pk}}</td>
             <td>{{allocation.get_resources_as_string}}</td>
             <td>{{allocation.status}}</td>
             <td>{{allocation.project.pi.username }}</td>
