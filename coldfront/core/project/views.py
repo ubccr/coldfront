@@ -18,7 +18,7 @@ from django.core import serializers
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.forms import formset_factory
-from django.http import (HttpResponse, HttpResponseForbidden,
+from django.http import (HttpRequest, HttpResponse, HttpResponseForbidden,
                          HttpResponseRedirect, JsonResponse)
 from django.forms.models import model_to_dict
 from django.shortcuts import get_object_or_404, redirect, render
@@ -486,19 +486,21 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
     def get_success_url(self):
         return reverse('project-detail', kwargs={'pk': self.object.pk})
 
-def _assign_current_user(self, project_obj: Project):
-    '''
-    Assigns the current user to the project_obj
 
-    :param self: The self, called from Post
+def assign_user(user: User, project_obj: Project):
+    '''
+    Assigns the specified user to the project_obj
+
+    :param user: The user to assign
     :param project_obj: The project object to add the user into
     '''
-    project_user_obj = ProjectUser.objects.create(
-        user=self.request.user,
+    ProjectUser.objects.create(
+        user=user,
         project=project_obj,
         role=ProjectUserRoleChoice.objects.get(name='Manager'),
         status=ProjectUserStatusChoice.objects.get(name='Active')
     )
+
 
 class ProjectMergeView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     model = Project
@@ -556,7 +558,7 @@ class ProjectMergeView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             for form in formset:
                 proj_form_data = form
                 if proj_form_data['selected'].data:
-                    proj = Project.objects.get(
+                    proj: Project = Project.objects.get(
                         id = proj_form_data.initial['id']
                     )
                     proj_ids.append(proj_form_data.initial['id'])
@@ -570,7 +572,6 @@ class ProjectMergeView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 title = request.POST['title'],
                 description = request.POST['description'],
             )
-            # Title+descript on new page
 
             # Grants
             _combine_objects(proj_ids, merged_proj.id, Grant.objects)
@@ -579,7 +580,14 @@ class ProjectMergeView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             _combine_objects(proj_ids, merged_proj.id, Publication.objects)
 
             # User
-            # _combine_objects(proj_ids, merged_proj.id, User.objects)
+            for proj in projs_to_merge:
+                # Exclude the current user as they will be added later.
+                # This ensures that at least one user has access to the old projects,
+                # if that matters at all.
+                # NOTE: untested
+                ProjectUser.objects.filter(project_id=proj.id)\
+                    .exclude(user_id=self.request.user.id)\
+                    .update(project_id=merged_proj.id)
 
             # Allocations
             old_resource_links: dict = Allocation.objects.filter(project_id__in = proj_ids).values('resources')
@@ -590,9 +598,11 @@ class ProjectMergeView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             # being changed in merge, resources should remain attached to each allocation.
             # THIS WILL NOT BE THE CASE IF WE DECIDE TO KEEP THE OLD ALLOCATIONS, as the
             # new allocations will change IDs.
+            # Also, the code here doesn't work.
             # _combine_objects(proj_ids, merged_proj.id, Resource.objects)
 
-            _assign_current_user(self, merged_proj)
+            # Assign current user
+            assign_user(self.request.user, merged_proj)
 
             # Archive all old projects when done. Remove this for loop if you want to
             # keep them.
@@ -680,9 +690,10 @@ class ProjectImportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             # The original project ID. The actual project ID will be changed.
             orig_proj_id = 0
 
-            # Keys are original resource PK, values are the new ones
+            # Keys are original PK, values are the new ones
             resource_trans_nums = {}
             resource_trans_vals = {}
+            user_trans = {}
 
             for member in grouped_data:
                 # data_obj has the complete data of the Django model
@@ -699,51 +710,68 @@ class ProjectImportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                         obj.save()
 
                         # Assign current user.
-                        _assign_current_user(self, project_obj)
-
+                        assign_user(self.request.user, project_obj)
                         continue
+                    elif (type(obj.object) == ProjectUser):
+                        # Assumes that all necessary user objects have been created.
+                        print(obj.object)
+
+                        if obj.object.user_id not in user_trans.keys():
+                            # This user already likely exists within the project.
+                            continue
+                        else:
+                            # Assign new project id and user id.
+                            obj.object.project_id = project_obj.pk
+                            obj.object.user_id = user_trans[obj.object.user_id]
+
+                            # We still need to assign a new pk to this object, so go through rest of the
+                            # logic (do not put continue here).
                     
                     orig_pk = obj.object.pk
-
-                    max_pk = 0
-
-                    abort_obj_import = False
+                    new_pk = 0          # Will be one more than the maximum PK of every other object.
+                    abort_import = False
 
                     # Pass through all objects of this type
                     for cur_obj in (type(obj.object)).objects.all():
                         # Put comparison logic here
                         if _same_obj_exists(cur_obj, obj.object):
-                            abort_obj_import = True
+                            abort_import = True
                             break
 
-                        if cur_obj.pk > max_pk:
-                            max_pk = cur_obj.pk
+                        if cur_obj.pk > new_pk:
+                            # Find max PK
+                            new_pk = cur_obj.pk
 
-                    if abort_obj_import:
+                    if abort_import:
                         continue    # Another same object exists. Abort operation.
 
                     try:
+                        # Once allocations and resources have been fully implemeneted, remove this if statement.
+                        # The body will exist on its own.
                         if obj.object.project_id == orig_proj_id:
                             obj.object.project_id = int(project_obj.pk)
                     except AttributeError:
                         pass    # Not all objects have the project id
 
                     # TESTING
-                    try:
-                        obj.object.resources.add(resource_trans_vals[1])
-                    except AttributeError:
-                        pass
-                    except KeyError:
-                        pass
+                    # try:
+                    #     obj.object.resources.add(resource_trans_vals[1])
+                    # except AttributeError:
+                    #     pass
+                    # except KeyError:
+                    #     pass
                             
-                    max_pk += 1
+                    new_pk += 1
 
-                    obj.object.pk = max_pk
+                    obj.object.pk = new_pk
 
                     if (type(obj.object) == Resource):
                         # Create new entry in translation
-                        resource_trans_nums[orig_pk] = max_pk
+                        resource_trans_nums[orig_pk] = new_pk
                         resource_trans_vals[orig_pk] = obj.object
+                    elif (type(obj.object) == User):
+                        # Create new entry in translation
+                        user_trans[orig_pk] = new_pk5
 
                     obj.save()
 
@@ -779,17 +807,24 @@ class ProjectExportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             return True
 
     def dispatch(self, request: http.HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
-        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        p_id = self.kwargs.get('pk')
+        project_obj = get_object_or_404(Project, pk=p_id)
         if project_obj.status.name not in ['Active', 'New', ]:
             messages.error(
                 request, 'You cannot export an archived project.')
-            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': p_id}))
         else:
+            proj_users = ProjectUser.objects.filter(project_id=p_id)
+            user_ids = [p_user.user_id for p_user in proj_users]
+
             serialize_data = [
-                fix_serialize_data(Project.objects.filter(pk__exact=self.kwargs.get('pk'))),    # Get current project
-                fix_serialize_data(User.objects.all()),
-                fix_serialize_data(Publication.objects.all()),
-                fix_serialize_data(Grant.objects.all()),
+                fix_serialize_data(Project.objects.filter(pk__exact=p_id)),    # Get current project
+                fix_serialize_data(User.objects.filter(pk__in=user_ids)),
+                fix_serialize_data(proj_users),
+                fix_serialize_data(Publication.objects.filter(project_id=p_id)),
+                fix_serialize_data(Grant.objects.filter(project_id=p_id)),
+
+                # Need to filter resources and allocations
                 fix_serialize_data(Resource.objects.all()),
                 fix_serialize_data(Allocation.objects.all())
             ]
