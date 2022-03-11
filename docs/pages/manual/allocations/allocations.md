@@ -47,7 +47,7 @@ ColdFront has a set of allocation attributes that tie into plugins.  You can add
 
 ![Allocation Attributes](../../images/allocationattributes.PNG)  
 
-![Allocation Attribute Types](../../images/attributetypes.PNG)    
+![New Allocation Attribute](../../images/attributetypes.PNG)   
 
 Click the 'Add Allocation Attribute Type' to create a new one.  Enter a name and select the type of attribute from: Date, Float, Int, Text, Yes/No
 
