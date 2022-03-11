@@ -1,22 +1,27 @@
 import datetime
+import itertools
 from multiprocessing.managers import BaseManager
 import pprint
 import json
+import re
 from re import template
 from sys import prefix
-from typing import Any, List, Optional
+from typing import Any, Iterable, List, Optional
+from attr import field
 from django import http
+import django
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import user_passes_test, login_required
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
+from django.db import IntegrityError
 from coldfront.core.utils.common import import_from_settings
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core import serializers
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from django.forms import formset_factory
 from django.http import (HttpRequest, HttpResponse, HttpResponseForbidden,
                          HttpResponseRedirect, JsonResponse)
@@ -29,9 +34,9 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 
-from coldfront.core.allocation.models import (Allocation,
+from coldfront.core.allocation.models import (Allocation, AllocationAdminNote, AllocationAttribute, AllocationAttributeChangeRequest, AllocationChangeRequest,
                                               AllocationStatusChoice,
-                                              AllocationUser,
+                                              AllocationUser, AllocationUserNote,
                                               AllocationUserStatusChoice)
 from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user)
@@ -670,7 +675,6 @@ class ProjectImportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         form = ProjectImportForm(request.POST, request.FILES)
 
-        # print(form.is_valid())
         if form.is_valid():
             file = request.FILES['file_upload']
             file_content = file.read()
@@ -682,99 +686,281 @@ class ProjectImportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 grouped_data = json.loads(file_content)
             except json.JSONDecodeError:
                 # Error w/ json decoding
-                messages.info(request, "JSON Decode Error: The project file you have selected is corrupted " + 
+                messages.error(request, "JSON Decode Error: The project file you have selected is corrupted " + 
                     "or is in a format ColdFront does not recognise.")
                 return HttpResponseRedirect(reverse('project-list'))
-            
-            
-            # The original project ID. The actual project ID will be changed.
-            orig_proj_id = 0
+            except UnicodeDecodeError:
+                # Thing uploaded in not in text form
+                messages.error(request, "Unicode Decode Error: Please upload a JSON document.")
+                return HttpResponseRedirect(reverse('project-list'))
 
-            # Keys are original PK, values are the new ones
-            resource_trans_nums = {}
-            resource_trans_vals = {}
-            user_trans = {}
+            # Delete file_content. May or may not improve memory usage on large
+            # projects.
+            del file_content
 
+            # Contains the translations between the imported pks and the
+            # assigned ones.
+            # Structure is as follows:
+            # {
+            #   "project.project" : { imported_pk:assigned_pk, imported_pk:assigned_pk, ... }
+            #   ...
+            # }
+            pk_translation_table = {}
+
+            # Deserialized object dictionary
+            do_dict = {}
+
+            # Step 1: Gather all deserialized objects into a dictionary
             for member in grouped_data:
                 # data_obj has the complete data of the Django model
-                data_obj = serializers.deserialize('json', member)  # TODO: Do something with this object
+                data_obj = serializers.deserialize('json', member)
 
-                for obj in data_obj:
-                    # obj is deserialized and can now be saved.
-                    # Create a new project type
-                    if (type(obj.object) == Project):
-                        project_obj: Project = obj.object
-                        orig_proj_id = int(project_obj.pk)
-                        project_obj.pk = None
-                        
-                        obj.save()
+                name = re.search("(?<=\"model\": \").+?(?=\")", member)
 
-                        # Assign current user.
-                        assign_user(self.request.user, project_obj)
-                        continue
-                    elif (type(obj.object) == ProjectUser):
-                        # Assumes that all necessary user objects have been created.
-                        print(obj.object)
+                if name is not None:
+                    do_dict[name[0]] = []
 
-                        if obj.object.user_id not in user_trans.keys():
-                            # This user already likely exists within the project.
-                            continue
-                        else:
-                            # Assign new project id and user id.
-                            obj.object.project_id = project_obj.pk
-                            obj.object.user_id = user_trans[obj.object.user_id]
+                    for obj in data_obj:
+                        do_dict[name[0]].append(obj)
 
-                            # We still need to assign a new pk to this object, so go through rest of the
-                            # logic (do not put continue here).
-                    
-                    orig_pk = obj.object.pk
-                    new_pk = 0          # Will be one more than the maximum PK of every other object.
-                    abort_import = False
+            # Contains list of models that will be ignored by _same_obj_exists
+            duplicate_model_keys = {"project.projectuser", "allocation.allocationuser"}
+
+            # Step 2: Assign unique pks. Build PK translation table at the same time.
+            for key in do_dict:
+                new_pk = 0
+
+                pk_translation_table[key] = {}
+                
+                for obj in do_dict[key]:
+                    abort_import: bool = False
 
                     # Pass through all objects of this type
                     for cur_obj in (type(obj.object)).objects.all():
-                        # Put comparison logic here
-                        if _same_obj_exists(cur_obj, obj.object):
+                        # If key IS in duplicate_model_keys, then always import.
+                        if key not in duplicate_model_keys and _same_obj_exists(cur_obj, obj.object):
                             abort_import = True
-                            break
+                            pk_translation_table[key][obj.object.pk] = cur_obj.pk
+                            continue
 
                         if cur_obj.pk > new_pk:
                             # Find max PK
                             new_pk = cur_obj.pk
 
                     if abort_import:
-                        continue    # Another same object exists. Abort operation.
-
-                    try:
-                        # Once allocations and resources have been fully implemeneted, remove this if statement.
-                        # The body will exist on its own.
-                        if obj.object.project_id == orig_proj_id:
-                            obj.object.project_id = int(project_obj.pk)
-                    except AttributeError:
-                        pass    # Not all objects have the project id
-
-                    # TESTING
-                    # try:
-                    #     obj.object.resources.add(resource_trans_vals[1])
-                    # except AttributeError:
-                    #     pass
-                    # except KeyError:
-                    #     pass
-                            
+                        continue
+                    
                     new_pk += 1
 
+                    pk_translation_table[key][obj.object.pk] = new_pk
                     obj.object.pk = new_pk
+            
+            # Translation table for Many to Many relationships of the same type of object.
+            # Registration table for m2m.
+            do_regist_tbl = {}
 
-                    if (type(obj.object) == Resource):
-                        # Create new entry in translation
-                        resource_trans_nums[orig_pk] = new_pk
-                        resource_trans_vals[orig_pk] = obj.object
-                    elif (type(obj.object) == User):
-                        # Create new entry in translation
-                        user_trans[orig_pk] = new_pk5
+            # * NOTE: IF ANY FIELDS ARE LATER ADDED, THEY HAVE TO BE
+            # * MANUALLY ADDED HERE IN ORDER FOR IT TO IMPORT CORRECTLY.
+            # Step 3: Match fields. This has to be done manually.
+            def _update_field(to_name: str, from_name: str, field_name: str, trans_tbl: dict):
+                """
+                Updates the ForeignKey fields of all deserialized objects whose model
+                is to_name and whose field name is field_name.
 
-                    obj.save()
+                :param to_name: str: Name of deserialized object to update.
+                :param from_name: str: Name of deserialized object to get PKs from.
+                :param field_name: str: Name of the field to update.
+                :param trans_tbl: dict: The pk translation table with old pks as keys and new
+                pks as values.
+                """
+                if to_name not in do_dict:
+                    # The requested field has not been placed in trans_tbl
+                    # due to it not existing.
+                    return
+                
+                for des_obj in do_dict[to_name]:
+                    index = getattr(des_obj.object, field_name)
+                    setattr(des_obj.object, field_name, trans_tbl[from_name][index])
 
+            def _batch_update_field(to_names: Iterable, from_name: str, field_name: str, trans_tbl: dict):
+                """
+                Batch updates the ForeignKey fields of all deserialized objects whose model
+                is in to_names and whose field name is field_name.
+
+                :param to_names: Iterable[str]: Iterable of names of deserialized objects to update.
+                :param from_name: str: Name of deserialized object to get PKs from.
+                :param field_name: str: Name of the field to update.
+                :param trans_tbl: dict: The pk translation table with old pks as keys and new
+                pks as values.
+                """
+                for to_name in to_names:
+                    _update_field(to_name, from_name, field_name, trans_tbl)
+
+            def _update_m2m(to_name: str, from_name: str, m2m_name: str, trans_tbl: dict):
+                """
+                Updates the m2m fields of all the deserialized objects whose model
+                is to_name and whose m2m name is m2m_name.
+
+                :param to_name: str: Name of deserialized object to update.
+                :param from_name: str: Name of deserialized object to get PKs from.
+                :param m2m_name: str: Name of the m2m_data field to update.
+                :param trans_tbl: dict: The pk translation table with old pks as keys and new
+                pks as values.
+                """
+                if to_name not in do_dict:
+                    # The requested m2m has not been placed in do_dict
+                    # due to it not existing.
+                    return
+                
+                for des_obj in do_dict[to_name]:
+                    trans = [trans_tbl[from_name][ln] for ln in des_obj.m2m_data[m2m_name]]
+                    des_obj.m2m_data[m2m_name] = trans
+            
+            def _register_m2m(to_name: str, from_name: str, m2m_name: str, regist_tbl: dict, trans_tbl: dict):
+                """
+                Updates the registration_table with all deserialized object whose model is
+                to_name and whose m2m name is m2m_name. This should be only called if saving
+                said model could cause an exception because of missing m2m members. Also removes
+                said m2m fields from the deserialized object so that it can be saved without error.
+                You will need to add the m2m after all objects of that type has been saved.
+
+                :param to_name: str: Name of deserialized object to update.
+                :param from_name: str: Name of deserialized object to get PKs from.
+                :param m2m_name: str: Name of the m2m_data field to update.
+                :param regist_tbl: dict: Dictionary to put all the m2m stuff.
+                :param trans_tbl: dict: The pk translation table with old pks as keys and new
+                pks as values.
+                """
+                if to_name not in do_dict:
+                    # The requested m2m has not been placed in do_dict
+                    # due to it not existing.
+                    return
+
+                if from_name not in regist_tbl:
+                    regist_tbl[from_name] = {}
+
+                if m2m_name not in regist_tbl[from_name]:
+                    regist_tbl[from_name][m2m_name] = {}
+
+                for des_obj in do_dict[to_name]:
+                    trans = [trans_tbl[from_name][ln] for ln in des_obj.m2m_data[m2m_name]]
+                    regist_tbl[from_name][m2m_name][des_obj.object.pk] = trans
+                    des_obj.m2m_data[m2m_name] = []
+            
+            def _register_field(to_name: str, from_name: str, field_name: str, regist_tbl: dict, trans_tbl: dict):
+                """
+                Updates the registration_table with all deserialized object whose model is
+                to_name and whose field name is field_name. This should be only called if saving
+                said model could cause an exception because of missing field members. Also removes
+                said field fields from the deserialized object so that it can be saved without error.
+                You will need to add the field after all objects of that type has been saved.
+
+                :param to_name: str: Name of deserialized object to update.
+                :param from_name: str: Name of deserialized object to get PKs from.
+                :param field_name: str: Name of the field_data field to update.
+                :param regist_tbl: dict: Dictionary to put all the field stuff.
+                :param trans_tbl: dict: The pk translation table with old pks as keys and new
+                pks as values.
+                """
+                if to_name not in do_dict:
+                    # The requested object has not been placed in do_dict
+                    # due to it not existing.
+                    return
+
+                if from_name not in regist_tbl:
+                    regist_tbl[from_name] = {}
+
+                if field_name not in regist_tbl[from_name]:
+                    regist_tbl[from_name][field_name] = {}
+
+                for des_obj in do_dict[to_name]:
+                    trans = getattr(des_obj.object, field_name)
+                    regist_tbl[from_name][field_name][des_obj.object.pk] = trans
+                    setattr(des_obj.object, field_name, None)
+
+            def _reassign_m2m(name: str, query: QuerySet, m2m_name: str, 
+                regist_tbl: dict, trans_tbl: dict):
+                """
+                Reassigns the m2m information to the object.
+
+                :param name: str: Name of object to update.
+                :param query: QuerySet: Query of the object to update.
+                Usually object.objects.all().
+                :param m2m_name: str: Name of the m2m_data field to update. Format:
+                object.field
+                :param regist_tbl: dict: Dictionary to get all the m2m stuff.
+                """
+                if name not in regist_tbl:
+                    # The requested m2m has not been placed in regist_tbl
+                    # due to it not existing.
+                    return
+
+                for obj in query:
+                    for id in trans_tbl[name][m2m_name][obj.pk]:
+                        getattr(obj, m2m_name).add(
+                            query.filter(pk=id)[0]
+                            )
+
+            def _reassign_field(name: str, query: QuerySet, field_name: str, 
+                regist_tbl: dict, trans_tbl: dict):
+                """
+                Reassigns the field information to the object.
+
+                :param name: str: Name of object to update.
+                :param query: QuerySet: Query of the object to update.
+                Usually object.objects.all().
+                :param field_name: str: Name of the field_data field to update. Format:
+                object.field
+                :param regist_tbl: dict: Dictionary to get all the field stuff.
+                """
+                if name not in regist_tbl:
+                    # The requested field has not been placed in regist_tbl
+                    # due to it not existing.
+                    return
+
+                for obj in query:
+                    setattr(obj, field_name, trans_tbl[name][field_name][obj.pk])
+                    obj.save(update_fields=[field_name])
+
+            
+            _register_field("resource.resource", "resource.resource", "parent_resource_id", do_regist_tbl, pk_translation_table)
+            _register_m2m("resource.resource", "resource.resource", "linked_resources", do_regist_tbl, pk_translation_table)
+            _update_m2m("auth.user", "auth.group", "groups", pk_translation_table)
+            _update_m2m("resource.resource", "auth.user", "allowed_users", pk_translation_table)
+            _update_m2m("resource.resource", "auth.group", "allowed_groups", pk_translation_table)
+            _update_m2m("allocation.allocation", "resource.resource", "resources", pk_translation_table)
+            _update_field("allocation.allocationuser", "auth.user", "user_id", pk_translation_table)
+            _update_field("allocation.allocationuser", "allocation.allocation", "allocation_id", pk_translation_table)
+            
+            _batch_update_field(
+                ["allocation.allocationchangerequest", "allocation.allocationattribute",
+                "allocation.allocationadminnote", "allocation.allocationusernote"],
+                "allocation.allocation", "allocation_id", pk_translation_table
+            )
+            _batch_update_field(
+                ["allocation.allocationadminnote", "allocation.allocationusernote"],
+                "auth.user", "author_id", pk_translation_table
+            )
+
+            # Add project ids
+            _batch_update_field(
+                ["project.projectuser", "allocation.allocation", "publication.publication", "grant.grant"]
+                , "project.project", "project_id", pk_translation_table
+            )
+
+            # Step 4: Save
+            for key in do_dict:
+                for obj in do_dict[key]:
+                    try:
+                        obj.save()
+                    except IntegrityError:
+                        # Other object in many to many field not saved yet.
+                        pass
+
+            _reassign_m2m("resource.resource", Resource.objects.all(),
+                "linked_resources", do_dict, do_regist_tbl)
+            _reassign_field("resource.resource", Resource.objects.all(),
+                "parent_resource_id", do_dict, do_regist_tbl)
 
         return HttpResponseRedirect(reverse('project-list'))
 
@@ -786,7 +972,12 @@ class ProjectImportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def get_success_url(self):
         return reverse('project-detail', kwargs={'pk': self.object.pk})
 
-def fix_serialize_data(data) -> list:
+def fix_serialize_data(data: QuerySet) -> list:
+    """
+    Wrapper function to serialize a QuerySet.
+
+    :param data: QuerySet: QuerySet to serialize.
+    """
     # return list([entry for entry in json.loads(serializers.serialize('json', data))])
     return serializers.serialize('json', data)
 
@@ -807,6 +998,36 @@ class ProjectExportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             return True
 
     def dispatch(self, request: http.HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        def _get_resource_query(proj_alloc):
+            """
+            Gets the resource query. Selects the resource(s) used by proj_alloc, and also selects
+            any parent or linked resources.
+
+            :param proj_alloc: The project allocation QuerySet
+            :return: The resource QuerySet that contains all the resources required to export the
+            project
+            """
+            resource_query = Resource.objects.filter(allocation__in=proj_alloc).distinct()
+            old_resource_set = set()
+
+            all_ids = set(resource_query.values_list('id', flat=True))
+
+            # This while loop goes through all resources and follows all the links until all linked
+            # resources are selected.
+            # Note: Slow
+            while old_resource_set != all_ids:
+                old_resource_set = all_ids
+
+                for resource in resource_query:
+                    other_linked_ids = set(resource.linked_resources.all().values_list('id', flat=True))
+                    all_ids = all_ids.union(other_linked_ids)
+                    parent_resources = Resource.objects.filter(parent_resource__in=all_ids)
+                    all_ids = all_ids.union(parent_resources.values_list('id', flat=True))
+                    resource_query = Resource.objects.filter(pk__in=all_ids)
+            
+            return resource_query
+
+
         p_id = self.kwargs.get('pk')
         project_obj = get_object_or_404(Project, pk=p_id)
         if project_obj.status.name not in ['Active', 'New', ]:
@@ -815,20 +1036,50 @@ class ProjectExportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': p_id}))
         else:
             proj_users = ProjectUser.objects.filter(project_id=p_id)
-            user_ids = [p_user.user_id for p_user in proj_users]
+            proj_alloc = Allocation.objects.filter(project_id=p_id)
+            alloc_users = AllocationUser.objects.filter(allocation__in=proj_alloc)
+            
+            proj_resources = _get_resource_query(proj_alloc)
+            # set(proj_resources.values_list("allowed_users", flat=True))
 
-            serialize_data = [
+            resource_user_ids = set(proj_resources.values_list("allowed_users", flat=True))
+            resource_group_ids = set(proj_resources.values_list("allowed_groups", flat=True))
+
+            # Allocation attribute
+            alloc_attrs = AllocationAttribute.objects.filter(allocation__in=proj_alloc)
+            # Allocation change request
+            alloc_change_request = AllocationChangeRequest.objects.filter(allocation__in=proj_alloc)
+
+            # Allocation adim and user notes.
+            # NOTE: Not sure if admin notes are actually being used. I just put it here in
+            # case it is actually being used or if it will be in the future.
+            alloc_admin_notes = AllocationAdminNote.objects.filter(allocation__in=proj_alloc)
+            alloc_user_notes = AllocationUserNote.objects.filter(allocation__in=proj_alloc)
+
+            # Set of all relevant users
+            user_ids = set(itertools.chain(
+                [p_user.user_id for p_user in proj_users],
+                resource_user_ids,
+                [note.author.id for note in alloc_admin_notes],
+                [note.author.id for note in alloc_user_notes]
+            ))
+
+            serialized_data = [
                 fix_serialize_data(Project.objects.filter(pk__exact=p_id)),    # Get current project
                 fix_serialize_data(User.objects.filter(pk__in=user_ids)),
+                fix_serialize_data(Group.objects.filter(pk__in=resource_group_ids)),
                 fix_serialize_data(proj_users),
                 fix_serialize_data(Publication.objects.filter(project_id=p_id)),
                 fix_serialize_data(Grant.objects.filter(project_id=p_id)),
-
-                # Need to filter resources and allocations
-                fix_serialize_data(Resource.objects.all()),
-                fix_serialize_data(Allocation.objects.all())
+                fix_serialize_data(proj_resources),
+                fix_serialize_data(proj_alloc),
+                fix_serialize_data(alloc_users),
+                fix_serialize_data(alloc_attrs),
+                fix_serialize_data(alloc_change_request),
+                fix_serialize_data(alloc_admin_notes),
+                fix_serialize_data(alloc_user_notes)
             ]
-            response = JsonResponse(serialize_data, content_type='application/json', safe=False, json_dumps_params={'indent': 2})
+            response = JsonResponse(serialized_data, content_type='application/json', safe=False, json_dumps_params={'indent': 2})
             response['Content-Disposition'] = 'attachment; filename="project.json"'
             
             return response

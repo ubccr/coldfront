@@ -23,7 +23,10 @@
     {% else %}
       <div class="alert alert-info" role="alert"><i class="fa fa-info-circle" aria-hidden="true"></i> There are no projects to display.</div>
       {% if user.userprofile.is_pi or user.is_superuser %}
-        <a class="btn btn-primary btn-block" href="{% url 'project-create' %}" role="button">Add a project</a>
+        <div class="card-body">
+          <a class="btn btn-primary" href="{% url 'project-create' %}" role="button">Add a project</a>
+          <a class="btn btn-secondary" href="{% url 'project-import' %}" role="button"><i class="fas fa-file-import"></i> Import a Project</a>
+        </div>
         <hr>
       {% endif %}
     {% endif %}
