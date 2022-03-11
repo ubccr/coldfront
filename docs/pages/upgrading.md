@@ -17,6 +17,9 @@ $ source /path/to/your/venv/bin/activate
 $ pip install --upgrade coldfront
 $ coldfront migrate
 $ coldfront collectstatic
+
+# Optionally, add new default Resource Attribute Types
+$ coldfront add_resource_defaults
 ```
 
 ## v1.0.3

@@ -212,6 +212,9 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         }
 
         form = AllocationUpdateForm(initial=initial_data)
+        if not self.request.user.is_superuser:
+            form.fields['is_locked'].disabled = True
+            form.fields['is_changeable'].disabled = True
 
         context = self.get_context_data()
         context['form'] = form
@@ -393,7 +396,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
                     'project', 'project__pi', 'status',).all().order_by(order_by)
             else:
                 allocations = Allocation.objects.prefetch_related('project', 'project__pi', 'status',).filter(
-                    Q(project__status__name='Active') &
+                    Q(project__status__name__in=['New', 'Active', ]) &
                     Q(project__projectuser__user=self.request.user) &
                     Q(project__projectuser__status__name='Active') &
                     Q(allocationuser__user=self.request.user) &
