@@ -47,10 +47,14 @@ ColdFront has a set of allocation attributes that tie into plugins.  You can add
 
 ![Allocation Attributes](../../images/allocationattributes.PNG)  
 
-![Allocation Attribute Types](../../images/attributetypes.PNG)  
+![Allocation Attribute Types](../../images/attributetypes.PNG)    
 
 Click the 'Add Allocation Attribute Type' to create a new one.  Enter a name and select the type of attribute from: Date, Float, Int, Text, Yes/No
 
 All attributes on an allocation are displayed on the Allocation Detail page.  If you do not want the PI and allocation users to see a particular attribute, check the "Is private" checkbox.  System administrators will be able to view these attributes on the allocation detail page but they'll be marked with a lock icon.  Any others viewing the allocation will not see them at all.
 
-![Private Allocation Attributes](../../images/privateattributes.PNG)  
+![Private Allocation Attributes](../../images/privateattributes.PNG)
+
+### Allow allocation attribute changes  
+
+In order for a PI/manager to request a change to an allocation attribute, such as storage quantity, the allocation attribute must be set to allow changes.  [See more here](change_requests.md)
