@@ -67,7 +67,7 @@ Resource List
       <tbody>
         {% for resource in resource_list %}
           <tr>
-            <td><a target="_blank" href="/resource/{{resource.id}}/">{{ resource.id }}</a></td>
+            <td><a href="/resource/{{resource.id}}/">{{ resource.id }}</a></td>
             <td>{{ resource }}</td>
             <td>{{ resource.parent_resource }}</td>
             <td>{{ resource.resource_type.name }}</td>
