@@ -342,6 +342,8 @@ class ProjectRemovalRequestListView(LoginRequiredMixin,
 
         context['removal_request_list'] = removal_requests
 
+        context['actions_visible'] = not self.completed
+
         return context
 
 

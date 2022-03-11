@@ -54,10 +54,12 @@ INSTALLED_APPS += [
     # 'coldfront.core.publication',
     # 'coldfront.core.research_output',
     'coldfront.core.statistics',
+    'coldfront.core.billing',
 ]
 
 # Savio-specific Additional Apps
 INSTALLED_APPS += [
+    'flags',
     'formtools',
 ]
 

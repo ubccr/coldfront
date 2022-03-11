@@ -11,6 +11,9 @@
 
 
 {% block content %}
+  <script type='text/javascript' src="{% static 'selectize/selectize.min.js' %}"></script>
+  <link rel='stylesheet' type='text/css' href="{% static 'selectize/selectize.bootstrap3.css' %}"/>
+
   <h1>Job List</h1>
 
   <div class="table-responsive">
@@ -62,7 +65,9 @@
                             <div>{{ job_search_form.status|as_crispy_field }}</div>
                             <div>{{ job_search_form.jobslurmid|as_crispy_field }}</div>
                             <div>{{ job_search_form.project_name|as_crispy_field }}</div>
-                            <div>{{ job_search_form.username|as_crispy_field }}</div>
+                            {% if show_username %}
+                              <div>{{ job_search_form.username|as_crispy_field }}</div>
+                            {% endif %}
                             <div>{{ job_search_form.partition|as_crispy_field }}</div>
                             <div class="row">
                               <div class="col-sm-2 ">Service Units {% include 'service_unit_popover.html' %}</div>
@@ -244,30 +249,36 @@
         </div>
     {% endif %}
 
-    <script>
-        $("#navbar-main > ul > li.active").removeClass("active");
-        $("#navbar-project-menu").addClass("active");
-        $("#navbar-jobs-list").addClass("active");
+  <script>
+      $('select').selectize({
+          create: true,
+          sortField: 'text'
+      })
 
-        $(document).on('click', '#form_reset_button', function () {
-            resetForm($('#filter_form'));
-        });
+      $("#navbar-main > ul > li.active").removeClass("active");
+      $("#navbar-jobs-list").addClass("active");
 
-        $(".datepicker").datepicker();
+      $(document).on('click', '#form_reset_button', function () {
+          resetForm($('#filter_form'));
+      });
 
-        function resetForm($form) {
-            $form.find('input:text, input:password, input:file, select, textarea').val('');
-            $form.find("input[type='number']").val('');
-        }
+      $(".datepicker").datepicker();
 
-        $("#expand_button").click(function () {
+      function resetForm($form) {
+          $form.find('input:text, input:password, input:file, select, textarea').val('');
+          $form.find("input[type='number']").val('');
 
-            $('#collapseOne').collapse();
-            icon = $("#plus_minus");
-            icon.toggleClass("fa-plus fa-minus");
+          for (let i = 0; i < 6; i++) {$('select')[i].selectize.clear();}
+      }
 
-        });
-    </script>
+      $("#expand_button").click(function () {
+
+          $('#collapseOne').collapse();
+          icon = $("#plus_minus");
+          icon.toggleClass("fa-plus fa-minus");
+
+      });
+  </script>
 
 {% endblock %}
 {% endtimezone %}

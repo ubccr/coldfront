@@ -22,11 +22,4 @@ def project_email_receiver_list(project):
     """
     if not isinstance(project, Project):
         raise TypeError(f'{project} is not a Project object.')
-    pi_condition = Q(
-        role__name='Principal Investigator', status__name='Active',
-        enable_notifications=True)
-    manager_condition = Q(role__name='Manager', status__name='Active')
-    return list(
-        project.projectuser_set.filter(
-            pi_condition | manager_condition
-        ).distinct().values_list('user__email', flat=True))
+    return project.managers_and_pis_emails()

@@ -1,0 +1,46 @@
+<table class="table table-sm">
+  <thead>
+  <tr>
+    <th scope="col">
+      #
+    </th>
+    <th scope="col">
+      Username
+    </th>
+    <th scope="col">
+      User Email
+    </th>
+    <th scope="col">
+      Project
+    </th>
+    <th scope="col">
+      Date Requested
+      <a href="?order_by=created&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+      <a href="?order_by=created&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+    </th>
+    <th scope="col">
+      Reason
+    </th>
+  </tr>
+  </thead>
+  <tbody>
+  {% for join_request in queryset %}
+    <tr>
+      <td>{{ forloop.counter }}</td>
+      <td>
+        {{ join_request.project_user.user.username }}
+      </td>
+      <td>{{ join_request.project_user.user.email }}</td>
+      <td>
+        <a href="{% url 'project-detail' join_request.project_user.project.pk %}">
+          {{ join_request.project_user.project.name }}
+        </a>
+      </td>
+      <td>{{ join_request.created|date:"M. d, Y" }}</td>
+      <td>
+        {{ join_request.reason }}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>

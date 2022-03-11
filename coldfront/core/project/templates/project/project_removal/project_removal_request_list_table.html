@@ -1,0 +1,94 @@
+<table class="table table-sm">
+  <thead>
+  <tr>
+    <th scope="col">
+      #
+      <a href="?order_by=id&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+      <a href="?order_by=id&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+    </th>
+    <th scope="col">
+      {% if request_filter == 'pending' or adj == 'pending' %}
+        Date Requested
+      {% else %}
+        Date Completed
+      {% endif %}
+      <a href="?order_by=created&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+      <a href="?order_by=created&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+    </th>
+    <th scope="col">
+      User Email
+      <a href="?order_by=project_user__user__email&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+      <a href="?order_by=project_user__user__email&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+    </th>
+    <th scope="col">
+      User
+      <a href="?order_by=project_user__user__username&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+      <a href="?order_by=project_user__user__username&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+    </th>
+    <th scope="col">
+      Requester
+      <a href="?order_by=requester__username&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+      <a href="?order_by=requester__username&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+    </th>
+    <th scope="col">
+      Project
+      <a href="?order_by=project_user__project__name&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+      <a href="?order_by=project_user__project__name=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+    </th>
+    <th scope="col">
+      Status
+    </th>
+    {% if user.is_superuser and actions_visible %}
+      <th scope="col">
+        Actions
+      </th>
+    {% endif %}
+  </tr>
+  </thead>
+  <tbody>
+  {% for removal_request in queryset %}
+    <tr>
+      <td>{{ removal_request.pk }}</td>
+      {% if request_filter == 'pending' or adj == 'pending' %}
+        <td>{{ removal_request.request_time|date:"M. d, Y" }}</td>
+      {% else %}
+        <td>{{ removal_request.completion_time|date:"M. d, Y" }}</td>
+      {% endif %}
+      <td>{{ removal_request.project_user.user.email }}</td>
+      <td>{{ removal_request.project_user.user.username }}</td>
+      <td>{{ removal_request.requester.username }}</td>
+
+      <td>
+        <a href="{% url 'project-detail' removal_request.project_user.project.pk %}">
+          {{ removal_request.project_user.project.name }}
+        </a>
+      </td>
+      <td>
+        {% with status=removal_request.status.name %}
+          {% if status == "Pending" %}
+            <span class="badge badge-warning">{{ status }}</span>
+          {% elif status == "Processing" %}
+            <span class="badge badge-warning">{{ status }}</span>
+          {% elif status == "Complete" %}
+            <span class="badge badge-success">{{ status }}</span>
+          {% endif %}
+        {% endwith %}
+      </td>
+      {% if user.is_superuser and actions_visible %}
+        <td class="text-nowrap">
+          {% if removal_request.status.name == "Pending" %}
+            <a href="{% url 'project-removal-request-update-status' removal_request.pk %}" class="btn btn-success mr-1">
+              Update
+            </a>
+          {% elif  user.is_superuser and removal_request.status.name == "Processing" %}
+            <a href="{% url 'project-removal-request-complete-status' removal_request.pk %}" class="btn btn-success mr-1">
+              Update
+            </a>
+          {% endif %}
+        </td>
+      {% endif %}
+
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>

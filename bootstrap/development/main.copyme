@@ -29,6 +29,9 @@ email_subject_prefix: "[MyBRC-User-Portal]"
 
 google_sheets_credentials: /tmp/credentials.json
 
+# The URL of the Sentry instance to send errors to.
+sentry_dsn: ""
+
 ###############################################################################
 # dev_settings
 ###############################################################################
