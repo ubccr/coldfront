@@ -389,6 +389,8 @@ GOOGLE_OAUTH2_KEY_FILE = "/tmp/credentials.json"
 #------------------------------------------------------------------------------
 
 FLAGS = {
+    'ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE': [],
+    'BRC_ONLY': [],
     'LRC_ONLY': [],
 }
 
