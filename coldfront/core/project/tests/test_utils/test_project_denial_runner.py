@@ -7,7 +7,7 @@ from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
-from coldfront.core.project.utils import ProjectDenialRunner
+from coldfront.core.project.utils_.new_project_utils import ProjectDenialRunner
 from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase

@@ -1,6 +1,5 @@
 from coldfront.api.statistics.utils import create_project_allocation
 from coldfront.api.statistics.utils import create_user_project_allocation
-from coldfront.api.statistics.utils import set_project_user_allocation_value
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
@@ -22,7 +21,7 @@ from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils import ProjectClusterAccessRequestRunner
-from coldfront.core.project.utils import SavioProjectApprovalRunner
+from coldfront.core.project.utils_.new_project_utils import SavioProjectApprovalRunner
 from coldfront.core.project.utils_.renewal_utils import AllocationRenewalProcessingRunner
 from coldfront.core.resource.models import Resource
 from coldfront.core.statistics.models import ProjectTransaction

@@ -47,7 +47,7 @@ def deny_associated_allocation_renewal_request(sender, **kwargs):
 
     # Set the reason for the renewal request to be that of the new project
     # request.
-    reason = new_project_request_denied.denial_reason()
+    reason = new_project_request_obj.denial_reason()
     renewal_request_obj.state['other'] = {
         'justification': reason.justification,
         'timestamp': reason.timestamp,
