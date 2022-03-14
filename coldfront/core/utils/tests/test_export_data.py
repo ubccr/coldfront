@@ -92,7 +92,8 @@ class TestBaseExportData(TestBase):
                                            days=4),
                                        enddate=self.current_time - datetime.timedelta(
                                            days=3),
-                                       userid=self.user0)
+                                       userid=self.user0,
+                                       partition='savio,savio2')
 
         self.job2 = Job.objects.create(jobslurmid='2',
                                        submitdate=self.current_time - datetime.timedelta(
@@ -101,7 +102,8 @@ class TestBaseExportData(TestBase):
                                            days=6),
                                        enddate=self.current_time - datetime.timedelta(
                                            days=4),
-                                       userid=self.user1)
+                                       userid=self.user1,
+                                       partition='savio_bigmem,savio2')
 
         self.job3 = Job.objects.create(jobslurmid='3',
                                        submitdate=self.current_time - datetime.timedelta(
@@ -110,7 +112,8 @@ class TestBaseExportData(TestBase):
                                            days=10),
                                        enddate=self.current_time - datetime.timedelta(
                                            days=7),
-                                       userid=self.user0)
+                                       userid=self.user0,
+                                       partition='savio3')
 
     def call_command(self, *args):
         """Call the command with the given arguments, returning the messages
@@ -428,6 +431,14 @@ class TestJobAvgQueueTime(TestBaseExportData):
         self.assertIn('60hrs 0mins 0secs', output)
         self.assertEqual(error, '')
 
+    def test_partition(self):
+        """Testing job_avg_queue_time with parition arg passed"""
+        output, error = self.call_command('export_data',
+                                          'job_avg_queue_time',
+                                          f'--partition=savio_bigmem')
+        self.assertIn('48hrs 0mins 0secs', output)
+        self.assertEqual(error, '')
+
     def test_errors(self):
         # invalid date error
         start_date = datetime.datetime.strftime(
@@ -449,6 +460,14 @@ class TestJobAvgQueueTime(TestBaseExportData):
                                               'job_avg_queue_time',
                                               f'--start_date={end_date}',
                                               f'--end_date={start_date}')
+            self.assertEqual(output, '')
+            self.assertEqual(error, '')
+
+        # no jobs found with the passed args
+        with self.assertRaises(CommandError):
+            output, error = self.call_command('export_data',
+                                              'job_avg_queue_time',
+                                              f'--partition=test_partition')
             self.assertEqual(output, '')
             self.assertEqual(error, '')
 
