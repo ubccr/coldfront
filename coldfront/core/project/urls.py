@@ -40,12 +40,6 @@ from coldfront.core.project.views import SavioProjectReviewMemorandumSignedView
 from coldfront.core.project.views import SavioProjectReviewReadinessView
 from coldfront.core.project.views import SavioProjectReviewSetupView
 from coldfront.core.project.views import SavioProjectUndenyRequestView
-from coldfront.core.project.views import show_details_form_condition
-from coldfront.core.project.views import show_ica_extra_fields_form_condition
-from coldfront.core.project.views import show_new_pi_form_condition
-from coldfront.core.project.views import show_pool_allocations_form_condition
-from coldfront.core.project.views import show_pooled_project_selection_form_condition
-from coldfront.core.project.views import show_recharge_extra_fields_form_condition
 from coldfront.core.project.views import VectorProjectRequestDetailView
 from coldfront.core.project.views import VectorProjectRequestListView
 from coldfront.core.project.views import VectorProjectRequestView
@@ -68,14 +62,7 @@ urlpatterns += [
          name='project-request-savio-landing'),
     path('savio-project-request/',
          SavioProjectRequestWizard.as_view(
-             condition_dict={
-                 '2': show_new_pi_form_condition,
-                 '3': show_ica_extra_fields_form_condition,
-                 '4': show_recharge_extra_fields_form_condition,
-                 '5': show_pool_allocations_form_condition,
-                 '6': show_pooled_project_selection_form_condition,
-                 '7': show_details_form_condition,
-             }
+             condition_dict=SavioProjectRequestWizard.condition_dict(),
          ),
          name='savio-project-request'),
     path('savio-project-pending-request-list/',
