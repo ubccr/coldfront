@@ -13,7 +13,9 @@ from coldfront.config import settings
 from coldfront.core.allocation.models import AllocationAttributeType, \
     AllocationUserAttribute
 from coldfront.core.statistics.models import Job
-from coldfront.core.project.models import Project, ProjectStatusChoice
+from coldfront.core.project.models import Project, ProjectStatusChoice, \
+    SavioProjectAllocationRequest, VectorProjectAllocationRequest
+
 
 """An admin command that exports the results of useful database queries
 in user-friendly formats."""
@@ -105,6 +107,19 @@ class Command(BaseCommand):
                                        help='Export results in the given format.',
                                        type=str)
         project_subparser.add_argument('--active_only', action='store_true')
+
+        new_project_requests_subparser = subparsers.\
+            add_parser('new_project_requests', help='Export new project requests')
+        new_project_requests_subparser.add_argument('--type',
+                                                    choices=['vector', 'savio'],
+                                                    required=True,
+                                                    help='Filter based on allocation type',
+                                                    type=str)
+        new_project_requests_subparser.add_argument('--format',
+                                                    choices=['csv', 'json'],
+                                                    required=True,
+                                                    help='Export results in the given format.',
+                                                    type=str)
 
     def handle(self, *args, **options):
         """Call the handler for the provided subcommand."""
@@ -317,6 +332,63 @@ class Command(BaseCommand):
                 project = dict(zip(header, project))
                 query_set.append(project)
 
+            self.to_json(query_set,
+                         output=kwargs.get('stdout', stdout),
+                         error=kwargs.get('stderr', stderr))
+
+    def handle_new_project_requests(self, *args, **kwargs):
+        format = kwargs['format']
+        type = kwargs['type']
+
+        requests = None
+        if type == 'savio':
+            requests = SavioProjectAllocationRequest.objects.all()
+            header = ['id', 'created', 'modified', 'allocation_type',
+                      'survey_answers', 'state', 'pool']
+
+        else:
+            requests = VectorProjectAllocationRequest.objects.all()
+            header = ['id', 'created', 'modified']
+
+        additiona_headers = ['project', 'status', 'requester', 'pi']
+        projects = [project.project.name for project in requests]
+        statuses = [request.status.name for request in requests]
+
+        requesters = []
+        for request in requests:
+            requesters.append(f'{request.requester.first_name} ' +
+                              f'{request.requester.last_name} ' +
+                              f'({request.requester.email})')
+
+        pis = []
+        for request in requests:
+            pis.append(f'{request.pi.first_name} ' +
+                       f'{request.pi.last_name} ' +
+                       f'({request.pi.email})')
+
+        query_set = []
+        requests = requests.values_list(*header)
+        for project, status, requester, pi, request in \
+                zip(projects, statuses, requesters, pis, requests):
+            request = list(request)
+            request[1] = str(request[1])
+            request[2] = str(request[2])
+
+            request.extend([project, status, requester, pi])
+            query_set.append(request)
+
+        headers = header + additiona_headers
+        query_set = list(map(lambda query: dict(zip(headers, query)), query_set))
+
+        if format == 'csv':
+            query_set_ = [query.values() for query in query_set]
+
+            self.to_csv(query_set_,
+                        header=headers,
+                        output=kwargs.get('stdout', stdout),
+                        error=kwargs.get('stderr', stderr))
+
+        elif format == 'json':
             self.to_json(query_set,
                          output=kwargs.get('stdout', stdout),
                          error=kwargs.get('stderr', stderr))

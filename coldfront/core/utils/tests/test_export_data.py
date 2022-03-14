@@ -20,7 +20,9 @@ from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 from coldfront.core.project.models import Project, ProjectStatusChoice, \
-    ProjectUser, ProjectUserStatusChoice, ProjectUserRoleChoice
+    ProjectUser, ProjectUserStatusChoice, ProjectUserRoleChoice, \
+    ProjectAllocationRequestStatusChoice, SavioProjectAllocationRequest, \
+    VectorProjectAllocationRequest
 
 DATE_FORMAT = '%m-%d-%Y %H:%M:%S'
 ABR_DATE_FORMAT = '%m-%d-%Y'
@@ -629,6 +631,155 @@ class TestProjects(TestBase):
         out.seek(0)
 
         query_set = self.base_queryset
+
+        output = json.loads(''.join(out.readlines()))
+        count = 0
+        for index, item in enumerate(output):
+            count += 1
+            compare = query_set[index]
+
+            self.assertListEqual(list(compare.keys()), list(item.keys()))
+
+            for key in item.keys():
+                self.assertEqual(str(compare[key]), str(item[key]))
+
+        self.assertEqual(len(query_set), count)
+
+
+class TestNewProjectRequests(TestBase):
+    """ Test class to test export data subcommand new_project_requests runs correctly """
+
+    def setUp(self):
+        super().setUp()
+
+        project_status = ProjectStatusChoice.objects.get(name='Inactive')
+        request_status = ProjectAllocationRequestStatusChoice.objects.get(
+            name='Approved - Complete')
+
+        savio_headers = ['id', 'created', 'modified',
+                         'allocation_type', 'survey_answers', 'state', 'pool']
+        vector_headers = ['id', 'created', 'modified']
+        additional_headers = ['project', 'status', 'requester', 'pi']
+
+        # create sample requests
+        projects, statuses, requesters, pis = [], [], [], []
+        for index in range(10):
+            test_user = User.objects.create(
+                first_name=f'Test{index}', last_name=f'User{index}',
+                username=f'user{index}', email=f'user{index}@nonexistent.com')
+            project = Project.objects.create(name=f'test_project_{index}', status=project_status)
+
+            projects.append(project.name)
+            statuses.append(request_status.name)
+            requesters.append(f'{test_user.first_name} ' +
+                              f'{test_user.last_name} ' +
+                              f'({test_user.email})')
+            pis.append(f'{test_user.first_name} ' +
+                       f'{test_user.last_name} ' +
+                       f'({test_user.email})')
+
+            if index < 5:
+                SavioProjectAllocationRequest.objects.create(
+                    requester=test_user,
+                    allocation_type=SavioProjectAllocationRequest.FCA,
+                    project=project,
+                    survey_answers={'abcd': 'bcda'},
+                    pi=test_user,
+                    status=ProjectAllocationRequestStatusChoice.objects.get(
+                        name='Approved - Complete'))
+
+            else:
+                VectorProjectAllocationRequest.objects.create(
+                    requester=test_user,
+                    project=project,
+                    pi=test_user,
+                    status=ProjectAllocationRequestStatusChoice.objects.get(
+                        name='Approved - Complete'))
+
+        savio_queryset = []
+        savio_requests = SavioProjectAllocationRequest.objects.all().values_list(*savio_headers)
+        for project, project_status, requester, pi, request in \
+                zip(projects, statuses, requesters, pis, savio_requests):
+            request = list(request)
+            request[1] = str(request[1])
+            request[2] = str(request[2])
+
+            request.extend([project, project_status, requester, pi])
+            savio_queryset.append(request)
+
+        vector_queryset = []
+        vector_requests = VectorProjectAllocationRequest.objects.all().values_list(*vector_headers)
+        for project, project_status, requester, pi, request in \
+                zip(projects[5:], statuses[5:], requesters[5:], pis[5:], vector_requests):
+            request = list(request)
+            request[1] = str(request[1])
+            request[2] = str(request[2])
+
+            request.extend([project, project_status, requester, pi])
+            vector_queryset.append(request)
+
+        savio_headers.extend(additional_headers)
+        vector_headers.extend(additional_headers)
+
+        self.savio_queryset = list(map(lambda r: dict(zip(savio_headers, r)), savio_queryset))
+        self.vector_queryset = list(map(lambda r: dict(zip(vector_headers, r)), vector_queryset))
+
+    def test_savio(self):
+        out, err = StringIO(''), StringIO('')
+        call_command('export_data', 'new_project_requests',
+                     '--format=csv', '--type=savio', stdout=out, stderr=err)
+
+        sys.stdout = sys.__stdout__
+        out.seek(0)
+
+        query_set = self.savio_queryset
+
+        output = DictReader(out.readlines())
+        count = 0
+        for index, item in enumerate(output):
+            count += 1
+            compare = query_set[index]
+
+            self.assertListEqual(list(compare.keys()), list(item.keys()))
+
+            for key in item.keys():
+                self.assertEqual(str(compare[key]), str(item[key]))
+
+        self.assertEqual(len(query_set), count)
+
+    def test_vector(self):
+        out, err = StringIO(''), StringIO('')
+        call_command('export_data', 'new_project_requests',
+                     '--format=csv', '--type=vector', stdout=out, stderr=err)
+
+        sys.stdout = sys.__stdout__
+        out.seek(0)
+
+        query_set = self.vector_queryset
+
+        output = DictReader(out.readlines())
+        count = 0
+        for index, item in enumerate(output):
+            count += 1
+            compare = query_set[index]
+
+            self.assertListEqual(list(compare.keys()), list(item.keys()))
+
+            for key in item.keys():
+                self.assertEqual(str(compare[key]), str(item[key]))
+
+        self.assertEqual(len(query_set), count)
+
+    def test_json(self):
+        # NOTE: csv is tested in other tests, only check json here
+        out, err = StringIO(''), StringIO('')
+        call_command('export_data', 'new_project_requests',
+                     '--format=json', '--type=savio', stdout=out, stderr=err)
+
+        sys.stdout = sys.__stdout__
+        out.seek(0)
+
+        query_set = self.savio_queryset
 
         output = json.loads(''.join(out.readlines()))
         count = 0
