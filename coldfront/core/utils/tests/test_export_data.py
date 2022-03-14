@@ -464,28 +464,71 @@ class TestProjects(TestBase):
         inactive_status = ProjectStatusChoice.objects.get(name='Inactive')
         prefixes = ['fc', 'ac', 'co']
 
-        active_projects, inactive_projects = [], []
         for index in range(10):
             project = Project.objects.create(
                 name=f'{prefixes[index % len(prefixes)]}_project_{index}',
                 status=active_status)
-            active_projects.append(project)
 
         for index in range(10, 20):
             project = Project.objects.create(
                 name=f'{prefixes[index % len(prefixes)]}_project_{index}',
                 status=inactive_status)
-            inactive_projects.append(project)
 
-        self.active_projects = active_projects
-        self.inactive_projects = inactive_projects
+        total_projects = Project.objects.all()
+        active_projects = total_projects.filter(status=active_status)
+        fc_projects = total_projects.filter(name__istartswith='fc_')
 
-        self.total_projects = []
-        self.total_projects.extend(active_projects)
-        self.total_projects.extend(inactive_projects)
+        fc_project_ids = list(map(lambda x: x[0], fc_projects.values_list('id')))
+        active_project_ids = list(map(lambda x: x[0], active_projects.values_list('id')))
 
-        self.fc_projects = list(filter(
-            lambda x: x.name.startswith('fc_'), self.total_projects))
+        pi_table = []
+        for project in total_projects:
+            pis = project.pis()
+            table = [f'{pi.first_name} {pi.last_name} ({pi.email})' for pi in pis]
+
+            if table != []:
+                pi_table.append(table)
+            else:
+                pi_table.append(None)
+
+        manager_table = []
+        for project in total_projects:
+            managers = project.managers()
+            table = [f'{manager.first_name} {manager.last_name} ({manager.email})'
+                     for manager in managers]
+
+            if table != []:
+                manager_table.append(table)
+            else:
+                manager_table.append(None)
+
+        status_table = []
+        for project in total_projects:
+            status_table.append(str(project.status))
+
+        header = ['id', 'created', 'modified', 'name', 'title', 'description']
+        query_set_ = total_projects.values_list(*header)
+
+        query_set = []
+        for index, project in enumerate(query_set_):
+            project = list(project)
+            project.extend([status_table[index],
+                            ';'.join(pi_table[index] or []),
+                            ';'.join(manager_table[index] or [])])
+            query_set.append(project)
+
+        # convert created and modified fields to strings
+        base_queryset = []
+        final_header = header + ['status', 'pis', 'manager']
+        for project in query_set:
+            project[1] = str(project[1])
+            project[2] = str(project[2])
+            base_queryset.append(dict(zip(final_header, project)))
+
+        self.fc_queryset = [project for project in base_queryset if project['id'] in fc_project_ids]
+        self.active_queryset = [
+            project for project in base_queryset if project['id'] in active_project_ids]
+        self.base_queryset = base_queryset
 
     def test_default(self):
         out, err = StringIO(''), StringIO('')
@@ -495,14 +538,13 @@ class TestProjects(TestBase):
         sys.stdout = sys.__stdout__
         out.seek(0)
 
-        query_set = self.total_projects
+        query_set = self.base_queryset
 
         output = DictReader(out.readlines())
         count = 0
         for index, item in enumerate(output):
             count += 1
-            compare = dict(query_set[index].__dict__)
-            compare.pop('_state')
+            compare = query_set[index]
 
             self.assertListEqual(list(compare.keys()), list(item.keys()))
 
@@ -519,14 +561,13 @@ class TestProjects(TestBase):
         sys.stdout = sys.__stdout__
         out.seek(0)
 
-        query_set = self.active_projects
+        query_set = self.active_queryset
 
         output = DictReader(out.readlines())
         count = 0
         for index, item in enumerate(output):
             count += 1
-            compare = dict(query_set[index].__dict__)
-            compare.pop('_state')
+            compare = query_set[index]
 
             self.assertListEqual(list(compare.keys()), list(item.keys()))
 
@@ -544,14 +585,13 @@ class TestProjects(TestBase):
         sys.stdout = sys.__stdout__
         out.seek(0)
 
-        query_set = self.fc_projects
+        query_set = self.fc_queryset
 
         output = DictReader(out.readlines())
         count = 0
         for index, item in enumerate(output):
             count += 1
-            compare = dict(query_set[index].__dict__)
-            compare.pop('_state')
+            compare = query_set[index]
 
             self.assertListEqual(list(compare.keys()), list(item.keys()))
 
@@ -569,14 +609,13 @@ class TestProjects(TestBase):
         sys.stdout = sys.__stdout__
         out.seek(0)
 
-        query_set = self.total_projects
+        query_set = self.base_queryset
 
         output = json.loads(''.join(out.readlines()))
         count = 0
         for index, item in enumerate(output):
             count += 1
-            compare = dict(query_set[index].__dict__)
-            compare.pop('_state')
+            compare = query_set[index]
 
             self.assertListEqual(list(compare.keys()), list(item.keys()))
 

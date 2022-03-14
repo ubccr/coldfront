@@ -13,7 +13,7 @@ from coldfront.config import settings
 from coldfront.core.allocation.models import AllocationAttributeType, \
     AllocationUserAttribute
 from coldfront.core.statistics.models import Job
-from coldfront.core.project.models import Project
+from coldfront.core.project.models import Project, ProjectStatusChoice
 
 """An admin command that exports the results of useful database queries
 in user-friendly formats."""
@@ -100,8 +100,7 @@ class Command(BaseCommand):
                                        required=True,
                                        help='Export results in the given format.',
                                        type=str)
-        project_subparser.add_argument('--active_only',
-                                       action='store_true')
+        project_subparser.add_argument('--active_only', action='store_true')
 
     def handle(self, *args, **options):
         """Call the handler for the provided subcommand."""
@@ -239,22 +238,60 @@ class Command(BaseCommand):
             projects = projects.filter(name__istartswith=allowance_type)
 
         if active_only:
-            projects = projects.filter(status__name__istartswith='Active')
+            active_status = ProjectStatusChoice.objects.get(name='Active')
+            projects = projects.filter(status=active_status)
 
+        pi_table = []
+        for project in projects:
+            pis = project.pis()
+            table = [f'{pi.first_name} {pi.last_name} ({pi.email})' for pi in pis]
+
+            if table != []:
+                pi_table.append(table)
+            else:
+                pi_table.append(None)
+
+        manager_table = []
+        for project in projects:
+            managers = project.managers()
+            table = [f'{manager.first_name} {manager.last_name} ({manager.email})'
+                     for manager in managers]
+
+            if table != []:
+                manager_table.append(table)
+            else:
+                manager_table.append(None)
+
+        status_table = []
+        for project in projects:
+            status_table.append(str(project.status))
+
+        header = ['id', 'created', 'modified', 'name', 'title', 'description']
+        query_set_ = projects.values_list(*header)
+
+        query_set = []
+        for index, project in enumerate(query_set_):
+            project = list(project)
+            project.extend([status_table[index],
+                            ';'.join(pi_table[index] or []),
+                            ';'.join(manager_table[index] or [])])
+
+            query_set.append(project)
+
+        header.extend(['status', 'pis', 'manager'])
         if format == 'csv':
-            header = dict(projects[0].__dict__)
-            header.pop('_state')
-            query_set = projects.values_list(*header)
-
             self.to_csv(query_set,
                         header=header,
                         output=kwargs.get('stdout', stdout),
                         error=kwargs.get('stderr', stderr))
 
         elif format == 'json':
-            query_set = [dict(project.__dict__) for project in projects]
-            for query in query_set:
-                query.pop("_state")
+            query_set_ = query_set
+            query_set = []
+
+            for project in query_set_:
+                project = dict(zip(header, project))
+                query_set.append(project)
 
             self.to_json(query_set,
                          output=kwargs.get('stdout', stdout),
