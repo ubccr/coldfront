@@ -13,15 +13,15 @@ from coldfront.core.project.forms import VectorProjectReviewSetupForm
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.models import VectorProjectAllocationRequest
-from coldfront.core.project.utils import ProjectDenialRunner
-from coldfront.core.project.utils import SavioProjectApprovalRunner
-from coldfront.core.project.utils import savio_request_state_status
-from coldfront.core.project.utils import send_project_request_pooling_email
-from coldfront.core.project.utils import VectorProjectApprovalRunner
-from coldfront.core.project.utils import vector_request_denial_reason
-from coldfront.core.project.utils import vector_request_state_status
 from coldfront.core.project.utils_.request_utils import project_allocation_request_latest_update_timestamp
+from coldfront.core.project.utils_.request_utils import ProjectDenialRunner
+from coldfront.core.project.utils_.request_utils import SavioProjectApprovalRunner
 from coldfront.core.project.utils_.request_utils import savio_request_denial_reason
+from coldfront.core.project.utils_.request_utils import savio_request_state_status
+from coldfront.core.project.utils_.request_utils import send_project_request_pooling_email
+from coldfront.core.project.utils_.request_utils import VectorProjectApprovalRunner
+from coldfront.core.project.utils_.request_utils import vector_request_denial_reason
+from coldfront.core.project.utils_.request_utils import vector_request_state_status
 from coldfront.core.utils.common import utc_now_offset_aware
 
 from datetime import datetime

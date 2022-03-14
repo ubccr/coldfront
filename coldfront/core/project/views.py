@@ -21,6 +21,7 @@ from coldfront.core.allocation.models import (Allocation,
                                               AllocationUserAttribute,
                                               AllocationUserStatusChoice)
 from coldfront.core.allocation.utils import get_allocation_user_cluster_access_status
+from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.allocation.signals import allocation_activate_user
 from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectAddUsersToAllocationForm,
@@ -41,9 +42,7 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserRemovalRequestStatusChoice,
                                            SavioProjectAllocationRequest,
                                            VectorProjectAllocationRequest)
-from coldfront.core.project.utils import (add_vector_user_to_designated_savio_project,
-                                          get_project_compute_allocation,
-                                          ProjectClusterAccessRequestRunner,
+from coldfront.core.project.utils import (ProjectClusterAccessRequestRunner,
                                           send_added_to_project_notification_email,
                                           send_project_join_notification_email,
                                           send_project_join_request_approval_email,
@@ -51,6 +50,7 @@ from coldfront.core.project.utils import (add_vector_user_to_designated_savio_pr
 from coldfront.core.project.utils_.addition_utils import can_project_purchase_service_units
 from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
 from coldfront.core.project.utils_.renewal_utils import is_any_project_pi_renewable
+from coldfront.core.project.utils_.request_utils import add_vector_user_to_designated_savio_project
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.common import (get_domain_url, import_from_settings)

@@ -19,8 +19,8 @@ from coldfront.core.project.models import savio_project_request_ica_state_schema
 from coldfront.core.project.models import savio_project_request_recharge_extra_fields_schema
 from coldfront.core.project.models import savio_project_request_recharge_state_schema
 from coldfront.core.project.models import VectorProjectAllocationRequest
-from coldfront.core.project.utils import send_new_project_request_admin_notification_email
-from coldfront.core.project.utils import send_new_project_request_pi_notification_email
+from coldfront.core.project.utils_.request_utils import send_new_project_request_admin_notification_email
+from coldfront.core.project.utils_.request_utils import send_new_project_request_pi_notification_email
 from coldfront.core.resource.models import Resource
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import utc_now_offset_aware
