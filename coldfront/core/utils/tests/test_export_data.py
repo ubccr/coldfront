@@ -9,6 +9,7 @@ from io import StringIO
 
 from django.contrib.auth.models import User
 from django.core.management import call_command, CommandError
+from django.db.models import Value, F, CharField, Func
 
 from coldfront.api.statistics.utils import get_accounting_allocation_objects, \
     create_project_allocation, create_user_project_allocation
@@ -663,7 +664,7 @@ class TestNewProjectRequests(TestBase):
 
         # create sample requests
         projects, statuses, requesters, pis = [], [], [], []
-        for index in range(10):
+        for index in range(15):
             test_user = User.objects.create(
                 first_name=f'Test{index}', last_name=f'User{index}',
                 username=f'user{index}', email=f'user{index}@nonexistent.com')
@@ -678,17 +679,7 @@ class TestNewProjectRequests(TestBase):
                        f'{test_user.last_name} ' +
                        f'({test_user.email})')
 
-            if index < 5:
-                SavioProjectAllocationRequest.objects.create(
-                    requester=test_user,
-                    allocation_type=SavioProjectAllocationRequest.FCA,
-                    project=project,
-                    survey_answers={'abcd': 'bcda'},
-                    pi=test_user,
-                    status=ProjectAllocationRequestStatusChoice.objects.get(
-                        name='Approved - Complete'))
-
-            else:
+            if 0 <= index < 5:
                 VectorProjectAllocationRequest.objects.create(
                     requester=test_user,
                     project=project,
@@ -696,21 +687,34 @@ class TestNewProjectRequests(TestBase):
                     status=ProjectAllocationRequestStatusChoice.objects.get(
                         name='Approved - Complete'))
 
-        savio_queryset = []
-        savio_requests = SavioProjectAllocationRequest.objects.all().values_list(*savio_headers)
-        for project, project_status, requester, pi, request in \
-                zip(projects, statuses, requesters, pis, savio_requests):
-            request = list(request)
-            request[1] = str(request[1])
-            request[2] = str(request[2])
+            elif 5 <= index < 10:
+                SavioProjectAllocationRequest.objects.create(
+                    requester=test_user,
+                    allocation_type=SavioProjectAllocationRequest.FCA,
+                    project=project,
+                    survey_answers={'abcd': 'bcda'},
+                    pi=test_user,
+                    created=self.convert_time_to_utc(
+                        datetime.datetime.strptime('05-05-2022', '%m-%d-%Y')),
+                    status=ProjectAllocationRequestStatusChoice.objects.get(
+                        name='Approved - Complete'))
 
-            request.extend([project, project_status, requester, pi])
-            savio_queryset.append(request)
+            else:
+                SavioProjectAllocationRequest.objects.create(
+                    requester=test_user,
+                    allocation_type=SavioProjectAllocationRequest.FCA,
+                    project=project,
+                    survey_answers={'abcd': 'bcda'},
+                    pi=test_user,
+                    created=self.convert_time_to_utc(
+                        datetime.datetime.strptime('01-01-2021', '%m-%d-%Y')),
+                    status=ProjectAllocationRequestStatusChoice.objects.get(
+                        name='Approved - Complete'))
 
         vector_queryset = []
         vector_requests = VectorProjectAllocationRequest.objects.all().values_list(*vector_headers)
         for project, project_status, requester, pi, request in \
-                zip(projects[5:], statuses[5:], requesters[5:], pis[5:], vector_requests):
+                zip(projects, statuses, requesters, pis, vector_requests):
             request = list(request)
             request[1] = str(request[1])
             request[2] = str(request[2])
@@ -718,9 +722,36 @@ class TestNewProjectRequests(TestBase):
             request.extend([project, project_status, requester, pi])
             vector_queryset.append(request)
 
+        savio_queryset = []
+        savio_requests = SavioProjectAllocationRequest.objects.all().values_list(*savio_headers)
+        for project, project_status, requester, pi, request in \
+                zip(projects[5:], statuses[5:], requesters[5:], pis[5:], savio_requests):
+            request = list(request)
+            request[1] = str(request[1])
+            request[2] = str(request[2])
+
+            request.extend([project, project_status, requester, pi])
+            savio_queryset.append(request)
+
+        self.threashold = '01-01-2022'
+        date = self.convert_time_to_utc(datetime.datetime.strptime(self.threashold, '%m-%d-%Y'))
+
+        savio_newqueryset = []
+        savio_newrequests = SavioProjectAllocationRequest.objects.all().\
+            filter(created__gte=date).values_list(*savio_headers)
+        for project, project_status, requester, pi, request in \
+                zip(projects[5:], statuses[5:], requesters[5:], pis[5:], savio_newrequests):
+            request = list(request)
+            request[1] = str(request[1])
+            request[2] = str(request[2])
+
+            request.extend([project, project_status, requester, pi])
+            savio_newqueryset.append(request)
+
         savio_headers.extend(additional_headers)
         vector_headers.extend(additional_headers)
 
+        self.savio_newqueryset = list(map(lambda r: dict(zip(savio_headers, r)), savio_newqueryset))
         self.savio_queryset = list(map(lambda r: dict(zip(savio_headers, r)), savio_queryset))
         self.vector_queryset = list(map(lambda r: dict(zip(vector_headers, r)), vector_queryset))
 
@@ -793,3 +824,38 @@ class TestNewProjectRequests(TestBase):
                 self.assertEqual(str(compare[key]), str(item[key]))
 
         self.assertEqual(len(query_set), count)
+
+    def test_start_date(self):
+        # NOTE: csv is tested in other tests, only check json here
+        out, err = StringIO(''), StringIO('')
+        call_command('export_data', 'new_project_requests',
+                     '--format=json', '--type=savio', '--start_date=' + self.threashold,
+                     stdout=out, stderr=err)
+
+        sys.stdout = sys.__stdout__
+        out.seek(0)
+
+        query_set = self.savio_newqueryset
+
+        output = json.loads(''.join(out.readlines()))
+        count = 0
+        for index, item in enumerate(output):
+            count += 1
+            compare = query_set[index]
+
+            self.assertListEqual(list(compare.keys()), list(item.keys()))
+
+            for key in item.keys():
+                self.assertEqual(str(compare[key]), str(item[key]))
+
+        self.assertEqual(len(query_set), count)
+
+    @staticmethod
+    def convert_time_to_utc(time):
+        """Convert naive LA time to UTC time"""
+        local_tz = pytz.timezone('America/Los_Angeles')
+        tz = pytz.timezone(settings.TIME_ZONE)
+        naive_dt = datetime.datetime.combine(time, datetime.datetime.min.time())
+        new_time = local_tz.localize(naive_dt).astimezone(tz).isoformat()
+
+        return new_time

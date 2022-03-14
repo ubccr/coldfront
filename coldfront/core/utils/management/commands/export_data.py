@@ -115,6 +115,10 @@ class Command(BaseCommand):
                                                     required=True,
                                                     help='Filter based on allocation type',
                                                     type=str)
+        new_project_requests_subparser.add_argument('--start_date',
+                                                    help='Get Requests from this date.'
+                                                    'Must take the form of "MM-DD-YYYY".',
+                                                    type=valid_date)
         new_project_requests_subparser.add_argument('--format',
                                                     choices=['csv', 'json'],
                                                     required=True,
@@ -339,6 +343,7 @@ class Command(BaseCommand):
     def handle_new_project_requests(self, *args, **kwargs):
         format = kwargs['format']
         type = kwargs['type']
+        date = kwargs.get('start_date', None)
 
         requests = None
         if type == 'savio':
@@ -349,6 +354,10 @@ class Command(BaseCommand):
         else:
             requests = VectorProjectAllocationRequest.objects.all()
             header = ['id', 'created', 'modified']
+
+        if date:
+            date = self.convert_time_to_utc(date)
+            requests = requests.filter(created__gte=date)
 
         additiona_headers = ['project', 'status', 'requester', 'pi']
         projects = [project.project.name for project in requests]
