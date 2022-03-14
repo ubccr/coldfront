@@ -16,11 +16,9 @@ from coldfront.core.project.models import VectorProjectAllocationRequest
 from coldfront.core.project.utils_.new_project_utils import project_allocation_request_latest_update_timestamp
 from coldfront.core.project.utils_.new_project_utils import ProjectDenialRunner
 from coldfront.core.project.utils_.new_project_utils import SavioProjectApprovalRunner
-from coldfront.core.project.utils_.new_project_utils import savio_request_denial_reason
 from coldfront.core.project.utils_.new_project_utils import savio_request_state_status
 from coldfront.core.project.utils_.new_project_utils import send_project_request_pooling_email
 from coldfront.core.project.utils_.new_project_utils import VectorProjectApprovalRunner
-from coldfront.core.project.utils_.new_project_utils import vector_request_denial_reason
 from coldfront.core.project.utils_.new_project_utils import vector_request_state_status
 from coldfront.core.utils.common import utc_now_offset_aware
 
@@ -183,7 +181,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
         if self.request_obj.status.name == 'Denied':
             try:
-                denial_reason = savio_request_denial_reason(self.request_obj)
+                denial_reason = self.request_obj.denial_reason()
                 category = denial_reason.category
                 justification = denial_reason.justification
                 timestamp = denial_reason.timestamp
@@ -991,7 +989,7 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
         if self.request_obj.status.name == 'Denied':
             try:
-                denial_reason = vector_request_denial_reason(self.request_obj)
+                denial_reason = self.request_obj.denial_reason()
                 category = denial_reason.category
                 justification = denial_reason.justification
                 timestamp = denial_reason.timestamp

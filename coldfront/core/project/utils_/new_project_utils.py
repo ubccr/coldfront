@@ -392,44 +392,6 @@ class SavioProjectApprovalRunner(ProjectApprovalRunner):
                     allocation=Decimal(value))
 
 
-def savio_request_denial_reason(savio_request):
-    """Return the reason why the given SavioProjectAllocationRequest was
-    denied, based on its 'state' field."""
-    if not isinstance(savio_request, SavioProjectAllocationRequest):
-        raise TypeError(
-            f'Provided request has unexpected type {type(savio_request)}.')
-    if savio_request.status.name != 'Denied':
-        raise ValueError(
-            f'Provided request has unexpected status '
-            f'{savio_request.status.name}.')
-
-    state = savio_request.state
-    eligibility = state['eligibility']
-    readiness = state['readiness']
-    other = state['other']
-
-    DenialReason = namedtuple(
-        'DenialReason', 'category justification timestamp')
-
-    if other['timestamp']:
-        category = 'Other'
-        justification = other['justification']
-        timestamp = other['timestamp']
-    elif eligibility['status'] == 'Denied':
-        category = 'PI Ineligible'
-        justification = eligibility['justification']
-        timestamp = eligibility['timestamp']
-    elif readiness['status'] == 'Denied':
-        category = 'Readiness Criteria Unsatisfied'
-        justification = readiness['justification']
-        timestamp = readiness['timestamp']
-    else:
-        raise ValueError('Provided request has an unexpected state.')
-
-    return DenialReason(
-        category=category, justification=justification, timestamp=timestamp)
-
-
 def savio_request_state_status(savio_request):
     """Return a ProjectAllocationRequestStatusChoice, based on the
     'state' field of the given SavioProjectAllocationRequest."""
@@ -636,10 +598,7 @@ def send_project_request_denial_email(request):
         subject = f'New Project Request ({request.project.name}) Denied'
         template_name = 'email/project_request/new_project_request_denied.txt'
 
-    if isinstance(request, SavioProjectAllocationRequest):
-        reason = savio_request_denial_reason(request)
-    else:
-        reason = vector_request_denial_reason(request)
+    reason = request.denial_reason()
 
     context = {
         'center_name': settings.CENTER_NAME,

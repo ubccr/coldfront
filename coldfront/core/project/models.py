@@ -1,6 +1,7 @@
 import datetime
 import textwrap
 
+from collections import namedtuple
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import MinLengthValidator
@@ -451,6 +452,41 @@ class SavioProjectAllocationRequest(TimeStampedModel):
     extra_fields = models.JSONField(default=dict)
     history = HistoricalRecords()
 
+    def denial_reason(self):
+        """Return the reason why the given SavioProjectAllocationRequest
+        was denied, based on its 'state' field."""
+        if self.status.name != 'Denied':
+            raise ValueError(
+                f'Provided request has unexpected status '
+                f'{self.status.name}.')
+
+        state = self.state
+        eligibility = state['eligibility']
+        readiness = state['readiness']
+        other = state['other']
+
+        DenialReason = namedtuple(
+            'DenialReason', 'category justification timestamp')
+
+        if other['timestamp']:
+            category = 'Other'
+            justification = other['justification']
+            timestamp = other['timestamp']
+        elif eligibility['status'] == 'Denied':
+            category = 'PI Ineligible'
+            justification = eligibility['justification']
+            timestamp = eligibility['timestamp']
+        elif readiness['status'] == 'Denied':
+            category = 'Readiness Criteria Unsatisfied'
+            justification = readiness['justification']
+            timestamp = readiness['timestamp']
+        else:
+            raise ValueError('Provided request has an unexpected state.')
+
+        return DenialReason(
+            category=category, justification=justification,
+            timestamp=timestamp)
+
     def save(self, *args, **kwargs):
         # On creation, set the requested_name.
         if not self.pk:
@@ -489,6 +525,32 @@ class VectorProjectAllocationRequest(TimeStampedModel):
             self.state['setup']['name_change']['requested_name'] = \
                 self.project.name
         super().save(*args, **kwargs)
+
+    def denial_reason(self):
+        """Return the reason why the given
+        VectorProjectAllocationRequest was denied, based on its 'state'
+        field."""
+        if self.status.name != 'Denied':
+            raise ValueError(
+                f'Provided request has unexpected status '
+                f'{self.status.name}.')
+
+        state = self.state
+        eligibility = state['eligibility']
+
+        DenialReason = namedtuple(
+            'DenialReason', 'category justification timestamp')
+
+        if eligibility['status'] == 'Denied':
+            category = 'Requester Ineligible'
+            justification = eligibility['justification']
+            timestamp = eligibility['timestamp']
+        else:
+            raise ValueError('Provided request has an unexpected state.')
+
+        return DenialReason(
+            category=category, justification=justification,
+            timestamp=timestamp)
 
     def __str__(self):
         return (

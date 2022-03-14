@@ -16,7 +16,6 @@ from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils_.new_project_utils import project_allocation_request_latest_update_timestamp
-from coldfront.core.project.utils_.new_project_utils import savio_request_denial_reason
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.utils.common import import_from_settings
@@ -365,7 +364,7 @@ def allocation_renewal_request_denial_reason(request):
         justification = eligibility['justification']
         timestamp = eligibility['timestamp']
     elif new_project_request and new_project_request.status.name == 'Denied':
-        reason = savio_request_denial_reason(new_project_request)
+        reason = new_project_request.denial_reason()
         category = reason.category
         justification = reason.justification
         timestamp = reason.timestamp
