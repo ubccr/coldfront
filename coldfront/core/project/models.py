@@ -453,8 +453,8 @@ class SavioProjectAllocationRequest(TimeStampedModel):
     history = HistoricalRecords()
 
     def denial_reason(self):
-        """Return the reason why the given SavioProjectAllocationRequest
-        was denied, based on its 'state' field."""
+        """Return the reason why the request was denied, based on its
+        'state' field."""
         if self.status.name != 'Denied':
             raise ValueError(
                 f'Provided request has unexpected status '
@@ -486,6 +486,19 @@ class SavioProjectAllocationRequest(TimeStampedModel):
         return DenialReason(
             category=category, justification=justification,
             timestamp=timestamp)
+
+    def latest_update_timestamp(self):
+        """Return the latest timestamp stored in the request's 'state'
+        field, or the empty string.
+
+        The expected values are ISO 8601 strings, or the empty string,
+        so taking the maximum should provide the correct output."""
+        state = self.state
+        max_timestamp = ''
+        for field in state:
+            max_timestamp = max(
+                max_timestamp, state[field].get('timestamp', ''))
+        return max_timestamp
 
     def save(self, *args, **kwargs):
         # On creation, set the requested_name.
@@ -527,9 +540,8 @@ class VectorProjectAllocationRequest(TimeStampedModel):
         super().save(*args, **kwargs)
 
     def denial_reason(self):
-        """Return the reason why the given
-        VectorProjectAllocationRequest was denied, based on its 'state'
-        field."""
+        """Return the reason why the request was denied, based on its
+        'state' field."""
         if self.status.name != 'Denied':
             raise ValueError(
                 f'Provided request has unexpected status '
@@ -551,6 +563,19 @@ class VectorProjectAllocationRequest(TimeStampedModel):
         return DenialReason(
             category=category, justification=justification,
             timestamp=timestamp)
+
+    def latest_update_timestamp(self):
+        """Return the latest timestamp stored in the request's 'state'
+        field, or the empty string.
+
+        The expected values are ISO 8601 strings, or the empty string,
+        so taking the maximum should provide the correct output."""
+        state = self.state
+        max_timestamp = ''
+        for field in state:
+            max_timestamp = max(
+                max_timestamp, state[field].get('timestamp', ''))
+        return max_timestamp
 
     def __str__(self):
         return (

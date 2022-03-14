@@ -13,7 +13,6 @@ from coldfront.core.project.forms_.new_project_forms.request_forms import SavioP
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.models import VectorProjectAllocationRequest
-from coldfront.core.project.utils_.new_project_utils import project_allocation_request_latest_update_timestamp
 from coldfront.core.project.utils_.new_project_utils import ProjectDenialRunner
 from coldfront.core.project.utils_.new_project_utils import SavioProjectApprovalRunner
 from coldfront.core.project.utils_.new_project_utils import savio_request_state_status
@@ -163,8 +162,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
         try:
             latest_update_timestamp = \
-                project_allocation_request_latest_update_timestamp(
-                    self.request_obj)
+                self.request_obj.latest_update_timestamp()
             if not latest_update_timestamp:
                 latest_update_timestamp = 'No updates yet.'
             else:
@@ -971,8 +969,7 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
         try:
             latest_update_timestamp = \
-                project_allocation_request_latest_update_timestamp(
-                    self.request_obj)
+                self.request_obj.latest_update_timestamp()
             if not latest_update_timestamp:
                 latest_update_timestamp = 'No updates yet.'
             else:
