@@ -48,9 +48,9 @@ from coldfront.core.project.utils import (ProjectClusterAccessRequestRunner,
                                           send_project_join_request_approval_email,
                                           send_project_join_request_denial_email)
 from coldfront.core.project.utils_.addition_utils import can_project_purchase_service_units
+from coldfront.core.project.utils_.new_project_utils import add_vector_user_to_designated_savio_project
 from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
 from coldfront.core.project.utils_.renewal_utils import is_any_project_pi_renewable
-from coldfront.core.project.utils_.request_utils import add_vector_user_to_designated_savio_project
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.common import (get_domain_url, import_from_settings)

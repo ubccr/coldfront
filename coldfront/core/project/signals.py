@@ -1,7 +1,7 @@
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.project.models import SavioProjectAllocationRequest
+from coldfront.core.project.utils_.new_project_utils import savio_request_denial_reason
 from coldfront.core.project.utils_.renewal_utils import AllocationRenewalDenialRunner
-from coldfront.core.project.utils_.request_utils import savio_request_denial_reason
 from django.dispatch import receiver
 from django.dispatch import Signal
 import logging

@@ -3,8 +3,8 @@ from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.utils import prorated_allocation_amount
-from coldfront.core.project.forms import SavioProjectDetailsForm
-from coldfront.core.project.forms import SavioProjectSurveyForm
+from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectDetailsForm
+from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectSurveyForm
 from coldfront.core.project.forms_.renewal_forms.request_forms import ProjectRenewalPISelectionForm
 from coldfront.core.project.forms_.renewal_forms.request_forms import ProjectRenewalPoolingPreferenceForm
 from coldfront.core.project.forms_.renewal_forms.request_forms import ProjectRenewalProjectSelectionForm
