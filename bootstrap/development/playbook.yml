@@ -1,6 +1,6 @@
 ---
 
-- name: MyBRC User Portal Development VM Playbook
+- name: MyBRC/LRC User Portal Development VM Playbook
   gather_facts: false
   hosts:
     - all
@@ -209,14 +209,14 @@
 
     - name: Create a WSGI configuration file from a template if SSL is disabled
       template:
-        src: "{{ git_prefix }}/{{ reponame }}/bootstrap/ansible/cf_mybrc_wsgi_conf.tmpl"
-        dest: /etc/httpd/conf.d/cf_mybrc_wsgi.conf
+        src: "{{ git_prefix }}/{{ reponame }}/bootstrap/ansible/wsgi_conf.tmpl"
+        dest: /etc/httpd/conf.d/{{ wsgi_conf_file_name }}
       when: not ssl_enabled
 
     - name: Create a WSGI configuration file from a template if SSL is enabled
       template:
-        src: "{{ git_prefix }}/{{ reponame }}/bootstrap/ansible/cf_mybrc_wsgi_conf_ssl.tmpl"
-        dest: /etc/httpd/conf.d/cf_mybrc_wsgi.conf
+        src: "{{ git_prefix }}/{{ reponame }}/bootstrap/ansible/wsgi_conf_ssl.tmpl"
+        dest: /etc/httpd/conf.d/{{ wsgi_conf_file_name }}
       when: ssl_enabled
 
     - name: Start and enable httpd service
@@ -227,19 +227,19 @@
 
     # Configure the Django application.
 
-    - name: Copy the myBRC local_settings.py file from the sample
+    - name: Copy the ColdFront local_settings.py file from the sample
       ansible.builtin.copy:
         src: "{{ git_prefix }}/{{ reponame }}/coldfront/config/local_settings.py.sample"
         dest: "{{ git_prefix }}/{{ reponame }}/coldfront/config/local_settings.py"
 
-    - name: Copy the myBRC local_strings.py file from the sample
+    - name: Copy the ColdFront local_strings.py file from the sample
       ansible.builtin.copy:
         src: "{{ git_prefix }}/{{ reponame }}/coldfront/config/local_strings.py.sample"
         dest: "{{ git_prefix }}/{{ reponame }}/coldfront/config/local_strings.py"
 
-    - name: Create the myBRC custom _settings.py file from a template
+    - name: Create the deployment-specific _settings.py file from a template
       template:
-        src: "{{ git_prefix }}/{{ reponame }}/bootstrap/ansible/cf_mybrc_settings_template.tmpl"
+        src: "{{ git_prefix }}/{{ reponame }}/bootstrap/ansible/settings_template.tmpl"
         dest: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/config/{{ deployment }}_settings.py"
 
     # Run Django management commands.
@@ -271,7 +271,7 @@
         virtualenv: "{{ git_prefix }}/venv"
       become_user: "{{ djangooperator }}"
 
-    - name: CF MyBRC Django app create_staff_group
+    - name: Run Django management command - create_staff_group
       django_manage:
         command: create_staff_group
         app_path: "{{ git_prefix }}/{{ reponame }}"

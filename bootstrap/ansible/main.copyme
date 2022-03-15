@@ -1,19 +1,14 @@
-#########################################################
-## Settings need for ColdFront based MyBRC Django APP
-
-####################################
+###############################################################################
 # General Settings
-#####################################
-
-# The user running the playbook.
+###############################################################################
 
 domain: localhost
 reponame: coldfront
 djangoprojname: coldfront 
 
-#####################################
-#BRC Config
-#####################################
+###############################################################################
+# BRC Config
+###############################################################################
 
 # The name of the PostgreSQL database.
 db_name: cf_brc_db
@@ -22,21 +17,27 @@ db_name: cf_brc_db
 db_admin_user: admin
 db_admin_passwd: ''
 
-log_path: '/var/log/user_portals/cf_mybrc'
-portal_log_file: 'cf_mybrc_portal.log'
-api_log_file: 'cf_mybrc_api.log'
+# Log paths.
+log_path: /var/log/user_portals/cf_mybrc
+portal_log_file: cf_mybrc_portal.log
+api_log_file: cf_mybrc_api.log
 
+# Email settings.
 email_port: 25
 from_email: brc-hpc-help@berkeley.edu
 admin_email: brc-hpcs@berkeley.edu
 email_subject_prefix: '[MyBRC-User-Portal]'
 
-google_sheets_credentials: '/tmp/credentials.json'
+# Apache settings.
+# The name of the copy of the generated WSGI template in the Apache directory.
+wsgi_conf_file_name: cf_mybrc_wsgi.conf
 
-#####################################
+###############################################################################
 #STAGING SETTINGS
-#####################################
+###############################################################################
 #deployment: staging
+
+# The user running the playbook.
 #djangooperator: root
 
 #debug: True
@@ -55,10 +56,12 @@ ip_range_with_api_access: 0.0.0.0/24
 
 request_approval_cc_list: []
 
-#####################################
+###############################################################################
 #PROD SETTINGS
-#####################################
+###############################################################################
 #deployment: prod
+
+# The user running the playbook.
 #djangooperator: meli
 
 #debug: False

@@ -71,8 +71,7 @@ class Command(BaseCommand):
                 type=str)
 
         all_parser = subparsers.add_parser('all', help='Run all subcommands.')
-        file_names = (
-            'passwd_file', 'group_file', 'pis_managers_file', 'billing_file')
+        file_names = ('passwd_file', 'project_users_file', 'billing_file')
         for file_name in file_names:
             add_file_argument(all_parser, file_name)
 
@@ -80,8 +79,8 @@ class Command(BaseCommand):
             'allocations',
             help=(
                 'Create allocation-related objects, referencing some data '
-                'from the cluster group file.'))
-        add_file_argument(allocations_parser, 'group_file')
+                'from a pre-defined file.'))
+        add_file_argument(allocations_parser, 'project_users_file')
 
         billing_ids_parser = subparsers.add_parser(
             'billing_ids',
@@ -90,17 +89,17 @@ class Command(BaseCommand):
 
         project_pis_and_managers_parser = subparsers.add_parser(
             'project_pis_and_managers',
-            help=(
-                'Load Project PIs and Managers from a pre-defined '
-                'spreadsheet.'))
-        add_file_argument(project_pis_and_managers_parser, 'pis_managers_file')
+            help='Load Project PIs and Managers from a pre-defined file.')
+        add_file_argument(
+            project_pis_and_managers_parser, 'project_users_file')
 
         projects_and_project_users_parser = subparsers.add_parser(
             'projects_and_project_users',
             help=(
-                'Load Projects and their ProjectUsers from the cluster group '
+                'Load Projects and their ProjectUsers from a pre-defined '
                 'file.'))
-        add_file_argument(projects_and_project_users_parser, 'group_file')
+        add_file_argument(
+            projects_and_project_users_parser, 'project_users_file')
 
         users_parser = subparsers.add_parser(
             'users', help='Load users from the cluster passwd file.')
@@ -128,7 +127,7 @@ class Command(BaseCommand):
     def handle_allocations(self, *args, **options):
         """Handle the 'allocations' subcommand."""
         usernames_by_project_name = self.get_project_and_project_users_data(
-            options['group_file'])
+            options['project_users_file'])
         self.set_up_lawrencium_project_allocations(usernames_by_project_name)
         self.set_up_departmental_project_allocations(usernames_by_project_name)
 
@@ -296,13 +295,14 @@ class Command(BaseCommand):
         """Handle the 'project_pis_and_managers' subcommand."""
         project_pis_and_managers_data = \
             self.get_project_pis_and_managers_data(
-                options['pis_managers_file'])
+                options['project_users_file'])
         self.create_project_pis_and_managers(project_pis_and_managers_data)
 
     def handle_projects_and_project_users(self, *args, **options):
         """Handle the 'projects_and_project_users' subcommand."""
         project_and_project_users_data = \
-            self.get_project_and_project_users_data(options['group_file'])
+            self.get_project_and_project_users_data(
+                options['project_users_file'])
         self.create_projects_and_project_users(project_and_project_users_data)
 
     def handle_users(self, *args, **options):
@@ -548,7 +548,7 @@ class Command(BaseCommand):
             names['last'] = full_name[-1]
         return names
 
-    def get_project_pis_and_managers_data(self, pis_managers_file_path):
+    def get_project_pis_and_managers_data(self, project_users_file_path):
         """Given a CSV file containing PIs and POCs for a Project,
         return a mapping from a project's name to a dict containing the
         project's POC names and emails and PI names and emails."""
@@ -594,8 +594,8 @@ class Command(BaseCommand):
 
         departmental_cluster_names = self.get_departmental_cluster_names()
         project_pis_and_managers_data = {}
-        with open(pis_managers_file_path, 'r') as pis_managers_file:
-            reader = csv.reader(pis_managers_file)
+        with open(project_users_file_path, 'r') as project_users_file:
+            reader = csv.reader(project_users_file)
             next(reader)
             for row in reader:
                 fields = [field.strip() for field in row]
@@ -623,27 +623,28 @@ class Command(BaseCommand):
 
         return project_pis_and_managers_data
 
-    def get_project_and_project_users_data(self, group_file_path):
-        """Given a path to the cluster group file, return a mapping from
-        a project's name to a set containing the usernames of the users
-        on the project."""
+    def get_project_and_project_users_data(self, project_users_file_path):
+        """Given a CSV file containing users under a Project, return a
+        mapping from a project's name to a set containing the usernames
+        of the users on the project."""
         departmental_cluster_names = self.get_departmental_cluster_names()
         project_and_project_users_data = {}
-        with open(group_file_path, 'r') as group_file:
-            for line in group_file:
-                fields = [
-                    field.strip() for field in line.rstrip().split(':')]
-                if len(fields) != 4:
+        with open(project_users_file_path, 'r') as project_users_file:
+            reader = csv.reader(project_users_file)
+            next(reader)
+            for row in reader:
+                fields = [field.strip() for field in row]
+                if len(fields) != 10:
                     self.logger.error(
-                        f'The group {fields} does not have 4 fields.')
+                        f'The entry {fields} does not have 10 fields.')
                     continue
-                project_name = fields[0].strip().lower()
+                project_name = fields[1].strip()
                 if not self.is_project_name_valid(
                         project_name, departmental_cluster_names):
-                    self.logger.debug(f'Skipping group {project_name}.')
+                    self.logger.info(f'Skipping Project {project_name}.')
                     continue
                 usernames = set([
-                    u.strip().lower() for u in fields[3].split(',')
+                    u.strip().lower() for u in fields[9].split(',')
                     if u.strip()])
                 project_and_project_users_data[project_name] = usernames
         return project_and_project_users_data
