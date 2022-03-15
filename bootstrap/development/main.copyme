@@ -54,12 +54,17 @@ debug: True
 # The path to the parent directory containing the Git repository.
 git_prefix: /vagrant/coldfront_app
 
+# Host settings.
 hostname: localhost
 host_ip: localhost
 app_port: 80
 full_host_path: http://localhost
 
+# SSL settings.
 ssl_enabled: false
+ssl_certificate_file: /etc/ssl/ssl_certificate.file
+ssl_certificate_key_file: /etc/ssl/ssl_certificate_key.file
+ssl_certificate_chain_file: /etc/ssl/ssl_certification_chain.file
 
 # An IP range, in CIDR notation, to which the REST API is accessible.
 ip_range_with_api_access: 0.0.0.0/0

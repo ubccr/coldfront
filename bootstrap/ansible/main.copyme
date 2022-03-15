@@ -11,71 +11,99 @@ djangoprojname: coldfront
 ###############################################################################
 
 # The name of the PostgreSQL database.
+# TODO: For LRC, set this to 'cf_lrc_db'.
 db_name: cf_brc_db
 
 # The credentials for the database admin user.
+# TODO: Replace the username and password.
 db_admin_user: admin
 db_admin_passwd: ''
 
 # Log paths.
+# TODO: For LRC, use the substring 'cf_mylrc'.
 log_path: /var/log/user_portals/cf_mybrc
 portal_log_file: cf_mybrc_portal.log
 api_log_file: cf_mybrc_api.log
 
 # Email settings.
 email_port: 25
+# TODO: Set these addresses to yours.
 from_email: brc-hpc-help@berkeley.edu
 admin_email: brc-hpcs@berkeley.edu
+# TODO: For LRC, use the substring 'MyLRC'.
 email_subject_prefix: '[MyBRC-User-Portal]'
 
 # Apache settings.
 # The name of the copy of the generated WSGI template in the Apache directory.
+# TODO: For LRC, use the substring 'cf_mylrc'.
 wsgi_conf_file_name: cf_mybrc_wsgi.conf
 
 ###############################################################################
-#STAGING SETTINGS
+# staging_settings
 ###############################################################################
-#deployment: staging
 
-# The user running the playbook.
-#djangooperator: root
+# The type of deployment ('dev', 'prod', 'staging').
+# deployment: staging
 
-#debug: True
-#git_prefix: /var/www/coldfront_app/
-#hostname: scgup-dev.lbl.gov
-#host_ip: 131.243.130.236
-#app_port: 8000
-#full_host_path: http://scgup-dev.lbl.gov:8000
+# The user to run commands under and set permissions using.
+# djangooperator: root
 
-#ssl_enabled: false
-#ssl_certificate_file: /etc/ssl/ssl_certificate.file
-#ssl_certificate_key_file: /etc/ssl/ssl_certificate_key.file
-#ssl_certificate_chain_file: /etc/ssl/ssl_certification_chain.file
+# Whether to run the Django application in DEBUG mode.
+# debug: True
 
-ip_range_with_api_access: 0.0.0.0/24
+# The path to the parent directory containing the Git repository.
+# git_prefix: /var/www/coldfront_app
 
-request_approval_cc_list: []
+# Host settings.
+# hostname: scgup-dev.lbl.gov
+# host_ip: 131.243.130.236
+# app_port: 8000
+# full_host_path: http://scgup-dev.lbl.gov:8000
+
+# SSL settings.
+# ssl_enabled: false
+# ssl_certificate_file: /etc/ssl/ssl_certificate.file
+# ssl_certificate_key_file: /etc/ssl/ssl_certificate_key.file
+# ssl_certificate_chain_file: /etc/ssl/ssl_certification_chain.file
+
+# An IP range, in CIDR notation, to which the REST API is accessible.
+# ip_range_with_api_access: 0.0.0.0/24
+
+# A list of email addresses to CC when certain requests are processed.
+# TODO: Set this address to yours.
+# request_approval_cc_list: []
 
 ###############################################################################
-#PROD SETTINGS
+# prod_settings
 ###############################################################################
-#deployment: prod
 
-# The user running the playbook.
-#djangooperator: meli
+# The type of deployment ('dev', 'prod', 'staging').
+# deployment: prod
 
-#debug: False
-#git_prefix: /var/www/coldfront_app/
-#hostname: mybrc.brc.berkeley.edu
-#host_ip: 136.152.224.34
-#app_port: 8000
-#full_host_path: https://mybrc.brc.berkeley.edu
+# The user to run commands under and set permissions using.
+# djangooperator: meli
 
-#ssl_enabled: true
-#ssl_certificate_file: /etc/ssl/ssl_certificate.file
-#ssl_certificate_key_file: /etc/ssl/ssl_certificate_key.file
-#ssl_certificate_chain_file: /etc/ssl/ssl_certification_chain.file
+# Whether to run the Django application in DEBUG mode.
+# debug: False
 
-ip_range_with_api_access: 10.0.0.0/8
+# The path to the parent directory containing the Git repository.
+# git_prefix: /var/www/coldfront_app
 
-request_approval_cc_list: ['wfeinstein@lbl.gov']
+# Host settings.
+# hostname: mybrc.brc.berkeley.edu
+# host_ip: 136.152.224.34
+# app_port: 8000
+# full_host_path: https://mybrc.brc.berkeley.edu
+
+# SSL settings.
+# ssl_enabled: true
+# ssl_certificate_file: /etc/ssl/ssl_certificate.file
+# ssl_certificate_key_file: /etc/ssl/ssl_certificate_key.file
+# ssl_certificate_chain_file: /etc/ssl/ssl_certification_chain.file
+
+# An IP range, in CIDR notation, to which the REST API is accessible.
+# ip_range_with_api_access: 10.0.0.0/8
+
+# A list of email addresses to CC when certain requests are processed.
+# TODO: Set this address to yours.
+# request_approval_cc_list: ['wfeinstein@lbl.gov']
