@@ -63,6 +63,8 @@ from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.mail import send_email_template
 
+from flags.state import flag_enabled
+
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
     'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
 ALLOCATION_DEFAULT_ALLOCATION_LENGTH = import_from_settings(
@@ -151,6 +153,8 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                     AttributeError,
                     ValueError):
                 usage = '0.00'
+            if not flag_enabled('LRC_ONLY'):
+                continue
             allocation_user_su_usages[username] = usage
             try:
                 billing_attribute = user_attributes.filter(
@@ -166,7 +170,9 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         context['has_service_units'] = has_service_units
         context['allocation_user_su_usages'] = allocation_user_su_usages
-        context['allocation_user_billing_ids'] = allocation_user_billing_ids
+        if flag_enabled('LRC_ONLY'):
+            context['allocation_user_billing_ids'] = \
+                allocation_user_billing_ids
 
         if self.request.user.is_superuser:
             attributes_with_usage = [attribute for attribute in allocation_obj.allocationattribute_set.all(
@@ -183,17 +189,23 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                 allocation_attribute_type__is_private=False)]
 
         # Annotate each attribute with a display value.
+        filtered_attributes = []
         for attribute in attributes:
-            if attribute.allocation_attribute_type.name == 'Billing Activity':
+            is_billing_activity = (
+                attribute.allocation_attribute_type.name == 'Billing Activity')
+            if is_billing_activity:
                 attribute.display_name = 'Billing ID'
                 try:
                     attribute.display_value = BillingActivity.objects.get(
                         pk=int(attribute.value)).full_id()
                 except (BillingActivity.DoesNotExist, ValueError):
                     attribute.display_value = attribute.value
+                if flag_enabled('LRC_ONLY'):
+                    filtered_attributes.append(attribute)
             else:
                 attribute.display_name = str(attribute)
                 attribute.display_value = attribute.value
+                filtered_attributes.append(attribute)
 
         guage_data = []
         invalid_attributes = []
@@ -223,7 +235,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         context['guage_data'] = guage_data
         context['attributes_with_usage'] = attributes_with_usage
-        context['attributes'] = attributes
+        context['attributes'] = filtered_attributes
 
         # Can the user update the project?
         if self.request.user.is_superuser:
