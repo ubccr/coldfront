@@ -3,34 +3,18 @@ from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestRun
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.user.models import *
 from coldfront.core.allocation.models import *
+from coldfront.core.utils.tests.test_base import TestBase
 
-from django.test import TestCase
 from django.contrib.auth.models import User
 from django.core import mail
-from django.core.management import call_command
-
-from io import StringIO
-import os
-import sys
 
 
-class TestProjectRemovalRequestRunner(TestCase):
+class TestProjectRemovalRequestRunner(TestBase):
     """A testing class for ProjectRemovalRequestRunner."""
 
     def setUp(self):
         """Set up test data."""
-        out, err = StringIO(), StringIO()
-        commands = [
-            'add_resource_defaults',
-            'add_allocation_defaults',
-            'import_field_of_science_data',
-            'add_default_project_choices',
-            'create_staff_group',
-        ]
-        sys.stdout = open(os.devnull, 'w')
-        for command in commands:
-            call_command(command, stdout=out, stderr=err)
-        sys.stdout = sys.__stdout__
+        super().setUp()
 
         # Create a requester user and multiple PI users.
         self.user1 = User.objects.create(

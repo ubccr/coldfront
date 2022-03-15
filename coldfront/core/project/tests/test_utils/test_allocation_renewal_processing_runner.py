@@ -1,6 +1,5 @@
 from coldfront.api.statistics.utils import create_project_allocation
 from coldfront.api.statistics.utils import create_user_project_allocation
-from coldfront.api.statistics.utils import set_project_user_allocation_value
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
@@ -29,20 +28,16 @@ from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.utils.tests.test_base import TestBase
 from datetime import date
 from datetime import timedelta
 from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import mail
-from django.core.management import call_command
-from django.db import IntegrityError
 from django.db.models import Q
 from django.test import override_settings
 from django.test import TestCase
-from io import StringIO
-import os
-import sys
 
 
 class TestRunnerMixin(object):
@@ -50,21 +45,7 @@ class TestRunnerMixin(object):
 
     def setUp(self):
         """Set up test data."""
-        out, err = StringIO(), StringIO()
-        commands = [
-            'add_resource_defaults',
-            'add_allocation_defaults',
-            'add_accounting_defaults',
-            'create_allocation_periods',
-            # This command calls 'print', whose output must be suppressed.
-            'import_field_of_science_data',
-            'add_default_project_choices',
-            'create_staff_group',
-        ]
-        sys.stdout = open(os.devnull, 'w')
-        for command in commands:
-            call_command(command, stdout=out, stderr=err)
-        sys.stdout = sys.__stdout__
+        TestBase.call_setup_commands()
 
         self.allocation_period = AllocationPeriod.objects.get(name='AY21-22')
 
