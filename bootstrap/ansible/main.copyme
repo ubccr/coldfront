@@ -7,7 +7,7 @@ reponame: coldfront
 djangoprojname: coldfront 
 
 ###############################################################################
-# BRC Config
+# BRC/LRC Config
 ###############################################################################
 
 # The name of the PostgreSQL database.
@@ -39,6 +39,10 @@ email_subject_prefix: '[MyBRC-User-Portal]'
 wsgi_conf_file_name: cf_mybrc_wsgi.conf
 # TODO: For LRC, use the substring 'cf_lrc'.
 wsgi_conf_log_prefix: cf_brc
+
+# Portal settings.
+# TODO: For LRC, use the string "MyLRC".
+portal_name: "MyBRC"
 
 ###############################################################################
 # staging_settings

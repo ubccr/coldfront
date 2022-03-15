@@ -40,6 +40,10 @@ wsgi_conf_file_name: cf_mybrc_wsgi.conf
 # TODO: For LRC, use the substring 'cf_lrc'.
 wsgi_conf_log_prefix: cf_brc
 
+# Portal settings.
+# TODO: For LRC, use the string "MyLRC".
+portal_name: "MyBRC"
+
 ###############################################################################
 # dev_settings
 ###############################################################################
