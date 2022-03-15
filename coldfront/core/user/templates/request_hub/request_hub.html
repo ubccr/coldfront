@@ -1,0 +1,123 @@
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% block content %}
+
+  <h1>Request Hub</h1>
+
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <tbody>
+      <tr>
+        <td>
+          {% if show_all %}
+              Below are all of the requests in MyBRC. Click on a request
+              section to view requests of that type. To perform actions on a specific request,
+              click the button to go to the request's main page and perform the actions there.
+              Click <a href="{% url 'request-hub' %}">here</a> to view only your requests.
+          {% else %}
+              Below are all of your requests in MyBRC. Click on a request
+              section to view your requests of that type.
+
+              {% if admin_staff %}
+                Click <a href="{% url 'request-hub-admin' %}">here</a> to view all requests in MyBRC.
+              {% endif %}
+          {% endif %}
+        </td>
+      </tr>
+      <tr><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card mb-3 bg-light">
+    <div class="card-header">
+      <div class="float-left">
+        <button id="collapse_all_button" type="button" class="btn btn-primary">
+          Collapse All
+          <i class="fas fa-minus" aria-hidden="true"></i>
+        </button>
+        <button id="expand_all_button" type="button" class="btn btn-primary">
+          Expand All
+          <i class="fas fa-plus" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  {% with request_obj=cluster_account_request_obj %}
+    {% include 'request_hub/request_section.html' %}
+  {% endwith %}
+
+  {% with request_obj=project_join_request_obj %}
+    {% include 'request_hub/request_section.html' %}
+  {% endwith %}
+
+  {% with request_obj=project_removal_request_obj %}
+    {% include 'request_hub/request_section.html' %}
+  {% endwith %}
+
+  {% with request_obj=project_renewal_request_obj %}
+    {% include 'request_hub/request_section.html' %}
+  {% endwith %}
+
+  {% with request_obj=savio_project_request_obj %}
+    {% include 'request_hub/request_section.html' %}
+  {% endwith %}
+
+  {% with request_obj=su_purchase_request_obj %}
+    {% include 'request_hub/request_section.html' %}
+  {% endwith %}
+
+  {% with request_obj=vector_project_request_obj %}
+    {% include 'request_hub/request_section.html' %}
+  {% endwith %}
+
+  <script>
+    {# set variables to be used for scroll position #}
+      window.onbeforeunload = function(e) {
+          localStorage.setItem('scrollpos', window.scrollY);
+          localStorage.setItem('resetpos', true);
+      };
+
+      $("#navbar-main > ul > li.active").removeClass("active");
+      $("#navbar-request-hub").addClass("active");
+
+      $(document).ready(function () {
+          {# maintains collapse status on reload #}
+          $(".collapse").on("shown.bs.collapse", function () {
+              localStorage.setItem("coll_" + this.id, true);
+          });
+
+          $(".collapse").on("hidden.bs.collapse", function () {
+              localStorage.removeItem("coll_" + this.id);
+          });
+
+          $(".collapse").each(function () {
+              if (localStorage.getItem("coll_" + this.id) === "true") {
+                  $(this).collapse("show");
+              }
+              else {
+                  $(this).collapse("hide");
+              }
+          });
+
+          {# maintains scroll position on reload #}
+          var scrollpos = localStorage.getItem('scrollpos');
+          var resetpos = localStorage.getItem('resetpos');
+          if (scrollpos && resetpos) window.scrollTo(0, scrollpos);
+
+          $(document).on('click', '#expand_all_button', function() {
+              document.querySelectorAll("[id^='collapse-']").forEach(function (item, index) {
+                  $(item).collapse("show");
+              });
+          });
+
+          $(document).on('click', '#collapse_all_button', function() {
+              document.querySelectorAll("[id^='collapse-']").forEach(function (item, index) {
+                  $(item).collapse("hide");
+              });
+          });
+
+      });
+  </script>
+
+{% endblock %}

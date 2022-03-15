@@ -185,12 +185,14 @@ class TestSlurmJobListView(TestJobBase):
         self.assertContains(response, '<span class="badge badge-success">COMPLETED</span>')
         self.assertNotContains(response, '<span class="badge badge-success">COMPLETING</span>')
         self.assertNotContains(response, 'Show All Jobs')
+        self.assertNotContains(response, 'div_id_username')
 
         # user2 should not be able to see job2
         response = self.get_response(self.user2, url)
         self.assertNotContains(response, self.job1.jobslurmid)
         self.assertNotContains(response, self.job2.jobslurmid)
         self.assertNotContains(response, 'Show All Jobs')
+        self.assertNotContains(response, 'Username')
 
     def test_pi_manager_list_view_content(self):
         """Testing content when users access SlurmJobListView"""
@@ -198,11 +200,13 @@ class TestSlurmJobListView(TestJobBase):
 
         response = self.get_response(self.pi, url)
         self.assertContains(response, self.job1.jobslurmid)
+        self.assertContains(response, 'div_id_username')
         self.assertNotContains(response, self.job2.jobslurmid)
         self.assertNotContains(response, 'Show All Jobs')
 
         response = self.get_response(self.manager, url)
         self.assertContains(response, self.job1.jobslurmid)
+        self.assertContains(response, 'div_id_username')
         self.assertNotContains(response, self.job2.jobslurmid)
         self.assertNotContains(response, 'Show All Jobs')
 
@@ -221,6 +225,7 @@ class TestSlurmJobListView(TestJobBase):
             self.assertNotContains(response, self.job2.jobslurmid)
             self.assertContains(response, 'Show All Jobs')
             self.assertContains(response, 'Viewing only jobs belonging to')
+            self.assertContains(response, 'div_id_username')
             self.assertNotContains(response, 'Viewing all jobs.')
             self.assertNotContains(response, 'Viewing your jobs and the jobs')
 
@@ -229,6 +234,7 @@ class TestSlurmJobListView(TestJobBase):
             self.assertContains(response, self.job2.jobslurmid)
             self.assertContains(response, 'Show All Jobs')
             self.assertContains(response, 'Show All Jobs')
+            self.assertContains(response, 'div_id_username')
             self.assertNotContains(response, 'Viewing only jobs belonging to')
             self.assertContains(response, 'Viewing all jobs.')
             self.assertNotContains(response, 'Viewing your jobs and the jobs')

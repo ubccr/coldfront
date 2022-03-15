@@ -1,0 +1,77 @@
+<div class="mb-3" id="accordion{{ request_obj.num }}">
+  <div class="card" id="{{ request_obj.id }}">
+    <div class="card-header">
+      <a id="expand_button{{ request_obj.num }}" role="button" class="card-link " data-toggle="collapse" href="#collapse-{{ request_obj.num }}">
+        <div style="text-align: left;">
+          <strong>
+            {{ request_obj.title}}
+            {% include 'request_hub/help_text_popover.html' %}
+            {% if request_obj.num_pending %}
+              <span class="badge badge-warning float-right">
+                <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                {{ request_obj.num_pending }} pending request{% if request_obj.num_pending > 1 %}s{% endif %} </span>
+            {% endif %}
+          </strong>
+        </div>
+      </a>
+    </div>
+    <div id="collapse-{{ request_obj.num }}" class="collapse hide" data-parent="#accordion{{ request_obj.num }}" style="transition: none;">
+      <div class="card">
+        {% with queryset=request_obj.pending_queryset adj='pending' page_num=request_obj.num title=request_obj.title actions_visible=false %}
+          <div class="card border-light" id="{{ request_obj.id }}_{{ adj }}">
+            <div class="card-body">
+              {% if queryset %}
+                <div class="card border-light">
+                  <div class="card-body">
+                    <h5 class="card-title"><span style="text-transform:capitalize;">{{ adj }} {{ title }}</span></h5>
+                    <div class="table-responsive">
+                      {% include request_obj.table %}
+                      {% with page_obj=queryset %}
+                        {% include 'common/pagination.html' %}
+                      {% endwith %}
+                    </div>
+                  </div>
+                </div>
+              {% else %}
+                <div class="alert alert-info">
+                  No {{ adj }} <span style="text-transform:lowercase;">{{ title }}</span>!
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        {% endwith %}
+        {% with queryset=request_obj.complete_queryset adj='completed' page_num=request_obj.num|add:1 title=request_obj.title actions_visible=false %}
+          <div class="card border-light" id="{{ request_obj.id }}_{{ adj }}">
+            <div class="card-body">
+              {% if queryset %}
+                <div class="card border-light">
+                  <div class="card-body">
+                    <h5 class="card-title"><span style="text-transform:capitalize;">{{ adj }} {{ title }}</span></h5>
+                    <div class="table-responsive">
+                      {% include request_obj.table %}
+                      {% with page_obj=queryset %}
+                        {% include 'common/pagination.html' %}
+                      {% endwith %}
+                    </div>
+                  </div>
+                </div>
+              {% else %}
+                <div class="alert alert-info">
+                  No {{ adj }} <span style="text-transform:lowercase;">{{ title }}</span>!
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        {% endwith %}
+        {% if admin_staff %}
+          <div class="card-body">
+            <a class="btn btn-primary" href="{% url request_obj.button_path %}" role="button" style="float: right;">
+              <i class="fa fa-angle-double-right" aria-hidden="true"></i>
+              {{ request_obj.button_text }}
+            </a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>

@@ -11,10 +11,8 @@ from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.utils.common import project_detail_url
 from coldfront.core.utils.common import utc_now_offset_aware
-from coldfront.core.utils.common import validate_num_service_units
 from coldfront.core.utils.mail import send_email_template
 
-from collections import namedtuple
 from decimal import Decimal
 from django.conf import settings
 

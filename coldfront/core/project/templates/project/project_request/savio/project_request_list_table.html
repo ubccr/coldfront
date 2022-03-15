@@ -1,0 +1,69 @@
+<table class="table table-sm">
+  <thead>
+  <tr>
+    <th scope="col">
+      #
+      <a href="?order_by=id&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+      <a href="?order_by=id&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+    </th>
+    <th scope="col">
+      Date Requested/<br>Last Modified
+      <a href="?order_by=modified&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+      <a href="?order_by=modified&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+    </th>
+    <th scope="col">
+      Requester Email
+      <a href="?order_by=requester__email&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+      <a href="?order_by=requester__email&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+    </th>
+    <th scope="col">
+      Project
+      <a href="?order_by=project&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+      <a href="?order_by=project&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+    </th>
+    <th scope="col">
+      Allocation Type
+      <a href="?order_by=allocation_type&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+      <a href="?order_by=allocation_type&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+    </th>
+    <th scope="col">Pooling?</th>
+    <th scope="col">
+      PI
+      <a href="?order_by=pi&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+      <a href="?order_by=pi&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+    </th>
+    <th scope="col">Status</th>
+  </tr>
+  </thead>
+  <tbody>
+  {% for savio_project_request in queryset %}
+    <tr>
+      <td>
+        <a href="{% url 'savio-project-request-detail' savio_project_request.pk %}">
+          <span class="accessibility-link-text">Project {{ savio_project_request.pk }}</span>
+          {{ savio_project_request.pk }}
+        </a>
+      </td>
+      <td>{{ savio_project_request.modified|date:"M. d, Y" }}</td>
+      <td>{{ savio_project_request.requester.email }}</td>
+      <td>{{ savio_project_request.project.name }}</td>
+      <td>{{ savio_project_request.allocation_type }}</td>
+      <td>{{ savio_project_request.pool }}</td>
+      <td>{{ savio_project_request.pi.email }}</td>
+      <td>
+        {% with status=savio_project_request.status.name %}
+          {% if status == 'Under Review' %}
+            <span class="badge badge-warning">{{ status }}</span>
+          {% elif status == 'Approved - Processing' %}
+            <span class="badge badge-warning">{{ status }}</span>
+          {% elif status == 'Approved - Complete' %}
+            <span class="badge badge-success">{{ status }}</span>
+          {% else %}
+            <span class="badge badge-danger">{{ status }}</span>
+          {% endif %}
+        {% endwith %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>

@@ -1865,6 +1865,8 @@ class AllocationClusterAccountRequestListView(LoginRequiredMixin,
 
         context['cluster_account_list'] = cluster_accounts
 
+        context['actions_visible'] = not self.completed
+
         return context
 
 
