@@ -37,6 +37,8 @@ email_subject_prefix: '[MyBRC-User-Portal]'
 # The name of the copy of the generated WSGI template in the Apache directory.
 # TODO: For LRC, use the substring 'cf_mylrc'.
 wsgi_conf_file_name: cf_mybrc_wsgi.conf
+# TODO: For LRC, use the substring 'cf_lrc'.
+wsgi_conf_log_prefix: cf_brc
 
 ###############################################################################
 # staging_settings
