@@ -25,20 +25,9 @@ logger.setLevel(logging.DEBUG)
 filehandler = logging.FileHandler(f'coldfront/plugins/sftocf/data/logs/sfc{datestr}.log', 'w')
 logger.addHandler(filehandler)
 
-svp = {
-"holysfdb01": {
-    "holylfs04":"HDD/C/LABS",
-    'holylfs05':"C/LABS",
-    'holystore01':"C/LABS",
-    },
-"holysfdb02": {
-    "boslfs02":"LABS",
-    "bos-isilon":"rc_labs",
-    "holy-isilon":"rc_labs",
-    "holylfs02":"LABS",
-  }
-}
 
+with open("coldfront/plugins/sftocf/servers.json", "r") as myfile:
+    svp = json.loads(myfile.read())
 
 def record_process(func):
     """Wrapper function for logging"""
