@@ -24,4 +24,6 @@ urlpatterns = [
     path('user-search-home/', user_views.UserSearchHome.as_view(), name='user-search-home'),
     path('user-search-results/', user_views.UserSearchResults.as_view(), name='user-search-results'),
     path('user-list-allocations/', user_views.UserListAllocations.as_view(), name='user-list-allocations'),
+    path('user-statistics/', user_views.UserStatistics.as_view(), name='user-statistics'),
+    path('user-statistics/<str:viewed_username>', user_views.UserStatistics.as_view(), name='user-statistics'),
 ]

@@ -1,0 +1,382 @@
+@font-face {
+  font-family: 'BentonSansRegular';
+  src: url("https://fonts.iu.edu/fonts/benton-sans-regular.eot");
+  src: url("https://fonts.iu.edu/fonts/benton-sans-regular.eot?#iefix") format("embedded-opentype"), url("https://fonts.iu.edu/fonts/benton-sans-regular.woff") format("woff"), url("https://fonts.iu.edu/fonts/benton-sans-regular.ttf") format("truetype"), url("https://fonts.iu.edu/fonts/benton-sans-regular.svg#BentonSansRegular") format("svg");
+  font-display: swap;
+  font-style: normal;
+  font-weight: normal;
+}
+
+@font-face {
+  font-family: 'BentonSansCondRegular';
+  src: url("https://fonts.iu.edu/fonts/benton-sans-cond-regular.eot");
+  src: url("https://fonts.iu.edu/fonts/benton-sans-cond-regular.eot?#iefix") format("embedded-opentype"), url("https://fonts.iu.edu/fonts/benton-sans-cond-regular.woff") format("woff"), url("https://fonts.iu.edu/fonts/benton-sans-cond-regular.ttf") format("truetype"), url("https://fonts.iu.edu/fonts/benton-sans-cond-regular.svg#BentonSansCondRegular") format("svg");
+  font-display: swap;
+  font-style: normal;
+  font-weight: normal;
+}
+
+@font-face {
+  font-family: 'BentonSansCondBold';
+  src: url("https://fonts.iu.edu/fonts/benton-sans-cond-bold.eot");
+  src: url("https://fonts.iu.edu/fonts/benton-sans-cond-bold.eot?#iefix") format("embedded-opentype"), url("https://fonts.iu.edu/fonts/benton-sans-cond-bold.woff") format("woff"), url("https://fonts.iu.edu/fonts/benton-sans-cond-bold.ttf") format("truetype"), url("https://fonts.iu.edu/fonts/benton-sans-cond-bold.svg#BentonSansCondBold") format("svg");
+  font-display: swap;
+  font-style: normal;
+  font-weight: normal;
+}
+
+@font-face {
+  font-family: 'GeorgiaProBoldItalic';
+  src: url("https://fonts.iu.edu/fonts/georgia-pro-bold-italic.eot");
+  src: url("https://fonts.iu.edu/fonts/georgia-pro-bold-italic.eot?#iefix") format("embedded-opentype"), url("https://fonts.iu.edu/fonts/georgia-pro-bold-italic.woff") format("woff"), url("https://fonts.iu.edu/fonts/georgia-pro-bold-italic.ttf") format("truetype"), url("https://fonts.iu.edu/fonts/georgia-pro-bold-italic.svg#GeorgiaProBoldItalic") format("svg");
+  font-display: swap;
+  font-style: normal;
+  font-weight: normal;
+}
+
+.visually-hidden {
+  position: absolute;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  width: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+}
+
+#branding-bar,
+#footer {
+  -webkit-font-smoothing: initial;
+  -moz-font-smoothing: initial;
+  font-smoothing: initial;
+}
+
+#branding-bar *,
+#footer * {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+#branding-bar .row,
+#footer .row {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 0;
+  margin-bottom: 0;
+  max-width: 64rem;
+  position: relative;
+}
+
+#branding-bar .row:before, #branding-bar .row:after,
+#footer .row:before,
+#footer .row:after {
+  content: " ";
+  display: table;
+}
+
+#branding-bar .row:after,
+#footer .row:after {
+  clear: both;
+}
+
+#branding-bar .row.pad,
+#footer .row.pad {
+  padding-left: 0.9375rem;
+  padding-right: 0.9375rem;
+  width: 100%;
+}
+
+#branding-bar {
+  background-color: #7A1705;
+  border-top: 5px solid #990000;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 10;
+}
+
+#branding-bar .show-on-mobile {
+  display: inline;
+}
+
+#branding-bar .show-on-tablet,
+#branding-bar .show-on-desktop {
+  display: none;
+}
+
+#branding-bar:after {
+  content: "";
+  bottom: -3px;
+  position: absolute;
+  width: 100%;
+  height: 3px;
+  background: rgba(74, 61, 48, 0.3);
+  z-index: 8;
+}
+
+#branding-bar img {
+  position: absolute;
+  top: -5px;
+  left: 0.9375rem;
+  width: 43px;
+  -webkit-transition: all 0.5s;
+  -moz-transition: all 0.5s;
+  transition: all 0.5s;
+  z-index: 9;
+}
+
+#branding-bar h1,
+#branding-bar #iu-campus {
+  font-family: BentonSansCondRegular, Arial, serif;
+  font-weight: normal;
+  color: #fff;
+  font-size: 18px;
+  float: left;
+  line-height: 45px;
+  margin: 0;
+  padding-left: 58px;
+  text-transform: uppercase;
+  -webkit-transition: all 0.25s;
+  -moz-transition: all 0.25s;
+  transition: all 0.25s;
+}
+
+#branding-bar h1 a,
+#branding-bar #iu-campus a {
+  color: #fff;
+  text-decoration: none;
+}
+
+#branding-bar h1 span,
+#branding-bar #iu-campus span {
+  font-family: inherit;
+}
+
+#branding-bar h1 .show-on-tablet,
+#branding-bar h1 .show-on-mobile,
+#branding-bar #iu-campus .show-on-tablet,
+#branding-bar #iu-campus .show-on-mobile {
+  font-size: 17px;
+}
+
+#branding-bar a:focus {
+  outline: none;
+}
+
+#branding-bar a:focus span {
+  outline: .125rem solid #fff;
+  outline-offset: .125rem;
+  padding: 2px;
+}
+
+#branding-bar.iupui #iu-campus,
+#branding-bar.iupuc #iu-campus {
+  font-size: 27px;
+}
+
+#branding-bar.iupui #iu-campus .show-on-tablet,
+#branding-bar.iupui #iu-campus .show-on-mobile,
+#branding-bar.iupuc #iu-campus .show-on-tablet,
+#branding-bar.iupuc #iu-campus .show-on-mobile {
+  font-size: 27px;
+}
+
+#footer {
+  padding: 24px 0;
+  text-align: center;
+  position: relative;
+  font-family: BentonSansRegular, Arial, serif;
+  font-weight: normal;
+}
+
+#footer a {
+  color: #990000;
+}
+
+#footer a:focus {
+  outline: .125rem solid #990000;
+  outline-offset: .125rem;
+}
+
+#footer .signature {
+  text-align: center;
+}
+
+#footer .signature-link {
+  background: url("iu-sig-formal.svg") no-repeat left top;
+  background-size: contain;
+  display: inline-block;
+  height: 0;
+  padding-top: 36px;
+  overflow: hidden;
+  width: 240px;
+}
+
+#footer .signature-link.signature-img {
+  background-image: none;
+  height: auto;
+  width: 15rem;
+  padding-top: 0;
+}
+
+#footer p {
+  font-size: 0.75rem;
+  line-height: 24px;
+  margin: 0;
+  clear: left;
+}
+
+#footer .tagline {
+  font-family: BentonSansCondBold, Arial, serif;
+  font-weight: normal;
+  -webkit-font-smoothing: antialiased;
+  background: #7A1705;
+  color: #fff;
+  font-size: 1.375rem;
+  line-height: 2.5rem;
+  margin: -24px -0.9375rem 24px -0.9375rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+}
+
+#footer .tagline span {
+  text-transform: lowercase;
+  font-family: GeorgiaProBoldItalic, Georgia, serif;
+  font-size: 1rem;
+  vertical-align: 2px;
+  letter-spacing: 0;
+  margin-left: -4px;
+}
+
+#footer .tagline a:focus {
+  outline-color: #fff;
+}
+
+#footer .tagline.bicentennial {
+  font-family: inherit;
+  letter-spacing: .1em;
+}
+
+#footer .tagline.bicentennial.celebration {
+  font-size: inherit;
+  padding-bottom: 2px;
+}
+
+#footer .tagline.celebration a {
+  color: #fff;
+  text-decoration: none;
+}
+
+#footer .tagline.celebration svg {
+  vertical-align: middle;
+}
+
+@media screen and (max-width: 350px) {
+  #footer .line-break-small {
+    display: block;
+  }
+}
+
+@media screen and (max-width: 420px) {
+  #footer .line-break {
+    display: block;
+  }
+  #footer .hide-on-mobile {
+    display: none;
+  }
+}
+
+@media only screen and (min-width: 40em) {
+  /* Campus names */
+  #branding-bar .show-on-tablet {
+    display: inline;
+  }
+  #branding-bar .show-on-mobile,
+  #branding-bar .show-on-desktop {
+    display: none;
+  }
+  #footer {
+    text-align: left;
+    border-top: 6px solid #7A1705;
+    padding: 32px 0 24px;
+  }
+  #footer p {
+    line-height: 2.25rem;
+  }
+  #footer .signature {
+    float: left;
+    text-align: left;
+    height: 36px;
+  }
+  #footer .copyright {
+    float: right;
+    clear: right;
+    text-align: right;
+  }
+  #footer .tagline {
+    font-size: 1.5rem;
+    position: absolute;
+    left: 50%;
+    margin: 0 -200px 0 0;
+    top: -55px;
+    padding: 0 24px;
+    -webkit-transform: translateX(-50%);
+    -moz-transform: translateX(-50%);
+    -ms-transform: translateX(-50%);
+    -o-transform: translateX(-50%);
+    transform: translateX(-50%);
+  }
+  #footer .tagline.bicentennial {
+    padding: 0 16px;
+  }
+}
+
+@media only screen and (min-width: 1025px) {
+  #branding-bar {
+    margin-bottom: 15px;
+    /* account for trident */
+    position: relative;
+  }
+  #branding-bar:after {
+    height: 0;
+  }
+  #branding-bar img {
+    position: absolute;
+    top: -5px;
+    width: 65px;
+  }
+  #branding-bar h1,
+  #branding-bar #iu-campus {
+    line-height: 52px;
+    padding-left: 80px;
+  }
+  #branding-bar .search {
+    margin-top: 6px;
+    float: right;
+    width: 250px;
+  }
+  #branding-bar input[type='text'] {
+    width: 80%;
+    float: left;
+    margin-bottom: 0;
+  }
+  #branding-bar input[type='submit'].button {
+    width: 20%;
+    float: left;
+    border-radius: 0;
+  }
+}
+
+@media only screen and (min-width: 1025px) {
+  /* Campus names */
+  #branding-bar .show-on-desktop {
+    display: inline !important;
+  }
+  #branding-bar .show-on-tablet,
+  #branding-bar .show-on-desktop {
+    display: none;
+  }
+}

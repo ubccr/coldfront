@@ -2,12 +2,9 @@ import datetime
 # import the logging library
 import logging
 
-from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
-
 from coldfront.core.allocation.models import (Allocation, AllocationAttribute,
                                               AllocationStatusChoice)
-from coldfront.core.utils.common import get_domain_url, import_from_settings
+from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
 
 # Get an instance of a logger

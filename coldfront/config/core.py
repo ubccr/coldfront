@@ -14,9 +14,15 @@ CENTER_PROJECT_RENEWAL_HELP_URL = ENV.str('CENTER_PROJECT_RENEWAL_HELP_URL', def
 CENTER_BASE_URL = ENV.str('CENTER_BASE_URL', default='')
 
 #------------------------------------------------------------------------------
-# Enable Project Review
+# Project related
 #------------------------------------------------------------------------------
 PROJECT_ENABLE_PROJECT_REVIEW = ENV.bool('PROJECT_ENABLE_PROJECT_REVIEW', default=True)
+PROJECT_DEFAULT_PROJECT_LENGTH = ENV.int('PROJECT_DEFAULT_PROJECT_LENGTH', default=365)
+PROJECT_CLASS_PROJECT_END_DATES = ENV.list(
+    'PROJECT_CLASS_PROJECT_END_DATES',
+    default=[(1, 19), (5, 11), (8, 23)]
+)
+PROJECT_DEFAULT_MAX_MANAGERS = ENV.int('PROJECT_DEFAULT_MAX_MANAGERS', default=3)
 
 #------------------------------------------------------------------------------
 # Allocation related
@@ -25,10 +31,18 @@ ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT = ENV.bool('ALLOCATION_ENABLE_CHANG
 ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS = ENV.list('ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS', cast=int, default=[30, 60, 90])
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = ENV.bool('ALLOCATION_ENABLE_ALLOCATION_RENEWAL', default=True)
 ALLOCATION_FUNCS_ON_EXPIRE = ['coldfront.core.allocation.utils.test_allocation_function', ]
+#------------------------------------------------------------------------------
+# Resource related
+#------------------------------------------------------------------------------
+RESOURCE_ENABLE_ACCOUNT_CHECKING = ENV.bool('RESOURCE_ENABLE_ACCOUNT_CHECKING', default=True)
 
 # This is in days
 ALLOCATION_DEFAULT_ALLOCATION_LENGTH = ENV.int('ALLOCATION_DEFAULT_ALLOCATION_LENGTH', default=365)
 
+#------------------------------------------------------------------------------
+# Resource related
+#------------------------------------------------------------------------------
+SLATE_PROJECT_MAX_ALLOCATED_STORAGE = ENV.int('SLATE_PROJECT_MAX_ALLOCATED_STORAGE', default=60)
 
 #------------------------------------------------------------------------------
 # Allow user to select account name for allocation
