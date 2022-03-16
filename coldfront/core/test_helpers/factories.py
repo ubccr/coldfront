@@ -1,15 +1,13 @@
-from factory import (
-    DjangoModelFactory,
-    SubFactory,
-)
+from coldfront.core.field_of_science.models import FieldOfScience
+from coldfront.core.resource.models import ResourceType
+from coldfront.core.project.models import Project, ProjectStatusChoice
+from coldfront.core.grant.models import GrantFundingAgency, GrantStatusChoice
+from coldfront.core.publication.models import PublicationSource
 
 from django.contrib.auth.models import User
-from coldfront.core.field_of_science.models import FieldOfScience
-from coldfront.core.project.models import (
-    Project,
-    ProjectStatusChoice,
-)
-from coldfront.core.publication.models import PublicationSource
+
+from factory.django import DjangoModelFactory
+from factory import SubFactory
 
 
 class UserFactory(DjangoModelFactory):
@@ -20,6 +18,16 @@ class UserFactory(DjangoModelFactory):
 class FieldOfScienceFactory(DjangoModelFactory):
     class Meta:
         model = FieldOfScience
+
+
+class GrantFundingAgencyFactory(DjangoModelFactory):
+    class Meta:
+        model = GrantFundingAgency
+
+
+class GrantStatusChoiceFactory(DjangoModelFactory):
+    class Meta:
+        model = GrantStatusChoice
 
 
 class ProjectStatusChoiceFactory(DjangoModelFactory):
@@ -46,3 +54,8 @@ class PublicationSourceFactory(DjangoModelFactory):
 
     name = 'doi'
     url = 'https://doi.org/'
+
+
+class ResourceTypeFactory(DjangoModelFactory):
+    class Meta:
+        model = ResourceType

@@ -1,14 +1,14 @@
 # Deploying ColdFront in Production
 
 This document outlines how to run ColdFront in production. ColdFront is written
-in python3 and uses the Django web framework.  Here we show case deploying
+in python3 and uses the Django web framework.  Here we showcase deploying
 ColdFront using Gunicorn and nginx but any method for deploying Django in
 production could be used. For a more comprehensive list of methods [see
 here](https://docs.djangoproject.com/en/3.1/howto/deployment/).
 
 ## Preliminaries
 
-It's recommended to create non-root user for running ColdFront. The Gunicorn
+It's recommended to create a non-root user for running ColdFront. The Gunicorn
 worker processes will run under this user account. Also, create a directory for
 installing ColdFront and related files.
 
@@ -16,6 +16,7 @@ installing ColdFront and related files.
 # useradd --system -m coldfront
 # mkdir /srv/coldfront
 # chown coldfront.coldfront /srv/coldfront
+# mkdir /etc/coldfront
 ```
 
 !!! note
@@ -39,7 +40,15 @@ installing ColdFront and related files.
 Create a config file for ColdFront. For a complete list of settings [see
 here](config.md).
 
-Create the file `/srv/coldfront/coldfront.env` and set at least the following
+!!! note
+    The config file needs to be readable by nginx user. Ensure you have the
+    appropriate permissions set. For example:
+    ```
+    $ chmod 640 /etc/coldfront/coldfront.env
+    $ chgrp nginx /etc/coldfront/coldfront.env
+    ```
+
+Create the file `/etc/coldfront/coldfront.env` and set at least the following
 variables:
 
 ```bash
@@ -53,7 +62,7 @@ STATIC_ROOT=/srv/coldfront/static
 # Name of your center
 CENTER_NAME='University HPC'
 
-# Cryptographic secret key 
+# Cryptographic secret key
 SECRET_KEY=
 ```
 
@@ -65,9 +74,12 @@ SECRET_KEY=
     $ python3 -c "import secrets; print(secrets.token_urlsafe())"
     ```
 
-Choose a database backend. ColdFront supports MariaDB/MySQL, PostgreSQL, or
-SQLite. Install your preferred database and set the connection details using
-the `DB_URL` variable above.
+**Choosing a database backend:** ColdFront supports MariaDB/MySQL, PostgreSQL, or
+SQLite. If you don't configure a database, it will use SQLite by default and will
+place the database in the ColdFront working directory.  You may not want this for a production installation.
+
+Install your preferred database and set the connection details using
+the `DB_URL` variable as shown above.  
 
 !!! note "Note: Install python database drivers"
     Be sure to install the database drivers associated with your db. For example:
@@ -77,11 +89,11 @@ the `DB_URL` variable above.
     $ pip install psycopg2
     ```
 
-## Intializing the ColdFront database
+## Initializing the ColdFront database
 
 ```
 $ source /srv/coldfront/venv/bin/activate
-$ COLDFRONT_ENV=/srv/coldfront/coldfront.env coldfront initial_setup
+$ coldfront initial_setup
 Running migrations:
   Applying contenttypes.0001_initial... OK
   Applying auth.0001_initial... OK
@@ -101,7 +113,7 @@ password:
 
 ```
 $ source /srv/coldfront/venv/bin/activate
-$ COLDFRONT_ENV=/srv/coldfront/coldfront.env coldfront createsuperuser
+$ coldfront createsuperuser
 ```
 
 ## Deploy static files
@@ -112,7 +124,7 @@ This command will deploy all static assets to the `STATIC_ROOT` path in the conf
 
 ```
 $ source /srv/coldfront/venv/bin/activate
-$ COLDFRONT_ENV=/srv/coldfront/coldfront.env coldfront collectstatic
+$ coldfront collectstatic
 ```
 
 ## Install Gunicorn
@@ -135,8 +147,7 @@ After=syslog.target network.target mariadb.service
 User=coldfront
 Group=nginx
 WorkingDirectory=/srv/coldfront
-Environment="PATH=/srv/coldront/venv/bin"
-EnvironmentFile=/srv/coldfront/coldfront.env
+Environment="PATH=/srv/coldfront/venv/bin"
 ExecStart=/srv/coldfront/venv/bin/gunicorn --workers 3 --bind unix:coldfront.sock -m 007 coldfront.config.wsgi
 
 [Install]
@@ -156,10 +167,42 @@ WantedBy=multi-user.target
 # systemctl status gunicorn.service
 ```
 
+## Create systemd unit file for ColdFront qcluster scheduled tasks
+ColdFront uses Django Q to run scheduled tasks such as sending allocation expiration
+warning emails. We need to create a unit file to run the qserver process or these
+tasks will never run.
+
+Create file `/etc/systemd/system/coldfrontq.service`:
+
+```ini
+[Unit]
+Description=DjangoQ instance to run Coldfront scheduled tasks
+After=syslog.target network.target mariadb.service gunicorn.service
+
+[Service]
+User=coldfront
+Group=nginx
+WorkingDirectory=/srv/coldfront
+Environment="PATH=/srv/coldfront/venv/bin"
+ExecStart=/srv/coldfront/venv/bin/coldfront qcluster
+
+[Install]
+WantedBy=multi-user.target
+```
+
+## Start/enable ColdFront qcluster
+
+```
+# systemctl start coldfrontq.service
+# systemctl enable coldfrontq.service
+
+# Check for any errors
+# systemctl status coldfrontq.service
+```
 ## Configure nginx
 
 We now configure nginx to proxy requests to the ColdFront Gunicorn workers via
-unix domain socket. 
+unix domain socket.
 
 Create file `/etc/nginx/conf.d/coldfront.conf`:
 
@@ -182,7 +225,7 @@ server {
     # HSTS (ngx_http_headers_module is required) (15768000 seconds = 6 months)
     add_header Strict-Transport-Security max-age=15768000;
 
-    
+
     location /static/ {
         alias /srv/coldfront/static/;
     }

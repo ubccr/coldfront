@@ -10,3 +10,9 @@ Before creating their first project, the user must have their account upgraded t
 Once this is done, when the user logs in he/she will see the "Add Project" button on the ColdFront dashboard.
 
 ![NewPIProject](../../images/newpi.PNG)  
+
+## What can a PI do that a manager can't?  
+
+A PI holds the role of 'manager' on a project.  The PI may also change the role of any users on their project to 'manager'  [More details](manager.md)  
+
+The only things a PI can do that a manager can not, is create a new project or archive a project.  All other project related tasks that a PI can do, a manager on that project can accomplish as well.  
