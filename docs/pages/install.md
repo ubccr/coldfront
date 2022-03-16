@@ -27,6 +27,9 @@ $ source venv/bin/activate
 $ pip install --upgrade pip
 $ pip install coldfront
 ```
+We recommend you install ColdFront in a test environment first;
+however, if you want to jump right to instructions for installing and deploying
+in a production environment, [go here](deploy.md)
 
 ### Install via source distribution
 
@@ -44,7 +47,7 @@ $ pip install .
 
 ### Developing ColdFront
 
-If you're interested in hacking on the ColdFront source code you install by
+If you're interested in hacking on the ColdFront source code you can install by
 cloning our GitHub repo and install via pip development mode. Note the master
 branch is the bleeding edge version and may be unstable. You can also checkout
 one of the tagged releases.
@@ -72,7 +75,7 @@ a python file which can be used for more advanced configuration settings.
 ColdFront requires a database and if you don't configure one it will use SQLite
 by default.
 
-## Intializing the ColdFront database
+## Initializing the ColdFront database
 
 ColdFront supports MariaDB/MySQL, PostgreSQL, and SQLite. See the complete
 guide on [configuring ColdFront](config.md) for more details. By default, ColdFront will use
@@ -90,7 +93,7 @@ Running migrations:
   ....
 ```
 
-After the above command completes the ColdFront database is ready for use. 
+After the above command completes the ColdFront database is ready for use.
 
 ## Creating the super user account
 
@@ -128,8 +131,8 @@ $ coldfront load_test_data
 ```
 
 - You can log in as `admin` with password `test1234`.
-- You can log in as a PI using username `ccollins` with password `test1234`.
-- You can log in as center director using username `michardson` with password `test1234`.
+- You can log in as a PI using username `cgray` with password `test1234`.
+- You can log in as center director using username `csimmons` with password `test1234`.
 - Password for all users is also `test1234`.
 
 !!! danger "Danger"
