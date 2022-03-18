@@ -9,6 +9,7 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationAttribute,
                                               AllocationAttributeType,
                                               AllocationAttributeUsage,
+                                              AllocationPeriod,
                                               AllocationStatusChoice,
                                               AllocationUser,
                                               AllocationUserAttribute,
@@ -412,6 +413,7 @@ class AllocationUserAttributeAdmin(SimpleHistoryAdmin):
         else:
             return self.readonly_fields_change
 
+
 @admin.register(AllocationUserAttributeUsage)
 class AllocationUserAttributeUsageAdmin(SimpleHistoryAdmin):
     list_display = ('allocation_user_attribute', 'user', 'project',
@@ -431,3 +433,8 @@ class AllocationUserAttributeUsageAdmin(SimpleHistoryAdmin):
 
     def user(self, obj):
         return obj.allocation_user_attribute.allocation_user.user.username
+
+
+@admin.register(AllocationPeriod)
+class AllocationPeriodAdmin(admin.ModelAdmin):
+    list_display = ('name', 'start_date', 'end_date',)
