@@ -1,3 +1,4 @@
+reportlab==3.6.6
 arrow==0.13.1
 bibtexparser==1.1.0
 blessed==1.15.0
