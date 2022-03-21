@@ -59,6 +59,14 @@
       {% endif %}
     </p>
     <p class="card-text text-justify">
+      <strong>Initial Allocation Period: </strong>
+      {% if savio_request.allocation_period %}
+        {{ savio_request.allocation_period.name }}
+      {% else %}
+        N/A
+      {% endif %}
+    </p>
+    <p class="card-text text-justify">
       <strong>Number of Service Units to Add (if approved now): </strong>
       {{ allocation_amount }}
     </p>
