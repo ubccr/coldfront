@@ -440,6 +440,10 @@ class SavioProjectAllocationRequest(TimeStampedModel):
     allocation_type = models.CharField(
         max_length=16, choices=ALLOCATION_TYPE_CHOICES)
 
+    allocation_period = models.ForeignKey(
+        'allocation.AllocationPeriod', blank=True, null=True,
+        on_delete=models.CASCADE, related_name='allocation_period')
+
     pi = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='savio_pi')
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
