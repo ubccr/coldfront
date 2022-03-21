@@ -41,7 +41,7 @@ class SavioProjectAllocationPeriodForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self.allocation_type = kwargs.pop('allocation_type', None)
         super().__init__(*args, **kwargs)
-        display_timezone = pytz.timezone('America/Los_Angeles')
+        display_timezone = pytz.timezone(settings.DISPLAY_TIME_ZONE)
         self.fields['allocation_period'].queryset = \
             self.allocation_period_choices(
                 self.allocation_type, utc_now_offset_aware(), display_timezone)

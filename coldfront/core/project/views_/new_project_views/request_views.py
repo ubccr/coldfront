@@ -224,6 +224,7 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
             request_kwargs['status'] = \
                 ProjectAllocationRequestStatusChoice.objects.get(
                     name='Under Review')
+            request_kwargs['request_time'] = utc_now_offset_aware()
             request = SavioProjectAllocationRequest.objects.create(
                 **request_kwargs)
 

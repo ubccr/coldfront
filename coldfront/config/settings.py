@@ -133,6 +133,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'django_settings_export.settings_export',
+                'coldfront.core.utils.context_processors.display_time_zone',
             ],
         },
     },

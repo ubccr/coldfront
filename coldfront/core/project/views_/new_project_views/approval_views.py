@@ -245,8 +245,8 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         return HttpResponseRedirect(self.redirect)
 
     def __get_service_units_to_allocate(self):
-        """Return the number of service units to allocate to the project
-        if it were to be approved now.
+        """Return the number of service units to allocate to the
+        project, based on its request_time.
 
         If the request was created as part of an allocation renewal, it
         may be associated with at most one AllocationRenewalRequest. If
@@ -257,17 +257,22 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             return settings.ALLOCATION_MIN
 
         allocation_type = self.request_obj.allocation_type
-        now = utc_now_offset_aware()
         if allocation_type == SavioProjectAllocationRequest.CO:
             return settings.CO_DEFAULT_ALLOCATION
         elif allocation_type == SavioProjectAllocationRequest.FCA:
+
+            # TODO: This depends on which AllocationPeriod it is for.
+
             return prorated_allocation_amount(
-                settings.FCA_DEFAULT_ALLOCATION, now)
+                settings.FCA_DEFAULT_ALLOCATION, self.request_obj.request_time)
         elif allocation_type == SavioProjectAllocationRequest.ICA:
             return settings.ICA_DEFAULT_ALLOCATION
         elif allocation_type == SavioProjectAllocationRequest.PCA:
+
+            # TODO: This depends on which AllocationPeriod it is for.
+
             return prorated_allocation_amount(
-                settings.PCA_DEFAULT_ALLOCATION, now)
+                settings.PCA_DEFAULT_ALLOCATION, self.request_obj.request_time)
         elif allocation_type == SavioProjectAllocationRequest.RECHARGE:
             num_service_units = \
                 self.request_obj.extra_fields['num_service_units']
@@ -509,7 +514,7 @@ class SavioProjectReviewAllocationDatesView(LoginRequiredMixin,
 
         # The allocation starts at the beginning of the start date and ends at
         # the end of the end date.
-        local_tz = pytz.timezone('America/Los_Angeles')
+        local_tz = pytz.timezone(settings.DISPLAY_TIME_ZONE)
         tz = pytz.timezone(settings.TIME_ZONE)
         if form_data['start_date']:
             naive_dt = datetime.datetime.combine(
@@ -556,7 +561,7 @@ class SavioProjectReviewAllocationDatesView(LoginRequiredMixin,
         initial = super().get_initial()
         allocation_dates = self.request_obj.state['allocation_dates']
         initial['status'] = allocation_dates['status']
-        local_tz = pytz.timezone('America/Los_Angeles')
+        local_tz = pytz.timezone(settings.DISPLAY_TIME_ZONE)
         for key in ('start', 'end'):
             value = allocation_dates['dates'][key]
             if value:

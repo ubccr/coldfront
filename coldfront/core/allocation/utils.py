@@ -140,7 +140,7 @@ def next_allocation_start_datetime():
     """
     start_month = settings.ALLOCATION_YEAR_START_MONTH
     start_day = settings.ALLOCATION_YEAR_START_DAY
-    local_tz = pytz.timezone('America/Los_Angeles')
+    local_tz = pytz.timezone(settings.DISPLAY_TIME_ZONE)
     dt = utc_now_offset_aware().astimezone(local_tz)
     start_year = dt.year + int(dt.month >= start_month)
     return datetime(
