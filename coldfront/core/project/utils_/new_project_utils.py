@@ -428,7 +428,7 @@ def savio_request_state_status(savio_request):
 
 
 def send_new_project_request_admin_notification_email(request):
-    """Send an email to admins notifying them of a new Savio or Vector
+    """Email admins notifying them of a new Savio or Vector
     ProjectAllocationRequest."""
     email_enabled = import_from_settings('EMAIL_ENABLED', False)
     if not email_enabled:

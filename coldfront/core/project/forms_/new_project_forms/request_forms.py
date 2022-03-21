@@ -1,3 +1,5 @@
+from coldfront.core.allocation.forms import AllocationPeriodChoiceField
+from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.project.forms import DisabledChoicesSelectWidget
 from coldfront.core.project.models import Project
@@ -18,10 +20,68 @@ from django.db.models import Q
 from django.forms.widgets import TextInput
 from django.utils.safestring import mark_safe
 
+from datetime import datetime
+from datetime import timedelta
+from flags.state import flag_enabled
+
+import pytz
+
 
 # =============================================================================
 # BRC: SAVIO
 # =============================================================================
+
+class SavioProjectAllocationPeriodForm(forms.Form):
+
+    allocation_period = AllocationPeriodChoiceField(
+        label='Allocation Period',
+        queryset=AllocationPeriod.objects.none(),
+        required=True)
+
+    def __init__(self, *args, **kwargs):
+        self.allocation_type = kwargs.pop('allocation_type', None)
+        super().__init__(*args, **kwargs)
+        display_timezone = pytz.timezone('America/Los_Angeles')
+        self.fields['allocation_period'].queryset = \
+            self.allocation_period_choices(
+                self.allocation_type, utc_now_offset_aware(), display_timezone)
+
+    @staticmethod
+    def allocation_period_choices(allocation_type, utc_dt, display_timezone):
+        """Return a queryset of AllocationPeriods to be available in the
+        form if rendered at the given datetime, whose tzinfo must be
+        pytz.UTC and which will be converted to the given timezone, for
+        an allocation with the given type."""
+        if utc_dt.tzinfo != pytz.UTC:
+            raise ValueError(f'Datetime {utc_dt}\'s tzinfo is not pytz.UTC.')
+        dt = utc_dt.astimezone(display_timezone)
+        date = datetime.date(dt)
+        f = Q(end_date__gte=date)
+        queryset = AllocationPeriod.objects.filter(end_date__gte=date)
+        if allocation_type in ('FCA', 'PCA'):
+            if flag_enabled('ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE'):
+                # If projects for the next period may be requested, include it.
+                # TODO: This assumes that an allocation year lasts a year.
+                num_days_in_allocation_year = 365
+                started_before_date = (
+                    date + timedelta(days=num_days_in_allocation_year))
+            else:
+                # Otherwise, include only the current period.
+                started_before_date = date
+            f = f & Q(start_date__lte=started_before_date)
+            f = f & Q(name__startswith='Allowance Year')
+        elif allocation_type == 'ICA':
+            # TODO: This is a magic number. Make it a setting.
+            num_days = 90
+            f = f & Q(start_date__lte=date + timedelta(days=num_days))
+            f = f & (
+                Q(name__startswith='Fall Semester') |
+                Q(name__startswith='Spring Semester') |
+                Q(name__startswith='Summer Sessions'))
+        else:
+            return AllocationPeriod.objects.none()
+        return queryset.filter(f).order_by('start_date', 'end_date')
+
 
 class SavioProjectAllocationTypeForm(forms.Form):
 
@@ -48,6 +108,7 @@ class SavioProjectExistingPIForm(forms.Form):
     def __init__(self, *args, **kwargs):
 
         self.allocation_type = kwargs.pop('allocation_type', None)
+        self.allocation_period = kwargs.pop('allocation_period', None)
 
         super().__init__(*args, **kwargs)
 
@@ -68,9 +129,8 @@ class SavioProjectExistingPIForm(forms.Form):
             #     (a) have an existing 'New', 'Active', or 'Inactive' FCA,
             #     (b) have non-denied AllocationRenewalRequests during this
             #         AllocationPeriod, or
-            #     (c) have non-denied SavioProjectAllocationRequests.
-            #         TODO: Once the first AllocationPeriod has ended, this
-            #         TODO: will need to be refined to filter on time.
+            #     (c) have non-denied SavioProjectAllocationRequests during
+            #         the specified AllocationPeriod.
 
             pis_with_existing_fcas = set(ProjectUser.objects.filter(
                 role=pi_role,
@@ -80,12 +140,12 @@ class SavioProjectExistingPIForm(forms.Form):
             pis_with_pending_requests = set(
                 SavioProjectAllocationRequest.objects.filter(
                     allocation_type=SavioProjectAllocationRequest.FCA,
+                    allocation_period=self.allocation_period,
                     status__name__in=ineligible_project_request_status_names
                 ).values_list('pi__pk', flat=True))
-            allocation_period = get_current_allocation_period()
             pis_with_renewal_requests = set(
                 AllocationRenewalRequest.objects.filter(
-                    allocation_period=allocation_period,
+                    allocation_period=self.allocation_period,
                     status__name__in=ineligible_renewal_request_status_names
                 ).values_list('pi__pk', flat=True))
             exclude_user_pks.update(
@@ -96,10 +156,9 @@ class SavioProjectExistingPIForm(forms.Form):
         elif self.allocation_type == 'PCA':
 
             # PIs may only have one PCA, so disable any PIs who:
-            #    (a) have an existing 'New' or 'Active' PCA, or
-            #    (b) have non-denied SavioProjectAllocationRequests.
-            #        TODO: Once the first AllocationPeriod has ended, this
-            #        TODO: will need to be refined to filter on time.
+            #     (a) have an existing 'New' or 'Active' PCA, or
+            #     (b) have non-denied SavioProjectAllocationRequests during
+            #         the specified AllocationPeriod.
 
             pis_with_existing_pcas = set(ProjectUser.objects.filter(
                 role=pi_role,
@@ -109,6 +168,7 @@ class SavioProjectExistingPIForm(forms.Form):
             pis_with_pending_requests = set(
                 SavioProjectAllocationRequest.objects.filter(
                     allocation_type=SavioProjectAllocationRequest.PCA,
+                    allocation_period=self.allocation_period,
                     status__name__in=ineligible_project_request_status_names
                 ).values_list('pi__pk', flat=True))
             exclude_user_pks.update(
@@ -382,6 +442,7 @@ class SavioProjectPooledProjectSelectionForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         self.allocation_type = kwargs.pop('allocation_type', None)
+        kwargs.pop('allocation_period', None)
         kwargs.pop('breadcrumb_pi', None)
         kwargs.pop('breadcrumb_pooling', None)
         super().__init__(*args, **kwargs)
@@ -442,6 +503,7 @@ class SavioProjectDetailsForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         self.allocation_type = kwargs.pop('allocation_type', None)
+        kwargs.pop('allocation_period', None)
         kwargs.pop('breadcrumb_pi', None)
         kwargs.pop('breadcrumb_pooling', None)
         super().__init__(*args, **kwargs)
@@ -599,6 +661,7 @@ class SavioProjectSurveyForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         allocation_type = kwargs.pop('allocation_type', None)
+        kwargs.pop('allocation_period', None)
         kwargs.pop('breadcrumb_pi', None)
         kwargs.pop('breadcrumb_pooling', None)
         kwargs.pop('breadcrumb_project', None)

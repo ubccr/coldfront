@@ -263,3 +263,9 @@ class AllocationClusterAccountRequestActivationForm(forms.Form):
                 raise forms.ValidationError(
                     f'A user with cluster_uid {cluster_uid} already exists.')
         return cluster_uid
+
+
+class AllocationPeriodChoiceField(forms.ModelChoiceField):
+
+    def label_from_instance(self, obj):
+        return f'{obj.name} ({obj.start_date} - {obj.end_date})'

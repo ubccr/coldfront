@@ -1,5 +1,6 @@
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationStatusChoice
+from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectAllocationPeriodForm
 from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectAllocationTypeForm
 from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectDetailsForm
 from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectExistingPIForm
@@ -80,11 +81,11 @@ class ProjectRequestView(LoginRequiredMixin, UserPassesTestMixin,
 # BRC: SAVIO
 # =============================================================================
 
-
 class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
 
     FORMS = [
         ('allocation_type', SavioProjectAllocationTypeForm),
+        ('allocation_period', SavioProjectAllocationPeriodForm),
         ('existing_pi', SavioProjectExistingPIForm),
         ('new_pi', SavioProjectNewPIForm),
         ('ica_extra_fields', SavioProjectICAExtraFieldsForm),
@@ -96,19 +97,30 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
     ]
 
     TEMPLATES = {
-        'allocation_type': 'project/project_request/savio/project_allocation_type.html',
-        'existing_pi': 'project/project_request/savio/project_existing_pi.html',
-        'new_pi': 'project/project_request/savio/project_new_pi.html',
-        'ica_extra_fields': 'project/project_request/savio/project_ica_extra_fields.html',
-        'recharge_extra_fields': 'project/project_request/savio/project_recharge_extra_fields.html',
-        'pool_allocations': 'project/project_request/savio/project_pool_allocations.html',
-        'pooled_project_selection': 'project/project_request/savio/project_pooled_project_selection.html',
+        'allocation_type':
+            'project/project_request/savio/project_allocation_type.html',
+        'allocation_period':
+            'project/project_request/savio/project_allocation_period.html',
+        'existing_pi':
+            'project/project_request/savio/project_existing_pi.html',
+        'new_pi':
+            'project/project_request/savio/project_new_pi.html',
+        'ica_extra_fields':
+            'project/project_request/savio/project_ica_extra_fields.html',
+        'recharge_extra_fields':
+            'project/project_request/savio/project_recharge_extra_fields.html',
+        'pool_allocations':
+            'project/project_request/savio/project_pool_allocations.html',
+        'pooled_project_selection':
+            ('project/project_request/savio/'
+             'project_pooled_project_selection.html'),
         'details': 'project/project_request/savio/project_details.html',
         'survey': 'project/project_request/savio/project_survey.html',
     }
 
     form_list = [
         SavioProjectAllocationTypeForm,
+        SavioProjectAllocationPeriodForm,
         SavioProjectExistingPIForm,
         SavioProjectNewPIForm,
         SavioProjectICAExtraFieldsForm,
@@ -122,14 +134,15 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
     # Non-required lookup table: form name --> step number
     step_numbers_by_form_name = {
         'allocation_type': 0,
-        'existing_pi': 1,
-        'new_pi': 2,
-        'ica_extra_fields': 3,
-        'recharge_extra_fields': 4,
-        'pool_allocations': 5,
-        'pooled_project_selection': 6,
-        'details': 7,
-        'survey': 8,
+        'allocation_period': 1,
+        'existing_pi': 2,
+        'new_pi': 3,
+        'ica_extra_fields': 4,
+        'recharge_extra_fields': 5,
+        'pool_allocations': 6,
+        'pooled_project_selection': 7,
+        'details': 8,
+        'survey': 9,
     }
 
     logger = logging.getLogger(__name__)
@@ -157,6 +170,7 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
         step = int(step)
         # The names of steps that require the past data.
         step_names = [
+            'allocation_period',
             'existing_pi',
             'pooled_project_selection',
             'details',
@@ -186,6 +200,7 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
                 'requester': self.request.user,
             }
             allocation_type = self.__get_allocation_type(form_data)
+            allocation_period = self.__get_allocation_period(form_data)
             pi = self.__handle_pi_data(form_data)
             if allocation_type == SavioProjectAllocationRequest.ICA:
                 self.__handle_ica_allocation_type(form_data, request_kwargs)
@@ -201,6 +216,7 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
 
             # Store transformed form data in a request.
             request_kwargs['allocation_type'] = allocation_type
+            request_kwargs['allocation_period'] = allocation_period
             request_kwargs['pi'] = pi
             request_kwargs['project'] = project
             request_kwargs['pool'] = pooling_requested
@@ -242,13 +258,30 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
     def condition_dict():
         view = SavioProjectRequestWizard
         return {
-            '2': view.show_new_pi_form_condition,
-            '3': view.show_ica_extra_fields_form_condition,
-            '4': view.show_recharge_extra_fields_form_condition,
-            '5': view.show_pool_allocations_form_condition,
-            '6': view.show_pooled_project_selection_form_condition,
-            '7': view.show_details_form_condition,
+            '1': view.show_allocation_period_form_condition,
+            '3': view.show_new_pi_form_condition,
+            '4': view.show_ica_extra_fields_form_condition,
+            '5': view.show_recharge_extra_fields_form_condition,
+            '6': view.show_pool_allocations_form_condition,
+            '7': view.show_pooled_project_selection_form_condition,
+            '8': view.show_details_form_condition,
         }
+
+    @staticmethod
+    def show_allocation_period_form_condition(wizard):
+        """Only show the form for selecting an AllocationPeriod for
+        FCAs, ICAs, and PCAs."""
+        step_name = 'allocation_type'
+        step = str(
+            SavioProjectRequestWizard.step_numbers_by_form_name[step_name])
+        cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
+        relevant_allocation_types = (
+            SavioProjectAllocationRequest.FCA,
+            SavioProjectAllocationRequest.ICA,
+            SavioProjectAllocationRequest.PCA,
+        )
+        allocation_type = cleaned_data.get('allocation_type', None)
+        return allocation_type in relevant_allocation_types
 
     @staticmethod
     def show_details_form_condition(wizard):
@@ -257,14 +290,6 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
             SavioProjectRequestWizard.step_numbers_by_form_name[step_name])
         cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
         return not cleaned_data.get('pool', False)
-
-    @staticmethod
-    def show_new_pi_form_condition(wizard):
-        step_name = 'existing_pi'
-        step = str(
-            SavioProjectRequestWizard.step_numbers_by_form_name[step_name])
-        cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
-        return cleaned_data.get('PI', None) is None
 
     @staticmethod
     def show_ica_extra_fields_form_condition(wizard):
@@ -276,15 +301,12 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
         return cleaned_data.get('allocation_type', None) == ica_allocation_type
 
     @staticmethod
-    def show_recharge_extra_fields_form_condition(wizard):
-        step_name = 'allocation_type'
+    def show_new_pi_form_condition(wizard):
+        step_name = 'existing_pi'
         step = str(
             SavioProjectRequestWizard.step_numbers_by_form_name[step_name])
         cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
-        recharge_allocation_type = SavioProjectAllocationRequest.RECHARGE
-        return (
-            cleaned_data.get('allocation_type', None) ==
-            recharge_allocation_type)
+        return cleaned_data.get('PI', None) is None
 
     @staticmethod
     def show_pool_allocations_form_condition(wizard):
@@ -307,6 +329,23 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
         cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
         return cleaned_data.get('pool', False)
 
+    @staticmethod
+    def show_recharge_extra_fields_form_condition(wizard):
+        step_name = 'allocation_type'
+        step = str(
+            SavioProjectRequestWizard.step_numbers_by_form_name[step_name])
+        cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
+        recharge_allocation_type = SavioProjectAllocationRequest.RECHARGE
+        return (
+            cleaned_data.get('allocation_type', None) ==
+            recharge_allocation_type)
+
+    def __get_allocation_period(self, form_data):
+        """Return the AllocationPeriod the user selected."""
+        step_number = self.step_numbers_by_form_name['allocation_period']
+        data = form_data[step_number]
+        return data['allocation_period'] if data['allocation_period'] else None
+
     def __get_allocation_type(self, form_data):
         """Return the allocation type matching the provided input."""
         step_number = self.step_numbers_by_form_name['allocation_type']
@@ -320,7 +359,7 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
         raise ValueError(f'Invalid allocation type {allocation_type}.')
 
     def __get_pooling_requested(self, form_data):
-        """Return whether or not pooling was requested."""
+        """Return whether pooling was requested."""
         step_number = self.step_numbers_by_form_name['pool_allocations']
         data = form_data[step_number]
         return data.get('pool', False)
@@ -459,6 +498,14 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
             if allocation_type_form_data:
                 dictionary.update(allocation_type_form_data)
 
+        allocation_period_form_step = \
+            self.step_numbers_by_form_name['allocation_period']
+        if step > allocation_period_form_step:
+            allocation_period_form_data = self.get_cleaned_data_for_step(
+                str(allocation_period_form_step))
+            if allocation_period_form_data:
+                dictionary.update(allocation_period_form_data)
+
         existing_pi_step = self.step_numbers_by_form_name['existing_pi']
         new_pi_step = self.step_numbers_by_form_name['new_pi']
         if step > new_pi_step:
@@ -519,7 +566,6 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
 # =============================================================================
 # BRC: VECTOR
 # =============================================================================
-
 
 class VectorProjectRequestView(LoginRequiredMixin, UserPassesTestMixin,
                                FormView):
