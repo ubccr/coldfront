@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinLengthValidator
 from django.db import models
 from django.db.models import Q
+from django.utils import timezone
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
@@ -452,6 +453,12 @@ class SavioProjectAllocationRequest(TimeStampedModel):
     status = models.ForeignKey(
         ProjectAllocationRequestStatusChoice, on_delete=models.CASCADE,
         verbose_name='Status')
+
+    request_time = models.DateTimeField(
+        null=True, blank=True, default=timezone.now)
+    approval_time = models.DateTimeField(null=True, blank=True)
+    completion_time = models.DateTimeField(null=True, blank=True)
+
     state = models.JSONField(default=savio_project_request_state_schema)
     extra_fields = models.JSONField(default=dict)
     history = HistoricalRecords()
