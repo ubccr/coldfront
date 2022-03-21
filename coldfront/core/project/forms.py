@@ -69,21 +69,6 @@ class ProjectAddUsersToAllocationForm(forms.Form):
         if disable_selected:
             self.fields['selected'].disabled = True
 
-        project_obj = get_object_or_404(Project, pk=project_pk)
-
-        allocation_query_set = project_obj.allocation_set.filter(
-            resources__is_allocatable=True, is_locked=False).exclude(status__name__in=['Denied', 'Expired', 'Payment Declined', 'Revoked', 'Unpaid',])
-        print(allocation_query_set)
-        allocation_choices = [(allocation.id, "%s (%s) %s" % (allocation.get_parent_resource.name, allocation.get_parent_resource.resource_type.name,
-                                                              allocation.description if allocation.description else '')) for allocation in allocation_query_set]
-        allocation_choices.insert(0, ('__select_all__', 'Select All'))
-        if allocation_query_set:
-            self.fields['allocation'].choices = allocation_choices
-            self.fields['allocation'].help_text = '<br/>Select allocations to add selected users to.'
-        else:
-            self.fields['allocation'].widget = forms.HiddenInput()
-
-
 
 class ProjectRemoveUserForm(forms.Form):
     username = forms.CharField(max_length=150, disabled=True)
