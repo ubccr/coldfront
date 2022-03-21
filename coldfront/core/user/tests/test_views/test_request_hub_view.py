@@ -530,7 +530,8 @@ class TestRequestHubView(TestBase):
         kwargs = {
             'pi': self.pi,
             'requester': self.user0,
-            'allocation_period': AllocationPeriod.objects.get(name='AY21-22'),
+            'allocation_period': AllocationPeriod.objects.get(
+                name='Allowance Year 2021 - 2022'),
             'pre_project': self.project0,
             'post_project': self.project0,
             'num_service_units': 1000,

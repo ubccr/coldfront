@@ -46,7 +46,8 @@ class TestRunnerMixin(object):
             call_command(command, stdout=out, stderr=err)
         sys.stdout = sys.__stdout__
 
-        self.allocation_period = AllocationPeriod.objects.get(name='AY21-22')
+        self.allocation_period = AllocationPeriod.objects.get(
+            name='Allowance Year 2021 - 2022')
 
         # Create a requester user and multiple PI users.
         self.requester = User.objects.create(

@@ -37,7 +37,9 @@ logger = logging.getLogger(__name__)
 
 
 def get_current_allocation_period():
-    return AllocationPeriod.objects.get(name='AY21-22')
+    """TODO"""
+    # TODO.
+    return AllocationPeriod.objects.get(name='Allowance Year 2021 - 2022')
 
 
 def get_pi_current_active_fca_project(pi_user):
