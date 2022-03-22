@@ -28,7 +28,20 @@ Allocation Detail
 
 <div class="card mb-3">
   <div class="card-header">
-    <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
+    {% if allocation.is_changeable and is_allowed_to_update_project %}
+      <div class="row">
+        <div class="col">
+          <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
+        </div>
+        <div class="col">
+          <a class="btn btn-primary" href="{% url 'allocation-change' allocation.pk %}" role="button" style="float: right;">
+            Request Change
+          </a>
+        </div>
+      </div>
+    {% else %}
+      <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>   
+    {% endif %}
   </div>
   <div class="card-body">
     <form method="post">
@@ -218,11 +231,14 @@ Allocation Detail
                 {{ allocation.end_date }}
               {% endif %}
 
-              {% if is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
+              {% if allocation.is_locked and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
+              <span class="badge badge-warning"><i class="far fa-clock" aria-hidden="true"></i>
+                Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} - Not renewable
+              </span>
+              {% elif is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
                 <a href="{% url 'allocation-renew' allocation.pk %}">
-                  <span class="badge badge-warning">
-                    <i class="fas fa-redo-alt" aria-hidden="true"></i>
-                    Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} - click to renew
+                  <span class="badge badge-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>
+                    Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} - Click to renew
                   </span>
                 </a>
               {% endif %}
@@ -247,18 +263,43 @@ Allocation Detail
             <td>{{ allocation.modified|date:"M. d, Y" }}</td>
           </tr>
           <tr>
-            {% if allocation.is_locked %}
-              <th scope="row" class="text-nowrap">Locked</th>
-              <td><i class="fas fa-lock" aria-hidden="true"></i></td>
+            {% if request.user.is_superuser or request.user.is_staff %}
+              <th scope="row" class="text-nowrap">Lock/Unlock Allocation:</th>
+              <td>
+                {{ form.is_locked }}
+              </td>
             {% else %}
-              <th scope="row" class="text-nowrap">Unlocked</th>
-              <td><i class="fas fa-lock-open" aria-hidden="true"></i></td>
+              {% if allocation.is_locked %}
+                <th scope="row" class="text-nowrap">Locked</th>
+                <td><i class="fas fa-lock" aria-hidden="true"></i></td>
+              {% else %}
+                <th scope="row" class="text-nowrap">Unlocked</th>
+                <td><i class="fas fa-lock-open" aria-hidden="true"></i></td>
+              {% endif %}
             {% endif %}
           </tr>
+          {% if request.user.is_superuser or request.user.is_staff %}
+            <tr>
+              <th scope="row" class="text-nowrap">Allow Change Requests:</th>
+              <td>
+                {{ form.is_changeable }}
+              </td>
+            </tr>
+          {% endif %}
         </table>
       </div>
       {% if request.user.is_superuser %}
-        <button type="submit" class="btn btn-success float-right"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
+        <div class="float-right">
+          {% if allocation.status.name == 'New' or allocation.status.name == 'Renewal Requested' %}
+            {% if allocation.project.status.name != 'Active' %}
+              Project must be approved first.
+            {% else %}
+              <a href="{% url 'allocation-activate-request' allocation.pk %}" class="btn btn-success mr-1 confirm-activate">Approve</a>
+              <a href="{% url 'allocation-deny-request' allocation.pk %}" class="btn btn-danger mr-1 confirm-deny">Deny</a>
+            {% endif %}
+          {% endif %}
+          <button type="submit" class="btn btn-primary"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
+        </div>
       {% endif %}
     </form>
   </div>
@@ -323,6 +364,57 @@ Allocation Detail
   </div>
 {% endif %}
 
+<!-- Start Allocation Change Requests -->
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Change Requests</h3> <span class="badge badge-secondary">{{allocation_changes.count}}</span>
+  </div>
+
+  <div class="card-body">
+    {% if allocation_changes %}
+      <div class="table-responsive">
+        <table id="allocation_change_table" class="table table-bordered table-sm">
+          <thead>
+            <tr>
+              <th scope="col">Date Requested</th>
+              <th scope="col">Status</th>
+              <th scope="col">Notes</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for change_request in allocation_changes %}
+                <tr>
+                  <td>{{ change_request.created|date:"M. d, Y" }}</td>
+                  {% if change_request.status.name == 'Approved' %}
+                    <td class="text-success">{{ change_request.status.name }}</td>
+                  {% elif change_request.status.name == 'Denied' %}
+                    <td class="text-danger">{{ change_request.status.name }}</td>
+                  {% else %}
+                    <td class="text-info">{{ change_request.status.name }}</td>
+                  {% endif %}
+                  </td>
+                  {% if change_request.notes %}
+                    <td>{{change_request.notes}}</td>
+                  {% else %}
+                    <td></td>
+                  {% endif %}
+                  <td><a href="{% url 'allocation-change-detail' change_request.pk %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
+                </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-info" role="alert">
+        <i class="fas fa-info-circle" aria-hidden="true"></i>
+         There are no allocation changes to display.
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+
 <!-- Start Allocation Users -->
 <div class="card mb-3">
   <div class="card-header">
@@ -376,8 +468,15 @@ Allocation Detail
 <!-- Start Admin Messages -->
 <div class="card mb-3">
   <div class="card-header">
-    <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Messages from System Administrators</h3>
+    <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Notifications</h3>
     <span class="badge badge-secondary">{{notes.count}}</span>
+    <div class="float-right">
+      {% if request.user.is_superuser %}
+        <a class="btn btn-success" href="{% url 'allocation-note-add' allocation.pk %}" role="button">
+          <i class="fas fa-plus" aria-hidden="true"></i> Add Notification
+        </a>
+      {% endif %}
+    </div>
   </div>
   <div class="card-body">
     {% if notes %}
@@ -417,6 +516,16 @@ Allocation Detail
     drawGauges(guage_data);
   });
 
+  $('#allocation_change_table').DataTable({
+    lengthMenu: [5, 10, 20, 50, 100],
+    "pageLength": 5,
+    "ordering": false,
+    'aoColumnDefs': [{
+      'bSortable': false,
+      'aTargets': ['nosort']
+    }]
+  });
+
   function drawGauges(guage_data) {
     var arrayLength = guage_data.length;
     for (var i = 0; i < arrayLength; i++) {
@@ -432,5 +541,18 @@ Allocation Detail
     }
   }
   $(".datepicker").datepicker({ dateFormat: 'yy-mm-dd' });
+
+  $(document).on('click', '.confirm-activate', function(){
+    var attributes_num = {{ attributes | length }};
+    if (attributes_num == 0) {
+      return confirm('Are you sure you want to activate this allocation request without setting any allocation attributes?');
+    }
+  });
+  $(document).on('click', '.confirm-deny', function(){
+    var notes_num = {{ notes | length }};
+    if (notes_num == 0) {
+      return confirm('Are you sure you want to deny this allocation request without setting a notification?');
+    }
+  });
 </script>
 {% endblock %}
