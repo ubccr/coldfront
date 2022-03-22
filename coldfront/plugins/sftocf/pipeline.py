@@ -254,10 +254,10 @@ class ColdFrontDB:
             if to_collect:
                 logger.debug(f"to collect: {to_collect}")
                 server = StarFishServer(s)
-                for vol, path in v.items():
+                for vol, paths in v.items():
                     serv_to_collect = to_collect[vol]
                     logger.debug(f"vol:{vol}\nserv_to_collect:{serv_to_collect}")
-                    fpaths = collect_starfish_usage(server, vol, path, serv_to_collect)
+                    fpaths = collect_starfish_usage(server, vol, paths, serv_to_collect)
                     all_filepaths.extend(fpaths)
         return set(all_filepaths)
 
@@ -444,7 +444,8 @@ def collect_starfish_usage(server, volume, volumepath, projects):
         if Path(filepath).exists():
             filepaths.append(filepath)
         else:
-            lab_volpath = volumepath# + "/{}".format(p)
+            lab_volpath = volumepath[1] if "_l3" in p else volumepath[0]
+            logger.debug(f"lab: {p} volpath: {lab_volpath}")
             queryline = "type=f groupname={}".format(p)
             usage_query = server.create_query(
                 queryline, "username, groupname", f"{volume}:{lab_volpath}", sec=2
