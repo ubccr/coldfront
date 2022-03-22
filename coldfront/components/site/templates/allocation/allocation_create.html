@@ -316,7 +316,15 @@ Request New Allocation
     label = $('label[for="id_total_cost"]')
     label.html('<strong>Total Cost*</strong>')
 
-    $('<br><input id="selectAll" class="check" type="checkbox"> <strong>Select All Users</strong>').insertAfter($("#div_id_users > label"))
+    $(
+      '<br>\
+       <div class="custom-control custom-checkbox">\
+       <input id="selectAll" class="custom-control-input" type="checkbox">\
+       <label class="custom-control-label" for="selectAll">\
+       <strong>Select All Users</strong>\
+       </label>\
+       </div>'
+    ).insertAfter($("#div_id_users > label"))
     $("#id_resource").trigger('change');
 
     $("#selectAll").click(function () {
@@ -332,25 +340,9 @@ Request New Allocation
   });
 
   function moveRadioSelectErrors() {
-    // Radio select validation errors need to be moved below their fields.
-    var radioSelectFields = [
-      'for_coursework',
-      'leverage_multiple_gpus',
-      'dl_workflow',
-      'store_ephi',
-      'system',
-      'phi_association',
-      'access_level',
-      'users',
-    ];
-    for (var i = 0; i < radioSelectFields.length; i++) {
-      var invalidRadioSelectField = $('#error_1_id_' + radioSelectFields[i]);
-      if (invalidRadioSelectField.length) {
-        $('#div_id_' + radioSelectFields[i]).append(
-          invalidRadioSelectField
-        )
-      }
-    }
+    // Remove error indentation.
+    radioErrors = $('div[class^="w-100"]')
+    radioErrors.removeClass('custom-control')
   }
 
   function enableUserSelection() {
@@ -536,7 +528,7 @@ Request New Allocation
       id = 'id_' + [field_key];
       if (type === 'radio') {
         if (label[resource_id]) {
-          var html_label = $('label[for="' + id + '"]')
+          var html_label = $('label[for="' + id + '_0"][class=""]')
           html_label.html(label[resource_id]);
             // Do not reset the value if the user has already entered one (relevent if the form errors
             // after submission because not all the required values were given).
