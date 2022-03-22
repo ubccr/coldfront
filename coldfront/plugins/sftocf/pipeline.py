@@ -39,6 +39,57 @@ def record_process(func):
         return result
     return call
 
+class AllTheThingsConn:
+
+    def __init__(self):
+        self.url = "https://allthethings.rc.fas.harvard.edu:7473/db/data/transaction/commit"
+        self.token = os.environ['neo4jp']
+        self.headers = generate_headers(self.token)
+
+    def pull_quota_data(self):
+        vol_search = "|".join([i for l in [v.keys() for s, v in svp.items()]for i in l])
+        print(vol_search)
+        queries = {"statements": [
+            # isilon query
+            # pull usage - the one we want is hard quota/limit
+            {"statement": f"MATCH p=(g:Group)-[:Owns]-(n:IsilonPath) \
+                WHERE (n.Isilon =~ '.*({vol_search}).*')\
+                RETURN \
+                g.ADSamAccountName as lab,\
+                datetime(n.DotsUpdateDate) as update_date,\
+                n.Isilon as volume,\
+                n.HasQuota as hasquota,\
+                n.SoftGB as softgb,\
+                n.HardGB as hardgb,\
+                n.UsedGB as usedgb"
+            },
+            # quota query
+            {"statement": f"MATCH p=(g:Group)-[:HasQuota]-(n:Quota) \
+                WHERE (n.filesystem =~ '.*({vol_search}).*')\
+                RETURN \
+                g.ADSamAccountName as lab,\
+                datetime(n.DotsLFSUpdateDate) as update_date,\
+                n.filesystem as volume, \
+                n.limitGB as limitgb,\
+                n.quotaGB as quotagb,\
+                n.used as used,\
+                n.usedGB as usedgb"
+            }
+            ]}
+
+        resp = requests.post(self.url, headers=self.headers, data=json.dumps(queries), verify=False)
+        resp_json = json.loads(resp.text)
+        result_dicts = [i for i in resp_json['results']]
+        resp_json_formatted = [dict(zip(rdict['columns'],entrydict['row'])) \
+                for rdict in result_dicts for entrydict in rdict['data'] ]
+
+        with open('coldfront/plugins/sftocf/data/allthethings_output.json', 'w') as f:
+            print("Writing to file")
+            f.write(json.dumps(resp_json_formatted, indent=2))
+
+        # to insert into database:
+        # first, find allocation connected to project with name matching lab value.
+        # then, pull allocationattribute for that allocation.
 
 class StarFishServer:
     """Class for interacting with StarFish API.
@@ -48,7 +99,7 @@ class StarFishServer:
         self.name = server
         self.api_url = f"https://{server}.rc.fas.harvard.edu/api/"
         self.token = self.get_auth_token()
-        self.headers = self.generate_headers()
+        self.headers = generate_headers(self.token)
         self.volumes = self.get_volume_names()
 
     @record_process
@@ -65,14 +116,6 @@ class StarFishServer:
         token = response_json["token"]
         return token
 
-    def generate_headers(self):
-        """Generate "headers" attribute by using the "token" attribute.
-        """
-        headers = {
-            "accept": "application/json",
-            "Authorization": "Bearer {}".format(self.token),
-        }
-        return headers
 
     # 2A. Generate list of volumes to search, along with top-level paths
     @record_process
@@ -120,10 +163,10 @@ class StarFishServer:
         return query
 
     @record_process
-    def get_vol_user_membership(self, volume):
-        usermap_url = self.api_url + "mapping/user_membership?volume_name=" + volume
-        userlist = return_get_json(usermap_url, self.headers)
-        return userlist
+    def get_vol_membership(self, volume, type):
+        url = self.api_url + f"mapping/{type}_membership?volume_name=" + volume
+        member_list = return_get_json(url, self.headers)
+        return member_list
 
     @record_process
     def get_vol_user_name_ids(self, volume):
@@ -131,12 +174,6 @@ class StarFishServer:
         users = return_get_json(usermap_url, self.headers)
         userdict = {u["uid"]: u["name"] for u in users}
         return userdict
-
-    @record_process
-    def get_vol_group_membership(self, volume):
-        group_url = self.api_url + "mapping/group_membership?volume_name=" + volume
-        grouplist = return_get_json(group_url, self.headers)
-        return grouplist
 
 
 class StarFishQuery:
@@ -189,21 +226,6 @@ class StarFishQuery:
         return response
 
 
-class LabUser:
-    def __init__(self, username, groupname):
-        user_entry = get_user_model().objects.get(username=username)
-        lab_entry = Project.objects.get(groupname)
-
-        self.user_id = user_entry.user_id
-        self.project_id = o.project_id
-    # def __init__(self, userdict):
-        # self.count = userdict["count"]
-        # self.groupname = userdict["groupname"]
-        # self.size_sum = userdict["size_sum"]
-        # self.size_sum_hum = userdict["size_sum_hum"]
-        # self.username = userdict["username"]
-
-
 class ColdFrontDB:
 
     @record_process
@@ -211,7 +233,8 @@ class ColdFrontDB:
         pr_objs = Allocation.objects.only("id", "project_id")
         pr_dict = {}
         for o in pr_objs:
-            o_name = return_pname(o.project_id)
+            proj = Project.objects.get(id=o.project_id)
+            o_name = project.title
             if o_name not in pr_dict:
                 pr_dict[o_name] = [o.get_resources_as_string]
             else:
@@ -397,10 +420,6 @@ def write_update_file_line(filepath, pattern):
             f.write(pattern + '\n')
             # f.write(newline)
 
-def return_pname(pid):
-    project = Project.objects.get(id=pid)
-    return project.title
-
 def split_num_string(x):
     n = re.search("\d*\.?\d+", x).group()
     s = x.replace(n, "")
@@ -473,41 +492,6 @@ def collect_starfish_usage(server, volume, volumepath, projects):
     return filepaths
 
 
-def collect_costperuser(ifx_uid, lab_name):
-    # to get to BillingRecord from ifx_uid:
-    # ifx_uid => ProductUsage.product_user_id
-    prod_uses = ProductUsage.objects.filter(product_user_id=ifx_uid)
-    pu_ids = [pu.id for pu in prod_uses]
-    # ProductUsage.id => BillingRecord.product_usage_id
-
-    # to get to BillingRecord from lab_name:
-    # lab_name => nanites_organization.code
-    nanites_lab = Organization.objects.get(code=lab_name)
-    # nanites_organization.id => Account.organization_id
-    account = Account.objects.get(organization_id=nanites_lab.id)
-    # Account.id => BillingRecord.account_id
-    bill = BillingRecord.objects.get(author_id=ifx_uid, account_id=lab.id)
-#     # get from billing record
-#     author_id = ifx_uid
-#     account_id => lab_name
-#
-#     product_usage_id links to product_usage table, containing
-#
-# id
-# charge
-# description
-# year
-# month
-# created
-# updated
-# account_id
-# product_usage_id
-# current_state
-# percent
-# author_id
-# updated_by_id
-# rate
-
 def use_zone(project_name):
     # attribute type ID will need to change to match the zone flag.
     try:
@@ -535,3 +519,12 @@ def generate_serv_vol_dict(vol_set):
                 if vk in vol_set:
                     search_svp[s][vk] = p
     return search_svp
+
+def generate_headers(token):
+    """Generate "headers" attribute by using the "token" attribute.
+    """
+    headers = {
+        "accept": "application/json",
+        "Authorization": "Bearer {}".format(token),
+    }
+    return headers
