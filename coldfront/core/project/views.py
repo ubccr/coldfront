@@ -751,7 +751,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Project
     template_name_suffix = '_update_form'
-    fields = ['title', 'description', 'slurm_account_name', 'field_of_science', 'private', ]
+    fields = ['title', 'description', 'slurm_account_name', 'field_of_science', ]
     success_message = 'Project updated.'
 
     def test_func(self):
@@ -785,7 +785,7 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
     def form_valid(self, form):
         form_data = form.cleaned_data
         slurm_account_name = form_data.get('slurm_account_name')
-        if len(slurm_account_name) > 0:
+        if slurm_account_name is not None and len(slurm_account_name) > 0:
             if len(slurm_account_name) < 3:
                 form.add_error(None, 'Please fix the errors below')
                 form.add_error('slurm_account_name', 'Must have a minimum length of three characters')
@@ -795,6 +795,8 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
                 form.add_error(None, 'Please fix the errors below')
                 form.add_error('slurm_account_name', 'Must not contain numbers or special characters')
                 return self.form_invalid(form)
+        else:
+            self.fields.insert(2, 'slurm_account_name')
 
         return super().form_valid(form)
 
