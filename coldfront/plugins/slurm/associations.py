@@ -61,8 +61,11 @@ class SlurmBase:
             for i in s.split(':'):
                 items.append(i)
 
+        # Remove duplicates
         items = list(set(items))
-        items.sort()
+        # Sort results (this is only to make consistent ordering for
+        # unit tests.  Small overhead as usually small lists)
+        #items.sort()
         return items
 
     def format_specs(self, specs=None):
@@ -76,7 +79,11 @@ class SlurmBase:
         if specs is None:
             return ''
         slist = self.spec_list(specs=specs)
-        return ':'.join([x for x in self.spec_list(specs=specs)])
+        # Sort results (this is only to make consistent ordering for
+        # unit tests.  Small overhead as usually small lists)
+        slist.sort()
+        #return ':'.join([x for x in self.spec_list(specs=specs)])
+        return ':'.join([x for x in slist])
 
     def _write(self, out, data):
         try:
@@ -504,7 +511,7 @@ class SlurmUser(SlurmBase):
     @classmethod
     def update_user_to(
         SlurmUser_class, old, new, flags=[], 
-        noop=False, cluster=None, account=None):
+        noop=False, cluster=None, account=None, noout=False):
         """Issue Slurm commands to update the user old to new.
 
         If old == None, creates the user
@@ -513,9 +520,9 @@ class SlurmUser(SlurmBase):
         account is the name of the account containing the users, required.
         cluster is the name of the cluster containing the accounts,
         required.
-        If noop is given, do not actually run commands just print them and
-        return text of commands run.
-        If noop is not set, returns output from the command.
+
+        If noop is given, do not actually run commands just print them 
+        (unless noout is set) and return text of commands run.
 
         Flags should be a list of flags controlling behavior.  Any flags
         given will be passed to update_*_to and compare_slurm_specs 
@@ -564,7 +571,8 @@ class SlurmUser(SlurmBase):
                 account=account,
                 cluster=cluster,
                 specs=new_specs, 
-                noop=noop)
+                noop=noop, 
+                noout=noout)
         
         # Old exists
         if new is None:
@@ -579,7 +587,8 @@ class SlurmUser(SlurmBase):
                 user=old.name,
                 cluster=cluster,
                 account=account,
-                noop=noop)
+                noop=noop, 
+                noout=noout)
 
         # Both old and new exist, compare them
         diffs = False
@@ -595,7 +604,8 @@ class SlurmUser(SlurmBase):
                 cluster=cluster,
                 account=account,
                 specs=diffs, 
-                noop=noop)
+                noop=noop, 
+                noout=noout)
         return output
 
 
@@ -669,7 +679,8 @@ class SlurmAccount(SlurmBase):
 
     @classmethod
     def update_account_to(
-        SlurmAccount_class, old, new, flags=[], noop=False, cluster=None):
+        SlurmAccount_class, old, new, flags=[], 
+            noop=False, cluster=None, noout=False):
         """Issue Slurm commands to update the account old to new.
 
         If old == None, creates the account
@@ -678,9 +689,9 @@ class SlurmAccount(SlurmBase):
 
         cluster is the name of the cluster containing the accounts,
         required.
-        If noop is set, do not actually run commands print them and 
-        return text with commands would have run
-        If noop is not set, returns output of commands
+
+        If noop is set, do not actually run commands print them
+        (unless noout is set) and return text with commands would have run
 
         Flags should be a list of flags controlling behavior.  Any flags
         given will be passed to update_*_to and compare_slurm_specs 
@@ -704,6 +715,11 @@ class SlurmAccount(SlurmBase):
             ignore_<spec_field>_<subfld>: if set and spec_field is
                 TRES-valued, the TRES named <tag> is ignored by 
                 compare_slurm_specs for that spec_field.
+
+        NOTE: skip_delete_account will also prevent the deletion of
+            users underneath the account to be deleted.
+        NOTE: skip_delete_user will be *ignored* for users of an
+            account being deleted.
         """
         output = ''
         if cluster is None:
@@ -727,7 +743,8 @@ class SlurmAccount(SlurmBase):
                 account=new_name, 
                 specs=new_specs, 
                 parent=new.parent,
-                noop=noop)
+                noop=noop,
+                noout=noout)
 
             # Add the users under the account
             for user in new.users.values():
@@ -737,7 +754,8 @@ class SlurmAccount(SlurmBase):
                     flags=flags,
                     cluster=cluster,
                     account=new_name,
-                    noop=noop)
+                    noop=noop,
+                    noout=noout)
                 output += tmpout
             return output
         
@@ -752,20 +770,28 @@ class SlurmAccount(SlurmBase):
 
             output = ''
             # First delete all of our users
+
+            # Remove skip_delete_user flag for this special case
+            tmpflags = flags
+            if 'skip_delete_user' in tmpflags:
+                tmpflags.remove('skip_delete_user')
+            
             for user in old.users.values():
                 tmpout = user.update_user_to(
                     old=user,
                     new=None,
-                    flags=flags, 
+                    flags=tmpflags, 
                     cluster=cluster,
                     account=old.name,
-                    noop=noop)
+                    noop=noop,
+                    noout=noout)
                 output += tmpout
             # Then delete the account
             tmpout = slurm_remove_account(
                 cluster=cluster,
                 account=old.name,
-                noop=noop)
+                noop=noop,
+                noout=noout)
             output += tmpout
             return output
 
@@ -793,7 +819,8 @@ class SlurmAccount(SlurmBase):
                 account=new.name, 
                 cluster=cluster,
                 specs=diffs, 
-                noop=noop)
+                noop=noop,
+                noout=noout)
             output += tmpout
 
         # Now compare users old vs new
@@ -807,7 +834,8 @@ class SlurmAccount(SlurmBase):
                     cluster=cluster,
                     account=new.name,
                     flags=flags,
-                    noop=noop)
+                    noop=noop,
+                    noout=noout)
                 output += tmpout
             else:
                 #User only exists in old
@@ -817,7 +845,8 @@ class SlurmAccount(SlurmBase):
                     cluster=cluster,
                     account=new.name,
                     flags=flags,
-                    noop=noop)
+                    noop=noop,
+                    noout=noout)
                 output += tmpout
         for uname, newuser in new.users.items():
             # We only consider users in new but not old, as
@@ -829,7 +858,8 @@ class SlurmAccount(SlurmBase):
                     cluster=cluster,
                     account=new.name,
                     flags=flags,
-                    noop=noop)
+                    noop=noop,
+                    noout=noout)
                 output += tmpout
         
         return output
@@ -907,15 +937,25 @@ class SlurmCluster(SlurmBase):
 
         # Process allocations
         for allocation in resource.allocation_set.filter(status__name='Active'):
-            cluster.add_allocation(allocation, user_specs=user_specs)
+            alloc_specs = resource.get_attribute_list(
+                SLURM_SPECS_ATTRIBUTE_NAME,
+                extra_allocations=[allocation])
+            alloc_user_specs = resource.get_attribute_list(
+                SLURM_USER_SPECS_ATTRIBUTE_NAME,
+                extra_allocations=[allocation])
+            cluster.add_allocation(allocation, 
+                specs=alloc_specs, user_specs=alloc_user_specs)
 
         # Process child resources
         children = Resource.objects.filter(
             parent_resource_id=resource.id, resource_type__name='Cluster Partition')
         for r in children:
-            partition_specs = r.get_attribute_list(SLURM_SPECS_ATTRIBUTE_NAME)
-            partition_user_specs = r.get_attribute_list(SLURM_USER_SPECS_ATTRIBUTE_NAME)
             for allocation in r.allocation_set.filter(status__name='Active'):
+                partition_specs = r.get_attribute_list(
+                    SLURM_SPECS_ATTRIBUTE_NAME, extra_allocations=[allocation])
+                partition_user_specs = r.get_attribute_list(
+                    SLURM_USER_SPECS_ATTRIBUTE_NAME,
+                    extra_allocations=[allocation])
                 cluster.add_allocation(allocation, specs=partition_specs, user_specs=partition_user_specs)
 
         if not cluster.accounts:
@@ -1010,7 +1050,7 @@ class SlurmCluster(SlurmBase):
 
     @classmethod
     def update_cluster_to(
-        SlurmCluster_class, old, new, flags=[], noop=False):
+        SlurmCluster_class, old, new, flags=[], noop=False, noout=False):
         """Issue Slurm commands to update the cluster old to new.
 
         If old == None, creates the cluster
@@ -1018,7 +1058,8 @@ class SlurmCluster(SlurmBase):
         Will recursively go through accounts, users, etc.
 
         If noop is given, do not actually run commands but just print
-        and return a string listing what commands would be run.
+        (unless noout is set) and return a string listing what commands 
+        would be run.
 
         Flags should be a list of flags controlling behavior.  Any flags
         given will be passed to update_*_to and compare_slurm_specs 
@@ -1066,7 +1107,8 @@ class SlurmCluster(SlurmBase):
             tmpout = slurm_add_cluster(
                 cluster=new_cname, 
                 specs=new_specs, 
-                noop=noop)
+                noop=noop, 
+                noout=noout)
             output += tmpout
 
             # Create the accounts beneath it
@@ -1085,7 +1127,8 @@ class SlurmCluster(SlurmBase):
                         new=account,
                         flags=flags,
                         cluster=new.name,
-                        noop=noop)
+                        noop=noop, 
+                        noout=noout)
                     output += tmpout
                 else:
                     # Defer processing until after parent
@@ -1104,7 +1147,8 @@ class SlurmCluster(SlurmBase):
                             new=account,
                             flags=flags,
                             cluster=new.name,
-                            noop=noop)
+                            noop=noop, 
+                            noout=noout)
                         output += tmpout
                     else:
                         # Still need to defer
@@ -1120,14 +1164,17 @@ class SlurmCluster(SlurmBase):
                 logger.info('Not deleting cluster {}: '
                     'skip_delete_cluster is set'.format(old.name))
                 return output
-            if not noop:
-                if not 'force_delete_cluster' in flags:
-                    logger.warning('Cowardly refusing to delete cluster {}:'
-                        ' force_delete_cluster not set.  Forcing noop to '
-                        'True'.format(old.name))
-                    noop = True
+            if not 'force_delete_cluster' in flags:
+                logger.warning('Cowardly refusing to delete cluster {}:'
+                    ' force_delete_cluster not set.'.format(old.name))
+                return output
             # First delete all of our accounts (which will do users as well)
             # We need to do child accounts first, then parents
+
+            # We need to temporarily remove 'skip_delete_account' flag
+            tmpflags = flags
+            if 'skip_delete_account' in tmpflags:
+                tmpflags.remove('skip_delete_account')
 
             # Make hash of children by parents
             children_by_parent = {}
@@ -1160,9 +1207,10 @@ class SlurmCluster(SlurmBase):
                     tmpout = oldaccount.update_account_to(
                         old=oldaccount,
                         new=None,
-                        flags=flags,
+                        flags=tmpflags,
                         cluster=old.name,
-                        noop=noop)
+                        noop=noop, 
+                        noout=noout)
                     output += tmpout
                 else:
                     # Defer processing until after all children processed
@@ -1188,16 +1236,18 @@ class SlurmCluster(SlurmBase):
                         tmpout = oldaccount.update_account_to(
                             old=oldaccount,
                             new=None,
-                            flags=flags,
+                            flags=tmpflags,
                             cluster=old.name,
-                            noop=noop)
+                            noop=noop, 
+                            noout=noout)
                         output += tmpout
                     else:
                         # Defer processing until all children processed
                         accs2proc.append((aname, oldaccount))
 
             # Then delete the cluster
-            tmpout = slurm_remove_cluster(cluster=old.name, noop=noop)
+            tmpout = slurm_remove_cluster(cluster=old.name, 
+                    noop=noop, noout=noout)
             output += tmpout
             return output
 
@@ -1213,7 +1263,8 @@ class SlurmCluster(SlurmBase):
 
         if diffs:
             # Modify the cluster
-            tmpout = slurm_modify_cluster(cluster=new.name, specs=diffs, noop=noop)
+            tmpout = slurm_modify_cluster(cluster=new.name, specs=diffs, 
+                    noop=noop, noout=noout)
             output += tmpout
 
         # Now compare accounts old vs new
@@ -1237,7 +1288,8 @@ class SlurmCluster(SlurmBase):
                         new=newaccount,
                         flags=flags,
                         cluster=new.name,
-                        noop=noop)
+                        noop=noop, 
+                        noout=noout)
                     output += tmpout
                 else:
                     #Account only exists in new
@@ -1246,7 +1298,8 @@ class SlurmCluster(SlurmBase):
                         new=newaccount,
                         flags=flags,
                         cluster=new.name, 
-                        noop=noop)
+                        noop=noop, 
+                        noout=noout)
                     output += tmpout
             else:
                 # Defer processing until after parent
@@ -1265,7 +1318,8 @@ class SlurmCluster(SlurmBase):
                         new=newaccount,
                         flags=flags,
                         cluster=new.name,
-                        noop=noop)
+                        noop=noop, 
+                        noout=noout)
                     output += tmpout
                 else:
                     # Still need to defer
@@ -1315,7 +1369,8 @@ class SlurmCluster(SlurmBase):
                     new=None,
                     flags=flags,
                     cluster=old.name,
-                    noop=noop)
+                    noop=noop, 
+                    noout=noout)
                 output += tmpout
             else:
                 # Defer processing until after all children processed
@@ -1346,7 +1401,8 @@ class SlurmCluster(SlurmBase):
                         new=None,
                         flags=flags,
                         cluster=old.name,
-                        noop=noop)
+                        noop=noop, 
+                        noout=noout)
                     output += tmpout
                 else:
                     # Defer processing until all children processed
