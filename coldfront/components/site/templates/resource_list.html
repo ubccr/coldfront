@@ -1,39 +1,31 @@
 {% extends "common/base.html" %}
-{% load crispy_forms_tags %}
 {% load common_tags %}
+{% load crispy_forms_tags %}
 {% load static %}
 
 
 {% block title %}
-Project List
+Resource List
 {% endblock %}
 
 
 {% block content %}
-<div class="card mb-3 bg-light">
-  <div class="card-body">
-    <div class="float-left">
-      <a class="btn btn-primary" href="{% url 'project-list' %}" role="button"><i class="fas fa-arrow-left" aria-hidden="true"></i> Back to active projects</a>
-    </div>
-  </div>
-</div>
-
-<h2>Denied Projects</h2>
+<h2>Resources</h2>
 <hr>
 
-{% if expand_accordion == "show" or project_list or user.is_superuser %}
+{% if expand_accordion == "show" or resource_list %}
   <div class="mb-3" id="accordion">
     <div class="card">
       <div class="card-header">
-        <a id="expand_button" role="button" class="card-link " data-toggle="collapse" href="#collapseOne"> 
+        <a id="expand_button" role="button" class="card-link " data-toggle="collapse" href="#collapseOne">
           <i class="fas fa-filter" aria-hidden="true"></i> Filter
           <i id="plus_minus" class="fas {{expand_accordion|get_icon}} float-right"></i>
         </a>
       </div>
       <div id="collapseOne" class="collapse {{expand_accordion}}" data-parent="#accordion">
         <div class="card-body">
-          <form id="filter_form" method="GET" action="{% url 'project-denied-list' %}">
-            {{ project_search_form|crispy }}
+          <form id="filter_form" method="GET" action="{% url 'resource-list' %}" autocomplete="off">
+            {{ resource_search_form|crispy }}
             <input type="submit" class="btn btn-primary" value="Search">
             <button id="form_reset_button" type="button" class="btn btn-secondary">Reset</button>
           </form>
@@ -44,8 +36,8 @@ Project List
   <hr>
 {% endif %}
 
-{% if project_list %}
-  <strong>Projects: {{projects_count}}</strong>
+{% if resource_list %}
+  <strong>Resource{{resources_count|pluralize}}: {{resources_count}}</strong>
   <div class="table-responsive">
     <table class="table table-sm">
       <thead>
@@ -56,32 +48,29 @@ Project List
             <a href="?order_by=id&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort ID desc</span></a>
           </th>
           <th scope="col" class="text-nowrap">
-            PI
-            <a href="?order_by=pi__username&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort PI asc</span></a>
-            <a href="?order_by=pi__username&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort PI desc</span></a>
-          </th>
-          <th scope="col">Title and Description</th>
-          <th scope="col" class="text-nowrap">
-            Field of Science
-            <a href="?order_by=field_of_science&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Field of Science asc</span></a>
-            <a href="?order_by=field_of_science&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Field of Science desc</span></a>
+            Resource Name
+            <a href="?order_by=name&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Resource Name asc</span></a>
+            <a href="?order_by=name&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Resource Name desc</span></a>
           </th>
           <th scope="col" class="text-nowrap">
-            Status
-            <a href="?order_by=status&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Status asc</span></a>
-            <a href="?order_by=status&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Status desc</span></a>
+            Parent Resource
+            <a href="?order_by=parent_resource&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Parent Resource asc</span></a>
+            <a href="?order_by=parent_resource&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Parent Resource desc</span></a>
+          </th>
+          <th scope="col" class="text-nowrap">
+            Resource Type
+            <a href="?order_by=resource_type__name&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Resource Type asc</span></a>
+            <a href="?order_by=resource_type__name&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Resource Type desc</span></a>
           </th>
         </tr>
       </thead>
       <tbody>
-        {% for project in project_list %}
+        {% for resource in resource_list %}
           <tr>
-            <td><a href="/project/{{project.id}}/">{{ project.id }}</a></td>
-            <td>{{ project.pi.username }}</td>
-            <td style="text-align: justify; text-justify: inter-word;"><strong>Title: </strong> {{ project.title }}
-              <br> <strong>Description: </strong>{{ project.description }}</td>
-            <td>{{ project.field_of_science.description }}</td>
-            <td>{{ project.status.name }}</td>
+            <td><a href="/resource/{{resource.id}}/">{{ resource.id }}</a></td>
+            <td>{{ resource }}</td>
+            <td>{{ resource.parent_resource }}</td>
+            <td>{{ resource.resource_type.name }}</td>
           </tr>
         {% endfor %}
       </tbody>
@@ -101,28 +90,35 @@ Project List
       </ul>
     {% endif %}
   </div>
+{% elif expand_accordion == "show"%}
+  <div class="alert alert-secondary">
+    No search results!
+  </div>
 {% else %}
-  <div class="alert alert-info">
-    There are no denied projects!
+  <div class="alert alert-secondary">
+    No resources to display!
   </div>
 {% endif %}
 
 <script>
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-project-menu").addClass("active");
-  $("#navbar-project").addClass("active");
+  $("#navbar-resource").addClass("active");
 
-  $(document).on('click', '#form_reset_button', function() {
+  $(document).on('click', '#form_reset_button', function () {
     resetForm($('#filter_form'));
   });
 
+  $(".datepicker").datepicker();
+
   function resetForm($form) {
-    $form.find('input:text, textarea').val('');
+    $form.find('input:text, input:password, input:file, select, textarea').val('');
+    $form.find('input:radio, input:checkbox').removeAttr('checked').removeAttr('selected');
   };
 
-  $("#expand_button").click(function() {
+  $("#expand_button").click(function () {
     $('#collapseOne').collapse();
-    icon = $(this).find("i");
+    icon = $("#plus_minus");
     icon.toggleClass("fa-plus fa-minus");
   });
 </script>

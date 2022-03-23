@@ -13,12 +13,12 @@ Project List
 <div class="card mb-3 bg-light">
   <div class="card-body">
     <div class="float-left">
-      <a class="btn btn-primary" href="{% url 'project-list' %}" role="button"><i class="fas fa-arrow-left" aria-hidden="true"></i> Back to active projects</a>
+      <a class="btn btn-primary" href="{% url 'project-list' %}?{{filter_parameters}}" role="button"><i class="fas fa-arrow-left" aria-hidden="true"></i> Back to active projects</a>
     </div>
   </div>
 </div>
 
-<h2>Denied Projects</h2>
+<h2>Archived Projects</h2>
 <hr>
 
 {% if expand_accordion == "show" or project_list or user.is_superuser %}
@@ -32,7 +32,7 @@ Project List
       </div>
       <div id="collapseOne" class="collapse {{expand_accordion}}" data-parent="#accordion">
         <div class="card-body">
-          <form id="filter_form" method="GET" action="{% url 'project-denied-list' %}">
+          <form id="filter_form" method="GET" action="{% url 'project-archived-list' %}">
             {{ project_search_form|crispy }}
             <input type="submit" class="btn btn-primary" value="Search">
             <button id="form_reset_button" type="button" class="btn btn-secondary">Reset</button>
@@ -103,7 +103,7 @@ Project List
   </div>
 {% else %}
   <div class="alert alert-info">
-    There are no denied projects!
+    There are no archived projects!
   </div>
 {% endif %}
 

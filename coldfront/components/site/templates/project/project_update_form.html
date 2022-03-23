@@ -1,20 +1,19 @@
-{% extends "common/base.html" %} 
+{% extends "common/base.html" %}
 {% load crispy_forms_tags %}
 {% load static %}
 
 
 {% block title %}
-Create Project
+Update Project
 {% endblock %}
 
 
 {% block content %}
- <form method="post">
+<form method="post">
   {% csrf_token %}
   {{ form|crispy }}
-  <input class="btn btn-primary" type="submit" value="Submit" />
-  <input id="after_project_creation" type="hidden" name="after_project_creation" value="true">
-  <a class="btn btn-secondary" href="{% url 'project-list' %}" role="button">Cancel</a>
+  <input class="btn btn-primary" type="submit" value="Save" />
+  <a class="btn btn-secondary" href="{% url 'project-detail' object.pk %}" role="button">Cancel</a>
 </form>
 
 <script>

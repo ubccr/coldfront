@@ -511,6 +511,9 @@ Allocation Detail
 </div>
 
 <script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-project-menu").addClass("active");
+
   $(document).ready(function () {
     var guage_data = {{ guage_data | safe }};
     drawGauges(guage_data);

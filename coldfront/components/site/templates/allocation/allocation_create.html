@@ -83,6 +83,9 @@ Request New Allocation
   var resource_form = {{ resource_form | safe }}
   var request_user_username = {{ request_user_username | safe }}
 
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-project-menu").addClass("active");
+
   $(document).ready(function () {
     moveRadioSelectErrors();
 

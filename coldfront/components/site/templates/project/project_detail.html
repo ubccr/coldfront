@@ -476,6 +476,9 @@ Project Detail
 <script>
   var display_modal = {{ display_modal | safe }};
 
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-project-menu").addClass("active");
+
   function getCookie(name) {
     var cookieValue = null;
     if (document.cookie && document.cookie != '') {

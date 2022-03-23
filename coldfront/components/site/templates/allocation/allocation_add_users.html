@@ -2,17 +2,20 @@
 {% load crispy_forms_tags %}
 {% load static %}
 
-{% block title %} Remove Users from Project {% endblock %}
+
+{% block title %}
+Add Users to Allocation
+{% endblock %}
+
 
 {% block content %}
-<h2>Remove users from project: {{project.title}}</h2>
+<h2>Add users to allocation for project: {{allocation.project.title}}</h2>
 <hr>
 
 {% if formset %}
   <div class="card border-light">
     <div class="card-body">
-
-      <form action="{% url 'project-remove-users' project.pk %}" method="post">
+      <form action="{% url 'allocation-add-users' allocation.pk %}" method="post">
         {% csrf_token %}
         <div class="table-responsive">
           <table class="table table-sm table-hover">
@@ -26,7 +29,6 @@
                 <th scope="col">First Name</th>
                 <th scope="col">Last Name</th>
                 <th scope="col">Email</th>
-                <th scope="col">Role</th>
               </tr>
             </thead>
             <tbody>
@@ -38,29 +40,26 @@
                   <td>{{ form.first_name.value }}</td>
                   <td>{{ form.last_name.value }}</td>
                   <td>{{ form.email.value }}</td>
-                  <td>{{ form.role.value }}</td>
                 </tr>
               {% endfor %}
             </tbody>
           </table>
-          {% if data_managers %}
-            <p>Slate-Project Data Managers cannot be removed from the project.</p>
-          {% endif %}
-          <p></p>
         </div>
         {{ formset.management_form }}
         <div>
-          <button type="submit" class="btn btn-primary"><i class="fas fa-user-minus" aria-hidden="true"></i> Remove Selected Users From Project</button>
-          <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a>
+          <button type="submit" class="btn btn-primary"><i class="fas
+              fa-user-plus"></i> Add Selected Users to Allocation</button>
+          <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i>
+            Back to Allocation</a>
           <br>
         </div>
       </form>
     </div>
   </div>
 {% else %}
-  <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a> 
+  <a class="btn btn-secondary mb-3" href="{% url 'allocation-detail' allocation.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Allocation</a>
   <div class="alert alert-info">
-    No users to remove!
+    All users in project are already in this allocation!
   </div>
 {% endif %}
 
@@ -68,13 +67,13 @@
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-project-menu").addClass("active");
 
-  $("#selectAll").click(function() {
-    $("input[name^='userform-']").not(":disabled").prop('checked', $(this).prop('checked'));
+  $("#selectAll").click(function () {
+    $("input[name^='userform-']").prop('checked', $(this).prop('checked'));
   });
 
-  $("input[name^='userform-']").click(function(ele) {
+  $("input[name^='userform-']").click(function (ele) {
     var id = $(this).attr('id');
-    if (id != "selectAll") {
+    if ( id != "selectAll") {
       $("#selectAll").prop('checked', false);
     }
   });
