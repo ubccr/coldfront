@@ -56,7 +56,7 @@ We do not have information about your research. Please provide a detailed descri
         max_length=15,
         blank=True,
         help_text='''
-This is only required if you need a resource that uses Slurm. The name must be at least four
+This is only required if you need a resource that uses Slurm. The name must be at least three
 characters long and cannot contain numbers or special characters. Once set it cannot be changed.
         '''
     )
