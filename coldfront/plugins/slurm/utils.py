@@ -20,9 +20,8 @@ SLURM_CMD_MODIFY_CLUSTER = SLURM_SACCTMGR_PATH + ' -Q -i modify cluster where cl
 SLURM_CMD_REMOVE_CLUSTER = SLURM_SACCTMGR_PATH + ' -Q -i delete cluster where cluster={}'
 
 SLURM_CMD_ADD_ACCOUNT = SLURM_SACCTMGR_PATH + ' -Q -i create account name={} cluster={}'
-SLURM_CMD_BLOCK_ACCOUNT = SLURM_SACCTMGR_PATH + ' -Q -i modify account {} where Cluster={} set GrpSubmitJobs=0'
+SLURM_CMD_BLOCK_ACCOUNT = SLURM_SACCTMGR_PATH + ' -Q -i modify account where cluster={} account={} set GrpSubmitJobs=0'
 SLURM_CMD_MODIFY_ACCOUNT = SLURM_SACCTMGR_PATH + ' -Q -i modify account where cluster={} account={} set'
-SLURM_CMD_REMOVE_CLUSTER = SLURM_SACCTMGR_PATH + ' -Q -i delete cluster where cluster={}'
 SLURM_CMD_REMOVE_ACCOUNT = SLURM_SACCTMGR_PATH + ' -Q -i delete account where name={} cluster={}'
 
 SLURM_CMD_ADD_USER = SLURM_SACCTMGR_PATH + ' -Q -i create user name={} cluster={} account={}'
