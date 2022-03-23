@@ -56,9 +56,8 @@ We do not have information about your research. Please provide a detailed descri
         max_length=15,
         blank=True,
         help_text='''
-All allocations that require a slurm account name will use this name plus an additional identifier.
-The name must be at least four characters long and cannot contain numbers or special characters.
-This is only required if you are using a resource that uses Slurm. Once set it cannot be changed.
+This is only required if you need a resource that uses Slurm. The name must be at least four
+characters long and cannot contain numbers or special characters. Once set it cannot be changed.
         '''
     )
     field_of_science = models.ForeignKey(FieldOfScience, on_delete=models.CASCADE, default=FieldOfScience.DEFAULT_PK)
