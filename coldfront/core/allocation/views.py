@@ -3153,7 +3153,7 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         if allocation_obj.project.status.name in ['Denied', 'Expired', ]:
             messages.error(
-                request, 'You cannot request a change to an allocation in a project with status {}.'.format(allocation_obj.project.status.name))
+                request, 'You cannot request a change to an allocation in a project with status "{}".'.format(allocation_obj.project.status.name))
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
         if allocation_obj.is_locked:
