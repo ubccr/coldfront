@@ -237,6 +237,9 @@ standards. The plugin pylint_django improves pylint's ability to analyse Django 
   ```
 - Note you can also run pylint on each python file in a directory by passing in the directory as <file_path>
 - By default, output is written to stdout. To output to a file, include the --output=<filename> flag.
+  ```
+  pylint --output=<filename> --load-plugins pylint_django --django-settings-module=<your.app.settings> <file_path>
+  ```
 
 ## Directory structure
 
