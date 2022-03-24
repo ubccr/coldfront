@@ -245,38 +245,25 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             is_locked = form_data.get('is_locked')
             is_changeable = form_data.get('is_changeable')
 
-            if initial_data.get('status') != status and allocation_obj.project.status.name != "Active":
-                messages.error(request, 'Project must be approved first before you can update this allocation\'s status!')
-                return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
+            old_status = allocation_obj.status.name
+            new_status = status.name
 
             allocation_obj.description = description
-            allocation_obj.save()
-
-            if not start_date:
-                start_date = datetime.datetime.now()
-            if not end_date:
-                end_date = allocation_obj.project.end_date
-
-            if allocation_obj.use_indefinitely:
-                end_date = None
-
-            allocation_obj.end_date = end_date
-
-            old_status = allocation_obj.status.name
-            new_status = form_data.get('status').name
-
-            allocation_obj.status = form_data.get('status')
             allocation_obj.is_locked = is_locked
             allocation_obj.is_changeable = is_changeable
             allocation_obj.save()
 
-            if start_date and allocation_obj.start_date != start_date:
-                allocation_obj.start_date = start_date
-                allocation_obj.save()
+            if initial_data.get('status') != status and allocation_obj.project.status.name != "Active":
+                messages.error(request, 'Project must be approved first before you can update this allocation\'s status!')
+                return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
-            if end_date and allocation_obj.end_date != end_date:
-                allocation_obj.end_date = end_date
-                allocation_obj.save()
+            allocation_obj.status = form_data.get('status')
+            allocation_obj.save()
+
+            if not start_date:
+                start_date = None
+            if not end_date:
+                end_date = None
 
             if EMAIL_ENABLED:
                 resource_name = allocation_obj.get_parent_resource
@@ -285,11 +272,13 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                     'allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
             if old_status != 'Active' and new_status == 'Active':
-                if not start_date:
+                if start_date is None:
                     start_date = datetime.datetime.now()
-                if not end_date:
-                    end_date = datetime.datetime.now(
-                    ) + relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)
+                if end_date is None:
+                    end_date = allocation_obj.project.end_date
+
+                if allocation_obj.use_indefinitely:
+                    end_date = None
 
                 allocation_obj.start_date = start_date
                 allocation_obj.end_date = end_date
@@ -360,7 +349,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                         email_receiver_list
                     )
 
-            elif old_status != 'New' and new_status == 'New':
+            elif not new_status == 'Expired' and not new_status == 'Active':
                 allocation_obj.start_date = None
                 allocation_obj.end_date = None
                 allocation_obj.save()
