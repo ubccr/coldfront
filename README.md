@@ -226,6 +226,16 @@ emails will be outputted here for inspection.
   python -m smtpd -n -c DebuggingServer localhost:1025
   ```
 
+#### pylint
+
+- pylint is a python module that tests code for style and helps enforce coding 
+standards. The plugin pylint_django improves pylint's ability to analyse Django code.
+
+- To run pylint with the pylint_django plugin on a python file, call pylint from the command line:
+  ```
+  pylint --load-plugins pylint_django --django-settings-module=<your.app.settings> <file_path>
+  ```
+
 ## Directory structure
 
 - coldfront
