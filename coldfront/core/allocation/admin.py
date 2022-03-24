@@ -234,6 +234,7 @@ class AllocationUserAdmin(SimpleHistoryAdmin):
         'user__first_name',
         'user__last_name',
         'user__username',
+        'allocation__project__name',
     )
     raw_id_fields = ('allocation', 'user', )
 
