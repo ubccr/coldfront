@@ -31,11 +31,11 @@ class ProjectRenewalPISelectionForm(forms.Form):
         self.allocation_type = SavioProjectAllocationRequest.FCA
         self.allocation_period_pk = kwargs.pop('allocation_period_pk', None)
         self.project_pks = kwargs.pop('project_pks', None)
+        super().__init__(*args, **kwargs)
+
         if not (self.allocation_type and self.allocation_period_pk
                 and self.project_pks):
             return
-
-        super().__init__(*args, **kwargs)
 
         role = ProjectUserRoleChoice.objects.get(name='Principal Investigator')
         status = ProjectUserStatusChoice.objects.get(name='Active')
