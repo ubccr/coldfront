@@ -19,7 +19,7 @@ AUTHENTICATION_BACKENDS += [
 
 # Base config for CAS login
 PLUGIN_CAS = ENV.bool('PLUGIN_CAS', default=True)
-CAS_SERVER_URL = ENV.str('CAS_SERVER_URL', default='https://idp-stg.login.iu.edu/idp/profile/cas/')
+CAS_SERVER_URL = ENV.str('CAS_SERVER_URL', default='https://idp.login.iu.edu/idp/profile/cas/')
 CAS_VERSION = ENV.str('CAS_VERSION', default='2')
 CAS_LOGOUT_COMPLETELY = ENV.bool('CAS_LOGOUT_COMPLETELY', default=False)
 CAS_AUTO_CREATE_USERS = ENV.bool('CAS_AUTO_CREATE_USERS', default=True)
