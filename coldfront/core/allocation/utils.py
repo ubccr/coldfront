@@ -7,6 +7,7 @@ from django.urls import reverse
 from urllib.parse import urljoin
 
 from coldfront.core.allocation.models import (AllocationAttributeType,
+                                              AllocationPeriod,
                                               AllocationUser,
                                               AllocationUserAttribute,
                                               AllocationUserStatusChoice)
@@ -148,35 +149,48 @@ def next_allocation_start_datetime():
             pytz.timezone(settings.TIME_ZONE))
 
 
-def prorated_allocation_amount(amount, dt):
+def prorated_allocation_amount(amount, dt, allocation_period):
     """Given a number of service units and a datetime, return the
     prorated number of service units that would be allocated in the
-    current allocation year, based on the datetime's month.
+    given AllocationPeriod, based on the datetime's position within that
+    period. If it is before, return the full amount. If it is after,
+    return zero.
 
     Parameters:
         - amount (Decimal): a number of service units (e.g.,
                             settings.FCA_DEFAULT_ALLOCATION).
         - dt (datetime): a datetime object whose month is used in the
                          calculation, based on its position relative to
-                         the start month of the allocation year.
+                         the start month of the given AllocationPeriod.
+        - allocation_period (AllocationPeriod): an AllocationPeriod
+                                                object to compare the
+                                                datetime against.
 
     Returns:
         - Decimal
 
     Raises:
-        - TypeError, if either argument has an invalid type
-        - ValueError, if the provided amount is outside of the allowed
+        - TypeError, if any argument has an invalid type
+        - ValueError, if the provided amount is outside the allowed
         range for allocations
     """
     if not isinstance(amount, Decimal):
         raise TypeError(f'Invalid Decimal {amount}.')
     if not isinstance(dt, datetime):
         raise TypeError(f'Invalid datetime {dt}.')
+    if not isinstance(allocation_period, AllocationPeriod):
+        raise TypeError(f'Invalid AllocationPeriod {allocation_period}.')
     if not (settings.ALLOCATION_MIN < amount < settings.ALLOCATION_MAX):
         raise ValueError(f'Invalid amount {amount}.')
-    month = dt.month
+    date = dt.astimezone(pytz.timezone(settings.DISPLAY_TIME_ZONE)).date()
+    start, end = allocation_period.start_date, allocation_period.end_date
+    if date < start:
+        return amount
+    if date > end:
+        return settings.ALLOCATION_MIN
+    month = date.month
     amount_per_month = amount / 12
-    start_month = settings.ALLOCATION_YEAR_START_MONTH
+    start_month = start.month
     if month >= start_month:
         amount = amount - amount_per_month * (month - start_month)
     else:

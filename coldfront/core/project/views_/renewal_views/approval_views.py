@@ -76,6 +76,7 @@ class AllocationRenewalRequestListView(LoginRequiredMixin, TemplateView):
 
 class AllocationRenewalRequestMixin(object):
 
+    allocation_period_obj = None
     request_obj = None
 
     def get_context_data(self, **kwargs):
@@ -93,17 +94,18 @@ class AllocationRenewalRequestMixin(object):
         return reverse(
             'pi-allocation-renewal-request-detail', kwargs={'pk': pk})
 
-    @staticmethod
-    def get_service_units_to_allocate():
+    def get_service_units_to_allocate(self):
         """Return the number of service units to allocate to the project
         if it were to be approved now."""
-        now = utc_now_offset_aware()
-        return prorated_allocation_amount(settings.FCA_DEFAULT_ALLOCATION, now)
+        return prorated_allocation_amount(
+            settings.FCA_DEFAULT_ALLOCATION, self.request_obj.request_time,
+            self.allocation_period_obj)
 
-    def set_request_obj(self, pk):
+    def set_objs(self, pk):
         self.request_obj = get_object_or_404(
             AllocationRenewalRequest.objects.prefetch_related(
                 'pi', 'post_project', 'pre_project', 'requester'), pk=pk)
+        self.allocation_period_obj = self.request_obj.allocation_period
 
 
 class AllocationRenewalRequestDetailView(LoginRequiredMixin,
@@ -137,7 +139,7 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
+        self.set_objs(pk)
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -289,7 +291,7 @@ class AllocationRenewalRequestReviewEligibilityView(LoginRequiredMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
+        self.set_objs(pk)
         response_redirect = HttpResponseRedirect(self.get_redirect_url(pk))
         status_name = self.request_obj.status.name
         if status_name in ['Approved', 'Complete', 'Denied']:
@@ -363,7 +365,7 @@ class AllocationRenewalRequestReviewDenyView(LoginRequiredMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
+        self.set_objs(pk)
         response_redirect = HttpResponseRedirect(self.get_redirect_url(pk))
 
         status_name = self.request_obj.status.name
@@ -439,7 +441,7 @@ class AllocationRenewalRequestReviewDenyView(LoginRequiredMixin,
 #
 #     def dispatch(self, request, *args, **kwargs):
 #         pk = self.kwargs.get('pk')
-#         self.set_request_obj(pk)
+#         self.set_objs(pk)
 #         response_redirect = HttpResponseRedirect(self.get_redirect_url(pk))
 #
 #         status_name = self.request_obj.status.name

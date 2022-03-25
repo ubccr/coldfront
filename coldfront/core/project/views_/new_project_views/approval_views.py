@@ -260,19 +260,15 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         if allocation_type == SavioProjectAllocationRequest.CO:
             return settings.CO_DEFAULT_ALLOCATION
         elif allocation_type == SavioProjectAllocationRequest.FCA:
-
-            # TODO: This depends on which AllocationPeriod it is for.
-
             return prorated_allocation_amount(
-                settings.FCA_DEFAULT_ALLOCATION, self.request_obj.request_time)
+                settings.FCA_DEFAULT_ALLOCATION, self.request_obj.request_time,
+                self.request_obj.allocation_period)
         elif allocation_type == SavioProjectAllocationRequest.ICA:
             return settings.ICA_DEFAULT_ALLOCATION
         elif allocation_type == SavioProjectAllocationRequest.PCA:
-
-            # TODO: This depends on which AllocationPeriod it is for.
-
             return prorated_allocation_amount(
-                settings.PCA_DEFAULT_ALLOCATION, self.request_obj.request_time)
+                settings.PCA_DEFAULT_ALLOCATION, self.request_obj.request_time,
+                self.request_obj.allocation_period)
         elif allocation_type == SavioProjectAllocationRequest.RECHARGE:
             num_service_units = \
                 self.request_obj.extra_fields['num_service_units']

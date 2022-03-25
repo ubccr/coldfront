@@ -27,9 +27,12 @@ class ProjectRenewalPISelectionForm(forms.Form):
         widget=DisabledChoicesSelectWidget())
 
     def __init__(self, *args, **kwargs):
-        self.allocation_period_pk = kwargs.pop('allocation_period_pk')
+        self.allocation_period_pk = kwargs.pop('allocation_period_pk', None)
         self.project_pks = kwargs.pop('project_pks', None)
         super().__init__(*args, **kwargs)
+
+        if not (self.allocation_period_pk and self.project_pks):
+            return
 
         role = ProjectUserRoleChoice.objects.get(name='Principal Investigator')
         status = ProjectUserStatusChoice.objects.get(name='Active')
