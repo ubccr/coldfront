@@ -78,7 +78,7 @@ Allocation List
       <tbody>
         {% for allocation in allocation_list %}
           <tr>
-            <td>{{ allocation.id }}</a></td>
+            <td>{{ allocation.id }}</td>
             <td class="text-nowrap"><a 
                 href="/project/{{allocation.project.id}}/">{{ allocation.project.title|truncatechars:50 }}</a></td>
             <td class="text-nowrap">{{allocation.project.pi.first_name}} {{allocation.project.pi.last_name}}

@@ -135,7 +135,7 @@ Project List
       <tbody>
         {% for project in project_list %}
           <tr>
-            <td>{{ project.id }}</a></td>
+            <td>{{ project.id }}</td>
             <td>{{ project.pi.username }}</td>
             <td style="text-align: justify; text-justify: inter-word;">{{ project.title|truncatechars:30 }}</td>
             <td>{{ project.field_of_science.description }}</td>
