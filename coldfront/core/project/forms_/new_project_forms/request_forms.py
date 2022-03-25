@@ -127,8 +127,8 @@ class SavioProjectExistingPIForm(forms.Form):
 
             # PIs may only have one FCA, so disable any PIs who:
             #     (a) have an existing 'New', 'Active', or 'Inactive' FCA,
-            #     (b) have non-denied AllocationRenewalRequests during this
-            #         AllocationPeriod, or
+            #     (b) have non-denied AllocationRenewalRequests during the
+            #         specified AllocationPeriod, or
             #     (c) have non-denied SavioProjectAllocationRequests during
             #         the specified AllocationPeriod.
 
