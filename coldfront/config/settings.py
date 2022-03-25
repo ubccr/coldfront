@@ -10,6 +10,7 @@ coldfront_configs = [
     'auth.py',
     'logging.py',
     'core.py',
+    'plugins/cas_login.py',
 ]
 
 if ENV.bool('EMAIL_ENABLED', default=False):

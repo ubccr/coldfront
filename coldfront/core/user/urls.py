@@ -38,7 +38,7 @@ urlpatterns = [
 ]
 
 
-if ENV.bool('PLUGIN_CAS', default=False):
+if ENV.bool('PLUGIN_CAS', default=True):
     urlpatterns += [
         path('login', django_cas_ng.views.LoginView.as_view(), name='login'),
         path('logout', django_cas_ng.views.LogoutView.as_view(), name='logout'),
