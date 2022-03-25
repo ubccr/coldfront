@@ -5,10 +5,6 @@ INSTALLED_APPS += [
     'django_cas_ng',
 ]
 
-if ENV.bool('DEBUG', default=False):
-    INSTALLED_APPS += [
-        'django_extensions'
-    ]
 
 MIDDLEWARE += [
     'django_cas_ng.middleware.CASMiddleware',
