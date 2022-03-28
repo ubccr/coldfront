@@ -1,5 +1,3 @@
-from rest_framework.exceptions import ValidationError
-
 from coldfront.api.permissions import IsAdminUserOrReadOnly
 from coldfront.api.statistics.pagination import JobPagination
 from coldfront.api.statistics.serializers import JobSerializer
@@ -376,14 +374,15 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
 
         # ac_ and co_ projects do not have end dates to check
         name = account.name
-        if name.startswith('fc_') or name.startswith('ic_') or name.startswith('pc_'):
+        if name.startswith('fc_') or name.startswith('ic_') or \
+                name.startswith('pc_'):
             # these projects' allocations should have end dates
             # checking that job end date is not after allocation end date
 
             # ensuring that the allocation end_date exists
             if not allocation_end_date:
                 message = (
-                    f'Allocation {name} does not have an end date.')
+                    f'Allocation {account} does not have an end date.')
                 logger.error(message)
                 raise serializers.ValidationError(message)
 
