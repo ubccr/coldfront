@@ -125,6 +125,15 @@ class Command(BaseCommand):
                                                     help='Export results in the given format.',
                                                     type=str)
 
+        survey_responses_subparser = subparsers.add_parser('survey_responses',
+                                                           help='Export survey responses')
+        survey_responses_subparser.add_argument('--format', help='Format to dump survey responses in',
+                                                type=str, required=True, choices=['json', 'csv'])
+        survey_responses_subparser.add_argument('--allowance_type',
+                                                help='Dump responses for Projects with given prefix',
+                                                type=str, required=False, default='',
+                                                choices=['ac_', 'co_', 'fc_', 'ic_', 'pc_'])
+
     def handle(self, *args, **options):
         """Call the handler for the provided subcommand."""
         subcommand = options['subcommand']
@@ -399,6 +408,50 @@ class Command(BaseCommand):
 
         elif format == 'json':
             self.to_json(query_set,
+                         output=kwargs.get('stdout', stdout),
+                         error=kwargs.get('stderr', stderr))
+
+    def handle_survey_responses(self, *args, **kwargs):
+        format = kwargs['format']
+        allowance_type = kwargs['allowance_type']
+        allocation_requests = SavioProjectAllocationRequest.objects.all()
+
+        if allowance_type:
+            allocation_requests = allocation_requests.filter(
+                project__name__istartswith=allowance_type)
+
+        _surveys = list(allocation_requests.values_list('survey_answers', flat=True))
+        projects = Project.objects.filter(
+            pk__in=allocation_requests.values_list('project', flat=True))
+        surveys = []
+
+        if format == 'csv':
+            for project, survey in zip(projects, _surveys):
+                surveys.append({
+                    'project_name': project.name,
+                    'project_title': project.title,
+                    **survey
+                })
+
+            try:
+                writer = csv.DictWriter(kwargs.get('stdout', stdout), surveys[0].keys())
+                writer.writeheader()
+
+                for survey in surveys:
+                    writer.writerow(survey)
+
+            except Exception as e:
+                kwargs.get('stderr', stderr).write(str(e))
+
+        elif format == 'json':
+            for project, survey in zip(projects, _surveys):
+                surveys.append({
+                    'project_name': project.name,
+                    'project_title': project.title,
+                    'survey_responses': survey
+                })
+
+            self.to_json(surveys,
                          output=kwargs.get('stdout', stdout),
                          error=kwargs.get('stderr', stderr))
 
