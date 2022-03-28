@@ -1,5 +1,6 @@
 from coldfront.api.statistics.tests.test_job_base import TestJobBase
-from coldfront.api.statistics.utils import convert_datetime_to_unix_timestamp
+from coldfront.api.statistics.utils import convert_datetime_to_unix_timestamp, \
+    get_accounting_allocation_objects
 from coldfront.api.statistics.utils import create_project_allocation
 from coldfront.api.statistics.utils import create_user_project_allocation
 from coldfront.api.statistics.utils import get_allocation_year_range
@@ -60,7 +61,7 @@ class TestJobList(TestJobBase):
         # Create Projects.
         self.num_projects = 2
         project_status = ProjectStatusChoice.objects.get(name='Active')
-        allocation_pks = dict()
+        self.allocation_pks = dict()
 
         # Create compute allocations for the Projects.
         allocation_amount = Decimal('1000.00')
@@ -69,7 +70,7 @@ class TestJobList(TestJobBase):
                 name=f'PROJECT_{i}', status=project_status)
             allocation_objects = create_project_allocation(
                 project, allocation_amount)
-            allocation_pks[project.pk] = allocation_objects.allocation.pk
+            self.allocation_pks[project.pk] = allocation_objects.allocation.pk
 
         # Create compute allocations for the Users on the Projects.
         role = ProjectUserRoleChoice.objects.get(name='User')
@@ -863,3 +864,114 @@ class TestJobViewSet(TestJobBase):
         self.assertEqual(self.client.put(self.post_url).status_code, 405)
         self.assertEqual(self.client.delete(self.post_url).status_code, 405)
         self.assertEqual(self.client.delete(self.post_url).status_code, 405)
+
+    def test_put_raise_error_for_start_date(self):
+        """Test that a PUT (update) request raises error if the job's start
+        date is before the allocation's start date."""
+        data = self.data.copy()
+        project = Project.objects.get(name=data['accountid'])
+        allocation_objects = get_accounting_allocation_objects(project)
+
+        default_start, default_end = get_allocation_year_range()
+        allocation_objects.allocation.start_date = default_start
+        allocation_objects.allocation.end_date = default_end
+        allocation_objects.allocation.save()
+        allocation_objects.allocation.refresh_from_db()
+
+        # submit and start date set to be before the allocation period starts
+        data['submitdate'] = (allocation_objects.allocation.start_date -
+                              timedelta(days=6)).strftime(self.date_format)
+        data['startdate'] = (allocation_objects.allocation.start_date -
+                             timedelta(days=5)).strftime(self.date_format)
+
+        response = self.client.put(
+            TestJobViewSet.put_url(data['jobslurmid']), data,
+            format='json')
+        self.assertEqual(response.status_code, 400)
+        json = response.json()
+        message = (
+            f'Job start date {data["startdate"]} occurs before allocation '
+            f'{data["accountid"]}\'s start date '
+            f'{allocation_objects.allocation.start_date.strftime(self.date_format)}.')
+        self.assertEqual(json[0], message)
+
+        # check that no Job object was created
+        self.assertFalse(Job.objects.all())
+
+    def test_put_raise_error_for_end_date(self):
+        """Test that a PUT (update) request raises error if the job's end
+        date is after the allocation's end date."""
+        data = self.data.copy()
+        project = Project.objects.get(name=data['accountid'])
+        new_project_name = f'fc_{data["accountid"]}'
+        project.name = new_project_name
+        project.save()
+        data['accountid'] = new_project_name
+
+        allocation_objects = get_accounting_allocation_objects(project)
+        default_start, default_end = get_allocation_year_range()
+        allocation_objects.allocation.start_date = default_start
+        allocation_objects.allocation.end_date = default_end
+        allocation_objects.allocation.save()
+        allocation_objects.allocation.refresh_from_db()
+
+        # submit and start dates within allocation period
+        # end date set to 5 days after allocation period ends
+        data['submitdate'] = (allocation_objects.allocation.start_date +
+                              timedelta(days=4)).strftime(self.date_format)
+        data['startdate'] = (allocation_objects.allocation.start_date +
+                             timedelta(days=5)).strftime(self.date_format)
+        data['enddate'] = (allocation_objects.allocation.end_date +
+                             timedelta(days=5)).strftime(self.date_format)
+
+        response = self.client.put(
+            TestJobViewSet.put_url(data['jobslurmid']), data,
+            format='json')
+        self.assertEqual(response.status_code, 400)
+        json = response.json()
+
+        message = (
+            f'Job end date {data["enddate"]} occurs after allocation '
+            f'{data["accountid"]}\'s end date '
+            f'{allocation_objects.allocation.end_date.strftime(self.date_format)}.')
+        self.assertEqual(json[0], message)
+
+        # check that no Job object was created
+        self.assertFalse(Job.objects.all())
+
+    def test_put_raise_error_for_no_start_end_date(self):
+        """Test that a PUT (update) request raises error if the job does not
+         have a start or end date."""
+        data = self.data.copy()
+        project = Project.objects.get(name=data['accountid'])
+        new_project_name = f'fc_{data["accountid"]}'
+        project.name = new_project_name
+        project.save()
+        data['accountid'] = new_project_name
+
+        allocation_objects = get_accounting_allocation_objects(project)
+        default_start, default_end = get_allocation_year_range()
+        allocation_objects.allocation.start_date = default_start
+        allocation_objects.allocation.end_date = default_end
+        allocation_objects.allocation.save()
+        allocation_objects.allocation.refresh_from_db()
+
+        # check error is thrown if no start date is given
+        for date in ['startdate', 'enddate']:
+            popped_date = data.pop(date)
+            response = self.client.put(
+                TestJobViewSet.put_url(data['jobslurmid']), data,
+                format='json')
+            self.assertEqual(response.status_code, 400)
+            json = response.json()
+
+            message = (
+                f'Job {data["jobslurmid"]} does not '
+                f'have start or end dates.')
+            self.assertEqual(json[0], message)
+
+            # check that no Job object was created
+            self.assertFalse(Job.objects.all())
+
+            # put popped date back into data for next test
+            data[date] = popped_date
