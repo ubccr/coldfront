@@ -3,8 +3,6 @@ from coldfront.api.statistics.utils import convert_datetime_to_unix_timestamp, \
     get_accounting_allocation_objects
 from coldfront.api.statistics.utils import create_project_allocation
 from coldfront.api.statistics.utils import create_user_project_allocation
-from coldfront.api.statistics.utils import get_allocation_year_range
-from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttributeUsage
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.models import AllocationUser
@@ -16,7 +14,6 @@ from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
-from coldfront.core.resource.models import Resource
 from coldfront.core.statistics.models import Job
 from coldfront.core.user.models import ExpiringToken
 from coldfront.core.user.models import UserProfile
@@ -70,9 +67,8 @@ class TestJobList(TestJobBase):
                 name=f'PROJECT_{i}', status=project_status)
             allocation_objects = create_project_allocation(
                 project, allocation_amount)
-            default_start, default_end = get_allocation_year_range()
-            allocation_objects.allocation.start_date = default_start
-            allocation_objects.allocation.end_date = default_end
+            allocation_objects.allocation.start_date = self.default_start
+            allocation_objects.allocation.end_date = self.default_end
             allocation_objects.allocation.save()
             allocation_pks[project.pk] = allocation_objects.allocation.pk
 
@@ -90,7 +86,7 @@ class TestJobList(TestJobBase):
 
         # Create Jobs with PUT requests.
         index = 1
-        dt = datetime.now().replace(
+        dt = self.default_start.replace(
             hour=index, minute=0, second=0, microsecond=0)
         # Jobs were submitted on the hour from 1 - 8 a.m. on the current day.
         for allocation_user in AllocationUser.objects.all():
@@ -101,6 +97,8 @@ class TestJobList(TestJobBase):
                 data = {
                     'jobslurmid': str(index),
                     'submitdate': dt.replace(hour=index),
+                    'startdate': dt.replace(hour=index),
+                    'enddate': dt.replace(hour=index+1),
                     'userid': UserProfile.objects.get(
                         user=allocation_user.user).cluster_uid,
                     'accountid': allocation_user.allocation.project.name,
@@ -153,14 +151,13 @@ class TestJobList(TestJobBase):
         url = TestJobList.get_url()
         status_code, count = 200, 8
         results_dict = self.assert_results(url, status_code, count)
-        start_time, end_time = get_allocation_year_range()
         for jobslurmid in results_dict:
             job = results_dict[jobslurmid]
             self.assertIn('submitdate', job)
             submitdate = datetime.strptime(
                 job['submitdate'], "%Y-%m-%dT%H:%M:%SZ")
-            self.assertGreaterEqual(submitdate, start_time)
-            self.assertLessEqual(submitdate, end_time)
+            self.assertGreaterEqual(submitdate, self.default_start)
+            self.assertLessEqual(submitdate, self.default_end)
 
     def test_user_filter(self):
         """Test that the user filter filters properly."""
@@ -282,21 +279,20 @@ class TestJobList(TestJobBase):
     def test_start_time_filter(self):
         """Test that the start_time filter filters properly."""
         # Four jobs were submitted at or after 5 a.m. today.
-        start_dt = datetime.now().replace(
+        start_dt = self.default_start.replace(
             hour=5, minute=0, second=0, microsecond=0)
         start_time = convert_datetime_to_unix_timestamp(start_dt)
         url = TestJobList.get_url(start_time=start_time)
         status_code, count = 200, 4
         results_dict = self.assert_results(url, status_code, count)
         # Since no end_time was provided, the default should be used.
-        _, default_end = get_allocation_year_range()
         for jobslurmid in results_dict:
             job = results_dict[jobslurmid]
             self.assertIn('submitdate', job)
             submitdate = datetime.strptime(
                 job['submitdate'], "%Y-%m-%dT%H:%M:%SZ")
             self.assertGreaterEqual(submitdate, start_dt)
-            self.assertLessEqual(submitdate, default_end)
+            self.assertLessEqual(submitdate, self.default_end)
 
     def test_invalid_start_time(self):
         """Test that an invalid start time raises an appropriate
@@ -309,20 +305,19 @@ class TestJobList(TestJobBase):
     def test_end_time_filter(self):
         """Test that the end_time filter filters properly."""
         # Four jobs were submitted before or at 4 a.m. today.
-        end_dt = datetime.now().replace(
+        end_dt = self.default_start.replace(
             hour=4, minute=0, second=0, microsecond=0)
         end_time = convert_datetime_to_unix_timestamp(end_dt)
         url = TestJobList.get_url(end_time=end_time)
         status_code, count = 200, 4
         results_dict = self.assert_results(url, status_code, count)
         # Since no start_time was provided, the default should be used.
-        default_start, _ = get_allocation_year_range()
         for jobslurmid in results_dict:
             job = results_dict[jobslurmid]
             self.assertIn('submitdate', job)
             submitdate = datetime.strptime(
                 job['submitdate'], "%Y-%m-%dT%H:%M:%SZ")
-            self.assertGreaterEqual(submitdate, default_start)
+            self.assertGreaterEqual(submitdate, self.default_start)
             self.assertLessEqual(submitdate, end_dt)
 
     def test_invalid_end_time(self):
@@ -335,10 +330,10 @@ class TestJobList(TestJobBase):
     def test_multiple_filters(self):
         """Test that the query filters filter in conjunction."""
         # Six jobs were submitted at or after 2 a.m. and before or at 7 a.m.
-        start_dt = datetime.now().replace(
+        start_dt = self.default_start.replace(
             hour=2, minute=0, second=0, microsecond=0)
         start_time = convert_datetime_to_unix_timestamp(start_dt)
-        end_dt = datetime.now().replace(
+        end_dt = self.default_start.replace(
             hour=7, minute=0, second=0, microsecond=0)
         end_time = convert_datetime_to_unix_timestamp(end_dt)
         url = TestJobList.get_url(start_time=start_time, end_time=end_time)
@@ -360,10 +355,10 @@ class TestJobList(TestJobBase):
         """Test that results are returned in ascending submitdate
         order."""
         # Six jobs were submitted at or after 2 a.m. and before or at 7 a.m.
-        start_dt = datetime.now().replace(
+        start_dt = self.default_start.replace(
             hour=2, minute=0, second=0, microsecond=0)
         start_time = convert_datetime_to_unix_timestamp(start_dt)
-        end_dt = datetime.now().replace(
+        end_dt = self.default_start.replace(
             hour=7, minute=0, second=0, microsecond=0)
         end_time = convert_datetime_to_unix_timestamp(end_dt)
         url = TestJobList.get_url(start_time=start_time, end_time=end_time)
