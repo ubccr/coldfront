@@ -1,3 +1,5 @@
+from rest_framework.exceptions import ValidationError
+
 from coldfront.api.permissions import IsAdminUserOrReadOnly
 from coldfront.api.statistics.pagination import JobPagination
 from coldfront.api.statistics.serializers import JobSerializer
@@ -29,6 +31,8 @@ from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 import logging
+
+DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 
 authorization_parameter = openapi.Parameter(
@@ -212,9 +216,6 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        logger.info(
-            f'New Job POST request with data: {serializer.validated_data}.')
-
         # These must exist because they are verified in JobSerializer.validate,
         # part of this atomic block.
         user = serializer.validated_data['userid']
@@ -231,6 +232,30 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         user_account_usage = (
             AllocationUserAttributeUsage.objects.select_for_update().get(
                 pk=allocation_objects.allocation_user_attribute_usage.pk))
+
+        # all project types will have start_dates
+        job_start_date = serializer.validated_data.get('start_date', None)
+        allocation_start_date = allocation_objects.allocation.start_date
+
+        # check that the job has a start date
+        if not job_start_date:
+            message = (
+                f'Job {serializer.validated_data.get("jobslurmid")} does not '
+                f'a start date.')
+            logger.error(message)
+            raise serializers.ValidationError(message)
+
+        # check that the job's start date is after the allocation's start date
+        if job_start_date.date() < allocation_start_date:
+            message = (
+                f'Job start date {job_start_date.strftime(DATE_FORMAT)} occurs '
+                f'before allocation {account}\'s start date '
+                f'{allocation_start_date.strftime(DATE_FORMAT)}.')
+            logger.error(message)
+            raise serializers.ValidationError(message)
+
+        logger.info(
+            f'New Job POST request with data: {serializer.validated_data}.')
 
         # If amount is specified, update usages.
         if 'amount' in serializer.validated_data:
@@ -309,9 +334,6 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                 data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
 
-        logger.info(
-            f'New Job PUT request with data: {serializer.validated_data}.')
-
         # These must exist because they are verified in JobSerializer.validate,
         # part of this atomic block.
         user = serializer.validated_data['userid']
@@ -324,6 +346,44 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         user_account_usage = (
             AllocationUserAttributeUsage.objects.select_for_update().get(
                 pk=allocation_objects.allocation_user_attribute_usage.pk))
+
+        # all project types will have start_dates
+        job_start_date = serializer.validated_data.get('startdate', None)
+        job_end_date = serializer.validated_data.get('enddate', None)
+        allocation_start_date = allocation_objects.allocation.start_date
+        allocation_end_date = allocation_objects.allocation.end_date
+
+        # throw error if there is no start or end date given
+        if not bool(job_start_date) or not bool(job_end_date):
+            message = (
+                f'Job {serializer.validated_data.get("jobslurmid")} does not '
+                f'have start or end dates.')
+            logger.error(message)
+            raise serializers.ValidationError(message)
+
+        # checking that job start date is not before allocation start date
+        if job_start_date.date() < allocation_start_date:
+            message = (
+                f'Job start date {job_start_date.strftime(DATE_FORMAT)} occurs '
+                f'before allocation {account}\'s start date '
+                f'{allocation_start_date.strftime(DATE_FORMAT)}.')
+            logger.error(message)
+            raise serializers.ValidationError(message)
+
+        # ac_ and co_ projects do not have end dates to check
+        name = account.name
+        if name.startswith('fc_') or name.startswith('ic_') or name.startswith('pc_'):
+            # these projects will have end dates
+            # checking that job end date is not after allocation end date
+            if job_end_date.date() > allocation_end_date:
+                message = (
+                    f'Job end date {job_end_date.strftime(DATE_FORMAT)} occurs after allocation '
+                    f'{account}\'s end date {allocation_end_date.strftime(DATE_FORMAT)}.')
+                logger.error(message)
+                raise serializers.ValidationError(message)
+
+        logger.info(
+            f'New Job PUT request with data: {serializer.validated_data}.')
 
         # If amount is specified, update usages.
         if 'amount' in serializer.validated_data:
