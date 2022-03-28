@@ -354,7 +354,6 @@ class Command(BaseCommand):
         type = kwargs['type']
         date = kwargs.get('start_date', None)
 
-        requests = None
         if type == 'savio':
             requests = SavioProjectAllocationRequest.objects.all()
             header = ['id', 'created', 'modified', 'allocation_type',
@@ -368,8 +367,8 @@ class Command(BaseCommand):
             date = self.convert_time_to_utc(date)
             requests = requests.filter(created__gte=date)
 
-        additiona_headers = ['project', 'status', 'requester', 'pi']
-        projects = [project.project.name for project in requests]
+        additional_headers = ['project', 'status', 'requester', 'pi']
+        projects = [request.project.name for request in requests]
         statuses = [request.status.name for request in requests]
 
         requesters = []
@@ -395,7 +394,7 @@ class Command(BaseCommand):
             request.extend([project, status, requester, pi])
             query_set.append(request)
 
-        headers = header + additiona_headers
+        headers = header + additional_headers
         query_set = list(map(lambda query: dict(zip(headers, query)), query_set))
 
         if format == 'csv':
