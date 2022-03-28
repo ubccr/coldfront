@@ -99,3 +99,5 @@ class TestJobBase(TestAPIBase):
             'partition': self.partition,
             'qos': self.qos
         }
+
+        self.default_start, self.default_end = get_allocation_year_range()
