@@ -1,4 +1,5 @@
-from coldfront.api.statistics.utils import create_project_allocation
+from coldfront.api.statistics.utils import create_project_allocation, \
+    get_allocation_year_range
 from coldfront.api.statistics.utils import create_user_project_allocation
 from coldfront.api.utils.tests.test_api_base import TestAPIBase
 from coldfront.core.allocation.models import AllocationAttributeUsage
@@ -60,6 +61,10 @@ class TestJobBase(TestAPIBase):
         allocation_objects = create_project_allocation(
             self.project, Decimal('1000.00'))
         self.allocation = allocation_objects.allocation
+        default_start, default_end = get_allocation_year_range()
+        self.allocation.start_date = default_start
+        self.allocation.end_date = default_end
+        self.allocation.save()
         self.allocation_attribute = allocation_objects.allocation_attribute
         self.account_usage = AllocationAttributeUsage.objects.first()
 
