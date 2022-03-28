@@ -233,12 +233,12 @@ standards. The plugin pylint_django improves pylint's ability to analyse Django 
 
 - To run pylint with the pylint_django plugin on a python file, call pylint from the command line:
   ```
-  pylint --load-plugins pylint_django --django-settings-module=<your.app.settings> <file_path>
+  pylint --load-plugins pylint_django --django-settings-module=coldfront.config.settings <file_path>
   ```
-- Note you can also run pylint on each python file in a directory by passing in the directory as <file_path>
+- Note you can also run pylint on each python file in a directory by passing in the directory as <file_path>.
 - By default, output is written to stdout. To output to a file, include the --output=<filename> flag.
   ```
-  pylint --output=<filename> --load-plugins pylint_django --django-settings-module=<your.app.settings> <file_path>
+  pylint --output=<filename> --load-plugins pylint_django --django-settings-module=coldfront.config.settings <file_path>
   ```
 
 ## Directory structure
