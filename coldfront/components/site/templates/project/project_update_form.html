@@ -13,7 +13,7 @@ Update Project
   {% csrf_token %}
   {{ form|crispy }}
   <input class="btn btn-primary" type="submit" value="Save" />
-  <a class="btn btn-secondary" href="{% url 'project-detail' object.pk %}" role="button">Cancel</a>
+  <a class="btn btn-secondary" href="{% url 'project-detail' project_pk %}" role="button">Cancel</a>
 </form>
 
 <script>

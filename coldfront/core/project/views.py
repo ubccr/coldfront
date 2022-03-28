@@ -29,6 +29,7 @@ from coldfront.core.allocation.signals import (allocation_activate_user,
 from coldfront.core.allocation.utils import send_allocation_user_request_email
 from coldfront.core.grant.models import Grant
 from coldfront.core.project.forms import (ProjectAddUserForm,
+                                          ProjectUpdateForm,
                                           ProjectAddUsersToAllocationForm,
                                           ProjectFormSetWithSelectDisabled,
                                           ProjectRemoveUserForm,
@@ -748,10 +749,9 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         )
 
 
-class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestMixin, UpdateView):
-    model = Project
-    template_name_suffix = '_update_form'
-    fields = ['title', 'description', 'slurm_account_name', 'field_of_science', ]
+class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestMixin, FormView):
+    form_class=ProjectUpdateForm
+    template_name='project/project_update_form.html'
     success_message = 'Project updated.'
 
     def test_func(self):
@@ -759,7 +759,7 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
         if self.request.user.is_superuser:
             return True
 
-        project_obj = self.get_object()
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
 
         if project_obj.pi == self.request.user:
             return True
@@ -775,14 +775,20 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
         else:
             return super().dispatch(request, *args, **kwargs)
 
-    def get(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        if not self.object.slurm_account_name == '':
-            self.fields.remove('slurm_account_name')
+    def get_form(self, form_class=None):
+        """Return an instance of the form to be used in this view."""
+        if form_class is None:
+            form_class = self.get_form_class()
+        return form_class(self.kwargs.get('pk'), **self.get_form_kwargs())
 
-        return super().get(request, *args, **kwargs)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['project_pk'] = self.kwargs.get('pk')
+
+        return context
 
     def form_valid(self, form):
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         form_data = form.cleaned_data
         slurm_account_name = form_data.get('slurm_account_name')
         if slurm_account_name is not None and len(slurm_account_name) > 0:
@@ -795,13 +801,17 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
                 form.add_error(None, 'Please fix the errors below')
                 form.add_error('slurm_account_name', 'Must not contain numbers or special characters')
                 return self.form_invalid(form)
-        else:
-            self.fields.insert(2, 'slurm_account_name')
 
+        project_obj.title = form_data.get('title')
+        project_obj.description = form_data.get('description')
+        project_obj.slurm_account_name = form_data.get('slurm_account_name')
+        project_obj.field_of_science = form_data.get('field_of_science')
+        project_obj.save()
+        
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse('project-detail', kwargs={'pk': self.object.pk})
+        return reverse('project-detail', kwargs={'pk': self.kwargs.get('pk')})
 
 
 class ProjectAddUsersSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
