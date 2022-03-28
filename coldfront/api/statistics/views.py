@@ -233,23 +233,25 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
             AllocationUserAttributeUsage.objects.select_for_update().get(
                 pk=allocation_objects.allocation_user_attribute_usage.pk))
 
-        # all project types will have start_dates
-        job_start_date = serializer.validated_data.get('start_date', None)
+        # all project types will have allocation start_dates
+        job_start_date = serializer.validated_data.get('startdate', None)
         allocation_start_date = allocation_objects.allocation.start_date
+        jobslurmid = serializer.validated_data.get('jobslurmid')
 
         # check that the job has a start date
         if not job_start_date:
             message = (
-                f'Job {serializer.validated_data.get("jobslurmid")} does not '
-                f'a start date.')
+                f'Job {jobslurmid} does not '
+                f'have a start date.')
             logger.error(message)
             raise serializers.ValidationError(message)
 
         # check that the job's start date is after the allocation's start date
         if job_start_date.date() < allocation_start_date:
             message = (
-                f'Job start date {job_start_date.strftime(DATE_FORMAT)} occurs '
-                f'before allocation {account}\'s start date '
+                f'Job {jobslurmid}\'s start date '
+                f'{job_start_date.strftime(DATE_FORMAT)} occurs before '
+                f'allocation {account}\'s start date '
                 f'{allocation_start_date.strftime(DATE_FORMAT)}.')
             logger.error(message)
             raise serializers.ValidationError(message)
@@ -352,11 +354,12 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         job_end_date = serializer.validated_data.get('enddate', None)
         allocation_start_date = allocation_objects.allocation.start_date
         allocation_end_date = allocation_objects.allocation.end_date
+        jobslurmid = serializer.validated_data.get('jobslurmid')
 
         # throw error if there is no start or end date given
         if not bool(job_start_date) or not bool(job_end_date):
             message = (
-                f'Job {serializer.validated_data.get("jobslurmid")} does not '
+                f'Job {jobslurmid} does not '
                 f'have start or end dates.')
             logger.error(message)
             raise serializers.ValidationError(message)
@@ -364,7 +367,8 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         # checking that job start date is not before allocation start date
         if job_start_date.date() < allocation_start_date:
             message = (
-                f'Job start date {job_start_date.strftime(DATE_FORMAT)} occurs '
+                f'Job {jobslurmid}\'s start date '
+                f'{job_start_date.strftime(DATE_FORMAT)} occurs '
                 f'before allocation {account}\'s start date '
                 f'{allocation_start_date.strftime(DATE_FORMAT)}.')
             logger.error(message)
@@ -373,12 +377,23 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         # ac_ and co_ projects do not have end dates to check
         name = account.name
         if name.startswith('fc_') or name.startswith('ic_') or name.startswith('pc_'):
-            # these projects will have end dates
+            # these projects' allocations should have end dates
+            # checking that job end date is not after allocation end date
+
+            # ensuring that the allocation end_date exists
+            if not allocation_end_date:
+                message = (
+                    f'Allocation {name} does not have an end date.')
+                logger.error(message)
+                raise serializers.ValidationError(message)
+
             # checking that job end date is not after allocation end date
             if job_end_date.date() > allocation_end_date:
                 message = (
-                    f'Job end date {job_end_date.strftime(DATE_FORMAT)} occurs after allocation '
-                    f'{account}\'s end date {allocation_end_date.strftime(DATE_FORMAT)}.')
+                    f'Job {jobslurmid}\'s end date '
+                    f'{job_end_date.strftime(DATE_FORMAT)} occurs after '
+                    f'allocation {account}\'s end date '
+                    f'{allocation_end_date.strftime(DATE_FORMAT)}.')
                 logger.error(message)
                 raise serializers.ValidationError(message)
 
