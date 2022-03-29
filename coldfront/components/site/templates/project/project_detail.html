@@ -32,7 +32,7 @@ Project Detail
 
 {% if project.status.name in 'Archived, Denied' %}
   <div class="alert alert-warning" role="alert">
-    This is a(n) {{project.status.name}} project! You cannot make any changes.
+    You cannot make changes to a project with status "{{ project.status.name }}".
   </div>
 {% endif %}
 

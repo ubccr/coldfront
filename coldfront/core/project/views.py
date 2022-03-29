@@ -589,7 +589,7 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
         if project_obj.status.name in ['Denied', 'Waiting For Admin Approval', 'Review Pending']:
             messages.error(
                 request,
-                'Cannot archive a project with status "{}".'.format(project_obj.status.name)
+                'You cannot archive a project with status "{}".'.format(project_obj.status.name)
             )
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
@@ -770,7 +770,10 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
-            messages.error(request, 'You cannot update a(n) {} project.'.format(project_obj.status.name))
+            messages.error(
+                request,
+                'You cannot update a project with status "{}".'.format(project_obj.status.name)
+            )
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
@@ -834,7 +837,9 @@ class ProjectAddUsersSearchView(LoginRequiredMixin, UserPassesTestMixin, Templat
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
             messages.error(
-                request, 'You cannot add users to a(n) {} project.'.format(project_obj.status.name))
+                request,
+                'You cannot add users to a project with status "{}".'.format(project_obj.status.name)
+            )
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
@@ -871,7 +876,9 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
             messages.error(
-                request, 'You cannot add users to a(n) {} project.'.format(project_obj.status.name))
+                request,
+                'You cannot add users to a project with status "{}".'.format(project_obj.status.name)
+            )
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
@@ -1007,7 +1014,9 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
             messages.error(
-                request, 'You cannot add users to a(n) {} project.'.format(project_obj.status.name))
+                request,
+                'You cannot add users to a project with status "{}".'.format(project_obj.status.name)
+            )
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
@@ -1241,7 +1250,9 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
             messages.error(
-                request, 'You cannot remove users from a(n) {} project.'.format(project_obj.status.name))
+                request,
+                'You cannot remove users from a project with status "{}".'.format(project_obj.status.name)
+            )
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)

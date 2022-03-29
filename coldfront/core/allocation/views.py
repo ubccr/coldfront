@@ -545,7 +545,9 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         if project_obj.status.name in ['Archived', 'Denied', 'Review Pending', 'Expired', ]:
             messages.error(
-                request, 'You cannot request a new allocation to a(n) {} project.'.format(project_obj.status.name))
+                request,
+                'You cannot request a new allocation for a project with status "{}".'.format(project_obj.status.name)
+            )
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
         return super().dispatch(request, *args, **kwargs)
@@ -1188,8 +1190,10 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
         if allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid']:
-            messages.error(request, 'You cannot add users to a allocation with status {}.'.format(
-                allocation_obj.status.name))
+            messages.error(
+                request,
+                'You cannot add users to an allocation with status "{}".'.format(allocation_obj.status.name)
+            )
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
         
         return super().dispatch(request, *args, **kwargs)
@@ -1393,8 +1397,10 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
         if allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', 'Paid', 'Payment Pending', 'Payment Requested', 'Expired']:
-            messages.error(request, 'You cannot remove users from a allocation with status {}.'.format(
-                allocation_obj.status.name))
+            messages.error(
+                request,
+                'You cannot remove users from an allocation with status "{}".'.format(allocation_obj.status.name)
+            )
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
         return super().dispatch(request, *args, **kwargs)
@@ -1972,7 +1978,7 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
         if allocation_obj.status.name not in ['Active', ]:
-            messages.error(request, 'You cannot renew a allocation with status {}.'.format(
+            messages.error(request, 'You cannot renew an allocation with status "{}".'.format(
                 allocation_obj.status.name))
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
