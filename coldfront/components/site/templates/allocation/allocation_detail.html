@@ -494,7 +494,11 @@ Allocation Detail
               {% if not note.is_private or request.user.is_superuser %}
                 <tr>
                   <td>{{ note.note }}</td>
-                  <td>{{ note.author.first_name }} {{ note.author.last_name }}</td>
+                  {% if note.is_private %}
+                    <td>{{ note.author.first_name }} {{ note.author.last_name }} (Private)</td>
+                  {% else %}
+                    <td>{{ note.author.first_name }} {{ note.author.last_name }}</td>
+                  {% endif %}
                   <td>{{ note.modified }}</td>
                 </tr>
               {% endif %}
