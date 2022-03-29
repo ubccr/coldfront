@@ -658,8 +658,9 @@ class TestNewProjectRequests(TestBase):
             name='Approved - Complete')
 
         savio_headers = ['id', 'created', 'modified',
-                         'allocation_type', 'survey_answers', 'state', 'pool']
-        vector_headers = ['id', 'created', 'modified']
+                         'allocation_type', 'survey_answers', 'state', 'pool',
+                         'extra_fields']
+        vector_headers = ['id', 'created', 'modified', 'state']
         additional_headers = ['project', 'status', 'requester', 'pi']
 
         # create sample requests

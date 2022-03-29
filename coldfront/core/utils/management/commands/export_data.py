@@ -357,11 +357,11 @@ class Command(BaseCommand):
         if type == 'savio':
             requests = SavioProjectAllocationRequest.objects.all()
             header = ['id', 'created', 'modified', 'allocation_type',
-                      'survey_answers', 'state', 'pool']
+                      'survey_answers', 'state', 'pool', 'extra_fields']
 
         else:
             requests = VectorProjectAllocationRequest.objects.all()
-            header = ['id', 'created', 'modified']
+            header = ['id', 'created', 'modified', 'state']
 
         if date:
             date = self.convert_time_to_utc(date)
