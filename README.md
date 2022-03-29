@@ -235,14 +235,22 @@ improves pylint's ability to analyse Django code.
 - To run pylint with the pylint_django plugin on a python file, call pylint 
 from the command line:
   ```
-  pylint --load-plugins pylint_django --django-settings-module=coldfront.config.settings <file_path>
+  pylint <file_path>
   ```
-- Note you can also run pylint on each python file in a directory by 
-passing in the directory as <file_path>.
+    - pylint must either be called from the same directory as the file `setup.cfg` 
+  or you can explicitly define the config file by using the flag `--rcfile=<config_path>`.
+    - Note you can also run pylint on each python file in a directory by 
+  passing in the directory as <file_path>.
+    - For example, to run pylint on all python files in the directory 
+  `coldfront/core/statistics/` from a location other than the top level 
+  directory, run the following command:
+      ```
+      pylint --rcfile=/vagrant/coldfront_app/coldfront/setup.cfg coldfront/core/statistics/
+      ```
 - By default, output is written to stdout. To output to a file, include 
 the `--output=<filename>` flag.
   ```
-  pylint --output=<filename> --load-plugins pylint_django --django-settings-module=coldfront.config.settings <file_path>
+  pylint --output=<filename> <file_path>
   ```
 
 #### coverage
