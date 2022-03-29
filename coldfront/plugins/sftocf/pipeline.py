@@ -16,6 +16,7 @@ from ifxbilling.models import Account, BillingRecord, ProductUsage
 
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.project.models import Project, ProjectUser
+from coldfront.core.resource.models import Resource
 from coldfront.core.allocation.models import Allocation, AllocationUser, AllocationAttribute, AllocationUserStatusChoice
 
 datestr = datetime.today().strftime("%Y%m%d")
@@ -49,47 +50,76 @@ class AllTheThingsConn:
     def pull_quota_data(self):
         vol_search = "|".join([i for l in [v.keys() for s, v in svp.items()]for i in l])
         print(vol_search)
-        queries = {"statements": [
-            # isilon query
-            # pull usage - the one we want is hard quota/limit
-            {"statement": f"MATCH p=(g:Group)-[:Owns]-(n:IsilonPath) \
-                WHERE (n.Isilon =~ '.*({vol_search}).*')\
-                RETURN \
-                g.ADSamAccountName as lab,\
-                datetime(n.DotsUpdateDate) as update_date,\
-                n.Isilon as volume,\
-                n.HasQuota as hasquota,\
-                n.SoftGB as softgb,\
-                n.HardGB as hardgb,\
-                n.UsedGB as usedgb"
-            },
-            # quota query
-            {"statement": f"MATCH p=(g:Group)-[:HasQuota]-(n:Quota) \
-                WHERE (n.filesystem =~ '.*({vol_search}).*')\
-                RETURN \
-                g.ADSamAccountName as lab,\
-                datetime(n.DotsLFSUpdateDate) as update_date,\
-                n.filesystem as volume, \
-                n.limitGB as limitgb,\
-                n.quotaGB as quotagb,\
-                n.used as used,\
-                n.usedGB as usedgb"
-            }
-            ]}
+
+
+        volume = {"match": "[:Owns]-(e:Volume)",
+            "where": "",
+            "storage_type":"\"Volume\"",
+            "fs_path":"LogicalVolume",
+            "server":"Hostname",
+            "display_date": "datetime(e.DotsLVDisplayUpdateDate)",
+            "files_quota":"filequota",
+            "unique":"datetime(e.DotsLVSUpdateDate) as update_date"}
+
+        quota = {"match": "[:HasQuota]-(e:Quota)",
+            "where":f"WHERE (n.filesystem =~ '.*({vol_search}).*') AND NOT UsedGB = 0",
+            "storage_type":"\"Quota\"",
+            "fs_path":"filesystem",
+            "server":"filesystem",
+            "display_date":"null",
+            "files_quota":"filequota",
+            "unique":"datetime(e.DotsLFSUpdateDate) as begin_date"}
+
+        isilon = {"match": "[:HasQuota]-(e:Quota)",
+            "where":"WHERE (n.Isilon =~ '.*({vol_search}).*') AND NOT SizeGB = 0",
+            "storage_type":"\"Isilon\"",
+            "fs_path":"Path",
+            "server":"Isilon",
+            "display_date":"null",
+            "files_quota":"HardGB",
+            "unique":"datetime(e.DotsUpdateDate) as begin_date"}
+
+        queries = {"statements": []}
+
+        for d in [volume, quota, isilon]:
+            statement = {"statement": f"MATCH p=(g:Group)-{d['match']} \
+                    {d['where']} RETURN\
+                    {d['unique']}, \
+                    g.ADSamAccountName as lab,\
+                    (e.SizeGB / 1024) as tb_allocation, \
+                    (e.UsedGB / 1024) as tb_usage,\
+                    e.{d['fs_path']} as fs_path,\
+                    {d['storage_type']} as storage_type, \
+                    e.{d['server']} as server, \
+                    e.files as files, \
+                    e.{d['files_quota']} as files_quota,\
+                    {d['display_date']} as display_date"}
+            queries['statements'].append(statement)
 
         resp = requests.post(self.url, headers=self.headers, data=json.dumps(queries), verify=False)
         resp_json = json.loads(resp.text)
         result_dicts = [i for i in resp_json['results']]
         resp_json_formatted = [dict(zip(rdict['columns'],entrydict['row'])) \
                 for rdict in result_dicts for entrydict in rdict['data'] ]
-
+        resp_json_by_lab = {entry['lab']:[] for entry in resp_json_formatted}
+        for entry in resp_json_formatted:
+            resp_json_by_lab[entry['lab']].append(entry)
         with open('coldfront/plugins/sftocf/data/allthethings_output.json', 'w') as f:
             print("Writing to file")
-            f.write(json.dumps(resp_json_formatted, indent=2))
+            f.write(json.dumps(resp_json_by_lab, indent=2))
 
-        # to insert into database:
+        # Each value collected contains the following:
+
+        # the correct value to update is an allocation_allocationattribute, where:
+
+        # 1. allocation_allocationattributetype = 1 (storagequota)
+        # 2. allocation_id matches the id of allocation_allocation that has the project_id of the project with a title matching “lab”
+        # 3. allocation_resources matches the allocation_id with the resource_id with a name matching the volume.
+
         # first, find allocation connected to project with name matching lab value.
-        # then, pull allocationattribute for that allocation.
+        allocation =
+        # then, use allocation_resources to confirm that the volume matches.
+        # llocationattribute for that allocation.
 
 class StarFishServer:
     """Class for interacting with StarFish API.
