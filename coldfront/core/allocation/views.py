@@ -1987,7 +1987,7 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
                 request, 'You cannot renew your allocation because you have to review your project first.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': allocation_obj.project.pk}))
 
-        if allocation_obj.expires_in > 60:
+        if allocation_obj.expires_in > 30:
             messages.error(
                 request, 'It is too soon to review your allocation.')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
