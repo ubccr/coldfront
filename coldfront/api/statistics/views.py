@@ -231,10 +231,8 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
             AllocationUserAttributeUsage.objects.select_for_update().get(
                 pk=allocation_objects.allocation_user_attribute_usage.pk))
 
-        # all project types will have allocation start_dates
         job_submit_date = serializer.validated_data.get('submitdate', None)
         job_start_date = serializer.validated_data.get('startdate', None)
-        allocation_start_date = allocation_objects.allocation.start_date
         jobslurmid = serializer.validated_data.get('jobslurmid')
         update_usage = True
 
@@ -247,7 +245,9 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
             # raise serializers.ValidationError(message)
             update_usage = False
 
+        # all project types will have allocation start_dates
         # check that the job's start date is after the allocation's start date
+        allocation_start_date = allocation_objects.allocation.start_date
         if bool(job_start_date) and \
                 job_start_date.date() < allocation_start_date:
             message = (
@@ -356,8 +356,6 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         job_submit_date = serializer.validated_data.get('submitdate', None)
         job_start_date = serializer.validated_data.get('startdate', None)
         job_end_date = serializer.validated_data.get('enddate', None)
-        allocation_start_date = allocation_objects.allocation.start_date
-        allocation_end_date = allocation_objects.allocation.end_date
         jobslurmid = serializer.validated_data.get('jobslurmid')
         update_usage = True
 
@@ -373,6 +371,7 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
             update_usage = False
 
         # checking that job start date is not before allocation start date
+        allocation_start_date = allocation_objects.allocation.start_date
         if bool(job_start_date) and \
                 job_start_date.date() < allocation_start_date:
             message = (
@@ -390,6 +389,8 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                 name.startswith('pc_'):
             # these projects' allocations should have end dates
             # checking that job end date is not after allocation end date
+
+            allocation_end_date = allocation_objects.allocation.end_date
 
             # ensuring that the allocation end_date exists
             if not allocation_end_date:
