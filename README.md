@@ -279,8 +279,8 @@ sources, comma separate the paths.
 directories specified. Like the source flag above, comma separate 
 multiple files or directories to omit.
 
-  - For example, in the following command will ignore all migration files and 
-  only measure code the statistics directory.
+  - For example, the following command will ignore all migration files and
+  only measure code in the statistics directory.
     ```
     coverage run --omit=*/migrations/* --source=coldfront/core/statistics/ manage.py test coldfront.core.statistics.tests
     ```
