@@ -7,6 +7,8 @@ from django.shortcuts import get_object_or_404
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserRoleChoice)
 from coldfront.core.utils.common import import_from_settings
+from coldfront.core.field_of_science.models import FieldOfScience
+from django.core.validators import MinLengthValidator
 
 EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL = import_from_settings(
     'EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL')
@@ -169,3 +171,37 @@ class ProjectReviewAllocationForm(forms.Form):
         disabled=True
     )
     renew = forms.BooleanField(initial=False, required=False)
+
+
+class ProjectUpdateForm(forms.Form):
+    title = forms.CharField(max_length=255,)
+    description = forms.CharField(
+        validators=[
+            MinLengthValidator(
+                10,
+                'The project description must be > 10 characters.',
+            )
+        ],
+        widget=forms.Textarea
+    )
+
+    slurm_account_name = forms.CharField(
+        max_length=15,
+        required=False,
+        help_text='''
+This is only required if you need a resource that uses Slurm. The name must be at least three
+characters long and cannot contain numbers or special characters. Once set it cannot be changed.
+        '''
+    )
+    field_of_science = forms.ModelChoiceField(queryset=FieldOfScience.objects.all())
+
+    def __init__(self, project_pk, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        project_obj = get_object_or_404(Project, pk=project_pk)
+
+        self.fields['title'].initial = project_obj.title
+        self.fields['description'].initial = project_obj.description
+        self.fields['slurm_account_name'].initial = project_obj.slurm_account_name
+        if not project_obj.slurm_account_name == '':
+            self.fields['slurm_account_name'].disabled = True
+        self.fields['field_of_science'].initial = project_obj.field_of_science
