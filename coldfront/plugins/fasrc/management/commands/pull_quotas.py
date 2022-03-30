@@ -19,6 +19,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         attconn = AllTheThingsConn()
-        # result_file = attconn.pull_quota_data()
-        result_file = "coldfront/plugins/fasrc/data/allthethings_output.json"
+        result_file = attconn.pull_quota_data()
+        # result_file = "coldfront/plugins/fasrc/data/allthethings_output.json"
         attconn.push_quota_data(result_file)

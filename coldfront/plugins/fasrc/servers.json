@@ -2,13 +2,10 @@
 {
 "holysfdb01": {
     "holylfs04":["HDD/C/LABS"],
-    "holylfs05":["C/LABS", "F/LABS"],
-    "holystore01":["C/LABS","C/LABS"]
+    "holylfs05":["C/LABS", "F/LABS"]
     },
 "holysfdb02": {
-    "boslfs02":["LABS","LABS"],
     "bos-isilon":["rc_labs","rc_labs"],
-    "holy-isilon":["rc_labs","rc_fasse_labs"],
-    "holylfs02":["LABS","LABS"]
+    "holy-isilon":["rc_labs","rc_fasse_labs"]
   }
 }

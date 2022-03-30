@@ -17,7 +17,10 @@ from ifxbilling.models import Account, BillingRecord, ProductUsage
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.project.models import Project, ProjectUser#, DoesNotExist
 from coldfront.core.resource.models import Resource
-from coldfront.core.allocation.models import Allocation, AllocationAttribute, AllocationAttributeUsage
+from coldfront.core.allocation.models import   (Allocation,
+                                                AllocationAttribute,
+                                                AllocationAttributeType,
+                                                AllocationAttributeUsage)
 
 datestr = datetime.today().strftime("%Y%m%d")
 logger = logging.getLogger(__name__)
@@ -51,7 +54,6 @@ class AllTheThingsConn:
         result_file = 'coldfront/plugins/fasrc/data/allthethings_output.json'
         vol_search = "|".join([i for l in [v.keys() for s, v in svp.items()]for i in l])
         logger.debug(f"vol_search: {vol_search}")
-
 
         quota = {"match": "[:HasQuota]-(e:Quota)",
             "where":f"WHERE (e.filesystem =~ '.*({vol_search}).*')",
@@ -112,23 +114,28 @@ class AllTheThingsConn:
 
     def push_quota_data(self, result_file):
         result_json = read_json(result_file)
+        counts = {"proj_err": 0, "res_err":0, "all_err":0, "complete":0}
         for lab, allocations in result_json.items():
-            logger.debug(f"project: {lab}")
+            logger.debug(f"PROJECT: {lab} ====================================")
             # Find the correct allocation_allocationattributes to update by:
             # 1. finding the project with a name that matches lab.lab
             try:
                 proj_query = Project.objects.get(title=lab)
             except Project.DoesNotExist:
-                logger.info(f"ERROR: cannot find matching project")
+                logger.info(f"ERROR: no matching project - {lab}")
+                counts['proj_err'] += 1
                 continue
             for allocation in allocations:
+                lab_allocation = allocation['tb_allocation']
+                lab_usage = allocation['tb_usage']
                 # 2. find the resource that matches/approximates the server value
                 r_str = allocation['server'].replace("01.rc.fas.harvard.edu", "")\
                             .replace("/n/", "")
                 try:
                     resource = Resource.objects.get(name__contains=r_str)
                 except Resource.DoesNotExist:
-                    logger.info(f"ERROR: cannot find matching resource")
+                    logger.info(f"ERROR: no matching resource - {r_str}")
+                    counts['res_err'] += 1
                     continue
                 # logger.info(f"resource: {resource.__dict__}")
 
@@ -139,12 +146,13 @@ class AllTheThingsConn:
                                                 resources__id=resource.id,
                                                 status__name='Active'   )
                 except Allocation.DoesNotExist:
-                    logger.info("ERROR: cannot find matching allocation")
+                    logger.info("ERROR: no matching allocation")
+                    counts['all_err'] += 1
                     continue
                 except Allocation.MultipleObjectsReturned:
-                    logger.info("WARNING: two allocations returned. If l3 in group name, will"
+                    logger.info("WARNING: two allocations returned. If LFS, will "
                         "choose the FASSE option; if not, will choose otherwise.")
-                    just_str = "FASSE" if "_l3" in lab else "InformationFor"
+                    just_str = "FASSE" if allocation['storage_type'] == "Isilon" else "Information for"
                     a = Allocation.objects.get( project=proj_query,
                                                 justification__contains=just_str,
                                                 resources__id=resource.id,
@@ -153,11 +161,40 @@ class AllTheThingsConn:
 
                 logger.info(f"allocation: {a.__dict__}")
 
-                # 4. get the allocation_attribute that has allocation_attribute_type=1 (storagequota)
-                #    and allocation=a.id.
-                a_quota = AllocationAttribute.objects.get(  allocation=a.id,
-                                                            allocation_attribute_type=1)
-                a_usage = AllocationAttributeUsage.objects.get( allocation_attribute=a_quota.id)
+                # 4. get the storage quota TB allocation_attribute that has allocation=a.
+                allocation_attribute_type_obj = AllocationAttributeType.objects.get(
+                    name='Storage Quota (TB)')
+                try:
+                    allocation_attribute_obj = AllocationAttribute.objects.get(
+                        allocation_attribute_type=allocation_attribute_type_obj,
+                        allocation=a,
+                    )
+                    allocation_attribute_obj.value = lab_allocation
+                    allocation_attribute_obj.save()
+                    allocation_attribute_exist = True
+                except AllocationAttribute.DoesNotExist:
+                    allocation_attribute_exist = False
+
+                if (not allocation_attribute_exist):
+                    allocation_attribute_obj,_ =AllocationAttribute.objects.get_or_create(
+                        allocation_attribute_type=allocation_attribute_type_obj,
+                        allocation=a,
+                        value = lab_allocation)
+                    allocation_attribute_type_obj.save()
+
+
+                allocation_attribute_obj.allocationattributeusage.value = lab_usage
+                allocation_attribute_obj.allocationattributeusage.save()
+
+                allocation_attribute_type_payment = AllocationAttributeType.objects.get(
+                name='RequiresPayment')
+                allocation_attribute_payment, _ = AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=allocation_attribute_type_payment,
+                allocation=a,
+                value=True)
+                allocation_attribute_payment.save()
+                counts['complete'] += 1
+        logger.info(f"error counts: {counts}")
 
 
 
