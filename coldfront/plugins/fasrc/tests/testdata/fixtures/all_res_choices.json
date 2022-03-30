@@ -1,0 +1,39 @@
+[
+  {
+    "model": "allocation.allocationuserstatuschoice",
+    "pk": 1,
+    "fields": {
+      "created": "2022-02-22T17:15:50.236Z",
+      "modified": "2022-02-22T17:15:50.236Z",
+      "name": "Active"
+    }
+  },
+  {
+    "model": "allocation.allocationstatuschoice",
+    "pk": 1,
+    "fields": {
+      "created": "2022-02-22T17:00:54.997Z",
+      "modified": "2022-02-22T17:00:54.997Z",
+      "name": "Active"
+    }
+  },
+  {
+    "model": "allocation.allocationstatuschoice",
+    "pk": 2,
+    "fields": {
+      "created": "2022-02-22T17:43:45.967Z",
+      "modified": "2022-02-22T17:43:45.968Z",
+      "name": "New"
+    }
+  },
+  {
+    "model": "resource.resourcetype",
+    "pk": 1,
+    "fields": {
+      "created": "2022-02-22T16:14:05.808Z",
+      "modified": "2022-02-22T16:14:05.809Z",
+      "name": "Storage",
+      "description": "Network Storage"
+    }
+  }
+]

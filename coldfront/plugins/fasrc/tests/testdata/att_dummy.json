@@ -1,0 +1,33 @@
+{
+  "gordon_lab": [
+    {
+      "begin_date": "2022-03-28T16:20:44Z",
+      "lab": "gordon_lab",
+      "tb_allocation": 1,
+      "tb_usage": 0.008183568264,
+      "fs_path": "/n/holylfs10",
+      "storage_type": "Quota",
+      "server": "/n/holylfs10"
+    },
+    {
+      "begin_date": "2022-03-29T15:16:37.170349700-04:00",
+      "lab": "gordon_lab",
+      "tb_allocation": 30,
+      "tb_usage": 1,
+      "fs_path": "/ifs/rc_labs/hausmann_lab",
+      "storage_type": "Isilon",
+      "server": "bos-isilon01.rc.fas.harvard.edu"
+    }
+  ],
+  "poisson_lab": [
+    {
+      "begin_date": "2022-03-28T16:20:44Z",
+      "lab": "poisson_lab",
+      "tb_allocation": 50,
+      "tb_usage": 24.757998044826,
+      "fs_path": "/n/holylfs10",
+      "storage_type": "Quota",
+      "server": "/n/holylfs10"
+    }
+  ]
+}

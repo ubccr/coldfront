@@ -1,0 +1,56 @@
+[
+  {
+  "model": "project.projectuserrolechoice",
+  "pk": 1,
+  "fields": {
+    "created": "2022-02-22T16:01:19.731Z",
+    "modified": "2022-02-22T16:01:19.731Z",
+    "name": "Manager"
+  }
+  },
+  {
+    "model": "project.projectuserrolechoice",
+    "pk": 2,
+    "fields": {
+      "created": "2022-02-22T16:01:31.935Z",
+      "modified": "2022-02-22T16:01:31.935Z",
+      "name": "User"
+    }
+  },
+  {
+    "model": "project.projectuserstatuschoice",
+    "pk": 1,
+    "fields": {
+      "created": "2022-02-22T16:02:10.927Z",
+      "modified": "2022-02-22T16:02:10.927Z",
+      "name": "Active"
+    }
+  },
+  {
+    "model": "project.projectuserstatuschoice",
+    "pk": 2,
+    "fields": {
+      "created": "2022-02-22T16:02:22.908Z",
+      "modified": "2022-02-22T16:02:22.908Z",
+      "name": "Denied"
+    }
+  },
+  {
+    "model": "project.projectstatuschoice",
+    "pk": 1,
+    "fields": {
+      "created": "2022-02-22T15:53:53.285Z",
+      "modified": "2022-02-22T15:53:53.286Z",
+      "name": "New"
+    }
+  },
+  {
+    "model": "project.projectstatuschoice",
+    "pk": 2,
+    "fields": {
+      "created": "2022-02-22T15:54:05.949Z",
+      "modified": "2022-02-22T15:54:05.949Z",
+      "name": "Active"
+    }
+  }
+]
