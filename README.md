@@ -259,7 +259,7 @@ the `--output=<filename>` flag.
 that gauges the effectiveness of tests by measuring the code coverage 
 of Python programs.
 
-- To run coverage alongside the Django test suit, call coverage from the 
+- To run coverage alongside the Django test suite, call coverage from the 
 command line:
   ```
   coverage run manage.py test <path.to.tests>
@@ -279,7 +279,7 @@ sources, comma separate the paths.
 directories specified. Like the source flag above, comma separate 
 multiple files or directories to omit.
 
-  - For example, the following command will ignore all migration files and 
+  - For example, in the following command will ignore all migration files and 
   only measure code the statistics directory.
     ```
     coverage run --omit=*/migrations/* --source=coldfront/core/statistics/ manage.py test coldfront.core.statistics.tests
@@ -298,10 +298,10 @@ multiple files or directories to omit.
   coverage html
   ```
   
-    - This generates the directory `htmlconv` and writes the coverage 
-  report to `htmlconv/index.html`.
+    - This generates the directory `htmlcov` and writes the coverage 
+  report to `htmlcov/index.html`.
   
-    - Open `htmlconv/index.html` in a browser to view which lines of 
+    - Open `htmlcov/index.html` in a browser to view which lines of 
   code were covered by the tests and which were not.
 
 
