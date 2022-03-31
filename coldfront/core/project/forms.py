@@ -3,12 +3,13 @@ import datetime
 from django import forms
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
+from django.core.validators import MinLengthValidator
 
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserRoleChoice)
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.field_of_science.models import FieldOfScience
-from django.core.validators import MinLengthValidator
+from coldfront.core.utils.validators import IsAlpha
 
 EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL = import_from_settings(
     'EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL')
@@ -180,7 +181,7 @@ class ProjectUpdateForm(forms.Form):
         validators=[
             MinLengthValidator(
                 10,
-                'The project description must be > 10 characters.',
+                'The project description must be > 10 characters',
             )
         ],
         widget=forms.Textarea
@@ -189,6 +190,15 @@ class ProjectUpdateForm(forms.Form):
     slurm_account_name = forms.CharField(
         max_length=15,
         required=False,
+        validators=[
+            MinLengthValidator(
+                3,
+                'The slurm account name must be at least 3 characters',
+            ),
+            IsAlpha(
+                'The slurm account name must not contain numbers of special characters'
+            ),
+        ],
         help_text='''
 This is only required if you need a resource that uses Slurm. The name must be at least three
 characters long and cannot contain numbers or special characters. Once set it cannot be changed.

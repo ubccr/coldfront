@@ -8,6 +8,7 @@ from django.db import models
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
+from coldfront.core.utils.validators import IsAlpha
 from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.utils.common import import_from_settings
 
@@ -55,6 +56,15 @@ We do not have information about your research. Please provide a detailed descri
     slurm_account_name = models.CharField(
         max_length=15,
         blank=True,
+        validators=[
+            MinLengthValidator(
+                3,
+                'The slurm account name must be at least 3 characters',
+            ),
+            IsAlpha(
+                'The slurm account name must not contain numbers of special characters'
+            ),
+        ],
         help_text='''
 This is only required if you need a resource that uses Slurm. The name must be at least three
 characters long and cannot contain numbers or special characters. Once set it cannot be changed.

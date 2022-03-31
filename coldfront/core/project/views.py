@@ -658,6 +658,14 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         return super().form_valid(form)
 
     def form_valid(self, form):
+        slurm_account_name = form.instance.slurm_account_name
+        if slurm_account_name is not None and len(slurm_account_name) > 0:
+            projects = Project.objects.filter(slurm_account_name=slurm_account_name)
+            if len(projects) > 0:
+                form.add_error(None, 'Please fix the errors below')
+                form.add_error('slurm_account_name', 'This slurm account name already exists')
+                return self.form_invalid(form)
+
         project_obj = form.save(commit=False)
         form.instance.pi = self.request.user
         form.instance.status = ProjectStatusChoice.objects.get(name='Waiting For Admin Approval')
@@ -696,18 +704,6 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
             form.instance.end_date = datetime.datetime.today() + datetime.timedelta(
                 days=PROJECT_DEFAULT_PROJECT_LENGTH
             )
-
-        slurm_account_name = form.instance.slurm_account_name
-        if len(slurm_account_name) > 0:
-            if len(slurm_account_name) < 3:
-                form.add_error(None, 'Please fix the errors below')
-                form.add_error('slurm_account_name', 'Must have a minimum length of three characters')
-                return self.form_invalid(form)
-
-            if not slurm_account_name.isalpha():
-                form.add_error(None, 'Please fix the errors below')
-                form.add_error('slurm_account_name', 'Must not contain numbers or special characters')
-                return self.form_invalid(form)
 
         form.instance.max_managers = PROJECT_DEFAULT_MAX_MANAGERS
         project_obj.save()
@@ -795,15 +791,18 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
         form_data = form.cleaned_data
         slurm_account_name = form_data.get('slurm_account_name')
         if slurm_account_name is not None and len(slurm_account_name) > 0:
-            if len(slurm_account_name) < 3:
-                form.add_error(None, 'Please fix the errors below')
-                form.add_error('slurm_account_name', 'Must have a minimum length of three characters')
-                return self.form_invalid(form)
+            projects = Project.objects.filter(slurm_account_name=slurm_account_name)
+            if len(projects) > 0:
+                if len(projects) > 1:
+                    form.add_error(None, 'Please fix the errors below')
+                    form.add_error('slurm_account_name', 'This slurm account name already exists')
+                    return self.form_invalid(form)
 
-            if not slurm_account_name.isalpha():
-                form.add_error(None, 'Please fix the errors below')
-                form.add_error('slurm_account_name', 'Must not contain numbers or special characters')
-                return self.form_invalid(form)
+                if projects[0].pk != project_obj.pk:
+                    form.add_error(None, 'Please fix the errors below')
+                    form.add_error('slurm_account_name', 'This slurm account name already exists')
+                    return self.form_invalid(form)
+                
 
         project_obj.title = form_data.get('title')
         project_obj.description = form_data.get('description')
