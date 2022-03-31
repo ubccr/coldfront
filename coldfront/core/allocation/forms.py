@@ -1,4 +1,5 @@
 from datetime import date
+from coldfront.core.user.models import UserProfile
 from django import forms
 from django.core.exceptions import ValidationError
 from django.forms.widgets import RadioSelect
@@ -159,14 +160,15 @@ class AllocationForm(forms.Form):
         self.fields['project_directory_name'].help_text = 'Must be alphanumeric and not exceed 10 characters in length'
         self.fields['data_manager'].help_text = 'Must be a project Manager. Only this user can add and remove users from this resource. They will automatically be added to the resource.'
 
+        user_profile = UserProfile.objects.get(user=request_user)
+        self.fields['department_full_name'].initial = user_profile.department
+        self.fields['first_name'].initial = user_profile.user.first_name
+        self.fields['last_name'].initial = user_profile.user.last_name
+
         if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
             from coldfront.plugins.ldap_user_info.utils import get_user_info
-            attributes = get_user_info(request_user.username, ['department', 'division', 'ou', 'givenName', 'sn', 'mail'])
-
-            self.fields['department_full_name'].initial = attributes['department'][0]
+            attributes = get_user_info(request_user.username, ['division', 'ou', 'mail'])
             self.fields['department_short_name'].initial = attributes['division'][0]
-            self.fields['first_name'].initial = attributes['givenName'][0]
-            self.fields['last_name'].initial = attributes['sn'][0]
             self.fields['campus_affiliation'].initial = attributes['ou'][0]
             self.fields['email'].initial = attributes['mail'][0]
 
