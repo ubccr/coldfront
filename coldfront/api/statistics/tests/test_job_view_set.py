@@ -1072,7 +1072,88 @@ class TestJobViewSet(TestJobBase):
             # reset data for next test
             data[date] = popped_date
             Job.objects.get(jobslurmid=data['jobslurmid']).delete()
+            self.assertFalse(Job.objects.filter(jobslurmid=data['jobslurmid']).
+                            exists())
             allocation_usage.value = pre_allocation_usage
             allocation_usage.save()
             user_usage.value = pre_user_usage
             user_usage.save()
+
+    def test_post_allocation_missing_dates(self):
+        """Test that a POST (create) request does not update usages if the
+        allocation is missing the start date."""
+        data = self.data.copy()
+        user = UserProfile.objects.get(cluster_uid=data['userid']).user
+        project = Project.objects.get(name=data['accountid'])
+        allocation_objects = get_accounting_allocation_objects(project, user)
+
+        allocation_usage, user_usage = self.get_usage_values(allocation_objects)
+
+        pre_allocation_usage, pre_user_usage = \
+            allocation_usage.value, user_usage.value
+
+        # remove start date from allocation
+        allocation_objects.allocation.start_date = None
+        allocation_objects.allocation.save()
+
+        response = self.client.post(
+            TestJobViewSet.post_url, data, format='json')
+        self.assertEqual(response.status_code, 201)
+
+        # check that Job object was created
+        self.assertTrue(Job.objects.filter(jobslurmid=data['jobslurmid']).
+                        exists())
+
+        # check that usages were not updated.
+        allocation_usage.refresh_from_db()
+        user_usage.refresh_from_db()
+        self.assertEqual(pre_allocation_usage, allocation_usage.value)
+        self.assertEqual(pre_user_usage, user_usage.value)
+
+    def test_put_allocation_missing_dates(self):
+        """Test that a PUT (update) request does not update usages if the
+        allocation is missing the start or end date."""
+        data = self.data.copy()
+        user = UserProfile.objects.get(cluster_uid=data['userid']).user
+        project = Project.objects.get(name=data['accountid'])
+        new_project_name = f'fc_{data["accountid"]}'
+        project.name = new_project_name
+        project.save()
+        data['accountid'] = new_project_name
+
+        allocation_objects = get_accounting_allocation_objects(project, user)
+        allocation_usage, user_usage = self.get_usage_values(allocation_objects)
+
+        pre_allocation_usage, pre_user_usage = \
+            allocation_usage.value, user_usage.value
+
+        for date in ['start_date', 'end_date']:
+            # set date to None
+            original_date = getattr(allocation_objects.allocation, date)
+            setattr(allocation_objects.allocation, date, None)
+            allocation_objects.allocation.save()
+            self.assertIsNone(getattr(allocation_objects.allocation, date))
+
+            response = self.client.put(
+                TestJobViewSet.put_url(data['jobslurmid']), data,
+                format='json')
+            self.assertEqual(response.status_code, 200)
+
+            # check that Job object was created
+            self.assertTrue(Job.objects.filter(jobslurmid=data['jobslurmid']).
+                            exists())
+
+            # check that usages were not updated.
+            allocation_usage.refresh_from_db()
+            user_usage.refresh_from_db()
+            self.assertEqual(pre_allocation_usage, allocation_usage.value)
+            self.assertEqual(pre_user_usage, user_usage.value)
+
+            # set date back
+            setattr(allocation_objects.allocation, date, original_date)
+            self.assertIsNotNone(getattr(allocation_objects.allocation, date))
+
+            # delete job for next test
+            Job.objects.get(jobslurmid=data['jobslurmid']).delete()
+            self.assertFalse(Job.objects.filter(jobslurmid=data['jobslurmid']).
+                             exists())
