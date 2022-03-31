@@ -1,3 +1,22 @@
+import logging
+from collections import OrderedDict
+from datetime import datetime
+from decimal import Decimal, InvalidOperation
+
+from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import MultipleObjectsReturned
+from django.core.exceptions import ObjectDoesNotExist
+from django.conf import settings
+from django.contrib.auth.models import User
+from django.db import transaction
+from django.http import Http404, JsonResponse
+from django.utils.decorators import method_decorator
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import mixins, serializers, status, viewsets
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
 from coldfront.api.permissions import IsAdminUserOrReadOnly
 from coldfront.api.statistics.pagination import JobPagination
 from coldfront.api.statistics.serializers import JobSerializer
@@ -12,23 +31,6 @@ from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.statistics.models import Job
 from coldfront.core.user.models import UserProfile
-from collections import OrderedDict
-from datetime import datetime
-from decimal import Decimal, InvalidOperation
-from django.core.exceptions import ImproperlyConfigured
-from django.core.exceptions import MultipleObjectsReturned
-from django.core.exceptions import ObjectDoesNotExist
-from django.conf import settings
-from django.contrib.auth.models import User
-from django.db import transaction
-from django.http import Http404, JsonResponse
-from django.utils.decorators import method_decorator
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
-from rest_framework import mixins, serializers, status, viewsets
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-import logging
 
 DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 
@@ -242,13 +244,21 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                 f'Job {jobslurmid} does not '
                 f'have a start or submit date.')
             logger.error(message)
-            # raise serializers.ValidationError(message)
             update_usage = False
 
-        # all project types will have allocation start_dates
-        # check that the job's start date is after the allocation's start date
+        # all project types *should* have allocation start_dates
+
+        # ensuring that the allocation has a start_date
         allocation_start_date = allocation_objects.allocation.start_date
-        if bool(job_start_date) and \
+        if not bool(allocation_start_date):
+            message = (
+                f'Allocation {account} does not have a '
+                f'start date')
+            logger.error(message)
+            update_usage = False
+
+        # check that the job's start date is after the allocation's start date
+        elif bool(job_start_date) and \
                 job_start_date.date() < allocation_start_date:
             message = (
                 f'Job {jobslurmid}\'s start date '
@@ -256,7 +266,6 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                 f'allocation {account}\'s start date '
                 f'{allocation_start_date.strftime(DATE_FORMAT)}.')
             logger.error(message)
-            # raise serializers.ValidationError(message)
             update_usage = False
 
         logger.info(
@@ -370,9 +379,17 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
             # raise serializers.ValidationError(message)
             update_usage = False
 
-        # checking that job start date is not before allocation start date
+        # ensuring that the allocation start_date exists
         allocation_start_date = allocation_objects.allocation.start_date
-        if bool(job_start_date) and \
+        if not bool(allocation_start_date):
+            message = (
+                f'Allocation {account} does not have a '
+                f'start date')
+            logger.error(message)
+            update_usage = False
+
+        # checking that job start date is not before allocation start date
+        elif bool(job_start_date) and \
                 job_start_date.date() < allocation_start_date:
             message = (
                 f'Job {jobslurmid}\'s start date '
@@ -388,27 +405,23 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         if name.startswith('fc_') or name.startswith('ic_') or \
                 name.startswith('pc_'):
             # these projects' allocations should have end dates
-            # checking that job end date is not after allocation end date
-
-            allocation_end_date = allocation_objects.allocation.end_date
 
             # ensuring that the allocation end_date exists
-            if not allocation_end_date:
+            allocation_end_date = allocation_objects.allocation.end_date
+            if not bool(allocation_end_date):
                 message = (
                     f'Allocation {account} does not have an end date.')
                 logger.error(message)
-                # raise serializers.ValidationError(message)
                 update_usage = False
 
             # checking that job end date is not after allocation end date
-            if bool(job_end_date) and job_end_date.date() > allocation_end_date:
+            elif bool(job_end_date) and job_end_date.date() > allocation_end_date:
                 message = (
                     f'Job {jobslurmid}\'s end date '
                     f'{job_end_date.strftime(DATE_FORMAT)} occurs after '
                     f'allocation {account}\'s end date '
                     f'{allocation_end_date.strftime(DATE_FORMAT)}.')
                 logger.error(message)
-                # raise serializers.ValidationError(message)
                 update_usage = False
 
         logger.info(
