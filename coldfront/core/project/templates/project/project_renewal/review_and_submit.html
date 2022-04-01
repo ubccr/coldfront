@@ -35,6 +35,10 @@ Project Renewal - Review and Submit
   <table class="table table-sm">
     <tbody>
       <tr>
+        <th>Allocation Period</th>
+        <td>{{ allocation_period.name }}</td>
+      </tr>
+      <tr>
         <th>Principal Investigator (PI)</th>
         <td>
           {% with pi=PI.user %}
@@ -78,8 +82,7 @@ Project Renewal - Review and Submit
   {% endif %}
   <li>
     Requested Project {{ requested_project }} will be granted
-    {{ allocation_amount }} service units. (Note that this number may be
-    prorated based on when the request is processed.)
+    {{ allocation_amount }} service units.
   </li>
 </ol>
 
