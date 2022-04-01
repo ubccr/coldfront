@@ -63,6 +63,18 @@ def su_login_callback(user):
     return False
 
 
+def display_time_zone_current_date():
+    """Return the current date in settings.DISPLAY_TIME_ZONE."""
+    return utc_now_offset_aware().astimezone(
+        pytz.timezone(settings.DISPLAY_TIME_ZONE)).date()
+
+
+def format_date_month_name_day_year(date):
+    """Return a string of the form "Month Day, Year" for the given
+    date (i.e., June 1, 2022)."""
+    return date.strftime('%B %-d, %Y')
+
+
 def session_wizard_all_form_data(submitted_forms_list, step_num_to_data,
                                  total_num_forms):
     """Given a list of user-submitted forms, a mapping from step number
