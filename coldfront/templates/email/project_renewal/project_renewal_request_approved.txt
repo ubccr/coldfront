@@ -1,0 +1,10 @@
+Dear {{ center_name }} user,
+
+Your request to renew PI {{ pi_name }}'s allowance for Allocation Period "{{ allocation_period.name }}" has been approved. When the request is processed on {{ allocation_period.start_date }}, {{ num_service_units }} will be added to the project {{ requested_project_name }} and you will gain the permission to manage the project (if you do not already have it). You will receive another notification then.
+
+You may view the project at {{ requested_project_url }}.
+
+If you have any questions, contact us at {{ support_email }}.
+
+Thank you,
+{{ signature }}

@@ -1,14 +1,16 @@
 from coldfront.core.allocation.models import AllocationRenewalRequest
-from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
 from coldfront.core.allocation.utils import prorated_allocation_amount
 from coldfront.core.project.forms import ReviewDenyForm
 from coldfront.core.project.forms import ReviewStatusForm
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
+from coldfront.core.project.utils_.renewal_utils import AllocationRenewalApprovalRunner
 from coldfront.core.project.utils_.renewal_utils import AllocationRenewalDenialRunner
 from coldfront.core.project.utils_.renewal_utils import AllocationRenewalProcessingRunner
 from coldfront.core.project.utils_.renewal_utils import allocation_renewal_request_denial_reason
 from coldfront.core.project.utils_.renewal_utils import allocation_renewal_request_latest_update_timestamp
 from coldfront.core.project.utils_.renewal_utils import allocation_renewal_request_state_status
+from coldfront.core.utils.common import display_time_zone_current_date
+from coldfront.core.utils.common import format_date_month_name_day_year
 from coldfront.core.utils.common import utc_now_offset_aware
 
 from django.conf import settings
@@ -190,6 +192,8 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
         return context
 
     def post(self, request, *args, **kwargs):
+        """Approve the request. Process it if its AllocationPeriod has
+        already started."""
         pk = self.request_obj.pk
         if not request.user.is_superuser:
             message = 'You do not have permission to POST to this page.'
@@ -200,26 +204,34 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
             messages.error(request, message)
             return HttpResponseRedirect(self.get_redirect_url(pk))
         try:
-            # TODO: The status can be set to 'Approved' because the checklist
-            # TODO: is complete. When processing can occur at an arbitrary time
-            # TODO: after approval, the status should be set to 'Approved'
-            # TODO: elsewhere, and not here.
-            self.request_obj.status = \
-                AllocationRenewalRequestStatusChoice.objects.get(
-                    name='Approved')
-            self.request_obj.approval_time = utc_now_offset_aware()
-            self.request_obj.save()
+            start_date = self.request_obj.allocation_period.start_date
+            has_allocation_period_started = (
+                start_date <= display_time_zone_current_date())
             num_service_units = self.get_service_units_to_allocate()
-            runner = AllocationRenewalProcessingRunner(
-                self.request_obj, num_service_units)
-            runner.run()
+
+            # Skip sending an approval email if a processing email will be sent
+            # immediately afterward.
+            approval_runner = AllocationRenewalApprovalRunner(
+                self.request_obj, num_service_units,
+                send_email=not has_allocation_period_started)
+            approval_runner.run()
+
+            if has_allocation_period_started:
+                processing_runner = AllocationRenewalProcessingRunner(
+                    self.request_obj, num_service_units)
+                processing_runner.run()
         except Exception as e:
             logger.exception(e)
             messages.error(self.request, self.error_message)
         else:
+            if not has_allocation_period_started:
+                phrase = (
+                    f'is scheduled for renewal on '
+                    f'{format_date_month_name_day_year(start_date)}.')
+            else:
+                phrase = 'has been renewed.'
             message = (
-                f'PI {self.request_obj.pi.username}\'s allocation has been '
-                f'renewed.')
+                f'PI {self.request_obj.pi.username}\'s allocation {phrase}.')
             messages.success(self.request, message)
 
         return HttpResponseRedirect(

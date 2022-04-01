@@ -17,6 +17,7 @@ from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
+from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.common import project_detail_url
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -31,6 +32,7 @@ from django.db.models import Q
 from django.urls import reverse
 from urllib.parse import urljoin
 import logging
+import pytz
 
 
 logger = logging.getLogger(__name__)
@@ -160,6 +162,38 @@ def is_any_project_pi_renewable(project, allocation_period):
         if not has_non_denied_renewal_request(pi, allocation_period):
             return True
     return False
+
+
+def send_allocation_renewal_request_approval_email(request, num_service_units):
+    """Send a notification email to the requester and PI associated with
+    the given AllocationRenewalRequest stating that the request has been
+    approved, and the given number of service units will be added when
+    the request is processed."""
+    email_enabled = import_from_settings('EMAIL_ENABLED', False)
+    if not email_enabled:
+        return
+
+    subject = f'{str(request)} Approved'
+    template_name = (
+        'email/project_renewal/project_renewal_request_approved.txt')
+
+    context = {
+        'allocation_period': request.allocation_period,
+        'center_name': settings.CENTER_NAME,
+        'num_service_units': str(num_service_units),
+        'pi_name': f'{request.pi.first_name} {request.pi.last_name}',
+        'requested_project_name': request.post_project.name,
+        'requested_project_url': project_detail_url(request.post_project),
+        'signature': settings.EMAIL_SIGNATURE,
+        'support_email': settings.CENTER_HELP_EMAIL,
+    }
+
+    sender = settings.EMAIL_SENDER
+    receiver_list = [request.requester.email, request.pi.email]
+    cc = settings.REQUEST_APPROVAL_CC_LIST
+
+    send_email_template(
+        subject, template_name, context, sender, receiver_list, cc=cc)
 
 
 def send_allocation_renewal_request_denial_email(request):
@@ -455,9 +489,17 @@ class AllocationRenewalRunnerBase(object):
 
     def __init__(self, request_obj, *args, **kwargs):
         self.request_obj = request_obj
+        self.current_display_tz_date = display_time_zone_current_date()
+        self.assert_request_allocation_period_not_ended()
 
     def run(self):
         raise NotImplementedError('This method is not implemented.')
+
+    def assert_request_allocation_period_not_ended(self):
+        """Raise an assertion error if the request's AllocationPeriod
+        has already ended."""
+        allocation_period_obj = self.request_obj.allocation_period
+        assert self.current_display_tz_date <= allocation_period_obj.end_date
 
     def assert_request_not_status(self, unexpected_status):
         """Raise an assertion error if the request has the given
@@ -627,49 +669,67 @@ class AllocationRenewalApprovalRunner(AllocationRenewalRunnerBase):
     """An object that performs necessary database changes when an
     AllocationRenewalRequest is approved."""
 
-    # TODO: This class will become relevant when there is a need to approve,
-    # TODO: but not yet process, a request. Namely, when support for requesting
-    # TODO: renewal for the next allocation period is added, requests may be
-    # TODO: approved days or weeks before the request is actually processed.
-
-    def __init__(self, request_obj, num_service_units):
+    def __init__(self, request_obj, num_service_units, send_email=False):
         super().__init__(request_obj)
         expected_status = AllocationRenewalRequestStatusChoice.objects.get(
             name='Under Review')
         self.assert_request_status(expected_status)
         validate_num_service_units(num_service_units)
+        self.num_service_units = num_service_units
+        # Note: send_email is already the name of a method.
+        self.can_send_email = bool(send_email)
 
     def run(self):
-        pass
+        self.approve_request()
+        if self.can_send_email:
+            self.send_email()
+
+    def approve_request(self):
+        """Set the status of the request to 'Approved' and set its
+        approval_time."""
+        self.request_obj.status = \
+            AllocationRenewalRequestStatusChoice.objects.get(name='Approved')
+        self.request_obj.approval_time = utc_now_offset_aware()
+        self.request_obj.save()
 
     def handle_unpooled_to_unpooled(self):
         """Handle the case when the preference is to stay unpooled."""
-        raise NotImplementedError('This method is not implemented.')
+        pass
 
     def handle_unpooled_to_pooled(self):
         """Handle the case when the preference is to start pooling."""
-        raise NotImplementedError('This method is not implemented.')
+        pass
 
     def handle_pooled_to_pooled_same(self):
         """Handle the case when the preference is to stay pooled with
         the same project."""
-        raise NotImplementedError('This method is not implemented.')
+        pass
 
     def handle_pooled_to_pooled_different(self):
         """Handle the case when the preference is to stop pooling with
         the current project and start pooling with a different
         project."""
-        raise NotImplementedError('This method is not implemented.')
+        pass
 
     def handle_pooled_to_unpooled_old(self):
         """Handle the case when the preference is to stop pooling and
         reuse another existing project owned by the PI."""
-        raise NotImplementedError('This method is not implemented.')
+        pass
 
     def handle_pooled_to_unpooled_new(self):
         """Handle the case when the preference is to stop pooling and
         create a new project."""
-        raise NotImplementedError('This method is not implemented.')
+        pass
+
+    def send_email(self):
+        """Send a notification email to the requester and PI."""
+        request = self.request_obj
+        try:
+            send_allocation_renewal_request_approval_email(
+                request, self.num_service_units)
+        except Exception as e:
+            logger.error('Failed to send notification email. Details:')
+            logger.exception(e)
 
 
 class AllocationRenewalDenialRunner(AllocationRenewalRunnerBase):
@@ -942,7 +1002,7 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         self.deactivate_pre_project()
 
     def send_email(self):
-        """Send a notification email to the request and PI."""
+        """Send a notification email to the requester and PI."""
         request = self.request_obj
         try:
             send_allocation_renewal_request_processing_email(

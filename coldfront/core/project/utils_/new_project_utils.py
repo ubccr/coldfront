@@ -152,7 +152,8 @@ class ProjectApprovalRunner(object):
             allocation, pi)
         return requester_allocation_user, pi_allocation_user
 
-    def create_cluster_access_request_for_requester(self, allocation_user):
+    @staticmethod
+    def create_cluster_access_request_for_requester(allocation_user):
         """Create a 'Cluster Account Status' for the given
         AllocationUser corresponding to the request's requester."""
         allocation_attribute_type = AllocationAttributeType.objects.get(
