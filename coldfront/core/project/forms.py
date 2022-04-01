@@ -9,6 +9,7 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserRoleChoice)
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.field_of_science.models import FieldOfScience
+from django.core.validators import MinLengthValidator
 from coldfront.core.utils.validators import IsAlpha
 
 EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL = import_from_settings(

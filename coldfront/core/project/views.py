@@ -802,7 +802,6 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
                     form.add_error(None, 'Please fix the errors below')
                     form.add_error('slurm_account_name', 'This slurm account name already exists')
                     return self.form_invalid(form)
-                
 
         project_obj.title = form_data.get('title')
         project_obj.description = form_data.get('description')

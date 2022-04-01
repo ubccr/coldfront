@@ -8,7 +8,8 @@
     <h2 class="text-center">Log In to ColdFront</h2>
     <hr>
 
-    <p><a class="btn btn-primary btn-block" href="{% url 'login' %}" role="button"><i class="fas fa-sign-in-alt" aria-hidden="true"></i> Log In</a></p>
+    <p><a class="btn btn-primary btn-block" href="{% url 'login' %}?next={{request.get_full_path}}" role="button"><i class="fas fa-sign-in-alt" aria-hidden="true"></i> Log In</a></p>
+  
 
     <div class="card bg-light">
       <div class="card-body">
@@ -27,5 +28,11 @@
   <script>
     $("#navbar-main > ul > li.active").removeClass("active");
     $("#navbar-home").addClass("active");
+  </script>
+  <script>
+    var ref = document.referrer
+    if (ref.includes("idp")) {
+      window.location.reload()
+    }
   </script>
 {% endblock %}
