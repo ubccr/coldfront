@@ -24,6 +24,7 @@ from coldfront.core.project.utils_.new_project_utils import send_new_project_req
 from coldfront.core.project.utils_.new_project_utils import send_new_project_request_pi_notification_email
 from coldfront.core.resource.models import Resource
 from coldfront.core.user.models import UserProfile
+from coldfront.core.utils.common import session_wizard_all_form_data
 from coldfront.core.utils.common import utc_now_offset_aware
 
 from django.conf import settings
@@ -131,21 +132,13 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
         SavioProjectSurveyForm,
     ]
 
-    # Non-required lookup table: form name --> step number
-    step_numbers_by_form_name = {
-        'allocation_type': 0,
-        'allocation_period': 1,
-        'existing_pi': 2,
-        'new_pi': 3,
-        'ica_extra_fields': 4,
-        'recharge_extra_fields': 5,
-        'pool_allocations': 6,
-        'pooled_project_selection': 7,
-        'details': 8,
-        'survey': 9,
-    }
-
     logger = logging.getLogger(__name__)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Define a lookup table from form name to step number.
+        self.step_numbers_by_form_name = {
+            name: i for i, (name, _) in enumerate(self.FORMS)}
 
     def test_func(self):
         if self.request.user.is_superuser:
@@ -190,11 +183,8 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
         object."""
         redirect_url = '/'
         try:
-            # Retrieve form data; include empty dictionaries for skipped steps.
-            data = iter([form.cleaned_data for form in form_list])
-            form_data = [{} for _ in range(len(self.form_list))]
-            for step in sorted(kwargs['form_dict'].keys()):
-                form_data[int(step)] = next(data)
+            form_data = session_wizard_all_form_data(
+                form_list, kwargs['form_dict'], len(self.form_list))
 
             request_kwargs = {
                 'requester': self.request.user,
@@ -268,14 +258,12 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
             '8': view.show_details_form_condition,
         }
 
-    @staticmethod
-    def show_allocation_period_form_condition(wizard):
+    def show_allocation_period_form_condition(self):
         """Only show the form for selecting an AllocationPeriod for
         FCAs, ICAs, and PCAs."""
         step_name = 'allocation_type'
-        step = str(
-            SavioProjectRequestWizard.step_numbers_by_form_name[step_name])
-        cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
+        step = str(self.step_numbers_by_form_name[step_name])
+        cleaned_data = self.get_cleaned_data_for_step(step) or {}
         relevant_allocation_types = (
             SavioProjectAllocationRequest.FCA,
             SavioProjectAllocationRequest.ICA,
@@ -284,37 +272,29 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
         allocation_type = cleaned_data.get('allocation_type', None)
         return allocation_type in relevant_allocation_types
 
-    @staticmethod
-    def show_details_form_condition(wizard):
+    def show_details_form_condition(self):
         step_name = 'pool_allocations'
-        step = str(
-            SavioProjectRequestWizard.step_numbers_by_form_name[step_name])
-        cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
+        step = str(self.step_numbers_by_form_name[step_name])
+        cleaned_data = self.get_cleaned_data_for_step(step) or {}
         return not cleaned_data.get('pool', False)
 
-    @staticmethod
-    def show_ica_extra_fields_form_condition(wizard):
+    def show_ica_extra_fields_form_condition(self):
         step_name = 'allocation_type'
-        step = str(
-            SavioProjectRequestWizard.step_numbers_by_form_name[step_name])
-        cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
+        step = str(self.step_numbers_by_form_name[step_name])
+        cleaned_data = self.get_cleaned_data_for_step(step) or {}
         ica_allocation_type = SavioProjectAllocationRequest.ICA
         return cleaned_data.get('allocation_type', None) == ica_allocation_type
 
-    @staticmethod
-    def show_new_pi_form_condition(wizard):
+    def show_new_pi_form_condition(self):
         step_name = 'existing_pi'
-        step = str(
-            SavioProjectRequestWizard.step_numbers_by_form_name[step_name])
-        cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
+        step = str(self.step_numbers_by_form_name[step_name])
+        cleaned_data = self.get_cleaned_data_for_step(step) or {}
         return cleaned_data.get('PI', None) is None
 
-    @staticmethod
-    def show_pool_allocations_form_condition(wizard):
+    def show_pool_allocations_form_condition(self):
         step_name = 'allocation_type'
-        step = str(
-            SavioProjectRequestWizard.step_numbers_by_form_name[step_name])
-        cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
+        step = str(self.step_numbers_by_form_name[step_name])
+        cleaned_data = self.get_cleaned_data_for_step(step) or {}
         non_poolable_allocation_types = (
             SavioProjectAllocationRequest.ICA,
             SavioProjectAllocationRequest.RECHARGE,
@@ -322,20 +302,16 @@ class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
         allocation_type = cleaned_data.get('allocation_type', None)
         return allocation_type not in non_poolable_allocation_types
 
-    @staticmethod
-    def show_pooled_project_selection_form_condition(wizard):
+    def show_pooled_project_selection_form_condition(self):
         step_name = 'pool_allocations'
-        step = str(
-            SavioProjectRequestWizard.step_numbers_by_form_name[step_name])
-        cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
+        step = str(self.step_numbers_by_form_name[step_name])
+        cleaned_data = self.get_cleaned_data_for_step(step) or {}
         return cleaned_data.get('pool', False)
 
-    @staticmethod
-    def show_recharge_extra_fields_form_condition(wizard):
+    def show_recharge_extra_fields_form_condition(self):
         step_name = 'allocation_type'
-        step = str(
-            SavioProjectRequestWizard.step_numbers_by_form_name[step_name])
-        cleaned_data = wizard.get_cleaned_data_for_step(step) or {}
+        step = str(self.step_numbers_by_form_name[step_name])
+        cleaned_data = self.get_cleaned_data_for_step(step) or {}
         recharge_allocation_type = SavioProjectAllocationRequest.RECHARGE
         return (
             cleaned_data.get('allocation_type', None) ==

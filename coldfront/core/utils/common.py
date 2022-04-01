@@ -63,6 +63,32 @@ def su_login_callback(user):
     return False
 
 
+def session_wizard_all_form_data(submitted_forms_list, step_num_to_data,
+                                 total_num_forms):
+    """Given a list of user-submitted forms, a mapping from step number
+    (str) to user-submitted data, and the total number of possible
+    forms, return a list of dictionaries containing data for each step,
+    including empty dictionaries for skipped steps.
+
+    This is a utility method for children of SessionWizardView.
+
+    Parameters:
+        - submitted_forms_list: A list of user-submitted forms
+        - step_num_to_data: A mapping from step number (str) to the
+                            user-submitted data from that step's form
+        - total_num_forms: The total number of possible forms
+
+    Returns: list(dict)
+
+    Raises: None.
+    """
+    data = iter([form.cleaned_data for form in submitted_forms_list])
+    all_form_data = [{} for _ in range(total_num_forms)]
+    for step in sorted(step_num_to_data.keys()):
+        all_form_data[int(step)] = next(data)
+    return all_form_data
+
+
 def utc_now_offset_aware():
     """Return the offset-aware current UTC time."""
     return datetime.utcnow().replace(tzinfo=pytz.utc)
