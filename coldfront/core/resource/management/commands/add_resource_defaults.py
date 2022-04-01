@@ -10,7 +10,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
-        for attribute_type in ('Active/Inactive', 'Date', 'Int', 'Public/Private', 'Text', 'Yes/No'):
+        for attribute_type in ('Active/Inactive', 'Date', 'Int', 
+            'Public/Private', 'Text', 'Yes/No', 'Attribute Expanded Text'):
             AttributeType.objects.get_or_create(name=attribute_type)
 
         for resource_attribute_type, attribute_type in (
@@ -26,8 +27,15 @@ class Command(BaseCommand):
             ('ServiceEnd', 'Date'),
             ('ServiceStart', 'Date'),
             ('slurm_cluster', 'Text'),
-            ('slurm_specs', 'Text'),
+            ('slurm_specs', 'Attribute Expanded Text'),
+            ('slurm_specs_attriblist', 'Text'),
             ('Status', 'Public/Private'),
+            ('Vendor', 'Text'),
+            ('Model', 'Text'),
+            ('SerialNumber', 'Text'),
+            ('RackUnits', 'Int'),
+            ('InstallDate', 'Date'),
+            ('WarrantyExpirationDate', 'Date'),
         ):
             ResourceAttributeType.objects.get_or_create(
                 name=resource_attribute_type, attribute_type=AttributeType.objects.get(name=attribute_type))
@@ -36,6 +44,7 @@ class Command(BaseCommand):
             ('Cloud', 'Cloud Computing'),
             ('Cluster', 'Cluster servers'),
             ('Cluster Partition', 'Cluster Partition '),
+            ('Compute Node', 'Compute Node'),
             ('Server', 'Extra servers providing various services'),
             ('Software License', 'Software license purchased by users'),
             ('Storage', 'NAS storage'),

@@ -39,10 +39,6 @@ Email User
           <th scope="row" class="text-nowrap">Project Type:</th>
           <td>{{ project.type.name }}</td>
         </tr>
-        <tr>
-          <th scope="row" class="text-nowrap">Private:</th>
-          <td>{{ project.private }}</td>
-        </tr>
       </table>
     </div>
   </div>
@@ -55,4 +51,10 @@ Email User
     <input class="btn btn-primary" type="submit" value="Email" />
     <a class="btn btn-secondary" href="{% url 'project-review-list' %}" role="button">Cancel</a>
 </form>
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-admin").addClass("active");
+  $("#navbar-project-reviews").addClass("active");
+</script>
 {% endblock %}

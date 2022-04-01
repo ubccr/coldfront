@@ -47,4 +47,9 @@ Allocation User Requests
   <p class="alert alert-info">There are no allocation user requests!</p>
 {% endif %}
 
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-admin").addClass("active");
+  $("#navbar-allocation-user-requests").addClass("active");
+</script>
 {% endblock %}

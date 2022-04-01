@@ -124,7 +124,7 @@ class Command(BaseCommand):
             else:
                 freeipa_status = 'Enabled'
         except dbus.exceptions.DBusException as e:
-            if 'No such user' in str(e):
+            if 'No such user' in str(e) or 'NotFound' in str(e):
                 logger.warn("User %s not found in FreeIPA", user.username)
                 freeipa_status = 'NotFound'
             else:
@@ -164,11 +164,11 @@ class Command(BaseCommand):
         active_groups = []
         for ua in user_allocations:
             if ua.status.name != 'Active':
-                logger.info("Skipping inactive allocation to %s for user %s", ua.allocation.get_resources_as_string, user.username)
+                logger.debug("Skipping inactive allocation to %s for user %s", ua.allocation.get_resources_as_string, user.username)
                 continue
 
             if ua.allocation.status.name != 'Active':
-                logger.info("Skipping allocation to %s for user %s because they are not an active user", ua.allocation.get_resources_as_string, user.username)
+                logger.debug("Skipping allocation to %s for user %s because they are not an active user", ua.allocation.get_resources_as_string, user.username)
                 continue
 
             all_resources_inactive = True
@@ -177,7 +177,7 @@ class Command(BaseCommand):
                     all_resources_inactive = False
 
             if all_resources_inactive:
-                logger.info("Skipping allocation to %s for user %s due to all resources being inactive", ua.allocation.get_resources_as_string, user.username)
+                logger.debug("Skipping allocation to %s for user %s due to all resources being inactive", ua.allocation.get_resources_as_string, user.username)
                 continue
 
             for g in ua.allocation.get_attribute_list(UNIX_GROUP_ATTRIBUTE_NAME):
@@ -207,6 +207,9 @@ class Command(BaseCommand):
                 removed_groups = [self.filter_group]
             else:
                 removed_groups = []
+
+        if len(active_groups) == 0 and len(removed_groups) == 0:
+            return
 
         self.check_user_freeipa(user, active_groups, removed_groups)
 

@@ -54,7 +54,9 @@ class PublicationSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
             Project, pk=self.kwargs.get('project_pk'))
         if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
             messages.error(
-                request, 'You cannot add publications to a(n) {} project.'.format(project_obj.status.name))
+                request,
+                'You cannot add publications to a project with status "{}".'.format(project_obj.status.name)
+            )
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
@@ -89,7 +91,9 @@ class PublicationSearchResultView(LoginRequiredMixin, UserPassesTestMixin, Templ
             Project, pk=self.kwargs.get('project_pk'))
         if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
             messages.error(
-                request, 'You cannot add publications to a(n) {} project.'.format(project_obj.status.name))
+                request,
+                'You cannot add publications to a project with status "{}".'.format(project_obj.status.name)
+            )
             return HttpResponseRedirect(reverse('project-detail', kwargs={'project_pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
@@ -197,7 +201,9 @@ class PublicationAddView(LoginRequiredMixin, UserPassesTestMixin, View):
             Project, pk=self.kwargs.get('project_pk'))
         if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
             messages.error(
-                request, 'You cannot add publications to a(n) {} project.'.format(project_obj.status.name))
+                request,
+                'You cannot add publications to a project with status "{}".'.format(project_obj.status.name)
+            )
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
@@ -215,21 +221,27 @@ class PublicationAddView(LoginRequiredMixin, UserPassesTestMixin, View):
         if formset.is_valid():
             for form in formset:
                 form_data = form.cleaned_data
-                source_obj = PublicationSource.objects.get(
-                    pk=form_data.get('source_pk'))
-                publication_obj, created = Publication.objects.get_or_create(
-                    project=project_obj,
-                    title=form_data.get('title'),
-                    author=form_data.get('author'),
-                    year=form_data.get('year'),
-                    journal=form_data.get('journal'),
-                    unique_id=form_data.get('unique_id'),
-                    source=source_obj
-                )
-                if created:
-                    publications_added += 1
-                else:
-                    publications_skipped.append(form_data.get('unique_id'))
+                
+                if form_data['selected']:
+                    source_obj = PublicationSource.objects.get(
+                        pk=form_data.get('source_pk'))
+                    author = form_data.get('author')
+                    if len(author) > 1024: author = author[:1024]
+                    publication_obj, created = Publication.objects.get_or_create(
+                        project=project_obj,
+                        unique_id=form_data.get('unique_id'),
+                        defaults = {
+                            'title':form_data.get('title'),
+                            'author':author,
+                            'year':form_data.get('year'),
+                            'journal':form_data.get('journal'),
+                            'source':source_obj                            
+                        }                        
+                    )
+                    if created:
+                        publications_added += 1
+                    else:
+                        publications_skipped.append(form_data.get('unique_id'))
 
             msg = ''
             if publications_added:
@@ -268,7 +280,10 @@ class PublicationAddManuallyView(LoginRequiredMixin, UserPassesTestMixin, FormVi
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
         if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
-            messages.error(request, 'You cannot add publications to a(n) {} project.'.format(project_obj.status.name))
+            messages.error(
+                request,
+                'You cannot add publications to a project with status "{}".'.format(project_obj.status.name)
+            )
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)

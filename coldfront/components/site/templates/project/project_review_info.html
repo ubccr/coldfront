@@ -64,4 +64,10 @@ Test title
     <a href="{% url 'project-review-list' %}" class="btn btn-secondary mr-1">Back</a>
   </div>
 </div>
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-admin").addClass("active");
+  $("#navbar-project-reviews").addClass("active");
+</script>
 {% endblock %}

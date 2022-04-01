@@ -4,7 +4,7 @@ from coldfront.config.env import ENV
 #------------------------------------------------------------------------------
 # Database settings
 #------------------------------------------------------------------------------
-# Set this using the DB_URL env variable. Defaults to sqlite. 
+# Set this using the DB_URL env variable. Defaults to sqlite.
 #
 # Examples:
 #
@@ -12,12 +12,12 @@ from coldfront.config.env import ENV
 #  DB_URL=mysql://user:password@127.0.0.1:3306/database
 #
 # Postgresql:
-#  DB_URL=psql://user:password@127.0.0.1:8458/database
+#  DB_URL=psql://user:password@127.0.0.1:5432/database
 #------------------------------------------------------------------------------
 DATABASES = {
     'default': ENV.db_url(
         var='DB_URL',
-        default='sqlite:///'+os.path.join(os.getcwd(), 'coldfront.db')
+        default='sqlite:///' + os.path.join(os.getcwd(), 'coldfront.db')
     )
 }
 
@@ -44,7 +44,7 @@ DATABASES = {
 #
 # DATABASES = {
 #     'default': {
-#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
+#         'ENGINE': 'django.db.backends.postgresql',
 #         'NAME': 'coldfront',
 #         'USER': '',
 #         'PASSWORD': '',
