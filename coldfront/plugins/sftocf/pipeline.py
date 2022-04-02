@@ -261,15 +261,6 @@ class ColdFrontDB:
         return allocation
 
 
-    def log_missing_user_models(self, groupname, user_models, usernames):
-        missing_unames = [u for u in usernames if u not in [m.username for m in user_models]]
-        if missing_unames:
-            fpath = './coldfront/plugins/sftocf/data/missing_ifxusers.csv'
-            pattern = "{},{},{}".format(groupname, userdict["username"], datestr)
-            write_update_file_line(fpath, pattern)
-            logger.warning(f"no IfxUser found for users: {missing_unames}")
-
-
     def push_cf(self, filepaths, clean):
         for f in filepaths:
             errors = False
@@ -277,7 +268,7 @@ class ColdFrontDB:
 
             user_models = get_user_model().objects.only("id","username")\
                     .filter(username__in=usernames)
-            self.log_missing_user_models(groupdict[0]["groupname"], user_models, usernames)
+            log_missing_user_models(groupdict[0]["groupname"], user_models, usernames)
 
             project = Project.objects.get(title=groupdict[0]["groupname"])
             allocation = self.return_proj_allocation(project)
@@ -364,10 +355,12 @@ class LocalData():
                 os.remove(fpath)
 
 def write_update_file_line(filepath, pattern):
-    with open(filepath, 'r+') as f:
-        if not any(pattern == line.rstrip('\r\n') for line in f):
-            f.write(pattern + '\n')
-            # f.write(newline)
+    with open(filepath, 'a+') as f:
+        f.seek(0)
+        lines = f.readlines()
+        for pattern in patterns:
+            if not any(pattern == line.rstrip('\r\n') for line in f):
+                f.write(pattern + '\n')
 
 def split_num_string(x):
     n = re.search("\d*\.?\d+", x).group()
@@ -440,6 +433,15 @@ def collect_starfish_usage(server, volume, volumepath, projects):
                 filepaths.append(filepath)
     return filepaths
 
+
+
+def log_missing_user_models(groupname, user_models, usernames):
+    missing_unames = [u for u in usernames if u not in [m.username for m in user_models]]
+    if missing_unames:
+        fpath = './coldfront/plugins/sftocf/data/missing_ifxusers.csv'
+        patterns = [f"{groupname},{uname},{datestr}" for uname in missing_unames]
+        write_update_file_line(fpath, pattern)
+        logger.warning(f"no IfxUser found for users: {missing_unames}")
 
 def use_zone(project_name):
     # attribute type ID will need to change to match the zone flag.
