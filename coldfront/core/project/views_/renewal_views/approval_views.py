@@ -231,7 +231,7 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
             else:
                 phrase = 'has been renewed.'
             message = (
-                f'PI {self.request_obj.pi.username}\'s allocation {phrase}.')
+                f'PI {self.request_obj.pi.username}\'s allocation {phrase}')
             messages.success(self.request, message)
 
         return HttpResponseRedirect(

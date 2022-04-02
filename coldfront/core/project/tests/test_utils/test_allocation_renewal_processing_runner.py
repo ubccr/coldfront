@@ -21,7 +21,7 @@ from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils import ProjectClusterAccessRequestRunner
-from coldfront.core.project.utils_.new_project_utils import SavioProjectApprovalRunner
+from coldfront.core.project.utils_.new_project_utils import SavioProjectProcessingRunner
 from coldfront.core.project.utils_.renewal_utils import AllocationRenewalProcessingRunner
 from coldfront.core.resource.models import Resource
 from coldfront.core.statistics.models import ProjectTransaction
@@ -1021,7 +1021,7 @@ class TestPreProjectDeactivationMixin(object):
             project=project,
             survey_answers={},
             status=under_review_request_status)
-        runner = SavioProjectApprovalRunner(
+        runner = SavioProjectProcessingRunner(
             new_project_request, num_service_units)
         runner.run()
 
@@ -1203,7 +1203,7 @@ class TestPooledToUnpooledNew(TestPreProjectDeactivationMixin,
 
         # Process the request.
         num_service_units = Decimal('1000.00')
-        runner = SavioProjectApprovalRunner(
+        runner = SavioProjectProcessingRunner(
             new_project_request, num_service_units)
         runner.run()
         # Clear the mail outbox.

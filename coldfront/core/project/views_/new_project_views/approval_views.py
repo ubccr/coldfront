@@ -15,10 +15,13 @@ from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.models import VectorProjectAllocationRequest
 from coldfront.core.project.utils_.new_project_utils import ProjectDenialRunner
 from coldfront.core.project.utils_.new_project_utils import SavioProjectApprovalRunner
+from coldfront.core.project.utils_.new_project_utils import SavioProjectProcessingRunner
 from coldfront.core.project.utils_.new_project_utils import savio_request_state_status
 from coldfront.core.project.utils_.new_project_utils import send_project_request_pooling_email
-from coldfront.core.project.utils_.new_project_utils import VectorProjectApprovalRunner
+from coldfront.core.project.utils_.new_project_utils import VectorProjectProcessingRunner
 from coldfront.core.project.utils_.new_project_utils import vector_request_state_status
+from coldfront.core.utils.common import display_time_zone_current_date
+from coldfront.core.utils.common import format_date_month_name_day_year
 from coldfront.core.utils.common import utc_now_offset_aware
 
 from datetime import datetime
@@ -119,6 +122,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
     logger = logging.getLogger(__name__)
 
     error_message = 'Unexpected failure. Please contact an administrator.'
+    request_obj = None
 
     redirect = reverse_lazy('savio-project-pending-request-list')
 
@@ -153,8 +157,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             initial=self.request_obj.survey_answers, disable_fields=True)
 
         try:
-            context['allocation_amount'] = \
-                self.__get_service_units_to_allocate()
+            context['allocation_amount'] = self.get_service_units_to_allocate()
         except Exception as e:
             self.logger.exception(e)
             messages.error(self.request, self.error_message)
@@ -198,14 +201,16 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             }
             context['support_email'] = settings.CENTER_HELP_EMAIL
 
-        context['setup_status'] = self.__get_setup_status()
-        context['is_checklist_complete'] = self.__is_checklist_complete()
+        context['setup_status'] = self.get_setup_status()
+        context['is_checklist_complete'] = self.is_checklist_complete()
 
         context['is_allowed_to_manage_request'] = self.request.user.is_superuser
 
         return context
 
     def post(self, request, *args, **kwargs):
+        """Approve the request. Process it if its AllocationPeriod has
+        already started."""
         if not self.request.user.is_superuser:
             message = 'You do not have permission to access this page.'
             messages.error(request, message)
@@ -214,37 +219,61 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             return HttpResponseRedirect(
                 reverse('savio-project-request-detail', kwargs={'pk': pk}))
 
-        if not self.__is_checklist_complete():
+        if not self.is_checklist_complete():
             message = 'Please complete the checklist before final activation.'
             messages.error(request, message)
             pk = self.request_obj.pk
             return HttpResponseRedirect(
                 reverse('savio-project-request-detail', kwargs={'pk': pk}))
+
+        processing_runner = None
+        project = self.request_obj.project
         try:
-            num_service_units = self.__get_service_units_to_allocate()
-            runner = SavioProjectApprovalRunner(
-                self.request_obj, num_service_units)
-            project, allocation = runner.run()
+            start_date = self.request_obj.allocation_period.start_date
+            has_allocation_period_started = (
+                start_date <= display_time_zone_current_date())
+            num_service_units = self.get_service_units_to_allocate()
+
+            # Skip sending an approval email if a processing email will be sent
+            # immediately afterward.
+            approval_runner = SavioProjectApprovalRunner(
+                self.request_obj, num_service_units,
+                send_email=not has_allocation_period_started)
+            approval_runner.run()
+
+            if has_allocation_period_started:
+                processing_runner = SavioProjectProcessingRunner(
+                    self.request_obj, num_service_units)
+                project, _ = processing_runner.run()
         except Exception as e:
             self.logger.exception(e)
             messages.error(self.request, self.error_message)
         else:
-            message = (
-                f'Project {project.name} and Allocation {allocation.pk} have '
-                f'been activated. A cluster access request has automatically '
-                f'been made for the requester.')
+            if not has_allocation_period_started:
+                formatted_start_date = format_date_month_name_day_year(
+                    start_date)
+                phrase = (
+                    f'are scheduled for activation on {formatted_start_date}. '
+                    f'A cluster access request will automatically be made for '
+                    f'the requester then.')
+            else:
+                phrase = (
+                    'have been activated. A cluster access request has '
+                    'automatically been made for the requester.')
+            message = f'Project {project.name} and its Allocation {phrase}'
             messages.success(self.request, message)
 
         # Send any messages from the runner back to the user.
-        try:
-            for message in runner.get_user_messages():
-                messages.info(self.request, message)
-        except NameError:
-            pass
+        if isinstance(processing_runner, SavioProjectProcessingRunner):
+            try:
+                for message in processing_runner.get_user_messages():
+                    messages.info(self.request, message)
+            except NameError:
+                pass
 
         return HttpResponseRedirect(self.redirect)
 
-    def __get_service_units_to_allocate(self):
+    def get_service_units_to_allocate(self):
         """Return the number of service units to allocate to the
         project, based on its request_time.
 
@@ -276,7 +305,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         else:
             raise ValueError(f'Invalid allocation_type {allocation_type}.')
 
-    def __get_setup_status(self):
+    def get_setup_status(self):
         """Return one of the following statuses for the 'setup' step of
         the request: 'N/A', 'Pending', 'Complete'."""
         allocation_type = self.request_obj.allocation_type
@@ -296,7 +325,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
                     return pending
         return state['setup']['status']
 
-    def __is_checklist_complete(self):
+    def is_checklist_complete(self):
         status_choice = savio_request_state_status(self.request_obj)
         return (status_choice.name == 'Approved - Processing' and
                 self.request_obj.state['setup']['status'] == 'Complete')
@@ -1006,7 +1035,7 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             }
             context['support_email'] = settings.CENTER_HELP_EMAIL
 
-        context['is_checklist_complete'] = self.__is_checklist_complete()
+        context['is_checklist_complete'] = self.is_checklist_complete()
 
         context['is_allowed_to_manage_request'] = (
             self.request.user.is_superuser)
@@ -1022,14 +1051,14 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             return HttpResponseRedirect(
                 reverse('vector-project-request-detail', kwargs={'pk': pk}))
 
-        if not self.__is_checklist_complete():
+        if not self.is_checklist_complete():
             message = 'Please complete the checklist before final activation.'
             messages.error(request, message)
             pk = self.request_obj.pk
             return HttpResponseRedirect(
                 reverse('vector-project-request-detail', kwargs={'pk': pk}))
         try:
-            runner = VectorProjectApprovalRunner(self.request_obj)
+            runner = VectorProjectProcessingRunner(self.request_obj)
             project, allocation = runner.run()
         except Exception as e:
             self.logger.exception(e)
@@ -1050,7 +1079,7 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
         return HttpResponseRedirect(self.redirect)
 
-    def __is_checklist_complete(self):
+    def is_checklist_complete(self):
         status_choice = vector_request_state_status(self.request_obj)
         return (status_choice.name == 'Approved - Processing' and
                 self.request_obj.state['setup']['status'] == 'Complete')

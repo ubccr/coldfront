@@ -87,7 +87,62 @@ def add_vector_user_to_designated_savio_project(user_obj):
 
 class ProjectApprovalRunner(object):
     """An object that performs necessary database changes when a new
-    project request is approved and processed."""
+    project request is approved."""
+
+    def __init__(self, request_obj, *args, **kwargs):
+        self.request_obj = request_obj
+
+    def run(self):
+        raise NotImplementedError('This method is not implemented.')
+
+
+class ProjectDenialRunner(object):
+    """An object that performs necessary database changes when a new
+    project request is denied."""
+
+    def __init__(self, request_obj):
+        self.request_obj = request_obj
+
+    def run(self):
+        # Only update the Project if pooling is not involved.
+        if (isinstance(self.request_obj, VectorProjectAllocationRequest) or
+                not self.request_obj.pool):
+            self.deny_project()
+        self.deny_request()
+        self.send_email()
+        self.deny_associated_renewal_request_if_existent()
+
+    def deny_associated_renewal_request_if_existent(self):
+        """Send a signal to deny any AllocationRenewalRequest that
+        references this request."""
+        kwargs = {'request_id': self.request_obj.pk}
+        new_project_request_denied.send(sender=None, **kwargs)
+
+    def deny_project(self):
+        """Set the Project's status to 'Denied'."""
+        project = self.request_obj.project
+        project.status = ProjectStatusChoice.objects.get(name='Denied')
+        project.save()
+        return project
+
+    def deny_request(self):
+        """Set the status of the request to 'Denied'."""
+        self.request_obj.status = \
+            ProjectAllocationRequestStatusChoice.objects.get(name='Denied')
+        self.request_obj.save()
+
+    def send_email(self):
+        """Send a notification email to the requester and PI."""
+        try:
+            send_project_request_denial_email(self.request_obj)
+        except Exception as e:
+            logger.error('Failed to send notification email. Details:\n')
+            logger.exception(e)
+
+
+class ProjectProcessingRunner(object):
+    """An object that performs necessary database changes when a new
+    project request is processed."""
 
     def __init__(self, request_obj):
         self.request_obj = request_obj
@@ -118,7 +173,7 @@ class ProjectApprovalRunner(object):
             self.create_cluster_access_request_for_requester(
                 requester_allocation_user)
 
-        self.approve_request()
+        self.complete_request()
         self.send_email()
 
         self.run_extra_processing()
@@ -132,11 +187,13 @@ class ProjectApprovalRunner(object):
         project.save()
         return project
 
-    def approve_request(self):
-        """Set the status of the request to 'Approved - Complete'."""
+    def complete_request(self):
+        """Set the status of the request to 'Approved - Complete' and
+        set its completion_time."""
         self.request_obj.status = \
             ProjectAllocationRequestStatusChoice.objects.get(
                 name='Approved - Complete')
+        self.request_obj.completion_time = utc_now_offset_aware()
         self.request_obj.save()
 
     def create_allocation_users(self, allocation):
@@ -222,7 +279,7 @@ class ProjectApprovalRunner(object):
     def send_email(self):
         """Send a notification email to the requester and PI."""
         try:
-            send_project_request_approval_email(self.request_obj)
+            send_project_request_processing_email(self.request_obj)
         except Exception as e:
             logger.error('Failed to send notification email. Details:\n')
             logger.exception(e)
@@ -245,53 +302,43 @@ class ProjectApprovalRunner(object):
         raise NotImplementedError('This method is not implemented.')
 
 
-class ProjectDenialRunner(object):
+class SavioProjectApprovalRunner(ProjectApprovalRunner):
     """An object that performs necessary database changes when a new
-    project request is denied."""
+    Savio project request is approved."""
 
-    def __init__(self, request_obj):
-        self.request_obj = request_obj
+    def __init__(self, request_obj, num_service_units, send_email=False):
+        validate_num_service_units(num_service_units)
+        self.num_service_units = num_service_units
+        super().__init__(request_obj)
+        # Note: send_email is already the name of a method.
+        self.can_send_email = bool(send_email)
 
     def run(self):
-        # Only update the Project if pooling is not involved.
-        if (isinstance(self.request_obj, VectorProjectAllocationRequest) or
-                not self.request_obj.pool):
-            self.deny_project()
-        self.deny_request()
-        self.send_email()
-        self.deny_associated_renewal_request_if_existent()
+        self.approve_request()
+        if self.can_send_email:
+            self.send_email()
 
-    def deny_associated_renewal_request_if_existent(self):
-        """Send a signal to deny any AllocationRenewalRequest that
-        references this request."""
-        kwargs = {'request_id': self.request_obj.pk}
-        new_project_request_denied.send(sender=None, **kwargs)
-
-    def deny_project(self):
-        """Set the Project's status to 'Denied'."""
-        project = self.request_obj.project
-        project.status = ProjectStatusChoice.objects.get(name='Denied')
-        project.save()
-        return project
-
-    def deny_request(self):
-        """Set the status of the request to 'Denied'."""
-        self.request_obj.status = \
-            ProjectAllocationRequestStatusChoice.objects.get(name='Denied')
+    def approve_request(self):
+        """Set the status of the request to TODO and set its
+        approval_time."""
+        # self.request_obj.status = # TODO
+        self.request_obj.approval_time = utc_now_offset_aware()
         self.request_obj.save()
 
     def send_email(self):
         """Send a notification email to the requester and PI."""
+        request = self.request_obj
         try:
-            send_project_request_denial_email(self.request_obj)
+            send_project_request_approval_email(
+                request, self.num_service_units)
         except Exception as e:
             logger.error('Failed to send notification email. Details:\n')
             logger.exception(e)
 
 
-class SavioProjectApprovalRunner(ProjectApprovalRunner):
+class SavioProjectProcessingRunner(ProjectProcessingRunner):
     """An object that performs necessary database changes when a new
-    Savio project request is approved and processed."""
+    Savio project request is processed."""
 
     def __init__(self, request_obj, num_service_units):
         validate_num_service_units(num_service_units)
@@ -532,10 +579,11 @@ def send_new_project_request_pi_notification_email(request):
     send_email_template(subject, template_name, context, sender, receiver_list)
 
 
-def send_project_request_approval_email(request):
+def send_project_request_approval_email(request, num_service_units):
     """Send a notification email to the requester and PI associated with
     the given project allocation request stating that the request has
-    been approved and processed."""
+    been approved, and the given number of service units will be added
+    when the request is processed."""
     email_enabled = import_from_settings('EMAIL_ENABLED', False)
     if not email_enabled:
         return
@@ -551,7 +599,9 @@ def send_project_request_approval_email(request):
 
     project_url = project_detail_url(request.project)
     context = {
+        'allocation_period': request.allocation_period,
         'center_name': settings.CENTER_NAME,
+        'num_service_units': num_service_units,
         'project_name': request.project.name,
         'project_url': project_url,
         'support_email': settings.CENTER_HELP_EMAIL,
@@ -637,9 +687,43 @@ def send_project_request_pooling_email(request):
     send_email_template(subject, template_name, context, sender, receiver_list)
 
 
-class VectorProjectApprovalRunner(ProjectApprovalRunner):
+def send_project_request_processing_email(request):
+    """Send a notification email to the requester and PI associated with
+    the given project allocation request stating that the request has
+    been processed."""
+    email_enabled = import_from_settings('EMAIL_ENABLED', False)
+    if not email_enabled:
+        return
+
+    if isinstance(request, SavioProjectAllocationRequest) and request.pool:
+        subject = f'Pooled Project Request ({request.project.name}) Processed'
+        template_name = (
+            'email/project_request/pooled_project_request_processed.txt')
+    else:
+        subject = f'New Project Request ({request.project.name}) Processed'
+        template_name = (
+            'email/project_request/new_project_request_processed.txt')
+
+    project_url = project_detail_url(request.project)
+    context = {
+        'center_name': settings.CENTER_NAME,
+        'project_name': request.project.name,
+        'project_url': project_url,
+        'support_email': settings.CENTER_HELP_EMAIL,
+        'signature': settings.EMAIL_SIGNATURE,
+    }
+
+    sender = settings.EMAIL_SENDER
+    receiver_list = [request.requester.email, request.pi.email]
+    cc = settings.REQUEST_APPROVAL_CC_LIST
+
+    send_email_template(
+        subject, template_name, context, sender, receiver_list, cc=cc)
+
+
+class VectorProjectProcessingRunner(ProjectProcessingRunner):
     """An object that performs necessary database changes when a new
-    Vector project request is approved and processed."""
+    Vector project request is processed."""
 
     def run_extra_processing(self):
         """Run additional subclass-specific processing."""
