@@ -1,5 +1,51 @@
 [
   {
+    "model": "allocation.attributetype",
+    "pk": 3,
+    "fields": {
+      "created": "2021-07-22T16:52:36.648Z",
+      "modified": "2021-07-22T16:52:36.649Z",
+      "name": "Float"
+    }
+  },
+  {
+    "model": "allocation.attributetype",
+    "pk": 6,
+    "fields": {
+      "created": "2021-08-20T16:38:18.123Z",
+      "modified": "2021-08-20T16:38:18.124Z",
+      "name": "Boolean"
+    }
+  },
+  {
+    "model": "allocation.allocationattributetype",
+    "pk": 1,
+    "fields": {
+      "created": "2021-07-22T16:55:20.800Z",
+      "modified": "2021-12-07T20:39:45.056Z",
+      "attribute_type": 3,
+      "name": "Storage Quota (TB)",
+      "has_usage": true,
+      "is_required": false,
+      "is_unique": false,
+      "is_private": false
+    }
+  },
+  {
+    "model": "allocation.allocationattributetype",
+    "pk": 4,
+    "fields": {
+      "created": "2021-08-20T16:39:40.245Z",
+      "modified": "2021-11-22T22:04:58.520Z",
+      "attribute_type": 6,
+      "name": "RequiresPayment",
+      "has_usage": false,
+      "is_required": true,
+      "is_unique": false,
+      "is_private": false
+    }
+  },
+  {
     "model": "allocation.allocationuserstatuschoice",
     "pk": 1,
     "fields": {

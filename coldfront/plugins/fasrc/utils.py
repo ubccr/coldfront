@@ -6,8 +6,11 @@ import timeit
 import logging
 import requests
 from pathlib import Path
+from functools import reduce
 from datetime import datetime, timedelta
 
+import operator
+from django.db.models import Q
 from django.utils import timezone
 from ifxuser.models import IfxUser, Organization
 from django.contrib.auth import get_user_model
@@ -115,42 +118,58 @@ class AllTheThingsConn:
     def push_quota_data(self, result_file):
         result_json = read_json(result_file)
         counts = {"proj_err": 0, "res_err":0, "all_err":0, "complete":0}
+        # produce list of present labs
+        lablist = [k for k in result_json.keys()]
+        proj_models = Project.objects.filter(title__in=lablist)
+        proj_titles = [p.title for p in proj_models]
+        # log labs w/o projects, remove them from result_json
+        missing_projs = log_missing("project", proj_titles,lablist)
+        counts['proj_err'] = len(missing_projs)
+        [result_json.pop(key) for key in missing_projs]
+
+        for l in result_json.values():
+            for a in l:
+                a['server'] = a['server'].replace("01.rc.fas.harvard.edu", "")\
+                        .replace("/n/", "")
+
+        resource_set = set([a['server'] for l in result_json.values() for a in l])
+
+        res_models = Resource.objects.filter(reduce(operator.or_, (Q(name__contains=x) for x in resource_set)))
+        res_names = [str(r.name).split("/")[0] for r in res_models]
+        missing_res = log_missing("resource", res_names, resource_set)
+        counts['proj_err'] = len(missing_res)
+
+        for k, v in result_json.items():
+            result_json[k] = [a for a in v if a['server'] not in missing_res]
+
         for lab, allocations in result_json.items():
             logger.debug(f"PROJECT: {lab} ====================================")
             # Find the correct allocation_allocationattributes to update by:
             # 1. finding the project with a name that matches lab.lab
-            try:
-                proj_query = Project.objects.get(title=lab)
-            except Project.DoesNotExist:
-                logger.info(f"ERROR: no matching project - {lab}")
-                counts['proj_err'] += 1
-                continue
+            proj_query = proj_models.get(title=lab)
             for allocation in allocations:
                 lab_allocation = allocation['tb_allocation']
                 lab_usage = allocation['tb_usage']
                 # 2. find the resource that matches/approximates the server value
                 r_str = allocation['server'].replace("01.rc.fas.harvard.edu", "")\
                             .replace("/n/", "")
-                try:
-                    resource = Resource.objects.get(name__contains=r_str)
-                except Resource.DoesNotExist:
-                    logger.info(f"ERROR: no matching resource - {r_str}")
-                    counts['res_err'] += 1
-                    continue
+                resource = res_models.get(name__contains=r_str)
                 # logger.info(f"resource: {resource.__dict__}")
 
 
                 # 3. find the allocation with a matching project and resource_type
-                try:
-                    a = Allocation.objects.get(  project=proj_query,
+                a = Allocation.objects.filter(  project=proj_query,
                                                 resources__id=resource.id,
                                                 status__name='Active'   )
-                except Allocation.DoesNotExist:
-                    logger.info("ERROR: no matching allocation")
+                if a.count() == 1:
+                    a = a.first()
+                elif a.count() < 1:
+                    res_str = allocation['server']
+                    log_missing("allocation", [], [res_str], group=proj_query.title, pattern="G,I,D")
                     counts['all_err'] += 1
                     continue
-                except Allocation.MultipleObjectsReturned:
-                    logger.info("WARNING: two allocations returned. If LFS, will "
+                elif a.count() > 1:
+                    logger.info("WARNING: multiple allocations returned. If LFS, will "
                         "choose the FASSE option; if not, will choose otherwise.")
                     just_str = "FASSE" if allocation['storage_type'] == "Isilon" else "Information for"
                     a = Allocation.objects.get( project=proj_query,
@@ -189,13 +208,38 @@ class AllTheThingsConn:
                 allocation_attribute_type_payment = AllocationAttributeType.objects.get(
                 name='RequiresPayment')
                 allocation_attribute_payment, _ = AllocationAttribute.objects.get_or_create(
-                allocation_attribute_type=allocation_attribute_type_payment,
-                allocation=a,
-                value=True)
+                        allocation_attribute_type=allocation_attribute_type_payment,
+                        allocation=a,
+                        value=True)
                 allocation_attribute_payment.save()
                 counts['complete'] += 1
         logger.info(f"error counts: {counts}")
 
+
+def log_missing(modelname,
+                model_attr_list,
+                search_list,
+                group="",
+                fpath_pref="./coldfront/plugins/fasrc/data/",
+                pattern = "I,D"):
+    fpath = f'{fpath_pref}missing_{modelname}s.csv'
+    missing = [i for i in search_list if i not in [i for i in model_attr_list]]
+    if missing:
+        datestr = datetime.today().strftime("%Y%m%d")
+        patterns = [pattern.replace("I", i).replace("D", datestr).replace("G", group) for i in missing]
+        write_update_file_line(fpath, patterns)
+    return missing
+
+
+def write_update_file_line(filepath, patterns):
+    """Find
+    """
+    with open(filepath, 'a+') as f:
+        f.seek(0)
+        lines = f.readlines()
+        for pattern in patterns:
+            if not any(pattern == line.rstrip('\r\n') for line in lines):
+                f.write(pattern + '\n')
 
 
 def generate_headers(token):

@@ -1,7 +1,10 @@
+import string
+import filecmp
+
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from ifxuser.models import IfxUser, Organization
-from coldfront.plugins.fasrc.utils import AllTheThingsConn
+from coldfront.plugins.fasrc.utils import AllTheThingsConn, log_missing
 
 class UploadTests(TestCase):
     """Catch issues that may cause database not to upload properly."""
@@ -19,7 +22,16 @@ class UploadTests(TestCase):
 
     def test_push_quota_data(self):
         self.attconn.push_quota_data(self.testfiles)
-        print("Done!")
+        # assert AllocationAttribute.
+
+    def test_log_missing(self):
+        vowels = ['a','e','i','o','u']
+        datapath = "./coldfront/plugins/fasrc/tests/testdata/"
+        modelname = "project"
+        model_attr_list = [f"{v}_lab" for v in vowels]
+        search_list = [f"{c}_lab" for c in list(string.ascii_lowercase)]
+        log_missing(modelname, model_attr_list, search_list, fpath_pref=datapath)
+        assert filecmp.cmp(f'{datapath}missing_projects.csv', f'{datapath}missing_projects_compare.csv') == True
 
 
 if __name__ == '__main__':

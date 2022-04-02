@@ -16,7 +16,7 @@
       "tb_usage": 1,
       "fs_path": "/ifs/rc_labs/hausmann_lab",
       "storage_type": "Isilon",
-      "server": "bos-isilon01.rc.fas.harvard.edu"
+      "server": "dummytest-isilon01.rc.fas.harvard.edu"
     }
   ],
   "poisson_lab": [
