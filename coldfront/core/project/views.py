@@ -3538,13 +3538,13 @@ class SavioProjectUndenyRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
     def get(self, request, *args, **kwargs):
         project_request = get_object_or_404(
             SavioProjectAllocationRequest, pk=kwargs.get('pk'))
-        
+
         if project_request.state['eligibility']['status'] == 'Denied':
             project_request.state['eligibility']['status'] = 'Pending'
 
         if project_request.state['readiness']['status'] == 'Denied':
             project_request.state['readiness']['status'] = 'Pending'
-            
+
         if project_request.state['other']['timestamp']:
             project_request.state['other']['justification'] = ''
             project_request.state['other']['timestamp'] = ''

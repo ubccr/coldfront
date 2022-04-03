@@ -432,6 +432,7 @@ class Command(BaseCommand):
                     **survey
                 })
 
+            surveys = list(sorted(surveys, key=lambda x: x['project_name'], reverse=True))
             try:
                 writer = csv.DictWriter(kwargs.get('stdout', stdout), surveys[0].keys())
                 writer.writeheader()
@@ -450,6 +451,7 @@ class Command(BaseCommand):
                     'survey_responses': survey
                 })
 
+            surveys = list(sorted(surveys, key=lambda x: x['project_name'], reverse=True))
             self.to_json(surveys,
                          output=kwargs.get('stdout', stdout),
                          error=kwargs.get('stderr', stderr))

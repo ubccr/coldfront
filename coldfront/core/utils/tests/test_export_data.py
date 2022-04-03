@@ -916,6 +916,9 @@ class TestSurveyResponses(TestBase):
             if index % 2:
                 filtered_fixtures.append(fixture)
 
+        fixtures = list(sorted(fixtures, key=lambda x: x.project.name, reverse=True))
+        filtered_fixtures = list(sorted(filtered_fixtures, key=lambda x: x.project.name, reverse=True))
+
         self.fixtures = fixtures
         self.filtered_fixtures = filtered_fixtures
 
