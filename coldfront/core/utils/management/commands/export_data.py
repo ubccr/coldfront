@@ -293,29 +293,27 @@ class Command(BaseCommand):
             active_status = ProjectStatusChoice.objects.get(name='Active')
             projects = projects.filter(status=active_status)
 
-        pi_table = []
+        projects = projects.order_by('id')
+
+        pi_table, manager_table, status_table = [], [], []
         for project in projects:
             pis = project.pis()
-            table = [f'{pi.first_name} {pi.last_name} ({pi.email})' for pi in pis]
-
-            if table != []:
+            table = [
+                f'{pi.first_name} {pi.last_name} ({pi.email})' for pi in pis]
+            if len(table) > 0:
                 pi_table.append(table)
             else:
                 pi_table.append(None)
 
-        manager_table = []
-        for project in projects:
             managers = project.managers()
-            table = [f'{manager.first_name} {manager.last_name} ({manager.email})'
-                     for manager in managers]
-
-            if table != []:
+            table = [
+                f'{manager.first_name} {manager.last_name} ({manager.email})'
+                for manager in managers]
+            if len(table) > 0:
                 manager_table.append(table)
             else:
                 manager_table.append(None)
 
-        status_table = []
-        for project in projects:
             status_table.append(str(project.status))
 
         header = ['id', 'created', 'modified', 'name', 'title', 'description']
