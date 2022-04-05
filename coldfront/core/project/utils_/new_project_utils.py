@@ -319,9 +319,11 @@ class SavioProjectApprovalRunner(ProjectApprovalRunner):
             self.send_email()
 
     def approve_request(self):
-        """Set the status of the request to TODO and set its
-        approval_time."""
-        # self.request_obj.status = # TODO
+        """Set the status of the request to 'Approved - Scheduled' and
+        set its approval_time."""
+        self.request_obj.status = \
+            ProjectAllocationRequestStatusChoice.objects.get(
+                name='Approved - Scheduled')
         self.request_obj.approval_time = utc_now_offset_aware()
         self.request_obj.save()
 
@@ -445,7 +447,7 @@ def savio_request_state_status(savio_request):
     ica = SavioProjectAllocationRequest.ICA
     recharge = SavioProjectAllocationRequest.RECHARGE
 
-    # For ICA projects, retrieve whether or not both allocation dates are set.
+    # For ICA projects, retrieve whether both allocation dates are set.
     if savio_request.allocation_type == ica:
         allocation_dates = state['allocation_dates']
         allocation_dates_not_set = allocation_dates['status'] == 'Pending'
@@ -468,9 +470,9 @@ def savio_request_state_status(savio_request):
         return ProjectAllocationRequestStatusChoice.objects.get(
             name='Under Review')
 
-    # The request has been approved, and is processing or complete. The final
-    # state, 'Approved - Complete', should only be set once the request is
-    # finally activated.
+    # The request has been approved, and is processing, scheduled, or complete.
+    # The states 'Approved - Scheduled' and 'Approved - Complete' should only
+    # be set once the request is scheduled for activation or activated.
     return ProjectAllocationRequestStatusChoice.objects.get(
         name='Approved - Processing')
 
