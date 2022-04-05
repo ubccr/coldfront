@@ -115,6 +115,33 @@ class SavioProjectRequestMixin(object):
             form = SavioProjectExtraFieldsForm
         return form(**kwargs)
 
+    def redirect_if_disallowed_status(self, http_request,
+                                      disallowed_status_names=(
+            'Approved - Scheduled', 'Approved - Complete', 'Denied')):
+        """Return a redirect response to the detail view for this
+        project request if its status has one of the given disallowed
+        names, after sending a message to the user. Otherwise, return
+        None."""
+        if not isinstance(self.request_obj, SavioProjectAllocationRequest):
+            raise TypeError(
+                f'Request object has unexpected type '
+                f'{type(self.request_obj)}.')
+        status_name = self.request_obj.status.name
+        if status_name in disallowed_status_names:
+            message = (
+                f'You cannot perform this action on a request with status '
+                f'{status_name}.')
+            messages.error(http_request, message)
+            return HttpResponseRedirect(
+                self.request_detail_url(self.request_obj.pk))
+        return None
+
+    @staticmethod
+    def request_detail_url(pk):
+        """Return the URL to the detail view for the request with the
+        given primary key."""
+        return reverse('savio-project-request-detail', kwargs={'pk': pk})
+
     def set_request_obj(self, pk):
         """Set this instance's request_obj to be the
         SavioProjectAllocationRequest with the given primary key."""
@@ -361,12 +388,9 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         self.set_request_obj(pk)
-        status_name = self.request_obj.status.name
-        if status_name in ['Approved - Complete', 'Denied']:
-            message = f'You cannot review a request with status {status_name}.'
-            messages.error(request, message)
-            return HttpResponseRedirect(
-                reverse('savio-project-request-detail', kwargs={'pk': pk}))
+        redirect = self.redirect_if_disallowed_status(self.request_obj)
+        if redirect is not None:
+            return redirect
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -436,12 +460,9 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         self.set_request_obj(pk)
-        status_name = self.request_obj.status.name
-        if status_name in ['Approved - Complete', 'Denied']:
-            message = f'You cannot review a request with status {status_name}.'
-            messages.error(request, message)
-            return HttpResponseRedirect(
-                reverse('savio-project-request-detail', kwargs={'pk': pk}))
+        redirect = self.redirect_if_disallowed_status(self.request_obj)
+        if redirect is not None:
+            return redirect
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -529,12 +550,9 @@ class SavioProjectReviewAllocationDatesView(LoginRequiredMixin,
             messages.error(request, message)
             return HttpResponseRedirect(
                 reverse('savio-project-request-detail', kwargs={'pk': pk}))
-        status_name = self.request_obj.status.name
-        if status_name in ['Approved - Complete', 'Denied']:
-            message = f'You cannot review a request with status {status_name}.'
-            messages.error(request, message)
-            return HttpResponseRedirect(
-                reverse('savio-project-request-detail', kwargs={'pk': pk}))
+        redirect = self.redirect_if_disallowed_status(self.request_obj)
+        if redirect is not None:
+            return redirect
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -639,12 +657,9 @@ class SavioProjectReviewMemorandumSignedView(LoginRequiredMixin,
             messages.error(request, message)
             return HttpResponseRedirect(
                 reverse('savio-project-request-detail', kwargs={'pk': pk}))
-        status_name = self.request_obj.status.name
-        if status_name in ['Approved - Complete', 'Denied']:
-            message = f'You cannot review a request with status {status_name}.'
-            messages.error(request, message)
-            return HttpResponseRedirect(
-                reverse('savio-project-request-detail', kwargs={'pk': pk}))
+        redirect = self.redirect_if_disallowed_status(self.request_obj)
+        if redirect is not None:
+            return redirect
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -705,12 +720,9 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         self.set_request_obj(pk)
-        status_name = self.request_obj.status.name
-        if status_name in ['Approved - Complete', 'Denied']:
-            message = f'You cannot review a request with status {status_name}.'
-            messages.error(request, message)
-            return HttpResponseRedirect(
-                reverse('savio-project-request-detail', kwargs={'pk': pk}))
+        redirect = self.redirect_if_disallowed_status(self.request_obj)
+        if redirect is not None:
+            return redirect
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -797,12 +809,9 @@ class SavioProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         self.set_request_obj(pk)
-        status_name = self.request_obj.status.name
-        if status_name in ['Approved - Complete', 'Denied']:
-            message = f'You cannot review a request with status {status_name}.'
-            messages.error(request, message)
-            return HttpResponseRedirect(
-                reverse('savio-project-request-detail', kwargs={'pk': pk}))
+        redirect = self.redirect_if_disallowed_status(self.request_obj)
+        if redirect is not None:
+            return redirect
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -865,14 +874,13 @@ class SavioProjectUndenyRequestView(LoginRequiredMixin, UserPassesTestMixin,
         pk = self.kwargs.get('pk')
         self.set_request_obj(pk)
 
-        state_status = savio_request_state_status(self.request_obj)
-        denied_status = ProjectAllocationRequestStatusChoice.objects.get(
-            name='Denied')
-        if state_status != denied_status:
-            message = 'Savio project request has an unexpected status.'
-            messages.error(request, message)
-            return HttpResponseRedirect(
-                reverse('savio-project-request-detail', kwargs={'pk': pk}))
+        disallowed_status_names = list(
+            ProjectAllocationRequestStatusChoice.objects.filter(
+                ~Q(name='Denied')).values_list('name', flat=True))
+        redirect = self.redirect_if_disallowed_status(
+            request, disallowed_status_names=disallowed_status_names)
+        if redirect is not None:
+            return redirect
 
         return super().dispatch(request, *args, **kwargs)
 
@@ -961,6 +969,33 @@ class VectorProjectRequestMixin(object):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.request_obj = None
+
+    def redirect_if_disallowed_status(self, http_request,
+                                      disallowed_status_names=(
+            'Approved - Complete', 'Denied')):
+        """Return a redirect response to the detail view for this
+        project request if its status has one of the given disallowed
+        names, after sending a message to the user. Otherwise, return
+        None."""
+        if not isinstance(self.request_obj, VectorProjectAllocationRequest):
+            raise TypeError(
+                f'Request object has unexpected type '
+                f'{type(self.request_obj)}.')
+        status_name = self.request_obj.status.name
+        if status_name in disallowed_status_names:
+            message = (
+                f'You cannot perform this action on a request with status '
+                f'{status_name}.')
+            messages.error(http_request, message)
+            return HttpResponseRedirect(
+                self.request_detail_url(self.request_obj.pk))
+        return None
+
+    @staticmethod
+    def request_detail_url(pk):
+        """Return the URL to the detail view for the request with the
+        given primary key."""
+        return reverse('vector-project-request-detail', kwargs={'pk': pk})
 
     def set_request_obj(self, pk):
         """Set this instance's request_obj to be the
@@ -1118,12 +1153,9 @@ class VectorProjectReviewEligibilityView(LoginRequiredMixin,
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         self.set_request_obj(pk)
-        status_name = self.request_obj.status.name
-        if status_name in ['Approved - Complete', 'Denied']:
-            message = f'You cannot review a request with status {status_name}.'
-            messages.error(request, message)
-            return HttpResponseRedirect(
-                reverse('vector-project-request-detail', kwargs={'pk': pk}))
+        redirect = self.redirect_if_disallowed_status(self.request_obj)
+        if redirect is not None:
+            return redirect
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -1186,12 +1218,9 @@ class VectorProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         self.set_request_obj(pk)
-        status_name = self.request_obj.status.name
-        if status_name in ['Approved - Complete', 'Denied']:
-            message = f'You cannot review a request with status {status_name}.'
-            messages.error(request, message)
-            return HttpResponseRedirect(
-                reverse('vector-project-request-detail', kwargs={'pk': pk}))
+        redirect = self.redirect_if_disallowed_status(self.request_obj)
+        if redirect is not None:
+            return redirect
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -1273,14 +1302,13 @@ class VectorProjectUndenyRequestView(LoginRequiredMixin, UserPassesTestMixin,
         pk = self.kwargs.get('pk')
         self.set_request_obj(pk)
 
-        state_status = vector_request_state_status(self.request_obj)
-        denied_status = ProjectAllocationRequestStatusChoice.objects.get(
-            name='Denied')
-        if state_status != denied_status:
-            message = 'Vector project request has an unexpected status.'
-            messages.error(request, message)
-            return HttpResponseRedirect(
-                reverse('vector-project-request-detail', kwargs={'pk': pk}))
+        disallowed_status_names = list(
+            ProjectAllocationRequestStatusChoice.objects.filter(
+                ~Q(name='Denied')).values_list('name', flat=True))
+        redirect = self.redirect_if_disallowed_status(
+            request, disallowed_status_names=disallowed_status_names)
+        if redirect is not None:
+            return redirect
 
         return super().dispatch(request, *args, **kwargs)
 
