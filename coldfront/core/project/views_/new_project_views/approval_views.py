@@ -214,7 +214,8 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             self.request_obj.status.name == 'Approved - Scheduled')
         context['is_checklist_complete'] = self.is_checklist_complete()
 
-        context['is_allowed_to_manage_request'] = self.request.user.is_superuser
+        context['is_allowed_to_manage_request'] = \
+            self.request.user.is_superuser
 
         return context
 
@@ -848,7 +849,7 @@ class SavioProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
 
 
 class SavioProjectUndenyRequestView(LoginRequiredMixin, UserPassesTestMixin,
-                                    View):
+                                    SavioProjectRequestMixin, View):
     login_url = '/'
 
     def test_func(self):
@@ -861,48 +862,48 @@ class SavioProjectUndenyRequestView(LoginRequiredMixin, UserPassesTestMixin,
         messages.error(self.request, message)
 
     def dispatch(self, request, *args, **kwargs):
-        project_request = get_object_or_404(
-            SavioProjectAllocationRequest, pk=self.kwargs.get('pk'))
+        pk = self.kwargs.get('pk')
+        self.set_request_obj(pk)
 
-        state_status = savio_request_state_status(project_request)
+        state_status = savio_request_state_status(self.request_obj)
         denied_status = ProjectAllocationRequestStatusChoice.objects.get(
             name='Denied')
-
         if state_status != denied_status:
             message = 'Savio project request has an unexpected status.'
             messages.error(request, message)
-
             return HttpResponseRedirect(
-                reverse('savio-project-request-detail',
-                        kwargs={'pk': self.kwargs.get('pk')}))
+                reverse('savio-project-request-detail', kwargs={'pk': pk}))
 
         return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
-        project_request = get_object_or_404(
-            SavioProjectAllocationRequest, pk=kwargs.get('pk'))
+        state = self.request_obj.state
 
-        if project_request.state['eligibility']['status'] == 'Denied':
-            project_request.state['eligibility']['status'] = 'Pending'
+        eligibility = state['eligibility']
+        if eligibility['status'] == 'Denied':
+            eligibility['status'] = 'Pending'
 
-        if project_request.state['readiness']['status'] == 'Denied':
-            project_request.state['readiness']['status'] = 'Pending'
+        readiness = state['readiness']
+        if readiness['status'] == 'Denied':
+            readiness['status'] = 'Pending'
 
-        if project_request.state['other']['timestamp']:
-            project_request.state['other']['justification'] = ''
-            project_request.state['other']['timestamp'] = ''
+        other = state['other']
+        if other['timestamp']:
+            other['justification'] = ''
+            other['timestamp'] = ''
 
-        project_request.status = savio_request_state_status(project_request)
-        project_request.save()
+        self.request_obj.status = savio_request_state_status(self.request_obj)
+        self.request_obj.save()
 
         message = (
-            f'Project request {project_request.project.name} '
-            f'has been UNDENIED and will need to be reviewed again.')
+            f'Project request {self.request_obj.project.name} has been '
+            f'un-denied and will need to be reviewed again.')
         messages.success(request, message)
 
         return HttpResponseRedirect(
-            reverse('savio-project-request-detail',
-                    kwargs={'pk': kwargs.get('pk')}))
+            reverse(
+                'savio-project-request-detail',
+                kwargs={'pk': kwargs.get('pk')}))
 
 
 # =============================================================================
@@ -955,8 +956,22 @@ class VectorProjectRequestListView(LoginRequiredMixin, TemplateView):
         return context
 
 
+class VectorProjectRequestMixin(object):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.request_obj = None
+
+    def set_request_obj(self, pk):
+        """Set this instance's request_obj to be the
+        VectorProjectAllocationRequest with the given primary key."""
+        self.request_obj = get_object_or_404(
+            VectorProjectAllocationRequest.objects.prefetch_related(
+                'pi', 'project', 'requester'), pk=pk)
+
+
 class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
-                                     DetailView):
+                                     VectorProjectRequestMixin, DetailView):
     model = VectorProjectAllocationRequest
     template_name = (
         'project/project_request/vector/project_request_detail.html')
@@ -987,9 +1002,7 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.request_obj = get_object_or_404(
-            VectorProjectAllocationRequest.objects.prefetch_related(
-                'pi', 'project', 'requester'), pk=pk)
+        self.set_request_obj(pk)
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -1055,6 +1068,8 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             pk = self.request_obj.pk
             return HttpResponseRedirect(
                 reverse('vector-project-request-detail', kwargs={'pk': pk}))
+
+        runner = None
         try:
             runner = VectorProjectProcessingRunner(self.request_obj)
             project, allocation = runner.run()
@@ -1069,11 +1084,12 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             messages.success(self.request, message)
 
         # Send any messages from the runner back to the user.
-        try:
-            for message in runner.get_user_messages():
-                messages.info(self.request, message)
-        except NameError:
-            pass
+        if isinstance(runner, VectorProjectProcessingRunner):
+            try:
+                for message in runner.get_user_messages():
+                    messages.info(self.request, message)
+            except NameError:
+                pass
 
         return HttpResponseRedirect(self.redirect)
 
@@ -1084,7 +1100,8 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
 
 class VectorProjectReviewEligibilityView(LoginRequiredMixin,
-                                         UserPassesTestMixin, FormView):
+                                         UserPassesTestMixin,
+                                         VectorProjectRequestMixin, FormView):
     form_class = ReviewStatusForm
     template_name = (
         'project/project_request/vector/project_review_eligibility.html')
@@ -1100,9 +1117,7 @@ class VectorProjectReviewEligibilityView(LoginRequiredMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.request_obj = get_object_or_404(
-            VectorProjectAllocationRequest.objects.prefetch_related(
-                'pi', 'project', 'requester'), pk=pk)
+        self.set_request_obj(pk)
         status_name = self.request_obj.status.name
         if status_name in ['Approved - Complete', 'Denied']:
             message = f'You cannot review a request with status {status_name}.'
@@ -1155,7 +1170,7 @@ class VectorProjectReviewEligibilityView(LoginRequiredMixin,
 
 
 class VectorProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
-                                   FormView):
+                                   VectorProjectRequestMixin, FormView):
     form_class = VectorProjectReviewSetupForm
     template_name = 'project/project_request/vector/project_review_setup.html'
     login_url = '/'
@@ -1170,9 +1185,7 @@ class VectorProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.request_obj = get_object_or_404(
-            VectorProjectAllocationRequest.objects.prefetch_related(
-                'pi', 'project', 'requester'), pk=pk)
+        self.set_request_obj(pk)
         status_name = self.request_obj.status.name
         if status_name in ['Approved - Complete', 'Denied']:
             message = f'You cannot review a request with status {status_name}.'
@@ -1244,7 +1257,7 @@ class VectorProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
 
 
 class VectorProjectUndenyRequestView(LoginRequiredMixin, UserPassesTestMixin,
-                                     View):
+                                     VectorProjectRequestMixin, View):
     login_url = '/'
 
     def test_func(self):
@@ -1257,37 +1270,36 @@ class VectorProjectUndenyRequestView(LoginRequiredMixin, UserPassesTestMixin,
         messages.error(self.request, message)
 
     def dispatch(self, request, *args, **kwargs):
-        project_request = get_object_or_404(
-            VectorProjectAllocationRequest, pk=self.kwargs.get('pk'))
+        pk = self.kwargs.get('pk')
+        self.set_request_obj(pk)
 
-        state_status = vector_request_state_status(project_request)
-        denied_status = ProjectAllocationRequestStatusChoice.objects.get(name='Denied')
-
+        state_status = vector_request_state_status(self.request_obj)
+        denied_status = ProjectAllocationRequestStatusChoice.objects.get(
+            name='Denied')
         if state_status != denied_status:
             message = 'Vector project request has an unexpected status.'
             messages.error(request, message)
-
             return HttpResponseRedirect(
-                reverse('vector-project-request-detail',
-                        kwargs={'pk': self.kwargs.get('pk')}))
+                reverse('vector-project-request-detail', kwargs={'pk': pk}))
 
         return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
-        project_request = get_object_or_404(
-            VectorProjectAllocationRequest, pk=kwargs.get('pk'))
+        state = self.request_obj.state
 
-        if project_request.state['eligibility']['status'] == 'Denied':
-            project_request.state['eligibility']['status'] = 'Pending'
+        eligibility = state['eligibility']
+        if eligibility['status'] == 'Denied':
+            eligibility['status'] = 'Pending'
 
-        project_request.status = vector_request_state_status(project_request)
-        project_request.save()
+        self.request_obj.status = vector_request_state_status(self.request_obj)
+        self.request_obj.save()
 
         message = (
-            f'Project request {project_request.project.name} '
-            f'has been UNDENIED and will need to be reviewed again.')
+            f'Project request {self.request_obj.project.name} has been '
+            f'un-denied and will need to be reviewed again.')
         messages.success(request, message)
 
         return HttpResponseRedirect(
-            reverse('vector-project-request-detail',
-                    kwargs={'pk': kwargs.get('pk')}))
+            reverse(
+                'vector-project-request-detail',
+                kwargs={'pk': kwargs.get('pk')}))
