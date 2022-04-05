@@ -251,6 +251,8 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             allocation_obj.description = description
             allocation_obj.is_locked = is_locked
             allocation_obj.is_changeable = is_changeable
+            allocation_obj.end_date = end_date
+            allocation_obj.start_date = start_date
             allocation_obj.save()
 
             if initial_data.get('status') != status and allocation_obj.project.status.name != "Active":
@@ -260,11 +262,6 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             allocation_obj.status = form_data.get('status')
             allocation_obj.save()
 
-            if not start_date:
-                start_date = None
-            if not end_date:
-                end_date = None
-
             if EMAIL_ENABLED:
                 resource_name = allocation_obj.get_parent_resource
                 domain_url = get_domain_url(self.request)
@@ -272,16 +269,8 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                     'allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
             if old_status != 'Active' and new_status == 'Active':
-                if start_date is None:
-                    start_date = datetime.datetime.now()
-                if end_date is None:
-                    end_date = allocation_obj.project.end_date
-
-                if allocation_obj.use_indefinitely:
-                    end_date = None
-
-                allocation_obj.start_date = start_date
-                allocation_obj.end_date = end_date
+                if not start_date:
+                    allocation_obj.start_date = datetime.date.today()
                 allocation_obj.save()
 
                 allocation_activate.send(
@@ -315,10 +304,6 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                     )
 
             elif old_status != 'Denied' and new_status == 'Denied':
-                allocation_obj.start_date = None
-                allocation_obj.end_date = None
-                allocation_obj.save()
-
                 allocation_disable.send(
                     sender=self.__class__, allocation_pk=allocation_obj.pk)
                 allocation_users = allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error'])
@@ -348,11 +333,6 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                         EMAIL_SENDER,
                         email_receiver_list
                     )
-
-            elif not new_status == 'Expired' and not new_status == 'Active':
-                allocation_obj.start_date = None
-                allocation_obj.end_date = None
-                allocation_obj.save()
 
             allocation_obj.refresh_from_db()
 
@@ -916,10 +896,21 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 elif license_term == 'current_and_next_year':
                     total_cost += prorated_cost
 
+        if end_date is None:
+            end_date = project_obj.end_date
+
         if resource_obj.name == 'RStudio Connect':
-            end_date = self.calculate_end_date(6, 30, license_term)
+            license_end_date = resource_obj.get_attribute('license_end_date')
+            if license_end_date is not None:
+                month, day, year = license_end_date.split('/')
+                end_date = self.calculate_end_date(int(month), int(day), license_term)
         elif resource_obj.name == 'Geode-Projects':
             storage_space_with_unit = str(storage_space_with_unit) + unit
+            if use_indefinitely:
+                end_date = None
+        elif resource_obj.name == 'Priority Boost':
+            if use_indefinitely:
+                end_date = None
 
         # A resource is selected that requires an account name selection but user has no account names
         if ALLOCATION_ACCOUNT_ENABLED and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING and AllocationAttributeType.objects.filter(
@@ -1780,14 +1771,10 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
         allocation_status_active_obj = AllocationStatusChoice.objects.get(
             name='Active')
         start_date = datetime.datetime.now()
-        end_date = allocation_obj.project.end_date
-
-        if allocation_obj.use_indefinitely:
-            end_date = None
 
         allocation_obj.status = allocation_status_active_obj
-        allocation_obj.start_date = start_date
-        allocation_obj.end_date = end_date
+        if not allocation_obj.start_date:
+            allocation_obj.start_date = start_date
         allocation_obj.save()
 
         messages.success(request, 'Allocation to {} has been ACTIVATED for {} {} ({})'.format(
