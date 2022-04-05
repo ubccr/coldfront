@@ -97,6 +97,10 @@ class SavioProjectRequestListView(LoginRequiredMixin, TemplateView):
 
 class SavioProjectRequestMixin(object):
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.request_obj = None
+
     @staticmethod
     def get_extra_fields_form(allocation_type, extra_fields):
         kwargs = {
@@ -111,6 +115,13 @@ class SavioProjectRequestMixin(object):
             form = SavioProjectExtraFieldsForm
         return form(**kwargs)
 
+    def set_request_obj(self, pk):
+        """Set this instance's request_obj to be the
+        SavioProjectAllocationRequest with the given primary key."""
+        self.request_obj = get_object_or_404(
+            SavioProjectAllocationRequest.objects.prefetch_related(
+                'pi', 'project', 'requester'), pk=pk)
+
 
 class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
                                     SavioProjectRequestMixin, DetailView):
@@ -122,7 +133,6 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
     logger = logging.getLogger(__name__)
 
     error_message = 'Unexpected failure. Please contact an administrator.'
-    request_obj = None
 
     redirect = reverse_lazy('savio-project-pending-request-list')
 
@@ -143,9 +153,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.request_obj = get_object_or_404(
-            SavioProjectAllocationRequest.objects.prefetch_related(
-                'pi', 'project', 'requester'), pk=pk)
+        self.set_request_obj(pk)
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -202,6 +210,8 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             context['support_email'] = settings.CENTER_HELP_EMAIL
 
         context['setup_status'] = self.get_setup_status()
+        context['is_approved_scheduled'] = (
+            self.request_obj.status.name == 'Approved - Scheduled')
         context['is_checklist_complete'] = self.is_checklist_complete()
 
         context['is_allowed_to_manage_request'] = self.request.user.is_superuser
@@ -349,9 +359,7 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.request_obj = get_object_or_404(
-            SavioProjectAllocationRequest.objects.prefetch_related(
-                'pi', 'project', 'requester'), pk=pk)
+        self.set_request_obj(pk)
         status_name = self.request_obj.status.name
         if status_name in ['Approved - Complete', 'Denied']:
             message = f'You cannot review a request with status {status_name}.'
@@ -426,9 +434,7 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.request_obj = get_object_or_404(
-            SavioProjectAllocationRequest.objects.prefetch_related(
-                'pi', 'project', 'requester'), pk=pk)
+        self.set_request_obj(pk)
         status_name = self.request_obj.status.name
         if status_name in ['Approved - Complete', 'Denied']:
             message = f'You cannot review a request with status {status_name}.'
@@ -513,9 +519,7 @@ class SavioProjectReviewAllocationDatesView(LoginRequiredMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.request_obj = get_object_or_404(
-            SavioProjectAllocationRequest.objects.prefetch_related(
-                'pi', 'project', 'requester'), pk=pk)
+        self.set_request_obj(pk)
         allocation_type = self.request_obj.allocation_type
         if allocation_type != SavioProjectAllocationRequest.ICA:
             message = (
@@ -621,9 +625,7 @@ class SavioProjectReviewMemorandumSignedView(LoginRequiredMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.request_obj = get_object_or_404(
-            SavioProjectAllocationRequest.objects.prefetch_related(
-                'pi', 'project', 'requester'), pk=pk)
+        self.set_request_obj(pk)
         allocation_type = self.request_obj.allocation_type
         memorandum_types = (
             SavioProjectAllocationRequest.ICA,
@@ -701,9 +703,7 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.request_obj = get_object_or_404(
-            SavioProjectAllocationRequest.objects.prefetch_related(
-                'pi', 'project', 'requester'), pk=pk)
+        self.set_request_obj(pk)
         status_name = self.request_obj.status.name
         if status_name in ['Approved - Complete', 'Denied']:
             message = f'You cannot review a request with status {status_name}.'
@@ -795,9 +795,7 @@ class SavioProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.request_obj = get_object_or_404(
-            SavioProjectAllocationRequest.objects.prefetch_related(
-                'pi', 'project', 'requester'), pk=pk)
+        self.set_request_obj(pk)
         status_name = self.request_obj.status.name
         if status_name in ['Approved - Complete', 'Denied']:
             message = f'You cannot review a request with status {status_name}.'

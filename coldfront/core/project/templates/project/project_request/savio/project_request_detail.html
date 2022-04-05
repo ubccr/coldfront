@@ -325,7 +325,11 @@ Savio Project Request Detail
         </table>
       </div>
       <hr>
-      {% if is_checklist_complete %}
+      {% if is_approved_scheduled %}
+        <a href="{% url 'savio-project-request-review-deny' savio_request.pk %}" class="btn btn-danger" style="float: right;">
+          Deny For Other Reason
+        </a>
+      {% elif is_checklist_complete %}
         <form action="{% url 'savio-project-request-detail' savio_request.pk %}" method="post">
           {% csrf_token %}
           <button type="submit" class="btn btn-primary">Submit</button>
