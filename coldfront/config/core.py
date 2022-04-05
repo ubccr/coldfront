@@ -27,6 +27,8 @@ PROJECT_DEFAULT_MAX_MANAGERS = ENV.int('PROJECT_DEFAULT_MAX_MANAGERS', default=3
 #------------------------------------------------------------------------------
 # Allocation related
 #------------------------------------------------------------------------------
+ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT = ENV.bool('ALLOCATION_ENABLE_CHANGE_REQUESTS', default=True)
+ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS = ENV.list('ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS', cast=int, default=[30, 60, 90])
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = ENV.bool('ALLOCATION_ENABLE_ALLOCATION_RENEWAL', default=True)
 ALLOCATION_FUNCS_ON_EXPIRE = ['coldfront.core.allocation.utils.test_allocation_function', ]
 #------------------------------------------------------------------------------
@@ -53,6 +55,11 @@ SETTINGS_EXPORT += [
 ]
 
 ADMIN_COMMENTS_SHOW_EMPTY = ENV.bool('ADMIN_COMMENTS_SHOW_EMPTY', default=True)
+
+#------------------------------------------------------------------------------
+# List of Allocation Attributes to display on view page
+#------------------------------------------------------------------------------
+ALLOCATION_ATTRIBUTE_VIEW_LIST = ENV.list('ALLOCATION_ATTRIBUTE_VIEW_LIST', default=['slurm_account_name', 'freeipa_group', 'Cloud Account Name', ])
 
 #------------------------------------------------------------------------------
 # Enable invoice functionality
@@ -85,6 +92,6 @@ Phone: (xxx) xxx-xxx
 """
 
 ACCOUNT_CREATION_TEXT = '''University faculty can submit a help ticket to request an account.
-Please see <a href="#">instructions on our website</a>. Staff, students, and external collaborators must 
+Please see <a href="#">instructions on our website</a>. Staff, students, and external collaborators must
 request an account through a university faculty member.
 '''

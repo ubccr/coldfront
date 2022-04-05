@@ -43,7 +43,7 @@ SLURM_SACCTMGR_PATH='/usr/bin/sacctmgr'
 To generate Slurm association data from ColdFront run the following command:
 
 ```
-    $ python manage.py slurm_dump -o /output_dir
+    $ coldfront slurm_dump -o /output_dir
 ```
 
 You can then load this file into Slurm with the following command:
@@ -75,7 +75,7 @@ To check the consistency between ColdFront and Slurm run the following command:
 
 ```
     $ sacctmgr dump file=/output_dir/tux.cfg
-    $ python manage.py slurm_check -i /output_dir/tux.cfg
+    $ coldfront slurm_check -i /output_dir/tux.cfg
 ```
 
 This will process the output of sacctmgr dump flat file and compare to active

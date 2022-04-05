@@ -1,4 +1,5 @@
 from datetime import date
+from coldfront.core.user.models import UserProfile
 from django import forms
 from django.core.exceptions import ValidationError
 from django.forms.widgets import RadioSelect
@@ -9,6 +10,7 @@ from django.utils.module_loading import import_string
 
 from coldfront.core.allocation.models import (AllocationAccount,
                                               AllocationAttributeType,
+                                              AllocationAttribute,
                                               AllocationStatusChoice)
 from coldfront.core.allocation.utils import get_user_resources
 from coldfront.core.project.models import Project
@@ -22,6 +24,8 @@ from crispy_forms.bootstrap import InlineRadios, FormActions, PrependedText
 
 ALLOCATION_ACCOUNT_ENABLED = import_from_settings(
     'ALLOCATION_ACCOUNT_ENABLED', False)
+ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS = import_from_settings(
+    'ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS', [])
 
 
 class AllocationForm(forms.Form):
@@ -156,14 +160,15 @@ class AllocationForm(forms.Form):
         self.fields['project_directory_name'].help_text = 'Must be alphanumeric and not exceed 10 characters in length'
         self.fields['data_manager'].help_text = 'Must be a project Manager. Only this user can add and remove users from this resource. They will automatically be added to the resource.'
 
+        user_profile = UserProfile.objects.get(user=request_user)
+        self.fields['department_full_name'].initial = user_profile.department
+        self.fields['first_name'].initial = user_profile.user.first_name
+        self.fields['last_name'].initial = user_profile.user.last_name
+
         if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
             from coldfront.plugins.ldap_user_info.utils import get_user_info
-            attributes = get_user_info(request_user.username, ['department', 'division', 'ou', 'givenName', 'sn', 'mail'])
-
-            self.fields['department_full_name'].initial = attributes['department'][0]
+            attributes = get_user_info(request_user.username, ['division', 'ou', 'mail'])
             self.fields['department_short_name'].initial = attributes['division'][0]
-            self.fields['first_name'].initial = attributes['givenName'][0]
-            self.fields['last_name'].initial = attributes['sn'][0]
             self.fields['campus_affiliation'].initial = attributes['ou'][0]
             self.fields['email'].initial = attributes['mail'][0]
 
@@ -452,6 +457,8 @@ class AllocationUpdateForm(forms.Form):
     description = forms.CharField(max_length=512,
                                   label='Description',
                                   required=False)
+    is_locked = forms.BooleanField(required=False)
+    is_changeable = forms.BooleanField(required=False)
 
     def clean(self):
         cleaned_data = super().clean()
@@ -587,3 +594,75 @@ class AllocationAccountForm(forms.ModelForm):
     class Meta:
         model = AllocationAccount
         fields = ['name', ]
+
+
+class AllocationAttributeChangeForm(forms.Form):
+    pk = forms.IntegerField(required=False, disabled=True)
+    name = forms.CharField(max_length=150, required=False, disabled=True)
+    value = forms.CharField(max_length=150, required=False, disabled=True)
+    new_value = forms.CharField(max_length=150, required=False, disabled=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['pk'].widget = forms.HiddenInput()
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        if cleaned_data.get('new_value') != "":
+            allocation_attribute = AllocationAttribute.objects.get(pk=cleaned_data.get('pk'))
+            allocation_attribute.value = cleaned_data.get('new_value')
+            allocation_attribute.clean()
+
+
+class AllocationAttributeUpdateForm(forms.Form):
+    change_pk = forms.IntegerField(required=False, disabled=True)
+    attribute_pk = forms.IntegerField(required=False, disabled=True)
+    name = forms.CharField(max_length=150, required=False, disabled=True)
+    value = forms.CharField(max_length=150, required=False, disabled=True)
+    new_value = forms.CharField(max_length=150, required=False, disabled=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['change_pk'].widget = forms.HiddenInput()
+        self.fields['attribute_pk'].widget = forms.HiddenInput()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        allocation_attribute = AllocationAttribute.objects.get(pk=cleaned_data.get('attribute_pk'))
+
+        allocation_attribute.value = cleaned_data.get('new_value')
+        allocation_attribute.clean()
+
+
+class AllocationChangeForm(forms.Form):
+    EXTENSION_CHOICES = [
+        (0, "No Extension")
+    ]
+    for choice in ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS:
+        EXTENSION_CHOICES.append((choice, "{} days".format(choice)))
+
+    end_date_extension = forms.TypedChoiceField(
+        label='Request End Date Extension',
+        choices = EXTENSION_CHOICES,
+        coerce=int,
+        required=False,
+        empty_value=0,)
+    justification = forms.CharField(
+        label='Justification for Changes',
+        widget=forms.Textarea,
+        required=True,
+        help_text='Justification for requesting this allocation change request.')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+class AllocationChangeNoteForm(forms.Form):
+        notes = forms.CharField(
+            max_length=512, 
+            label='Notes', 
+            required=False, 
+            widget=forms.Textarea,
+            help_text="Leave any feedback about the allocation change request.")
+

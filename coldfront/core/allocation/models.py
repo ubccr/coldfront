@@ -13,14 +13,17 @@ from simple_history.models import HistoricalRecords
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import import_from_settings
+import coldfront.core.attribute_expansion as attribute_expansion
 
 logger = logging.getLogger(__name__)
 
-
+ALLOCATION_ATTRIBUTE_VIEW_LIST = import_from_settings(
+    'ALLOCATION_ATTRIBUTE_VIEW_LIST', [])
 ALLOCATION_FUNCS_ON_EXPIRE = import_from_settings(
     'ALLOCATION_FUNCS_ON_EXPIRE', [])
-SLURM_ACCOUNT_ATTRIBUTE_NAME = import_from_settings(
-    'SLURM_ACCOUNT_ATTRIBUTE_NAME', 'slurm_account_name')
+ALLOCATION_RESOURCE_ORDERING = import_from_settings(
+    'ALLOCATION_RESOURCE_ORDERING',
+    ['-is_allocatable', 'name'])
 
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 if EMAIL_ENABLED:
@@ -157,6 +160,7 @@ class Allocation(TimeStampedModel):
     justification = models.TextField()
     description = models.CharField(max_length=512, blank=True, null=True)
     is_locked = models.BooleanField(default=False)
+    is_changeable = models.BooleanField(default=False)
     history = HistoricalRecords()
 
     class Meta:
@@ -211,8 +215,7 @@ class Allocation(TimeStampedModel):
     def get_information(self):
         html_string = ''
         for attribute in self.allocationattribute_set.all():
-
-            if attribute.allocation_attribute_type.name in [SLURM_ACCOUNT_ATTRIBUTE_NAME, ]:
+            if attribute.allocation_attribute_type.name in ALLOCATION_ATTRIBUTE_VIEW_LIST:
                 html_string += '%s: %s <br>' % (
                     attribute.allocation_attribute_type.name, attribute.value)
 
@@ -223,6 +226,10 @@ class Allocation(TimeStampedModel):
                 except ValueError:
                     percent = 'Invalid Value'
                     logger.error("Allocation attribute '%s' is not an int but has a usage",
+                                 attribute.allocation_attribute_type.name)
+                except ZeroDivisionError:
+                    percent = 100
+                    logger.error("Allocation attribute '%s' == 0 but has a usage",
                                  attribute.allocation_attribute_type.name)
 
                 string = '{}: {}/{} ({} %) <br>'.format(
@@ -237,20 +244,57 @@ class Allocation(TimeStampedModel):
 
     @property
     def get_resources_as_string(self):
-        return ', '.join([ele.name for ele in self.resources.all().order_by('-is_allocatable')])
+        return ', '.join([ele.name for ele in self.resources.all().order_by(
+            *ALLOCATION_RESOURCE_ORDERING)])
+
+    @property
+    def get_resources_as_list(self):
+        return [ele for ele in self.resources.all().order_by('-is_allocatable')]
 
     @property
     def get_parent_resource(self):
         if self.resources.count() == 1:
             return self.resources.first()
         else:
-            return self.resources.filter(is_allocatable=True).first()
+            parent = self.resources.order_by(
+                *ALLOCATION_RESOURCE_ORDERING).first()
+            if parent:
+                return parent
+            # Fallback
+            return self.resources.first()
 
-    def get_attribute(self, name):
+    def get_attribute(self, name, expand=True, typed=True,
+        extra_allocations=[]):
+        """Return the value of the first attribute found with specified name
+
+        This will return the value of the first attribute found for this
+        allocation with the specified name.
+
+        If expand is True (the default), we will return the expanded_value()
+        method of the attribute, which will expand attributes/parameters in
+        the attribute value for attributes with a base type of 'Attribute
+        Expanded Text'.  If the attribute is not of that type, or expand is
+        false, returns the value attribute/data member (i.e. the raw, unexpanded
+        value).
+
+        Extra_allocations is a list of Allocations which, if expand is True,
+        will have their attributes available for referencing.
+
+        If typed is True (the default), we will attempt to convert the value
+        returned to the appropriate python type (int/float/str) based on the
+        base AttributeType name.
+        """
         attr = self.allocationattribute_set.filter(
             allocation_attribute_type__name=name).first()
         if attr:
-            return attr.value
+            if expand:
+                return attr.expanded_value(
+                    extra_allocations=extra_allocations, typed=typed)
+            else:
+                if typed:
+                    return attr.typed_value()
+                else:
+                    return attr.value
         return None
 
     def set_usage(self, name, value):
@@ -271,10 +315,33 @@ class Allocation(TimeStampedModel):
         usage.value = value
         usage.save()
 
-    def get_attribute_list(self, name):
+    def get_attribute_list(self, name, expand=True, typed=True,
+        extra_allocations=[]):
+        """Return a list of values of the attributes found with specified name
+
+        This will return a list consisting of the values of the all attributes
+        found for this allocation with the specified name.
+
+        If expand is True (the default), we will return the result of the
+        expanded_value() method for each attribute, which will expand 
+        attributes/parameters in the attribute value for attributes with a base 
+        type of 'Attribute Expanded Text'.  If the attribute is not of that 
+        type, or expand is false, returns the value attribute/data member (i.e. 
+        the raw, unexpanded value).
+
+        Extra_allocations is a list of Allocations which, if expand is True,
+        will have their attributes available for referencing.
+        """
         attr = self.allocationattribute_set.filter(
             allocation_attribute_type__name=name).all()
-        return [a.value for a in attr]
+        if expand:
+            return [a.expanded_value(typed=typed,
+                extra_allocations=extra_allocations) for a in attr]
+        else:
+            if typed:
+                return [a.typed_value() for a in attr]
+            else:
+                return [a.value for a in attr]
 
     def check_user_account_exists_on_resource(self, username):
         resource = self.get_parent_resource.get_attribute('check_user_account')
@@ -353,6 +420,7 @@ class AllocationAttributeType(TimeStampedModel):
     is_required = models.BooleanField(default=False)
     is_unique = models.BooleanField(default=False)
     is_private = models.BooleanField(default=True)
+    is_changeable = models.BooleanField(default=False)
     history = HistoricalRecords()
 
     def __str__(self):
@@ -385,23 +453,97 @@ class AllocationAttribute(TimeStampedModel):
 
         if expected_value_type == "Int" and not isinstance(literal_eval(self.value), int):
             raise ValidationError(
-                'Invalid Value "%s". Value must be an integer.' % (self.value))
+                'Invalid Value "%s" for "%s". Value must be an integer.' % (self.value, self.allocation_attribute_type.name))
         elif expected_value_type == "Float" and not (isinstance(literal_eval(self.value), float) or isinstance(literal_eval(self.value), int)):
             raise ValidationError(
-                'Invalid Value "%s". Value must be a float.' % (self.value))
+                'Invalid Value "%s" for "%s". Value must be a float.' % (self.value, self.allocation_attribute_type.name))
         elif expected_value_type == "Yes/No" and self.value not in ["Yes", "No"]:
             raise ValidationError(
-                'Invalid Value "%s". Allowed inputs are "Yes" or "No".' % (self.value))
+                'Invalid Value "%s" for "%s". Allowed inputs are "Yes" or "No".' % (self.value, self.allocation_attribute_type.name))
         elif expected_value_type == "Date":
             try:
                 datetime.datetime.strptime(self.value.strip(), "%Y-%m-%d")
             except ValueError:
                 raise ValidationError(
-                    'Invalid Value "%s". Date must be in format YYYY-MM-DD' % (self.value))
+                    'Invalid Value "%s" for "%s". Date must be in format YYYY-MM-DD' % (self.value, self.allocation_attribute_type.name))
 
     def __str__(self):
         return '%s' % (self.allocation_attribute_type.name)
 
+    def typed_value(self):
+        """Returns the value of the attribute, with proper type.
+
+        For attributes with Int or Float types, we return the value of
+        the attribute coerced into an Int or Float.  If the coercion
+        fails, we log a warning and return the string.
+
+        For all other attribute types, we return the value as a string.
+
+        This is needed when computing values for expanded_value()
+        """
+        raw_value = self.value
+        atype_name = self.allocation_attribute_type.attribute_type.name
+        return attribute_expansion.convert_type(
+            value=raw_value, type_name=atype_name)
+                
+    
+    def expanded_value(self, extra_allocations=[], typed=True):
+        """Returns the value of the attribute, after attribute expansion.
+
+        For attributes with attribute type of  'Attribute Expanded Text' we
+        look for an attribute with same name suffixed with '_attriblist' (this
+        should be either an AllocationAttribute of the Allocation associated
+        with this attribute  or a ResourceAttribute of a Resource of the 
+        Allocation associated with this AllocationAttribute).  
+        If the attriblist attribute is found, we use
+        it to generate a dictionary to use to expand the attribute value,
+        and the expanded value is returned.  
+        If extra_allocations is given, it should be a list of Allocations and
+        the attriblist can reference attributes for allocations in the
+        extra_allocations list (as well as in the Allocation associated with
+        this AllocationAttribute or Resources associated with that allocation)
+
+        If typed is True (the default), we use typed to convert the returned
+        value to the expected (int, float, str) python data type according to
+        the AttributeType of the AllocationAttributeType (unrecognized values
+        not converted, so will return str).
+
+        If the expansion fails, or if no attriblist attribute is found, or if
+        the attribute type is not 'Attribute Expanded Text', we just return
+        the raw value.
+        """
+        raw_value = self.value
+        if typed:
+            # Try to convert to python type as per AttributeType
+            raw_value = self.typed_value()
+
+        if not attribute_expansion.is_expandable_type(
+            self.allocation_attribute_type.attribute_type):
+            # We are not an expandable type, return raw_value
+            return raw_value
+
+        allocs = [ self.allocation ] + extra_allocations
+        resources = list(self.allocation.resources.all())
+        attrib_name = self.allocation_attribute_type.name
+
+        attriblist = attribute_expansion.get_attriblist_str(
+            attribute_name = attrib_name,
+            resources = resources,
+            allocations = allocs)
+
+        if not attriblist:
+            # We do not have an attriblist, return raw_value
+            return raw_value
+
+        expanded = attribute_expansion.expand_attribute(
+            raw_value = raw_value,
+            attribute_name = attrib_name,
+            attriblist_string = attriblist,
+            resources = resources,
+            allocations = allocs)
+        return expanded
+
+            
 
 class AllocationAttributeUsage(TimeStampedModel):
     """ AllocationAttributeUsage. """
@@ -461,6 +603,16 @@ class AllocationUserRequestStatusChoice(TimeStampedModel):
         ordering = ['name', ]
 
 
+class AllocationChangeStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]
+
+
 class AllocationUserRequest(TimeStampedModel):
     requestor_user = models.ForeignKey(User, on_delete=models.CASCADE)
     allocation_user = models.ForeignKey(AllocationUser, on_delete=models.CASCADE)
@@ -470,3 +622,34 @@ class AllocationUserRequest(TimeStampedModel):
 
     def __str__(self):
         return '{} ({})'.format(self.allocation_user.user.username, self.allocation_user_status)
+
+
+class AllocationChangeRequest(TimeStampedModel):
+    allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE,)
+    status = models.ForeignKey(
+        AllocationChangeStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
+    end_date_extension = models.IntegerField(blank=True, null=True)
+    justification = models.TextField()
+    notes = models.CharField(max_length=512, blank=True, null=True)
+    history = HistoricalRecords()
+
+    @property
+    def get_parent_resource(self):
+        if self.allocation.resources.count() == 1:
+            return self.allocation.resources.first()
+        else:
+            return self.allocation.resources.filter(is_allocatable=True).first()
+
+    def __str__(self):
+        return "%s (%s)" % (self.get_parent_resource.name, self.allocation.project.pi)
+
+
+class AllocationAttributeChangeRequest(TimeStampedModel):
+    allocation_change_request = models.ForeignKey(AllocationChangeRequest, on_delete=models.CASCADE)
+    allocation_attribute = models.ForeignKey(AllocationAttribute, on_delete=models.CASCADE)
+    new_value = models.CharField(max_length=128)
+    history = HistoricalRecords()
+
+    def __str__(self):
+        return '%s' % (self.allocation_attribute.allocation_attribute_type.name)
+

@@ -83,6 +83,9 @@ Request New Allocation
   var resource_form = {{ resource_form | safe }}
   var request_user_username = {{ request_user_username | safe }}
 
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-project-menu").addClass("active");
+
   $(document).ready(function () {
     moveRadioSelectErrors();
 
@@ -110,25 +113,15 @@ Request New Allocation
     )
 
     // By default we will have the use_indefinitely div placed just after the end_date label on the form.
-    // Save the value since it will be deleted when we change the label.
-    var use_indefinitely = $('#id_use_indefinitely').is(':checked');
     $('#div_id_end_date label').after( function () {
       var label = $('label[for="id_use_indefinitely"]');
-      // Changing the label removes the <input> so we need to include that in our change.
-      $('input[type=checkbox][name=use_indefinitely]:checked').val();
-      label.html(
-        '<input id="id_use_indefinitely"\
-          class="checkboxinput form-check-input"\
-          type="checkbox" name="use_indefinitely"\
-          >\n\
-          This storage space will be used indefinitely.'
-      );
+      label.html('This storage space will be used indefinitely.');
+
       // Clone the use_indefinitely div so we can delete the old one so there are no duplicates.
       var use_indefinitely_clone = $('#div_id_use_indefinitely').clone()
       $('#div_id_use_indefinitely').remove()
       return use_indefinitely_clone
     });
-
     $('#id_use_indefinitely').change(function (e) {
       if (e.target.checked) {
         $('#id_end_date').prop('disabled', true);
@@ -140,8 +133,7 @@ Request New Allocation
       }
     });
 
-    $('#id_use_indefinitely').prop('checked', use_indefinitely);
-    if (use_indefinitely) {
+    if ($('#id_use_indefinitely').is(':checked')) {
       $('#id_end_date').prop('disabled', true);
       $('#id_end_date').val('')
     }
@@ -248,13 +240,7 @@ Request New Allocation
     // Set up grand challenge checkbox and options for the priority boost form.
     // Save the value since it will be deleted when we change checkbox the label.
     var is_grand_challenge = $('#id_is_grand_challenge').is(':checked');
-    $('label[for="id_is_grand_challenge"]').html(
-      '<input id="id_is_grand_challenge"\
-        class="checkboxinput form-check-input"\
-        type="checkbox" name="is_grand_challenge"\
-        >\n\
-        My project is part of an IU Grand Challenge program.'
-    );
+    $('label[for="id_is_grand_challenge"]').html('My project is part of an IU Grand Challenge program.');
     $('label[for="id_grand_challenge_program"]').html(
       '<strong>Select your Grand Challenge program*</strong>'
     )
@@ -316,7 +302,15 @@ Request New Allocation
     label = $('label[for="id_total_cost"]')
     label.html('<strong>Total Cost*</strong>')
 
-    $('<br><input id="selectAll" class="check" type="checkbox"> <strong>Select All Users</strong>').insertAfter($("#div_id_users > label"))
+    $(
+      '<br>\
+       <div class="custom-control custom-checkbox">\
+       <input id="selectAll" class="custom-control-input" type="checkbox">\
+       <label class="custom-control-label" for="selectAll">\
+       <strong>Select All Users</strong>\
+       </label>\
+       </div>'
+    ).insertAfter($("#div_id_users > label"))
     $("#id_resource").trigger('change');
 
     $("#selectAll").click(function () {
@@ -332,25 +326,9 @@ Request New Allocation
   });
 
   function moveRadioSelectErrors() {
-    // Radio select validation errors need to be moved below their fields.
-    var radioSelectFields = [
-      'for_coursework',
-      'leverage_multiple_gpus',
-      'dl_workflow',
-      'store_ephi',
-      'system',
-      'phi_association',
-      'access_level',
-      'users',
-    ];
-    for (var i = 0; i < radioSelectFields.length; i++) {
-      var invalidRadioSelectField = $('#error_1_id_' + radioSelectFields[i]);
-      if (invalidRadioSelectField.length) {
-        $('#div_id_' + radioSelectFields[i]).append(
-          invalidRadioSelectField
-        )
-      }
-    }
+    // Remove error indentation.
+    radioErrors = $('div[class^="w-100"]')
+    radioErrors.removeClass('custom-control')
   }
 
   function enableUserSelection() {
@@ -461,6 +439,8 @@ Request New Allocation
 
     if (resource_name === 'Slate-Project') {
       checkDataManager();
+    } else {
+      enableUserSelection();
     }
 
     if (resource_name === 'Carbonate DL') {
@@ -536,7 +516,7 @@ Request New Allocation
       id = 'id_' + [field_key];
       if (type === 'radio') {
         if (label[resource_id]) {
-          var html_label = $('label[for="' + id + '"]')
+          var html_label = $('label[for="' + id + '_0"][class=""]')
           html_label.html(label[resource_id]);
             // Do not reset the value if the user has already entered one (relevent if the form errors
             // after submission because not all the required values were given).
@@ -550,23 +530,11 @@ Request New Allocation
         continue
       } else if (type === 'checkbox') {
         if (label[resource_id]) {
-          // Changing the label also deletes the value so we need to save it beforehand.
-          value = $('input[type=checkbox][name=' + field_key + ']:checked').val();
-
           var html_label = $('label[for="' + id + '"]')
-          // Changing the label removes the <input> so we need to include that in our change.
-          html_label.html(
-            '<input id="' + id + '"\
-              class="checkboxinput form-check-input"\
-              type="checkbox" name="' + field_key + '"\
-              >\n'
-            + label[resource_id]
-          );
-          if (value === undefined){
+          html_label.html(label[resource_id]);
+          if ($('input[type=checkbox][name=' + field_key + ']:checked').val() === undefined){
               $('input[type=checkbox][name=' + field_key + ']').val([field[resource_id]]);
-            } else {
-              $('input[type=checkbox][name=' + field_key + ']').val([value]);
-            }
+          }
           $('#div_' + id).show();
         } else {
           $('#div_' + id).hide();

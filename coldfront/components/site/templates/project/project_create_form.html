@@ -18,6 +18,9 @@ Create Project
 </form>
 
 <script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-project-menu").addClass("active");
+
   $(document).ready(function() {
     $('#id_field_of_science').select2();
   });

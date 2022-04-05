@@ -10,3 +10,4 @@ recursive-include coldfront/core/research_output/templates *
 recursive-include coldfront/core/publication/templates *
 recursive-include coldfront/core/grant/templates *
 recursive-include coldfront/core/user/templates *
+recursive-include coldfront/core/resource/templates *

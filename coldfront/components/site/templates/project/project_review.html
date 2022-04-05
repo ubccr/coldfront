@@ -96,6 +96,9 @@ Review Project
 </form>
 
 <script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-project-menu").addClass("active");
+
   $(document).ready(function () {
     if ($('#id_no_project_updates').is(':checked')) {
       $('#div_id_project_updates').hide();

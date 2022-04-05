@@ -64,6 +64,8 @@ more advanced configuration use `local_settings.py`.
 | SECRET_KEY           | This is used to provide cryptographic signing, and should be set to a unique, unpredictable value. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#secret-key). If you don't provide this one will be generated each time ColdFront starts. |
 | LANGUAGE_CODE        | A string representing the language code. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#language-code)
 | TIME_ZONE            | A string representing the time zone for this installation. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#std:setting-TIME_ZONE) |
+| Q_CLUSTER_RETRY    | The number of seconds Django Q broker will wait for a cluster to finish a task. [See here](https://django-q.readthedocs.io/en/latest/configure.html#retry) |
+| Q_CLUSTER_TIMEOUT    | The number of seconds a Django Q worker is allowed to spend on a task before it’s terminated. IMPORTANT NOTE: Q_CLUSTER_TIMEOUT must be less than Q_CLUSTER_RETRY. [See here](https://django-q.readthedocs.io/en/latest/configure.html#timeout) |
 
 ### Template settings
 
@@ -86,7 +88,10 @@ The following settings are ColdFront specific settings related to the core appli
 | PROJECT_ENABLE_PROJECT_REVIEW          | Enable or disable project reviews. Default True|
 | ALLOCATION_ENABLE_ALLOCATION_RENEWAL   | Enable or disable allocation renewals. Default True |
 | ALLOCATION_DEFAULT_ALLOCATION_LENGTH   | Default number of days an allocation is active for. Default 365 |
+| ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT | Enable or disable allocation change requests. Default True |
+| ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS | List of days users can request extensions in an allocation change request. Default 30,60,90 |
 | ALLOCATION_ACCOUNT_ENABLED             | Allow user to select account name for allocation. Default False |
+| ALLOCATION_RESOURCE_ORDERING           | Controls the ordering of parent resources for an allocation (if allocation has multiple resources).  Should be a list of field names suitable for Django QuerySet order_by method.  Default is ['-is_allocatable', 'name']; i.e. prefer Resources with is_allocatable field set, ordered by name of the Resource.|
 | INVOICE_ENABLED                        | Enable or disable invoices. Default True       |
 | ONDEMAND_URL                           | The URL to your Open OnDemand installation     |
 | LOGIN_FAIL_MESSAGE                     | Custom message when user fails to login. Here you can paint a custom link to your user account portal |
@@ -95,7 +100,7 @@ The following settings are ColdFront specific settings related to the core appli
 
 ### Database settings
 
-The following settings configure the databse server to use: 
+The following settings configure the database server to use, if not set will default to using SQLite:
 
 | Name                 | Description                          |
 | :--------------------|:-------------------------------------|
@@ -105,9 +110,10 @@ Examples:
 
 ```
 DB_URL=mysql://user:password@127.0.0.1:3306/database
-DB_URL=psql://user:password@127.0.0.1:8458/database
+DB_URL=psql://user:password@127.0.0.1:5432/database
 DB_URL=sqlite:////usr/share/coldfront/coldfront.db
 ```
+
 
 ### Email settings
 
@@ -126,7 +132,7 @@ disabled:
 | EMAIL_SUBJECT_PREFIX            | Prefix to add to subject line             |
 | EMAIL_ADMIN_LIST                | List of admin email addresses.            |
 | EMAIL_TICKET_SYSTEM_ADDRESS     | Email address of ticketing system         |
-| EMAIL_DIRECTOR_EMAIL_ADDRESS    | Email address for director                | 
+| EMAIL_DIRECTOR_EMAIL_ADDRESS    | Email address for director                |
 | EMAIL_PROJECT_REVIEW_CONTACT    | Email address of review contact           |
 | EMAIL_DEVELOPMENT_EMAIL_LIST    | List of emails to send when in debug mode |
 | EMAIL_OPT_OUT_INSTRUCTION_URL   | URL of article regarding opt out          |
@@ -134,11 +140,12 @@ disabled:
 | EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS   | List of days to send email notifications for expiring allocations. Default 7,14,30 |
 
 ### Plugin settings
+For more info on [ColdFront plugins](plugin.md) (Django apps)
 
 #### LDAP Auth
 
 !!! warning "Required"
-    LDAP authentication backend requires `ldap3` and `django_auth_ldap`. 
+    LDAP authentication backend requires `ldap3` and `django_auth_ldap`.
     ```
     $ pip install ldap3 django_auth_ldap
     ```
@@ -230,9 +237,9 @@ authentication. This allows users who haven't yet logged into ColdFront but
 exist in your backend LDAP to show up in the ColdFront user search.
 
 !!! warning "Required"
-    LDAP User Search requires `ldap3`. 
+    LDAP User Search requires `ldap3`.
     ```
-    $ pip install ldap3 
+    $ pip install ldap3
     ```
 
 | Name                        | Description                             |
@@ -242,6 +249,8 @@ exist in your backend LDAP to show up in the ColdFront user search.
 | LDAP_USER_SEARCH_BIND_DN    | The distinguished name to use when binding to the LDAP server      |
 | LDAP_USER_SEARCH_BIND_PASSWORD  | The password to use LDAP_USER_SEARCH_BIND_DN   |
 | LDAP_USER_SEARCH_BASE       | User search base dn                     |
+| LDAP_USER_SEARCH_CONNECT_TIMEOUT  | Time in seconds to wait before timing out. Default 2.5  |
+| LDAP_USER_SEARCH_USE_SSL  | Whether to use ssl when connecting to LDAP server. Default True |
 
 ## Advanced Configuration
 
@@ -272,7 +281,10 @@ DATABASES = {
 The default HTML templates and css can be easily customized to add your own
 site specific branding or even modify the functionality of ColdFront. To
 override the stock templates in ColdFront, create a directory and add your
-custom templates. Then set the following environment variable:
+custom templates. By default, ColdFront will look in
+`/usr/share/coldfront/site/templates` and `/usr/share/coldfront/site/static`.
+If you'd like to use a different directory then be sure to set the following
+environment variable:
 
 ```
 SITE_TEMPLATES=/path/to/your/templates
@@ -286,8 +298,7 @@ environment variable:
 SITE_STATIC=/path/to/static/files
 ```
 
-As a simple example, to change the default background color from blue to black.
-Create a common.css with the following styles and set the environment variable:
+As a simple example, to change the default background color from blue to black, create a common.css file with the following styles and set the SITE_STATIC environment variable when starting ColdFront:
 
 ```
 $ mkdir -p site/static/common/css
@@ -297,5 +308,5 @@ $ tee site/static/common/css/common.css <<EOF
 }
 EOF
 
-$ DEBUG=True SITE_STATIC=site coldfront runserver
+$ DEBUG=True SITE_STATIC=site/static coldfront runserver
 ```

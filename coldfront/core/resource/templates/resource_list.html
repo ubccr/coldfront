@@ -1,0 +1,125 @@
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Resource List
+{% endblock %}
+
+
+{% block content %}
+<h2>Resources</h2>
+<hr>
+
+{% if expand_accordion == "show" or resource_list %}
+  <div class="mb-3" id="accordion">
+    <div class="card">
+      <div class="card-header">
+        <a id="expand_button" role="button" class="card-link " data-toggle="collapse" href="#collapseOne">
+          <i class="fas fa-filter" aria-hidden="true"></i> Filter
+          <i id="plus_minus" class="fas {{expand_accordion|get_icon}} float-right"></i>
+        </a>
+      </div>
+      <div id="collapseOne" class="collapse {{expand_accordion}}" data-parent="#accordion">
+        <div class="card-body">
+          <form id="filter_form" method="GET" action="{% url 'resource-list' %}" autocomplete="off">
+            {{ resource_search_form|crispy }}
+            <input type="submit" class="btn btn-primary" value="Search">
+            <button id="form_reset_button" type="button" class="btn btn-secondary">Reset</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  <hr>
+{% endif %}
+
+{% if resource_list %}
+  <strong>Resource{{resources_count|pluralize}}: {{resources_count}}</strong>
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th scope="col" class="text-nowrap">
+            ID
+            <a href="?order_by=id&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort ID asc</span></a>
+            <a href="?order_by=id&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort ID desc</span></a>
+          </th>
+          <th scope="col" class="text-nowrap">
+            Resource Name
+            <a href="?order_by=name&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Resource Name asc</span></a>
+            <a href="?order_by=name&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Resource Name desc</span></a>
+          </th>
+          <th scope="col" class="text-nowrap">
+            Parent Resource
+            <a href="?order_by=parent_resource&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Parent Resource asc</span></a>
+            <a href="?order_by=parent_resource&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Parent Resource desc</span></a>
+          </th>
+          <th scope="col" class="text-nowrap">
+            Resource Type
+            <a href="?order_by=resource_type__name&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Resource Type asc</span></a>
+            <a href="?order_by=resource_type__name&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Resource Type desc</span></a>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for resource in resource_list %}
+          <tr>
+            <td><a href="/resource/{{resource.id}}/">{{ resource.id }}</a></td>
+            <td>{{ resource }}</td>
+            <td>{{ resource.parent_resource }}</td>
+            <td>{{ resource.resource_type.name }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if is_paginated %} Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+      <ul class="pagination float-right mr-3">
+        {% if page_obj.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{filter_parameters_with_order_by}}">Previous</a></li>
+        {% else %}
+          <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{filter_parameters_with_order_by}}">Next</a></li>
+        {% else %}
+          <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
+        {% endif %}
+      </ul>
+    {% endif %}
+  </div>
+{% elif expand_accordion == "show"%}
+  <div class="alert alert-secondary">
+    No search results!
+  </div>
+{% else %}
+  <div class="alert alert-secondary">
+    No resources to display!
+  </div>
+{% endif %}
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-project-menu").addClass("active");
+  $("#navbar-resource").addClass("active");
+
+  $(document).on('click', '#form_reset_button', function () {
+    resetForm($('#filter_form'));
+  });
+
+  $(".datepicker").datepicker();
+
+  function resetForm($form) {
+    $form.find('input:text, input:password, input:file, select, textarea').val('');
+    $form.find('input:radio, input:checkbox').removeAttr('checked').removeAttr('selected');
+  };
+
+  $("#expand_button").click(function () {
+    $('#collapseOne').collapse();
+    icon = $("#plus_minus");
+    icon.toggleClass("fa-plus fa-minus");
+  });
+</script>
+{% endblock %}

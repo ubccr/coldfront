@@ -83,6 +83,9 @@ Project User Detail
 </form>
 
 <script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-project-menu").addClass("active");
+
   $('document').ready(function() {
     if ($("#id_role option:selected").text() == 'Group') {
       $("#id_role option:not(:selected)").prop('disabled', true);

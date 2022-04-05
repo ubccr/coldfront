@@ -71,17 +71,21 @@ Project List
             <a href="?order_by=status&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Status asc</span></a>
             <a href="?order_by=status&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Status desc</span></a>
           </th>
+          <th scope="col" class="text-nowrap">Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for project in project_list %}
           <tr>
-            <td><a href="/project/{{project.id}}/">{{ project.id }}</a></td>
+            <td>{{ project.id }}</td>
             <td>{{ project.pi.username }}</td>
             <td style="text-align: justify; text-justify: inter-word;"><strong>Title: </strong> {{ project.title }}
               <br> <strong>Description: </strong>{{ project.description }}</td>
             <td>{{ project.field_of_science.description }}</td>
             <td>{{ project.status.name }}</td>
+            <td>
+              <a class="btn btn-primary" href="{% url 'project-detail' project.id %}" role="button">Details</a>
+            </td>
           </tr>
         {% endfor %}
       </tbody>
@@ -108,6 +112,10 @@ Project List
 {% endif %}
 
 <script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-project-menu").addClass("active");
+  $("#navbar-project").addClass("active");
+
   $(document).on('click', '#form_reset_button', function() {
     resetForm($('#filter_form'));
   });

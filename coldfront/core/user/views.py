@@ -14,6 +14,7 @@ from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import ListView, TemplateView
+from django.conf import settings
 
 from coldfront.core.project.models import Project, ProjectUser
 from coldfront.core.user.forms import UserSearchForm
@@ -222,6 +223,13 @@ class UserUpgradeAccount(LoginRequiredMixin, UserPassesTestMixin, View):
         if request.user.userprofile.is_pi:
             messages.error(request, 'Your account has already been upgraded')
             return HttpResponseRedirect(reverse('user-profile'))
+
+        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+            from coldfront.plugins.ldap_user_info.utils import get_user_info
+            attributes = get_user_info(request.user.username, ['title'])
+            if attributes['title'][0] == 'group':
+                messages.error(request, 'A group account cannt be a PI')
+                return HttpResponseRedirect(reverse('user-profile'))
 
         return super().dispatch(request, *args, **kwargs)
 

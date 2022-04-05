@@ -5,6 +5,7 @@ import logging
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.decorators import user_passes_test, login_required
 from django.contrib.auth.models import User
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
@@ -154,7 +155,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['research_outputs'] = ResearchOutput.objects.filter(
             project=self.object).order_by('-created')
         context['grants'] = Grant.objects.filter(
-            project=self.object, status__name__in=['Active', 'Pending'])
+            project=self.object, status__name__in=['Active', 'Pending', 'Archived'])
         context['allocations'] = allocations
         context['project_users'] = project_users
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
@@ -588,7 +589,7 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
         if project_obj.status.name in ['Denied', 'Waiting For Admin Approval', 'Review Pending']:
             messages.error(
                 request,
-                'Cannot archive a project with status "{}".'.format(project_obj.status.name)
+                'You cannot archive a project with status "{}".'.format(project_obj.status.name)
             )
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
@@ -624,7 +625,7 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
 class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Project
     template_name_suffix = '_create_form'
-    fields = ['title', 'description', 'slurm_account_name', 'field_of_science', 'type', 'private', ]
+    fields = ['title', 'description', 'slurm_account_name', 'field_of_science', 'type', ]
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -657,6 +658,14 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         return super().form_valid(form)
 
     def form_valid(self, form):
+        slurm_account_name = form.instance.slurm_account_name
+        if slurm_account_name is not None and len(slurm_account_name) > 0:
+            projects = Project.objects.filter(slurm_account_name=slurm_account_name)
+            if len(projects) > 0:
+                form.add_error(None, 'Please fix the errors below')
+                form.add_error('slurm_account_name', 'This slurm account name already exists')
+                return self.form_invalid(form)
+
         project_obj = form.save(commit=False)
         form.instance.pi = self.request.user
         form.instance.status = ProjectStatusChoice.objects.get(name='Waiting For Admin Approval')
@@ -695,18 +704,6 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
             form.instance.end_date = datetime.datetime.today() + datetime.timedelta(
                 days=PROJECT_DEFAULT_PROJECT_LENGTH
             )
-
-        slurm_account_name = form.instance.slurm_account_name
-        if len(slurm_account_name) > 0:
-            if len(slurm_account_name) < 3:
-                form.add_error(None, 'Please fix the errors below')
-                form.add_error('slurm_account_name', 'Must have a minimum length of three characters')
-                return self.form_invalid(form)
-
-            if not slurm_account_name.isalpha():
-                form.add_error(None, 'Please fix the errors below')
-                form.add_error('slurm_account_name', 'Must not contain numbers or special characters')
-                return self.form_invalid(form)
 
         form.instance.max_managers = PROJECT_DEFAULT_MAX_MANAGERS
         project_obj.save()
@@ -794,15 +791,17 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
         form_data = form.cleaned_data
         slurm_account_name = form_data.get('slurm_account_name')
         if slurm_account_name is not None and len(slurm_account_name) > 0:
-            if len(slurm_account_name) < 3:
-                form.add_error(None, 'Please fix the errors below')
-                form.add_error('slurm_account_name', 'Must have a minimum length of three characters')
-                return self.form_invalid(form)
+            projects = Project.objects.filter(slurm_account_name=slurm_account_name)
+            if len(projects) > 0:
+                if len(projects) > 1:
+                    form.add_error(None, 'Please fix the errors below')
+                    form.add_error('slurm_account_name', 'This slurm account name already exists')
+                    return self.form_invalid(form)
 
-            if not slurm_account_name.isalpha():
-                form.add_error(None, 'Please fix the errors below')
-                form.add_error('slurm_account_name', 'Must not contain numbers or special characters')
-                return self.form_invalid(form)
+                if projects[0].pk != project_obj.pk:
+                    form.add_error(None, 'Please fix the errors below')
+                    form.add_error('slurm_account_name', 'This slurm account name already exists')
+                    return self.form_invalid(form)
 
         project_obj.title = form_data.get('title')
         project_obj.description = form_data.get('description')
@@ -814,6 +813,7 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
 
     def get_success_url(self):
         return reverse('project-detail', kwargs={'pk': self.kwargs.get('pk')})
+
 
 class ProjectAddUsersSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'project/project_add_users.html'
@@ -835,7 +835,9 @@ class ProjectAddUsersSearchView(LoginRequiredMixin, UserPassesTestMixin, Templat
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
             messages.error(
-                request, 'You cannot add users to a(n) {} project.'.format(project_obj.status.name))
+                request,
+                'You cannot add users to a project with status "{}".'.format(project_obj.status.name)
+            )
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
@@ -872,7 +874,9 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
             messages.error(
-                request, 'You cannot add users to a(n) {} project.'.format(project_obj.status.name))
+                request,
+                'You cannot add users to a project with status "{}".'.format(project_obj.status.name)
+            )
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
@@ -1008,7 +1012,9 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
             messages.error(
-                request, 'You cannot add users to a(n) {} project.'.format(project_obj.status.name))
+                request,
+                'You cannot add users to a project with status "{}".'.format(project_obj.status.name)
+            )
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
@@ -1242,7 +1248,9 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
             messages.error(
-                request, 'You cannot remove users from a(n) {} project.'.format(project_obj.status.name))
+                request,
+                'You cannot remove users from a project with status "{}".'.format(project_obj.status.name)
+            )
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
@@ -1533,25 +1541,46 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_obj.pk, 'project_user_pk': project_user_obj.pk}))
 
 
+@login_required
 def project_update_email_notification(request):
 
     if request.method == "POST":
         data = request.POST
         project_user_obj = get_object_or_404(
             ProjectUser, pk=data.get('user_project_id'))
-        checked = data.get('checked')
-        if checked == 'true':
-            project_user_obj.enable_notifications = True
-            project_user_obj.save()
-            return HttpResponse('', status=200)
-        elif checked == 'false':
-            project_user_obj.enable_notifications = False
-            project_user_obj.save()
-            return HttpResponse('', status=200)
+
+
+        project_obj = project_user_obj.project
+
+        allowed = False
+        if project_obj.pi == request.user:
+            allowed = True
+
+        if project_obj.projectuser_set.filter(user=request.user, role__name='Manager', status__name='Active').exists():
+            allowed = True
+
+        if project_user_obj.user == request.user:
+            allowed = True
+
+        if request.user.is_superuser:
+            allowed = True
+
+        if allowed == False:
+             return HttpResponse('not allowed', status=403)
         else:
-            return HttpResponse('', status=400)
+            checked = data.get('checked')
+            if checked == 'true':
+                project_user_obj.enable_notifications = True
+                project_user_obj.save()
+                return HttpResponse('checked', status=200)
+            elif checked == 'false':
+                project_user_obj.enable_notifications = False
+                project_user_obj.save()
+                return HttpResponse('unchecked', status=200)
+            else:
+                return HttpResponse('no checked', status=400)
     else:
-        return HttpResponse('', status=400)
+        return HttpResponse('no POST', status=400)
 
 
 class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
