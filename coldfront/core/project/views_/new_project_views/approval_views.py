@@ -80,10 +80,12 @@ class SavioProjectRequestListView(LoginRequiredMixin, TemplateView):
 
         request_list = self.get_queryset()
         user = self.request.user
-        if not (user.is_superuser or user.has_perm('project.view_savioprojectallocationrequest')):
+        permission = 'project.view_savioprojectallocationrequest'
+        if not (user.is_superuser or user.has_perm(permission)):
             args.append(Q(requester=user) | Q(pi=user))
         if self.completed:
-            status__name__in = ['Approved - Complete', 'Denied']
+            status__name__in = [
+                'Approved - Complete', 'Approved - Scheduled', 'Denied']
         else:
             status__name__in = ['Under Review', 'Approved - Processing']
         kwargs['status__name__in'] = status__name__in
