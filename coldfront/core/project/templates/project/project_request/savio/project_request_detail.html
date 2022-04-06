@@ -18,6 +18,8 @@ Savio Project Request Detail
       <span class="badge badge-warning" style="float: right;">{{ status }}</span>
     {% elif status == 'Approved - Processing' %}
       <span class="badge badge-warning" style="float: right;">{{ status }}</span>
+    {% elif status == 'Approved - Scheduled' %}
+      <span class="badge badge-warning" style="float: right;">{{ status }}</span>
     {% elif status == 'Approved - Complete' %}
       <span class="badge badge-success" style="float: right;">{{ status }}</span>
     {% else %}
@@ -65,9 +67,20 @@ Savio Project Request Detail
                     {% endif %}
                   </p>
                 {% elif status == 'Approved - Processing' %}
-                  <p>This request has been approved, and is currently being set up on the cluster.</p>
+                  <p>
+                    This request has been approved, and is currently being set
+                    up on the cluster.
+                  </p>
+                {% elif status == 'Approved - Scheduled' %}
+                  <p>
+                    This request has been approved, and final processing is
+                    scheduled for
+                    {{ savio_request.allocation_period.start_date }}.
+                  </p>
                 {% elif status == 'Approved - Complete' %}
-                  <p>This request has been approved, and is fully set up on the cluster.</p>
+                  <p>
+                    This request has been approved, and is fully processed.
+                  </p>
                 {% else %}
                   <p>This request has been denied. Below are specific details:</p>
                   <p>

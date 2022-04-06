@@ -14,6 +14,18 @@
       <strong>Date Requested: </strong>
       {{ renewal_request.request_time|date:"M. d, Y" }}
     </p>
+    {% if renewal_request.approval_time %}
+      <p class="card-text text-justify">
+        <strong>Date Approved: </strong>
+        {{ renewal_request.approval_time|date:"M. d, Y" }}
+      </p>
+    {% endif %}
+    {% if renewal_request.completion_time %}
+      <p class="card-text text-justify">
+        <strong>Date Completed: </strong>
+        {{ renewal_request.completion_time|date:"M. d, Y" }}
+      </p>
+    {% endif %}
     <p class="card-text text-justify">
       <strong>Requester: </strong>
       {% with requester=renewal_request.requester %}
