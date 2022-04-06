@@ -188,6 +188,7 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
         context['is_allowed_to_manage_request'] = is_superuser
         if is_superuser:
             context['checklist'] = self.__get_checklist()
+        context['is_approved'] = self.request_obj.status.name == 'Approved'
         context['is_checklist_complete'] = self.__is_checklist_complete()
         return context
 
