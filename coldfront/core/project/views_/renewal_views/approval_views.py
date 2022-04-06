@@ -185,6 +185,8 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
             }
             context['support_email'] = settings.CENTER_HELP_EMAIL
 
+        context['has_allocation_period_started'] = \
+            self.__has_request_allocation_period_started()
         context['is_allowed_to_manage_request'] = is_superuser
         if is_superuser:
             context['checklist'] = self.__get_checklist()
@@ -205,9 +207,8 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
             messages.error(request, message)
             return HttpResponseRedirect(self.get_redirect_url(pk))
         try:
-            start_date = self.request_obj.allocation_period.start_date
-            has_allocation_period_started = (
-                start_date <= display_time_zone_current_date())
+            has_allocation_period_started = \
+                self.__has_request_allocation_period_started()
             num_service_units = self.get_service_units_to_allocate()
 
             # Skip sending an approval email if a processing email will be sent
@@ -226,9 +227,9 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
             messages.error(self.request, self.error_message)
         else:
             if not has_allocation_period_started:
-                phrase = (
-                    f'is scheduled for renewal on '
-                    f'{format_date_month_name_day_year(start_date)}.')
+                formatted_start_date = format_date_month_name_day_year(
+                    self.request_obj.allocation_period.start_date)
+                phrase = f'is scheduled for renewal on {formatted_start_date}.'
             else:
                 phrase = 'has been renewed.'
             message = (
@@ -270,6 +271,12 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
                     kwargs={'pk': self.request_obj.pk}),
             ])
         return checklist
+
+    def __has_request_allocation_period_started(self):
+        """Return whether the request's AllocationPeriod has started."""
+        return (
+            self.request_obj.allocation_period.start_date <=
+            display_time_zone_current_date())
 
     def __is_checklist_complete(self):
         """Return whether the request is ready for final submission."""

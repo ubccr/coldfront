@@ -238,6 +238,8 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             }
             context['support_email'] = settings.CENTER_HELP_EMAIL
 
+        context['has_allocation_period_started'] = \
+            self.has_request_allocation_period_started()
         context['setup_status'] = self.get_setup_status()
         context['is_approved_scheduled'] = (
             self.request_obj.status.name == 'Approved - Scheduled')
@@ -269,9 +271,8 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         processing_runner = None
         project = self.request_obj.project
         try:
-            start_date = self.request_obj.allocation_period.start_date
-            has_allocation_period_started = (
-                start_date <= display_time_zone_current_date())
+            has_allocation_period_started = \
+                self.has_request_allocation_period_started()
             num_service_units = self.get_service_units_to_allocate()
 
             # Skip sending an approval email if a processing email will be sent
@@ -291,7 +292,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         else:
             if not has_allocation_period_started:
                 formatted_start_date = format_date_month_name_day_year(
-                    start_date)
+                    self.request_obj.allocation_period.start_date)
                 phrase = (
                     f'are scheduled for activation on {formatted_start_date}. '
                     f'A cluster access request will automatically be made for '
@@ -364,6 +365,12 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
                 if state['memorandum_signed']['status'] == pending:
                     return pending
         return state['setup']['status']
+
+    def has_request_allocation_period_started(self):
+        """Return whether the request's AllocationPeriod has started."""
+        return (
+            self.request_obj.allocation_period.start_date <=
+            display_time_zone_current_date())
 
     def is_checklist_complete(self):
         status_choice = savio_request_state_status(self.request_obj)
