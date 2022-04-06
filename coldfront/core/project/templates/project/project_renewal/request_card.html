@@ -11,8 +11,8 @@
       {{ renewal_request.pk }}
     </p>
     <p class="card-text text-justify">
-      <strong>Date Requested/Last Modified: </strong>
-      {{ renewal_request.modified|date:"M. d, Y" }}
+      <strong>Date Requested: </strong>
+      {{ renewal_request.request_time|date:"M. d, Y" }}
     </p>
     <p class="card-text text-justify">
       <strong>Requester: </strong>
@@ -47,16 +47,18 @@
       {% endwith %}
     </p>
     <p class="card-text text-justify">
+      <strong>Allocation Period: </strong>
+      {{ renewal_request.allocation_period.name }}
+    </p>
+    <p class="card-text text-justify">
       {% if renewal_request.status.name == 'Approved' %}
         <strong>Number of Service Units Approved to be Added: </strong>
-        {{ renewal_request.num_service_units }}
       {% elif renewal_request.status.name == 'Complete' %}
         <strong>Number of Service Units Added: </strong>
-        {{ renewal_request.num_service_units }}
       {% else %}
         <strong>Number of Service Units to Add: </strong>
-        {{ allocation_amount }}
       {% endif %}
+      {{ allocation_amount }}
     </p>
   </div>
 </div>
