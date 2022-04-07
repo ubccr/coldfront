@@ -217,26 +217,6 @@ class SavioProjectExtraFieldsForm(forms.Form):
 
 class SavioProjectICAExtraFieldsForm(SavioProjectExtraFieldsForm):
 
-    SEMESTER_CHOICES = (
-        ('', 'Select one...'),
-        ('Spring', 'Spring'),
-        ('Summer', 'Summer'),
-        ('Fall', 'Fall'),
-    )
-
-    semester = forms.ChoiceField(
-        choices=SEMESTER_CHOICES,
-        help_text=(
-            'Specify the name of the next semester you intend to hold this '
-            'course.'),
-        label='Semester',
-        required=True)
-    year = forms.ChoiceField(
-        help_text=(
-            'Specify the year of the next semester you intend to hold this '
-            'course.'),
-        label='Year',
-        required=True)
     num_students = forms.IntegerField(
         help_text=(
             'Specify the number of students you anticipate having in this '
@@ -329,15 +309,6 @@ class SavioProjectICAExtraFieldsForm(SavioProjectExtraFieldsForm):
                 'min': '1',
                 'max': '10000',
                 'step': '1'}))
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        year = utc_now_offset_aware().year
-        self.fields['year'].choices = (
-            ('', 'Select one...'),
-            (f'{year}', f'{year}'),
-            (f'{year + 1}', f'{year + 1}'),
-        )
 
 
 class SavioProjectRechargeExtraFieldsForm(SavioProjectExtraFieldsForm):

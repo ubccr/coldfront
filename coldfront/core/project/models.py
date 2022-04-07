@@ -347,8 +347,6 @@ def savio_project_request_ica_extra_fields_schema():
     SavioProjectAllocationRequest.extra_fields for Instructional Compute
     Allowance (ICA) projects."""
     return {
-        'semester': '',
-        'year': '',
         'num_students': 0,
         'num_gsis': 0,
         'manager_experience_description': '',
