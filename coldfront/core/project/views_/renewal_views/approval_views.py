@@ -1,4 +1,5 @@
 from coldfront.core.allocation.models import AllocationRenewalRequest
+from coldfront.core.allocation.utils import annotate_queryset_with_allocation_period_not_started_bool
 from coldfront.core.allocation.utils import prorated_allocation_amount
 from coldfront.core.project.forms import ReviewDenyForm
 from coldfront.core.project.forms import ReviewStatusForm
@@ -49,7 +50,8 @@ class AllocationRenewalRequestListView(LoginRequiredMixin, TemplateView):
             order_by = direction + order_by
         else:
             order_by = 'id'
-        return AllocationRenewalRequest.objects.order_by(order_by)
+        return annotate_queryset_with_allocation_period_not_started_bool(
+            AllocationRenewalRequest.objects.order_by(order_by))
 
     def get_context_data(self, **kwargs):
         """Include either pending or completed requests. If the user is

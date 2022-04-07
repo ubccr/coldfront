@@ -292,15 +292,19 @@ class RequestHubView(LoginRequiredMixin,
         if not self.show_all_requests:
             args.append(Q(requester=user) | Q(pi=user))
 
+        pending_status_names = ['Under Review']
         project_renewal_request_pending = \
-            AllocationRenewalRequest.objects.filter(
-                status__name__in=['Under Review'], *args).order_by('modified')
+            annotate_queryset_with_allocation_period_not_started_bool(
+                AllocationRenewalRequest.objects.filter(
+                    status__name__in=pending_status_names, *args
+                ).order_by('request_time'))
 
+        complete_status_names = ['Approved', 'Complete', 'Denied']
         project_renewal_request_complete = \
-            AllocationRenewalRequest.objects.filter(
-                status__name__in=[
-                    'Approved', 'Complete', 'Denied'],
-                *args).order_by('modified')
+            annotate_queryset_with_allocation_period_not_started_bool(
+                AllocationRenewalRequest.objects.filter(
+                    status__name__in=complete_status_names, *args
+                ).order_by('request_time'))
 
         proj_renewal_request_object.num = self.paginators
         proj_renewal_request_object.pending_queryset = \
