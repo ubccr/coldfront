@@ -16,11 +16,12 @@ New Savio Project
 {% if next_period_requestable %}
   <div class="alert alert-info" role="alert">
     <i class="fas fa-info-circle" aria-hidden="true"></i>
-    The allocation year for FCAs and PCAs is ending soon, on TODO. Between now
-    and then, you may request to create a new project for the remainder of the
-    current allocation year, or to create it for the start of the next
-    allocation year. If you choose to create it now, you may complete a
-    separate renewal form once it has been approved and processed.
+    The allocation year for FCAs is ending soon, on
+    {{ CURRENT_ALLOWANCE_YEAR_ALLOCATION_PERIOD.end_date|date:"M. d, Y" }}.
+    Between now and then, you may request to create a new project for the
+    remainder of the current allocation year, or to create it for the start of
+    the next allocation year. If you choose to create it now, you may complete
+    a separate renewal form once it has been approved and processed.
   </div>
 {% endif %}
 
