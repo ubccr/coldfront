@@ -2,7 +2,11 @@ from datetime import datetime
 from decimal import Decimal
 
 from django.conf import settings
+from django.db.models import BooleanField
+from django.db.models import Case
 from django.db.models import Q
+from django.db.models import Value
+from django.db.models import When
 from django.urls import reverse
 from urllib.parse import urljoin
 
@@ -13,6 +17,7 @@ from coldfront.core.allocation.models import (AllocationAttributeType,
                                               AllocationUserStatusChoice)
 from coldfront.core.allocation.signals import allocation_activate_user
 from coldfront.core.resource.models import Resource
+from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import utc_now_offset_aware
 
 import math
@@ -72,6 +77,22 @@ def get_user_resources(user_obj):
 def test_allocation_function(allocation_pk):
     pass
     # print('test_allocation_function', allocation_pk)
+
+
+def annotate_queryset_with_allocation_period_not_started_bool(queryset):
+    """Given a queryset of instances that may have an AllocationPeriod,
+    annotate each instance with a boolean field named
+    'allocation_period_not_started', which is True if it (a) has an
+    AllocationPeriod and (b) that period has not started."""
+    date = display_time_zone_current_date()
+    return queryset.annotate(
+        allocation_period_not_started=Case(
+            When(
+                Q(allocation_period__isnull=False) &
+                Q(allocation_period__start_date__gt=date),
+                then=Value(True)),
+            default=Value(False),
+            output_field=BooleanField()))
 
 
 def get_or_create_active_allocation_user(allocation_obj, user_obj):

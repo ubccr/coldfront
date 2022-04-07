@@ -1,4 +1,5 @@
 from coldfront.core.allocation.models import AllocationRenewalRequest
+from coldfront.core.allocation.utils import annotate_queryset_with_allocation_period_not_started_bool
 from coldfront.core.allocation.utils import prorated_allocation_amount
 from coldfront.core.project.forms import MemorandumSignedForm
 from coldfront.core.project.forms import ReviewDenyForm
@@ -31,7 +32,11 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.mixins import UserPassesTestMixin
+from django.db.models import BooleanField
+from django.db.models import Case
 from django.db.models import Q
+from django.db.models import Value
+from django.db.models import When
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -69,7 +74,8 @@ class SavioProjectRequestListView(LoginRequiredMixin, TemplateView):
         else:
             order_by = 'id'
 
-        return SavioProjectAllocationRequest.objects.order_by(order_by)
+        return annotate_queryset_with_allocation_period_not_started_bool(
+            SavioProjectAllocationRequest.objects.order_by(order_by))
 
     def get_context_data(self, **kwargs):
         """Include either pending or completed requests. If the user is

@@ -27,6 +27,19 @@
       <a href="?order_by=pi&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
     </th>
     <th scope="col">Status</th>
+    <th scope="col">
+      <a
+          href="#"
+          data-toggle="popover"
+          title="Allocation Period Started?"
+          data-trigger="hover"
+          data-content="Green indicates that the request's Allocation Period has already started. Red indicates that it has not.">
+        <span class="accessibility-link-text">
+          Allocation Period Started?
+        </span>
+        <i class="fas fa-info-circle"></i>
+      </a>
+    </th>
   </tr>
   </thead>
   <tbody>
@@ -56,6 +69,15 @@
             <span class="badge badge-danger">{{ status }}</span>
           {% endif %}
         {% endwith %}
+      </td>
+      <td>
+        {% if not savio_project_request.allocation_period_not_started %}
+          <div class="col-1 p-1 badge-success d-inline-block rounded-circle"></div>
+          <span class="accessibility-link-text">Yes</span>
+        {% else %}
+          <div class="col-1 p-1 badge-danger d-inline-block rounded-circle"></div>
+          <span class="accessibility-link-text">No</span>
+        {% endif %}
       </td>
     </tr>
   {% endfor %}

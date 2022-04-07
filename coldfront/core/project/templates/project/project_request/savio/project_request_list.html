@@ -45,6 +45,11 @@ Savio Project {{ request_filter|title }} Requests
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-admin").addClass("active");
   $("#navbar-project-savio-project-requests").addClass("active");
+
+  $(document).ready(function(){
+      $('[data-toggle="popover"]').popover();
+  });
+
 </script>
 
 {% endblock %}
