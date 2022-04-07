@@ -165,7 +165,8 @@ class RequestHubView(LoginRequiredMixin,
 
         project_request_complete = \
             SavioProjectAllocationRequest.objects.filter(
-                status__name__in=['Approved - Complete', 'Denied'],
+                status__name__in=[
+                    'Approved - Complete', 'Approved - Scheduled', 'Denied'],
                 *args).order_by(
                 'modified')
 
@@ -279,7 +280,8 @@ class RequestHubView(LoginRequiredMixin,
         return proj_join_request_object
 
     def get_project_renewal_request(self):
-        """Populates a RequestListItem with data for project renewal requests"""
+        """Populates a RequestListItem with data for project renewal
+        requests"""
         proj_renewal_request_object = RequestListItem()
         user = self.request.user
 
@@ -289,13 +291,13 @@ class RequestHubView(LoginRequiredMixin,
 
         project_renewal_request_pending = \
             AllocationRenewalRequest.objects.filter(
-                status__name__in=['Approved', 'Under Review'], *args).order_by(
-                'modified')
+                status__name__in=['Under Review'], *args).order_by('modified')
 
         project_renewal_request_complete = \
             AllocationRenewalRequest.objects.filter(
-                status__name__in=['Complete', 'Denied'], *args).order_by(
-                'modified')
+                status__name__in=[
+                    'Approved', 'Complete', 'Denied'],
+                *args).order_by('modified')
 
         proj_renewal_request_object.num = self.paginators
         proj_renewal_request_object.pending_queryset = \
