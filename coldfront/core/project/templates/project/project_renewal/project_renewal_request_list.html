@@ -46,7 +46,11 @@ Project Renewal {{ request_filter|title }} Requests %}
 <script>
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-admin").addClass("active");
-  // TODO
+
+  $(document).ready(function(){
+      $('[data-toggle="popover"]').popover();
+  });
+
 </script>
 
 {% endblock %}
