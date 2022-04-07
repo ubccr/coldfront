@@ -106,7 +106,7 @@ Project Renewal Request Detail
   </div>
 </div>
 
-{% if is_allowed_to_manage_request and renewal_request.status.name not in 'Denied,Complete' %}
+{% if is_allowed_to_manage_request and renewal_request.status.name not in 'Approved,Complete,Denied' %}
   <div class="card mb-3">
     <div class="card-header">
       <h2>
@@ -181,11 +181,7 @@ Project Renewal Request Detail
         </table>
       </div>
       <hr>
-      {% if is_approved %}
-        <a href="{% url 'pi-allocation-renewal-request-review-deny' renewal_request.pk %}" class="btn btn-danger" style="float: right;">
-          Deny For Other Reason
-        </a>
-      {% elif is_checklist_complete %}
+      {% if is_checklist_complete %}
         <form action="{% url 'pi-allocation-renewal-request-detail' renewal_request.pk %}" method="post">
           {% csrf_token %}
           <button type="submit" class="btn btn-primary">Submit</button>

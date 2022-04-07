@@ -241,8 +241,6 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         context['has_allocation_period_started'] = \
             self.has_request_allocation_period_started()
         context['setup_status'] = self.get_setup_status()
-        context['is_approved_scheduled'] = (
-            self.request_obj.status.name == 'Approved - Scheduled')
         context['is_checklist_complete'] = self.is_checklist_complete()
 
         context['is_allowed_to_manage_request'] = \
@@ -397,7 +395,7 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         self.set_request_obj(pk)
-        redirect = self.redirect_if_disallowed_status(self.request_obj)
+        redirect = self.redirect_if_disallowed_status(request)
         if redirect is not None:
             return redirect
         return super().dispatch(request, *args, **kwargs)
@@ -469,7 +467,7 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         self.set_request_obj(pk)
-        redirect = self.redirect_if_disallowed_status(self.request_obj)
+        redirect = self.redirect_if_disallowed_status(request)
         if redirect is not None:
             return redirect
         return super().dispatch(request, *args, **kwargs)
@@ -559,7 +557,7 @@ class SavioProjectReviewAllocationDatesView(LoginRequiredMixin,
             messages.error(request, message)
             return HttpResponseRedirect(
                 reverse('savio-project-request-detail', kwargs={'pk': pk}))
-        redirect = self.redirect_if_disallowed_status(self.request_obj)
+        redirect = self.redirect_if_disallowed_status(request)
         if redirect is not None:
             return redirect
         return super().dispatch(request, *args, **kwargs)
@@ -666,7 +664,7 @@ class SavioProjectReviewMemorandumSignedView(LoginRequiredMixin,
             messages.error(request, message)
             return HttpResponseRedirect(
                 reverse('savio-project-request-detail', kwargs={'pk': pk}))
-        redirect = self.redirect_if_disallowed_status(self.request_obj)
+        redirect = self.redirect_if_disallowed_status(request)
         if redirect is not None:
             return redirect
         return super().dispatch(request, *args, **kwargs)
@@ -729,7 +727,7 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         self.set_request_obj(pk)
-        redirect = self.redirect_if_disallowed_status(self.request_obj)
+        redirect = self.redirect_if_disallowed_status(request)
         if redirect is not None:
             return redirect
         return super().dispatch(request, *args, **kwargs)
@@ -818,7 +816,7 @@ class SavioProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         self.set_request_obj(pk)
-        redirect = self.redirect_if_disallowed_status(self.request_obj)
+        redirect = self.redirect_if_disallowed_status(request)
         if redirect is not None:
             return redirect
         return super().dispatch(request, *args, **kwargs)
@@ -1162,7 +1160,7 @@ class VectorProjectReviewEligibilityView(LoginRequiredMixin,
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         self.set_request_obj(pk)
-        redirect = self.redirect_if_disallowed_status(self.request_obj)
+        redirect = self.redirect_if_disallowed_status(request)
         if redirect is not None:
             return redirect
         return super().dispatch(request, *args, **kwargs)
@@ -1227,7 +1225,7 @@ class VectorProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         self.set_request_obj(pk)
-        redirect = self.redirect_if_disallowed_status(self.request_obj)
+        redirect = self.redirect_if_disallowed_status(request)
         if redirect is not None:
             return redirect
         return super().dispatch(request, *args, **kwargs)
