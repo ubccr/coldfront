@@ -21,7 +21,12 @@ Savio Project Request - Allocation Period
   <li>Allocation Type: {{ allocation_type }}</li>
 </ol>
 
-<p>Select the period the project's allocation will be valid under.</p>
+<p>
+  Select the period the project's allocation will be valid under. Requests for
+  a period that has not begun yet may be approved before its start date, but
+  will not be fully processed (i.e., service units will not be available) until
+  then.
+</p>
 
 <form action="" method="post">
   {% csrf_token %}
