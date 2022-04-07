@@ -63,18 +63,6 @@ class ProjectRequestView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get(self, request, *args, **kwargs):
         context = dict()
-        context['savio_requests'] = \
-            SavioProjectAllocationRequest.objects.filter(
-                Q(requester=request.user) | Q(pi=request.user)
-            ).exclude(
-                status__name__in=['Approved - Complete', 'Denied']
-            )
-        context['vector_requests'] = \
-            VectorProjectAllocationRequest.objects.filter(
-                Q(requester=request.user) | Q(pi=request.user)
-            ).exclude(
-                status__name__in=['Approved - Complete', 'Denied']
-            )
         return render(request, self.template_name, context)
 
 
