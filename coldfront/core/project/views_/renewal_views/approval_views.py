@@ -236,6 +236,7 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
             message = (
                 f'PI {self.request_obj.pi.username}\'s allocation {phrase}')
             messages.success(self.request, message)
+            logger.info(message)
 
         return HttpResponseRedirect(
             reverse_lazy('pi-allocation-renewal-pending-request-list'))

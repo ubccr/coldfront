@@ -307,6 +307,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
                     'automatically been made for the requester.')
             message = f'Project {project.name} and its Allocation {phrase}'
             messages.success(self.request, message)
+            self.logger.info(message)
 
         # Send any messages from the runner back to the user.
         if isinstance(processing_runner, SavioProjectProcessingRunner):
