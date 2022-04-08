@@ -1,5 +1,6 @@
 from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.project.models import SavioProjectAllocationRequest
+from coldfront.core.utils.common import add_argparse_dry_run_argument
 from django.core.management import CommandError
 from django.core.management.base import BaseCommand
 
@@ -35,7 +36,7 @@ class Command(BaseCommand):
                 'should generally not be processed because they should '
                 'already have periods set; and (b) requests for ICA projects '
                 'for Summer Sessions.'))
-        self.add_dry_run_argument(auto_parser)
+        add_argparse_dry_run_argument(auto_parser)
 
         manual_parser = subparsers.add_parser(
             'manual',
@@ -48,16 +49,7 @@ class Command(BaseCommand):
             'allocation_period_name',
             help='The name of the AllocationPeriod to set.',
             type=str)
-        self.add_dry_run_argument(manual_parser)
-
-    @staticmethod
-    def add_dry_run_argument(parser):
-        """Add an optional argument to the given parser for displaying
-        updates without performing them."""
-        parser.add_argument(
-            '--dry_run',
-            action='store_true',
-            help='Display updates without performing them.')
+        add_argparse_dry_run_argument(manual_parser)
 
     def handle(self, *args, **options):
         """Call the handler for the provided subcommand."""

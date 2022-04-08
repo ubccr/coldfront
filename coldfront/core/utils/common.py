@@ -63,6 +63,16 @@ def su_login_callback(user):
     return False
 
 
+def add_argparse_dry_run_argument(parser):
+    """Add an optional argument '--dry_run' to the given argparse parser
+    to indicate that the corresponding action will display would-be
+    updates instead of performing them."""
+    parser.add_argument(
+        '--dry_run',
+        action='store_true',
+        help='Display updates without performing them.')
+
+
 def display_time_zone_current_date():
     """Return the current date in settings.DISPLAY_TIME_ZONE."""
     return utc_now_offset_aware().astimezone(
