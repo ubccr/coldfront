@@ -21,9 +21,12 @@
       <a id="navbar-allocation-requests" class="dropdown-item" href="{% url 'allocation-request-list' %}">
         Allocation Requests</a>
     {% endif %}
-    
+    {% if perms.allocation.can_view_all_allocations %}
+      <a id="navbar-allocation-change-requests" class="dropdown-item" href="{% url 'allocation-change-list' %}">
+        Allocation Change Requests</a>
+    {% endif %}
     {% if perms.allocation.change_allocationuserstatuschoice %}
-      <a id="navbar-users-pending" class="dropdown-item" href="{% url 'allocation-user-request-list' %}">Users Pending</a>
+      <a id="navbar-users-pending" class="dropdown-item" href="{% url 'allocation-user-request-list' %}">Allocation User Requests</a>
     {% endif %}
     {% if perms.grant.can_view_all_grants %}
       <a id="navbar-grant-report" class="dropdown-item" href="{% url 'grant-report' %}">Grant Report</a>
