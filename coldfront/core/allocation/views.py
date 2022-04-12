@@ -981,6 +981,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             if resource_obj.name == "Slate-Project" and account_number == '':
                 # If a Slate-Project request doesnt have an account number then it shouldn't be
                 # placed in the invoice list.
+                # TODO: Might not be true anymore
                 allocation_status_obj = AllocationStatusChoice.objects.get(
                     name='New')
         else:
@@ -1732,7 +1733,8 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         allocation_list = Allocation.objects.filter(
-            status__name__in=['New', 'Renewal Requested', 'Paid', ]
+            status__name__in=['New', 'Renewal Requested', 'Paid', ],
+            resources__review_groups__in=list(self.request.user.groups.all())
         ).exclude(project__status__name__in=['Review Pending', 'Archived'])
         context['allocation_list'] = allocation_list
         context['PROJECT_ENABLE_PROJECT_REVIEW'] = PROJECT_ENABLE_PROJECT_REVIEW
@@ -2134,8 +2136,21 @@ class AllocationInvoiceListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
     def get_queryset(self):
 
         allocations = Allocation.objects.filter(
-            status__name__in=['Paid', 'Payment Pending', 'Payment Requested', 'Payment Declined', ])
+            status__name__in=['Paid', 'Payment Pending', 'Payment Requested', 'Payment Declined', ],
+            resources__review_groups__in=list(self.request.user.groups.all())
+        )
         return allocations
+
+
+# class AllocationAllInvoicesListView(AllocationInvoiceListView):
+#     template_name = 'allocation/allocation_all_invoices_list.html'
+
+#     def get_queryset(self):
+#         allocations = Allocation.objects.filter(
+#             resources__requires_payment=True
+#         )
+
+#         return allocations
 
 
 class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -2501,7 +2516,8 @@ class AllocationUserRequestListView(LoginRequiredMixin, UserPassesTestMixin, Tem
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['request_list'] = AllocationUserRequest.objects.filter(
-            status__name='Pending'
+            status__name='Pending',
+            allocation_user__allocation__resources__review_groups__in=list(self.request.user.groups.all())
         )
 
         return context
@@ -3109,7 +3125,9 @@ class AllocationChangeListView(LoginRequiredMixin, UserPassesTestMixin, Template
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         allocation_change_list = AllocationChangeRequest.objects.filter(
-            status__name__in=['Pending', ])
+            status__name__in=['Pending', ],
+            allocation__resources__review_groups__in=list(self.request.user.groups.all())
+        )
         context['allocation_change_list'] = allocation_change_list
         context['PROJECT_ENABLE_PROJECT_REVIEW'] = PROJECT_ENABLE_PROJECT_REVIEW
         return context
