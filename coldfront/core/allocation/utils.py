@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from decimal import Decimal
 
@@ -9,8 +10,12 @@ from urllib.parse import urljoin
 from coldfront.core.allocation.models import (AllocationAttributeType,
                                               AllocationUser,
                                               AllocationUserAttribute,
-                                              AllocationUserStatusChoice)
+                                              AllocationUserStatusChoice,
+                                              Allocation,
+                                              AllocationStatusChoice,
+                                              AllocationAttribute)
 from coldfront.core.allocation.signals import allocation_activate_user
+from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import utc_now_offset_aware
 
@@ -188,3 +193,62 @@ def review_cluster_access_requests_url():
     domain = settings.CENTER_BASE_URL
     view = reverse('allocation-cluster-account-request-list')
     return urljoin(domain, view)
+
+
+def create_secure_dir(project, subdirectory_name):
+    """
+    Creates two secure directory allocations: group directory and
+    scratch2 directory. Additionally creates an AllocationAttribute for each
+    new allocation that corresponds to the directory path on the cluster
+
+    Parameters:
+        - project (Project): a Project object to create a secure directory
+                            allocation for
+        - subdirectory_name (str): the name of the subdirectories on the cluster
+
+    Returns:
+        - Tuple of (groups_allocation, scratch2_allocation)
+
+    Raises:
+        - TypeError, if either argument has an invalid type
+    """
+
+    if not isinstance(project, Project):
+        raise TypeError(f'Invalid Project {project}.')
+    if not isinstance(subdirectory_name, str):
+        raise TypeError(f'Invalid subdirectory_name {subdirectory_name}.')
+
+    groups_allocation = Allocation.objects.create(
+        project=project,
+        status=AllocationStatusChoice.objects.get(name='Active'),
+        start_date=utc_now_offset_aware())
+
+    scratch2_allocation = Allocation.objects.create(
+        project=project,
+        status=AllocationStatusChoice.objects.get(name='Active'),
+        start_date=utc_now_offset_aware())
+
+    groups_pl1_directory = Resource.objects.get(name='Groups PL1 Directory')
+    groups_pl1_path = groups_pl1_directory.resourceattribute_set.get(
+        resource_attribute_type__name='path')
+    scratch2_pl1_directory = Resource.objects.get(name='Scratch2 PL1 Directory')
+    scratch2_pl1_path = scratch2_pl1_directory.resourceattribute_set.get(
+        resource_attribute_type__name='path')
+
+    groups_allocation.resources.add(groups_pl1_directory)
+    scratch2_allocation.resources.add(scratch2_pl1_directory)
+
+    allocation_attribute_type = AllocationAttributeType.objects.get(
+        name='Cluster Directory Access')
+
+    groups_pl1_subdirectory = AllocationAttribute.objects.create(
+        allocation_attribute_type=allocation_attribute_type,
+        allocation=groups_allocation,
+        value=os.path.join(groups_pl1_path.value, subdirectory_name))
+
+    scratch2_pl1_subdirectory = AllocationAttribute.objects.create(
+        allocation_attribute_type=allocation_attribute_type,
+        allocation=scratch2_allocation,
+        value=os.path.join(scratch2_pl1_path.value, subdirectory_name))
+
+    return groups_allocation, scratch2_allocation
