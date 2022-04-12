@@ -102,6 +102,7 @@ class StarFishServer:
         group_by : string
         volpath : string
         sec : integer, optional
+
         Returns
         -------
         query : Query class object
@@ -157,7 +158,6 @@ class StarFishQuery:
         logger.debug(f"response: {response}")
         return response["query_id"]
 
-    # 4. return query results
     @record_process
     def return_results_once_prepared(self, sec=3):
         while True:
@@ -178,108 +178,129 @@ class StarFishQuery:
 class ColdFrontDB:
 
     @record_process
-    def produce_lab_list(self, vol):
+    def produce_lab_dict(self, vol):
+        """Create dict of labs to collect and the volumes/tiers associated with them.
+        Returns
+        -------
+        labs_resources: dict
+            Structured as follows:
+            "lab_name": [("volume", "tier"),("volume", "tier")]
+        """
         pr_objs = Allocation.objects.only("id", "project_id")
         pr_dict = {}
         for o in pr_objs:
             proj = Project.objects.get(id=o.project_id)
-            o_name = project.title
+            o_name = proj.title
+            resource_list = o.get_resources_as_string.split(', ')
             if o_name not in pr_dict:
-                pr_dict[o_name] = [o.get_resources_as_string]
+                pr_dict[o_name] = resource_list
             else:
-                pr_dict[o_name].append(o.get_resources_as_string)
+                pr_dict[o_name].extend(resource_list)
         lr = pr_dict if not vol else {p:[i for i in r if vol in i] for p, r in pr_dict.items()}
-        labs_resources = {p:[rs.split("/") for rs in r] for p, r in lr.items()}
+        labs_resources = {p:[tuple(rs.split("/")) for rs in r] for p, r in lr.items()}
         logger.debug(f"labs_resources:\n{labs_resources}")
         return labs_resources
 
 
-    def check_server_collection(self, servername, v, lr):
+    def check_server_collection(self, lr, homepath="./coldfront/plugins/sftocf/data/"):
         '''
+        Parameters
+        ----------
+        lr : dict
+            Keys are labnames, values are a list of (volume, tier) tuples.
+
         Returns
         -------
         filepaths : list
-        to_collect :
+            List of lab usage files that have already been created.
+        to_collect : list
+            list of tuples - (labname, volume, tier, filename)
         '''
         filepaths = []
-        to_collect = {}
-        for vol, path in v.items():
-            p = {l:[v for v in r if vol == v[0]] for l, r in lr.items() for v in r}
-            projs = {l:r[0] for l, r in p.items() if p[l]}
-            logger.debug(f"check_server_collection projs: {projs}")
-            localdata = LocalData()
-            fp, coll = localdata.sort_collected_uncollected(servername, projs)
-            filepaths.extend(fp)
-            to_collect[vol] = coll
+        to_collect = []
+        labs_resources = [(l, res[0], res[1]) for l, r in lr.items() for res in r]
+        logger.debug(f"labs_resources:{labs_resources}")
+
+        yesterdaystr = (datetime.today()-timedelta(1)).strftime("%Y%m%d")
+        dates = [yesterdaystr, datestr]
+
+        for lr_pair in labs_resources:
+            lab = lr_pair[0]
+            resource = lr_pair[1]
+            tier = lr_pair[2]
+            fpaths = [f"{homepath}{lab}_{resource}_{n}.json" for n in dates]
+            if any(Path(fpath).exists() for fpath in fpaths):
+                for fpath in fpaths:
+                    if Path(fpath).exists():
+                        filepaths.append(fpath)
+            else:
+                to_collect.append((lab, resource, tier, fpaths[-1],))
+
         return filepaths, to_collect
 
 
     def pull_sf(self, volume=None):
-        lr = self.produce_lab_list(volume)
-        vol_set = {v[0] for r in lr.values() for v in r}
-        logger.debug(f"vol_set: {vol_set}")
-        serv_vols = generate_serv_vol_dict(vol_set)
-        all_filepaths = []
-        for s, v in serv_vols.items():
-            filepaths, to_collect = self.check_server_collection(s, v, lr)
-            all_filepaths.extend(filepaths)
-            if to_collect:
-                logger.debug(f"to collect: {to_collect}")
-                server = StarFishServer(s)
-                for vol, paths in v.items():
-                    serv_to_collect = to_collect[vol]
-                    logger.debug(f"vol:{vol}\nserv_to_collect:{serv_to_collect}")
-                    fpaths = collect_starfish_usage(server, vol, paths, serv_to_collect)
-                    all_filepaths.extend(fpaths)
-        return set(all_filepaths)
-
-    def return_server_tier_usernames(self, f):
-        content = read_json(f)
-        unames = [d['username'] for d in content['contents']]
-        return (str(content['server']), str(content['tier']), unames, content['contents'])
-
-    def return_proj_allocation(self, project):
-        try:
-            allocation = Allocation.objects.get(project_id=project.id)
-        except Allocation.MultipleObjectsReturned:
-            logger.debug(f"Too many allocations for project id {project.id}; choosing one with 'Allocation Information' in justification.")
-            try:
-                allocation = Allocation.objects.get(
-                    project_id=project.id,
-                    justification__icontains='Allocation Information',
-                    justification__endswith=project.title)
-            except Allocation.MultipleObjectsReturned:
-                logger.warning("Too many allocations for project id {project.id}, matching justifications; choosing the first. Fix this duplication.")
-                allocations = Allocation.objects.filter(
-                    project_id=project.id,
-                    justification__icontains='Allocation Information',
-                    justification__endswith=project.title)
-                for a in allocations:
-                    logger.warning(f"Duplicate item:{a}")
-                allocation = allocations.first()
-            logger.debug(f"Item:{allocation.id}")
-        return allocation
+        """Query Starfish to produce json files of lab usage data.
+        Return a set of produced filepaths.
+        """
+        # 1. produce dict of all labs to be collected and the volumes on which their data is located
+        lr = self.produce_lab_dict(volume)
+        # 2. produce list of files that have been collected and list of lab/volume/filename tuples to collect
+        filepaths, to_collect = self.check_server_collection(lr)
+        # 3. produce set of all volumes to be queried
+        vol_set = {i[1] for i in to_collect}
+        servers_vols = [(k, vol) for k, v in svp.items() for vol in vol_set if vol in v.keys()]
+        for server_vol in servers_vols:
+            s = server_vol[0]
+            vol = server_vol[1]
+            paths = svp[s][vol]
+            to_collect_subset = [t for t in to_collect if t[1] == vol]
+            logger.debug(f"vol:{vol}\nto_collect_subset:{to_collect_subset}")
+            server = StarFishServer(s)
+            fpaths = collect_starfish_usage(server, vol, paths, to_collect_subset)
+            filepaths.extend(fpaths)
+        return set(filepaths)
 
 
     def push_cf(self, filepaths, clean):
         for f in filepaths:
             errors = False
-            server, tier, usernames, groupdict = self.return_server_tier_usernames(f)
+            content = read_json(f)
+            usernames = [d['username'] for d in content['contents']]
+            resource = content['volume'] + "/" + content['tier']
 
             user_models = get_user_model().objects.only("id","username")\
                     .filter(username__in=usernames)
-            log_missing_user_models(groupdict[0]["groupname"], user_models, usernames)
+            log_missing_user_models(content["project"], user_models, usernames)
 
-            project = Project.objects.get(title=groupdict[0]["groupname"])
-            allocation = self.return_proj_allocation(project)
-            logger.debug(f"usernames for {project.title}: {usernames}")
-            logger.debug(f"user_models for {project.title}: {[u.username for u in user_models]}")
+            project = Project.objects.get(title=content["project"])
+            # find project allocation
+            try:
+                allocation = Allocation.objects.get(project_id=project.id, resources__name=resource)
+            except Allocation.MultipleObjectsReturned:
+                logger.debug(f"Too many allocations for project id {project.id}; choosing one with 'Allocation Information' in justification.")
+                # try:
+                allocation = Allocation.objects.get(
+                    project_id=project.id,
+                    resources__name=resource,
+                    justification__icontains='Allocation Information',
+                    justification__endswith=project.title)
+                # except Allocation.MultipleObjectsReturned:
+                #     logger.warning("Too many allocations for project id {project.id}, matching justifications; choosing the first. Fix this duplication.")
+                #     allocations = Allocation.objects.filter(
+                #         project_id=project.id,
+                #         justification__icontains='Allocation Information',
+                #         justification__endswith=project.title)
+                #     for a in allocations:
+                #         logger.warning(f"Duplicate item:{a}")
+                #     allocation = allocations.first()
+            logger.debug(f"{project.title}\n usernames: {usernames}\n user_models: {[u.username for u in user_models]}")
 
             for user in user_models:
-                userdict = [d for d in groupdict if d["username"] == user.username][0]
+                userdict = [d for d in content['contents'] if d["username"] == user.username][0]
+                model = user_models.get(username=userdict["username"])
                 try:
-                    server_tier = server + "/" + tier
-                    self.update_usage(user_models, userdict, allocation)
+                    self.update_usage(model, userdict, allocation)
                 except Exception as e:
                     logger.warning("EXCEPTION FOR ENTRY: {}".format(e), exc_info=True)
                     errors = True
@@ -288,10 +309,7 @@ class ColdFrontDB:
         logger.debug("push_cf complete")
 
 
-    def update_usage(self, models, userdict, allocation):
-        # get ids needed to locate correct allocationuser entry
-        # user = LabUser(userdict["username"], userdict["groupname"])
-        user = models.get(username=userdict["username"])
+    def update_usage(self, user, userdict, allocation):
         usage, unit = split_num_string(userdict["size_sum_hum"])
         logger.debug(f"entering for user:{user.username}")
         try:
@@ -317,44 +335,21 @@ class ColdFrontDB:
         allocationuser.save()
         logger.debug(f"successful entry: {userdict['groupname']}, {userdict['username']}")
 
-class LocalData():
-    def __init__(self):
-        self.homepath = "./coldfront/plugins/sftocf/data/"
-        confirm_dirpath_exists(self.homepath)
-
-    @record_process
-    def sort_collected_uncollected(self, server_name, projects):
-        '''
-        '''
-        filepaths = []
-        tocollect = {}
-        for p in list(projects.keys()):
-            yesterdaystr = (datetime.today()-timedelta(1)).strftime("%Y%m%d")
-            dates = [yesterdaystr, datestr]
-            fpaths = [f"{self.homepath}{p}_{server_name}_{n}.json" for n in dates]
-            if any(Path(fpath).exists() for fpath in fpaths):
-                for fpath in fpaths:
-                    if Path(fpath).exists():
-                        filepaths.append(fpath)
-            else:
-                tocollect[p] = projects[p]
-                tocollect[p].append(fpaths[-1])
-        return (filepaths, tocollect)
 
 
-    def clean_data_dir(self):
-        """Remove json from data folder that's more than a week old
-        """
-        files = os.listdir(self.homepath)
-        json_files = [f for f in files if ".json" in f]
-        now = time.time()
-        for f in json_files:
-            fpath = f"{self.homepath}{f}"
-            created = os.stat(fpath).st_ctime
-            if created < now - 7 * 86400:
-                os.remove(fpath)
+def clean_data_dir(homepath):
+    """Remove json from data folder that's more than a week old
+    """
+    files = os.listdir(homepath)
+    json_files = [f for f in files if ".json" in f]
+    now = time.time()
+    for f in json_files:
+        fpath = f"{homepath}{f}"
+        created = os.stat(fpath).st_ctime
+        if created < now - 7 * 86400:
+            os.remove(fpath)
 
-def write_update_file_line(filepath, pattern):
+def write_update_file_line(filepath, patterns):
     with open(filepath, 'a+') as f:
         f.seek(0)
         lines = f.readlines()
@@ -381,7 +376,7 @@ def read_json(filepath):
         data = json.loads(myfile.read())
     return data
 
-def confirm_dirpath_exists(dpath):
+def locate_or_create_dirpath(dpath):
     if not os.path.exists(dpath):
         os.makedirs(dpath)
         logger.info(f"created new directory {dpath}")
@@ -389,59 +384,63 @@ def confirm_dirpath_exists(dpath):
 @record_process
 def collect_starfish_usage(server, volume, volumepath, projects):
     """
+    Parameters
+    ----------
+    server : object
+    volume : string
+    volumepath : list of strings
+    projects : list of tuples
 
     Returns
     -------
-    filepaths : list
-        list of filepath names
+    filepaths : list of strings
     """
     filepaths = []
     datestr = datetime.today().strftime("%Y%m%d")
+    locate_or_create_dirpath("./coldfront/plugins/sftocf/data/")
     logger.debug(f"projects: {projects}")
-    for p, r in projects.items():
-        homepath = "./coldfront/plugins/sftocf/data/"
-        filepath = f"{homepath}{p}_{server.name}_{datestr}.json"
-        logger.debug(f"filepath 1: {filepath}")
-        if Path(filepath).exists():
-            filepaths.append(filepath)
+    for t in projects:
+        p = t[0]
+        tier = t[2]
+        filepath = t[3]
+        lab_volpath = volumepath[1] if "_l3" in p else volumepath[0]
+        logger.debug(f"filepath: {filepath} lab: {p} volpath: {lab_volpath}")
+        usage_query = server.create_query(
+            f"type=f groupname={p}", "username, groupname", f"{volume}:{lab_volpath}"
+        )
+        data = usage_query.result
+        logger.debug("usage_query.result:{}".format(data))
+        if not data:
+            logger.warning("No starfish result for lab {}".format(p))
+        elif type(data) is dict and "error" in data:
+            logger.warning("Error in starfish result for lab {}:\n{}".format(p, data))
         else:
-            lab_volpath = volumepath[1] if "_l3" in p else volumepath[0]
-            logger.debug(f"lab: {p} volpath: {lab_volpath}")
-            queryline = "type=f groupname={}".format(p)
-            usage_query = server.create_query(
-                queryline, "username, groupname", f"{volume}:{lab_volpath}", sec=2
-            )
             data = usage_query.result
-            logger.debug("usage_query.result:{}".format(data))
-            if not data:
-                logger.warning("No starfish result for lab {}".format(p))
-            elif type(data) is dict and "error" in data:
-                logger.warning("Error in starfish result for lab {}:\n{}".format(p, data))
-            else:
-                data = usage_query.result
-                logger.debug(data)
-                record = {
-                    "server": server.name,
-                    "volume": volume,
-                    "path": lab_volpath,
-                    "tier": r[1],
-                    "date": datestr,
-                    "contents": data,
-                }
-                confirm_dirpath_exists(homepath)
-                save_json(filepath, record)
-                filepaths.append(filepath)
+            logger.debug(data)
+            record = {
+                "server": server.name,
+                "volume": volume,
+                "path": lab_volpath,
+                "project": p,
+                "tier": tier,
+                "date": datestr,
+                "contents": data,
+            }
+            save_json(filepath, record)
+            filepaths.append(filepath)
     return filepaths
 
 
-
 def log_missing_user_models(groupname, user_models, usernames):
+    """Identify and record any usernames that lack a matching user_models entry.
+    """
     missing_unames = [u for u in usernames if u not in [m.username for m in user_models]]
     if missing_unames:
         fpath = './coldfront/plugins/sftocf/data/missing_ifxusers.csv'
         patterns = [f"{groupname},{uname},{datestr}" for uname in missing_unames]
-        write_update_file_line(fpath, pattern)
+        write_update_file_line(fpath, patterns)
         logger.warning(f"no IfxUser found for users: {missing_unames}")
+
 
 def use_zone(project_name):
     # attribute type ID will need to change to match the zone flag.
@@ -461,15 +460,6 @@ def use_zone(project_name):
                 return True
     return False
 
-def generate_serv_vol_dict(vol_set):
-    search_svp = {}
-    for s, v in svp.items():
-        if any(vi in v.keys() for vi in vol_set):
-            search_svp[s] = {}
-            for vk, p in v.items():
-                if vk in vol_set:
-                    search_svp[s][vk] = p
-    return search_svp
 
 def generate_headers(token):
     """Generate "headers" attribute by using the "token" attribute.
