@@ -1,3 +1,5 @@
+import pytz
+
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
@@ -419,3 +421,25 @@ def set_project_user_usage_value(user, project, value):
         user_project_usage.value = value
         user_project_usage.save()
     return True
+
+
+def convert_time_to_utc(time):
+    """
+    Convert datetime object to UTC time
+
+    Parameters:
+        - time: a datetime object
+
+    Returns:
+        - A datetime object in UTC time or None of time == None
+    """
+
+    if time is None:
+        return time
+
+    local_tz = pytz.timezone('America/Los_Angeles')
+    tz = pytz.timezone(settings.TIME_ZONE)
+    naive_dt = datetime.combine(time, datetime.min.time())
+    new_time = local_tz.localize(naive_dt).astimezone(tz)
+
+    return new_time
