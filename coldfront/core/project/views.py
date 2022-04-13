@@ -5,7 +5,7 @@ import logging
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.contrib.auth.decorators import user_passes_test, login_required
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
@@ -15,7 +15,7 @@ from django.http import HttpResponse, HttpResponseRedirect, HttpResponseForbidde
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views import View
-from django.views.generic import CreateView, DetailView, ListView, UpdateView
+from django.views.generic import CreateView, DetailView, ListView
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 from django.utils.html import format_html
@@ -26,7 +26,6 @@ from coldfront.core.allocation.models import (Allocation,
                                               AllocationUserStatusChoice)
 from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user)
-from coldfront.core.allocation.utils import send_allocation_user_request_email
 from coldfront.core.grant.models import Grant
 from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectUpdateForm,
@@ -593,7 +592,6 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
             )
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
-
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -641,21 +639,6 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
         if self.request.user.userprofile.is_pi and max_projects - project_count > 0:
             return True
-
-    def form_valid(self, form):
-        form_data = form.cleaned_data
-        slurm_account_name = form_data.get('slurm_account_name')
-        if len(slurm_account_name) < 3:
-            form.add_error(None, 'Please fix the errors below')
-            form.add_error('slurm_account_name', 'Must have a minimum length of three characters')
-            return self.form_invalid(form)
-
-        if not slurm_account_name.isalpha():
-            form.add_error(None, 'Please fix the errors below')
-            form.add_error('slurm_account_name', 'Must not contain numbers or special characters')
-            return self.form_invalid(form)
-
-        return super().form_valid(form)
 
     def form_valid(self, form):
         slurm_account_name = form.instance.slurm_account_name
@@ -746,8 +729,8 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
 
 class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestMixin, FormView):
-    form_class=ProjectUpdateForm
-    template_name='project/project_update_form.html'
+    form_class = ProjectUpdateForm
+    template_name = 'project/project_update_form.html'
     success_message = 'Project updated.'
 
     def test_func(self):
@@ -808,7 +791,7 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
         project_obj.slurm_account_name = form_data.get('slurm_account_name')
         project_obj.field_of_science = form_data.get('field_of_science')
         project_obj.save()
-        
+
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -1199,10 +1182,10 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             if display_warning:
                 warning_message = 'The following users were not added to the selected resources due to missing accounts:<ul>'
                 for username, no_account_list in no_accounts.items():
-                        warning_message += '<li>{} is missing an account for {}</li>'.format(
-                            username,
-                            ', '.join(no_account_list)
-                        )
+                    warning_message += '<li>{} is missing an account for {}</li>'.format(
+                        username,
+                        ', '.join(no_account_list)
+                    )
                 warning_message += '</ul>'
                 if warning_message != '':
                     warning_message += 'They cannot be added until they create one. Please direct them to <a href="https://access.iu.edu/Accounts/Create">https://access.iu.edu/Accounts/Create</a> to create one.'
@@ -1549,7 +1532,6 @@ def project_update_email_notification(request):
         project_user_obj = get_object_or_404(
             ProjectUser, pk=data.get('user_project_id'))
 
-
         project_obj = project_user_obj.project
 
         allowed = False
@@ -1565,8 +1547,8 @@ def project_update_email_notification(request):
         if request.user.is_superuser:
             allowed = True
 
-        if allowed == False:
-             return HttpResponse('not allowed', status=403)
+        if allowed is False:
+            return HttpResponse('not allowed', status=403)
         else:
             checked = data.get('checked')
             if checked == 'true':
