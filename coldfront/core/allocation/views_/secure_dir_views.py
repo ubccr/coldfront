@@ -28,14 +28,15 @@ from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 
 from coldfront.core.allocation.forms import AllocationSecureDirJoinForm
-from coldfront.core.allocation.models import Allocation
+from coldfront.core.allocation.models import Allocation, \
+    SecureDirAddUserRequest, SecureDirAddUserRequestStatusChoice
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.mail import send_email, send_email_template
 
 
-class ProjectAddUsersView(LoginRequiredMixin,
-                          UserPassesTestMixin,
-                          TemplateView):
+class SecureDirAddUsersView(LoginRequiredMixin,
+                            UserPassesTestMixin,
+                            TemplateView):
 
     # TODO: add template name
     template_name = None
@@ -163,14 +164,9 @@ class ProjectAddUsersView(LoginRequiredMixin,
             return HttpResponse('', status=400)
 
         if formset.is_valid():
-
-            # TODO: create models for SecureDirAddUserRequest and SecureDirAddUserRequestStatusChoice
             pending_status = \
                 SecureDirAddUserRequestStatusChoice.objects.get(
                     name='Pending - Add')
-
-            error_message = (
-                'Unexpected server error. Please contact an administrator.')
 
             for form in formset:
                 user_form_data = form.cleaned_data
