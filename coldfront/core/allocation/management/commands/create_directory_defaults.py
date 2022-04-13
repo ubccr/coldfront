@@ -97,7 +97,8 @@ class Command(BaseCommand):
             })
 
         for status in ['Pending - Add', 'Processing - Add', 'Completed']:
-            SecureDirAddUserRequestStatusChoice.objects.create(name=status)
+            SecureDirAddUserRequestStatusChoice.objects.get_or_create(
+                name=status)
 
         message = 'Successfully created directory objects.'
         self.stdout.write(self.style.SUCCESS(message))
