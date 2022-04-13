@@ -3,6 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.urls import reverse
 from urllib.parse import urljoin
@@ -218,6 +219,15 @@ def create_secure_dir(project, subdirectory_name):
     if not isinstance(subdirectory_name, str):
         raise TypeError(f'Invalid subdirectory_name {subdirectory_name}.')
 
+    scratch2_pl1_directory = Resource.objects.get(name='Scratch2 PL1 Directory')
+    groups_pl1_directory = Resource.objects.get(name='Groups PL1 Directory')
+
+    query = Allocation.objects.filter(project=project,
+                                      resources__in=[scratch2_pl1_directory,
+                                                     groups_pl1_directory])
+    if query.exists():
+        raise ValidationError('Allocations already exist')
+
     groups_allocation = Allocation.objects.create(
         project=project,
         status=AllocationStatusChoice.objects.get(name='Active'),
@@ -228,10 +238,8 @@ def create_secure_dir(project, subdirectory_name):
         status=AllocationStatusChoice.objects.get(name='Active'),
         start_date=utc_now_offset_aware())
 
-    groups_pl1_directory = Resource.objects.get(name='Groups PL1 Directory')
     groups_pl1_path = groups_pl1_directory.resourceattribute_set.get(
         resource_attribute_type__name='path')
-    scratch2_pl1_directory = Resource.objects.get(name='Scratch2 PL1 Directory')
     scratch2_pl1_path = scratch2_pl1_directory.resourceattribute_set.get(
         resource_attribute_type__name='path')
 
