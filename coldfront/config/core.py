@@ -81,3 +81,55 @@ ACCOUNT_CREATION_TEXT = '''University faculty can submit a help ticket to reques
 Please see <a href="#">instructions on our website</a>. Staff, students, and external collaborators must
 request an account through a university faculty member.
 '''
+
+#------------------------------------------------------------------------------
+# Organization settings
+#------------------------------------------------------------------------------
+
+# --- Organization and User pages
+# Whether Organizations should display on UserProfile page
+# True => always display (use 1 for env vars)
+# False => never display (use 0 for env vars)
+# 'not-empty' => display only if user belongs to any organizations
+ORGANIZATION_USER_DISPLAY_MODE = ENV.str(
+    'ORGANIZATION_USER_DISPLAY_MODE', 'not-empty')
+# Title to give for display of Organizations in user page
+ORGANIZATION_USER_DISPLAY_TITLE = ENV.str(
+    'ORGANIZATION_USER_DISPLAY_TITLE', 'Department(s), etc.')
+
+# --- Organization and Project pages
+# Whether Organizations should display on Project page
+# True => always display (use 1 for env vars)
+# False => never display (use 0 for env vars)
+# 'not-empty' => display only if project belongs to any organizations
+ORGANIZATION_PROJECT_DISPLAY_MODE = ENV.str(
+    'ORGANIZATION_PROJECT_DISPLAY_MODE', 'not-empty')
+# Whether PI can edit Orgs for their projects, Boolean (use 1/0 for env vars)
+ORGANIZATION_PI_CAN_EDIT_FOR_PROJECT = ENV.str(
+    'ORGANIZATION_PI_CAN_EDIT_FOR_PROJECT', True)
+# Title to give for display of Organizations in user page
+ORGANIZATION_PROJECT_DISPLAY_TITLE = ENV.str(
+    'ORGANIZATION_PROJECT_DISPLAY_TITLE', 'Department(s), etc.')
+
+# --- Integration between Organization and LDAP
+# Should LDAP auth automatically populate Organizations for user
+# (ignored unless PLUGIN_LDAP_AUTH is also True) (use 1/0 for env vars)
+ORGANIZATION_LDAP_AUTH_POPULATE_USER_ORGANIZATIONS = ENV.str(
+    'ORGANIZATION_LDAP_AUTH_POPULATE_USER_ORGANIZATIONS', False)
+
+# Name of attribute of ldap_user used for populating Organizations 
+# for user (the attribute should return strings matching 
+# directory_string in Directory2Organization table)
+ORGANIZATION_LDAP_USER_ATTRIBUTE = ENV.str(
+    'ORGANIZATION_LDAP_USER_ATTRIBUTE', None)
+# Whether to create placeholder organizations (and assign to user)
+# when encounter an unrecognized directory_string when updating
+# user's organization list from LDAP (use 1/0 for env vars)
+ORGANIZATION_LDAP_USER_CREATE_PLACEHOLDERS = ENV.str(
+    'ORGANIZATION_LDAP_USER_CREATE_PLACEHOLDERS', True)
+# Whether to delete organizations present for user but not showing
+# up in LDAP when updating user's organization list from LDAP 
+# (use 1/0 for env vars)
+ORGANIZATION_LDAP_USER_DELETE_MISSING = ENV.str(
+    'ORGANIZATION_LDAP_USER_DELETE_MISSING', False)
+

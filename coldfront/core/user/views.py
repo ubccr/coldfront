@@ -19,6 +19,11 @@ from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
+from coldfront.core.organization.models import (
+        ORGANIZATION_USER_DISPLAY_MODE,
+        ORGANIZATION_USER_DISPLAY_TITLE,
+        OrganizationUser,
+    )
 
 logger = logging.getLogger(__name__)
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
@@ -50,6 +55,7 @@ class UserProfile(TemplateView):
         return super().dispatch(request, *args, viewed_username=viewed_username, **kwargs)
 
     def get_context_data(self, viewed_username=None, **kwargs):
+        import sys
         context = super().get_context_data(**kwargs)
 
         if viewed_username:
@@ -61,6 +67,21 @@ class UserProfile(TemplateView):
             [group.name for group in viewed_user.groups.all()])
         context['group_list'] = group_list
         context['viewed_user'] = viewed_user
+
+        context['ORGANIZATION_USER_DISPLAY_MODE'] = \
+                ORGANIZATION_USER_DISPLAY_MODE
+        context['ORGANIZATION_USER_DISPLAY_TITLE'] = \
+                ORGANIZATION_USER_DISPLAY_TITLE
+        firstIsPrimary = False
+        orgs = []
+        qset = OrganizationUser.objects.filter(user=viewed_user.userprofile)
+        if qset:
+            orgs = [ x.organization for x in qset ]
+            if qset[0].is_primary:
+                firstIsPrimary = True
+        context['organizations'] = orgs
+        context['firstIsPrimary'] = firstIsPrimary
+
         return context
 
 

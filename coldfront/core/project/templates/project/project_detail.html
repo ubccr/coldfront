@@ -64,6 +64,28 @@ Project Detail
     </h3>
     <p class="card-text text-justify"><strong>Description: </strong>{{ project.description }}</p>
     <p class="card-text text-justify"><strong>Field of Science: </strong>{{ project.field_of_science }}</p>
+    {% if ORGANIZATION_PROJECT_DISPLAY_MODE %}
+	{% for dept in organizations %}
+		{% if forloop.first %}
+    <p class="card-text text-justify"><strong>{{ ORGANIZATION_PROJECT_DISPLAY_TITLE }}: </strong>
+			{% if firstIsPrimary %}
+				{{ dept.semifullcode }}
+			{% else %}
+			<i>{{ dept.semifullcode }}</i>
+			{% endif %} 
+		{% else %}
+		, <i>{{ dept.semifullcode }}</i>
+		{% endif %}
+	{% empty %}
+		{% if ORGANIZATION_PROJECT_DISPLAY_MODE != 'not-empty' %}
+    <p class="card-text text-justify"><strong>{{ ORGANIZATION_PROJECT_DISPLAY_TITLE }}: </strong>
+    			none found
+		{% endif %}
+	{% endfor %}
+    {% endif %}
+
+	
+    	
     <p class="card-text text-justify"><strong>Project Status: </strong>{{ project.status }}
         {% if project.last_project_review and  project.last_project_review.status.name == 'Pending'%}
           <span class="badge badge-pill badge-info">project review pending</span>

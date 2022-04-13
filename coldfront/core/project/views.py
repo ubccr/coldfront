@@ -32,7 +32,9 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectAddUsersToAllocationForm,
                                           ProjectRemoveUserForm,
                                           ProjectReviewEmailForm,
-                                          ProjectReviewForm, ProjectSearchForm,
+                                          ProjectReviewForm, 
+                                          ProjectSearchForm,
+                                          ProjectUpdateForm,
                                           ProjectUserUpdateForm)
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectReviewStatusChoice,
@@ -45,12 +47,17 @@ from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email, send_email_template
+from coldfront.core.organization.models import OrganizationProject
 
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
     'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
 ALLOCATION_DEFAULT_ALLOCATION_LENGTH = import_from_settings(
     'ALLOCATION_DEFAULT_ALLOCATION_LENGTH', 365)
+ORGANIZATION_PROJECT_DISPLAY_MODE = import_from_settings(
+    'ORGANIZATION_PROJECT_DISPLAY_MODE', False)
+ORGANIZATION_PROJECT_DISPLAY_TITLE = import_from_settings(
+    'ORGANIZATION_PROJECT_DISPLAY_TITLE', 'Department/etc')
 
 if EMAIL_ENABLED:
     EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
@@ -127,6 +134,17 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['allocations'] = allocations
         context['project_users'] = project_users
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
+        context['ORGANIZATION_PROJECT_DISPLAY_MODE'] = ORGANIZATION_PROJECT_DISPLAY_MODE
+        context['ORGANIZATION_PROJECT_DISPLAY_TITLE'] = ORGANIZATION_PROJECT_DISPLAY_TITLE
+        orgs = []
+        firstIsPrimary = False
+        qset = OrganizationProject.objects.filter(project=self.object)
+        if qset:
+            orgs = [ x.organization for x in qset ]
+            if qset[0].is_primary:
+                firstIsPrimary = True
+        context['organizations'] = orgs
+        context['firstIsPrimary'] = firstIsPrimary
 
         try:
             context['ondemand_url'] = settings.ONDEMAND_URL
@@ -441,8 +459,9 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Project
     template_name_suffix = '_update_form'
-    fields = ['title', 'description', 'field_of_science', ]
+    #fields = ['title', 'description', 'field_of_science', ]
     success_message = 'Project updated.'
+    form_class = ProjectUpdateForm
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""

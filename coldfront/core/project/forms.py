@@ -3,9 +3,16 @@ import datetime
 from django import forms
 from django.shortcuts import get_object_or_404
 
-from coldfront.core.project.models import (Project, ProjectReview,
-                                           ProjectUserRoleChoice)
+from coldfront.core.project.models import (
+        Project, 
+        ProjectReview,
+        ProjectUserRoleChoice,
+    )
 from coldfront.core.utils.common import import_from_settings
+from coldfront.core.organization.models import (
+        Organization,
+        OrganizationProject,
+    )
 
 EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL = import_from_settings(
     'EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL')
@@ -69,6 +76,57 @@ class ProjectRemoveUserForm(forms.Form):
     role = forms.CharField(max_length=30, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
 
+class ProjectUpdateForm(forms.ModelForm):
+    class Meta:
+        model = Project
+        #fields = ['title', 'description', 'field_of_science', 'organizations' ]
+        fields = ['title', 'description', 'field_of_science', ]
+    #end: class Meta
+
+    def __init__(self, *args, **kwargs):
+        super(ProjectUpdateForm, self).__init__(*args, **kwargs)
+        # Fetch related organizations so will display in the form
+        qset = OrganizationProject.objects.filter(
+                project=self.instance,
+                is_primary=True,
+            )
+        import sys
+        if qset:
+            porg = qset[0].organization
+        else:
+            porg = None
+        sys.stderr.write('[TPTEST] porg={}\n'.format(porg))
+
+        self.fields['primary_organization'] = forms.ModelChoiceField(
+                queryset = Organization.objects.filter(
+                    is_selectable_for_project=True),
+                initial = porg,
+                required = False,
+            )
+        self.fields['secondary_organizations'] = forms.ModelMultipleChoiceField(
+                queryset = Organization.objects.filter(
+                    is_selectable_for_project=True),
+                initial = OrganizationProject.objects.filter(
+                    project=self.instance,
+                    is_primary=False,
+                    ).values_list('organization', flat=True),
+                required = False,
+            )
+
+
+    def save(self, *args, **kwargs):
+        instance = super(ProjectUpdateForm, self).save(*args, **kwargs)
+        # Update organizations
+        porg = self.cleaned_data['primary_organization']
+        import sys
+        sys.stderr.write('[TPTEST] save: porg={}\n'.format(porg))
+        instance.organizations.set(self.cleaned_data['secondary_organizations'])
+        if porg is not None:
+            OrganizationProject.set_primary_organization_for_project(
+                    project=self.instance,
+                    new=porg,
+                )
+        return instance
 
 class ProjectUserUpdateForm(forms.Form):
     role = forms.ModelChoiceField(
