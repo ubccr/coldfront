@@ -227,6 +227,23 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         context['notes'] = notes
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
+
+        context['secure_dir'] = \
+            allocation_obj.resources.filter(
+                name__icontains='Directory').exists()
+
+        can_edit_users = False
+        if allocation_obj.project.projectuser_set.filter(
+                user=self.request.user,
+                role__name='Principal Investigator',
+                status__name='Active').exists():
+            can_edit_users = True
+
+        if self.request.user.is_superuser:
+            can_edit_users = True
+
+        context['can_edit_users'] = can_edit_users
+
         return context
 
     def get(self, request, *args, **kwargs):

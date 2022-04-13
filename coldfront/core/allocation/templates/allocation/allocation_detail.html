@@ -186,8 +186,20 @@ Allocation Detail
 <!-- Start Allocation Users -->
 <div class="card mb-3">
   <div class="card-header">
-    <h2 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Users in Allocation </h2> <span
-      class="badge badge-secondary">{{allocation_users.count}}</span>
+    <h2 class="d-inline">
+      <i class="fas fa-users" aria-hidden="true"></i>
+      Users in Allocation
+    </h2>
+    <span class="badge badge-secondary">{{allocation_users.count}}</span>
+    <div class="float-right">
+      {% if secure_dir and can_edit_users %}
+        {% comment %}
+          <a class="btn btn-primary" href="{{mailto}}" role="button"><i class="far fa-envelope"></i> Email Project Users</a>
+        {% endcomment %}
+        <a class="btn btn-success" href="{% url 'secure-dir-add-users' allocation.pk %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
+        <a class="btn btn-danger" href="{% url 'secure-dir-remove-users' allocation.pk %}" role="button"><i class="fas fa-user-times" aria-hidden="true"></i> Remove Users</a>
+      {% endif %}
+    </div>
   </div>
   <div class="card-body">
     <div class="table-responsive">
