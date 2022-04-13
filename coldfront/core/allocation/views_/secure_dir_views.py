@@ -29,7 +29,8 @@ from django.views.generic.edit import FormView
 
 from coldfront.core.allocation.forms import AllocationSecureDirJoinForm
 from coldfront.core.allocation.models import Allocation, \
-    SecureDirAddUserRequest, SecureDirAddUserRequestStatusChoice
+    SecureDirAddUserRequest, SecureDirAddUserRequestStatusChoice, \
+    SecureDirRemoveUserRequest
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.mail import send_email, send_email_template
 
@@ -37,9 +38,7 @@ from coldfront.core.utils.mail import send_email, send_email_template
 class SecureDirAddUsersView(LoginRequiredMixin,
                             UserPassesTestMixin,
                             TemplateView):
-
-    # TODO: add template name
-    template_name = None
+    template_name = 'secure_dir/secure_dir_add_users.html'
 
     logger = logging.getLogger(__name__)
 
@@ -61,7 +60,8 @@ class SecureDirAddUsersView(LoginRequiredMixin,
         if alloc_obj.status.name not in ['Active', 'New', ]:
             messages.error(
                 request, 'You can only add users to an active allocation.')
-            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': project_obj.pk}))
+            return HttpResponseRedirect(
+                reverse('allocation-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
 
@@ -84,6 +84,22 @@ class SecureDirAddUsersView(LoginRequiredMixin,
                                alloc_obj.allocationuser_set.filter(
                                    status__name='Active'))
 
+        # Excluding users that have active join requests.
+        users_to_exclude |= \
+            set(request.user for request in
+                SecureDirAddUserRequest.objects.filter(
+                    allocation=alloc_obj,
+                    status__name__in=['Pending - Add',
+                                      'Processing - Add']))
+
+        # Excluding users that have active removal requests.
+        users_to_exclude |= \
+            set(request.user for request in
+                SecureDirRemoveUserRequest.objects.filter(
+                    allocation=alloc_obj,
+                    status__name__in=['Pending - Remove',
+                                      'Processing - Remove']))
+
         users_to_add -= users_to_exclude
 
         user_data_list = []
@@ -95,9 +111,6 @@ class SecureDirAddUsersView(LoginRequiredMixin,
                 'email': user.email
             }
             user_data_list.append(user_data)
-
-
-        # TODO: after requests are implemented, users with pending requests cannot be added
 
         return user_data_list
 
@@ -125,6 +138,12 @@ class SecureDirAddUsersView(LoginRequiredMixin,
                 role__name='Principal Investigator',
                 status__name='Active').exists():
             context['can_add_users'] = True
+
+        resource_type = 'scratch2' if \
+            alloc_obj.resources.filter(name__icontains='Scratch').exists() \
+            else 'group'
+        context['title'] = f'secure {resource_type} directory for ' \
+                           f'{alloc_obj.project.name}'
 
         return render(request, self.template_name, context)
 
@@ -187,8 +206,9 @@ class SecureDirAddUsersView(LoginRequiredMixin,
             # TODO: alter message or is it already informative enough?
             message = (
                 f'Successfully requested secure directory access for '
-                f'{reviewed_users_count} users. BRC staff have been '
-                f'notified.')
+                f'{reviewed_users_count} user'
+                f'{"s" if reviewed_users_count > 1 else ""}. BRC staff '
+                f'have been notified.')
             messages.success(request, message)
 
         else:
