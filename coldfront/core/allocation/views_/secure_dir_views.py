@@ -1,33 +1,15 @@
 import logging
 
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.shortcuts import get_object_or_404
-from django.views import View
-import datetime
-import pprint
-from itertools import chain
-
-from django import forms
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
-from django.contrib.messages.views import SuccessMessageMixin
-from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db import IntegrityError
-from django.db.models import Case, CharField, F, Q, Value, When
 from django.forms import formset_factory
-from django.http import (HttpResponse, HttpResponseForbidden,
-                         HttpResponseRedirect)
-from django.shortcuts import get_object_or_404, redirect, render
-from django.template.loader import render_to_string
-from django.urls import reverse, reverse_lazy
-from django.views import View
-from django.views.generic import CreateView, DetailView, ListView, UpdateView
+from django.http import HttpResponse, HttpResponseRedirect
+from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
 from django.views.generic.base import TemplateView
-from django.views.generic.edit import FormView
 
-from coldfront.core.allocation.forms import AllocationSecureDirManageUserForm
+from coldfront.core.allocation.forms import AllocationSecureDirManageUsersForm
 from coldfront.core.allocation.models import Allocation, \
     SecureDirAddUserRequest, SecureDirAddUserRequestStatusChoice, \
     SecureDirRemoveUserRequest, SecureDirRemoveUserRequestStatusChoice
@@ -35,10 +17,10 @@ from coldfront.core.resource.models import Resource
 from coldfront.core.utils.mail import send_email, send_email_template
 
 
-class SecureDirAddUsersView(LoginRequiredMixin,
-                            UserPassesTestMixin,
-                            TemplateView):
-    template_name = 'secure_dir/secure_dir_add_users.html'
+class SecureDirManageUsersView(LoginRequiredMixin,
+                               UserPassesTestMixin,
+                               TemplateView):
+    template_name = 'secure_dir/secure_dir_manage_users.html'
     action = 'Add'
 
     logger = logging.getLogger(__name__)
@@ -67,10 +49,6 @@ class SecureDirAddUsersView(LoginRequiredMixin,
             return super().dispatch(request, *args, **kwargs)
 
     def get_users_to_add(self, alloc_obj):
-        # part of project's allocation ie active allocationusers
-        # cannot already be part of allocation
-        # must be active
-        # cannot have pending request to join/remove
         savio_compute = Resource.objects.get(name='Savio Compute')
         compute_alloc = Allocation.objects.get(project=alloc_obj.project,
                                                resources=savio_compute)
@@ -157,7 +135,7 @@ class SecureDirAddUsersView(LoginRequiredMixin,
 
         if user_list:
             formset = formset_factory(
-                AllocationSecureDirManageUserForm, max_num=len(user_list))
+                AllocationSecureDirManageUsersForm, max_num=len(user_list))
             formset = formset(initial=user_list, prefix='userform')
             context['formset'] = formset
 
@@ -217,7 +195,7 @@ class SecureDirAddUsersView(LoginRequiredMixin,
             user_list = self.get_users_to_remove(alloc_obj)
 
         formset = formset_factory(
-            AllocationSecureDirManageUserForm, max_num=len(user_list))
+            AllocationSecureDirManageUsersForm, max_num=len(user_list))
         formset = formset(
             request.POST, initial=user_list, prefix='userform')
 
