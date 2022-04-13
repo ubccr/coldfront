@@ -605,3 +605,24 @@ class AllocationAdditionRequest(TimeStampedModel):
             max_timestamp = max(
                 max_timestamp, state[field].get('timestamp', ''))
         return max_timestamp
+
+
+class SecureDirAddUserRequestStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+    # One of "Pending - Add", "Processing - Add", "Completed"
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]
+
+
+class SecureDirAddUserRequest(TimeStampedModel):
+    """A request to add a user to a secure directory"""
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE)
+    allocation = models.ForeignKey(
+        Allocation, on_delete=models.CASCADE)
+    status = models.ForeignKey(
+        SecureDirAddUserRequestStatusChoice, on_delete=models.CASCADE)
