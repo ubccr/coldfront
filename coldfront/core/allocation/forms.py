@@ -263,3 +263,12 @@ class AllocationClusterAccountRequestActivationForm(forms.Form):
                 raise forms.ValidationError(
                     f'A user with cluster_uid {cluster_uid} already exists.')
         return cluster_uid
+
+
+class AllocationSecureDirJoinForm(forms.Form):
+    username = forms.CharField(max_length=150, disabled=True)
+    first_name = forms.CharField(max_length=30, required=False, disabled=True)
+    last_name = forms.CharField(max_length=150, required=False, disabled=True)
+    email = forms.EmailField(max_length=100, required=False, disabled=True)
+    selected = forms.BooleanField(initial=False, required=False)
+
