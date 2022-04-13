@@ -70,7 +70,8 @@ class ProjectRequestView(LoginRequiredMixin, UserPassesTestMixin,
 # BRC: SAVIO
 # =============================================================================
 
-class SavioProjectRequestWizard(UserPassesTestMixin, SessionWizardView):
+class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
+                                SessionWizardView):
 
     FORMS = [
         ('allocation_type', SavioProjectAllocationTypeForm),
