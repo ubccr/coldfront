@@ -2,22 +2,22 @@
 {% load crispy_forms_tags %}
 {% load static %}
 
-{% block title %} Add users to the {{ title }} {% endblock %}
+{% block title %} Manage Users for Secure Dir {% endblock %}
 
 {% block content %}
-  <h1>Add users to the {{ title }}</h1>
+  <h1>{{ action }} users {{ preposition }} the {{ title }}</h1>
   <hr>
   {% if formset %}
     <div class="card border-light">
       <div class="card-body">
 
-        <form action="{% url 'secure-dir-add-users' allocation.pk %}" method="post">
+        <form action="{% url url allocation.pk %}" method="post">
           {% csrf_token %}
           <div class="table-responsive">
             <table class="table table-sm table-hover">
               <thead>
               <tr>
-                {% if can_add_users %}
+                {% if can_manage_users %}
                   <th>
                     <input type="checkbox" class="check" id="selectAll">
                   </th>
@@ -32,7 +32,7 @@
               <tbody>
               {% for form in formset %}
                 <tr>
-                  {% if can_add_users %}
+                  {% if can_manage_users %}
                     <td>{{ form.selected }}</td>
                   {% endif %}
                   <td>{{ forloop.counter }}</td>
@@ -47,10 +47,10 @@
           </div>
           {{ formset.management_form }}
           <div>
-            {% if can_add_users %}
-              <button type="submit" value="add" name="decision" class="btn btn-success">
+            {% if can_manage_users %}
+              <button type="submit" value={{ action }} name="decision" class="btn {{ button }}">
                 <i class="fas fa-user-check" aria-hidden="true"></i>
-                Add Selected Users
+                {{ action }} Selected Users
               </button>
             {% endif %}
             <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation.pk %}" role="button">
@@ -68,7 +68,7 @@
       Back to Allocation
     </a>
     <div class="alert alert-info">
-      No users to add!
+      No users to {{ action|lower }}!
     </div>
   {% endif %}
   <script>
