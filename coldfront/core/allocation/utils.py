@@ -87,7 +87,7 @@ def compute_prorated_amount(total_cost):
     return round(cost_per_day * difference.days + cost_per_day)
 
 
-def send_allocation_user_request_email(request, usernames, parent_resource_name):
+def send_allocation_user_request_email(request, usernames, parent_resource_name, email_receiver_list):
     if EMAIL_ENABLED:
         domain_url = get_domain_url(request)
         url = '{}{}'.format(domain_url, reverse('allocation-user-request-list'))
@@ -98,8 +98,6 @@ def send_allocation_user_request_email(request, usernames, parent_resource_name)
             'signature': EMAIL_SIGNATURE,
             'users': usernames
         }
-
-        email_receiver_list = [EMAIL_TICKET_SYSTEM_ADDRESS]
 
         send_email_template(
             'New Allocation User Request(s)',

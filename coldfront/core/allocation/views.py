@@ -64,7 +64,7 @@ from coldfront.core.project.models import (Project, ProjectUser,
                                            ProjectUserStatusChoice)
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import get_domain_url, import_from_settings
-from coldfront.core.utils.mail import send_email_template
+from coldfront.core.utils.mail import send_email_template, get_email_recipient_from_groups
 
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
     'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
@@ -1117,17 +1117,23 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 'url': url
             }
 
+            email_recipient = get_email_recipient_from_groups(
+                allocation_obj.get_parent_resource.review_groups.all()
+            )
+
             send_email_template(
                 'New allocation request: {} - {}'.format(
                     pi_name, resource_name),
                 'email/new_allocation_request.txt',
                 template_context,
                 EMAIL_SENDER,
-                [EMAIL_TICKET_SYSTEM_ADDRESS, ]
+                [email_recipient, ]
             )
 
             if new_user_requests:
-                send_allocation_user_request_email(self.request, new_user_requests, resource_name)
+                send_allocation_user_request_email(
+                    self.request, new_user_requests, resource_name, email_recipient
+                )
 
         return super().form_valid(form)
 
@@ -1317,10 +1323,14 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             if added_users:
 
                 if allocation_user_status_choice.name == 'Pending - Add':
+                    email_recipient = get_email_recipient_from_groups(
+                        allocation_obj.get_parent_resource.review_groups.all()
+                    )
                     send_allocation_user_request_email(
                         self.request,
                         added_users,
-                        allocation_obj.get_parent_resource.name
+                        allocation_obj.get_parent_resource.name,
+                        email_recipient
                     )
                     messages.success(
                         request,
@@ -1535,10 +1545,14 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
             if removed_users:
                 if allocation_user_status_choice.name == 'Pending - Remove':
+                    email_recipient = get_email_recipient_from_groups(
+                        allocation_obj.get_parent_resource.review_groups.all()
+                    )
                     send_allocation_user_request_email(
                         self.request,
                         removed_users,
-                        allocation_obj.get_parent_resource.name
+                        allocation_obj.get_parent_resource.name,
+                        email_recipient
                     )
                     messages.success(
                         request, 'Pending removal of user(s) {} from allocation.'.format(', '.join(removed_users))
@@ -2094,13 +2108,17 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
                     'url': url
                 }
 
+                email_recipient = get_email_recipient_from_groups(
+                    allocation_obj.get_parent_resource.review_groups.all()
+                )
+
                 send_email_template(
                     'Allocation renewed: {} - {}'.format(
                         pi_name, resource_name),
                     'email/allocation_renewed.txt',
                     template_context,
                     EMAIL_SENDER,
-                    [EMAIL_TICKET_SYSTEM_ADDRESS, ]
+                    [email_recipient, ]
                 )
 
             messages.success(request, 'Allocation renewed successfully')
@@ -3288,13 +3306,17 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                             'url': url
                         }
 
+                        email_recipient = get_email_recipient_from_groups(
+                            allocation_obj.get_parent_resource.review_groups.all()
+                        )
+
                         send_email_template(
                             'New Allocation Change Request: {} - {}'.format(
                                 pi_name, resource_name),
                             'email/new_allocation_change_request.txt',
                             template_context,
                             EMAIL_SENDER,
-                            [EMAIL_TICKET_SYSTEM_ADDRESS, ]
+                            [email_recipient, ]
                         )
 
                     return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
@@ -3345,13 +3367,17 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                         'url': url
                     }
 
+                    email_recipient = get_email_recipient_from_groups(
+                        allocation_obj.get_parent_resource.review_groups.all()
+                    )
+
                     send_email_template(
                         'New Allocation Change Request: {} - {}'.format(
                             pi_name, resource_name),
                         'email/new_allocation_change_request.txt',
                         template_context,
                         EMAIL_SENDER,
-                        [EMAIL_TICKET_SYSTEM_ADDRESS, ]
+                        [email_recipient, ]
                     )
 
                     return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))

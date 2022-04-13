@@ -13,6 +13,8 @@ if EMAIL_ENABLED:
     EMAIL_SUBJECT_PREFIX = import_from_settings('EMAIL_SUBJECT_PREFIX')
     EMAIL_DEVELOPMENT_EMAIL_LIST = import_from_settings(
         'EMAIL_DEVELOPMENT_EMAIL_LIST')
+    EMAIL_GROUP_TO_EMAIL_MAPPING = import_from_settings('EMAIL_GROUP_TO_EMAIL_MAPPING')
+    EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
 
 
 def send_email(subject, body, sender, receiver_list, cc=[]):
@@ -62,3 +64,19 @@ def send_email_template(subject, template_name, context, sender, receiver_list):
     body = render_to_string(template_name, context)
 
     return send_email(subject, body, sender, receiver_list)
+
+
+def get_email_recipient_from_groups(groups):
+    """
+    Returns a group's email if it exists in EMAIL_GROUP_TO_EMAIL_MAPPING. Only returns the first
+    email it finds, if no email is found then EMAIL_TICKET_SYSTEM_ADDRESS is returned.
+
+    :params groups: List/QuerySet of Groups
+    :return: Email address for a group if found, else EMAIL_TICKET_SYSTEM_ADDRESS
+    """
+    for group in groups:
+        email = EMAIL_GROUP_TO_EMAIL_MAPPING.get(group.name)
+        if email is not None:
+            return email
+
+    return EMAIL_TICKET_SYSTEM_ADDRESS
