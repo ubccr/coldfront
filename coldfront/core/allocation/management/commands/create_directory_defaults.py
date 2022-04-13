@@ -3,7 +3,7 @@ from coldfront.core.resource.models import ResourceAttribute
 from coldfront.core.resource.models import ResourceAttributeType
 from coldfront.core.resource.models import ResourceType
 from coldfront.core.allocation.models import AllocationAttributeType, \
-    SecureDirAddUserRequestStatusChoice
+    SecureDirAddUserRequestStatusChoice, SecureDirRemoveUserRequestStatusChoice
 
 from django.core.management.base import BaseCommand
 
@@ -98,6 +98,10 @@ class Command(BaseCommand):
 
         for status in ['Pending - Add', 'Processing - Add', 'Completed']:
             SecureDirAddUserRequestStatusChoice.objects.get_or_create(
+                name=status)
+
+        for status in ['Pending - Remove', 'Processing - Remove', 'Completed']:
+            SecureDirRemoveUserRequestStatusChoice.objects.get_or_create(
                 name=status)
 
         message = 'Successfully created directory objects.'
