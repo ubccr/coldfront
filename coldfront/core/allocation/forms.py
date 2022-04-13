@@ -265,7 +265,7 @@ class AllocationClusterAccountRequestActivationForm(forms.Form):
         return cluster_uid
 
 
-class AllocationSecureDirJoinForm(forms.Form):
+class AllocationSecureDirManageUserForm(forms.Form):
     username = forms.CharField(max_length=150, disabled=True)
     first_name = forms.CharField(max_length=30, required=False, disabled=True)
     last_name = forms.CharField(max_length=150, required=False, disabled=True)
