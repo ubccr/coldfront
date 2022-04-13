@@ -1,6 +1,7 @@
 from django.urls import path
 
 import coldfront.core.allocation.views as allocation_views
+import coldfront.core.allocation.views_.secure_dir_views as secure_dir_views
 
 
 urlpatterns = [
@@ -57,4 +58,6 @@ urlpatterns = [
          name='add-allocation-account'),
     path('allocation-account-list/', allocation_views.AllocationAccountListView.as_view(),
          name='allocation-account-list'),
+    path('<int:pk>/secure-dir-add-users/', secure_dir_views.SecureDirAddUsersView.as_view(),
+         name='secure-dir-add-users'),
 ]
