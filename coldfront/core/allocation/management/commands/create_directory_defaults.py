@@ -2,7 +2,8 @@ from coldfront.core.resource.models import Resource
 from coldfront.core.resource.models import ResourceAttribute
 from coldfront.core.resource.models import ResourceAttributeType
 from coldfront.core.resource.models import ResourceType
-from coldfront.core.allocation.models import AllocationAttributeType
+from coldfront.core.allocation.models import AllocationAttributeType, \
+    SecureDirAddUserRequestStatusChoice
 
 from django.core.management.base import BaseCommand
 
@@ -94,6 +95,9 @@ class Command(BaseCommand):
                 'is_unique': False,
                 'is_private': False,
             })
+
+        for status in ['Pending - Add', 'Processing - Add', 'Completed']:
+            SecureDirAddUserRequestStatusChoice.objects.create(name=status)
 
         message = 'Successfully created directory objects.'
         self.stdout.write(self.style.SUCCESS(message))
