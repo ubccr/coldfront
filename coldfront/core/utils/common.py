@@ -10,6 +10,9 @@ from decimal import Decimal
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.urls import reverse
+
+from django_q.models import Schedule
+
 from urllib.parse import urljoin
 
 # Get an instance of a logger
@@ -73,10 +76,31 @@ def add_argparse_dry_run_argument(parser):
         help='Display updates without performing them.')
 
 
+def delete_scheduled_tasks(func, *args):
+    """Delete scheduled tasks (Schedule objects) for running the given
+    function with the given arguments. Write a message to the log."""
+    scheduled_tasks = Schedule.objects.filter(func=func, args=args)
+    num_scheduled_tasks = scheduled_tasks.count()
+    if num_scheduled_tasks:
+        scheduled_tasks.delete()
+        message = (
+            f'Deleted {num_scheduled_tasks} scheduled tasks for running '
+            f'{func}({", ".join(str(arg) for arg in args)}).')
+        logger.info(message)
+
+
 def display_time_zone_current_date():
     """Return the current date in settings.DISPLAY_TIME_ZONE."""
     return utc_now_offset_aware().astimezone(
         pytz.timezone(settings.DISPLAY_TIME_ZONE)).date()
+
+
+def display_time_zone_date_to_utc_datetime(date):
+    """Return the given date, interpreted as being in
+    settings.DISPLAY_TIME_ZONE as a datetime object in the UTC
+    timezone."""
+    return datetime.combine(date, datetime.min.time()).replace(
+        tzinfo=pytz.timezone(settings.DISPLAY_TIME_ZONE)).astimezone(pytz.utc)
 
 
 def format_date_month_name_day_year(date):
