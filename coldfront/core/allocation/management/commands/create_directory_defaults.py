@@ -15,7 +15,6 @@ relevant cluster directories."""
 
 
 class Command(BaseCommand):
-
     help = 'Manually creates objects for storing relevant cluster directories.'
     logger = logging.getLogger(__name__)
 
@@ -86,15 +85,16 @@ class Command(BaseCommand):
 
         from coldfront.core.allocation.models import AttributeType
         attribute_type, _ = AttributeType.objects.get_or_create(name='Text')
-        allocation_attr_type = AllocationAttributeType.objects.update_or_create(
-            attribute_type=attribute_type,
-            name='Cluster Directory Access',
-            defaults={
-                'has_usage': False,
-                'is_required': False,
-                'is_unique': False,
-                'is_private': False,
-            })
+        allocation_attr_type, _ = \
+            AllocationAttributeType.objects.update_or_create(
+                attribute_type=attribute_type,
+                name='Cluster Directory Access',
+                defaults={
+                    'has_usage': False,
+                    'is_required': False,
+                    'is_unique': False,
+                    'is_private': False,
+                })
 
         for status in ['Pending - Add', 'Processing - Add', 'Completed']:
             SecureDirAddUserRequestStatusChoice.objects.get_or_create(
