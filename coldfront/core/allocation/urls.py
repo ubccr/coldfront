@@ -58,6 +58,8 @@ urlpatterns = [
          name='add-allocation-account'),
     path('allocation-account-list/', allocation_views.AllocationAccountListView.as_view(),
          name='allocation-account-list'),
-    path('<int:pk>/secure-dir-add-users/', secure_dir_views.SecureDirAddUsersView.as_view(),
+    path('<int:pk>/secure-dir-add-users/', secure_dir_views.SecureDirAddUsersView.as_view(action='Add'),
          name='secure-dir-add-users'),
+    path('<int:pk>/secure-dir-remove-users/', secure_dir_views.SecureDirAddUsersView.as_view(action='Remove'),
+         name='secure-dir-remove-users'),
 ]
