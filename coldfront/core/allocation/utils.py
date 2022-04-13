@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from django.db.models import Q
 from django.urls import reverse
 
@@ -17,6 +17,7 @@ if EMAIL_ENABLED:
         'EMAIL_OPT_OUT_INSTRUCTION_URL')
     EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
     EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
+
 
 def set_allocation_user_status_to_error(allocation_user_pk):
     allocation_user_obj = AllocationUser.objects.get(pk=allocation_user_pk)
@@ -64,7 +65,7 @@ def get_user_resources(user_obj):
         resources = Resource.objects.filter(
             Q(is_allocatable=True) &
             Q(is_available=True) &
-            (Q(is_public=True) | Q(allowed_groups__in=user_obj.groups.all()) | Q(allowed_users__in=[user_obj,]))
+            (Q(is_public=True) | Q(allowed_groups__in=user_obj.groups.all()) | Q(allowed_users__in=[user_obj, ]))
         ).distinct()
 
     return resources
