@@ -26,7 +26,7 @@ class Command(BaseCommand):
         for choice in ('Pending', 'Approved', 'Denied',):
             AllocationChangeStatusChoice.objects.get_or_create(name=choice)
 
-        for choice in ('Active', 'Error', 'Removed', ):
+        for choice in ('Active', 'Error', 'Removed', 'Pending - Add', 'Pending - Remove'):
             AllocationUserStatusChoice.objects.get_or_create(name=choice)
 
         for choice in ('Approved', 'Pending', 'Denied', ):
