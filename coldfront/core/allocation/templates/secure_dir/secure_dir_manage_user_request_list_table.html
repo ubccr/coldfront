@@ -1,0 +1,118 @@
+<table class="table table-sm">
+  <thead>
+  <tr>
+    <th scope="col">
+      #
+      <a href="?order_by=id&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+      <a href="?order_by=id&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+    </th>
+    <th scope="col">
+      {% if request_filter == 'pending' or adj == 'pending' %}
+        Date Requested
+      {% else %}
+        Date Completed
+      {% endif %}
+      <a href="?order_by=created&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+      <a href="?order_by=created&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+    </th>
+    <th scope="col">
+      User Email
+    </th>
+    <th scope="col">
+      User
+    </th>
+    <th scope="col">
+      Allocation
+    </th>
+    <th scope="col">
+      Directory
+    </th>
+    <th scope="col">
+      Status
+    </th>
+    {% if user.is_superuser and actions_visible %}
+      <th scope="col">
+        Actions
+      </th>
+    {% endif %}
+  </tr>
+  </thead>
+  <tbody>
+  {% for request in queryset %}
+    <tr>
+      <td>{{ request.pk }}</td>
+      {% if request_filter == 'pending' or adj == 'pending' %}
+        <td>{{ request.request_time|date:"M. d, Y" }}</td>
+      {% else %}
+        <td>{{ request.completion_time|date:"M. d, Y" }}</td>
+      {% endif %}
+      <td>{{ request.user.email }}</td>
+      <td>{{ request.user.username }}</td>
+      <td>
+        <a href="{% url 'allocation-detail' request.allocation.pk %}">
+          {{ request.allocation.project.name }}
+        </a>
+      </td>
+      <td>{{ request.allocation.resources.first.name }}</td>
+      {% with status=request.status.name %}
+        <td>
+          {% if "Pending" in status %}
+            <span class="badge badge-warning">{{ status }}</span>
+          {% elif "Processing" in status %}
+            <span class="badge badge-warning">{{ status }}</span>
+          {% elif "Complete" in status %}
+            <span class="badge badge-success">{{ status }}</span>
+          {% endif %}
+        </td>
+        {% if user.is_superuser and actions_visible %}
+          <td class="text-nowrap">
+            {% if "Pending" in status %}
+              <a href="{% url 'secure-dir-manage-user-update-status' request.pk action %}" class="btn btn-success mr-1">
+                Update
+              </a>
+            {% elif "Processing" in status %}
+              <a href="{% url 'secure-dir-manage-user-complete-status' request.pk action %}" class="btn btn-success mr-1">
+                Update
+              </a>
+            {% endif %}
+            <div class="modal fade" id="denial{{ request.pk }}Modal" tabindex="-1" role="dialog" aria-labelledby="denial{{ request.pk }}ModalLabel" aria-hidden="true">
+              <div class="modal-dialog" role="document">
+                <form action="{% url 'secure-dir-manage-user-deny-request' request.pk action %}" method="get" id="denial{{ request.pk }}Form">
+                  {% csrf_token %}
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <p class="modal-title">Deny Request</p>
+                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                      </button>
+                    </div>
+
+                    <div class="modal-body">
+                      <label>Are You Sure?</label>
+
+                      <br><b>User:</b> {{ request.user.username }}
+                      <br><b>Allocation:</b> {{ request.allocation.project.name }}
+                      <br><b>Resource:</b> {{ request.allocation.resources.first.name }}
+                    </div>
+
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                      <button class="btn btn-danger mr-1" type="submit">
+                        Yes, deny this request.
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+            <button class="btn btn-danger mr-1" data-toggle="modal" data-target="#denial{{ request.pk }}Modal">
+              Deny
+            </button>
+          </td>
+        {% endif %}
+      {% endwith %}
+
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
