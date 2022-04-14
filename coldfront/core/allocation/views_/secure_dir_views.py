@@ -12,12 +12,17 @@ from django.views.generic import ListView, FormView
 from django.views.generic.base import TemplateView, View
 
 from coldfront.core.allocation.forms import SecureDirManageUsersForm, \
-    SecureDirManageUsersSearchForm
+    SecureDirManageUsersSearchForm, SecureDirManageUsersRequestUpdateStatusForm, \
+    SecureDirManageUsersRequestCompletionForm
 from coldfront.core.allocation.models import Allocation, \
     SecureDirAddUserRequest, SecureDirAddUserRequestStatusChoice, \
     SecureDirRemoveUserRequest, SecureDirRemoveUserRequestStatusChoice, \
-    AllocationUserAttribute
-from coldfront.core.resource.models import Resource
+    AllocationUserAttribute, AllocationUserStatusChoice, AllocationUser, \
+    AllocationAttributeType, AllocationAttribute
+from coldfront.core.allocation.utils import \
+    get_secure_dir_manage_user_request_objects
+from coldfront.core.resource.models import Resource, ResourceAttributeType, \
+    AttributeType
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.mail import send_email, send_email_template
 
@@ -427,9 +432,10 @@ class SecureDirManageUsersRequestListView(LoginRequiredMixin,
 class SecureDirManageUsersUpdateStatusView(LoginRequiredMixin,
                                            UserPassesTestMixin,
                                            FormView):
-    form_class = None
+    form_class = SecureDirManageUsersRequestUpdateStatusForm
     login_url = '/'
-    template_name = ''
+    template_name = \
+        'secure_dir/secure_dir_manage_user_request_update_status.html'
 
     def test_func(self):
         """UserPassesTestMixin tests."""
@@ -440,14 +446,70 @@ class SecureDirManageUsersUpdateStatusView(LoginRequiredMixin,
         message = (
             'You do not have permission to update secure dir requests.')
         messages.error(self.request, message)
+
+    def dispatch(self, request, *args, **kwargs):
+        get_secure_dir_manage_user_request_objects(self,
+                                                   self.kwargs.get('action'))
+        self.secure_dir_request = get_object_or_404(
+            self.request_type, pk=self.kwargs.get('pk'))
+        status = self.secure_dir_request.status.name
+
+        if 'Pending' not in status:
+            message = f'Secure directory user {self.language_dict["noun"]} ' \
+                      f'request has unexpected status {status}.'
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse(f'secure-dir-{self.action}-users-request-list'))
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        form_data = form.cleaned_data
+        status = form_data.get('status')
+
+        secure_dir_status_choice = \
+            self.request_status_type.objects.filter(
+                name__icontains=status).first()
+        self.secure_dir_request.status = secure_dir_status_choice
+        self.secure_dir_request.save()
+
+        # TODO: alter message
+        message = ''
+        messages.success(self.request, message)
+
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['request'] = self.secure_dir_request
+        context['return_url'] = \
+            f'secure-dir-{self.action}-users-request-list'
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Cluster Directory Access')
+        subdirectory = AllocationAttribute.objects.get(
+            allocation_attribute_type=allocation_attribute_type,
+            allocation=self.secure_dir_request.allocation)
+        context['subdirectory'] = subdirectory.value
+        context['action'] = self.action
+        context['noun'] = self.language_dict['noun']
+        return context
+
+    def get_initial(self):
+        initial = {
+            'status': self.secure_dir_request.status.name,
+        }
+        return initial
+
+    def get_success_url(self):
+        return reverse(f'secure-dir-{self.action}-users-request-list')
 
 
 class SecureDirManageUsersCompleteStatusView(LoginRequiredMixin,
                                              UserPassesTestMixin,
                                              FormView):
-    form_class = None
+    form_class = SecureDirManageUsersRequestCompletionForm
     login_url = '/'
-    template_name = ''
+    template_name = \
+        'secure_dir/secure_dir_manage_user_request_complete_status.html'
 
     def test_func(self):
         """UserPassesTestMixin tests."""
@@ -458,6 +520,76 @@ class SecureDirManageUsersCompleteStatusView(LoginRequiredMixin,
         message = (
             'You do not have permission to update secure dir requests.')
         messages.error(self.request, message)
+
+    def dispatch(self, request, *args, **kwargs):
+        self.action = self.kwargs.get('action')
+        self.request_type = SecureDirAddUserRequest \
+            if self.action == 'Add' else SecureDirRemoveUserRequest
+        self.request_status_type = SecureDirAddUserRequestStatusChoice \
+            if self.action == 'Add' else SecureDirRemoveUserRequestStatusChoice
+        self.secure_dir_request = get_object_or_404(
+            self.request_type, pk=self.kwargs.get('pk'))
+        status = self.secure_dir_request.status.name
+        if 'Processing' not in status:
+            message = f'Secure directory user {self.action.lower()} request ' \
+                      f'has unexpected status {status}.'
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse(f'secure-dir-{self.action.lower()}-users-request-list'))
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        form_data = form.cleaned_data
+        status = form_data.get('status')
+        complete = 'Complete' in status
+
+        secure_dir_status_choice = \
+            self.request_status_type.objects.filter(
+                name__icontains=status).first()
+        self.secure_dir_request.status = secure_dir_status_choice
+        if complete:
+            self.secure_dir_request.completion_time = utc_now_offset_aware()
+        self.secure_dir_request.save()
+
+        if complete:
+            # either create allocation user with active status or set
+            # allocation user status to removed
+            alloc_user, created = \
+                AllocationUser.objects.get_or_create(
+                    allocation=self.secure_dir_request.allocation,
+                    user=self.secure_dir_request.user,
+                    status=AllocationUserStatusChoice.objects.get(name='Active')
+            )
+
+            if self.action == 'Remove':
+                # create allocation user
+                alloc_user.status = \
+                    AllocationUserStatusChoice.objects.get(name='Removed')
+                alloc_user.save()
+
+        # TODO: alter message
+        message = ''
+        messages.success(self.request, message)
+
+        # TODO: send email
+
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['request'] = self.secure_dir_request
+        context['return_url'] = \
+            f'secure-dir-{self.action.lower()}-users-request-list'
+        return context
+
+    def get_initial(self):
+        initial = {
+            'status': self.secure_dir_request.status.name,
+        }
+        return initial
+
+    def get_success_url(self):
+        return reverse(f'secure-dir-{self.action.lower()}-users-request-list')
 
 
 class SecureDirManageUsersDenyRequestView(LoginRequiredMixin,
