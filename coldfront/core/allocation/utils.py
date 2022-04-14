@@ -301,9 +301,9 @@ def get_secure_dir_manage_user_request_objects(self, action):
 
     add_bool = action == 'add'
 
-    request_type = SecureDirAddUserRequest \
+    request_obj = SecureDirAddUserRequest \
         if add_bool else SecureDirRemoveUserRequest
-    request_status_type = SecureDirAddUserRequestStatusChoice \
+    request_status_obj = SecureDirAddUserRequestStatusChoice \
         if add_bool else SecureDirRemoveUserRequestStatusChoice
 
     language_dict = {
@@ -313,7 +313,8 @@ def get_secure_dir_manage_user_request_objects(self, action):
     }
 
     setattr(self, 'action', action.lower())
-    setattr(self, 'request_type', request_type)
-    setattr(self, 'request_status_type', request_status_type)
+    setattr(self, 'add_bool', add_bool)
+    setattr(self, 'request_obj', request_obj)
+    setattr(self, 'request_status_obj', request_status_obj)
     setattr(self, 'language_dict', language_dict)
 
