@@ -12,9 +12,10 @@ from django.urls import reverse
 from django.views.generic import ListView, FormView
 from django.views.generic.base import TemplateView, View
 
-from coldfront.core.allocation.forms import SecureDirManageUsersForm, \
-    SecureDirManageUsersSearchForm, SecureDirManageUsersRequestUpdateStatusForm, \
-    SecureDirManageUsersRequestCompletionForm
+from coldfront.core.allocation.forms_.secure_dir_forms import (
+    SecureDirManageUsersForm, SecureDirManageUsersSearchForm,
+    SecureDirManageUsersRequestUpdateStatusForm,
+    SecureDirManageUsersRequestCompletionForm)
 from coldfront.core.allocation.models import Allocation, \
     SecureDirAddUserRequest, SecureDirRemoveUserRequest, \
     AllocationUserStatusChoice, AllocationUser, \
