@@ -33,9 +33,6 @@ filehandler = logging.FileHandler(f'coldfront/plugins/fasrc/data/logs/{datestr}.
 logger.addHandler(filehandler)
 
 
-with open("coldfront/plugins/fasrc/servers.json", "r") as myfile:
-    svp = json.loads(myfile.read())
-
 def record_process(func):
     """Wrapper function for logging"""
     def call(*args, **kwargs):
@@ -46,6 +43,7 @@ def record_process(func):
         return result
     return call
 
+
 class AllTheThingsConn:
 
     def __init__(self):
@@ -53,13 +51,17 @@ class AllTheThingsConn:
         self.token = import_from_settings('NEO4JP')
         self.headers = generate_headers(self.token)
 
+
     def pull_quota_data(self):
+        """Produce JSON file of quota data for LFS and Isilon from AlltheThings.
+        """
         result_file = 'coldfront/plugins/fasrc/data/allthethings_output.json'
-        vol_search = "|".join([i for l in [v.keys() for s, v in svp.items()]for i in l])
-        logger.debug(f"vol_search: {vol_search}")
+        svp = read_json("coldfront/plugins/fasrc/servers.json")
+        volumes = "|".join([i for l in [v.keys() for s, v in svp.items()]for i in l])
+        logger.debug(f"volumes: {volumes}")
 
         quota = {"match": "[:HasQuota]-(e:Quota)",
-            "where":f"WHERE (e.filesystem =~ '.*({vol_search}).*')",
+            "where":f"WHERE (e.filesystem =~ '.*({volumes}).*')",
             "storage_type":"\"Quota\"",
             "usedgb": "usedGB",
             "fs_path":"filesystem",
@@ -67,7 +69,7 @@ class AllTheThingsConn:
             "unique":"datetime(e.DotsLFSUpdateDate) as begin_date"}
 
         isilon = {"match": "[:Owns]-(e:IsilonPath)",
-            "where":f"WHERE (e.Isilon =~ '.*({vol_search}).*')",
+            "where":f"WHERE (e.Isilon =~ '.*({volumes}).*')",
             "storage_type":"\"Isilon\"",
             "fs_path":"Path",
             "server":"Isilon",
@@ -115,7 +117,10 @@ class AllTheThingsConn:
             f.write(json.dumps(resp_json_by_lab_cleaned, indent=2))
         return result_file
 
+
     def push_quota_data(self, result_file):
+        """Use JSON of collected ATT data to update group quota & usage values in Coldfront.
+        """
         result_json = read_json(result_file)
         counts = {"proj_err": 0, "res_err":0, "all_err":0, "complete":0}
         # produce list of present labs
@@ -127,13 +132,15 @@ class AllTheThingsConn:
         counts['proj_err'] = len(missing_projs)
         [result_json.pop(key) for key in missing_projs]
 
+        # clean result_json - edit "server" value
         for l in result_json.values():
             for a in l:
                 a['server'] = a['server'].replace("01.rc.fas.harvard.edu", "")\
                         .replace("/n/", "")
 
+        # produce set of server values for which to locate matching resources
         resource_set = set([a['server'] for l in result_json.values() for a in l])
-
+        # get resource models
         res_models = Resource.objects.filter(reduce(operator.or_, (Q(name__contains=x) for x in resource_set)))
         res_names = [str(r.name).split("/")[0] for r in res_models]
         missing_res = log_missing("resource", res_names, resource_set)
@@ -201,12 +208,12 @@ class AllTheThingsConn:
                         value = lab_allocation)
                     allocation_attribute_type_obj.save()
 
-
                 allocation_attribute_obj.allocationattributeusage.value = lab_usage
                 allocation_attribute_obj.allocationattributeusage.save()
 
+                # 5. AllocationAttribute
                 allocation_attribute_type_payment = AllocationAttributeType.objects.get(
-                name='RequiresPayment')
+                        name='RequiresPayment')
                 allocation_attribute_payment, _ = AllocationAttribute.objects.get_or_create(
                         allocation_attribute_type=allocation_attribute_type_payment,
                         allocation=a,
@@ -227,19 +234,26 @@ def log_missing(modelname,
     if missing:
         datestr = datetime.today().strftime("%Y%m%d")
         patterns = [pattern.replace("I", i).replace("D", datestr).replace("G", group) for i in missing]
-        write_update_file_line(fpath, patterns)
+        find_or_add_file_line(fpath, patterns)
     return missing
 
 
-def write_update_file_line(filepath, patterns):
-    """Find
+def find_or_add_file_line(filepath, patterns):
+    """Find or add lines matching a string contained in a list to a file.
+
+    Parameters
+    ----------
+    filepath : string
+        path and name of file to check.
+    patterns : list
+        list of lines to find or append to file.
     """
     with open(filepath, 'a+') as f:
         f.seek(0)
         lines = f.readlines()
-        for pattern in patterns:
-            if not any(pattern == line.rstrip('\r\n') for line in lines):
-                f.write(pattern + '\n')
+        for p in patterns:
+            if not any(p == line.rstrip('\r\n') for line in lines):
+                f.write(p + '\n')
 
 
 def generate_headers(token):
@@ -252,7 +266,7 @@ def generate_headers(token):
     return headers
 
 def read_json(filepath):
-    logger.debug("read_json for {}".format(filepath))
+    logger.debug(f"read_json for {filepath}")
     with open(filepath, "r") as myfile:
         data = json.loads(myfile.read())
     return data
