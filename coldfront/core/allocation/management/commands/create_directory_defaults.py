@@ -96,11 +96,11 @@ class Command(BaseCommand):
                     'is_private': False,
                 })
 
-        for status in ['Pending - Add', 'Processing - Add', 'Completed']:
+        for status in ['Pending - Add', 'Processing - Add', 'Completed', 'Denied']:
             SecureDirAddUserRequestStatusChoice.objects.get_or_create(
                 name=status)
 
-        for status in ['Pending - Remove', 'Processing - Remove', 'Completed']:
+        for status in ['Pending - Remove', 'Processing - Remove', 'Completed', 'Denied']:
             SecureDirRemoveUserRequestStatusChoice.objects.get_or_create(
                 name=status)
 
