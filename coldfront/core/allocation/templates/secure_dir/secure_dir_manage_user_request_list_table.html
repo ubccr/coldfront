@@ -62,16 +62,18 @@
             <span class="badge badge-warning">{{ status }}</span>
           {% elif "Complete" in status %}
             <span class="badge badge-success">{{ status }}</span>
+          {% elif "Denied" in status %}
+            <span class="badge badge-danger">{{ status }}</span>
           {% endif %}
         </td>
         {% if user.is_superuser and actions_visible %}
           <td class="text-nowrap">
             {% if "Pending" in status %}
-              <a href="{% url 'secure-dir-manage-user-update-status' request.pk action|lower %}" class="btn btn-success mr-1">
+              <a href="{% url 'secure-dir-manage-user-update-status' request.pk action %}" class="btn btn-success mr-1">
                 Update
               </a>
             {% elif "Processing" in status %}
-              <a href="{% url 'secure-dir-manage-user-complete-status' request.pk action|lower %}" class="btn btn-success mr-1">
+              <a href="{% url 'secure-dir-manage-user-complete-status' request.pk action %}" class="btn btn-success mr-1">
                 Update
               </a>
             {% endif %}

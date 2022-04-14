@@ -4,8 +4,9 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db.models import Q
 from django.forms import formset_factory
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.views.generic import ListView, FormView
@@ -15,14 +16,12 @@ from coldfront.core.allocation.forms import SecureDirManageUsersForm, \
     SecureDirManageUsersSearchForm, SecureDirManageUsersRequestUpdateStatusForm, \
     SecureDirManageUsersRequestCompletionForm
 from coldfront.core.allocation.models import Allocation, \
-    SecureDirAddUserRequest, SecureDirAddUserRequestStatusChoice, \
-    SecureDirRemoveUserRequest, SecureDirRemoveUserRequestStatusChoice, \
-    AllocationUserAttribute, AllocationUserStatusChoice, AllocationUser, \
+    SecureDirAddUserRequest, SecureDirRemoveUserRequest, \
+    AllocationUserStatusChoice, AllocationUser, \
     AllocationAttributeType, AllocationAttribute
 from coldfront.core.allocation.utils import \
     get_secure_dir_manage_user_request_objects
-from coldfront.core.resource.models import Resource, ResourceAttributeType, \
-    AttributeType
+from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.mail import send_email, send_email_template
 
@@ -31,7 +30,6 @@ class SecureDirManageUsersView(LoginRequiredMixin,
                                UserPassesTestMixin,
                                TemplateView):
     template_name = 'secure_dir/secure_dir_manage_users.html'
-    action = 'Add'
 
     logger = logging.getLogger(__name__)
 
@@ -50,9 +48,13 @@ class SecureDirManageUsersView(LoginRequiredMixin,
 
     def dispatch(self, request, *args, **kwargs):
         alloc_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+        get_secure_dir_manage_user_request_objects(self,
+                                                   self.kwargs.get('action'))
         if alloc_obj.status.name not in ['Active', 'New', ]:
             messages.error(
-                request, 'You can only add users to an active allocation.')
+                request, f'You can only {self.language_dict["verb"]} users '
+                         f'{self.language_dict["preposition"]} an '
+                         f'active allocation.')
             return HttpResponseRedirect(
                 reverse('allocation-detail', kwargs={'pk': alloc_obj.pk}))
         else:
@@ -137,7 +139,7 @@ class SecureDirManageUsersView(LoginRequiredMixin,
         pk = self.kwargs.get('pk')
         alloc_obj = get_object_or_404(Allocation, pk=pk)
 
-        if self.action == 'Add':
+        if self.add_bool:
             user_list = self.get_users_to_add(alloc_obj)
         else:
             user_list = self.get_users_to_remove(alloc_obj)
@@ -168,13 +170,11 @@ class SecureDirManageUsersView(LoginRequiredMixin,
                            f'{alloc_obj.project.name}'
 
         context['action'] = self.action
-        context['url'] = 'secure-dir-add-users' \
-            if self.action == 'Add' else 'secure-dir-remove-users'
+        context['url'] = f'secure-dir-manage-users'
 
-        context['button'] = 'btn-success' if self.action == 'Add' \
-            else 'btn-danger'
+        context['button'] = 'btn-success' if self.add_bool else 'btn-danger'
 
-        context['preposition'] = 'to' if self.action == 'Add' else 'from'
+        context['preposition'] = self.language_dict['preposition']
 
         return render(request, self.template_name, context)
 
@@ -199,7 +199,7 @@ class SecureDirManageUsersView(LoginRequiredMixin,
             return HttpResponseRedirect(
                 reverse('allocation-detail', kwargs={'pk': pk}))
 
-        if self.action == 'Add':
+        if self.add_bool:
             user_list = self.get_users_to_add(alloc_obj)
         else:
             user_list = self.get_users_to_remove(alloc_obj)
@@ -211,19 +211,9 @@ class SecureDirManageUsersView(LoginRequiredMixin,
 
         reviewed_users_count = 0
 
-        decision = request.POST.get('decision', None)
-        if decision not in ['Add', 'Remove']:
-            return HttpResponse('', status=400)
-
         if formset.is_valid():
-            if decision == 'Add':
-                pending_status = \
-                    SecureDirAddUserRequestStatusChoice.objects.get(
-                        name='Pending - Add')
-            else:
-                pending_status = \
-                    SecureDirRemoveUserRequestStatusChoice.objects.get(
-                        name='Pending - Remove')
+            pending_status = \
+                self.request_status_obj.objects.get(name__icontains='Pending')
 
             for form in formset:
                 user_form_data = form.cleaned_data
@@ -232,21 +222,12 @@ class SecureDirManageUsersView(LoginRequiredMixin,
                     user_obj = User.objects.get(
                         username=user_form_data.get('username'))
 
-                    # Create a new SecureDirAddUserRequest for the user.
-                    if decision == 'Add':
-                        secure_dir_add_request = \
-                            SecureDirAddUserRequest.objects.create(
-                                user=user_obj,
-                                allocation=alloc_obj,
-                                status=pending_status
-                            )
-                    else:
-                        secure_dir_remove_request = \
-                            SecureDirRemoveUserRequest.objects.create(
-                                user=user_obj,
-                                allocation=alloc_obj,
-                                status=pending_status
-                            )
+                    secure_dir_manage_user_request = \
+                        self.request_obj.objects.create(
+                            user=user_obj,
+                            allocation=alloc_obj,
+                            status=pending_status
+                        )
 
                     # TODO: do we email admins? Probably
 
@@ -256,10 +237,10 @@ class SecureDirManageUsersView(LoginRequiredMixin,
                 else 'group'
 
             message = (
-                f'Successfully requested to {decision.lower()} '
+                f'Successfully requested to {self.action} '
                 f'{reviewed_users_count} user'
                 f'{"s" if reviewed_users_count > 1 else ""} '
-                f'{"to" if decision == "Add" else "from"} the secure '
+                f'{self.language_dict["preposition"]} the secure '
                 f'{directory_name} directory for {alloc_obj.project.name}. '
                 f'BRC staff have been notified.')
             messages.success(request, message)
@@ -276,9 +257,6 @@ class SecureDirManageUsersRequestListView(LoginRequiredMixin,
                                           UserPassesTestMixin,
                                           ListView):
     template_name = 'secure_dir/secure_dir_manage_user_request_list.html'
-    login_url = '/'
-    completed = False
-    action = 'Add'
     paginate_by = 30
 
     def test_func(self):
@@ -288,8 +266,15 @@ class SecureDirManageUsersRequestListView(LoginRequiredMixin,
 
         message = (
             f'You do not have permission to review secure directory '
-            f'{self.action.lower()} requests.')
+            f'{self.action} user requests.')
         messages.error(self.request, message)
+
+    def dispatch(self, request, *args, **kwargs):
+        get_secure_dir_manage_user_request_objects(self,
+                                                   self.kwargs.get('action'))
+        self.status = self.kwargs.get('status')
+        self.completed = self.status == 'completed'
+        return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
         order_by = self.request.GET.get('order_by')
@@ -303,33 +288,21 @@ class SecureDirManageUsersRequestListView(LoginRequiredMixin,
         else:
             order_by = 'id'
 
-        if self.action == 'Add':
-            pending_status = \
-                SecureDirAddUserRequestStatusChoice.objects.filter(
-                    name__in=['Pending - Add', 'Processing - Add'])
-            complete_status = \
-                SecureDirAddUserRequestStatusChoice.objects.filter(
-                    name__in=['Completed', 'Denied'])
+        pending_status = self.request_status_obj.objects.filter(
+            Q(name__icontains='Pending') | Q(name__icontains='Processing'))
 
-        else:
-            pending_status = \
-                SecureDirRemoveUserRequestStatusChoice.objects.filter(
-                    name__in=['Pending - Remove', 'Processing - Remove'])
-            complete_status = \
-                SecureDirRemoveUserRequestStatusChoice.objects.filter(
-                    name__in=['Completed', 'Denied'])
+        complete_status = self.request_status_obj.objects.filter(
+            name__in=['Completed', 'Denied'])
 
         secure_dir_request_search_form = \
             SecureDirManageUsersSearchForm(self.request.GET)
 
-        request_obj = SecureDirAddUserRequest if self.action == 'Add' else \
-            SecureDirRemoveUserRequest
-
         if self.completed:
-            request_list = request_obj.objects.filter(
+            request_list = self.request_obj.objects.filter(
                 status__in=complete_status)
         else:
-            request_list = request_obj.objects.filter(status__in=pending_status)
+            request_list = self.request_obj.objects.filter(
+                status__in=pending_status)
 
         if secure_dir_request_search_form.is_valid():
             data = secure_dir_request_search_form.cleaned_data
@@ -413,18 +386,8 @@ class SecureDirManageUsersRequestListView(LoginRequiredMixin,
         context['actions_visible'] = not self.completed
 
         context['action'] = self.action
-        if self.action == 'Add':
-            context['pending_url'] = \
-                'secure-dir-add-users-request-list'
-            context['completed_url'] = \
-                'secure-dir-add-users-request-list-completed'
-        else:
-            context['pending_url'] = \
-                'secure-dir-remove-users-request-list'
-            context['completed_url'] = \
-                'secure-dir-remove-users-request-list-completed'
 
-        context['preposition'] = 'to' if self.action == 'Add' else 'from'
+        context['preposition'] = self.language_dict['preposition']
 
         return context
 
@@ -433,7 +396,6 @@ class SecureDirManageUsersUpdateStatusView(LoginRequiredMixin,
                                            UserPassesTestMixin,
                                            FormView):
     form_class = SecureDirManageUsersRequestUpdateStatusForm
-    login_url = '/'
     template_name = \
         'secure_dir/secure_dir_manage_user_request_update_status.html'
 
@@ -451,7 +413,7 @@ class SecureDirManageUsersUpdateStatusView(LoginRequiredMixin,
         get_secure_dir_manage_user_request_objects(self,
                                                    self.kwargs.get('action'))
         self.secure_dir_request = get_object_or_404(
-            self.request_type, pk=self.kwargs.get('pk'))
+            self.request_obj, pk=self.kwargs.get('pk'))
         status = self.secure_dir_request.status.name
 
         if 'Pending' not in status:
@@ -467,13 +429,13 @@ class SecureDirManageUsersUpdateStatusView(LoginRequiredMixin,
         status = form_data.get('status')
 
         secure_dir_status_choice = \
-            self.request_status_type.objects.filter(
+            self.request_status_obj.objects.filter(
                 name__icontains=status).first()
         self.secure_dir_request.status = secure_dir_status_choice
         self.secure_dir_request.save()
 
         # TODO: alter message
-        message = ''
+        message = 'updated woo from status 1 to status 2'
         messages.success(self.request, message)
 
         return super().form_valid(form)
@@ -491,6 +453,7 @@ class SecureDirManageUsersUpdateStatusView(LoginRequiredMixin,
         context['subdirectory'] = subdirectory.value
         context['action'] = self.action
         context['noun'] = self.language_dict['noun']
+        context['step'] = 'pending'
         return context
 
     def get_initial(self):
@@ -500,16 +463,16 @@ class SecureDirManageUsersUpdateStatusView(LoginRequiredMixin,
         return initial
 
     def get_success_url(self):
-        return reverse(f'secure-dir-{self.action}-users-request-list')
+        return reverse(f'secure-dir-manage-users-request-list',
+                       kwargs={'action': self.action, 'status': 'pending'})
 
 
 class SecureDirManageUsersCompleteStatusView(LoginRequiredMixin,
                                              UserPassesTestMixin,
                                              FormView):
     form_class = SecureDirManageUsersRequestCompletionForm
-    login_url = '/'
     template_name = \
-        'secure_dir/secure_dir_manage_user_request_complete_status.html'
+        'secure_dir/secure_dir_manage_user_request_update_status.html'
 
     def test_func(self):
         """UserPassesTestMixin tests."""
@@ -522,20 +485,17 @@ class SecureDirManageUsersCompleteStatusView(LoginRequiredMixin,
         messages.error(self.request, message)
 
     def dispatch(self, request, *args, **kwargs):
-        self.action = self.kwargs.get('action')
-        self.request_type = SecureDirAddUserRequest \
-            if self.action == 'Add' else SecureDirRemoveUserRequest
-        self.request_status_type = SecureDirAddUserRequestStatusChoice \
-            if self.action == 'Add' else SecureDirRemoveUserRequestStatusChoice
+        get_secure_dir_manage_user_request_objects(self,
+                                                   self.kwargs.get('action'))
         self.secure_dir_request = get_object_or_404(
-            self.request_type, pk=self.kwargs.get('pk'))
+            self.request_obj, pk=self.kwargs.get('pk'))
         status = self.secure_dir_request.status.name
         if 'Processing' not in status:
-            message = f'Secure directory user {self.action.lower()} request ' \
+            message = f'Secure directory user {self.action} request ' \
                       f'has unexpected status {status}.'
             messages.error(request, message)
             return HttpResponseRedirect(
-                reverse(f'secure-dir-{self.action.lower()}-users-request-list'))
+                reverse(f'secure-dir-{self.action}-users-request-list'))
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -544,7 +504,7 @@ class SecureDirManageUsersCompleteStatusView(LoginRequiredMixin,
         complete = 'Complete' in status
 
         secure_dir_status_choice = \
-            self.request_status_type.objects.filter(
+            self.request_status_obj.objects.filter(
                 name__icontains=status).first()
         self.secure_dir_request.status = secure_dir_status_choice
         if complete:
@@ -559,16 +519,16 @@ class SecureDirManageUsersCompleteStatusView(LoginRequiredMixin,
                     allocation=self.secure_dir_request.allocation,
                     user=self.secure_dir_request.user,
                     status=AllocationUserStatusChoice.objects.get(name='Active')
-            )
+                )
 
-            if self.action == 'Remove':
+            if self.action == 'remove':
                 # create allocation user
                 alloc_user.status = \
                     AllocationUserStatusChoice.objects.get(name='Removed')
                 alloc_user.save()
 
         # TODO: alter message
-        message = ''
+        message = 'GREAT SUCCESS'
         messages.success(self.request, message)
 
         # TODO: send email
@@ -578,8 +538,15 @@ class SecureDirManageUsersCompleteStatusView(LoginRequiredMixin,
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['request'] = self.secure_dir_request
-        context['return_url'] = \
-            f'secure-dir-{self.action.lower()}-users-request-list'
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Cluster Directory Access')
+        subdirectory = AllocationAttribute.objects.get(
+            allocation_attribute_type=allocation_attribute_type,
+            allocation=self.secure_dir_request.allocation)
+        context['subdirectory'] = subdirectory.value
+        context['action'] = self.action
+        context['noun'] = self.language_dict['noun']
+        context['step'] = 'processing'
         return context
 
     def get_initial(self):
@@ -589,15 +556,13 @@ class SecureDirManageUsersCompleteStatusView(LoginRequiredMixin,
         return initial
 
     def get_success_url(self):
-        return reverse(f'secure-dir-{self.action.lower()}-users-request-list')
+        return reverse(f'secure-dir-manage-users-request-list',
+                       kwargs={'action': self.action, 'status': 'pending'})
 
 
 class SecureDirManageUsersDenyRequestView(LoginRequiredMixin,
                                           UserPassesTestMixin,
                                           View):
-    login_url = '/'
-    action = 'Add'
-
     def test_func(self):
         """UserPassesTestMixin tests."""
         if self.request.user.is_superuser:
@@ -608,24 +573,33 @@ class SecureDirManageUsersDenyRequestView(LoginRequiredMixin,
             'You do not have permission to deny a secure directory request.')
         messages.error(self.request, message)
 
-    def get(self, request, *args, **kwargs):
-        action = self.kwargs.get('action')
-        request_type = SecureDirAddUserRequest \
-            if action == 'Add' else SecureDirRemoveUserRequest
-        request_status_type = SecureDirAddUserRequestStatusChoice \
-            if action == 'Add' else SecureDirRemoveUserRequestStatusChoice
-        secure_dir_manage_user_request = \
-            get_object_or_404(request_type, pk=self.kwargs.get('pk'))
+    def dispatch(self, request, *args, **kwargs):
+        get_secure_dir_manage_user_request_objects(self,
+                                                   self.kwargs.get('action'))
+        self.secure_dir_request = get_object_or_404(
+            self.request_obj, pk=self.kwargs.get('pk'))
+        status = self.secure_dir_request.status.name
+        if 'Processing' not in status and 'Pending' not in status:
+            message = f'Secure directory user {self.action} request ' \
+                      f'has unexpected status {status}.'
+            messages.error(request, message)
+            return HttpResponseRedirect(
+                reverse(f'secure-dir-manage-users-request-list',
+                        kwargs={'action': self.action, 'status': 'pending'}))
+        return super().dispatch(request, *args, **kwargs)
 
-        secure_dir_manage_user_request.status = request_status_type.objects.get(name='Denied')
-        secure_dir_manage_user_request.completion_time = utc_now_offset_aware()
-        secure_dir_manage_user_request.save()
+    def get(self, request, *args, **kwargs):
+        self.secure_dir_request.status = \
+            self.request_status_obj.objects.get(name='Denied')
+        self.secure_dir_request.completion_time = utc_now_offset_aware()
+        self.secure_dir_request.save()
 
         # TODO: new message
-        message = f'DENIED {action.upper()} REQUEST'
+        message = f'DENIED {self.action.upper()} REQUEST'
         messages.success(request, message)
 
         # TODO: send email after denial
 
         return HttpResponseRedirect(
-            reverse(f'secure-dir-{action.lower()}-users-request-list'))
+            reverse(f'secure-dir-manage-users-request-list',
+                    kwargs={'action': self.action, 'status': 'pending'}))

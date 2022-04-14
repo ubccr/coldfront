@@ -196,8 +196,8 @@ Allocation Detail
         {% comment %}
           <a class="btn btn-primary" href="{{mailto}}" role="button"><i class="far fa-envelope"></i> Email Project Users</a>
         {% endcomment %}
-        <a class="btn btn-success" href="{% url 'secure-dir-add-users' allocation.pk %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
-        <a class="btn btn-danger" href="{% url 'secure-dir-remove-users' allocation.pk %}" role="button"><i class="fas fa-user-times" aria-hidden="true"></i> Remove Users</a>
+        <a class="btn btn-success" href="{% url 'secure-dir-manage-users' allocation.pk 'add' %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
+        <a class="btn btn-danger" href="{% url 'secure-dir-manage-users' allocation.pk 'remove' %}" role="button"><i class="fas fa-user-times" aria-hidden="true"></i> Remove Users</a>
       {% endif %}
     </div>
   </div>

@@ -12,12 +12,20 @@
 {% block content %}
   <h1>Update Secure Directory {{ action|title }} Users Request Status</h1>
 
-  <p>
-    This form updates the status of a secure directory {{ action|lower }} user request from pending to
-    actively processing. Please confirm that the request is marked for processing
-    on the cluster before proceeding. Once updated, the form for performing final
-    {{ noun }} in the database will be made available.
-  </p>
+  {% if step == 'pending' %}
+    <p>
+      This form updates the status of a secure directory {{ action }} user request from pending to
+      actively processing. Please confirm that the request is marked for processing
+      on the cluster before proceeding. Once updated, the form for performing final
+      {{ noun }} in the database will be made available.
+    </p>
+  {% else %}
+    <p>
+      This form updates the status of a secure directory {{ action }} user request from processing to
+      completed. Please confirm the necessary backend actions for the request have been
+      completed before proceeding.
+    </p>
+  {% endif %}
 
   <div class="card mb-3">
     <div class="card-header">
@@ -73,14 +81,20 @@
       </h2>
     </div>
     <div class="card-body">
-      <p class="card-text text-justify">
-        Please change the status to "Processing".
-      </p>
+      {% if step == 'pending' %}
+        <p class="card-text text-justify">
+          Please change the status to "Processing".
+        </p>
+      {% else %}
+        <p class="card-text text-justify">
+          Please change the status to "Complete."
+        </p>
+      {% endif %}
       <form method="post">
         {% csrf_token %}
         {{form|crispy}}
         <input class="btn btn-success" type="submit" value="Update">
-        <a class="btn btn-secondary" href="{% url return_url %}" role="button">Cancel</a>
+        <a class="btn btn-secondary" href="{% url 'secure-dir-manage-users-request-list' action 'pending' %}" role="button">Cancel</a>
       </form>
     </div>
   </div>

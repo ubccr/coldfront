@@ -5,13 +5,13 @@
 {% block title %} Manage Users for Secure Dir {% endblock %}
 
 {% block content %}
-  <h1>{{ action }} users {{ preposition }} the {{ title }}</h1>
+  <h1>{{ action|title }} users {{ preposition }} the {{ title }}</h1>
   <hr>
   {% if formset %}
     <div class="card border-light">
       <div class="card-body">
 
-        <form action="{% url url allocation.pk %}" method="post">
+        <form action="{% url url allocation.pk action %}" method="post">
           {% csrf_token %}
           <div class="table-responsive">
             <table class="table table-sm table-hover">
@@ -48,9 +48,9 @@
           {{ formset.management_form }}
           <div>
             {% if can_manage_users %}
-              <button type="submit" value={{ action }} name="decision" class="btn {{ button }}">
+              <button type="submit" class="btn {{ button }}">
                 <i class="fas fa-user-check" aria-hidden="true"></i>
-                {{ action }} Selected Users
+                {{ action|title }} Selected Users
               </button>
             {% endif %}
             <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation.pk %}" role="button">
@@ -68,7 +68,7 @@
       Back to Allocation
     </a>
     <div class="alert alert-info">
-      No users to {{ action|lower }}!
+      No users to {{ action }}!
     </div>
   {% endif %}
   <script>

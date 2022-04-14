@@ -18,17 +18,17 @@
       <tr>
         <td>
           {% if request_filter == 'completed' %}
-            Viewing completed secure directory {{ action|lower }} user requests. You may also view
+            Viewing completed secure directory {{ action }} user requests. You may also view
             pending requests
-            <a href="{% url pending_url %}?show_all_requests=on">
+            <a href="{% url 'secure-dir-manage-users-request-list' action 'pending' %}?show_all_requests=on">
               <span class="accessibility-link-text">
                 Pending Requests
               </span>
               here</a>.
           {% else %}
-            Viewing pending secure directory {{ action|lower }} user requests. You may also view
+            Viewing pending secure directory {{ action }} user requests. You may also view
             completed requests
-            <a href="{% url completed_url %}?show_all_requests=on">
+            <a href="{% url 'secure-dir-manage-users-request-list' action 'completed' %}?show_all_requests=on">
               <span class="accessibility-link-text">
                 Completed Requests
               </span>
@@ -54,13 +54,13 @@
         <div id="collapseOne" class="collapse {{expand_accordion}}" data-parent="#accordion">
           <div class="card-body">
             {% if request_filter == 'completed' %}
-              <form id="filter_form" method="GET" action="{% url completed_url %}" autocomplete="off">
+              <form id="filter_form" method="GET" action="{% url 'secure-dir-manage-users-request-list' action 'completed' %}" autocomplete="off">
                 {{ secure_dir_request_search_form|crispy }}
                 <input type="submit" class="btn btn-primary" value="Search">
                 <button id="form_reset_button" type="button" class="btn btn-secondary">Reset</button>
               </form>
             {% else %}
-              <form id="filter_form" method="GET" action="{% url pending_url %}" autocomplete="off">
+              <form id="filter_form" method="GET" action="{% url 'secure-dir-manage-users-request-list' action 'pending' %}" autocomplete="off">
                 {{ secure_dir_request_search_form|crispy }}
                 <input type="submit" class="btn btn-primary" value="Search">
                 <button id="form_reset_button" type="button" class="btn btn-secondary">Reset</button>
@@ -84,11 +84,11 @@
   {% else %}
     {% if request_filter == 'pending' %}
       <div class="alert alert-info">
-        No new or pending secure directory {{ action|lower }} user requests!
+        No new or pending secure directory {{ action }} user requests!
       </div>
     {% else %}
       <div class="alert alert-info">
-        No completed secure directory {{ action|lower }} user requests!
+        No completed secure directory {{ action }} user requests!
       </div>
     {% endif %}
 
@@ -97,7 +97,7 @@
   <script>
       $("#navbar-main > ul > li.active").removeClass("active");
       $("#navbar-admin").addClass("active");
-      $("#navbar-secure-dir-{{ action|lower }}-user-requests").addClass("active");
+      $("#navbar-secure-dir-{{ action }}-user-requests").addClass("active");
   </script>
 
   <script>
