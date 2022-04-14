@@ -14,7 +14,11 @@ from coldfront.core.allocation.models import (AllocationAttributeType,
                                               AllocationUserStatusChoice,
                                               Allocation,
                                               AllocationStatusChoice,
-                                              AllocationAttribute)
+                                              AllocationAttribute,
+                                              SecureDirAddUserRequest,
+                                              SecureDirAddUserRequestStatusChoice,
+                                              SecureDirRemoveUserRequest,
+                                              SecureDirRemoveUserRequestStatusChoice)
 from coldfront.core.allocation.signals import allocation_activate_user
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
@@ -273,3 +277,43 @@ def create_secure_dir(project, subdirectory_name):
             )
 
     return groups_allocation, scratch2_allocation
+
+
+def get_secure_dir_manage_user_request_objects(self, action):
+    """
+    Sets attributes pertaining to a secure directory based on the
+    action being performed.
+
+    Parameters:
+        - self (object): object to set attributes for
+        - action (str): the action being performed, either 'add' or 'remove'
+
+    Raises:
+        - TypeError, if the 'self' object is not an object
+        - ValueError, if action is not one of 'add' or 'remove'
+    """
+
+    action = action.lower()
+    if not isinstance(self, object):
+        raise TypeError(f'Invalid self {self}.')
+    if action not in ['add', 'remove']:
+        raise ValueError(f'Invalid action {action}.')
+
+    add_bool = action == 'add'
+
+    request_type = SecureDirAddUserRequest \
+        if add_bool else SecureDirRemoveUserRequest
+    request_status_type = SecureDirAddUserRequestStatusChoice \
+        if add_bool else SecureDirRemoveUserRequestStatusChoice
+
+    language_dict = {
+        'preposition': 'to' if add_bool else 'from',
+        'noun': 'addition' if add_bool else 'removal',
+        'verb': 'add' if add_bool else 'remove'
+    }
+
+    setattr(self, 'action', action.lower())
+    setattr(self, 'request_type', request_type)
+    setattr(self, 'request_status_type', request_status_type)
+    setattr(self, 'language_dict', language_dict)
+
