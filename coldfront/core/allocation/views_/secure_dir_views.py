@@ -3,17 +3,22 @@ import logging
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.forms import formset_factory
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
-from django.views.generic.base import TemplateView
+from django.views.generic import ListView, FormView
+from django.views.generic.base import TemplateView, View
 
-from coldfront.core.allocation.forms import AllocationSecureDirManageUsersForm
+from coldfront.core.allocation.forms import SecureDirManageUsersForm, \
+    SecureDirManageUsersSearchForm
 from coldfront.core.allocation.models import Allocation, \
     SecureDirAddUserRequest, SecureDirAddUserRequestStatusChoice, \
-    SecureDirRemoveUserRequest, SecureDirRemoveUserRequestStatusChoice
+    SecureDirRemoveUserRequest, SecureDirRemoveUserRequestStatusChoice, \
+    AllocationUserAttribute
 from coldfront.core.resource.models import Resource
+from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.mail import send_email, send_email_template
 
 
@@ -135,7 +140,7 @@ class SecureDirManageUsersView(LoginRequiredMixin,
 
         if user_list:
             formset = formset_factory(
-                AllocationSecureDirManageUsersForm, max_num=len(user_list))
+                SecureDirManageUsersForm, max_num=len(user_list))
             formset = formset(initial=user_list, prefix='userform')
             context['formset'] = formset
 
@@ -195,7 +200,7 @@ class SecureDirManageUsersView(LoginRequiredMixin,
             user_list = self.get_users_to_remove(alloc_obj)
 
         formset = formset_factory(
-            AllocationSecureDirManageUsersForm, max_num=len(user_list))
+            SecureDirManageUsersForm, max_num=len(user_list))
         formset = formset(
             request.POST, initial=user_list, prefix='userform')
 
@@ -260,3 +265,235 @@ class SecureDirManageUsersView(LoginRequiredMixin,
 
         return HttpResponseRedirect(
             reverse('allocation-detail', kwargs={'pk': pk}))
+
+
+class SecureDirManageUsersRequestListView(LoginRequiredMixin,
+                                          UserPassesTestMixin,
+                                          ListView):
+    template_name = 'secure_dir/secure_dir_manage_user_request_list.html'
+    login_url = '/'
+    completed = False
+    action = 'Add'
+    paginate_by = 30
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+
+        message = (
+            f'You do not have permission to review secure directory '
+            f'{self.action.lower()} requests.')
+        messages.error(self.request, message)
+
+    def get_queryset(self):
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            if direction == 'asc':
+                direction = ''
+            else:
+                direction = '-'
+            order_by = direction + order_by
+        else:
+            order_by = 'id'
+
+        if self.action == 'Add':
+            pending_status = \
+                SecureDirAddUserRequestStatusChoice.objects.filter(
+                    name__in=['Pending - Add', 'Processing - Add'])
+            complete_status = \
+                SecureDirAddUserRequestStatusChoice.objects.filter(
+                    name__in=['Completed', 'Denied'])
+
+        else:
+            pending_status = \
+                SecureDirRemoveUserRequestStatusChoice.objects.filter(
+                    name__in=['Pending - Remove', 'Processing - Remove'])
+            complete_status = \
+                SecureDirRemoveUserRequestStatusChoice.objects.filter(
+                    name__in=['Completed', 'Denied'])
+
+        secure_dir_request_search_form = \
+            SecureDirManageUsersSearchForm(self.request.GET)
+
+        request_obj = SecureDirAddUserRequest if self.action == 'Add' else \
+            SecureDirRemoveUserRequest
+
+        if self.completed:
+            request_list = request_obj.objects.filter(
+                status__in=complete_status)
+        else:
+            request_list = request_obj.objects.filter(status__in=pending_status)
+
+        if secure_dir_request_search_form.is_valid():
+            data = secure_dir_request_search_form.cleaned_data
+
+            if data.get('username'):
+                request_list = request_list.filter(
+                    user__username__icontains=data.get('username'))
+
+            if data.get('email'):
+                request_list = request_list.filter(
+                    user__email__icontains=data.get('email'))
+
+            if data.get('allocation_name'):
+                request_list = \
+                    request_list.filter(
+                        allocation__project__name__icontains=data.get(
+                            'allocation_name'))
+
+            if data.get('resource_name'):
+                request_list = \
+                    request_list.filter(
+                        allocation__resources__name__icontains=data.get(
+                            'resource_name'))
+
+        return request_list.order_by(order_by)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        secure_dir_request_search_form = \
+            SecureDirManageUsersSearchForm(self.request.GET)
+        if secure_dir_request_search_form.is_valid():
+            data = secure_dir_request_search_form.cleaned_data
+            filter_parameters = ''
+            for key, value in data.items():
+                if value:
+                    if isinstance(value, list):
+                        for ele in value:
+                            filter_parameters += '{}={}&'.format(key, ele)
+                    else:
+                        filter_parameters += '{}={}&'.format(key, value)
+            context['secure_dir_request_search_form'] = \
+                secure_dir_request_search_form
+        else:
+            filter_parameters = None
+            context['secure_dir_request_search_form'] = \
+                SecureDirManageUsersSearchForm()
+
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            filter_parameters_with_order_by = filter_parameters + \
+                                              'order_by=%s&direction=%s&' % (
+                                                  order_by, direction)
+        else:
+            filter_parameters_with_order_by = filter_parameters
+
+        context['expand_accordion'] = 'toggle'
+
+        context['filter_parameters'] = filter_parameters
+        context['filter_parameters_with_order_by'] = \
+            filter_parameters_with_order_by
+
+        context['request_filter'] = (
+            'completed' if self.completed else 'pending')
+
+        request_list = self.get_queryset()
+        paginator = Paginator(request_list, self.paginate_by)
+
+        page = self.request.GET.get('page')
+
+        try:
+            request_list = paginator.page(page)
+        except PageNotAnInteger:
+            request_list = paginator.page(1)
+        except EmptyPage:
+            request_list = paginator.page(paginator.num_pages)
+
+        context['request_list'] = request_list
+
+        context['actions_visible'] = not self.completed
+
+        context['action'] = self.action
+        if self.action == 'Add':
+            context['pending_url'] = \
+                'secure-dir-add-users-request-list'
+            context['completed_url'] = \
+                'secure-dir-add-users-request-list-completed'
+        else:
+            context['pending_url'] = \
+                'secure-dir-remove-users-request-list'
+            context['completed_url'] = \
+                'secure-dir-remove-users-request-list-completed'
+
+        context['preposition'] = 'to' if self.action == 'Add' else 'from'
+
+        return context
+
+
+class SecureDirManageUsersUpdateStatusView(LoginRequiredMixin,
+                                           UserPassesTestMixin,
+                                           FormView):
+    form_class = None
+    login_url = '/'
+    template_name = ''
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+
+        # TODO: alter message
+        message = (
+            'You do not have permission to update secure dir requests.')
+        messages.error(self.request, message)
+
+
+class SecureDirManageUsersCompleteStatusView(LoginRequiredMixin,
+                                             UserPassesTestMixin,
+                                             FormView):
+    form_class = None
+    login_url = '/'
+    template_name = ''
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+
+        # TODO: alter message
+        message = (
+            'You do not have permission to update secure dir requests.')
+        messages.error(self.request, message)
+
+
+class SecureDirManageUsersDenyRequestView(LoginRequiredMixin,
+                                          UserPassesTestMixin,
+                                          View):
+    login_url = '/'
+    action = 'Add'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+
+        # TODO: alter message
+        message = (
+            'You do not have permission to deny a secure directory request.')
+        messages.error(self.request, message)
+
+    def get(self, request, *args, **kwargs):
+        action = self.kwargs.get('action')
+        request_type = SecureDirAddUserRequest \
+            if action == 'Add' else SecureDirRemoveUserRequest
+        request_status_type = SecureDirAddUserRequestStatusChoice \
+            if action == 'Add' else SecureDirRemoveUserRequestStatusChoice
+        secure_dir_manage_user_request = \
+            get_object_or_404(request_type, pk=self.kwargs.get('pk'))
+
+        secure_dir_manage_user_request.status = request_status_type.objects.get(name='Denied')
+        secure_dir_manage_user_request.completion_time = utc_now_offset_aware()
+        secure_dir_manage_user_request.save()
+
+        # TODO: new message
+        message = f'DENIED {action.upper()} REQUEST'
+        messages.success(request, message)
+
+        # TODO: send email after denial
+
+        return HttpResponseRedirect(
+            reverse(f'secure-dir-{action.lower()}-users-request-list'))
