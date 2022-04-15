@@ -168,7 +168,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         ), "None")
         allocation_usage_tb = float(allocation_quota_tb.allocationattributeusage.value)
         context['allocation_quota_tb'] = allocation_quota_tb
-        context['allocation_usage_tb'] = allocation_usage_tb
+        context['allocation_usage_tb'] = allocation_usage_tb if allocation_usage_tb != 0 else .00001
 
         context['guage_data'] = guage_data
         context['attributes_with_usage'] = attributes_with_usage
