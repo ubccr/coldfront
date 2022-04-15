@@ -211,8 +211,8 @@ Allocation Detail
             <!-- <th scope="col">Bytes</th> -->
 
             <th scope="col">Logical Usage</th>
-            <!-- <th scope="col">Percentage Usage</th>
-            <th scope="col">Cost Per user (TB/month)</th> -->
+            <th scope="col">Percentage Usage</th>
+            <th scope="col">Cost Per user (TB/month)</th>
 
 
             <!-- <th scope="col">Status</th> -->
@@ -228,8 +228,8 @@ Allocation Detail
 
               <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
               <td data-sort = "{{user.usage_bytes}}" name = "usage_bytes">{{ user.usage }}{{ user.unit }}</td>
-              <!-- <td>{{user.usage_bytes|div:1024|div:user.allocation_group_usage_bytes|mul:100|floatformat:2}}</td>
-              <td>{{4.16|mul:user.allocation_group_quota|div:1073741824|mul:user.usage_bytes|div:1024|div:user.allocation_group_usage_bytes|floatformat:2}}</td> -->
+              <td>{{user.usage_bytes|div:1024|div:user.allocation_group_usage_bytes|mul:100|floatformat:2}}</td>
+              <td>{{4.16|mul:allocation_quota_tb.value|mul:1024|mul:user.usage_bytes|div:1024|div:user.allocation_group_usage_bytes|floatformat:2}}</td>
 
             </tr>
 
