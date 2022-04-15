@@ -65,7 +65,11 @@
         {% endwith %}
         {% if admin_staff %}
           <div class="card-body">
+          {% if request_obj.button_arg1 and request_obj.button_arg2 %}
+            <a class="btn btn-primary" href="{% url request_obj.button_path request_obj.button_arg1 request_obj.button_arg2%}" role="button" style="float: right;">
+          {% else %}
             <a class="btn btn-primary" href="{% url request_obj.button_path %}" role="button" style="float: right;">
+          {% endif %}
               <i class="fa fa-angle-double-right" aria-hidden="true"></i>
               {{ request_obj.button_text }}
             </a>

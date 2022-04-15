@@ -63,6 +63,14 @@
     {% include 'request_hub/request_section.html' %}
   {% endwith %}
 
+  {% with request_obj=secure_dir_join_request_obj %}
+    {% include 'request_hub/request_section.html' %}
+  {% endwith %}
+
+  {% with request_obj=secure_dir_remove_request_obj %}
+    {% include 'request_hub/request_section.html' %}
+  {% endwith %}
+
   {% with request_obj=su_purchase_request_obj %}
     {% include 'request_hub/request_section.html' %}
   {% endwith %}
