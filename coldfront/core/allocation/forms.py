@@ -1,4 +1,5 @@
 from django import forms
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.core.validators import MinLengthValidator
@@ -10,10 +11,13 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationStatusChoice,
                                               AllocationUserAttribute)
 from coldfront.core.allocation.utils import get_user_resources
+from coldfront.core.allocation.utils import prorated_allocation_amount
 from coldfront.core.project.models import Project
+from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.resource.models import Resource, ResourceType
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import import_from_settings
+from coldfront.core.utils.common import utc_now_offset_aware
 
 ALLOCATION_ACCOUNT_ENABLED = import_from_settings(
     'ALLOCATION_ACCOUNT_ENABLED', False)
@@ -268,4 +272,9 @@ class AllocationClusterAccountRequestActivationForm(forms.Form):
 class AllocationPeriodChoiceField(forms.ModelChoiceField):
 
     def label_from_instance(self, obj):
-        return f'{obj.name} ({obj.start_date} - {obj.end_date})'
+        # TODO: Set this dynamically when supporting other types.
+        num_service_units = prorated_allocation_amount(
+            settings.FCA_DEFAULT_ALLOCATION, utc_now_offset_aware(), obj)
+        return (
+            f'{obj.name} ({obj.start_date} - {obj.end_date}) '
+            f'({num_service_units} SUs)')
