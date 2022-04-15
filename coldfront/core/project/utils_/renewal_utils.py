@@ -65,8 +65,9 @@ def get_pi_current_active_fca_project(pi_user):
     active fc_ Project.
 
     A Project is considered "active" if it has a completed
-    AllocationRenewalRequest for the current AllocationPeriod or if it
-    has a completed SavioProjectAllocationRequest during the period.
+    AllocationRenewalRequest for the current "Allowance Year"
+    AllocationPeriod or if it has a completed
+    SavioProjectAllocationRequest during the period.
 
     Parameters:
         - pi_user: a User object.
@@ -75,6 +76,9 @@ def get_pi_current_active_fca_project(pi_user):
         - A Project object.
 
     Raises:
+        - AllocationPeriod.DoesNotExist, if no such period is found.
+        - AllocationPeriod.MultipleObjectsReturned, if multiple such
+          periods are found.
         - AllocationRenewalRequest.MultipleObjectsReturned, if the PI
           has more than one 'Complete' renewal request during the
           current AllocationPeriod.
@@ -83,14 +87,11 @@ def get_pi_current_active_fca_project(pi_user):
         - SavioProjectAllocationRequest.MultipleObjectsReturned, if the
           PI has more than one 'Approved - Complete' request.
         - Exception, if any other errors occur.
-
-    TODO: Once the first AllocationPeriod has ended, this will need to
-    TODO: be refined to filter on time.
     """
     project = None
+    allocation_period = get_current_allowance_year_period()
 
     # Check AllocationRenewalRequests.
-    allocation_period = get_current_allowance_year_period()
     renewal_request_status = AllocationRenewalRequestStatusChoice.objects.get(
         name='Complete')
     renewal_requests = AllocationRenewalRequest.objects.filter(
@@ -103,7 +104,7 @@ def get_pi_current_active_fca_project(pi_user):
             message = (
                 f'PI {pi_user.username} unexpectedly has more than one '
                 f'completed FCA AllocationRenewalRequest during '
-                f'AllocationPeriod {allocation_period.name}.')
+                f'AllocationPeriod "{allocation_period.name}".')
             logger.error(message)
             raise AllocationRenewalRequest.MultipleObjectsReturned(message)
         project = renewal_requests.first().post_project
@@ -113,13 +114,15 @@ def get_pi_current_active_fca_project(pi_user):
         name='Approved - Complete')
     project_requests = SavioProjectAllocationRequest.objects.filter(
         allocation_type=SavioProjectAllocationRequest.FCA,
+        allocation_period=allocation_period,
         pi=pi_user,
         status=project_request_status)
     if project_requests.exists():
         if project_requests.count() > 1:
             message = (
                 f'PI {pi_user.username} unexpectedly has more than one '
-                f'completed FCA SavioProjectAllocationRequest.')
+                f'completed FCA SavioProjectAllocationRequest during '
+                f'AllocationPeriod "{allocation_period.name}".')
             logger.error(message)
             raise SavioProjectAllocationRequest.MultipleObjectsReturned(
                 message)
