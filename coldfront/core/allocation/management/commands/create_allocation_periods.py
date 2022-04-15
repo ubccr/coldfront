@@ -2,10 +2,11 @@ from coldfront.core.allocation.models import AllocationPeriod
 from datetime import datetime
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
-import json
+from flags.state import flag_enabled
+
 import logging
 
-"""An admin command that loads AllocationPeriods from a JSON file."""
+"""An admin command that creates AllocationPeriods."""
 
 
 class Command(BaseCommand):
@@ -17,23 +18,14 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            'json',
-            help=(
-                f'The path to the JSON file containing a list of objects, '
-                f'where each object has a "name", a "start_date", and an '
-                f'"end_date", with dates in the format '
-                f'"{self.date_format.replace("%", "%%")}".'),
-            type=str)
-        parser.add_argument(
             '--dry_run',
             action='store_true',
             help='Display updates without performing them.')
 
     def handle(self, *args, **options):
-        """Create AllocationPeriods from the JSON. If a period with a
-        given name already exists, update its start_date and
-        end_date."""
-        periods = self.clean_input_periods(options['json'])
+        """Create AllocationPeriods. If a period with a given name
+        already exists, update its start_date and end_date."""
+        periods = self.clean_periods(self.get_allocation_periods())
         dry_run = options['dry_run']
         for period in periods:
             name = period['name']
@@ -79,13 +71,12 @@ class Command(BaseCommand):
                     self.logger.info(message)
                     self.stdout.write(self.style.SUCCESS(message))
 
-    def clean_input_periods(self, json_file_path):
-        """Return a list of dictionaries with keys "name", "start_date",
-        and "end_date", where the dates are datetime.date objects, read
-        from the JSON at the given file path. Raise exceptions if data
-        cannot be parsed or is invalid."""
-        with open(json_file_path, 'r') as f:
-            periods = json.load(f)
+    def clean_periods(self, periods):
+        """Given a list of dictionaries, validate that each has the keys
+        "name", "start_date", and "end_date", where the dates are in the
+        form self.date_format. Return the list with the dates converted
+        into date objects. Raise exceptions if data cannot be parsed or
+        are invalid."""
         for period in periods:
             name = period.get('name', '').strip()
             if not name:
@@ -95,4 +86,79 @@ class Command(BaseCommand):
                     raise CommandError(f'Period {period} has no {key}.')
                 period[key] = datetime.strptime(
                     period[key], self.date_format).date()
+        return periods
+
+    @staticmethod
+    def get_allocation_periods():
+        """Return a list of dictionaries representing AllocationPeriods,
+        based on the current deployment."""
+        periods = []
+
+        if flag_enabled('BRC_ONLY'):
+            periods.extend(
+                [
+                    {
+                        "name": "Allowance Year 2021 - 2022",
+                        "start_date": "2021-06-01",
+                        "end_date": "2022-05-31"
+                    },
+                    {
+                        "name": "Allowance Year 2022 - 2023",
+                        "start_date": "2022-06-01",
+                        "end_date": "2023-05-31"
+                    },
+                    {
+                        "name": "Fall Semester 2021",
+                        "start_date": "2021-08-18",
+                        "end_date": "2021-12-17"
+                    },
+                    {
+                        "name": "Spring Semester 2022",
+                        "start_date": "2022-01-11",
+                        "end_date": "2022-05-13"
+                    },
+                    {
+                        "name": "Summer Sessions 2022 - Session A",
+                        "start_date": "2022-05-23",
+                        "end_date": "2022-07-01"
+                    },
+                    {
+                        "name": "Summer Sessions 2022 - Session B",
+                        "start_date": "2022-06-06",
+                        "end_date": "2022-08-12"
+                    },
+                    {
+                        "name": "Summer Sessions 2022 - Session C",
+                        "start_date": "2022-06-21",
+                        "end_date": "2022-08-12"
+                    },
+                    {
+                        "name": "Summer Sessions 2022 - Session D",
+                        "start_date": "2022-07-05",
+                        "end_date": "2022-08-12"
+                    },
+                    {
+                        "name": "Summer Sessions 2022 - Session E",
+                        "start_date": "2022-07-25",
+                        "end_date": "2022-08-12"
+                    },
+                    {
+                        "name": "Summer Sessions 2022 - Session F",
+                        "start_date": "2022-07-05",
+                        "end_date": "2022-07-22"
+                    }
+                ]
+            )
+
+        if flag_enabled('LRC_ONLY'):
+            periods.extend(
+                [
+                    {
+                        "name": "Allowance Year 2022 - 2023",
+                        "start_date": "2022-10-01",
+                        "end_date": "2023-09-30"
+                    }
+                ]
+            )
+
         return periods
