@@ -49,7 +49,8 @@ class ProjectRenewalPISelectionForm(forms.Form):
             pk=self.allocation_period_pk)
         renewal_request_status_names = ['Under Review', 'Approved', 'Complete']
         project_request_status_names = [
-            'Under Review', 'Approved - Processing', 'Approved - Complete']
+            'Under Review', 'Approved - Processing', 'Approved - Scheduled',
+            'Approved - Complete']
 
         exclude_project_user_pks = set()
 

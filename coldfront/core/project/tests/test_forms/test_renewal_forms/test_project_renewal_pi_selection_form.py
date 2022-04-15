@@ -55,18 +55,18 @@ class TestProjectRenewalPISelectionForm(TestBase):
 
         # Create an 'Under Review' SavioProjectAllocationRequest for the new
         # Project.
+        allocation_period = get_current_allocation_period()
         under_review_request_status = \
             ProjectAllocationRequestStatusChoice.objects.get(
                 name='Under Review')
         request = SavioProjectAllocationRequest.objects.create(
             requester=self.user,
             allocation_type=SavioProjectAllocationRequest.FCA,
+            allocation_period=allocation_period,
             pi=self.user,
             project=new_project,
             survey_answers={},
             status=under_review_request_status)
-
-        allocation_period = get_current_allocation_period()
 
         # For every status except 'Denied', the PI should be disabled.
         kwargs = {
@@ -74,7 +74,7 @@ class TestProjectRenewalPISelectionForm(TestBase):
             'project_pks': [project.pk],
         }
         status_choices = ProjectAllocationRequestStatusChoice.objects.all()
-        self.assertEqual(status_choices.count(), 4)
+        self.assertEqual(status_choices.count(), 5)
         for status_choice in status_choices:
             request.status = status_choice
             request.save()

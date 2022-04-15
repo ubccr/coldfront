@@ -277,9 +277,9 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
     def condition_dict():
         view = AllocationRenewalRequestView
         return {
-            '2': view.show_project_selection_form_condition,
-            '3': view.show_new_project_forms_condition,
+            '3': view.show_project_selection_form_condition,
             '4': view.show_new_project_forms_condition,
+            '5': view.show_new_project_forms_condition,
         }
 
     def show_new_project_forms_condition(self):

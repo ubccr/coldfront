@@ -119,9 +119,12 @@ class TestAllocationRenewalRequestCompletedListView(TestViewMixin, TestBase):
         """Set up test data."""
         super().setUp()
         self.url = self.completed_url
-        completed_status = AllocationRenewalRequestStatusChoice.objects.get(
-            name='Complete')
-        AllocationRenewalRequest.objects.update(status=completed_status)
+        self.request_a.status = \
+            AllocationRenewalRequestStatusChoice.objects.get(name='Approved')
+        self.request_a.save()
+        self.request_b.status = \
+            AllocationRenewalRequestStatusChoice.objects.get(name='Complete')
+        self.request_b.save()
 
     def test_pending_list_empty(self):
         """Test that no requests appear in the pending view, since all
@@ -143,13 +146,9 @@ class TestAllocationRenewalRequestPendingListView(TestViewMixin, TestBase):
         """Set up test data."""
         super().setUp()
         self.url = self.pending_url
-        self.request_a.status = \
-            AllocationRenewalRequestStatusChoice.objects.get(
-                name='Under Review')
-        self.request_a.save()
-        self.request_b.status = \
-            AllocationRenewalRequestStatusChoice.objects.get(name='Approved')
-        self.request_b.save()
+        under_review_status = AllocationRenewalRequestStatusChoice.objects.get(
+            name='Under Review')
+        AllocationRenewalRequest.objects.update(status=under_review_status)
 
     def test_completed_list_empty(self):
         """Test that no requests appear in the completed view, since all

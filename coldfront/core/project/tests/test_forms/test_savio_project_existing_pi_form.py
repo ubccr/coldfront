@@ -68,19 +68,21 @@ class TestSavioProjectExistingPIForm(TestBase):
             user=self.user)
 
         # Create an AllocationRenewalRequest.
+        allocation_period = get_current_allocation_period()
         under_review_request_status = \
             AllocationRenewalRequestStatusChoice.objects.get(
                 name='Under Review')
         AllocationRenewalRequest.objects.create(
             requester=self.user,
             pi=self.user,
-            allocation_period=get_current_allocation_period(),
+            allocation_period=allocation_period,
             status=under_review_request_status,
             pre_project=project,
             post_project=project,
             request_time=utc_now_offset_aware())
 
-        form = SavioProjectExistingPIForm(allocation_type='FCA')
+        form = SavioProjectExistingPIForm(
+            allocation_type='FCA', allocation_period=allocation_period)
         pi_field_disabled_choices = form.fields['PI'].widget.disabled_choices
         self.assertIn(self.user.pk, pi_field_disabled_choices)
 

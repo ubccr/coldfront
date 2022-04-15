@@ -119,7 +119,8 @@ class SavioProjectExistingPIForm(forms.Form):
 
         ineligible_project_status_names = ['New', 'Active', 'Inactive']
         ineligible_project_request_status_names = [
-            'Under Review', 'Approved - Processing', 'Approved - Complete']
+            'Under Review', 'Approved - Processing', 'Approved - Scheduled',
+            'Approved - Complete']
         ineligible_renewal_request_status_names = [
             'Under Review', 'Approved', 'Complete']
 
