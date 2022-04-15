@@ -38,10 +38,26 @@ import pytz
 logger = logging.getLogger(__name__)
 
 
-def get_current_allocation_period():
-    """TODO"""
-    # TODO.
-    return AllocationPeriod.objects.get(name='Allowance Year 2021 - 2022')
+def get_current_allowance_year_period():
+    """Return the AllocationPeriod representing the current allowance
+    year, of which there should be exactly one.
+
+    Parameters:
+        - None
+
+    Returns:
+        - An AllocationPeriod object.
+
+    Raises:
+        - AllocationPeriod.DoesNotExist, if no such period is found.
+        - AllocationPeriod.MultipleObjectsReturned, if multiple such
+          periods are found.
+    """
+    date = display_time_zone_current_date()
+    return AllocationPeriod.objects.get(
+        name__startswith='Allowance Year',
+        start_date__lte=date,
+        end_date__gte=date)
 
 
 def get_pi_current_active_fca_project(pi_user):
@@ -74,7 +90,7 @@ def get_pi_current_active_fca_project(pi_user):
     project = None
 
     # Check AllocationRenewalRequests.
-    allocation_period = get_current_allocation_period()
+    allocation_period = get_current_allowance_year_period()
     renewal_request_status = AllocationRenewalRequestStatusChoice.objects.get(
         name='Complete')
     renewal_requests = AllocationRenewalRequest.objects.filter(
@@ -883,7 +899,7 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         # (a) If the pre_project has been renewed during this AllocationPeriod,
         # do not deactivate it.
         # TODO: Reconsider the use of this AllocationPeriod moving forward.
-        allocation_period = get_current_allocation_period()
+        allocation_period = get_current_allowance_year_period()
         complete_renewal_request_status = \
             AllocationRenewalRequestStatusChoice.objects.get(name='Complete')
         completed_renewals = AllocationRenewalRequest.objects.filter(

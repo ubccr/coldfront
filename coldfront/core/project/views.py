@@ -49,7 +49,7 @@ from coldfront.core.project.utils import (ProjectClusterAccessRequestRunner,
                                           send_project_join_request_denial_email)
 from coldfront.core.project.utils_.addition_utils import can_project_purchase_service_units
 from coldfront.core.project.utils_.new_project_utils import add_vector_user_to_designated_savio_project
-from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
+from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.project.utils_.renewal_utils import is_any_project_pi_renewable
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
@@ -231,7 +231,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             # Short-circuit if the button is not visible.
                 context['renew_allowance_current_visible'] and
                 is_any_project_pi_renewable(
-                    self.object, get_current_allocation_period()))
+                    self.object, get_current_allowance_year_period()))
 
         # Display the "Purchase Service Units" button for eligible allocation
         # types, for those allowed to update the project.

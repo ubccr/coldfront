@@ -4,7 +4,7 @@ from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
-from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
+from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from django.core.management.base import BaseCommand
 from django.db.models import Q
 import logging
@@ -41,7 +41,7 @@ class Command(BaseCommand):
         TODO: will need to be refined to filter on time.
         """
         # Retrieve IDs of projects with non-denied renewal requests.
-        allocation_period = get_current_allocation_period()
+        allocation_period = get_current_allowance_year_period()
         a = self.fca_projects_with_non_denied_renewal_requests(
             allocation_period)
         a_ids = set(a.values_list('post_project', flat=True))
