@@ -74,7 +74,7 @@ Allocation Detail
             <th scope="row" class="text-nowrap">End Date:</th>
             <td>
               {{ allocation.end_date }}
-
+              {% comment %}
 <!--              {% if is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}-->
 <!--              <a href="{% url 'allocation-renew' allocation.pk %}">-->
 <!--                <span class="badge badge-warning">-->
@@ -83,6 +83,7 @@ Allocation Detail
 <!--                </span>-->
 <!--              </a>-->
 <!--              {% endif %}-->
+              {% endcomment %}
             </td>
           </tr>
 <!--          <tr>-->
