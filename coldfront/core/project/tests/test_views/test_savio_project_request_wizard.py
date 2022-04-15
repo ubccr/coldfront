@@ -1,7 +1,7 @@
 from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import SavioProjectAllocationRequest
-from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
+from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.utils.tests.test_base import TestBase
 from django.urls import reverse
 from http import HTTPStatus
@@ -29,7 +29,7 @@ class TestSavioProjectRequestWizard(TestBase):
         self.assertEqual(SavioProjectAllocationRequest.objects.count(), 0)
         self.assertEqual(Project.objects.count(), 0)
 
-        allocation_period = get_current_allocation_period()
+        allocation_period = get_current_allowance_year_period()
 
         view_name = 'savio_project_request_wizard'
         current_step_key = f'{view_name}-current_step'

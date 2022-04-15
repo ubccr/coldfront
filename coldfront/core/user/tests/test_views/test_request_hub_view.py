@@ -19,7 +19,7 @@ from coldfront.core.project.models import ProjectStatusChoice, \
     SavioProjectAllocationRequest, ProjectAllocationRequestStatusChoice, \
     savio_project_request_state_schema, vector_project_request_state_schema, \
     VectorProjectAllocationRequest, ProjectUserJoinRequest
-from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
+from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
@@ -531,7 +531,7 @@ class TestRequestHubView(TestBase):
         kwargs = {
             'pi': self.pi,
             'requester': self.user0,
-            'allocation_period': get_current_allocation_period(),
+            'allocation_period': get_current_allowance_year_period(),
             'pre_project': self.project0,
             'post_project': self.project0,
             'num_service_units': 1000,

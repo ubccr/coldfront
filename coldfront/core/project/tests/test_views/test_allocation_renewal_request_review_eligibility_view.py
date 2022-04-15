@@ -7,7 +7,7 @@ from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
-from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
+from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 from django.urls import reverse
@@ -47,7 +47,7 @@ class TestAllocationRenewalRequestReviewEligibilityView(TestBase):
             user=self.user)
 
         # Create an AllocationRenewalRequest.
-        allocation_period = get_current_allocation_period()
+        allocation_period = get_current_allowance_year_period()
         under_review_request_status = \
             AllocationRenewalRequestStatusChoice.objects.get(
                 name='Under Review')
