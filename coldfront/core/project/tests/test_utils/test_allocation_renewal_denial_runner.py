@@ -20,6 +20,7 @@ from django.core import mail
 from django.core.management import call_command
 from django.test import override_settings
 from django.test import TestCase
+from flags.state import enable_flag
 from io import StringIO
 import os
 import sys
@@ -30,6 +31,8 @@ class TestRunnerMixin(object):
 
     def setUp(self):
         """Set up test data."""
+        enable_flag('BRC_ONLY', create_boolean_condition=True)
+
         out, err = StringIO(), StringIO()
         commands = [
             'add_resource_defaults',

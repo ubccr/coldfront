@@ -12,6 +12,8 @@ from django.contrib.auth.models import User, Permission, Group
 from django.core import mail
 from django.core.management import call_command
 
+from flags.state import enable_flag
+
 from io import StringIO
 import os
 import sys
@@ -22,6 +24,8 @@ class TestBase(TestCase):
 
     def setUp(self):
         """Set up test data."""
+        enable_flag('BRC_ONLY', create_boolean_condition=True)
+
         out, err = StringIO(), StringIO()
         commands = [
             'add_resource_defaults',
@@ -178,6 +182,7 @@ class TestStaffViewPermissions(TestBase):
         request = SavioProjectAllocationRequest.objects.create(
             requester=self.user1,
             allocation_type=SavioProjectAllocationRequest.FCA,
+            allocation_period=get_current_allocation_period(),
             pi=self.user1,
             project=new_project,
             survey_answers={},
