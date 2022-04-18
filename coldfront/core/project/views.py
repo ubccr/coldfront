@@ -56,6 +56,8 @@ from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.common import (get_domain_url, import_from_settings)
 from coldfront.core.utils.mail import send_email, send_email_template
 
+from flags.state import flag_enabled
+
 import logging
 
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
@@ -221,17 +223,24 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['cluster_accounts_tooltip'] = cluster_accounts_tooltip
 
         # Display the "Renew Allowance" button for eligible allocation types.
-        # TODO: Display these for ic_ and pc_ when ready.
+        eligible_allowance_types = (
+            'fc_'
+            # TODO: Include these when ready.
+            # 'ic_',
+            # 'pc_',
+        )
         context['renew_allowance_current_visible'] = \
-            self.object.name.startswith('fc_')
-            # self.object.name.startswith(('fc_', 'ic_', 'pc_'))
-        # Only allow the "Renew Allowance" button to be clickable if any PIs do
-        # not have pending/approved renewal requests.
+            self.object.name.startswith(eligible_allowance_types)
+        # Only allow the "Renew Allowance" button to be clickable if
+        #     (a) any PIs do not have pending/approved renewal requests for the
+        #         current period, or
+        #     (b) renewals for the next period can be requested.
+        # TODO: Set this dynamically when supporting other types.
+        allocation_period = get_current_allowance_year_period()
         context['renew_allowance_current_clickable'] = (
-            # Short-circuit if the button is not visible.
-                context['renew_allowance_current_visible'] and
-                is_any_project_pi_renewable(
-                    self.object, get_current_allowance_year_period()))
+            context['renew_allowance_current_visible'] and
+            is_any_project_pi_renewable(self.object, allocation_period) or
+            flag_enabled('ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE'))
 
         # Display the "Purchase Service Units" button for eligible allocation
         # types, for those allowed to update the project.

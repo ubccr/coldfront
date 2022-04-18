@@ -36,7 +36,11 @@ Project Renewal - Review and Submit
     <tbody>
       <tr>
         <th>Allocation Period</th>
-        <td>{{ allocation_period.name }}</td>
+        <td>
+          {{ allocation_period.name }}
+          ({{ allocation_period.start_date|date:"Y-m-d" }} -
+          {{ allocation_period.end_date|date:"Y-m-d" }})
+        </td>
       </tr>
       <tr>
         <th>Principal Investigator (PI)</th>
