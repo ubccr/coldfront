@@ -27,7 +27,7 @@ from coldfront.core.allocation.utils import \
     get_secure_dir_manage_user_request_objects
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import utc_now_offset_aware
-from coldfront.core.utils.mail import send_email, send_email_template
+from coldfront.core.utils.mail import send_email_template
 
 
 class SecureDirManageUsersView(LoginRequiredMixin,
@@ -590,27 +590,34 @@ class SecureDirManageUsersCompleteStatusView(LoginRequiredMixin,
                 else 'Group'
 
             for user in users_to_notify:
-                context = {
-                    'user_first_name': user.first_name,
-                    'user_last_name': user.last_name,
-                    'managed_user_first_name': self.secure_dir_request.user.first_name,
-                    'managed_user_last_name': self.secure_dir_request.user.last_name,
-                    'managed_user_username': self.secure_dir_request.user.username,
-                    'verb': self.language_dict['verb'],
-                    'preposition': self.language_dict['preposition'],
-                    'directory': directory_name,
-                    'project_name': self.secure_dir_request.allocation.project.name,
-                    'removed': 'no longer' if self.action == 'removed' else 'now',
-                    'signature': settings.EMAIL_SIGNATURE,
-                    'support_email': settings.CENTER_HELP_EMAIL,
-                }
+                try:
+                    context = {
+                        'user_first_name': user.first_name,
+                        'user_last_name': user.last_name,
+                        'managed_user_first_name': self.secure_dir_request.user.first_name,
+                        'managed_user_last_name': self.secure_dir_request.user.last_name,
+                        'managed_user_username': self.secure_dir_request.user.username,
+                        'verb': self.language_dict['verb'],
+                        'preposition': self.language_dict['preposition'],
+                        'directory': directory_name,
+                        'project_name': self.secure_dir_request.allocation.project.name,
+                        'removed': 'no longer' if self.action == 'removed' else 'now',
+                        'signature': settings.EMAIL_SIGNATURE,
+                        'support_email': settings.CENTER_HELP_EMAIL,
+                    }
 
-                send_email_template(
-                    f'Secure Directory {self.language_dict["noun"]} Request Complete',
-                    'email/secure_dir_request/secure_dir_manage_user_request_complete.txt',
-                    context,
-                    settings.EMAIL_SENDER,
-                    [user.email])
+                    send_email_template(
+                        f'Secure Directory {self.language_dict["noun"]} Request Complete',
+                        'email/secure_dir_request/secure_dir_manage_user_request_complete.txt',
+                        context,
+                        settings.EMAIL_SENDER,
+                        [user.email])
+
+                except Exception as e:
+                    message = f'Failed to send notification email. Details: {e}'
+                    messages.error(self.request, message)
+                    self.logger.error(message)
+                    self.logger.exception(e)
 
         message = (
             f'Secure directory {self.language_dict["noun"]} request for user '
@@ -677,7 +684,8 @@ class SecureDirManageUsersDenyRequestView(LoginRequiredMixin,
                         kwargs={'action': self.action, 'status': 'pending'}))
         return super().dispatch(request, *args, **kwargs)
 
-    def get(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
+        reason = self.request.POST['reason']
         self.secure_dir_request.status = \
             self.request_status_obj.objects.get(name='Denied')
         self.secure_dir_request.completion_time = utc_now_offset_aware()
@@ -687,11 +695,54 @@ class SecureDirManageUsersDenyRequestView(LoginRequiredMixin,
             f'Secure directory {self.language_dict["noun"]} request for user '
             f'{self.secure_dir_request.user.username} for allocation '
             f'{self.secure_dir_request.allocation.project.name} has been '
-            f'denied.')
+            f'"Denied" with reason: {reason}.')
         messages.success(request, message)
 
-        # TODO: place reason text box in denial popup
         # TODO: send email after denial
+        if settings.EMAIL_ENABLED:
+            # Send notification email to PIs and the user that the
+            # request has been denied.
+            pis = self.secure_dir_request.allocation.project.projectuser_set.filter(
+                role__name='Principal Investigator',
+                status__name='Active',
+                enable_notifications=True)
+            users_to_notify = [x.user for x in pis]
+            users_to_notify.append(self.secure_dir_request.user)
+
+            directory_name = 'Scratch2' if \
+                self.secure_dir_request.allocation.resources.filter(
+                    name__icontains='Scratch').exists() \
+                else 'Group'
+
+            for user in users_to_notify:
+                try:
+                    context = {
+                        'user_first_name': user.first_name,
+                        'user_last_name': user.last_name,
+                        'managed_user_first_name': self.secure_dir_request.user.first_name,
+                        'managed_user_last_name': self.secure_dir_request.user.last_name,
+                        'managed_user_username': self.secure_dir_request.user.username,
+                        'verb': self.language_dict['verb'],
+                        'preposition': self.language_dict['preposition'],
+                        'directory': directory_name,
+                        'project_name': self.secure_dir_request.allocation.project.name,
+                        'reason': reason,
+                        'signature': settings.EMAIL_SIGNATURE,
+                        'support_email': settings.CENTER_HELP_EMAIL,
+                    }
+
+                    send_email_template(
+                        f'Secure Directory {self.language_dict["noun"]} Request Denied',
+                        'email/secure_dir_request/secure_dir_manage_user_request_denied.txt',
+                        context,
+                        settings.EMAIL_SENDER,
+                        [user.email])
+
+                except Exception as e:
+                    message = f'Failed to send notification email. Details: {e}'
+                    messages.error(self.request, message)
+                    self.logger.error(message)
+                    self.logger.exception(e)
 
         return HttpResponseRedirect(
             reverse(f'secure-dir-manage-users-request-list',
