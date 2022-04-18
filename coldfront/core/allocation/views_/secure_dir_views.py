@@ -1,13 +1,16 @@
 import logging
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
+from django.core.mail import send_mail
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
 from django.forms import formset_factory
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views.generic import ListView, FormView
 from django.views.generic.base import TemplateView, View
@@ -164,10 +167,10 @@ class SecureDirManageUsersView(LoginRequiredMixin,
                 status__name='Active').exists():
             context['can_manage_users'] = True
 
-        directory_name = 'scratch2' if \
+        directory_name = 'Scratch2' if \
             alloc_obj.resources.filter(name__icontains='Scratch').exists() \
-            else 'group'
-        context['title'] = f'secure {directory_name} directory for ' \
+            else 'Group'
+        context['title'] = f'Secure {directory_name} Directory for ' \
                            f'{alloc_obj.project.name}'
 
         context['action'] = self.action
@@ -230,12 +233,46 @@ class SecureDirManageUsersView(LoginRequiredMixin,
                             status=pending_status
                         )
 
-                    # TODO: do we email admins? Probably
-
-            # TODO: alter message or is it already informative enough?
             directory_name = 'scratch2' if \
                 alloc_obj.resources.filter(name__icontains='Scratch').exists() \
                 else 'group'
+
+            # Email admins that there are new request(s)
+            if settings.EMAIL_ENABLED:
+                context = {
+                    'noun': self.language_dict['noun'],
+                    'verb': 'are' if reviewed_users_count > 1 else 'is',
+                    'plural': 's' if reviewed_users_count > 1 else '',
+                    'determiner': 'this' if reviewed_users_count > 1 else 'this',
+                    'num_requests': reviewed_users_count,
+                    'project_name': alloc_obj.project.name,
+                    'directory': directory_name,
+                    'review_url': 'secure-dir-manage-users-request-list',
+                    'action': self.action
+                }
+
+                try:
+                    msg_plain = \
+                        render_to_string('email/secure_dir_request/pending_secure_dir_manage_user_requests.txt',
+                                         context)
+                    msg_html = \
+                        render_to_string('email/secure_dir_request/pending_secure_dir_manage_user_requests.html',
+                                         context)
+
+                    send_mail(
+                        f'Pending Secure Directory '
+                        f'{self.language_dict["noun"]} Requests',
+                        msg_plain,
+                        settings.EMAIL_SENDER,
+                        settings.EMAIL_ADMIN_LIST,
+                        html_message=msg_html,
+                    )
+
+                except Exception as e:
+                    message = f'Failed to send notification email. Details: {e}'
+                    messages.error(request, message)
+                    self.logger.error(message)
+                    self.logger.exception(e)
 
             message = (
                 f'Successfully requested to {self.action} '
@@ -405,9 +442,13 @@ class SecureDirManageUsersUpdateStatusView(LoginRequiredMixin,
         if self.request.user.is_superuser:
             return True
 
-        # TODO: alter message
+        if self.request.user.has_perm('allocation.change_securediradduserrequest') or \
+                self.request.user.has_perm('allocation.change_securedirremoveuserrequest'):
+            return True
+
         message = (
-            'You do not have permission to update secure dir requests.')
+            'You do not have permission to update secure dir '
+            'join/removal requests.')
         messages.error(self.request, message)
 
     def dispatch(self, request, *args, **kwargs):
@@ -435,8 +476,11 @@ class SecureDirManageUsersUpdateStatusView(LoginRequiredMixin,
         self.secure_dir_request.status = secure_dir_status_choice
         self.secure_dir_request.save()
 
-        # TODO: alter message
-        message = 'updated woo from status 1 to status 2'
+        message = (
+            f'Secure directory {self.language_dict["noun"]} request for user '
+            f'{self.secure_dir_request.user.username} for allocation '
+            f'{self.secure_dir_request.allocation.project.name} has been '
+            f'marked as "{status}".')
         messages.success(self.request, message)
 
         return super().form_valid(form)
@@ -444,8 +488,6 @@ class SecureDirManageUsersUpdateStatusView(LoginRequiredMixin,
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['request'] = self.secure_dir_request
-        context['return_url'] = \
-            f'secure-dir-{self.action}-users-request-list'
         allocation_attribute_type = AllocationAttributeType.objects.get(
             name='Cluster Directory Access')
         subdirectory = AllocationAttribute.objects.get(
@@ -480,9 +522,13 @@ class SecureDirManageUsersCompleteStatusView(LoginRequiredMixin,
         if self.request.user.is_superuser:
             return True
 
-        # TODO: alter message
+        if self.request.user.has_perm('allocation.change_securediradduserrequest') or \
+                self.request.user.has_perm('allocation.change_securedirremoveuserrequest'):
+            return True
+
         message = (
-            'You do not have permission to update secure dir requests.')
+            'You do not have permission to update secure dir '
+            'join/removal requests.')
         messages.error(self.request, message)
 
     def dispatch(self, request, *args, **kwargs):
@@ -513,8 +559,8 @@ class SecureDirManageUsersCompleteStatusView(LoginRequiredMixin,
         self.secure_dir_request.save()
 
         if complete:
-            # either create allocation user with active status or set
-            # allocation user status to removed
+            # Creates an allocation user with an active status is the request
+            # was an addition request.
             alloc_user, created = \
                 AllocationUser.objects.get_or_create(
                     allocation=self.secure_dir_request.allocation,
@@ -522,17 +568,56 @@ class SecureDirManageUsersCompleteStatusView(LoginRequiredMixin,
                     status=AllocationUserStatusChoice.objects.get(name='Active')
                 )
 
+            # Sets the allocation user status to removed if the request
+            # was a removal request.
             if self.action == 'remove':
-                # create allocation user
                 alloc_user.status = \
                     AllocationUserStatusChoice.objects.get(name='Removed')
                 alloc_user.save()
 
-        # TODO: alter message
-        message = 'GREAT SUCCESS'
-        messages.success(self.request, message)
+            # Send notification email to PIs and the user that the
+            # request has been completed.
+            pis = self.secure_dir_request.allocation.project.projectuser_set.filter(
+                role__name='Principal Investigator',
+                status__name='Active',
+                enable_notifications=True)
+            users_to_notify = [x.user for x in pis]
+            users_to_notify.append(self.secure_dir_request.user)
 
-        # TODO: send email
+            directory_name = 'Scratch2' if \
+                self.secure_dir_request.allocation.resources.filter(
+                    name__icontains='Scratch').exists() \
+                else 'Group'
+
+            for user in users_to_notify:
+                context = {
+                    'user_first_name': user.first_name,
+                    'user_last_name': user.last_name,
+                    'managed_user_first_name': self.secure_dir_request.user.first_name,
+                    'managed_user_last_name': self.secure_dir_request.user.last_name,
+                    'managed_user_username': self.secure_dir_request.user.username,
+                    'verb': self.language_dict['verb'],
+                    'preposition': self.language_dict['preposition'],
+                    'directory': directory_name,
+                    'project_name': self.secure_dir_request.allocation.project.name,
+                    'removed': 'no longer' if self.action == 'removed' else 'now',
+                    'signature': settings.EMAIL_SIGNATURE,
+                    'support_email': settings.CENTER_HELP_EMAIL,
+                }
+
+                send_email_template(
+                    f'Secure Directory {self.language_dict["noun"]} Request Complete',
+                    'email/secure_dir_request/secure_dir_manage_user_request_complete.txt',
+                    context,
+                    settings.EMAIL_SENDER,
+                    [user.email])
+
+        message = (
+            f'Secure directory {self.language_dict["noun"]} request for user '
+            f'{self.secure_dir_request.user.username} for allocation '
+            f'{self.secure_dir_request.allocation.project.name} has been '
+            f'marked as "{status}".')
+        messages.success(self.request, message)
 
         return super().form_valid(form)
 
@@ -569,7 +654,10 @@ class SecureDirManageUsersDenyRequestView(LoginRequiredMixin,
         if self.request.user.is_superuser:
             return True
 
-        # TODO: alter message
+        if self.request.user.has_perm('allocation.change_securediradduserrequest') or \
+                self.request.user.has_perm('allocation.change_securedirremoveuserrequest'):
+            return True
+
         message = (
             'You do not have permission to deny a secure directory request.')
         messages.error(self.request, message)
@@ -595,10 +683,14 @@ class SecureDirManageUsersDenyRequestView(LoginRequiredMixin,
         self.secure_dir_request.completion_time = utc_now_offset_aware()
         self.secure_dir_request.save()
 
-        # TODO: new message
-        message = f'DENIED {self.action.upper()} REQUEST'
+        message = (
+            f'Secure directory {self.language_dict["noun"]} request for user '
+            f'{self.secure_dir_request.user.username} for allocation '
+            f'{self.secure_dir_request.allocation.project.name} has been '
+            f'denied.')
         messages.success(request, message)
 
+        # TODO: place reason text box in denial popup
         # TODO: send email after denial
 
         return HttpResponseRedirect(
