@@ -1,12 +1,12 @@
 from coldfront.core.allocation.models import AllocationRenewalRequest
-from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.project.models import Project
-from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
+from coldfront.core.project.utils_.new_project_utils import non_denied_new_project_request_statuses
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
+from coldfront.core.project.utils_.renewal_utils import non_denied_renewal_request_statuses
 from django.core.management.base import BaseCommand
 from django.db.models import Q
 import logging
@@ -86,13 +86,10 @@ class Command(BaseCommand):
     def non_denied_fca_new_project_requests(allocation_period):
         """Return a queryset of new project requests for FCAs under the
         given AllocationPeriod that are not denied."""
-        status_names = list(
-            ProjectAllocationRequestStatusChoice.objects.filter(
-                ~Q(name='Denied')).values_list('name', flat=True))
         kwargs = {
             'allocation_period': allocation_period,
             'allocation_type': SavioProjectAllocationRequest.FCA,
-            'status__name__in': status_names,
+            'status__in': non_denied_new_project_request_statuses(),
         }
         return SavioProjectAllocationRequest.objects.filter(**kwargs)
 
@@ -100,13 +97,10 @@ class Command(BaseCommand):
     def non_denied_fca_allocation_renewal_requests(allocation_period):
         """Return a queryset of allocation renewal requests for FCAs
         under the given AllocationPeriod that are not denied."""
-        status_names = list(
-            AllocationRenewalRequestStatusChoice.objects.filter(
-                ~Q(name='Denied')).values_list('name', flat=True))
         kwargs = {
             'allocation_period': allocation_period,
             'post_project__name__startswith': (
                 SavioProjectAllocationRequest.FCA),
-            'status__name__in': status_names,
+            'status__in': non_denied_renewal_request_statuses(),
         }
         return AllocationRenewalRequest.objects.filter(**kwargs)

@@ -6,7 +6,8 @@ from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
-from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
+from coldfront.core.project.utils_.new_project_utils import non_denied_new_project_request_statuses
+from coldfront.core.project.utils_.renewal_utils import non_denied_renewal_request_statuses
 from coldfront.core.utils.common import utc_now_offset_aware
 
 from django import forms
@@ -127,11 +128,10 @@ class SavioProjectExistingPIForm(forms.Form):
             name='Principal Investigator')
 
         ineligible_project_status_names = ['New', 'Active', 'Inactive']
-        ineligible_project_request_status_names = [
-            'Under Review', 'Approved - Processing', 'Approved - Scheduled',
-            'Approved - Complete']
-        ineligible_renewal_request_status_names = [
-            'Under Review', 'Approved', 'Complete']
+        ineligible_project_request_statuses = \
+            non_denied_new_project_request_statuses()
+        ineligible_renewal_request_statuses = \
+            non_denied_renewal_request_statuses()
 
         if self.allocation_type == 'FCA':
 
@@ -151,12 +151,12 @@ class SavioProjectExistingPIForm(forms.Form):
                 SavioProjectAllocationRequest.objects.filter(
                     allocation_type=SavioProjectAllocationRequest.FCA,
                     allocation_period=self.allocation_period,
-                    status__name__in=ineligible_project_request_status_names
+                    status__in=ineligible_project_request_statuses
                 ).values_list('pi__pk', flat=True))
             pis_with_renewal_requests = set(
                 AllocationRenewalRequest.objects.filter(
                     allocation_period=self.allocation_period,
-                    status__name__in=ineligible_renewal_request_status_names
+                    status__in=ineligible_renewal_request_statuses
                 ).values_list('pi__pk', flat=True))
             exclude_user_pks.update(
                 set.union(
@@ -179,7 +179,7 @@ class SavioProjectExistingPIForm(forms.Form):
                 SavioProjectAllocationRequest.objects.filter(
                     allocation_type=SavioProjectAllocationRequest.PCA,
                     allocation_period=self.allocation_period,
-                    status__name__in=ineligible_project_request_status_names
+                    status__in=ineligible_project_request_statuses
                 ).values_list('pi__pk', flat=True))
             exclude_user_pks.update(
                 set.union(pis_with_existing_pcas, pis_with_pending_requests))

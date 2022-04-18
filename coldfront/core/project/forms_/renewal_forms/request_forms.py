@@ -7,6 +7,8 @@ from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
+from coldfront.core.project.utils_.new_project_utils import non_denied_new_project_request_statuses
+from coldfront.core.project.utils_.renewal_utils import non_denied_renewal_request_statuses
 
 from django import forms
 
@@ -47,10 +49,8 @@ class ProjectRenewalPISelectionForm(forms.Form):
 
         allocation_period = AllocationPeriod.objects.get(
             pk=self.allocation_period_pk)
-        renewal_request_status_names = ['Under Review', 'Approved', 'Complete']
-        project_request_status_names = [
-            'Under Review', 'Approved - Processing', 'Approved - Scheduled',
-            'Approved - Complete']
+        renewal_request_statuses = non_denied_renewal_request_statuses()
+        project_request_statuses = non_denied_new_project_request_statuses()
 
         exclude_project_user_pks = set()
 
@@ -66,13 +66,13 @@ class ProjectRenewalPISelectionForm(forms.Form):
                 AllocationRenewalRequest.objects.filter(
                     pi__in=users,
                     allocation_period=allocation_period,
-                    status__name__in=renewal_request_status_names
+                    status__in=renewal_request_statuses
                 ).values_list('pi', flat=True)))
             pis_with_non_denied_project_requests = set(list(
                 SavioProjectAllocationRequest.objects.filter(
                     allocation_type=self.allocation_type,
                     allocation_period=allocation_period,
-                    status__name__in=project_request_status_names
+                    status__in=project_request_statuses
                 ).values_list('pi', flat=True)))
             for project_user in pi_project_users:
                 if (project_user.user.pk in

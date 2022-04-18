@@ -30,6 +30,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.conf import settings
+from django.db.models import Q
 from django.urls import reverse
 
 from urllib.parse import urljoin
@@ -83,6 +84,13 @@ def add_vector_user_to_designated_savio_project(user_obj):
     # Request cluster access for the user.
     request_runner = ProjectClusterAccessRequestRunner(project_user_obj)
     request_runner.run()
+
+
+def non_denied_new_project_request_statuses():
+    """Return a queryset of ProjectAllocationRequestStatusChoices that
+    do not have the name 'Denied'."""
+    return ProjectAllocationRequestStatusChoice.objects.filter(
+        ~Q(name='Denied')).values_list('name', flat=True)
 
 
 class ProjectApprovalRunner(object):

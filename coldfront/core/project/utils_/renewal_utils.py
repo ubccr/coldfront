@@ -32,7 +32,6 @@ from django.db.models import Q
 from django.urls import reverse
 from urllib.parse import urljoin
 import logging
-import pytz
 
 
 logger = logging.getLogger(__name__)
@@ -142,24 +141,8 @@ def get_pi_current_active_fca_project(pi_user):
     return project
 
 
-def has_non_denied_project_request(pi):
-    """Return whether or not the given PI User has a non-"Denied"
-    SavioProjectAllocationRequest.
-
-    TODO: Once the first AllocationPeriod has ended, this will need to
-    TODO: be refined to filter on time.
-    """
-    if not isinstance(pi, User):
-        raise TypeError(f'{pi} is not a User object.')
-    status_names = [
-        'Under Review', 'Approved - Processing', 'Approved - Complete']
-    return SavioProjectAllocationRequest.objects.filter(
-        pi=pi,
-        status__name__in=status_names).exists()
-
-
 def has_non_denied_renewal_request(pi, allocation_period):
-    """Return whether or not the given PI User has a non-"Denied"
+    """Return whether the given PI User has a non-"Denied"
     AllocationRenewalRequest for the given AllocationPeriod."""
     if not isinstance(pi, User):
         raise TypeError(f'{pi} is not a User object.')
@@ -181,6 +164,13 @@ def is_any_project_pi_renewable(project, allocation_period):
         if not has_non_denied_renewal_request(pi, allocation_period):
             return True
     return False
+
+
+def non_denied_renewal_request_statuses():
+    """Return a queryset of AllocationRenewalRequestStatusChoices that
+    do not have the name 'Denied'."""
+    return AllocationRenewalRequestStatusChoice.objects.filter(
+        ~Q(name='Denied')).values_list('name', flat=True)
 
 
 def send_allocation_renewal_request_approval_email(request, num_service_units):
@@ -464,12 +454,6 @@ def allocation_renewal_request_state_status(request):
            processing.
         - 'Complete' should be set when the request is actually
           processed.
-
-    # TODO: Currently, the request is set to 'Approved' and then
-    # TODO: immediately changed to 'Complete' when an administrator
-    # TODO: clicks the 'Submit' button. In the future, requests may not
-    # TODO: be processed immediately; instead, it will be handled by
-    # TODO: some other process (e.g., a cron job).
     """
     if not isinstance(request, AllocationRenewalRequest):
         raise TypeError(
@@ -879,16 +863,13 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
 
     def deactivate_pre_project(self):
         """Deactivate the request's pre_project, which involves setting
-        its status to 'Inactive and its corresponding compute
-        Allocation's status to 'Expired', unless either of the following
-        is true:
+        its status to 'Inactive' and its corresponding 'CLUSTER_NAME
+        Compute' Allocation's status to 'Expired', unless either of the
+        following is true:
             (a) The pre_project has been renewed during this
                 AllocationPeriod, or
             (b) A different PI made an approved and complete request to
                 pool with the pre_project.
-
-        TODO: Once the first AllocationPeriod has ended, criterion (b)
-        TODO: will need to be refined to filter on time.
 
         If the pre_project is None, do nothing."""
         request = self.request_obj
@@ -899,10 +880,11 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
                 f'Skipping deactivation.')
             return
 
+        # TODO: Set this dynamically when supporting other types.
+        allocation_period = get_current_allowance_year_period()
+
         # (a) If the pre_project has been renewed during this AllocationPeriod,
         # do not deactivate it.
-        # TODO: Reconsider the use of this AllocationPeriod moving forward.
-        allocation_period = get_current_allowance_year_period()
         complete_renewal_request_status = \
             AllocationRenewalRequestStatusChoice.objects.get(name='Complete')
         completed_renewals = AllocationRenewalRequest.objects.filter(
@@ -918,14 +900,14 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
             return
 
         # (b) If a different PI made an 'Approved - Complete' request to pool
-        # with the pre_project, do not deactivate it.
-        # TODO: Once the first AllocationPeriod has ended, this will need to be
-        # TODO: refined to filter on time.
+        # with the pre_project during this AllocationPeriod, do not deactivate
+        # it.
         approved_complete_request_status = \
             ProjectAllocationRequestStatusChoice.objects.get(
                 name='Approved - Complete')
         approved_complete_pool_requests_from_other_pis = \
             SavioProjectAllocationRequest.objects.filter(
+                Q(allocation_period=allocation_period) &
                 Q(allocation_type=SavioProjectAllocationRequest.FCA) &
                 ~Q(pi=request.pi) &
                 Q(pool=True) &
@@ -934,7 +916,8 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         if approved_complete_pool_requests_from_other_pis.exists():
             message = (
                 f'Project {pre_project.name} has been pooled with by a '
-                f'different PI. Skipping deactivation.')
+                f'different PI during AllocationPeriod '
+                f'"{allocation_period.name}". Skipping deactivation.')
             logger.info(message)
             return
 
