@@ -1,0 +1,8 @@
+Dear {{ user_first_name }} {{ user_last_name }},
+
+The request to {{ verb }} {{ managed_user_first_name }} {{ managed_user_last_name }} ({{ managed_user_username }}) {{ preposition }} the secure {{ directory }} directory for allocation {{ project_name }} has been completed. {{ managed_user_first_name }} {{ managed_user_last_name }} {{ removed }} has access to the secure {{ directory }} directory on the cluster.
+
+If you have any questions, please contact us at {{ support_email }}.
+
+Thank you,
+{{ signature }}
