@@ -33,7 +33,7 @@ import pytz
 
 class SavioProjectAllocationPeriodForm(forms.Form):
 
-    allocation_period = AllocationPeriodChoiceField(
+    allocation_period = forms.ModelChoiceField(
         label='Allocation Period',
         queryset=AllocationPeriod.objects.none(),
         required=True)
@@ -42,9 +42,13 @@ class SavioProjectAllocationPeriodForm(forms.Form):
         self.allocation_type = kwargs.pop('allocation_type', None)
         super().__init__(*args, **kwargs)
         display_timezone = pytz.timezone(settings.DISPLAY_TIME_ZONE)
-        self.fields['allocation_period'].queryset = \
-            self.allocation_period_choices(
-                self.allocation_type, utc_now_offset_aware(), display_timezone)
+        queryset = self.allocation_period_choices(
+            self.allocation_type, utc_now_offset_aware(), display_timezone)
+        self.fields['allocation_period'] = AllocationPeriodChoiceField(
+            allocation_type=self.allocation_type,
+            label='AllocationPeriod',
+            queryset=queryset,
+            required=True)
 
     @staticmethod
     def allocation_period_choices(allocation_type, utc_dt, display_timezone):
@@ -57,7 +61,7 @@ class SavioProjectAllocationPeriodForm(forms.Form):
         dt = utc_dt.astimezone(display_timezone)
         date = datetime.date(dt)
         f = Q(end_date__gte=date)
-        queryset = AllocationPeriod.objects.filter(end_date__gte=date)
+        order_by = ('start_date', 'end_date')
         if allocation_type in ('FCA', 'PCA'):
             if flag_enabled('ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE'):
                 # If projects for the next period may be requested, include it.
@@ -65,6 +69,11 @@ class SavioProjectAllocationPeriodForm(forms.Form):
                 num_days_in_allocation_year = 365
                 started_before_date = (
                     date + timedelta(days=num_days_in_allocation_year))
+                # Special handling: During the time in which renewals for the
+                # next period can be requested, the first option should be the
+                # period that is most relevant to most users (i.e., the
+                # upcoming one).
+                order_by = ('-start_date', '-end_date')
             else:
                 # Otherwise, include only the current period.
                 started_before_date = date
@@ -80,7 +89,7 @@ class SavioProjectAllocationPeriodForm(forms.Form):
                 Q(name__startswith='Summer Sessions'))
         else:
             return AllocationPeriod.objects.none()
-        return queryset.filter(f).order_by('start_date', 'end_date')
+        return AllocationPeriod.objects.filter(f).order_by(*order_by)
 
 
 class SavioProjectAllocationTypeForm(forms.Form):

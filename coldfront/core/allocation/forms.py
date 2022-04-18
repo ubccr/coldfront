@@ -271,10 +271,25 @@ class AllocationClusterAccountRequestActivationForm(forms.Form):
 
 class AllocationPeriodChoiceField(forms.ModelChoiceField):
 
+    def __init__(self, *args, **kwargs):
+        self.allocation_type = kwargs.pop('allocation_type', None)
+        super().__init__(*args, **kwargs)
+
     def label_from_instance(self, obj):
-        # TODO: Set this dynamically when supporting other types.
         num_service_units = prorated_allocation_amount(
-            settings.FCA_DEFAULT_ALLOCATION, utc_now_offset_aware(), obj)
+            self.allocation_value(), utc_now_offset_aware(), obj)
         return (
             f'{obj.name} ({obj.start_date} - {obj.end_date}) '
             f'({num_service_units} SUs)')
+
+    def allocation_value(self):
+        """Return the default allocation value (Decimal) to use based on
+        the allocation type."""
+        if self.allocation_type == 'FCA':
+            return settings.FCA_DEFAULT_ALLOCATION
+        elif self.allocation_type == 'ICA':
+            return settings.ICA_DEFAULT_ALLOCATION
+        elif self.allocation_type == 'PCA':
+            return settings.PCA_DEFAULT_ALLOCATION
+        else:
+            return settings.ALLOCATION_MIN
