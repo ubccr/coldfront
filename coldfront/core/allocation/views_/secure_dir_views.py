@@ -698,7 +698,6 @@ class SecureDirManageUsersDenyRequestView(LoginRequiredMixin,
             f'"Denied" with reason: {reason}.')
         messages.success(request, message)
 
-        # TODO: send email after denial
         if settings.EMAIL_ENABLED:
             # Send notification email to PIs and the user that the
             # request has been denied.
