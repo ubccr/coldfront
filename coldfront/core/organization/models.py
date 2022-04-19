@@ -463,6 +463,9 @@ class OrganizationLevel(TimeStampedModel):
 
         Returns the newly created OrganizationLevel
         """
+        if level is None:
+            raise ValidationError( 'Invalid value None for level')
+        level = int(level)
         if parent is None:
             # No parent organization
             root = cls.root_organization_level()
@@ -604,8 +607,14 @@ class OrganizationLevel(TimeStampedModel):
 
                 # Set the child's parent to parent
                 self.disable_validation_checks(True)
-                child.parent = self.parent
+                # Cache parent and set child's parent to Null to bypass unique constraint
+                cachedparent = self.parent
+                child.parent = None
+                child.save()
                 self.delete()
+                # Set child's parent to what the deleted orglevel parent was
+                child.parent = cachedparent
+                child.save()
                 self.disable_validation_checks(False)
             else: #if child
                 # Have a parent but no child

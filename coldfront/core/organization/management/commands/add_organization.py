@@ -24,6 +24,7 @@ class Command(BaseCommand):
         parser.add_argument('--code',
                 help='The code for the Organization to create',
                 action='store',
+                required=True,
                 )
         parser.add_argument('--shortname','--short',
                 help='The shortname of the Organization to create',
@@ -39,18 +40,24 @@ class Command(BaseCommand):
                 '--level',
                 help='The name of the OrganizationLevel for this Organization',
                 action='store',
+                required=True,
                 )
-        parser.add_argument('-is_selectable_for_user', '--user_selectable',
+        parser.add_argument('--parent',
+                help="The fullcode of the new Organizaton's parent, if any",
+                action='store',
+                default=None,
+                )
+        parser.add_argument('--is_selectable_for_user', '--user_selectable',
                 '--user',
                 help='Whether Organization should be selectable by user',
                 action='store_true',
                 )
-        parser.add_argument('-is_selectable_for_project', '--project_selectable',
+        parser.add_argument('--is_selectable_for_project', '--project_selectable',
                 '--project', '--proj',
                 help='Whether Organization should be selectable by project',
                 action='store_true',
                 )
-        parser.add_argument('-selectable', '--is_selectable',
+        parser.add_argument('--selectable', '--is_selectable',
                 help='Short for --is_selectable_for_user and --is_selectable_for_project',
                 action='store_true',
                 )
@@ -90,13 +97,13 @@ class Command(BaseCommand):
 
         if orglev_name is None:
                 raise CommandError('No organization_level specified')
-        olev = OrganizationLevel.object.get(name=orglev_name)
+        olev = OrganizationLevel.objects.get(name=orglev_name)
 
         if selectable:
             user_selectable = True
             proj_selectable = True
 
-        new, create, changes = Organization.create_or_update_organization_by_parent_code(
+        new, created, changes = Organization.create_or_update_organization_by_parent_code(
                 code=code,
                 parent=parent,
                 organization_level=olev,

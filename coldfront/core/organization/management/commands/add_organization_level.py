@@ -36,20 +36,22 @@ class Command(BaseCommand):
     """
 
     def add_arguments(self, parser):
-        parser.add_argument('-name',
+        parser.add_argument('--name',
                 help='The name of the OrganizationLevel to add.',
                 action='store',
+                required=True,
                 )
-        parser.add_argument('-level',
+        parser.add_argument('--level',
                 help='The integer level of the OrganizationLevel to add.',
                 action='store',
+                required=True,
                 )
-        parser.add_argument('-parent',
+        parser.add_argument('--parent',
                 help='The name of the parent OrganizationLevel.',
                 action='store',
                 default=None,
                 )
-        parser.add_argument('-export_to_xdmod', '-export-to-xdmod', '--export',
+        parser.add_argument('--export_to_xdmod', '--export-to-xdmod', '--export',
                 help='Whether OrganizationLevel should export to xdmod',
                 action='store_true',
                 )
@@ -59,14 +61,14 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
 
         name = options['name']
-        level = options['level']
+        level = int(options['level'])
         pname = options['parent']
         export = options['export_to_xdmod']
 
         if pname is None:
             parent = None
         else:
-            parent = OrganizationLevel.objects.get(name=name)
+            parent = OrganizationLevel.objects.get(name=pname)
         
         new = OrganizationLevel.add_organization_level(
                 name=name,

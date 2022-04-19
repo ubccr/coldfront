@@ -148,19 +148,50 @@ class Command(BaseCommand):
                         )
                 if verbosity:
                     username = userprof.user.username
-                    orgs = results['added']
-                    for org in orgs:
-                        sys.stdout.write('{} Added org {} to user '
-                            '{}\n'.format(
-                            v_or_d_text, 
-                            org.fullcode(),
-                            username))
-                    orgs = results['removed']
-                    for org in orgs:
-                        sys.stdout.write('{} Removed org {} from user '
-                            '{}\n'.format(
-                            v_or_d_text, 
-                            org.fullcode(),
-                            username))
+                    for fcode, rec in results.items():
+                        if fcode is None:
+                            continue
+                        old = None
+                        new = None
+                        if 'old' in rec:
+                            old = rec['old']
+                        if 'new' in rec:
+                            new = rec['new']
+                        if old is None:
+                            if new is None:
+                                # Both old and new are None, nothing to report
+                                continue
+                            elif new is 'primary':
+                                sys.stdout.write('{} Added Org {} as primary for user {}\n'.format(
+                                    v_or_d_text, fcode, username))
+                            else:
+                                sys.stdout.write('{} Added Org {} as secondary for user {}\n'.format(
+                                    v_or_d_text, fcode, username))
+                            #end: if new is None
+                        elif old is 'primary':
+                            if new is None:
+                                sys.stdout.write('{} Deleted former primary Org {} from user {}\n'.format(
+                                    v_or_d_text, fcode, username))
+                            elif new is 'primary':
+                                # Both old and new are primary, nothing to report
+                                continue
+                            else:
+                                sys.stdout.write('{} Demoted Org {} from primary to secondary for user {}\n'.format(
+                                    v_or_d_text, fcode, username))
+                            #end: if new is None
+
+                        else:
+                            if new is None:
+                                sys.stdout.write('{} Deleted former secondary Org {} from user {}\n'.format(
+                                    v_or_d_text, fcode, username))
+                            elif new is 'primary':
+                                sys.stdout.write('{} Promoted Org {} from secondary to primary for user {}\n'.format(
+                                    v_or_d_text, fcode, username))
+                            else:
+                                # Both old and new are secondary, nothing to report
+                                continue
+                            #end: if new is None
+                        #end: if old is None
+                    #end: for fcode, rec in results.items()
             #end: if dryrun
         return

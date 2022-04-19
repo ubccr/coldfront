@@ -21,6 +21,7 @@ class Command(BaseCommand):
         parser.add_argument('--name',
                 help='The name of the OrganizationLevel to delete',
                 action='store',
+                required=True,
                 )
         parser.add_argument('--force',
                 help='Force mode.  Skip DAconfirmation prompt',
@@ -51,7 +52,7 @@ class Command(BaseCommand):
             if default is not None and choice == '':
                 return valid[default]
             elif choice in valid:
-                return valid[default]
+                return valid[choice]
             else:
                 sys.stdout.write("Please respond with 'yes' or 'now'")
         #end: while True
@@ -62,11 +63,11 @@ class Command(BaseCommand):
         name = options['name']
         force = options['force']
 
-        orglev = OrganizationLevel.object.get(name=name)
+        orglev = OrganizationLevel.objects.get(name=name)
 
         if not force:
             sys.stdout.write('You have requested to delete OrganizationLevel '
-                    'name={} (level={})\n'.format(orglev.name, orglev,level))
+                    'name={} (level={})\n'.format(orglev.name, orglev.level))
             orgs = Organization.objects.filter(organization_level=orglev)
             if orgs:
                 sys.stdout.write('This will cause the deletion of Organizations:\n')

@@ -38,6 +38,7 @@ class Command(BaseCommand):
                 help='The fullcode or semifullcode for the Organization to '
                     'delete',
                 action='store',
+                required=True,
                 )
         parser.add_argument('--dissociate_users','--dissociate-users',
                 help='Any associations between the Organization and '

@@ -6,6 +6,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from coldfront.core.organization.models import (
             OrganizationLevel,
+            OrganizationProject,
             Organization,
         )
 from coldfront.core.project.models import (
@@ -41,11 +42,13 @@ class Command(BaseCommand):
         parser.add_argument('--project','--proj',
                 help='The title of the project',
                 action='store',
+                required=True,
                 )
         parser.add_argument('--mode',
                 help='The operational mode.  It can be "add", or '
                     '"delete" or "primary"',
                 action='store',
+                required=True,
                 )
         return
 
@@ -61,7 +64,7 @@ class Command(BaseCommand):
         if mode == 'add':
             pass
         elif mode == 'delete' or mode == 'del':
-            mode = delete
+            mode = 'delete'
         elif mode == 'primary':
             pass
         else:
@@ -79,7 +82,7 @@ class Command(BaseCommand):
 
             if mode == 'primary':
                 mode = 'add'
-                oldprim = OrganizationProject.set_primary_organization_for_project( 
+                oldprim, _ = OrganizationProject.set_primary_organization_for_project( 
                     proj, org)
 
                 if oldprim == org:
