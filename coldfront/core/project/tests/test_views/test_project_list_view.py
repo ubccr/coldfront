@@ -46,4 +46,8 @@ class TestProjectListView(TestBase):
         self.assertContains(response, active_name)
         self.assertContains(response, inactive_name)
 
+    def test_renew_pi_allowance_button_conditionally_enabled(self):
+        """Test that the button for renewing a PI's allowance is only
+        enabled for Users who are """
+
     # TODO

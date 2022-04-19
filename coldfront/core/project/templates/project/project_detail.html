@@ -60,7 +60,7 @@ Project Detail
           </a>
         {% endif %}
         {% if renew_allowance_visible %}
-          {% if renew_allowance_current_clickable %}
+          {% if renew_allowance_clickable %}
             <a
                 class="btn btn-success"
                 href="{% url 'project-renew' project.pk %}"
