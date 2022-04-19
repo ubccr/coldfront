@@ -229,8 +229,8 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             # 'ic_',
             # 'pc_',
         )
-        context['renew_allowance_current_visible'] = \
-            self.object.name.startswith(eligible_allowance_types)
+        context['renew_allowance_visible'] = self.object.name.startswith(
+            eligible_allowance_types)
         # Only allow the "Renew Allowance" button to be clickable if
         #     (a) any PIs do not have pending/approved renewal requests for the
         #         current period, or
@@ -238,7 +238,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         # TODO: Set this dynamically when supporting other types.
         allocation_period = get_current_allowance_year_period()
         context['renew_allowance_current_clickable'] = (
-            context['renew_allowance_current_visible'] and
+            context['renew_allowance_visible'] and
             is_any_project_pi_renewable(self.object, allocation_period) or
             flag_enabled('ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE'))
 
@@ -410,7 +410,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
         # Managers and PIs.
         role_names = ['Manager', 'Principal Investigator']
         status = ProjectUserStatusChoice.objects.get(name='Active')
-        context['renew_allowance_current_visible'] = \
+        context['renew_allowance_visible'] = \
             ProjectUser.objects.filter(
                 user=self.request.user, role__name__in=role_names,
                 status=status)
