@@ -44,7 +44,7 @@ class OrganizationUserInline(admin.TabularInline):
 
     # Limit to Organizations with is_selectable_for_project
     def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
-        field = super(OrganizationProjectInline, self).formfield_for_foreignkey(
+        field = super(OrganizationUserInline, self).formfield_for_foreignkey(
                 db_field, request, **kwargs)
         if db_field.name == 'organization':
             field.queryset = field.queryset.filter(
@@ -110,14 +110,14 @@ class OrganizationAdmin(admin.ModelAdmin):
                     inline.max_num = 0
             #end: if request
             if isinstance(inline, OrganizationProjectInline):
-                if not obj.is_selectable_for_project:
+                if obj is not None and not obj.is_selectable_for_project:
                     inline.max_num = 0
             if isinstance(inline, OrganizationUserInline):
-                if not obj.is_selectable_for_user:
+                if obj is not None and not obj.is_selectable_for_user:
                     inline.max_num = 0
             inline_instances.append(inline)
         #end: for inline_class
-        return inline_instance
+        return inline_instances
 
 #end: class OrganizationAdmin
 

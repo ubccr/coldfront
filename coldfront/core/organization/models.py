@@ -14,25 +14,6 @@ from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import import_from_settings
 
 
-ORGANIZATION_USER_DISPLAY_MODE = import_from_settings(
-    'ORGANIZATION_USER_DISPLAY_MODE')
-ORGANIZATION_USER_DISPLAY_TITLE = import_from_settings(
-    'ORGANIZATION_USER_DISPLAY_TITLE')
-ORGANIZATION_PROJECT_DISPLAY_MODE = import_from_settings(
-    'ORGANIZATION_PROJECT_DISPLAY_MODE')
-ORGANIZATION_PI_CAN_EDIT_FOR_PROJECT = import_from_settings(
-    'ORGANIZATION_PI_CAN_EDIT_FOR_PROJECT')
-ORGANIZATION_PROJECT_DISPLAY_TITLE = import_from_settings(
-    'ORGANIZATION_PROJECT_DISPLAY_TITLE')
-ORGANIZATION_LDAP_AUTH_POPULATE_USER_ORGANIZATIONS = import_from_settings(
-    'ORGANIZATION_LDAP_AUTH_POPULATE_USER_ORGANIZATIONS')
-ORGANIZATION_LDAP_USER_ATTRIBUTE = import_from_settings(
-    'ORGANIZATION_LDAP_USER_ATTRIBUTE')
-ORGANIZATION_LDAP_USER_CREATE_PLACEHOLDERS = import_from_settings(
-    'ORGANIZATION_LDAP_USER_CREATE_PLACEHOLDERS')
-ORGANIZATION_LDAP_USER_DELETE_MISSING = import_from_settings(
-    'ORGANIZATION_LDAP_USER_DELETE_MISSING')
-
 logger = logging.getLogger(__name__)
 
 class OrganizationLevel(TimeStampedModel):
@@ -501,8 +482,6 @@ class OrganizationLevel(TimeStampedModel):
                 root.save()
                 cls.disable_validation_checks(False)
 
-                # Delete any cached toplevel unknown org
-                Organization.CACHED_TOPLEVEL_UNKNOWN_ORG = None
                 # Are there any Organizations with OrgLevel=root ?
                 orgs = Organization.objects.filter(organization_level=root)
                 if orgs:
@@ -711,8 +690,6 @@ class Organization(TimeStampedModel):
                 through='OrganizationProject',
                 related_name='organizations',
             )
-    # This is a cached top-level/root Unknown org, used for defaulting things
-    CACHED_TOPLEVEL_UNKNOWN_ORG = None
     # Disable the validation constraints if true.
     # Intended for temporary use when adding/deleting OrgLevels (see
     # add_organization_level and delete_organization_level methods).
@@ -1454,24 +1431,12 @@ class Organization(TimeStampedModel):
     #end: deef generate_unique_organization_names
 
     @classmethod
-    def get_or_create_unknown_root(cls, dryrun=False):
+    def get_or_create_unknown_root(cls):
         """This returns a 'top-level' Unknown organization.
 
-        It will look for one, first checking if it is cached
-        in CACHED_TOPLEVEL_UNKNOWN_ORG, then searching DB, 
-        and return if found.  
-
-        If not found, creates one.  The value being returned will
-        be cached in UNKNOWN_ORG to speed up future calls.
-
-        If dryrun is set, will not actually create an instance but
-        just return None
+        If not found, creates one.
         """
-        if cls.CACHED_TOPLEVEL_UNKNOWN_ORG is not None:
-            # We have a cached value, use it
-            return cls.CACHED_TOPLEVEL_UNKNOWN_ORG
-
-        # No value cached in UNKNOWN_ORG, look for one in DB
+        # Look for root-level Unknown org in DB
         # To allow this to work when adding a new root orglevel, we
         # need to search for orglevel having no parent, not for org
         # to have no parent (between creation of new root and migrating
@@ -1484,11 +1449,8 @@ class Organization(TimeStampedModel):
                 )
         if qset:
             # We got an org with code='Unknown', cache and return first found
-            cls.CACHED_TOPLEVEL_UNKNOWN_ORG = qset[0]
             return qset[0]
 
-        if dryrun:
-            return None
         #Not found, create one
         orglevel = OrganizationLevel.root_organization_level()
         if not orglevel:
@@ -1509,13 +1471,11 @@ class Organization(TimeStampedModel):
                 is_selectable_for_user=False,
                 is_selectable_for_project=False,
                 )
-        # Cache it
-        cls.CACHED_TOPLEVEL_UNKNOWN_ORG = new
         return new
     #end: def get_or_create_unknown_root
 
     @classmethod
-    def create_unknown_object_for_dir_string(cls, dirstring, dryrun=False):
+    def create_unknown_object_for_dir_string(cls, dirstring):
         """This creates a placeholder Organization for the 
         given Directory string.
 
@@ -1532,11 +1492,10 @@ class Organization(TimeStampedModel):
 
         The newly created Organization is returned.
         """
-        unknown_root = cls.get_or_create_unknown_root(dryrun)
+        unknown_root = cls.get_or_create_unknown_root()
         orglevel = None
-        if unknown_root is not None:
-            root_orglevel = unknown_root.organization_level
-            orglevel = root_orglevel.child_organization_level()
+        root_orglevel = unknown_root.organization_level
+        orglevel = root_orglevel.child_organization_level()
         unique_names = cls.generate_unique_organization_names(
                 parent=unknown_root,
                 code='Unknown_placeholder',
@@ -1550,18 +1509,16 @@ class Organization(TimeStampedModel):
             shortname=unique_names['shortname'],
             longname=unique_names['longname']
             )
-        if not dryrun:
-            placeholder.save()
+        placeholder.save()
         tmpid = placeholder.id
         if tmpid is None:
             tmpid = abs(hash(dirstring))
             placeholder.id = tmpid
         placeholder.code = 'Unknown_{}'.format(tmpid)
-        if not dryrun:
-            placeholder.save()
-            Directory2Organization.objects.create(
-                    organization=placeholder,
-                    directory_string=dirstring).save()
+        placeholder.save()
+        Directory2Organization.objects.create(
+                organization=placeholder,
+                directory_string=dirstring).save()
         return placeholder
     #end: def create_unknown/object_for_dir_string
 
@@ -1772,8 +1729,16 @@ class OrganizationProject(TimeStampedModel):
             the fullcode of an Organization.
         If the Organization was provided as instance or fullcode, or
         as a dictionary w/out the 'is_primary' key, is_primary will
+        default as follows:
+            if default_primary is set AND it is the first element
+                of the list, default to True
+            if Org is already associated with the Project, then we
+                do not change its primariness unless explicitly
+                instructed to do so; i.e. is_primary defaults to
+                the current is_primary setting for the association
+                (which can change as we loop through the list)
+            otherwise, defaults to False
         default to False *unless* default_first_primary is set AND
-        it is the first element of the list.
 
         If is_primary is set, any previously primary Organization for
         the Project (including if it was previously set by an earlier
@@ -1801,24 +1766,24 @@ class OrganizationProject(TimeStampedModel):
         """
         changes = {}
         keypattern = 'Org[{}]'
-        if delete:
-            # Delete flag set, we need the list of previously existing
-            # Organizations
-            qset = cls.objects.filter(project=project)
-            previous_by_fullcode = {}
-            fcodes2del = set()
-            if qset:
-                for rec in qset:
-                    org = rec.organization
-                    fcode = org.fullcode()
-                    previous_by_fullcode[fcode] = rec
+        previous_by_fullcode = {}
+        fcodes2del = set()
+        # Get  list of previously associated Organizations
+        qset = cls.objects.filter(project=project)
+        if qset:
+            for rec in qset:
+                org = rec.organization
+                fcode = org.fullcode()
+                previous_by_fullcode[fcode] = rec
+                if delete:
                     fcodes2del.add(fcode)
+                #end: if delete
+            #end: for rec in qset
+        #end: if qset
 
         first = default_first_primary
         for orec in organization_list:
-            # Default is_primary to False, unless first iteration and default_first_primary
-            is_primary = first
-            first = False
+            is_primary = None
             # Handle is orec is a dict
             if isinstance(orec, dict):
                 # We got a dictionary
@@ -1828,8 +1793,8 @@ class OrganizationProject(TimeStampedModel):
                 else:
                     raise ValueError('Dictionary elements of organization_list '
                             '*must* have an "organization" key')
-                    if 'is_primary' in tmporec:
-                        is_primary = tmporec['is_primary']
+                if 'is_primary' in tmporec:
+                    is_primary = tmporec['is_primary']
             # Get Organization from orec
             if isinstance(orec, Organization):
                 # Already an Organization
@@ -1846,63 +1811,99 @@ class OrganizationProject(TimeStampedModel):
             # Add the Organization
             fcode = org.fullcode()
             key = keypattern.format(fcode)
+
+            # Remove our fullcode from list of those previously present
+            fcodes2del.discard(fcode)
+
             if fcode in previous_by_fullcode:
                 # Organization already present for Project, update is_primary as needed
+                if is_primary is None:
+                    if first:
+                        # First iteration of loop and default_first_primary set
+                        # So default to True
+                        is_primary = True
+                    else:
+                        # Not first iter, or default_first_primary unset
+                        # Since ORg is already present and we were not explicitly
+                        # instructed to change its primariness, nothing to do
+                        first = False
+                        continue
+                    #end: if first
+                #end: if is_primary is None
+                first = False
+
                 old = previous_by_fullcode[fcode]
                 if old.is_primary != is_primary:
                     if is_primary:
                         # Handle primary orgs delicately
-                        oldprimary, _ = cls.set_primary_organization_for_project(
+                        oldprimary, new = cls.set_primary_organization_for_project(
                                 project=project, new=org)
                         opkey = None
                         if oldprimary:
-                            opkey = keypattern.format(oldprimary.fullcode())
+                            oldfcode = oldprimary.fullcode()
+                            opkey = keypattern.format(oldpfcode)
+                            if oldfcode in previous_by_fullcode:
+                                previous_by_fullcode[oldfcode].is_primary = False
                         if opkey in changes:
-                            changes[opkey][new] = 'secondary'
+                            changes[opkey]['new'] = 'secondary'
                         else:
                             changes[opkey]={'old':'primary', 'new':'secondary'}
                         if key in changes:
-                            changes[key][new] = 'primary'
+                            changes[key]['new'] = 'primary'
                         else:
                             changes[key] = { 'old':None, 'new':'primary' }
+                        # Update our cached store
+                        newfcode = new.organization.fullcode()
+                        previous_by_fullcode[newfcode] = new
                     else: #if is_primary
                         old.is_primary = False
                         old.save()
                         if key in changes:
-                            changes[key][new] = 'secondary'
+                            changes[key]['new'] = 'secondary'
                         else:
                             changes[key] = { 'old':primary, 'new':'secondary' }
                     #end: if is_primary
                 #end: if old.is_primary != is_primary
             else: #if fcode in previous_by_fullcode
                 # Need to add
+                if is_primary is None:
+                    # Default is_primary to first, as no existing object
+                    is_primary = first
+                first = False
+
                 if is_primary:
                     # Special care for primary orgs
-                    oldprimary, _ = cls.set_primary_organization_for_project(
+                    oldprimary, new = cls.set_primary_organization_for_project(
                             project=project, new=org)
                     opkey = None
                     if oldprimary:
-                        opkey = keypattern.format(oldprimary.fullcode())
+                        oldfcode = oldprimary.fullcode()
+                        opkey = keypattern.format(oldfcode)
+                        if oldfcode in previous_by_fullcode:
+                            previous_by_fullcode[oldfcode].is_primary = False
+                    # Update our cached store
+                    newfcode = new.organization.fullcode()
+                    previous_by_fullcode[newfcode] = new
                     if opkey in changes:
-                        changes[opkey][new] = 'secondary'
+                        changes[opkey]['new'] = 'secondary'
                     else:
                         changes[opkey]={'old':'primary', 'new':'secondary'}
                     if key in changes:
-                        changes[key][new] = 'primary'
+                        changes[key]['new'] = 'primary'
                     else:
                         changes[key] = { 'old':None, 'new':'primary' }
                 else: #if is_primary:
-                    cls.objects.create(
+                    new = cls.objects.create(
                             organization=org, project=project, is_primary=False)
+                    # Update our cached store
+                    newfcode = new.organization.fullcode()
+                    previous_by_fullcode[newfcode] = new
                     if key in changes:
-                        changes[key][new] = 'secondary'
+                        changes[key]['new'] = 'secondary'
                     else:
                         changes[key] = { 'old':None, 'new':'secondary' }
                 #end: if is_primary:
             #end: if fcode in previous_by_fullcode
-
-            # Remove our fullcode from list of those previously present
-            fcodes2del.discard(fcode)
         #end: for orec
 
         if delete:
@@ -1913,7 +1914,7 @@ class OrganizationProject(TimeStampedModel):
                 isprimary = orgp.is_primary
                 orgp.delete()
                 if key in changes:
-                    changes[key][new] = None
+                    changes[key]['new'] = None
                 else:
                     old = 'secondary'
                     if isprimary:
@@ -2052,6 +2053,11 @@ class OrganizationUser(TimeStampedModel):
                     ),
                 ]
     #end: class OrganizationUser.Meta
+
+    def __str__(self):
+        return '{}:{}'.format(
+                self.user.user.username, self.organization.fullcode())
+    #end: def __str__
 
     @classmethod
     def get_primary_organization_for_user(cls, user):
@@ -2218,8 +2224,15 @@ class OrganizationUser(TimeStampedModel):
             the fullcode of an Organization.
         If the Organization was provided as instance or fullcode, or
         as a dictionary w/out the 'is_primary' key, is_primary will
-        default to False *unless* default_first_primary is set AND
-        it is the first element of the list.
+        default as follows:
+            if default_primary_is set AND it is the first element 
+                of the list, defaults to True
+            if the Org is already associated with the user, then
+                we do not change it's is_primary setting (ie 
+                defaults to the current is_primary setting for
+                the association, which can change over the course
+                of the list)
+            otherwise, defaults to False
 
         If is_primary is set, any previously primary Organization for
         the User (including if it was previously set by an earlier
@@ -2247,6 +2260,7 @@ class OrganizationUser(TimeStampedModel):
         """
         changes = {}
         keypattern = 'Org[{}]'
+
         # Convert user to an instance of UserProfile, if needed
         if isinstance(user, User):
             # Convert User to UserProfile
@@ -2258,24 +2272,24 @@ class OrganizationUser(TimeStampedModel):
         else:
             raise ValueError('user must be an instance of User or UserProfile')
 
-        if delete:
-            # Delete flag set, we need the list of previously existing
-            # Organizations
-            qset = cls.objects.filter(user=user)
-            previous_by_fullcode = {}
-            fcodes2del = set()
-            if qset:
-                for rec in qset:
-                    org = rec.organization
-                    fcode = org.fullcode()
-                    previous_by_fullcode[fcode] = rec
+        # Get  list of previously associated Organizations
+        previous_by_fullcode = {}
+        fcodes2del = set()
+        qset = cls.objects.filter(user=user)
+        if qset:
+            for rec in qset:
+                org = rec.organization
+                fcode = org.fullcode()
+                previous_by_fullcode[fcode] = rec
+                if delete:
                     fcodes2del.add(fcode)
+                #end: if delete
+            #end: for rec in qset
+        #end: if qset
 
         first = default_first_primary
         for orec in organization_list:
-            # Default is_primary to False, unless first iteration and default_first_primary
-            is_primary = first
-            first = False
+            is_primary = None
             # Handle is orec is a dict
             if isinstance(orec, dict):
                 # We got a dictionary
@@ -2285,8 +2299,8 @@ class OrganizationUser(TimeStampedModel):
                 else:
                     raise ValueError('Dictionary elements of organization_list '
                             '*must* have an "organization" key')
-                    if 'is_primary' in tmporec:
-                        is_primary = tmporec['is_primary']
+                if 'is_primary' in tmporec:
+                    is_primary = tmporec['is_primary']
             # Get Organization from orec
             if isinstance(orec, Organization):
                 # Already an Organization
@@ -2303,72 +2317,110 @@ class OrganizationUser(TimeStampedModel):
             # Add the Organization
             fcode = org.fullcode()
             key = keypattern.format(fcode)
+
+            # Remove our fullcode from list of those previously present
+            fcodes2del.discard(fcode)
+
             if fcode in previous_by_fullcode:
                 # Organization already present for User, update is_primary as needed
+                if is_primary is None:
+                    if first:
+                        # First iteration of loop, and default_first_primary is set
+                        # So default to True
+                        is_primary = True
+                    else:
+                        # Not first iter, or default_first_primary unset
+                        # Since Organization is already present, and we were not 
+                        #explicitly instructed to changes its primariness, just punt
+                        first = False
+                        continue
+                    #end: if first
+                #end: if is_primary is None
+                first = False
+
                 old = previous_by_fullcode[fcode]
                 if old.is_primary != is_primary:
                     if is_primary:
                         # Handle primary orgs delicately
-                        oldprimary, _ = cls.set_primary_organization_for_user(
+                        oldprimary, new = cls.set_primary_organization_for_user(
                                 user=user, new=org)
                         opkey = None
                         if oldprimary:
-                            opkey = keypattern.format(oldprimary.fullcode())
+                            oldfcode = oldprimary.fullcode()
+                            opkey = keypattern.format(oldfcode)
+                            if oldfcode in previous_by_fullcode:
+                                # Update our cached store
+                                previous_by_fullcode[oldfcode].is_primary = False
                         if opkey in changes:
-                            changes[opkey][new] = 'secondary'
+                            changes[opkey]['new'] = 'secondary'
                         else:
                             changes[opkey]={'old':'primary', 'new':'secondary'}
                         if key in changes:
-                            changes[key][new] = 'primary'
+                            changes[key]['new'] = 'primary'
                         else:
                             changes[key] = { 'old':None, 'new':'primary' }
+                        # Update our cached store
+                        newfcode = new.organization.fullcode()
+                        previous_by_fullcode[newfcode] = new
                     else: #if is_primary
                         old.is_primary = False
                         old.save()
                         if key in changes:
-                            changes[key][new] = 'secondary'
+                            changes[key]['new'] = 'secondary'
                         else:
-                            changes[key] = { 'old':primary, 'new':'secondary' }
+                            changes[key] = { 'old':'primary', 'new':'secondary' }
                     #end: if is_primary
                 #end: if old.is_primary != is_primary
             else: #if fcode in previous_by_fullcode
                 # Need to add
+                if is_primary is None:
+                    # Default is_primary to first, as no existing object
+                    is_primary = first
+                first = False
                 if is_primary:
                     # Special care for primary orgs
-                    oldprimary, _ = cls.set_primary_organization_for_user(
+                    oldprimary, new = cls.set_primary_organization_for_user(
                             user=user, new=org)
                     opkey = None
                     if oldprimary:
-                        opkey = keypattern.format(oldprimary.fullcode())
+                        oldfcode = oldprimary.fullcode()
+                        opkey = keypattern.format(oldfcode)
+                        if oldfcode in previous_by_fullcode:
+                            # Update our cached store
+                            previous_by_fullcode[oldfcode].is_primary = False
+                    # Update our cached store
+                    newfcode = new.organization.fullcode()
+                    previous_by_fullcode[newfcode] = new
                     if opkey in changes:
-                        changes[opkey][new] = 'secondary'
+                        changes[opkey]['new'] = 'secondary'
                     else:
                         changes[opkey]={'old':'primary', 'new':'secondary'}
                     if key in changes:
-                        changes[key][new] = 'primary'
+                        changes[key]['new'] = 'primary'
                     else:
                         changes[key] = { 'old':None, 'new':'primary' }
                 else: #if is_primary:
-                    cls.objects.create(
+                    new = cls.objects.create(
                             organization=org, user=user, is_primary=False)
+                    # Update our cached store
+                    newfcode = new.organization.fullcode()
+                    previous_by_fullcode[newfcode] = new
                     if key in changes:
-                        changes[key][new] = 'secondary'
+                        changes[key]['new'] = 'secondary'
                     else:
                         changes[key] = { 'old':None, 'new':'secondary' }
                 #end: if is_primary:
             #end: if fcode in previous_by_fullcode
-
-            # Remove our fullcode from list of those previously present
-            fcodes2del.discard(fcode)
         #end: for orec
 
         if delete:
             # delete Organizations not on our list
             for fcode in fcodes2del:
                 orgp = previous_by_fullcode[fcode]
+                isprimary = orgp.is_primary
                 orgp.delete()
                 if key in changes:
-                    changes[key][new] = None
+                    changes[key]['new'] = None
                 else:
                     old = 'secondary'
                     if isprimary:
@@ -2516,7 +2568,7 @@ class Directory2Organization(TimeStampedModel):
         #end: if org is None
 
         # Does an entry with this dirstring exist?
-        qset = Directory2Organization.objects.filter(
+        qset = cls.objects.filter(
                 directory_string=directory_string)
         if qset:
             # An entry exists, update as needed
@@ -2566,45 +2618,43 @@ class Directory2Organization(TimeStampedModel):
         True, will call Organization.create_unknown_object_for_dir_string 
         and include it in the returned list.
         """
-        tmporgs = set()
+        orglist = []
         for string in strings:
             qset = cls.objects.filter(directory_string=string)
             if qset:
-                # Got an object, add it to tmporgs
+                # Got an object, add it to orglist
                 org = qset[0].organization
-                tmporgs.add(org)
+                orglist.append(org)
             else: #if qset
                 # String did not match a known Directory2Object string
                 if createUndefined:
                     # Create a placeholder organization
                     placeholder = \
                             Organization.create_unknown_object_for_dir_string(
-                            string, dryrun)
-                    tmporgs.add(placeholder)
+                            string)
+                    orglist.append(placeholder)
                 #end: if createUndefined
             #end: if qset:
 
-        # Convert tmporgs set to list 
-        orglist = list(tmporgs)
         return orglist
     #end: def convert_strings_to_orgs
 
     @classmethod
-    def update_user_organizations_from_dirstrings(
+    def update_user_organizations_from_ldapstrings(
             cls, 
             user, 
-            dirstrings,
+            ldapstrings,
             delete=False, 
             createUndefined=False,
             include_nonselectable=False, 
             firstIsPrimary=False,
         ):
         """Updates the organizations associated with user from list
-        of directory strings.
+        of LDAP directory strings.
 
         Given an User/UserProfile instance and a list of 
-        Directory2Organization directory_strings, updates the the 
-        Organizations associated with the User.
+        Directory2Organization LDAP directory strings ldapstrings, updates 
+        the Organizations associated with the User.
 
         Basically, does convert_strings_to_orgs followed by
         OrganizationUser.set_organizations_for_user.  createUndefined
@@ -2617,7 +2667,7 @@ class Directory2Organization(TimeStampedModel):
         include_nonselectable is set, we skip the filtering
         """
         orgs2add = cls.convert_strings_to_orgs(
-                strings=dirstrings, 
+                strings=ldapstrings, 
                 createUndefined=createUndefined,
             )
         if include_nonselectable:
@@ -2634,23 +2684,23 @@ class Directory2Organization(TimeStampedModel):
                 default_first_primary=firstIsPrimary,
             )
         return results
-    #end: def update_user_organizations_from_dirstrings
+    #end: def update_user_organizations_from_ldapstrings
 
     @classmethod
-    def update_project_organizations_from_dirstrings(
+    def update_project_organizations_from_ldapstrings(
             cls, 
             project, 
-            dirstrings,
+            ldapstrings,
             delete=False, 
             createUndefined=False,
             include_nonselectable=False, 
             firstIsPrimary=False,
         ):
         """Updates the organizations associated with project from list
-        of directory strings.
+        of LDAP strings.
 
         Given an Project instance and a list of Directory2Organization
-        directory_strings, updates the the Organizations 
+        LDAP directory strings ldapstrings, updates the the Organizations 
         associated with the Project.
 
         Basically, does convert_strings_to_orgs followed by
@@ -2664,7 +2714,7 @@ class Directory2Organization(TimeStampedModel):
         include_nonselectable is set, we skip the filtering
         """
         orgs2add = cls.convert_strings_to_orgs(
-                strings=dirstrings, 
+                strings=ldapstrings, 
                 createUndefined=createUndefined,
             )
         if include_nonselectable:
@@ -2681,7 +2731,7 @@ class Directory2Organization(TimeStampedModel):
                 default_first_primary=firstIsPrimary,
             )
         return results
-    #end: def update_project_organizations_from_dirstrings
+    #end: def update_project_organizations_from_ldapstrings
 
 #end: class Directory2Organization
 

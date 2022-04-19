@@ -55,7 +55,7 @@ ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
 ALLOCATION_DEFAULT_ALLOCATION_LENGTH = import_from_settings(
     'ALLOCATION_DEFAULT_ALLOCATION_LENGTH', 365)
 ORGANIZATION_PROJECT_DISPLAY_MODE = import_from_settings(
-    'ORGANIZATION_PROJECT_DISPLAY_MODE', False)
+    'ORGANIZATION_PROJECT_DISPLAY_MODE', 'not-empty').lower()
 ORGANIZATION_PROJECT_DISPLAY_TITLE = import_from_settings(
     'ORGANIZATION_PROJECT_DISPLAY_TITLE', 'Department/etc')
 
@@ -134,7 +134,15 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['allocations'] = allocations
         context['project_users'] = project_users
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
-        context['ORGANIZATION_PROJECT_DISPLAY_MODE'] = ORGANIZATION_PROJECT_DISPLAY_MODE
+        dispmode = ORGANIZATION_PROJECT_DISPLAY_MODE.lower()
+        if dispmode == 'always':
+            pass
+        elif dispmode == 'never':
+            pass
+        else:
+            dispmode = 'not-empty'
+
+        context['ORGANIZATION_PROJECT_DISPLAY_MODE'] = dispmode
         context['ORGANIZATION_PROJECT_DISPLAY_TITLE'] = ORGANIZATION_PROJECT_DISPLAY_TITLE
         orgs = []
         firstIsPrimary = False

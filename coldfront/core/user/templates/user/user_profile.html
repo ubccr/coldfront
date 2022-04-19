@@ -28,7 +28,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
             <th scope="row" nowrap>University Role(s):</th>
             <td>{{group_list}}</td>
           </tr>
-	  {% if ORGANIZATION_USER_DISPLAY_MODE %}
+	  {% if ORGANIZATION_USER_DISPLAY_MODE != 'never' %}
 	     {% for dept in organizations %}
 	        {% if forloop.first %}
 	  <tr>

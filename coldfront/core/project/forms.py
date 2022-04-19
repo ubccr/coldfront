@@ -19,7 +19,11 @@ EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL = import_from_settings(
 EMAIL_ADMIN_LIST = import_from_settings('EMAIL_ADMIN_LIST', [])
 EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
     'EMAIL_DIRECTOR_EMAIL_ADDRESS', '')
+ORGANIZATION_PI_CAN_EDIT_FOR_PROJECT = import_from_settings(
+    'ORGANIZATION_PI_CAN_EDIT_FOR_PROJECT', True)
 
+#ORGANIZATION_PI_CAN_EDIT_FOR_PROJECT = import_from_settings(
+#    'ORGANIZATION_PI_CAN_EDIT_FOR_PROJECT', True)
 
 class ProjectSearchForm(forms.Form):
     """ Search form for the Project list page.
@@ -90,36 +94,36 @@ class ProjectUpdateForm(forms.ModelForm):
                 project=self.instance,
                 is_primary=True,
             )
-        import sys
         if qset:
             porg = qset[0].organization
         else:
             porg = None
-        sys.stderr.write('[TPTEST] porg={}\n'.format(porg))
 
-        self.fields['primary_organization'] = forms.ModelChoiceField(
-                queryset = Organization.objects.filter(
-                    is_selectable_for_project=True),
-                initial = porg,
-                required = False,
-            )
-        self.fields['secondary_organizations'] = forms.ModelMultipleChoiceField(
-                queryset = Organization.objects.filter(
-                    is_selectable_for_project=True),
-                initial = OrganizationProject.objects.filter(
-                    project=self.instance,
-                    is_primary=False,
-                    ).values_list('organization', flat=True),
-                required = False,
-            )
+        if ORGANIZATION_PI_CAN_EDIT_FOR_PROJECT:
+            self.fields['primary_organization'] = forms.ModelChoiceField(
+                    queryset = Organization.objects.filter(
+                        is_selectable_for_project=True),
+                    initial = porg,
+                    required = False,
+                )
+            self.fields['secondary_organizations'] = \
+                forms.ModelMultipleChoiceField(
+                    queryset = Organization.objects.filter(
+                        is_selectable_for_project=True),
+                    initial = OrganizationProject.objects.filter(
+                        project=self.instance,
+                        is_primary=False,
+                        ).values_list('organization', flat=True),
+                    required = False,
+                )
+        #end: if ORGANIZATION_PI_CAN_EDIT_FOR_PROJECT:
+    #end: def __init__(self, *args, **kwargs):
 
 
     def save(self, *args, **kwargs):
         instance = super(ProjectUpdateForm, self).save(*args, **kwargs)
         # Update organizations
         porg = self.cleaned_data['primary_organization']
-        import sys
-        sys.stderr.write('[TPTEST] save: porg={}\n'.format(porg))
         instance.organizations.set(self.cleaned_data['secondary_organizations'])
         if porg is not None:
             OrganizationProject.set_primary_organization_for_project(

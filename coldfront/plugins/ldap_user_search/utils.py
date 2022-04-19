@@ -7,8 +7,11 @@ from coldfront.core.utils.common import import_from_settings
 from ldap3 import Connection, Server
 
 logger = logging.getLogger(__name__)
-ORGANIZATION_LDAP_USER_ATTRIBUTE = import_from_settings(
-        'ORGANIZATION_LDAP_USER_ATTRIBUTE', None)
+
+ORGANIZATION_LDAP_USER_ORG_ATTRIBUTE = import_from_settings(
+        'ORGANIZATION_LDAP_USER_ORG_ATTRIBUTE', None)
+ORGANIZATION_LDAP_USER_PORG_ATTRIBUTE = import_from_settings(
+        'ORGANIZATION_LDAP_USER_PORG_ATTRIBUTE', None)
 
 
 class LDAPUserSearch(UserSearch):
@@ -35,9 +38,12 @@ class LDAPUserSearch(UserSearch):
             'username': entry_dict.get('uid')[0] if entry_dict.get('uid') else '',
             'email': entry_dict.get('mail')[0] if entry_dict.get('mail') else '',
             'source': self.search_source,
-            'directory_strings': entry_dict.get(
-                ORGANIZATION_LDAP_USER_ATTRIBUTE) if entry_dict.get(
-                    ORGANIZATION_LDAP_USER_ATTRIBUTE) else [],
+            'organizations': entry_dict.get(
+                ORGANIZATION_LDAP_USER_ORG_ATTRIBUTE) if entry_dict.get(
+                    ORGANIZATION_LDAP_USER_ORG_ATTRIBUTE) else [],
+            'primary_organization': entry_dict.get(
+                ORGANIZATION_LDAP_USER_PORG_ATTRIBUTE)[0] if entry_dict.get(
+                    ORGANIZATION_LDAP_USER_ORG_ATTRIBUTE) else '',
         }
 
         return user_dict
@@ -53,8 +59,10 @@ class LDAPUserSearch(UserSearch):
             filter = '(objectclass=person)'
 
         attributes = [ 'uid', 'sn', 'givenName', 'mail' ]
-        if ORGANIZATION_LDAP_USER_ATTRIBUTE:
-            attributes.append(ORGANIZATION_LDAP_USER_ATTRIBUTE)
+        if ORGANIZATION_LDAP_USER_ORG_ATTRIBUTE:
+            attributes.append(ORGANIZATION_LDAP_USER_ORG_ATTRIBUTE)
+        if ORGANIZATION_LDAP_USER_PORG_ATTRIBUTE:
+            attributes.append(ORGANIZATION_LDAP_USER_PORG_ATTRIBUTE)
         searchParameters = {'search_base': self.LDAP_USER_SEARCH_BASE,
                             'search_filter': filter,
                             'attributes': attributes,

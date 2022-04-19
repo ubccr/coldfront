@@ -1,4 +1,4 @@
-# Script to test OrganizationLevel methods
+# Script to test OrganizationLevel, Organization methods
 # including:
 #   validate_orglevel_hierarchy
 #   the integrity checks in clean(), etc.
@@ -15,6 +15,10 @@ from coldfront.core.organization.models import (
         OrganizationLevel,
         Organization,
         )
+
+VERBOSE_TESTS = set()
+#VERBOSE_TESTS.add('orglevel_exceptions')
+#VERBOSE_TESTS.add('org_exceptions')
 
 EXPECTED_BASE_ORGLEVEL_HIERARCHY=[
     {   'name': 'University',
@@ -447,6 +451,7 @@ class OrganizationLevelTest(TestCase):
     def test_orglevel_dont_naive_add_root_tier(self):
         """Test that we cannot naively add a root tier"""
         # Add a root OrgLevel tier, we expect to fail
+        testname = 'orglevel_dont_naive_add_root_tier'
         new_args = dict(NEW_ORGLEVEL_ROOT)
         newolev = None
         with self.assertRaises(ValidationError) as cm:
@@ -456,9 +461,11 @@ class OrganizationLevelTest(TestCase):
             # Cleanup in case did not raise exception
             newolev.delete()
 
-#        exc = cm.exception
-#        sys.stderr.write('[TPTEST] naive_add_root: exc={}: {}\n'.format(
-#            type(exc), exc))
+        if 'orglevel_exceptions' in VERBOSE_TESTS:
+            exc = cm.exception
+            sys.stderr.write('[DEBUG] {}: got exc={}: {}\n'.format(
+                testname, type(exc), exc))
+
         return
 
     def test_orglevel_dont_naive_delete_root_tier(self):
@@ -517,7 +524,7 @@ class OrganizationLevelTest(TestCase):
 
     def test_orglevel_dont_naive_add_middle_tier(self):
         """Test that we cannot naively add a middle tier"""
-
+        testname = 'orglevel_dont_naive_add_middle_tier'
         # Add a middle OrgLevel tier, we expect to fail
         new_args = dict(NEW_ORGLEVEL_MIDDLE)
         parent_oname = new_args['parent']
@@ -533,13 +540,15 @@ class OrganizationLevelTest(TestCase):
             # Cleanup in case did not raise exception
             newolev.delete()
 
-#        exc = cm.exception
-#        sys.stderr.write('[TPTEST] naive_add_middle: exc={}: {}\n'.format(
-#            type(exc), exc))
+        if 'orglevel_exceptions' in VERBOSE_TESTS:
+            exc = cm.exception
+            sys.stderr.write('[DEBUG] {}: got exc={}: {}\n'.format(
+                testname, type(exc), exc))
         return
 
     def test_orglevel_dont_naive_add_middle_tier2(self):
         """Test that we cannot naively add a middle tier even when checks disabled"""
+        testname = 'orglevel_dont_naive_add_middle_tier2'
         new_args = dict(NEW_ORGLEVEL_MIDDLE)
         parent_oname = new_args['parent']
         del new_args['parent']
@@ -559,14 +568,15 @@ class OrganizationLevelTest(TestCase):
             newolev.delete()
             OrganizationLevel.disable_validation_checks(False)
 
-#        exc = cm.exception
-#        sys.stderr.write('[TPTEST] naive_add_middle_tier2: exc={}: {}\n'.format(
-#            type(exc), exc))
+        if 'orglevel_exceptions' in VERBOSE_TESTS:
+            exc = cm.exception
+            sys.stderr.write('[DEBUG] {}: got exc={}: {}\n'.format(
+                testname, type(exc), exc))
         return
 
     def test_orglevel_dont_naive_add_badleaf1_tier(self):
         """Test that we cannot naively add a bad leaf tier (1)"""
-
+        testname = 'orglevel_dont_naive_adD_badleaf1_tier'
         # Add a bad leaf1 OrgLevel tier, we expect to fail
         new_args = dict(NEW_ORGLEVEL_BADLEAF1)
         parent_oname = new_args['parent']
@@ -582,9 +592,10 @@ class OrganizationLevelTest(TestCase):
             # Cleanup in case did not raise exception
             newolev.delete()
 
-#        exc = cm.exception
-#        sys.stderr.write('[TPTEST] naive_add_middle: exc={}: {}\n'.format(
-#            type(exc), exc))
+        if 'orglevel_exceptions' in VERBOSE_TESTS:
+            exc = cm.exception
+            sys.stderr.write('[DEBUG] {}: got exc={}: {}\n'.format(
+                testname, type(exc), exc))
         return
 
 
@@ -774,15 +785,13 @@ class OrganizationLevelTest(TestCase):
                 #end: for tmpcode, newcode in tmpcodes.items()
             #end: if fullcode in tmpcodes
         #end: for raworg in EXPECTED_BASE_ORGS
-        #sys.stderr.write('[TPTEST] got=\n')
-        #for tmp in got:
-        #    sys.stderr.write('[TPTEST] got tmp={}\n'.format(tmp))
         self.assertEqual(got, expected)
 
         return
 
     def test_orglevel_validate_fails_on_bad_root(self):
         """Test that validate_orglevel_hierarchy fails on invalid hierarchy (bad root)"""
+        testname = 'orglevel_validate_fails_on_bad_root'
         # Force the addition of an invalid root tier
         new_args = dict(NEW_ORGLEVEL_ROOT)
         newolev = None
@@ -799,13 +808,15 @@ class OrganizationLevelTest(TestCase):
             newolev.delete()
             OrganizationLevel.disable_validation_checks(False)
 
-#        exc = cm.exception
-#        sys.stderr.write('[TPTEST] validate_fails_on_bad_root: exc={}: {}\n'.format(
-#            type(exc), exc))
+        if 'orglevel_exceptions' in VERBOSE_TESTS:
+            exc = cm.exception
+            sys.stderr.write('[DEBUG] {}: got exc={}: {}\n'.format(
+                testname, type(exc), exc))
         return
 
     def test_orglevel_validate_warns_if_checks_disabled(self):
         """Test that validate_orglevel_hierarchy warns on disable_validation_checks"""
+        testname = 'orglevel_validate_warns_if_checks_disabled'
         OrganizationLevel.disable_validation_checks(True)
         with self.assertWarns(Warning) as cm:
             OrganizationLevel.validate_orglevel_hierarchy()
@@ -813,13 +824,15 @@ class OrganizationLevelTest(TestCase):
         # Cleanup
         OrganizationLevel.disable_validation_checks(False)
 
-#        exc = cm.warning
-#        sys.stderr.write('[TPTEST] naive_orglevel_validate3: warning={}: {}\n'.format(
-#            type(exc), exc))
+        if 'orglevel_exceptions' in VERBOSE_TESTS:
+            exc = cm.warning
+            sys.stderr.write('[DEBUG] {}: got warning={}: {}\n'.format(
+                testname, type(exc), exc))
         return
 
     def test_orglevel_validate_fails_on_bad_leaf(self):
         """Test that validate_orglevel_hierarchy fails on invalid hierarchy (bad leaf)"""
+        testname = 'orglevel_validate_fails_on_bad_leaf'
         # Force the addition of an invalid badleaf tier
         new_args = dict(NEW_ORGLEVEL_BADLEAF1)
         parent_oname = new_args['parent']
@@ -842,14 +855,15 @@ class OrganizationLevelTest(TestCase):
             newolev.delete()
             OrganizationLevel.disable_validation_checks(False)
 
-#        exc = cm.exception
-#        sys.stderr.write('[TPTEST] validate_fails_on_bad_leaf exc={}: {}\n'.format(
-#            type(exc), exc))
+        if 'orglevel_exceptions' in VERBOSE_TESTS:
+            exc = cm.exception
+            sys.stderr.write('[DEBUG] {}: got exc={}: {}\n'.format(
+                testname, type(exc), exc))
         return
 
     def test_org_dont_naive_add_skipped_parent(self):
         """Test that we cannot naively add an org which skips an orglevel"""
-        testname = 'dont_naive_add_skipped_parent'
+        testname = 'org_dont_naive_add_skipped_parent'
         # Try adding an org whose parent skips an org level
         new_args = {}
         olevname = NEW_BAD_ORG1['orglevel']
@@ -866,14 +880,15 @@ class OrganizationLevelTest(TestCase):
             # Cleanup in case did not raise exception
             new.delete()
 
-#        exc = cm.exception
-#        sys.stderr.write('[TPTEST] {}: exc={}: {}\n'.format(
-#            testname, type(exc), exc))
+        if 'org_exceptions' in VERBOSE_TESTS:
+            exc = cm.exception
+            sys.stderr.write('[DEBUG] {}: got exc={}: {}\n'.format(
+                testname, type(exc), exc))
         return
 
-    def test_org_validation_fails_on_skipped_org(self):
+    def test_org_validation_fails_on_skipped_orglevel(self):
         """Test that we cannot naively add an org which skips an orglevel"""
-        testname = 'dont_naive_add_skipped_parent'
+        testname = 'org_validation_fails_on_skipped_orglevel'
         # Try adding an org whose parent skips an org level
         new_args = {}
         olevname = NEW_BAD_ORG1['orglevel']
@@ -895,8 +910,9 @@ class OrganizationLevelTest(TestCase):
             # Cleanup in case did not raise exception
             new.delete()
 
-#        exc = cm.exception
-#        sys.stderr.write('[TPTEST] {}: exc={}: {}\n'.format(
-#            testname, type(exc), exc))
+        if 'org_exceptions' in VERBOSE_TESTS:
+            exc = cm.exception
+            sys.stderr.write('[DEBUG] {}: got exc={}: {}\n'.format(
+                testname, type(exc), exc))
         return
 

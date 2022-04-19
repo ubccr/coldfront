@@ -15,13 +15,27 @@ class Command(BaseCommand):
     It is recommended to rename existing OrganizationLevels rather than
     inserting/deleting if possible.
 
+    If parent is not specified, this will attempt to create a new "root"
+    OrganizationLevel, in which case the level must be greater than any 
+    existing OrganizationLevel, and any Organizations at the previous root
+    level will be made children of a new 'Unknown' placeholder Organization
+    at the new root level.
+
+    In other cases, parent should be the name of an OrganizationLevel to be
+    the parent of the new OrganizationLevel. In this case, new OrganizationLevel
+    will be placed beneath that parent, but above any existing child of that
+    parent, and the level must be strictly less than the level of the parent, 
+    and greater than the level of the child of that parent (if the parent has 
+    a child). If the parent has an existing child OrganizationLevel, than for
+    every Organization at the child OrganizationLevel, a placeholder Organization
+    at the new OrganizationLevel will be created and that will become the new
+    parent of the Organization at that level.
+
     However, if you need to insert, this should insert an OrganizationLevel
     and placeholder Organizations.
     """
 
     def add_arguments(self, parser):
-        def_delimiter = '|'
-
         parser.add_argument('-name',
                 help='The name of the OrganizationLevel to add.',
                 action='store',

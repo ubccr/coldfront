@@ -6,12 +6,9 @@ from django.core.management.base import BaseCommand, CommandError
 from django.core.exceptions import ObjectDoesNotExist
 
 from coldfront.core.utils.common import import_from_settings
-from coldfront.core.organization.models import Organization
+from coldfront.core.organization.models import Directory2Organization
 from coldfront.core.user.models import UserProfile
 from coldfront.plugins.ldap_user_search.utils import LDAPUserSearch
-
-ORGANIZATION_LDAP_USER_ATTRIBUTE = import_from_settings(
-        'ORGANIZATION_LDAP_USER_ATTRIBUTE', None)
 
 
 class Command(BaseCommand):
@@ -31,18 +28,14 @@ class Command(BaseCommand):
                 help='Update Organizations for all (active) User objects.  '
                     'Incompatible with --user.',
                 action='store_true',)
-        parser.add_argument('-p', '--parents', '--add-parents',
-                action='store_true',
-                help='If set, we will also add any and all ancestors of '
-                    'Organizations obtained from LDAP.', 
-                    )
         parser.add_argument('-d', '--delete',
                 action='store_true',
                 help='If set, we will also delete any Organizations the user '
                     'currently belongs to if not present in the list from '
                     'LDAP (after adding ancestors if so requested)'
                     )
-        parser.add_argument('--create-placeholder', '--create', '--placeholder',
+        parser.add_argument('--create_placeholder', 
+                '--create-placeholder', '--create', '--placeholder',
                 action='store_true',
                 help='If set, if an LDAP directory_string found which we '
                     'cannot convert to an Organization is encountered, '
@@ -61,11 +54,10 @@ class Command(BaseCommand):
 
         users = options['user']
         allusers = options['all']
-        addparents = options['parents']
         delete = options['delete']
         dryrun = options['dryrun']
         verbosity = options['verbosity']
-        create_placeholder = options['create-placeholder']
+        create_placeholder = options['create_placeholder']
 
         v_or_d_text = '[VERBOSE]'
         if dryrun:
@@ -87,22 +79,70 @@ class Command(BaseCommand):
                     '--user flag (but not both)')
 
         for userprof in users:
+            username = userprof.user.username
             ldap = LDAPUserSearch(
-                    user_search_string=userprof.user.username,
+                    user_search_string=username,
                     search_by='username_only')
             results = ldap.search_a_user(
-                    user_search_string=userprof.user.username,
+                    user_search_string=username,
                     search_by='username_only')
+            ldapstrings = []
+            firstIsPrimary = False
             if results:
                 userrec = results[0]
-                directory_strings = []
-                if 'directory_strings' in userrec:
-                    directory_strings = userrec['directory_strings']
-                results= Organization.update_user_organizations_from_dirstrings(
+                if 'primary_organization' in userrec:
+                    tmp = userrec['primary_organization']
+                    if tmp:
+                        ldapstrings = [tmp]
+                        firstIsPrimary = True
+                if 'organizations' in userrec:
+                    tmp = userrec['organizations']
+                    if tmp:
+                        ldapstrings.extend(tmp)
+            else: # if results
+                if verbosity:
+                    sys.stderr.write('No results found for LDAP lookup of {}\n'.format(
+                        username))
+                    continue
+            #end: if results
+
+            if dryrun:
+                primary = None
+                secondary = []
+                if firstIsPrimary:
+                    tmp = Directory2Organization.convert_strings_to_orgs(
+                            [ldapstrings[0]], createUndefined=False)
+                    if tmp:
+                        primary = tmp
+                    ldapstrings = ldapstrings[1:]
+                secondary = Directory2Organization.convert_strings_to_orgs(
+                        ldapstrings, createUndefined=False)
+
+                sys.stderr.write('[DRYRUN] Organizations for user {} are\n'.format(
+                    username))
+                printed = set()
+                if primary:
+                    primary = primary[0]
+                    fcode = primary.fullcode()
+                    sys.stderr.write('[DRYRUN]    {} (primary)\n'.format(
+                        fcode))
+                    printed.add(fcode)
+                for tmp in secondary:
+                    fcode = tmp.fullcode()
+                    if fcode in printed:
+                        pass
+                    else:
+                        sys.stderr.write('[DRYRUN]    {}\n'.format(
+                            fcode))
+                        printed.add(fcode)
+                #end: for tmp in secondary
+                # and skip to next user
+                continue
+            else: #if dryrun
+                results= Directory2Organization.update_user_organizations_from_ldapstrings(
                         user=userprof,
-                        dirstrings = directory_strings,
-                        addParents = addparents,
-                        dryrun = dryrun,
+                        ldapstrings = ldapstrings,
+                        firstIsPrimary = firstIsPrimary,
                         delete = delete,
                         createUndefined = create_placeholder,
                         )
@@ -122,9 +162,5 @@ class Command(BaseCommand):
                             v_or_d_text, 
                             org.fullcode(),
                             username))
-            else:
-                if verbosity:
-                    username = userprof.user.username
-                    sys.stdout.write('[{}] Unable to get organizations for {} '
-                            'from LDAP'.format(v_or_d_text, username))
+            #end: if dryrun
         return

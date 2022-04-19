@@ -97,6 +97,18 @@ The following settings are ColdFront specific settings related to the core appli
 | LOGIN_FAIL_MESSAGE                     | Custom message when user fails to login. Here you can paint a custom link to your user account portal |
 | ENABLE_SU                              | Enable administrators to login as other users. Default True |
 
+| [ORGANIZATION_PROJECT_DISPLAY_MODE](manual/organizations/configuration.md#ORGANIZATION_PROJECT_DISPLAY_MODE)      | Should Organizations appear on Project pages ['always', 'never', or 'not-empty' (default)] |
+| [ORGANIZATION_USER_DISPLAY_MODE](manual/organizations/configuration.md#ORGANIZATION_USER_DISPLAY_MODE)      | Like ORGANIZATION_PROJECT_DISPLAY_MODE but for User pages |
+| [ORGANIZATION_PROJECT_DISPLAY_TITLE](manual/organizations/configuration.md#ORGANIZATION_PROJECT_DISPLAY_TITLE)     | Title for Organization display on Project pages (Default 'Departments(s), etc.') |
+| [ORGANIZATION_USER_DISPLAY_TITLE](manual/organizations/configuration.md#ORGANIZATION_USER_DISPLAY_TITLE)     | Like ORGANIZATION_PROJECT_DISPLAY_TITLE but for User pages |
+| [ORGANIZATION_PI_CAN_EDIT_FOR_PROJECT](manual/organizations/configuration.md#ORGANIZATION_PI_CAN_EDIT_FOR_PROJECT)   | Boolean: Should PI be able to edit Organizations for their projects |
+
+| [ORGANIZATION_LDAP_AUTH_POPULATE_USER_ORGANIZATIONS](manual/organizations/configuration.md#ORGANIZATION_LDAP_AUTH_POPULATE_USER_ORGANIZATIONS) | Boolean. If True, autopopulate Organizations from LDAP when user logs in.  Ignored unless PLUGIN_LDAP_AUTH is True |
+| [ORGANIZATION_LDAP_USER_ORG_ATTRIBUTE](manual/organizations/configuration.md#ORGANIZATION_LDAP_USER_ORG_ATTRIBUTE) | LDAP attribute used for determining Organization membership for users |
+| [ORGANIZATION_LDAP_USER_PORG_ATTRIBUTE](manual/organizations/configuration.md#ORGANIZATION_LDAP_USER_PORG_ATTRIBUTE) | LDAP attribute used for determining primary Organization membership for users |
+| [ORGANIZATION_LDAP_USER_CREATE_PLACEHOLDERS](manual/organizations/configuration.md#ORGANIZATION_LDAP_USER_CREATE_PLACEHOLDERS) | Boolean. If True, create placeholder Organizations when encounter an unrecognized Organization string from LDAP |
+| [ORGANIZATION_LDAP_USER_DELETE_MISSING](manual/organizations/configuration.md#ORGANIZATION_LDAP_USER_DELETE_MISSING) | Boolean. If True, remove Organizations for User if not present in LDAP |
+
 
 ### Database settings
 
@@ -113,7 +125,6 @@ DB_URL=mysql://user:password@127.0.0.1:3306/database
 DB_URL=psql://user:password@127.0.0.1:5432/database
 DB_URL=sqlite:////usr/share/coldfront/coldfront.db
 ```
-
 
 ### Email settings
 
@@ -205,10 +216,33 @@ For more info on [ColdFront plugins](plugin.md) (Django apps)
 
 #### XDMoD
 
-| Name                 | Description                             |
-| :--------------------|:----------------------------------------|
-| PLUGIN_XDMOD         | Enable XDMoD integration. Default False |
-| XDMOD_API_URL        | URL to XDMoD API                        |
+| Name                                          | Description                             |
+| :---------------------------------------------|:----------------------------------------|
+| PLUGIN_XDMOD                                  | Enable XDMoD integration. Default False |
+| XDMOD_API_URL                                 | URL to XDMoD API                        |
+| XDMOD_ACCOUNT_ATTRIBUTE_NAME                  | ??? Defaults to 'slurm_account_name'    |
+| XDMOD_RESOURCE_ATTRIBUTE_NAME                 | ??? Defaults to 'xdmod_resource'        |
+| XDMOD_CLOUD_PROJECT_ATTRIBUTE_NAME            | ??? Defaults to 'Cloud Account Name'    |
+| XDMOD_CLOUD_CORE_TIME_ATTRIBUTE_NAME          | ??? Defaults to 'Core Usage (Hours)'    |
+| XDMOD_CPU_HOURS_ATTRIBUTE_NAME                | ??? Defaults to 'Core Usage (Hours)'    |
+
+| [XDMOD_MAX_HIERARCHY_TIERS](manual/organizations/xdmod.md#XDMod-Hierarchy-Tiers)| The number of tiers in XdMod hierarchy. Default is 3 |
+| [XDMOD_ALLOCATION_IN_HIERARCHY](manual/organizations/xdmod.md#Including-Allocations-in-XDMod-Hierarchies)| If set, lowest tier is Allocations. Default false |
+| [XDMOD_ALLOCATION_HIERARCHY_LABEL](manual/organizations/xdmod.md#Including-Allocations-in-XDMod-Hierarchies)| If allocations in hierarchy, this is the label for hierarchy.json |
+| [XDMOD_ALLOCATION_HIERARCHY_INFO](manual/organizations/xdmod.md#Including-Allocations-in-XDMod-Hierarchies)| If allocations in hierarchy, this is the info for hierarchy.json |
+| [XDMOD_ALLOCATION_HIERARCHY_CODE_ATTRIBUTE_NAME](manual/organizations/xdmod.md#Including-Allocations-in-XDMod-Hierarchies)| If allocs in hier, this is the AllocAttribType to use for getting the code|
+| [XDMOD_ALLOCATION_HIERARCHY_NAME_ATTRIBUTE_NAME](manual/organizations/xdmod.md#Including-Allocations-in-XDMod-Hierarchies)| If allocs in hier, this is the AllocAttribType to use for getting the name|
+| [XDMOD_ALLOCATION_HIERARCHY_CODE_PREFIX](manual/organizations/xdmod.md#Including-Allocations-in-XDMod-Hierarchies)| If alloc code defaulted from Slurm account, this prefix added|
+| [XDMOD_ALLOCATION_HIERARCHY_CODE_SUFFIX](manual/organizations/xdmod.md#Including-Allocations-in-XDMod-Hierarchies)| If alloc code defaulted from Slurm account, this suffix added|
+| [XDMOD_PROJECT_IN_HIERARCHY](manual/organizations/xdmod.md#Including-Projects-in-XDMoD-Hierarchies)| If set, have Project as a tier in XdMod hierarchy|
+| [XDMOD_PROJECT_HIERARCHY_LABEL](manual/organizations/xdmod.md#Including-Projects-in-XDMoD-Hierarchies)| If proj in hier, this is the label for hierarchy.json|
+| [XDMOD_PROJECT_HIERARCHY_INFO](manual/organizations/xdmod.md#Including-Projects-in-XDMoD-Hierarchies)| If proj in hier, this is the info for hierarchy.json|
+| [XDMOD_PROJECT_HIERARCHY_CODE_MODE](manual/organizations/xdmod.md#Including-Projects-in-XDMoD-Hierarchies)| If proj in hier, this determines how the code value is generated| 
+| [XDMOD_PROJECT_HIERARCHY_CODE_PREFIX](manual/organizations/xdmod.md#Including-Projects-in-XDMoD-Hierarchies)|If proj in hier, this is prefixed to basename for code in some cases|
+| [XDMOD_PROJECT_HIERARCHY_CODE_SUFFIX](manual/organizations/xdmod.md#Including-Projects-in-XDMoD-Hierarchies)|If proj in hier, this is suffixed to basename for code in some cases|
+| [XDMOD_PROJECT_HIERARCHY_CODE_ATTRIBUTE_NAME](manual/organizations/xdmod.md#Including-Projects-in-XDMoD-Hierarchies)|If proj in hier, this the AllocationAttributeType used for getting code name in some cases|
+| [XDMOD_NAMES_CSV_USER_FNAME_FORMAT](manual/organizations/xdmod.md#Generating-names.csv)|This is used for generating the first name field in names.csv|
+| [XDMOD_NAMES_CSV_USER_LNAME_FORMAT](manual/organizations/xdmod.md#Generating-names.csv)|This is used for generating the last name field in names.csv|
 
 #### FreeIPA
 

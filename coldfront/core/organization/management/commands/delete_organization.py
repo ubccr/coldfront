@@ -13,16 +13,27 @@ from coldfront.core.organization.models import (
 class Command(BaseCommand):
     help = """Deletes an Organization
 `
-    This will add an organization to the database.
-    Longname and shortname will default to the other, or if neither
-    given to code.
+    This will delete an organization with the specified fullcode from the 
+    database.
 
-    level can be the fullcode or semifullcode of an OrganizationLevel.
+    If --dissociate-users is given, if any Users are associated with the
+    Organization being deleted, those associations will be broken.  It it
+    is not given, an exception will be raised if any Users are associated
+    with the Organization being deleted.
+
+    Similarly, if --dissociate-projects is given, if any Projects are associated
+    with the Organization being deleted, those associated will be broken.
+    Again, an error will occur if such Projects exist and --dissociate-projects
+    was not given.
+
+    --dissociate is a shortcut for specifying both --dissociate-users and 
+    --dissociate-projects.
+
+    A fatal error will arise if the Organization being deleted is a parent of
+    another Organization.
     """
 
     def add_arguments(self, parser):
-        def_delimiter = '|'
-
         parser.add_argument('--code',
                 help='The fullcode or semifullcode for the Organization to '
                     'delete',
@@ -40,7 +51,6 @@ class Command(BaseCommand):
                 action='store_true',
                 )
         parser.add_argument('--dissociate',
-                    '--dissociate_projs', '--dissociate-projs',
                 help='Short for --dissociate_projects and --dissociate_users',
                 action='store_true',
                 )
@@ -55,10 +65,10 @@ class Command(BaseCommand):
         diss = options['dissociate']
 
         org = Organization.get_organization_by_fullcode(code)
-        if org = None:
+        if org is None:
             parent = Organization.get_organization_by_semifullcode(
                         code)
-        if org = None:
+        if org is None:
             sys.stderr.write('No Organization {} found, nothing '
                     'to do\n'.format(code))
 

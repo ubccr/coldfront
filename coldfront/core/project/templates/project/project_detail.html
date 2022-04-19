@@ -64,7 +64,7 @@ Project Detail
     </h3>
     <p class="card-text text-justify"><strong>Description: </strong>{{ project.description }}</p>
     <p class="card-text text-justify"><strong>Field of Science: </strong>{{ project.field_of_science }}</p>
-    {% if ORGANIZATION_PROJECT_DISPLAY_MODE %}
+    {% if ORGANIZATION_PROJECT_DISPLAY_MODE != 'never' %}
 	{% for dept in organizations %}
 		{% if forloop.first %}
     <p class="card-text text-justify"><strong>{{ ORGANIZATION_PROJECT_DISPLAY_TITLE }}: </strong>

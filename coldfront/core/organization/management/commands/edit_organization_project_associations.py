@@ -33,20 +33,18 @@ class Command(BaseCommand):
     """
 
     def add_arguments(self, parser):
-        def_delimiter = '|'
-
         parser.add_argument('--organization', '--org',
                 help='The code for the Organization to associate/dissociate',
                 action='append',
                 default=[],
                 )
         parser.add_argument('--project','--proj',
-                help='The title of the project'
+                help='The title of the project',
                 action='store',
                 )
         parser.add_argument('--mode',
                 help='The operational mode.  It can be "add", or '
-                    '"delete" or "primary"'.
+                    '"delete" or "primary"',
                 action='store',
                 )
         return
@@ -77,7 +75,7 @@ class Command(BaseCommand):
                 org = Organization.get_organization_by_semifullcode(ocode)
             if org is None:
                 raise CommandError('No Organization for {} found.\n'.format(
-                    ocode)
+                    ocode))
 
             if mode == 'primary':
                 mode = 'add'
@@ -88,7 +86,7 @@ class Command(BaseCommand):
                     if verbosity > 1:
                         sys.stderr.write('Organization {} is already primary '
                             'organization for project "{}"\n'.format(
-                                org.fullcode(), title)
+                                org.fullcode(), title))
                 else:
                     if verbosity:
                         sys.stderr.write('Organization {} made primary '

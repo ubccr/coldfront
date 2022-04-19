@@ -19,8 +19,6 @@ class Command(BaseCommand):
     help = 'Lists projects belongs to an Organization'
 
     def add_arguments(self, parser):
-        def_delimiter = '|'
-
         parser.add_argument('-o', '--organization', '--org',
                 help='The fullcode of the Organization being queried. '
                     'Maybe repeated to give multiple Organizations (in which '

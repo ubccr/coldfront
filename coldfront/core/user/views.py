@@ -20,12 +20,16 @@ from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
 from coldfront.core.organization.models import (
-        ORGANIZATION_USER_DISPLAY_MODE,
-        ORGANIZATION_USER_DISPLAY_TITLE,
         OrganizationUser,
     )
 
+
 logger = logging.getLogger(__name__)
+
+ORGANIZATION_USER_DISPLAY_MODE = import_from_settings(
+    'ORGANIZATION_USER_DISPLAY_MODE', 'not-empty')
+ORGANIZATION_USER_DISPLAY_TITLE = import_from_settings(
+    'ORGANIZATION_USER_DISPLAY_TITLE', 'Department(s), etc.')
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 if EMAIL_ENABLED:
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings(
@@ -68,8 +72,14 @@ class UserProfile(TemplateView):
         context['group_list'] = group_list
         context['viewed_user'] = viewed_user
 
-        context['ORGANIZATION_USER_DISPLAY_MODE'] = \
-                ORGANIZATION_USER_DISPLAY_MODE
+        dispmode = ORGANIZATION_USER_DISPLAY_MODE.lower()
+        if dispmode == 'always':
+            pass
+        elif dispmode == 'never':
+            pass
+        else:
+            dispmode = 'not-empty'
+        context['ORGANIZATION_USER_DISPLAY_MODE'] = dispmode
         context['ORGANIZATION_USER_DISPLAY_TITLE'] = \
                 ORGANIZATION_USER_DISPLAY_TITLE
         firstIsPrimary = False

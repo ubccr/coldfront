@@ -9,6 +9,8 @@ from django.test import TestCase
 import coldfront.plugins.xdmod.utils as xdmod
 import coldfront.plugins.slurm.utils as slurm
 import coldfront.core.utils as utils
+import coldfront.core.organization.models as organization
+import coldfront.core.organization.signals as orgsignals
 
 # Both resource.models and allocation.models have a class AttributeType
 # So import each with different name
@@ -106,16 +108,24 @@ class ConfigChangingTestCase(TestCase):
         """Returns the ColdFront package from a string.
 
         Recognized strings are:
+            organization: Returns the package for coldfront.core.organization.models
+            orgsignals: Returns the package for coldfront.core.organization.signals
+            slurm: Returns the package for coldfront.plugins.slurm.utils
             slurm: Returns the package for coldfront.plugins.slurm.utils
             xdmod: Returns the package for coldfront.plugins.xdmod.utils
         Any other string will raise a ValueError
         """
-        if pkgname == 'slurm':
-            return slurm
-        elif pkgname == 'xdmod':
-            return xdmod
+        pkgmapping = {
+                'organization': organization,
+                'orgsignals': orgsignals,
+                'slurm': slurm,
+                'xdmod': xdmod,
+            }
+        if pkgname in pkgmapping:
+            return pkgmapping[pkgname]
         else:
-            raise ValueError('Expecting pkgname to be slurm or xdmod')
+            tmp = ', '.join(pkgmapping.keys())
+            raise ValueError('Expecting pkgname to be one of {}'.format(tmp))
         return
 
     def set_and_cache_coldfront_config_variable(self, pkgname, varname, new):

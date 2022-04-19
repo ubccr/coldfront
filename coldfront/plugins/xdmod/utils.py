@@ -34,9 +34,9 @@ XDMOD_MAX_HIERARCHY_TIERS  = import_from_settings(
         'XDMOD_MAX_HIERARCHY_TIERS', 3)
 # Booleans.  If set, allocation and/or project appears in XdMod hierarchy
 XDMOD_ALLOCATION_IN_HIERARCHY = import_from_settings(
-        'XDMOD_ALLOCATION_IN_HIERARCHY', 0)
+        'XDMOD_ALLOCATION_IN_HIERARCHY', False)
 XDMOD_PROJECT_IN_HIERARCHY = import_from_settings(
-        'XDMOD_PROJECT_IN_HIERARCHY', 0)
+        'XDMOD_PROJECT_IN_HIERARCHY', False)
 # Info and label fields to use in hierarchy.json for Allocation or Project tier
 XDMOD_ALLOCATION_HIERARCHY_LABEL = import_from_settings(
         'XDMOD_ALLOCATION_HIERARCHY_LABEL', 'Allocation')
@@ -67,16 +67,16 @@ XDMOD_PROJECT_HIERARCHY_CODE_PREFIX = import_from_settings(
 XDMOD_PROJECT_HIERARCHY_CODE_SUFFIX = import_from_settings(
     'XDMOD_PROJECT_HIERARCHY_CODE_SUFFIX', '')
 XDMOD_PROJECT_HIERARCHY_CODE_ATTRIBUTE_NAME = import_from_settings(
-    'XDMOD_PROJECT_HIERARCHY_CODE_ATTRIBUTE_NAME', '')
+    'XDMOD_PROJECT_HIERARCHY_CODE_ATTRIBUTE_NAME', 'xdmod_project_code')
 # These control the first_name and last_name fields for XdMod names.csv
 # for Users.  The string is processed with the Python format() method,
 # passing arguments fname, lname, username, email for the User's 
 # first_name, last_name, username, and email fields.
 # If None, will default to '{fname}' for FNAME and '{lname}' for LNAME
 XDMOD_NAMES_CSV_USER_FNAME_FORMAT = import_from_settings(
-    'XDMOD_NAMES_CSV_USER_FNAME_FORMAT', None)
+    'XDMOD_NAMES_CSV_USER_FNAME_FORMAT', '{fname}')
 XDMOD_NAMES_CSV_USER_LNAME_FORMAT = import_from_settings(
-    'XDMOD_NAMES_CSV_USER_LNAME_FORMAT', None)
+    'XDMOD_NAMES_CSV_USER_LNAME_FORMAT', '{lname}')
 
 
 _ENDPOINT_CORE_HOURS = '/controllers/user_interface.php'

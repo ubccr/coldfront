@@ -22,7 +22,6 @@ class OrganizationConfig(AppConfig):
             try:
                 import coldfront.core.organization.signals
                 import sys
-                sys.stderr.write('[TPTEST] imports org.signals\n')
             except Exception as error:
                 logger.error("Not populating user organizations "
                         "from LDAP --- error importing organization."

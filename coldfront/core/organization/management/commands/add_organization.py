@@ -21,8 +21,6 @@ class Command(BaseCommand):
     """
 
     def add_arguments(self, parser):
-        def_delimiter = '|'
-
         parser.add_argument('--code',
                 help='The code for the Organization to create',
                 action='store',
@@ -37,10 +35,10 @@ class Command(BaseCommand):
                 action='store',
                 default=None,
                 )
-        parser.add_argument('-parent',
-                help='The fullcode of the parent Organization.',
+        parser.add_argument('--organization_level', '--organization-level',
+                '--level',
+                help='The name of the OrganizationLevel for this Organization',
                 action='store',
-                default=None,
                 )
         parser.add_argument('-is_selectable_for_user', '--user_selectable',
                 '--user',
@@ -68,6 +66,7 @@ class Command(BaseCommand):
         user_selectable = options['is_selectable_for_user']
         proj_selectable = options['is_selectable_for_project']
         pcode = options['parent']
+        orglev_name = options['organization_level']
         
         if shortname is None:
             if longname is None:
@@ -82,12 +81,16 @@ class Command(BaseCommand):
             parent = None
         else:
             parent = Organization.get_organization_by_fullcode(pcode)
-            if parent = None:
+            if parent is None:
                 parent = Organization.get_organization_by_semifullcode(
                         pcode)
-            if parent = None:
+            if parent is None:
                 raise CommandError('Unable to convert {} to a parent '
                         'Organization'.format(pcode))
+
+        if orglev_name is None:
+                raise CommandError('No organization_level specified')
+        olev = OrganizationLevel.object.get(name=orglev_name)
 
         if selectable:
             user_selectable = True
@@ -96,6 +99,7 @@ class Command(BaseCommand):
         new, create, changes = Organization.create_or_update_organization_by_parent_code(
                 code=code,
                 parent=parent,
+                organization_level=olev,
                 shortname=shortname,
                 longname=longname,
                 is_selectable_for_user=user_selectable,
@@ -104,17 +108,17 @@ class Command(BaseCommand):
 
         if created:
             sys.stderr.write('Created new organization {}\n'.format(
-                new.fullcode())
+                new.fullcode()))
         elif changes:
             sys.stderr.write('Existing organization {} modified\n'.format(
-                new.fullcode())
+                new.fullcode()))
             for key, val in changes.items():
                 old = val['old']
                 new = val['new']
                 sys.stderr.write('    {} changed from {} to {}\n'.format(
-                    key, old, new)
+                    key, old, new))
             #end: for key, val
         else:
             sys.stderr.write('No changes to organization {}\n'.format(
-                new.fullcode())
+                new.fullcode()))
         #end: if created
