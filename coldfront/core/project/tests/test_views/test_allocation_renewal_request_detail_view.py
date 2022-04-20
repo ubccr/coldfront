@@ -1,3 +1,4 @@
+from coldfront.api.statistics.utils import create_project_allocation
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
 from coldfront.core.project.models import Project
@@ -8,10 +9,13 @@ from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
+from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
+from decimal import Decimal
 from django.contrib.auth.models import Permission
 from django.contrib.auth.models import User
+from django.core import mail
 from django.urls import reverse
 from http import HTTPStatus
 from unittest.mock import patch
@@ -27,7 +31,7 @@ class TestAllocationRenewalRequestDetailView(TestBase):
         self.sign_user_access_agreement(self.user)
         self.client.login(username=self.user.username, password=self.password)
 
-        # Create a Project for the user to renew.
+        # Create a Project and corresponding Allocation for the user to renew.
         project_name = 'fc_project'
         active_project_status = ProjectStatusChoice.objects.get(name='Active')
         project = Project.objects.create(
@@ -43,6 +47,8 @@ class TestAllocationRenewalRequestDetailView(TestBase):
             role=pi_role,
             status=active_project_user_status,
             user=self.user)
+        self.existing_service_units = Decimal('100000.00')
+        create_project_allocation(project, self.existing_service_units)
 
         # Create an AllocationRenewalRequest.
         allocation_period = get_current_allowance_year_period()
@@ -179,6 +185,68 @@ class TestAllocationRenewalRequestDetailView(TestBase):
         message = 'Please complete the checklist before final activation.'
         self.assertEqual(message, self.get_message_strings(response)[0])
 
+    def test_post_approves_and_processes_request_for_started_period(self):
+        """Test that a POST request for a renewal request under an
+        AllocationPeriod that has already started is both approved and
+        processed."""
+        self.assertEqual(len(mail.outbox), 0)
+
+        self.user.is_superuser = True
+        self.user.save()
+
+        # Set the request's eligibility state.
+        allocation_renewal_request = self.allocation_renewal_request
+        allocation_renewal_request.state['eligibility']['status'] = 'Approved'
+        allocation_renewal_request.save()
+
+        # The request's AllocationPeriod has already started.
+        self.assertLessEqual(
+            allocation_renewal_request.allocation_period.start_date,
+            display_time_zone_current_date())
+
+        pre_time = utc_now_offset_aware()
+
+        url = self.pi_allocation_renewal_request_detail_url(
+            allocation_renewal_request.pk)
+        data = {}
+        response = self.client.post(url, data)
+
+        post_time = utc_now_offset_aware()
+
+        # The view should redirect to the list of requests and display a
+        # message.
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        self.assertEqual(
+            response.url, self.pi_allocation_renewal_request_list_url())
+        message = f'PI {self.user.username}\'s allocation has been renewed.'
+        self.assertEqual(message, self.get_message_strings(response)[0])
+
+        # The request's status should have been set to 'Approved' and then to
+        # 'Complete', and its approval_time and completion_time should have
+        # been set. AllocationRenewalProcessingRunner verifies that the request
+        # has the 'Approved' status. Therefore, if processing completed, the
+        # request must have had the 'Approved' status at the time.
+        allocation_renewal_request.refresh_from_db()
+        self.assertEqual(allocation_renewal_request.status.name, 'Complete')
+        self.assertTrue(
+            pre_time <=
+            allocation_renewal_request.approval_time <=
+            allocation_renewal_request.completion_time <=
+            post_time)
+
+        # One email about processing should have been sent; an email about
+        # approval should not have been sent.
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+        self.assertIn(f'{allocation_renewal_request} Processed', email.subject)
+
+    def test_post_approves_not_processes_request_for_non_started_period(self):
+        """Test that a POST request for a renewal request under an
+        AllocationPeriod that has not yet started is approved, but not
+        processed."""
+        # TODO: Verify that an approval email, not a processing email, is sent.
+        self.fail('TODO.')
+
     @patch(
         'coldfront.core.project.utils_.renewal_utils.'
         'AllocationRenewalProcessingRunner.run')
@@ -284,41 +352,3 @@ class TestAllocationRenewalRequestDetailView(TestBase):
         self.assertRedirects(response, redirect_url)
         message = f'PI {self.user.username}\'s allocation has been renewed.'
         self.assertEqual(message, self.get_message_strings(response)[0])
-
-    @patch(
-        'coldfront.core.project.utils_.renewal_utils.'
-        'AllocationRenewalProcessingRunner.run')
-    def test_post_sets_request_approval_time(self, mock_method):
-        """Test that a POST request sets the approval_time of the
-        renewal request before processing."""
-        # Patch the method for running the processing to do nothing.
-        mock_method.side_effect = self.no_op
-
-        self.user.is_superuser = True
-        self.user.save()
-
-        # Set the request's eligibility state.
-        allocation_renewal_request = self.allocation_renewal_request
-        allocation_renewal_request.state['eligibility']['status'] = 'Approved'
-        allocation_renewal_request.save()
-
-        pre_time = utc_now_offset_aware()
-
-        url = self.pi_allocation_renewal_request_detail_url(
-            allocation_renewal_request.pk)
-        data = {}
-        response = self.client.post(url, data)
-
-        post_time = utc_now_offset_aware()
-
-        # The view should redirect to the list of requests.
-        self.assertEqual(response.status_code, HTTPStatus.FOUND)
-        self.assertEqual(
-            response.url, self.pi_allocation_renewal_request_list_url())
-
-        # Because of the patch, the request's status should be 'Approved'
-        # rather than 'Complete'.
-        allocation_renewal_request.refresh_from_db()
-        self.assertEqual(allocation_renewal_request.status.name, 'Approved')
-        self.assertTrue(
-            pre_time <= allocation_renewal_request.approval_time <= post_time)
