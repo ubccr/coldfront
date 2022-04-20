@@ -237,7 +237,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         #     (b) renewals for the next period can be requested.
         # TODO: Set this dynamically when supporting other types.
         allocation_period = get_current_allowance_year_period()
-        context['renew_allowance_current_clickable'] = (
+        context['renew_allowance_clickable'] = (
             context['renew_allowance_visible'] and
             is_any_project_pi_renewable(self.object, allocation_period) or
             flag_enabled('ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE'))
