@@ -53,6 +53,7 @@ class TestProjectListView(TestBase):
         """Test that the button for renewing a PI's allowance is only
         visible for Users who are Active Managers or PIs of Projects."""
         url = self.project_list_url()
+        button_text = 'Renew a PI\'s Allowance'
 
         project = Project.objects.create(
             name='fc_project',
@@ -81,7 +82,6 @@ class TestProjectListView(TestBase):
                     project=project, user=self.user, defaults=defaults)
                 response = self.client.get(url)
 
-                button_text = 'Renew a PI\'s Allowance'
                 if (status.name, role.name) in successful_pairs:
                     self.assertContains(response, button_text)
                     actual_num_successes = actual_num_successes + 1

@@ -223,14 +223,14 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['cluster_accounts_tooltip'] = cluster_accounts_tooltip
 
         # Display the "Renew Allowance" button for eligible allocation types.
-        eligible_allowance_types = (
+        eligible_project_prefixes = (
             'fc_'
             # TODO: Include these when ready.
             # 'ic_',
             # 'pc_',
         )
         context['renew_allowance_visible'] = self.object.name.startswith(
-            eligible_allowance_types)
+            eligible_project_prefixes)
         # Only allow the "Renew Allowance" button to be clickable if
         #     (a) any PIs do not have pending/approved renewal requests for the
         #         current period, or
