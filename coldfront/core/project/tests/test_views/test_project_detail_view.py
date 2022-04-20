@@ -32,9 +32,9 @@ class TestProjectDetailView(TestBase):
         given primary key."""
         return reverse('project-detail', kwargs={'pk': pk})
 
-    def test_get_access(self):
-        """Test that GET requests are accessible to authenticated
-        members of the Project, staff, and superusers."""
+    def test_permissions_get(self):
+        """Test that the correct users have permissions to perform GET
+        requests."""
         project = self.create_active_project_with_pi('ac_project', self.user)
         create_project_allocation(project, Decimal('0.00'))
 

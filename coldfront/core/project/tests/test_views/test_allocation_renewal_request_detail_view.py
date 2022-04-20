@@ -77,6 +77,17 @@ class TestAllocationRenewalRequestDetailView(TestBase):
         AllocationRenewalRequests."""
         return reverse('pi-allocation-renewal-pending-request-list')
 
+    def test_approved_requests_displayed_as_approved_scheduled(self):
+        """Test that requests with the 'Approved' status are displayed
+        as 'Approved - Scheduled'."""
+        self.allocation_renewal_request.status = \
+            AllocationRenewalRequestStatusChoice.objects.get(name='Approved')
+        self.allocation_renewal_request.save()
+        url = self.pi_allocation_renewal_request_detail_url(
+            self.allocation_renewal_request.pk)
+        response = self.client.get(url)
+        self.assertContains(response, 'Approved - Scheduled')
+
     def test_permissions_get(self):
         """Test that the correct users have permissions to perform GET
         requests."""

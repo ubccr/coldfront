@@ -126,6 +126,12 @@ class TestAllocationRenewalRequestCompletedListView(TestViewMixin, TestBase):
             AllocationRenewalRequestStatusChoice.objects.get(name='Complete')
         self.request_b.save()
 
+    def test_approved_requests_displayed_as_approved_scheduled(self):
+        """Test that requests with the 'Approved' status are displayed
+        as 'Approved - Scheduled'."""
+        response = self.client.get(self.completed_url)
+        self.assertContains(response, 'Approved - Scheduled')
+
     def test_pending_list_empty(self):
         """Test that no requests appear in the pending view, since all
         requests have a completed status."""
