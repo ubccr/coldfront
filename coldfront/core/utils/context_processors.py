@@ -1,19 +1,27 @@
 from coldfront.core.allocation.models import AllocationPeriod
+from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.utils.common import display_time_zone_current_date
 
 from django.conf import settings
 
+import logging
+
+
+logger = logging.getLogger(__name__)
+
 
 def current_allowance_year_allocation_period(request):
-    date = display_time_zone_current_date()
-    allocation_periods = AllocationPeriod.objects.filter(
-        name__startswith='Allowance Year',
-        start_date__lte=date,
-        end_date__gte=date).order_by('start_date')
     context = {}
-    if allocation_periods.exists():
-        context['CURRENT_ALLOWANCE_YEAR_ALLOCATION_PERIOD'] = \
-            allocation_periods.first()
+    try:
+        allocation_period = get_current_allowance_year_period()
+    except Exception as e:
+        message = (
+            f'Failed to retrieve current Allowance Year AllocationPeriod. '
+            f'Details:\n'
+            f'{e}')
+        logger.exception(message)
+    else:
+        context['CURRENT_ALLOWANCE_YEAR_ALLOCATION_PERIOD'] = allocation_period
     return context
 
 
