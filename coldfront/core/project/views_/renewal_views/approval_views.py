@@ -220,6 +220,7 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
             approval_runner.run()
 
             if has_allocation_period_started:
+                self.request_obj.refresh_from_db()
                 processing_runner = AllocationRenewalProcessingRunner(
                     self.request_obj, num_service_units)
                 processing_runner.run()

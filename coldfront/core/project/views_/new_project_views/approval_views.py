@@ -287,6 +287,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             approval_runner.run()
 
             if has_allocation_period_started:
+                self.request_obj.refresh_from_db()
                 processing_runner = SavioProjectProcessingRunner(
                     self.request_obj, num_service_units)
                 project, _ = processing_runner.run()
