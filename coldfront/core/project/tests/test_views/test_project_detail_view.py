@@ -1,11 +1,18 @@
 from coldfront.api.statistics.utils import create_project_allocation
+from coldfront.core.allocation.models import AllocationRenewalRequest
+from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
+from coldfront.core.project.models import ProjectUserStatusChoice
+from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
+from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 
 from decimal import Decimal
+from django.contrib.auth.models import User
 from django.urls import reverse
 
+from flags.state import enable_flag
 from http import HTTPStatus
 
 
@@ -108,10 +115,79 @@ class TestProjectDetailView(TestBase):
         response = self.client.get(url)
         self.assertContains(response, button_text)
 
-    def test_renew_allowance_button_conditionally_clickable(self):
-        """Test that the 'Renew Allowance' button is only clickable
+    def test_renew_allowance_button_conditionally_enabled(self):
+        """Test that the 'Renew Allowance' button is only enabled
         under certain conditions."""
-        self.fail('TODO.')
+        project = self.create_active_project_with_pi('fc_project', self.user)
+        create_project_allocation(project, Decimal('0.00'))
+
+        project_detail_url = self.project_detail_url(project.pk)
+        # The existence of the renewal URL on the page indicates that the
+        # button is enabled.
+        renewal_url = reverse('project-renew', kwargs={'pk': project.pk})
+
+        # Create a second PI on the project.
+        pi_2 = User.objects.create(
+            email='pi_2@email.com',
+            first_name='PI',
+            last_name='2',
+            username='pi_2')
+        ProjectUser.objects.create(
+            project=project,
+            role=ProjectUserRoleChoice.objects.get(
+                name='Principal Investigator'),
+            status=ProjectUserStatusChoice.objects.get(name='Active'),
+            user=pi_2)
+
+        # 0/2 PIs have non-denied renewal requests under the current period.
+        allocation_period = get_current_allowance_year_period()
+        self.assertFalse(
+            AllocationRenewalRequest.objects.filter(
+                allocation_period=allocation_period,
+                pi__in=[self.user, pi_2]).exists())
+        response = self.client.get(project_detail_url)
+        self.assertContains(response, renewal_url)
+
+        # 1/2 PIs have non-denied renewal requests under the current period.
+        under_review_request_status = \
+            AllocationRenewalRequestStatusChoice.objects.get(
+                name='Under Review')
+        AllocationRenewalRequest.objects.create(
+            requester=self.user,
+            pi=self.user,
+            allocation_period=allocation_period,
+            status=under_review_request_status,
+            pre_project=project,
+            post_project=project,
+            request_time=utc_now_offset_aware())
+        response = self.client.get(project_detail_url)
+        self.assertContains(response, renewal_url)
+
+        denied_request_status = \
+            AllocationRenewalRequestStatusChoice.objects.get(name='Denied')
+        request_2 = AllocationRenewalRequest.objects.create(
+            requester=self.user,
+            pi=pi_2,
+            allocation_period=allocation_period,
+            status=denied_request_status,
+            pre_project=project,
+            post_project=project,
+            request_time=utc_now_offset_aware())
+        response = self.client.get(project_detail_url)
+        self.assertContains(response, renewal_url)
+
+        # 2/2 PIs have non-denied renewal requests under the current period.
+        approved_request_status = \
+            AllocationRenewalRequestStatusChoice.objects.get(name='Approved')
+        request_2.status = approved_request_status
+        request_2.save()
+        response = self.client.get(project_detail_url)
+        self.assertNotContains(response, renewal_url)
+
+        # Renewals for the next allocation period can be requested.
+        enable_flag('ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE')
+        response = self.client.get(project_detail_url)
+        self.assertContains(response, renewal_url)
 
     def test_renew_allowance_button_conditionally_visible(self):
         """Test that the 'Renew Allowance' button is only visible to
