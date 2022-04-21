@@ -6,8 +6,11 @@ from coldfront.api.allocation.tests.test_allocation_base import \
     TestAllocationBase
 from coldfront.core.allocation.models import AllocationAttributeType, \
     Allocation, AllocationStatusChoice, AllocationAttribute, \
-    AllocationUserStatusChoice
-from coldfront.core.allocation.utils import create_secure_dir
+    AllocationUserStatusChoice, SecureDirAddUserRequest, \
+    SecureDirAddUserRequestStatusChoice, SecureDirRemoveUserRequest, \
+    SecureDirRemoveUserRequestStatusChoice
+from coldfront.core.allocation.utils import create_secure_dir, \
+    get_secure_dir_manage_user_request_objects
 from coldfront.core.project.models import ProjectUser, ProjectUserRoleChoice, \
     ProjectUserStatusChoice
 from coldfront.core.resource.models import Resource
@@ -95,3 +98,48 @@ class TestCreateSecureDir(TestAllocationBase):
                 user=self.pi,
                 status=active_status)
         self.assertTrue(pi_scratch2_alloc_user.exists())
+
+
+class TestGetSecureDirManageUserRequestObjects(TestAllocationBase):
+    """A class for testing get_secure_dir_manage_user_request_objects."""
+
+    def setUp(self):
+        """Set up test data."""
+        super().setUp()
+        call_command('create_directory_defaults')
+
+    def test_action_add(self):
+        """Testing that the correct fields are set when action=add"""
+        class DummyObject:
+            pass
+
+        dummy_object = DummyObject()
+
+        get_secure_dir_manage_user_request_objects(dummy_object, 'add')
+
+        self.assertEqual(dummy_object.action, 'add')
+        self.assertEqual(dummy_object.add_bool, True)
+        self.assertEqual(dummy_object.request_obj, SecureDirAddUserRequest)
+        self.assertEqual(dummy_object.request_status_obj,
+                         SecureDirAddUserRequestStatusChoice)
+        self.assertEqual(dummy_object.language_dict['preposition'], 'to')
+        self.assertEqual(dummy_object.language_dict['noun'], 'addition')
+        self.assertEqual(dummy_object.language_dict['verb'], 'add')
+
+    def test_action_remove(self):
+        """Testing that the correct fields are set when action=add"""
+        class DummyObject:
+            pass
+
+        dummy_object = DummyObject()
+
+        get_secure_dir_manage_user_request_objects(dummy_object, 'remove')
+
+        self.assertEqual(dummy_object.action, 'remove')
+        self.assertEqual(dummy_object.add_bool, False)
+        self.assertEqual(dummy_object.request_obj, SecureDirRemoveUserRequest)
+        self.assertEqual(dummy_object.request_status_obj,
+                         SecureDirRemoveUserRequestStatusChoice)
+        self.assertEqual(dummy_object.language_dict['preposition'], 'from')
+        self.assertEqual(dummy_object.language_dict['noun'], 'removal')
+        self.assertEqual(dummy_object.language_dict['verb'], 'remove')
