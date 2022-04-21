@@ -1,4 +1,5 @@
 from coldfront.api.statistics.utils import create_project_allocation
+from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
 from coldfront.core.project.models import Project
@@ -10,6 +11,7 @@ from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.utils.common import display_time_zone_current_date
+from coldfront.core.utils.common import format_date_month_name_day_year
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 from decimal import Decimal
@@ -48,7 +50,11 @@ class TestAllocationRenewalRequestDetailView(TestBase):
             status=active_project_user_status,
             user=self.user)
         self.existing_service_units = Decimal('100000.00')
-        create_project_allocation(project, self.existing_service_units)
+        accounting_allocation_objects = create_project_allocation(
+            project, self.existing_service_units)
+        self.compute_allocation = accounting_allocation_objects.allocation
+        self.service_units_attribute = \
+            accounting_allocation_objects.allocation_attribute
 
         # Create an AllocationRenewalRequest.
         allocation_period = get_current_allowance_year_period()
@@ -240,12 +246,83 @@ class TestAllocationRenewalRequestDetailView(TestBase):
         email = mail.outbox[0]
         self.assertIn(f'{allocation_renewal_request} Processed', email.subject)
 
+        # The 'CLUSTER_NAME Compute' Allocation's Service Units should have
+        # increased.
+        expected_num_service_units = (
+            self.existing_service_units +
+            allocation_renewal_request.num_service_units)
+        self.service_units_attribute.refresh_from_db()
+        self.assertEqual(
+            expected_num_service_units,
+            Decimal(self.service_units_attribute.value))
+
     def test_post_approves_not_processes_request_for_non_started_period(self):
         """Test that a POST request for a renewal request under an
         AllocationPeriod that has not yet started is approved, but not
         processed."""
-        # TODO: Verify that an approval email, not a processing email, is sent.
-        self.fail('TODO.')
+        self.assertEqual(len(mail.outbox), 0)
+
+        self.user.is_superuser = True
+        self.user.save()
+
+        # Set the request's eligibility state.
+        allocation_renewal_request = self.allocation_renewal_request
+        allocation_renewal_request.state['eligibility']['status'] = 'Approved'
+        allocation_renewal_request.save()
+
+        # Set the request's AllocationPeriod to one that has not already
+        # started.
+        next_allowance_year_allocation_period = \
+            AllocationPeriod.objects.filter(
+                name__startswith='Allowance Year',
+                start_date__gt=display_time_zone_current_date()).first()
+        self.assertIsNotNone(next_allowance_year_allocation_period)
+        allocation_renewal_request.allocation_period = \
+            next_allowance_year_allocation_period
+        allocation_renewal_request.save()
+
+        pre_time = utc_now_offset_aware()
+
+        url = self.pi_allocation_renewal_request_detail_url(
+            allocation_renewal_request.pk)
+        data = {}
+        response = self.client.post(url, data)
+
+        post_time = utc_now_offset_aware()
+
+        # The view should redirect to the list of requests and display a
+        # message.
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        self.assertEqual(
+            response.url, self.pi_allocation_renewal_request_list_url())
+        formatted_start_date = format_date_month_name_day_year(
+            next_allowance_year_allocation_period.start_date)
+        message = (
+            f'PI {self.user.username}\'s allocation is scheduled for renewal '
+            f'on {formatted_start_date}.')
+        self.assertEqual(message, self.get_message_strings(response)[0])
+
+        # The request's status should have been set to 'Approved', and its
+        # approval_time, but not its completion_time, should have been set.
+        allocation_renewal_request.refresh_from_db()
+        self.assertEqual(allocation_renewal_request.status.name, 'Approved')
+        self.assertTrue(
+            pre_time <= allocation_renewal_request.approval_time <= post_time)
+        self.assertIsNone(allocation_renewal_request.completion_time)
+
+        # One email about approval should have been sent; an email about
+        # processing should not have been sent.
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+        self.assertIn(f'{allocation_renewal_request} Approved', email.subject)
+
+        # The 'CLUSTER_NAME Compute' Allocation's Service Units should not have
+        # increased.
+        expected_num_service_units = self.existing_service_units
+        self.service_units_attribute.refresh_from_db()
+        self.assertEqual(
+            expected_num_service_units,
+            Decimal(self.service_units_attribute.value))
 
     @patch(
         'coldfront.core.project.utils_.renewal_utils.'
