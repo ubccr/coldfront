@@ -19,7 +19,7 @@ from coldfront.core.utils.common import utc_now_offset_aware
 
 
 class TestSecureDirManageUsersView(TestAllocationBase):
-    """A class for testing secure directory views."""
+    """A class for testing SecureDirManageUsersView."""
 
     def setUp(self):
         """Set up test data."""
