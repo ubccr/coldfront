@@ -11,7 +11,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
 
         for attribute_type in ('Active/Inactive', 'Date', 'Int', 
-            'Public/Private', 'Text', 'Yes/No', 'Attribute Expanded Text'):
+            'Public/Private', 'Text', 'Yes/No', 'Attribute Expanded Text', 'True/False'):
             AttributeType.objects.get_or_create(name=attribute_type)
 
         for resource_attribute_type, attribute_type in (
