@@ -1,13 +1,18 @@
 from coldfront.api.statistics.utils import create_project_allocation
+from coldfront.core.allocation.models import Allocation
+from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.models import AllocationUser
 from coldfront.core.allocation.models import AllocationUserStatusChoice
 from coldfront.core.project.models import Project
+from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
+from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils import ProjectClusterAccessRequestRunner
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
+from coldfront.core.resource.models import Resource
 from coldfront.core.user.models import UserProfile
 from decimal import Decimal
 from django.contrib.auth.models import User
@@ -138,3 +143,38 @@ class TestRunnerMixinBase(object):
 
         # This should be set by the subclasses.
         self.request_obj = None
+
+    def create_under_review_new_project_request(self):
+        """Create a new Project, a corresponding 'CLUSTER_NAME Compute'
+        Allocation, and an 'Under Review' new project request for it."""
+        # Create a new Project.
+        new_project_name = 'unpooled_project2'
+        new_project_status = ProjectStatusChoice.objects.get(name='New')
+        new_project = Project.objects.create(
+            name=new_project_name,
+            status=new_project_status,
+            title=new_project_name,
+            description=f'Description of {new_project_name}.')
+
+        # Create a compute Allocation for the new Project.
+        new_allocation_status = AllocationStatusChoice.objects.get(name='New')
+        allocation = Allocation.objects.create(
+            project=new_project, status=new_allocation_status)
+        resource = Resource.objects.get(name='Savio Compute')
+        allocation.resources.add(resource)
+        allocation.save()
+
+        # Create an 'Under Review' SavioProjectAllocationRequest for the new
+        # Project.
+        under_review_request_status = \
+            ProjectAllocationRequestStatusChoice.objects.get(
+                name='Under Review')
+        new_project_request = SavioProjectAllocationRequest.objects.create(
+            requester=self.requester,
+            allocation_type=SavioProjectAllocationRequest.FCA,
+            pi=self.pi0,
+            project=new_project,
+            survey_answers={},
+            status=under_review_request_status)
+
+        return new_project_request
