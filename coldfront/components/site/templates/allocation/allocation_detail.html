@@ -290,7 +290,7 @@ Allocation Detail
       </div>
       {% if user_has_permissions %}
         <div class="float-right">
-          {% if allocation.status.name == 'New' or allocation.status.name == 'Renewal Requested' %}
+          {% if allocation.status.name in 'New, Renewal Requested, Paid' %}
             {% if allocation.project.status.name != 'Active' %}
               Project must be approved first.
             {% else %}
