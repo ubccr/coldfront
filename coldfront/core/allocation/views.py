@@ -190,6 +190,17 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             notes = allocation_obj.allocationusernote_set.filter(
                 is_private=False)
 
+        context['user_has_permissions'] = False
+        if self.request.user.is_staff:
+            context['user_has_permissions'] = True
+
+        review_groups = allocation_obj.get_parent_resource.review_groups.all()
+        if set(self.request.user.groups.all()).isdisjoint(set(review_groups)):
+            context['user_has_permissions'] = False
+
+        if self.request.user.is_superuser:
+            context['user_has_permissions'] = True
+
         context['notes'] = notes
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
         return context
@@ -221,10 +232,19 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
-        if not self.request.user.is_superuser:
-            messages.success(
-                request, 'You do not have permission to update the allocation')
-            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
+        if not request.user.is_superuser:
+            if not request.user.is_staff:
+                messages.success(
+                    request, 'You do not have permission to update the allocation')
+                return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
+
+            review_groups = allocation_obj.get_parent_resource.review_groups.all()
+            if set(request.user.groups.all()).isdisjoint(set(review_groups)):
+                messages.error(
+                    request,
+                    'You are not in the correct group to update this allocation\'s details with this resource.'
+                )
+                return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
         initial_data = {
             'status': allocation_obj.status,
@@ -1575,12 +1595,28 @@ class AllocationAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Cre
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-
         if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.is_staff:
             return True
         else:
             messages.error(
                 self.request, 'You do not have permission to add allocation attributes.')
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            allocation_obj = get_object_or_404(Allocation, pk=kwargs.get('pk'))
+
+            review_groups = allocation_obj.get_parent_resource.review_groups.all()
+            if set(request.user.groups.all()).isdisjoint(set(review_groups)):
+                messages.error(
+                    request,
+                    'You are not in the correct group to create an allocation attribute with this resource.'
+                )
+                return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
+
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -1613,9 +1649,26 @@ class AllocationAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Tem
         """ UserPassesTestMixin Tests"""
         if self.request.user.is_superuser:
             return True
+
+        if self.request.user.is_staff:
+            return True
         else:
             messages.error(
                 self.request, 'You do not have permission to delete allocation attributes.')
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            allocation_obj = get_object_or_404(Allocation, pk=kwargs.get('pk'))
+
+            review_groups = allocation_obj.get_parent_resource.review_groups.all()
+            if set(request.user.groups.all()).isdisjoint(set(review_groups)):
+                messages.error(
+                    request,
+                    'You are not in the correct group to delete an allocation attribute with this resource.'
+                )
+                return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
+
+        return super().dispatch(request, *args, **kwargs)
 
     def get_allocation_attributes_to_delete(self, allocation_obj):
 
@@ -1744,10 +1797,15 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        allocation_list = Allocation.objects.filter(
-            status__name__in=['New', 'Renewal Requested', 'Paid', ],
-            resources__review_groups__in=list(self.request.user.groups.all())
-        ).exclude(project__status__name__in=['Review Pending', 'Archived'])
+        if self.request.user.is_superuser:
+            allocation_list = Allocation.objects.filter(
+                status__name__in=['New', 'Renewal Requested', 'Paid', ]
+            ).exclude(project__status__name__in=['Review Pending', 'Archived'])
+        else:
+            allocation_list = Allocation.objects.filter(
+                status__name__in=['New', 'Renewal Requested', 'Paid', ],
+                resources__review_groups__in=list(self.request.user.groups.all())
+            ).exclude(project__status__name__in=['Review Pending', 'Archived'])
         context['allocation_list'] = allocation_list
         context['PROJECT_ENABLE_PROJECT_REVIEW'] = PROJECT_ENABLE_PROJECT_REVIEW
         context['ALLOCATION_DEFAULT_ALLOCATION_LENGTH'] = ALLOCATION_DEFAULT_ALLOCATION_LENGTH
@@ -1773,9 +1831,21 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
         allocation_obj = get_object_or_404(Allocation, pk=kwargs.get('pk'))
         project_obj = allocation_obj.project
 
+        if not request.user.is_superuser:
+            review_groups = allocation_obj.get_parent_resource.review_groups.all()
+            if set(request.user.groups.all()).isdisjoint(set(review_groups)):
+                messages.error(request, 'You are not in the correct group to activate this allocation with this resource.')
+                if 'request-list' in request.META.get('HTTP_REFERER'):
+                    return HttpResponseRedirect(reverse('allocation-request-list'))
+                else:
+                    return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
+
         if project_obj.status.name != 'Active':
             messages.error(request, 'Project must be approved first before you can approve this allocation!')
-            return HttpResponseRedirect(reverse('allocation-request-list'))
+            if 'request-list' in request.META.get('HTTP_REFERER'):
+                return HttpResponseRedirect(reverse('allocation-request-list'))
+            else:
+                return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
         return super().dispatch(request, *args, **kwargs)
 
@@ -1885,9 +1955,21 @@ class AllocationDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
         allocation_obj = get_object_or_404(Allocation, pk=kwargs.get('pk'))
         project_obj = allocation_obj.project
 
+        if not request.user.is_superuser:
+            review_groups = allocation_obj.get_parent_resource.review_groups.all()
+            if set(request.user.groups.all()).isdisjoint(set(review_groups)):
+                messages.error(request, 'You are not in the correct group to deny this allocation with this resource.')
+                if 'request-list' in request.META.get('HTTP_REFERER'):
+                    return HttpResponseRedirect(reverse('allocation-request-list'))
+                else:
+                    return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
+
         if project_obj.status.name != 'Active':
             messages.error(request, 'Project must be approved first before you can deny this allocation!')
-            return HttpResponseRedirect(reverse('allocation-request-list'))
+            if 'request-list' in request.META.get('HTTP_REFERER'):
+                return HttpResponseRedirect(reverse('allocation-request-list'))
+            else:
+                return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
         return super().dispatch(request, *args, **kwargs)
 
@@ -2149,11 +2231,15 @@ class AllocationInvoiceListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
         return context
 
     def get_queryset(self):
-
-        allocations = Allocation.objects.filter(
-            status__name__in=['Paid', 'Payment Pending', 'Payment Requested', 'Payment Declined', ],
-            resources__review_groups__in=list(self.request.user.groups.all())
-        )
+        if self.request.user.is_superuser:
+            allocations = Allocation.objects.filter(
+                status__name__in=['Paid', 'Payment Pending', 'Payment Requested', 'Payment Declined', ]
+            )
+        else:
+            allocations = Allocation.objects.filter(
+                status__name__in=['Paid', 'Payment Pending', 'Payment Requested', 'Payment Declined', ],
+                resources__review_groups__in=list(self.request.user.groups.all())
+            )
         return allocations
 
 
@@ -2528,10 +2614,15 @@ class AllocationUserRequestListView(LoginRequiredMixin, UserPassesTestMixin, Tem
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['request_list'] = AllocationUserRequest.objects.filter(
-            status__name='Pending',
-            allocation_user__allocation__resources__review_groups__in=list(self.request.user.groups.all())
-        )
+        if self.request.user.is_superuser:
+            context['request_list'] = AllocationUserRequest.objects.filter(
+                status__name='Pending'
+            )
+        else:
+            context['request_list'] = AllocationUserRequest.objects.filter(
+                status__name='Pending',
+                allocation_user__allocation__resources__review_groups__in=list(self.request.user.groups.all())
+            )
 
         return context
 
@@ -2547,6 +2638,21 @@ class AllocationUserApproveRequestView(LoginRequiredMixin, UserPassesTestMixin, 
             return True
 
         messages.error('You do not have access to approve allocation user requests.')
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            allocation_user_request_obj = get_object_or_404(AllocationUserRequest, pk=kwargs.get('pk'))
+            allocation_obj = allocation_user_request_obj.allocation_user.allocation
+
+            review_groups = allocation_obj.get_parent_resource.review_groups.all()
+            if set(request.user.groups.all()).isdisjoint(set(review_groups)):
+                messages.error(
+                    request,
+                    'You are not in the correct group to approve this allocation user request with this resource.'
+                )
+                return HttpResponseRedirect(reverse('allocation-user-request-list'))
+
+        return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
         pk = kwargs.get('pk')
@@ -2628,6 +2734,21 @@ class AllocationUserDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
             return True
 
         messages.error(self.request, 'You do not have access to deny allocation user requests.')
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            allocation_user_request_obj = get_object_or_404(AllocationUserRequest, pk=kwargs.get('pk'))
+            allocation_obj = allocation_user_request_obj.allocation_user.allocation
+
+            review_groups = allocation_obj.get_parent_resource.review_groups.all()
+            if set(request.user.groups.all()).isdisjoint(set(review_groups)):
+                messages.error(
+                    request,
+                    'You are not in the correct group to deny this allocation user request with this resource.'
+                )
+                return HttpResponseRedirect(reverse('allocation-user-request-list'))
+
+        return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
         pk = kwargs.get('pk')
@@ -2782,6 +2903,18 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                 initial=allocation_attributes_to_change, prefix='attributeform')
             context['formset'] = formset
 
+        context['user_has_permissions'] = False
+        if self.request.user.is_staff:
+            context['user_has_permissions'] = True
+
+        allocation_obj = allocation_change_obj.allocation
+        review_groups = allocation_obj.get_parent_resource.review_groups.all()
+        if set(self.request.user.groups.all()).isdisjoint(set(review_groups)):
+            context['user_has_permissions'] = False
+
+        if self.request.user.is_superuser:
+            context['user_has_permissions'] = True
+
         context['allocation_change'] = allocation_change_obj
         context['attribute_changes'] = allocation_attributes_to_change
 
@@ -2812,7 +2945,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
 
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        if not self.request.user.is_superuser:
+        if not request.user.is_staff:
             messages.error(
                 request, 'You do not have permission to update an allocation change request')
             return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
@@ -2840,6 +2973,17 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
             notes = note_form.cleaned_data.get('notes')
 
             if request.POST.get('choice') == 'approve':
+                if not request.user.is_superuser:
+                    allocation_obj = allocation_change_obj.allocation
+
+                    review_groups = allocation_obj.get_parent_resource.review_groups.all()
+                    if set(request.user.groups.all()).isdisjoint(set(review_groups)):
+                        messages.error(
+                            request,
+                            'You are not in the correct group to approve this allocation change request with this resource.'
+                        )
+                        return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': allocation_change_obj.pk}))
+
                 if allocation_attributes_to_change:
                     if allocation_change_form.is_valid() and formset.is_valid():
                         allocation_change_obj.notes = notes
@@ -2991,6 +3135,17 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                         return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
 
             if request.POST.get('choice') == 'deny':
+                if not request.user.is_superuser:
+                    allocation_obj = allocation_change_obj.allocation
+
+                    review_groups = allocation_obj.get_parent_resource.review_groups.all()
+                    if set(request.user.groups.all()).isdisjoint(set(review_groups)):
+                        messages.error(
+                            request,
+                            'You are not in the correct group to deny this allocation change request with this resource.'
+                        )
+                        return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': allocation_change_obj.pk}))
+
                 allocation_change_obj.notes = notes
 
                 allocation_change_status_denied_obj = AllocationChangeStatusChoice.objects.get(
@@ -3037,6 +3192,17 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                 return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
 
             if request.POST.get('choice') == 'update':
+                if not request.user.is_superuser:
+                    allocation_obj = allocation_change_obj.allocation
+
+                    review_groups = allocation_obj.get_parent_resource.review_groups.all()
+                    if set(request.user.groups.all()).isdisjoint(set(review_groups)):
+                        messages.error(
+                            request,
+                            'You are not in the correct group to update this allocation change request with this resource.'
+                        )
+                        return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': allocation_change_obj.pk}))
+
                 if allocation_change_obj.status.name != 'Pending':
                     allocation_change_obj.notes = notes
                     allocation_change_obj.save()
@@ -3133,10 +3299,15 @@ class AllocationChangeListView(LoginRequiredMixin, UserPassesTestMixin, Template
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        allocation_change_list = AllocationChangeRequest.objects.filter(
-            status__name__in=['Pending', ],
-            allocation__resources__review_groups__in=list(self.request.user.groups.all())
-        )
+        if self.request.user.is_superuser:
+            allocation_change_list = AllocationChangeRequest.objects.filter(
+                status__name__in=['Pending', ]
+            )
+        else:
+            allocation_change_list = AllocationChangeRequest.objects.filter(
+                status__name__in=['Pending', ],
+                allocation__resources__review_groups__in=list(self.request.user.groups.all())
+            )
         context['allocation_change_list'] = allocation_change_list
         context['PROJECT_ENABLE_PROJECT_REVIEW'] = PROJECT_ENABLE_PROJECT_REVIEW
         return context
@@ -3398,6 +3569,26 @@ class AllocationChangeActivateView(LoginRequiredMixin, UserPassesTestMixin, View
         messages.error(
             self.request, 'You do not have permission to approve an allocation change.')
 
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            allocation_change_request_obj = get_object_or_404(AllocationChangeRequest, pk=kwargs.get('pk'))
+            allocation_obj = allocation_change_request_obj.allocation
+
+            review_groups = allocation_obj.get_parent_resource.review_groups.all()
+            if set(request.user.groups.all()).isdisjoint(set(review_groups)):
+                messages.error(
+                    request,
+                    'You are not in the correct group to approve this allocation change request with this resource.'
+                )
+                if 'change-list' in request.META.get('HTTP_REFERER'):
+                    return HttpResponseRedirect(reverse('allocation-change-list'))
+                else:
+                    return HttpResponseRedirect(
+                        reverse('allocation-change-detail', kwargs={'pk': allocation_change_request_obj.pk})
+                    )
+
+        return super().dispatch(request, *args, **kwargs)
+
     def get(self, request, pk):
         allocation_change_obj = get_object_or_404(AllocationChangeRequest, pk=pk)
 
@@ -3478,6 +3669,26 @@ class AllocationChangeDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         messages.error(
             self.request, 'You do not have permission to deny an allocation change.')
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            allocation_change_request_obj = get_object_or_404(AllocationChangeRequest, pk=kwargs.get('pk'))
+            allocation_obj = allocation_change_request_obj.allocation
+
+            review_groups = allocation_obj.get_parent_resource.review_groups.all()
+            if set(request.user.groups.all()).isdisjoint(set(review_groups)):
+                messages.error(
+                    request,
+                    'You are not in the correct group to deny this allocation change request with this resource.'
+                )
+                if 'change-list' in request.META.get('HTTP_REFERER'):
+                    return HttpResponseRedirect(reverse('allocation-change-list'))
+                else:
+                    return HttpResponseRedirect(
+                        reverse('allocation-change-detail', kwargs={'pk': allocation_change_request_obj.pk})
+                    )
+
+        return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, pk):
         allocation_change_obj = get_object_or_404(AllocationChangeRequest, pk=pk)

@@ -205,7 +205,7 @@ Allocation Detail
           <tr>
             <th scope="row" class="text-nowrap">Status:</th>
             <td>
-              {% if request.user.is_superuser %}
+              {% if user_has_permissions %}
                 {{ form.status }}
               {% else %}
                 {{ allocation.status }}
@@ -215,7 +215,7 @@ Allocation Detail
           <tr>
             <th scope="row" class="text-nowrap">Start Date:</th>
             <td>
-              {% if request.user.is_superuser %}
+              {% if user_has_permissions %}
                 {{ form.start_date }}
               {% else %}
                 {{ allocation.start_date }}
@@ -225,7 +225,7 @@ Allocation Detail
           <tr>
             <th scope="row" class="text-nowrap">End Date:</th>
             <td>
-              {% if request.user.is_superuser %}
+              {% if user_has_permissions %}
                 {{ form.end_date }}
               {% else %}
                 {{ allocation.end_date }}
@@ -247,7 +247,7 @@ Allocation Detail
           <tr>
             <th scope="row" class="text-nowrap">Description:</th>
             <td>
-              {% if request.user.is_superuser %}
+              {% if user_has_permissions %}
                 {{ form.description }}
               {% else %}
                 {{ allocation.description }}
@@ -263,7 +263,7 @@ Allocation Detail
             <td>{{ allocation.modified|date:"M. d, Y" }}</td>
           </tr>
           <tr>
-            {% if request.user.is_superuser or request.user.is_staff %}
+            {% if user_has_permissions %}
               <th scope="row" class="text-nowrap">Lock/Unlock Allocation:</th>
               <td>
                 {{ form.is_locked }}
@@ -278,7 +278,7 @@ Allocation Detail
               {% endif %}
             {% endif %}
           </tr>
-          {% if request.user.is_superuser or request.user.is_staff %}
+          {% if user_has_permissions %}
             <tr>
               <th scope="row" class="text-nowrap">Allow Change Requests:</th>
               <td>
@@ -288,7 +288,7 @@ Allocation Detail
           {% endif %}
         </table>
       </div>
-      {% if request.user.is_superuser %}
+      {% if user_has_permissions %}
         <div class="float-right">
           {% if allocation.status.name == 'New' or allocation.status.name == 'Renewal Requested' %}
             {% if allocation.project.status.name != 'Active' %}
@@ -305,12 +305,12 @@ Allocation Detail
   </div>
 </div>
 
-{% if attributes or attributes_with_usage or request.user.is_superuser %}
+{% if attributes or attributes_with_usage or user_has_permissions %}
   <div class="card mb-3">
     <div class="card-header">
       <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Attributes</h3>
       <div class="float-right">
-        {% if request.user.is_superuser %}
+        {% if user_has_permissions %}
           <a class="btn btn-success" href="{% url 'allocation-attribute-add' allocation.pk %}" role="button">
             <i class="fas fa-plus" aria-hidden="true"></i> Add Allocation Attribute
           </a>
@@ -471,7 +471,7 @@ Allocation Detail
     <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Notifications</h3>
     <span class="badge badge-secondary">{{notes.count}}</span>
     <div class="float-right">
-      {% if request.user.is_superuser %}
+      {% if user_has_permissions %}
         <a class="btn btn-success" href="{% url 'allocation-note-add' allocation.pk %}" role="button">
           <i class="fas fa-plus" aria-hidden="true"></i> Add Notification
         </a>
@@ -491,7 +491,7 @@ Allocation Detail
           </thead>
           <tbody>
             {% for note in notes %}
-              {% if not note.is_private or request.user.is_superuser %}
+              {% if not note.is_private or user_has_permissions %}
                 <tr>
                   <td>{{ note.note }}</td>
                   {% if note.is_private %}
