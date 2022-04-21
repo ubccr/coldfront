@@ -25,7 +25,7 @@ from coldfront.core.allocation.models import Allocation, \
     AllocationAttributeType, AllocationAttribute
 from coldfront.core.allocation.utils import \
     get_secure_dir_manage_user_request_objects
-from coldfront.core.resource.models import Resource
+from coldfront.core.project.models import ProjectUser
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.mail import send_email_template
 
@@ -65,14 +65,23 @@ class SecureDirManageUsersView(LoginRequiredMixin,
             return super().dispatch(request, *args, **kwargs)
 
     def get_users_to_add(self, alloc_obj):
-        savio_compute = Resource.objects.get(name='Savio Compute')
-        compute_alloc = Allocation.objects.get(project=alloc_obj.project,
-                                               resources=savio_compute)
+        # Users in any projects that the PI runs should be available to add.
+        alloc_pis = [proj_user.user for proj_user in
+                     alloc_obj.project.projectuser_set.filter(
+                         Q(role__name__in=['Manager',
+                                           'Principal Investigator']) &
+                         Q(status__name='Active'))]
 
-        # Adding active AllocationUsers from main compute allocation.
-        users_to_add = set(alloc_user.user for alloc_user in
-                           compute_alloc.allocationuser_set.filter(
-                               status__name='Active'))
+        projects = [proj_user.project for proj_user in
+                    ProjectUser.objects.filter(
+                        Q(role__name__in=['Manager',
+                                          'Principal Investigator']) &
+                        Q(status__name='Active') &
+                        Q(user__in=alloc_pis))]
+
+        users_to_add = set([proj_user.user for proj_user in
+                            ProjectUser.objects.filter(project__in=projects,
+                                                       status__name='Active')])
 
         # Excluding active users that are already part of the allocation.
         users_to_exclude = set(alloc_user.user for alloc_user in
@@ -114,6 +123,7 @@ class SecureDirManageUsersView(LoginRequiredMixin,
                               alloc_obj.allocationuser_set.filter(
                                   status__name='Active'))
 
+        # Exclude users that have active removal requests.
         users_to_remove -= set(request.user for request in
                                SecureDirRemoveUserRequest.objects.filter(
                                    allocation=alloc_obj,
@@ -121,7 +131,7 @@ class SecureDirManageUsersView(LoginRequiredMixin,
                                                      'Processing - Remove']))
 
         # PIs cannot request to remove themselves from their
-        # own secure directories
+        # own secure directories.
         users_to_remove -= set(proj_user.user for proj_user in
                                alloc_obj.project.projectuser_set.filter(
                                    role__name='Principal Investigator',
@@ -214,7 +224,6 @@ class SecureDirManageUsersView(LoginRequiredMixin,
             request.POST, initial=user_list, prefix='userform')
 
         reviewed_users_count = 0
-
         if formset.is_valid():
             pending_status = \
                 self.request_status_obj.objects.get(name__icontains='Pending')
@@ -253,11 +262,13 @@ class SecureDirManageUsersView(LoginRequiredMixin,
 
                 try:
                     msg_plain = \
-                        render_to_string('email/secure_dir_request/pending_secure_dir_manage_user_requests.txt',
-                                         context)
+                        render_to_string(
+                            'email/secure_dir_request/pending_secure_dir_manage_user_requests.txt',
+                            context)
                     msg_html = \
-                        render_to_string('email/secure_dir_request/pending_secure_dir_manage_user_requests.html',
-                                         context)
+                        render_to_string(
+                            'email/secure_dir_request/pending_secure_dir_manage_user_requests.html',
+                            context)
 
                     send_mail(
                         f'Pending Secure Directory '
@@ -442,8 +453,10 @@ class SecureDirManageUsersUpdateStatusView(LoginRequiredMixin,
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('allocation.change_securediradduserrequest') or \
-                self.request.user.has_perm('allocation.change_securedirremoveuserrequest'):
+        if self.request.user.has_perm(
+                'allocation.change_securediradduserrequest') or \
+                self.request.user.has_perm(
+                    'allocation.change_securedirremoveuserrequest'):
             return True
 
         message = (
@@ -522,8 +535,10 @@ class SecureDirManageUsersCompleteStatusView(LoginRequiredMixin,
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('allocation.change_securediradduserrequest') or \
-                self.request.user.has_perm('allocation.change_securedirremoveuserrequest'):
+        if self.request.user.has_perm(
+                'allocation.change_securediradduserrequest') or \
+                self.request.user.has_perm(
+                    'allocation.change_securedirremoveuserrequest'):
             return True
 
         message = (
@@ -661,8 +676,10 @@ class SecureDirManageUsersDenyRequestView(LoginRequiredMixin,
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('allocation.change_securediradduserrequest') or \
-                self.request.user.has_perm('allocation.change_securedirremoveuserrequest'):
+        if self.request.user.has_perm(
+                'allocation.change_securediradduserrequest') or \
+                self.request.user.has_perm(
+                    'allocation.change_securedirremoveuserrequest'):
             return True
 
         message = (
