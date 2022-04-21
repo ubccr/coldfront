@@ -38,43 +38,6 @@ from django.test import TestCase
 class TestRunnerMixin(TestRunnerMixinBase):
     """A mixin for testing AllocationRenewalProcessingRunner."""
 
-    def assert_allocation_service_units_value(self, allocation, expected):
-        """Assert that the given Allocation has an AllocationAttribute
-        with type 'Service Units' and the given expected value."""
-        allocation_attribute_type = AllocationAttributeType.objects.get(
-            name='Service Units')
-        kwargs = {
-            'allocation_attribute_type': allocation_attribute_type,
-        }
-        attributes = allocation.allocationattribute_set.filter(**kwargs)
-        self.assertEqual(attributes.count(), 1)
-        self.assertEqual(str(expected), attributes.first().value)
-
-    def assert_pooling_preference_case(self, expected):
-        """Assert that the pooling preference case of the request_obj is
-        the provided, expected one."""
-        actual = self.request_obj.get_pooling_preference_case()
-        self.assertEqual(expected, actual)
-
-    def create_request(self, pi=None, pre_project=None, post_project=None,
-                       new_project_request=None):
-        """Create and return an AllocationRenewalRequest with the given
-        parameters."""
-        assert pi and pre_project and post_project
-        approved_renewal_request_status = \
-            AllocationRenewalRequestStatusChoice.objects.get(name='Approved')
-        kwargs = {
-            'requester': self.requester,
-            'pi': pi,
-            'allocation_period': self.allocation_period,
-            'status': approved_renewal_request_status,
-            'pre_project': pre_project,
-            'post_project': post_project,
-            'request_time': utc_now_offset_aware(),
-            'new_project_request': new_project_request,
-        }
-        return AllocationRenewalRequest.objects.create(**kwargs)
-
     def test_cluster_access_requests_created(self):
         """Test that the runner creates an AllocationUserAttribute with
         type 'Cluster Account Status' for the requester if one does not
@@ -936,6 +899,7 @@ class TestUnpooledToUnpooled(TestRunnerMixin, TestCase):
         """Set up test data."""
         super().setUp()
         self.request_obj = self.create_request(
+            AllocationRenewalRequestStatusChoice.objects.get(name='Approved'),
             pi=self.pi0,
             pre_project=self.unpooled_project0,
             post_project=self.unpooled_project0)
@@ -956,6 +920,7 @@ class TestUnpooledToPooled(TestPreProjectDeactivationMixin, TestRunnerMixin,
         """Set up test data."""
         super().setUp()
         self.request_obj = self.create_request(
+            AllocationRenewalRequestStatusChoice.objects.get(name='Approved'),
             pi=self.pi0,
             pre_project=self.unpooled_project0,
             post_project=self.pooled_project1)
@@ -975,6 +940,7 @@ class TestPooledToPooledSame(TestRunnerMixin, TestCase):
         """Set up test data."""
         super().setUp()
         self.request_obj = self.create_request(
+            AllocationRenewalRequestStatusChoice.objects.get(name='Approved'),
             pi=self.pi0,
             pre_project=self.pooled_project0,
             post_project=self.pooled_project0)
@@ -996,6 +962,7 @@ class TestPooledToPooledDifferent(TestPreProjectDeactivationMixin,
         """Set up test data."""
         super().setUp()
         self.request_obj = self.create_request(
+            AllocationRenewalRequestStatusChoice.objects.get(name='Approved'),
             pi=self.pi0,
             pre_project=self.pooled_project0,
             post_project=self.pooled_project1)
@@ -1016,6 +983,7 @@ class TestPooledToUnpooledOld(TestPreProjectDeactivationMixin,
         """Set up test data."""
         super().setUp()
         self.request_obj = self.create_request(
+            AllocationRenewalRequestStatusChoice.objects.get(name='Approved'),
             pi=self.pi0,
             pre_project=self.pooled_project0,
             post_project=self.unpooled_project0)
@@ -1038,6 +1006,7 @@ class TestPooledToUnpooledNew(TestPreProjectDeactivationMixin,
         new_project_request = \
             self.simulate_new_project_allocation_request_processing()
         self.request_obj = self.create_request(
+            AllocationRenewalRequestStatusChoice.objects.get(name='Approved'),
             pi=self.pi0,
             pre_project=self.pooled_project0,
             post_project=new_project_request.project,

@@ -1,5 +1,7 @@
 from coldfront.api.statistics.utils import create_project_allocation
 from coldfront.core.allocation.models import Allocation
+from coldfront.core.allocation.models import AllocationAttributeType
+from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.models import AllocationUser
 from coldfront.core.allocation.models import AllocationUserStatusChoice
@@ -14,6 +16,7 @@ from coldfront.core.project.utils import ProjectClusterAccessRequestRunner
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.resource.models import Resource
 from coldfront.core.user.models import UserProfile
+from coldfront.core.utils.common import utc_now_offset_aware
 from decimal import Decimal
 from django.contrib.auth.models import User
 from django.core import mail
@@ -143,6 +146,41 @@ class TestRunnerMixinBase(object):
 
         # This should be set by the subclasses.
         self.request_obj = None
+
+    def assert_allocation_service_units_value(self, allocation, expected):
+        """Assert that the given Allocation has an AllocationAttribute
+        with type 'Service Units' and the given expected value."""
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Service Units')
+        kwargs = {
+            'allocation_attribute_type': allocation_attribute_type,
+        }
+        attributes = allocation.allocationattribute_set.filter(**kwargs)
+        self.assertEqual(attributes.count(), 1)
+        self.assertEqual(str(expected), attributes.first().value)
+
+    def assert_pooling_preference_case(self, expected):
+        """Assert that the pooling preference case of the request_obj is
+        the provided, expected one."""
+        actual = self.request_obj.get_pooling_preference_case()
+        self.assertEqual(expected, actual)
+
+    def create_request(self, status, pi=None, pre_project=None,
+                       post_project=None, new_project_request=None):
+        """Create and return an AllocationRenewalRequest with the given
+        parameters."""
+        assert pi and pre_project and post_project
+        kwargs = {
+            'requester': self.requester,
+            'pi': pi,
+            'allocation_period': self.allocation_period,
+            'status': status,
+            'pre_project': pre_project,
+            'post_project': post_project,
+            'request_time': utc_now_offset_aware(),
+            'new_project_request': new_project_request,
+        }
+        return AllocationRenewalRequest.objects.create(**kwargs)
 
     def create_under_review_new_project_request(self):
         """Create a new Project, a corresponding 'CLUSTER_NAME Compute'
