@@ -9,13 +9,19 @@ from django.urls import reverse
 
 from coldfront.api.allocation.tests.test_allocation_base import \
     TestAllocationBase
-from coldfront.core.allocation.models import Allocation, AllocationStatusChoice, \
-    SecureDirAddUserRequest, SecureDirAddUserRequestStatusChoice, \
-    SecureDirRemoveUserRequest, SecureDirRemoveUserRequestStatusChoice, \
-    AllocationUser, AllocationUserStatusChoice
+from coldfront.core.allocation.models import (Allocation,
+                                              AllocationStatusChoice,
+                                              SecureDirAddUserRequest,
+                                              SecureDirAddUserRequestStatusChoice,
+                                              SecureDirRemoveUserRequest,
+                                              SecureDirRemoveUserRequestStatusChoice,
+                                              AllocationUser,
+                                              AllocationUserStatusChoice)
 from coldfront.core.allocation.utils import create_secure_dir
-from coldfront.core.project.models import ProjectUser, ProjectUserStatusChoice, \
-    ProjectUserRoleChoice, Project, ProjectStatusChoice
+from coldfront.core.project.models import (ProjectUser,
+                                           ProjectUserStatusChoice,
+                                           ProjectUserRoleChoice, Project,
+                                           ProjectStatusChoice)
 from coldfront.core.utils.common import utc_now_offset_aware
 
 
@@ -65,8 +71,9 @@ class TestSecureDirBase(TestAllocationBase):
         self.groups_path = self.groups_allocation.allocationattribute_set.get(
             allocation_attribute_type__name__icontains='Directory').value
 
-        self.scratch2_path = self.scratch2_allocation.allocationattribute_set.get(
-            allocation_attribute_type__name__icontains='Directory').value
+        self.scratch2_path = \
+            self.scratch2_allocation.allocationattribute_set.get(
+                allocation_attribute_type__name__icontains='Directory').value
 
     def get_response(self, user, url, kwargs=None):
         """Returns the response to a GET request."""
@@ -101,7 +108,7 @@ class TestSecureDirBase(TestAllocationBase):
 
 class TestSecureDirManageUsersView(TestSecureDirBase):
     """A class for testing SecureDirManageUsersView."""
-    
+
     def setUp(self):
         super().setUp()
         self.url = 'secure-dir-manage-users'
@@ -267,10 +274,10 @@ class TestSecureDirManageUsersView(TestSecureDirBase):
                                       data=form_data)
 
         request = SecureDirAddUserRequest.objects.filter(
-            user=self.user0,
             allocation=self.scratch2_allocation,
             status=SecureDirAddUserRequestStatusChoice.objects.get(
-                name='Pending - Add'))
+                name='Pending - Add'),
+            directory=self.scratch2_path)
         self.assertTrue(request.exists())
 
         request = request.first()
@@ -412,7 +419,8 @@ class TestSecureDirManageUsersRequestListView(TestSecureDirBase):
             for action in ['add', 'remove']:
                 kwargs = {'status': status, 'action': action}
 
-                response = self.get_response(self.admin, self.url, kwargs=kwargs)
+                response = self.get_response(self.admin, self.url,
+                                             kwargs=kwargs)
                 html = response.content.decode('utf-8')
 
                 if status == 'completed':
@@ -629,6 +637,15 @@ class TestSecureDirManageUsersDenyRequestView(TestSecureDirBase):
             self.assertIn(email.to[0], recipients)
             self.assertEqual(settings.EMAIL_SENDER, email.from_email)
 
+        # Test that the correct message is displayed.
+        expected_message = \
+            f'Secure directory addition request for user '\
+            f'{self.add_request.user.username} for the secure directory '\
+            f'{self.add_request.directory} has been denied.'
+        messages = self.get_message_strings(response)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(messages[0], expected_message)
+
         # Test that the user is redirected.
         self.assertRedirects(response,
                              reverse(f'secure-dir-manage-users-request-list',
@@ -669,6 +686,15 @@ class TestSecureDirManageUsersDenyRequestView(TestSecureDirBase):
             self.assertIn(email_subject, email.subject)
             self.assertIn(email.to[0], recipients)
             self.assertEqual(settings.EMAIL_SENDER, email.from_email)
+
+        # Test that the correct message is displayed.
+        expected_message = \
+            f'Secure directory removal request for user ' \
+            f'{self.remove_request.user.username} for the secure directory ' \
+            f'{self.remove_request.directory} has been denied.'
+        messages = self.get_message_strings(response)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(messages[0], expected_message)
 
         # Test that the user is redirected.
         self.assertRedirects(response,
@@ -734,7 +760,7 @@ class TestSecureDirManageUsersUpdateStatusView(TestSecureDirBase):
         """Testing access to SecureDirManageUsersUpdateStatusView"""
 
         for request, action in [(self.add_request, 'add'),
-                           (self.remove_request, 'remove')]:
+                                (self.remove_request, 'remove')]:
             kwargs = {'pk': request.pk, 'action': action}
 
             # Only admins should have access
@@ -753,10 +779,22 @@ class TestSecureDirManageUsersUpdateStatusView(TestSecureDirBase):
             kwargs = {'pk': request.pk, 'action': action}
             data = {'status': 'Processing'}
 
-            response = self.post_response(self.admin, self.url, kwargs=kwargs, data=data)
+            response = self.post_response(self.admin, self.url, kwargs=kwargs,
+                                          data=data)
 
             request.refresh_from_db()
-            self.assertEqual(request.status.name, f'Processing - {action.title()}')
+            self.assertEqual(request.status.name,
+                             f'Processing - {action.title()}')
+
+            # Test that the correct message is shown
+            expected_message = (
+                f'Secure directory '
+                f'{"addition" if action == "add" else "removal"} request '
+                f'for user {request.user.username} for '
+                f'{request.directory} has been marked as "Processing".')
+            messages = self.get_message_strings(response)
+            self.assertEqual(len(messages), 1)
+            self.assertEqual(expected_message, messages[0])
 
             # Test that the user is redirected.
             self.assertRedirects(response,
@@ -773,10 +811,21 @@ class TestSecureDirManageUsersUpdateStatusView(TestSecureDirBase):
             kwargs = {'pk': request.pk, 'action': action}
             data = {'status': 'Pending'}
 
-            response = self.post_response(self.admin, self.url, kwargs=kwargs, data=data)
+            response = self.post_response(self.admin, self.url, kwargs=kwargs,
+                                          data=data)
 
             request.refresh_from_db()
             self.assertEqual(request.status.name, f'Pending - {action.title()}')
+
+            # Test that the correct message is shown
+            expected_message = (
+                f'Secure directory '
+                f'{"addition" if action == "add" else "removal"} request '
+                f'for user {request.user.username} for '
+                f'{request.directory} has been marked as "Pending".')
+            messages = self.get_message_strings(response)
+            self.assertEqual(len(messages), 1)
+            self.assertEqual(expected_message, messages[0])
 
             # Test that the user is redirected.
             self.assertRedirects(response,
@@ -785,11 +834,16 @@ class TestSecureDirManageUsersUpdateStatusView(TestSecureDirBase):
                                                  'status': 'pending'}))
 
     def test_bad_request_status(self):
-        """Testing that the correct message is shown for a bad request status."""
+        """Testing that the correct message is shown for a bad
+        request status."""
 
-        self.add_request.status = SecureDirAddUserRequestStatusChoice.objects.get(name='Denied')
+        self.add_request.status = \
+            SecureDirAddUserRequestStatusChoice.objects.get(
+                name='Denied')
         self.add_request.save()
-        self.remove_request.status = SecureDirRemoveUserRequestStatusChoice.objects.get(name='Processing - Remove')
+        self.remove_request.status = \
+            SecureDirRemoveUserRequestStatusChoice.objects.get(
+                name='Processing - Remove')
         self.remove_request.save()
 
         for request, action in [(self.add_request, 'add'),
@@ -797,13 +851,15 @@ class TestSecureDirManageUsersUpdateStatusView(TestSecureDirBase):
             kwargs = {'pk': request.pk, 'action': action}
             data = {'status': 'Processing'}
 
-            response = self.post_response(self.admin, self.url, kwargs=kwargs, data=data)
+            response = self.post_response(self.admin, self.url, kwargs=kwargs,
+                                          data=data)
             messages = self.get_message_strings(response)
 
-            expected_message = f'Secure directory user '\
-                               f'{"addition" if action == "add" else "removal"}'\
-                               f' request has unexpected status ' \
-                               f'"{request.status.name}."'
+            expected_message = (
+                f'Secure directory user '
+                f'{"addition" if action == "add" else "removal"}'
+                f' request has unexpected status '
+                f'"{request.status.name}."')
 
             self.assertEqual(len(messages), 1)
             self.assertEqual(expected_message, messages[0])
@@ -860,10 +916,22 @@ class TestSecureDirManageUsersCompleteStatusView(TestSecureDirBase):
             kwargs = {'pk': request.pk, 'action': action}
             data = {'status': 'Processing'}
 
-            response = self.post_response(self.admin, self.url, kwargs=kwargs, data=data)
+            response = self.post_response(self.admin, self.url, kwargs=kwargs,
+                                          data=data)
 
             request.refresh_from_db()
-            self.assertEqual(request.status.name, f'Processing - {action.title()}')
+            self.assertEqual(request.status.name,
+                             f'Processing - {action.title()}')
+
+            # Test that the correct message is shown
+            expected_message = (
+                f'Secure directory '
+                f'{"addition" if action == "add" else "removal"} request '
+                f'for user {request.user.username} for '
+                f'{request.directory} has been marked as "Processing".')
+            messages = self.get_message_strings(response)
+            self.assertEqual(len(messages), 1)
+            self.assertEqual(expected_message, messages[0])
 
             # Test that the user is redirected.
             self.assertRedirects(response,
@@ -872,10 +940,15 @@ class TestSecureDirManageUsersCompleteStatusView(TestSecureDirBase):
                                                  'status': 'pending'}))
 
     def test_bad_request_status(self):
-        """Testing that the correct message is shown for a bad request status."""
-        self.add_request.status = SecureDirAddUserRequestStatusChoice.objects.get(name='Denied')
+        """Testing that the correct message is shown for a
+        bad request status."""
+        self.add_request.status = \
+            SecureDirAddUserRequestStatusChoice.objects.get(
+                name='Denied')
         self.add_request.save()
-        self.remove_request.status = SecureDirRemoveUserRequestStatusChoice.objects.get(name='Pending - Remove')
+        self.remove_request.status = \
+            SecureDirRemoveUserRequestStatusChoice.objects.get(
+                name='Pending - Remove')
         self.remove_request.save()
 
         for request, action in [(self.add_request, 'add'),
@@ -883,13 +956,15 @@ class TestSecureDirManageUsersCompleteStatusView(TestSecureDirBase):
             kwargs = {'pk': request.pk, 'action': action}
             data = {'status': 'Processing'}
 
-            response = self.post_response(self.admin, self.url, kwargs=kwargs, data=data)
+            response = self.post_response(self.admin, self.url, kwargs=kwargs,
+                                          data=data)
             messages = self.get_message_strings(response)
 
-            expected_message = f'Secure directory user ' \
-                               f'{"addition" if action == "add" else "removal"}' \
-                               f' request has unexpected status ' \
-                               f'"{request.status.name}."'
+            expected_message = (
+                f'Secure directory user '
+                f'{"addition" if action == "add" else "removal"}' 
+                f' request has unexpected status ' 
+                f'"{request.status.name}."')
 
             self.assertEqual(len(messages), 1)
             self.assertEqual(expected_message, messages[0])
@@ -906,7 +981,8 @@ class TestSecureDirManageUsersCompleteStatusView(TestSecureDirBase):
         kwargs = {'pk': self.add_request.pk, 'action': 'add'}
         data = {'status': 'Complete'}
 
-        response = self.post_response(self.admin, self.url, kwargs=kwargs, data=data)
+        response = self.post_response(self.admin, self.url, kwargs=kwargs,
+                                      data=data)
 
         # Test that the status is updated.
         self.add_request.refresh_from_db()
@@ -959,7 +1035,8 @@ class TestSecureDirManageUsersCompleteStatusView(TestSecureDirBase):
         kwargs = {'pk': self.remove_request.pk, 'action': 'remove'}
         data = {'status': 'Complete'}
 
-        response = self.post_response(self.admin, self.url, kwargs=kwargs, data=data)
+        response = self.post_response(self.admin, self.url, kwargs=kwargs,
+                                      data=data)
 
         # Test that the status is updated.
         self.remove_request.refresh_from_db()
