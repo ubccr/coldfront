@@ -16,13 +16,15 @@ from django.views.generic import ListView, FormView
 from django.views.generic.base import TemplateView, View
 
 from coldfront.core.allocation.forms_.secure_dir_forms import (
-    SecureDirManageUsersForm, SecureDirManageUsersSearchForm,
+    SecureDirManageUsersForm,
+    SecureDirManageUsersSearchForm,
     SecureDirManageUsersRequestUpdateStatusForm,
     SecureDirManageUsersRequestCompletionForm)
-from coldfront.core.allocation.models import Allocation, \
-    SecureDirAddUserRequest, SecureDirRemoveUserRequest, \
-    AllocationUserStatusChoice, AllocationUser, \
-    AllocationAttributeType, AllocationAttribute
+from coldfront.core.allocation.models import (Allocation,
+                                              SecureDirAddUserRequest,
+                                              SecureDirRemoveUserRequest,
+                                              AllocationUserStatusChoice,
+                                              AllocationUser)
 from coldfront.core.allocation.utils import \
     get_secure_dir_manage_user_request_objects
 from coldfront.core.project.models import ProjectUser
@@ -260,11 +262,13 @@ class SecureDirManageUsersView(LoginRequiredMixin,
                 try:
                     msg_plain = \
                         render_to_string(
-                            'email/secure_dir_request/pending_secure_dir_manage_user_requests.txt',
+                            ('email/secure_dir_request/'
+                             'pending_secure_dir_manage_user_requests.txt'),
                             context)
                     msg_html = \
                         render_to_string(
-                            'email/secure_dir_request/pending_secure_dir_manage_user_requests.html',
+                            ('email/secure_dir_request/'
+                             'pending_secure_dir_manage_user_requests.html'),
                             context)
 
                     send_mail(
@@ -599,9 +603,12 @@ class SecureDirManageUsersCompleteStatusView(LoginRequiredMixin,
                     context = {
                         'user_first_name': user.first_name,
                         'user_last_name': user.last_name,
-                        'managed_user_first_name': self.secure_dir_request.user.first_name,
-                        'managed_user_last_name': self.secure_dir_request.user.last_name,
-                        'managed_user_username': self.secure_dir_request.user.username,
+                        'managed_user_first_name':
+                            self.secure_dir_request.user.first_name,
+                        'managed_user_last_name':
+                            self.secure_dir_request.user.last_name,
+                        'managed_user_username':
+                            self.secure_dir_request.user.username,
                         'verb': self.language_dict['verb'],
                         'preposition': self.language_dict['preposition'],
                         'directory': self.secure_dir_request.directory,
@@ -611,8 +618,11 @@ class SecureDirManageUsersCompleteStatusView(LoginRequiredMixin,
                     }
 
                     send_email_template(
-                        f'Secure Directory {self.language_dict["noun"].title()} Request Complete',
-                        'email/secure_dir_request/secure_dir_manage_user_request_complete.txt',
+                        f'Secure Directory '
+                        f'{self.language_dict["noun"].title()} '
+                        f'Request Complete',
+                        f'email/secure_dir_request/'
+                        f'secure_dir_manage_user_request_complete.txt',
                         context,
                         settings.EMAIL_SENDER,
                         [user.email])
@@ -659,12 +669,6 @@ class SecureDirManageUsersDenyRequestView(LoginRequiredMixin,
         if self.request.user.is_superuser:
             return True
 
-        # if self.request.user.has_perm(
-        #         'allocation.change_securediradduserrequest') or \
-        #         self.request.user.has_perm(
-        #             'allocation.change_securedirremoveuserrequest'):
-        #     return True
-
         message = (
             'You do not have permission to deny a secure directory join or '
             'removal request.')
@@ -697,16 +701,18 @@ class SecureDirManageUsersDenyRequestView(LoginRequiredMixin,
             f'Secure directory {self.language_dict["noun"]} request for user '
             f'{self.secure_dir_request.user.username} for the secure directory '
             f'{self.secure_dir_request.directory} has been '
-            f'"Denied" with reason: {reason}.')
+            f'denied.')
         messages.success(request, message)
 
         if settings.EMAIL_ENABLED:
             # Send notification email to PIs and the user that the
             # request has been denied.
-            pis = self.secure_dir_request.allocation.project.projectuser_set.filter(
-                role__name='Principal Investigator',
-                status__name='Active',
-                enable_notifications=True)
+            pis = \
+                self.secure_dir_request.allocation.project. \
+                    projectuser_set.filter(
+                    role__name='Principal Investigator',
+                    status__name='Active',
+                    enable_notifications=True)
             users_to_notify = [x.user for x in pis]
             users_to_notify.append(self.secure_dir_request.user)
 
@@ -715,9 +721,12 @@ class SecureDirManageUsersDenyRequestView(LoginRequiredMixin,
                     context = {
                         'user_first_name': user.first_name,
                         'user_last_name': user.last_name,
-                        'managed_user_first_name': self.secure_dir_request.user.first_name,
-                        'managed_user_last_name': self.secure_dir_request.user.last_name,
-                        'managed_user_username': self.secure_dir_request.user.username,
+                        'managed_user_first_name':
+                            self.secure_dir_request.user.first_name,
+                        'managed_user_last_name':
+                            self.secure_dir_request.user.last_name,
+                        'managed_user_username':
+                            self.secure_dir_request.user.username,
                         'verb': self.language_dict['verb'],
                         'preposition': self.language_dict['preposition'],
                         'directory': self.secure_dir_request.directory,
@@ -727,8 +736,10 @@ class SecureDirManageUsersDenyRequestView(LoginRequiredMixin,
                     }
 
                     send_email_template(
-                        f'Secure Directory {self.language_dict["noun"].title()} Request Denied',
-                        'email/secure_dir_request/secure_dir_manage_user_request_denied.txt',
+                        f'Secure Directory '
+                        f'{self.language_dict["noun"].title()} Request Denied',
+                        f'email/secure_dir_request/'
+                        f'secure_dir_manage_user_request_denied.txt',
                         context,
                         settings.EMAIL_SENDER,
                         [user.email])
