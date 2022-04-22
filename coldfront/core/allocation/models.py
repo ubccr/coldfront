@@ -624,6 +624,7 @@ class SecureDirAddUserRequest(TimeStampedModel):
         User, on_delete=models.CASCADE)
     allocation = models.ForeignKey(
         Allocation, on_delete=models.CASCADE)
+    directory = models.CharField(max_length=200)
     request_time = models.DateTimeField(auto_now_add=True)
     completion_time = models.DateTimeField(null=True)
     status = models.ForeignKey(
@@ -647,6 +648,7 @@ class SecureDirRemoveUserRequest(TimeStampedModel):
         User, on_delete=models.CASCADE)
     allocation = models.ForeignKey(
         Allocation, on_delete=models.CASCADE)
+    directory = models.CharField(max_length=200)
     request_time = models.DateTimeField(auto_now_add=True)
     completion_time = models.DateTimeField(null=True)
     status = models.ForeignKey(
