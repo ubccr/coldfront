@@ -62,6 +62,12 @@ class TestSecureDirBase(TestAllocationBase):
             status=AllocationStatusChoice.objects.get(name='Active'),
             resources__name='Scratch2 PL1 Directory')
 
+        self.groups_path = self.groups_allocation.allocationattribute_set.get(
+            allocation_attribute_type__name__icontains='Directory').value
+
+        self.scratch2_path = self.scratch2_allocation.allocationattribute_set.get(
+            allocation_attribute_type__name__icontains='Directory').value
+
     def get_response(self, user, url, kwargs=None):
         """Returns the response to a GET request."""
         self.client.login(username=user.username, password=self.password)
@@ -179,7 +185,6 @@ class TestSecureDirManageUsersView(TestSecureDirBase):
         self.assertNotIn(self.user2.username, html)
         self.assertNotIn(self.user3.username, html)
         self.assertNotIn(self.admin.username, html)
-        self.assertNotIn(self.pi.email, html)
 
         # Testing users shown on scratch2_allocation add users page
         kwargs = {'pk': self.scratch2_allocation.pk, 'action': 'add'}
@@ -194,7 +199,6 @@ class TestSecureDirManageUsersView(TestSecureDirBase):
         self.assertIn(self.user4.username, html)
 
         self.assertNotIn(self.admin.username, html)
-        self.assertNotIn(self.pi.email, html)
 
     def test_correct_users_to_remove(self):
         """Test that the correct users to be removed are displayed by
@@ -229,7 +233,6 @@ class TestSecureDirManageUsersView(TestSecureDirBase):
         self.assertNotIn(self.user1.username, html)
         self.assertNotIn(self.user2.username, html)
         self.assertNotIn(self.admin.username, html)
-        self.assertNotIn(self.pi.email, html)
 
         # Testing users shown on scratch2_allocation remove users page
         kwargs = {'pk': self.scratch2_allocation.pk, 'action': 'remove'}
@@ -244,7 +247,6 @@ class TestSecureDirManageUsersView(TestSecureDirBase):
         self.assertNotIn(self.user3.username, html)
         self.assertNotIn(self.user4.username, html)
         self.assertNotIn(self.admin.username, html)
-        self.assertNotIn(self.pi.email, html)
 
     def test_add_users(self):
         """Test that the correct SecureDirAddUserRequest is created"""
@@ -285,9 +287,9 @@ class TestSecureDirManageUsersView(TestSecureDirBase):
 
         # Test that the correct email is sent.
         recipients = settings.EMAIL_ADMIN_LIST
-        email_body = ['There is 1 new secure '
-                      'directory user addition request from '
-                      'project1 for a scratch2 directory.',
+        email_body = [f'There is 1 new secure '
+                      f'directory user addition request for '
+                      f'{self.scratch2_path}.',
                       'Please process this request here.']
 
         self.assertEqual(len(recipients), len(mail.outbox))
@@ -343,9 +345,9 @@ class TestSecureDirManageUsersView(TestSecureDirBase):
 
         # Test that the correct email is sent.
         recipients = settings.EMAIL_ADMIN_LIST
-        email_body = ['There are 2 new secure '
-                      'directory user removal requests from '
-                      'project1 for a group directory.',
+        email_body = [f'There are 2 new secure '
+                      f'directory user removal requests for '
+                      f'{self.groups_path}.',
                       'Please process these requests here.']
 
         self.assertEqual(len(recipients), len(mail.outbox))
@@ -365,7 +367,7 @@ class TestSecureDirManageUsersView(TestSecureDirBase):
                                      kwargs=kwargs)
         html = response.content.decode('utf-8')
         self.assertIn(
-            f'Add users to: Secure Group Directory for {self.project1.name}',
+            f'Add users to: {self.groups_path}',
             html)
 
         # Scratch2 allocation with no users to remove
@@ -376,8 +378,7 @@ class TestSecureDirManageUsersView(TestSecureDirBase):
         html = response.content.decode('utf-8')
 
         self.assertIn(
-            f'Remove users from: Secure Scratch2 Directory '
-            f'for {self.project1.name}',
+            f'Remove users from: {self.scratch2_path}',
             html)
 
 
@@ -435,19 +436,22 @@ class TestSecureDirManageUsersRequestListView(TestSecureDirBase):
             user=self.user0,
             allocation=self.groups_allocation,
             status=SecureDirAddUserRequestStatusChoice.objects.get(
-                name='Pending - Add'))
+                name='Pending - Add'),
+            directory=self.groups_path)
 
         SecureDirAddUserRequest.objects.create(
             user=self.user1,
             allocation=self.groups_allocation,
             status=SecureDirAddUserRequestStatusChoice.objects.get(
-                name='Completed'))
+                name='Completed'),
+            directory=self.groups_path)
 
         SecureDirAddUserRequest.objects.create(
             user=self.user2,
             allocation=self.scratch2_allocation,
             status=SecureDirAddUserRequestStatusChoice.objects.get(
-                name='Denied'))
+                name='Denied'),
+            directory=self.scratch2_allocation)
 
         # Testing pending requests
         kwargs = {'status': 'pending', 'action': 'add'}
@@ -455,8 +459,7 @@ class TestSecureDirManageUsersRequestListView(TestSecureDirBase):
         html = response.content.decode('utf-8')
 
         self.assertIn(self.user0.username, html)
-        self.assertIn(self.user0.email, html)
-        self.assertIn(self.groups_allocation.project.name, html)
+        self.assertIn(self.groups_path, html)
         self.assertIn('Pending - Add', html)
 
         # Testing completed requests
@@ -465,10 +468,8 @@ class TestSecureDirManageUsersRequestListView(TestSecureDirBase):
         html = response.content.decode('utf-8')
 
         self.assertIn(self.user1.username, html)
-        self.assertIn(self.user1.email, html)
         self.assertIn(self.user2.username, html)
-        self.assertIn(self.user2.email, html)
-        self.assertIn(self.groups_allocation.project.name, html)
+        self.assertIn(self.groups_path, html)
         self.assertIn('Completed', html)
         self.assertIn('Denied', html)
 
@@ -484,19 +485,22 @@ class TestSecureDirManageUsersRequestListView(TestSecureDirBase):
             user=self.user0,
             allocation=self.groups_allocation,
             status=SecureDirRemoveUserRequestStatusChoice.objects.get(
-                name='Pending - Remove'))
+                name='Pending - Remove'),
+            directory=self.groups_path)
 
         SecureDirRemoveUserRequest.objects.create(
             user=self.user1,
             allocation=self.groups_allocation,
             status=SecureDirRemoveUserRequestStatusChoice.objects.get(
-                name='Completed'))
+                name='Completed'),
+            directory=self.groups_path)
 
         SecureDirRemoveUserRequest.objects.create(
             user=self.user2,
             allocation=self.scratch2_allocation,
             status=SecureDirRemoveUserRequestStatusChoice.objects.get(
-                name='Denied'))
+                name='Denied'),
+            directory=self.scratch2_path)
 
         # Testing pending requests
         kwargs = {'status': 'pending', 'action': 'remove'}
@@ -504,8 +508,7 @@ class TestSecureDirManageUsersRequestListView(TestSecureDirBase):
         html = response.content.decode('utf-8')
 
         self.assertIn(self.user0.username, html)
-        self.assertIn(self.user0.email, html)
-        self.assertIn(self.groups_allocation.project.name, html)
+        self.assertIn(self.groups_path, html)
         self.assertIn('Pending - Remove', html)
 
         # Testing completed requests
@@ -514,10 +517,8 @@ class TestSecureDirManageUsersRequestListView(TestSecureDirBase):
         html = response.content.decode('utf-8')
 
         self.assertIn(self.user1.username, html)
-        self.assertIn(self.user1.email, html)
         self.assertIn(self.user2.username, html)
-        self.assertIn(self.user2.email, html)
-        self.assertIn(self.groups_allocation.project.name, html)
+        self.assertIn(self.groups_path, html)
         self.assertIn('Completed', html)
         self.assertIn('Denied', html)
 
@@ -532,13 +533,15 @@ class TestSecureDirManageUsersDenyRequestView(TestSecureDirBase):
             user=self.user0,
             allocation=self.groups_allocation,
             status=SecureDirAddUserRequestStatusChoice.objects.get(
-                name='Pending - Add'))
+                name='Pending - Add'),
+            directory=self.groups_path)
 
         self.remove_request = SecureDirRemoveUserRequest.objects.create(
             user=self.user1,
             allocation=self.scratch2_allocation,
             status=SecureDirRemoveUserRequestStatusChoice.objects.get(
-                name='Pending - Remove'))
+                name='Pending - Remove'),
+            directory=self.scratch2_path)
 
         for i, user in enumerate([self.user0, self.user1]):
             user.first_name = f'first{i}'
@@ -611,9 +614,9 @@ class TestSecureDirManageUsersDenyRequestView(TestSecureDirBase):
 
         # Test that the correct emails are sent
         recipients = [self.pi.email, self.user0.email]
-        email_body = ['The request to add first0 last0 (user0) to '
-                      'the secure group directory for allocation '
-                      'project1 has been denied for the following reason:',
+        email_body = [f'The request to add first0 last0 (user0) to '
+                      f'the secure directory {self.groups_path} '
+                      f'has been denied for the following reason:',
                       f'"{data["reason"]}"',
                       'If you have any questions, please contact us at']
         email_subject = 'Secure Directory Addition Request Denied'
@@ -652,9 +655,9 @@ class TestSecureDirManageUsersDenyRequestView(TestSecureDirBase):
 
         # Test that the correct emails are sent
         recipients = [self.pi.email, self.user1.email]
-        email_body = ['The request to remove first1 last1 (user1) from '
-                      'the secure scratch2 directory for allocation '
-                      'project1 has been denied for the following reason:',
+        email_body = [f'The request to remove first1 last1 (user1) from '
+                      f'the secure directory {self.scratch2_path} has '
+                      f'been denied for the following reason:',
                       f'"{data["reason"]}"',
                       'If you have any questions, please contact us at']
         email_subject = 'Secure Directory Removal Request Denied'
@@ -715,13 +718,15 @@ class TestSecureDirManageUsersUpdateStatusView(TestSecureDirBase):
             user=self.user0,
             allocation=self.groups_allocation,
             status=SecureDirAddUserRequestStatusChoice.objects.get(
-                name='Pending - Add'))
+                name='Pending - Add'),
+            directory=self.groups_path)
 
         self.remove_request = SecureDirRemoveUserRequest.objects.create(
             user=self.user1,
             allocation=self.scratch2_allocation,
             status=SecureDirRemoveUserRequestStatusChoice.objects.get(
-                name='Pending - Remove'))
+                name='Pending - Remove'),
+            directory=self.scratch2_path)
 
         self.url = 'secure-dir-manage-user-update-status'
 
@@ -814,13 +819,15 @@ class TestSecureDirManageUsersCompleteStatusView(TestSecureDirBase):
             user=self.user0,
             allocation=self.groups_allocation,
             status=SecureDirAddUserRequestStatusChoice.objects.get(
-                name='Processing - Add'))
+                name='Processing - Add'),
+            directory=self.groups_path)
 
         self.remove_request = SecureDirRemoveUserRequest.objects.create(
             user=self.user1,
             allocation=self.scratch2_allocation,
             status=SecureDirRemoveUserRequestStatusChoice.objects.get(
-                name='Processing - Remove'))
+                name='Processing - Remove'),
+            directory=self.scratch2_path)
 
         for i, user in enumerate([self.user0, self.user1]):
             user.first_name = f'first{i}'
@@ -922,7 +929,7 @@ class TestSecureDirManageUsersCompleteStatusView(TestSecureDirBase):
         messages = self.get_message_strings(response)
 
         expected_message = f'Secure directory addition request for user ' \
-                           f'user0 for allocation project1 has been ' \
+                           f'user0 for {self.groups_path} has been ' \
                            f'marked as "Complete".'
 
         self.assertEqual(len(messages), 1)
@@ -930,10 +937,10 @@ class TestSecureDirManageUsersCompleteStatusView(TestSecureDirBase):
 
         # Test that the correct emails are sent.
         recipients = [self.pi.email, self.user0.email]
-        email_body = ['The request to add first0 last0 (user0) to the secure '
-                      'group directory for allocation project1 has been '
-                      'completed. first0 last0 now has access to the secure '
-                      'group directory on the cluster.',
+        email_body = [f'The request to add first0 last0 (user0) to the secure '
+                      f'directory {self.groups_path} has been '
+                      f'completed. first0 last0 now has access to '
+                      f'{self.groups_path} on the cluster.',
                       'If you have any questions, please contact us at']
         email_subject = 'Secure Directory Addition Request Complete'
 
@@ -975,7 +982,7 @@ class TestSecureDirManageUsersCompleteStatusView(TestSecureDirBase):
         messages = self.get_message_strings(response)
 
         expected_message = f'Secure directory removal request for user ' \
-                           f'user1 for allocation project1 has been ' \
+                           f'user1 for {self.scratch2_path} has been ' \
                            f'marked as "Complete".'
 
         self.assertEqual(len(messages), 1)
@@ -983,10 +990,10 @@ class TestSecureDirManageUsersCompleteStatusView(TestSecureDirBase):
 
         # Test that the correct emails are sent.
         recipients = [self.pi.email, self.user1.email]
-        email_body = ['The request to remove first1 last1 (user1) from the '
-                      'secure scratch2 directory for allocation project1 has been '
-                      'completed. first1 last1 no longer has access to the '
-                      'secure scratch2 directory on the cluster.',
+        email_body = [f'The request to remove first1 last1 (user1) from the '
+                      f'secure directory {self.scratch2_path} has been '
+                      f'completed. first1 last1 no longer has access to '
+                      f'{self.scratch2_path} on the cluster.',
                       'If you have any questions, please contact us at']
         email_subject = 'Secure Directory Removal Request Complete'
 
