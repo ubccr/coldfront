@@ -38,7 +38,7 @@
       {% with user=request.user %}
         <p class="card-text text-justify">
           <strong>User:</strong>
-          <a href="{% url 'user-profile' user.username %}">{{ user.first_name }} {{user.last_name }}</a>
+          <a href="{% url 'user-profile' user.username %}">{{ user.first_name }} {{ user.last_name }}</a>
           ({{ user.email }})
         </p>
       {% endwith %}
@@ -55,16 +55,8 @@
           <a href="{% url 'allocation-detail' allocation.pk %}">{{ allocation.pk }}</a>
         </p>
         <p class="card-text text-justify">
-          <strong>Resource in Allocation:</strong>
-          {{ allocation.resources.first }}
-        </p>
-        <p class="card-text text-justify">
-          <strong>Subdirectory Path:</strong>
-          {{ subdirectory }}
-        </p>
-        <p class="card-text text-justify">
-          <strong>Project:</strong>
-          <a href="{% url 'project-detail' allocation.project.pk %}">{{ allocation.project.name }}</a>
+          <strong>Directory:</strong>
+          {{ request.directory }}
         </p>
       {% endwith %}
       <p class="card-text text-justify">
