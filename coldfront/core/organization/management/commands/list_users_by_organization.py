@@ -40,7 +40,7 @@ class Command(BaseCommand):
                     'which are found in all of them.  Default is to list users '
                     'in any of them',
                 action='store_true',)
-        parser.add_argument('--descendents', '--children', '-c',
+        parser.add_argument('--descendants', '--children', '-c',
                 help='If set, then when matching against a given fullcode of '
                     'an Organization, we consider an user to match if the '
                     'user belongs to any Organization descended from the named '
@@ -67,7 +67,7 @@ class Command(BaseCommand):
         orgcodes = options['organization']
         andorgs = options['and']
         verbosity = options['verbosity']
-        descendents = options['descendents']
+        descendants = options['descendants']
         primary_only = options['primary_only']
         inactive = options['inactive']
         pis_only = options['pis_only']
@@ -100,8 +100,8 @@ class Command(BaseCommand):
                 raise CommandError('No Organization with fullcode {} '
                         'found, aborting'.format(orgcode))
             orgs = [ org ]
-            if descendents:
-                orgs.extend(org.descendents())
+            if descendants:
+                orgs.extend(org.descendants())
 
             orgcodeQ = Q(organization__in=orgs)
             if orgQ is None:
