@@ -814,7 +814,11 @@ class TestPreProjectDeactivationMixin(object):
             role=pi_role,
             status=active_status)
         request_ = self.create_request(
-            pi=pi_not_on_project, pre_project=project, post_project=project)
+            status=AllocationRenewalRequestStatusChoice.objects.get(
+                name='Approved'),
+            pi=pi_not_on_project,
+            pre_project=project,
+            post_project=project)
         runner = AllocationRenewalProcessingRunner(request_, num_service_units)
         runner.run()
 
@@ -854,6 +858,7 @@ class TestPreProjectDeactivationMixin(object):
         new_project_request = SavioProjectAllocationRequest.objects.create(
             requester=self.requester,
             allocation_type=SavioProjectAllocationRequest.FCA,
+            allocation_period=request.allocation_period,
             pi=pi_not_on_project,
             pool=True,
             project=project,
@@ -899,7 +904,8 @@ class TestUnpooledToUnpooled(TestRunnerMixin, TestCase):
         """Set up test data."""
         super().setUp()
         self.request_obj = self.create_request(
-            AllocationRenewalRequestStatusChoice.objects.get(name='Approved'),
+            status=AllocationRenewalRequestStatusChoice.objects.get(
+                name='Approved'),
             pi=self.pi0,
             pre_project=self.unpooled_project0,
             post_project=self.unpooled_project0)
@@ -920,7 +926,8 @@ class TestUnpooledToPooled(TestPreProjectDeactivationMixin, TestRunnerMixin,
         """Set up test data."""
         super().setUp()
         self.request_obj = self.create_request(
-            AllocationRenewalRequestStatusChoice.objects.get(name='Approved'),
+            status=AllocationRenewalRequestStatusChoice.objects.get(
+                name='Approved'),
             pi=self.pi0,
             pre_project=self.unpooled_project0,
             post_project=self.pooled_project1)
@@ -940,7 +947,8 @@ class TestPooledToPooledSame(TestRunnerMixin, TestCase):
         """Set up test data."""
         super().setUp()
         self.request_obj = self.create_request(
-            AllocationRenewalRequestStatusChoice.objects.get(name='Approved'),
+            status=AllocationRenewalRequestStatusChoice.objects.get(
+                name='Approved'),
             pi=self.pi0,
             pre_project=self.pooled_project0,
             post_project=self.pooled_project0)
@@ -962,7 +970,8 @@ class TestPooledToPooledDifferent(TestPreProjectDeactivationMixin,
         """Set up test data."""
         super().setUp()
         self.request_obj = self.create_request(
-            AllocationRenewalRequestStatusChoice.objects.get(name='Approved'),
+            status=AllocationRenewalRequestStatusChoice.objects.get(
+                name='Approved'),
             pi=self.pi0,
             pre_project=self.pooled_project0,
             post_project=self.pooled_project1)
@@ -983,7 +992,8 @@ class TestPooledToUnpooledOld(TestPreProjectDeactivationMixin,
         """Set up test data."""
         super().setUp()
         self.request_obj = self.create_request(
-            AllocationRenewalRequestStatusChoice.objects.get(name='Approved'),
+            status=AllocationRenewalRequestStatusChoice.objects.get(
+                name='Approved'),
             pi=self.pi0,
             pre_project=self.pooled_project0,
             post_project=self.unpooled_project0)
@@ -1006,7 +1016,8 @@ class TestPooledToUnpooledNew(TestPreProjectDeactivationMixin,
         new_project_request = \
             self.simulate_new_project_allocation_request_processing()
         self.request_obj = self.create_request(
-            AllocationRenewalRequestStatusChoice.objects.get(name='Approved'),
+            status=AllocationRenewalRequestStatusChoice.objects.get(
+                name='Approved'),
             pi=self.pi0,
             pre_project=self.pooled_project0,
             post_project=new_project_request.project,
