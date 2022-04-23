@@ -170,7 +170,7 @@ def non_denied_renewal_request_statuses():
     """Return a queryset of AllocationRenewalRequestStatusChoices that
     do not have the name 'Denied'."""
     return AllocationRenewalRequestStatusChoice.objects.filter(
-        ~Q(name='Denied')).values_list('name', flat=True)
+        ~Q(name='Denied'))
 
 
 def send_allocation_renewal_request_approval_email(request, num_service_units):

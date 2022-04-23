@@ -90,7 +90,7 @@ def non_denied_new_project_request_statuses():
     """Return a queryset of ProjectAllocationRequestStatusChoices that
     do not have the name 'Denied'."""
     return ProjectAllocationRequestStatusChoice.objects.filter(
-        ~Q(name='Denied')).values_list('name', flat=True)
+        ~Q(name='Denied'))
 
 
 class ProjectApprovalRunner(object):
