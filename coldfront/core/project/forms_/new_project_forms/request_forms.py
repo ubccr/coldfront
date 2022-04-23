@@ -34,6 +34,9 @@ import pytz
 
 class SavioProjectAllocationPeriodForm(forms.Form):
 
+    NUM_DAYS_IN_ALLOCATION_YEAR = 365
+    NUM_DAYS_BEFORE_ICA = 90
+
     allocation_period = forms.ModelChoiceField(
         label='Allocation Period',
         queryset=AllocationPeriod.objects.none(),
@@ -51,8 +54,8 @@ class SavioProjectAllocationPeriodForm(forms.Form):
             queryset=queryset,
             required=True)
 
-    @staticmethod
-    def allocation_period_choices(allocation_type, utc_dt, display_timezone):
+    def allocation_period_choices(self, allocation_type, utc_dt,
+                                  display_timezone):
         """Return a queryset of AllocationPeriods to be available in the
         form if rendered at the given datetime, whose tzinfo must be
         pytz.UTC and which will be converted to the given timezone, for
@@ -66,10 +69,8 @@ class SavioProjectAllocationPeriodForm(forms.Form):
         if allocation_type in ('FCA', 'PCA'):
             if flag_enabled('ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE'):
                 # If projects for the next period may be requested, include it.
-                # TODO: This assumes that an allocation year lasts a year.
-                num_days_in_allocation_year = 365
                 started_before_date = (
-                    date + timedelta(days=num_days_in_allocation_year))
+                    date + timedelta(days=self.NUM_DAYS_IN_ALLOCATION_YEAR))
                 # Special handling: During the time in which renewals for the
                 # next period can be requested, the first option should be the
                 # period that is most relevant to most users (i.e., the
@@ -81,8 +82,7 @@ class SavioProjectAllocationPeriodForm(forms.Form):
             f = f & Q(start_date__lte=started_before_date)
             f = f & Q(name__startswith='Allowance Year')
         elif allocation_type == 'ICA':
-            # TODO: This is a magic number. Make it a setting.
-            num_days = 90
+            num_days = self.NUM_DAYS_BEFORE_ICA
             f = f & Q(start_date__lte=date + timedelta(days=num_days))
             f = f & (
                 Q(name__startswith='Fall Semester') |
