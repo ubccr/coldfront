@@ -449,7 +449,7 @@ class RequestHubView(LoginRequiredMixin,
         user = self.request.user
 
         secure_dir_remove_pending = SecureDirRemoveUserRequest.objects.filter(
-            status__name__in=['Pending - Add', 'Processing - Add']).order_by('modified')
+            status__name__in=['Pending - Remove', 'Processing - Remove']).order_by('modified')
 
         secure_dir_remove_complete = SecureDirRemoveUserRequest.objects.filter(
             status__name__in=['Complete', 'Denied']).order_by('modified')
