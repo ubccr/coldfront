@@ -45,7 +45,7 @@ class ProjectSearchForm(forms.Form):
         super().__init__(*args, **kwargs)
         cluster_name_choices = \
             [('', '-----')] + \
-            [(x, x) for x in self.get_compute_resource_names()]
+            [(x, x) for x in get_compute_resource_names()]
         self.fields['cluster_name'].choices = cluster_name_choices
 
 
