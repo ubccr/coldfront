@@ -39,7 +39,7 @@ class TestSavioProjectRequestWizard(TestBase):
         }
         allocation_period_form_data = {
             '1-allocation_period': allocation_period.pk,
-            current_step_key:' 1',
+            current_step_key: '1',
         }
         existing_pi_form_data = {
             '2-PI': self.user.pk,
