@@ -24,8 +24,7 @@ class TestAllocationRenewalRequestView(TestBase):
 
     @staticmethod
     def renew_pi_allocation_url():
-        """Return the URL for the requesting to renew a PI's
-        allocation."""
+        """Return the URL for requesting to renew a PI's allocation."""
         return reverse('renew-pi-allocation')
 
     def test_post_sets_request_request_time(self):
