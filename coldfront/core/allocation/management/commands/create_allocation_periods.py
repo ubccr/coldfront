@@ -108,6 +108,11 @@ class Command(BaseCommand):
                         "end_date": "2023-05-31"
                     },
                     {
+                        "name": "Allowance Year 2023 - 2024",
+                        "start_date": "2023-06-01",
+                        "end_date": "2024-05-31"
+                    },
+                    {
                         "name": "Fall Semester 2021",
                         "start_date": "2021-08-18",
                         "end_date": "2021-12-17"
