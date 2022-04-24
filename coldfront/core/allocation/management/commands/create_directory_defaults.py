@@ -10,7 +10,7 @@ from django.core.management.base import BaseCommand
 import os
 import logging
 
-"""An admin command that creates Resource-related objects for storing 
+"""An admin command that creates objects for storing 
 relevant cluster directories."""
 
 
@@ -96,13 +96,17 @@ class Command(BaseCommand):
                     'is_private': False,
                 })
 
-        for status in ['Pending - Add', 'Processing - Add', 'Completed', 'Denied']:
+        for status in ['Pending - Add',
+                       'Processing - Add',
+                       'Completed',
+                       'Denied']:
             SecureDirAddUserRequestStatusChoice.objects.get_or_create(
                 name=status)
 
-        for status in ['Pending - Remove', 'Processing - Remove', 'Completed', 'Denied']:
+        for status in ['Pending - Remove',
+                       'Processing - Remove',
+                       'Completed',
+                       'Denied']:
             SecureDirRemoveUserRequestStatusChoice.objects.get_or_create(
                 name=status)
 
-        message = 'Successfully created directory objects.'
-        self.stdout.write(self.style.SUCCESS(message))
