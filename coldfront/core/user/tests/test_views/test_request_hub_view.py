@@ -260,7 +260,7 @@ class TestRequestHubView(TestBase):
             # completed request is shown
             completed_div = str(
                 soup.find(id=f'{section}_completed'))
-            self.assertIn(str(completed_req.pk), pending_div)
+            self.assertIn(str(completed_req.pk), completed_div)
             self.assertIn(completed_req.project_user.user.username, completed_div)
             self.assertIn(completed_req.requester.username, completed_div)
             self.assertIn(completed_req.completion_time.strftime("%b. %d, %Y"), completed_div)

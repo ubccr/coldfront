@@ -31,6 +31,7 @@ class TestBase(TestCase):
         commands = [
             'add_resource_defaults',
             'add_allocation_defaults',
+            'create_allocation_periods',
             'import_field_of_science_data',
             'add_default_project_choices',
             'create_staff_group',
