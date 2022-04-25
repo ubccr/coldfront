@@ -41,7 +41,14 @@
       </td>
       <td>{{ vector_project_request.modified|date:"M. d, Y" }}</td>
       <td>{{ vector_project_request.requester.email }}</td>
-      <td>{{ vector_project_request.project.name }}</td>
+
+      <td>
+          <a href="{% url 'project-detail' vector_project_request.project.pk %}">
+              <span class="accessibility-link-text">Project {{ vector_project_request.project.name }}</span>
+                           {{ vector_project_request.project.name }}
+          </a>
+      </td>
+
       <td>{{ vector_project_request.pi.email }}</td>
       <td>
         {% with status=vector_project_request.status.name %}
