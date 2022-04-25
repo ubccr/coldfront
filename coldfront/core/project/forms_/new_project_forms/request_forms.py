@@ -50,7 +50,7 @@ class SavioProjectAllocationPeriodForm(forms.Form):
             self.allocation_type, utc_now_offset_aware(), display_timezone)
         self.fields['allocation_period'] = AllocationPeriodChoiceField(
             allocation_type=self.allocation_type,
-            label='AllocationPeriod',
+            label='Allocation Period',
             queryset=queryset,
             required=True)
 
