@@ -249,7 +249,7 @@ class ResourceAttribute(TimeStampedModel):
             )
         elif expected_value_type == "True/False" and self.value not in ["True", "False", ""]:
             raise ValidationError(
-                'Invalid Value "%s". Allowed inputs are "True" or "False".'
+                'Invalid Value "%s". Allowed inputs are "True" or "False".' % (self.value)
             )
         elif expected_value_type == "Date" and not self.value == "":
             try:
