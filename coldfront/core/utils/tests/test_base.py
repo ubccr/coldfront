@@ -9,7 +9,6 @@ from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.utils.common import utc_now_offset_aware
 from django.test import Client
 from django.test import TestCase
-from flags.state import enable_flag
 from http import HTTPStatus
 from io import StringIO
 import os
@@ -24,8 +23,6 @@ class TestBase(TestCase):
 
     def setUp(self):
         """Set up test data."""
-        enable_flag('BRC_ONLY', create_boolean_condition=True)
-
         out, err = StringIO(), StringIO()
         commands = [
             'add_resource_defaults',
