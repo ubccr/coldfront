@@ -382,6 +382,16 @@ class Allocation(TimeStampedModel):
         return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
 
 
+class AllocationInvoice(TimeStampedModel):
+    allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
+    account_number = models.CharField(max_length=9)
+    sub_account_number = models.CharField(max_length=20, blank=True, null=True)
+    status = models.ForeignKey(AllocationStatusChoice, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return "{} Invoice".format(self.allocation.get_parent_resource.name)
+
+
 class AllocationAdminNote(TimeStampedModel):
     allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
     author = models.ForeignKey(User, on_delete=models.CASCADE)

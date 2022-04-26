@@ -49,7 +49,8 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationUserNote,
                                               AllocationUserRequestStatusChoice,
                                               AllocationUserRequest,
-                                              AllocationUserStatusChoice)
+                                              AllocationUserStatusChoice,
+                                              AllocationInvoice)
 from coldfront.core.allocation.utils import (compute_prorated_amount,
                                              generate_guauge_data_from_usage,
                                              get_user_resources,
@@ -183,6 +184,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                     context['is_allowed_to_update_project'] = True
 
         context['allocation_users'] = allocation_users
+        context['allocation_invoices'] = allocation_obj.allocationinvoice_set.all()
 
         if self.request.user.is_superuser:
             notes = allocation_obj.allocationusernote_set.all()
@@ -2243,17 +2245,6 @@ class AllocationInvoiceListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
         return allocations
 
 
-# class AllocationAllInvoicesListView(AllocationInvoiceListView):
-#     template_name = 'allocation/allocation_all_invoices_list.html'
-
-#     def get_queryset(self):
-#         allocations = Allocation.objects.filter(
-#             resources__requires_payment=True
-#         )
-
-#         return allocations
-
-
 class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     model = Allocation
     template_name = 'allocation/allocation_invoice_detail.html'
@@ -2301,6 +2292,14 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
                 messages.error(request, 'Project must be approved first before you can update this allocation\'s status!')
                 return HttpResponseRedirect(reverse('allocation-invoice-detail', kwargs={'pk': pk}))
 
+            if initial_data.get('status') != status and status.name in ['Paid', 'Payment Declined']:
+                AllocationInvoice.objects.create(
+                    allocation=allocation_obj,
+                    account_number=allocation_obj.account_number,
+                    sub_account_number=allocation_obj.sub_account_number,
+                    status=status
+                )
+
             allocation_obj.status = status
             allocation_obj.save()
             messages.success(request, 'Allocation updated!')
@@ -2308,6 +2307,53 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
             for error in form.errors:
                 messages.error(request, error)
         return HttpResponseRedirect(reverse('allocation-invoice-detail', kwargs={'pk': pk}))
+
+
+class AllocationAllInvoicesListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    model = AllocationInvoice
+    template_name = 'allocation/allocation_all_invoices_list.html'
+    context_object_name = 'allocation_invoice_list'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('allocation.can_manage_invoice'):
+            return True
+
+        messages.error(
+            self.request, 'You do not have permission to manage invoices.')
+        return False
+
+    def get_queryset(self):
+        invoices = AllocationInvoice.objects.all()
+
+        return invoices
+
+
+class AllocationAllInvoicesDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'allocation/allocation_all_invoices_detail.html'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('allocation.can_manage_invoice'):
+            return True
+
+        messages.error(
+            self.request, 'You do not have permission to manage invoices.')
+        return False
+
+    def get_context_data(self, **kwargs):
+        pk = self.kwargs.get('pk')
+        invoice_obj = get_object_or_404(AllocationInvoice, pk=pk)
+
+        context = super().get_context_data(**kwargs)
+        context['invoice'] = invoice_obj
+        return context
 
 
 class AllocationAddInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, CreateView):

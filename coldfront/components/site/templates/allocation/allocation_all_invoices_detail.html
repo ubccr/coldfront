@@ -1,0 +1,54 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}
+Allocation Invoice Detail
+{% endblock %}
+
+{% block content %}
+  <div class="mb-3">
+    <h2>Allocation Invoice</h2>
+    <hr>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header">
+      <h3><i class="fas fa-list" aria-hidden="true"></i> Invoice Information</h3>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered table-sm">
+          <tr>
+            <th scope="row" class="text-nowrap">ID</th>
+            <td>{{ invoice.pk }}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Allocation ID</th>
+            <td>{{ invoice.allocation.pk }}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Account Number</th>
+            <td>{{ invoice.account_number }}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Sub-Account Number</th>
+            <td>{{ invoice.sub_account_number }}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Resource</th>
+            <td>{{ invoice.allocation.get_parent_resource.name }}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Created</th>
+            <td>{{ invoice.created }}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+    <div class="card-footer">
+      <a class="btn btn-secondary float-right" href="{% url 'allocation-all-invoices-list' %}" role="button">View Allocation Invoice List</a>
+      <a class="btn btn-secondary float-right" style="margin-right: 1%;" href="{% url 'allocation-detail' invoice.allocation.pk %}" role="button">View Allocation</a>
+    </div>
+  </div>
+{% endblock %}

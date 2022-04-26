@@ -1,0 +1,50 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}
+Allocation Invoice List
+{% endblock %}
+
+{% block content %}
+<h2>All Allocation Invoices</h2>
+<hr>
+
+{% if allocation_invoice_list %}
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th scope="col">ID</th>
+          <th scope="col">Allocation ID</th>
+          <th scope="col">Resource</th>
+          <th scope="col">Status</th>
+          <th scope="col">Created</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for invoice in allocation_invoice_list %}
+          <tr>
+            <td>{{ invoice.pk }}</td>
+            <td>
+              <a target="_blank" href="{% url 'allocation-detail' invoice.allocation.pk %}">
+                {{ invoice.allocation.pk }}
+              </a>
+            </td>
+            <td>{{ invoice.allocation.get_parent_resource.name }}</td>
+            <td>{{ invoice.status }}</td>
+            <td>{{ invoice.created|date:"M d, Y" }}</td>
+            <td><a class="btn btn-primary" href="{% url 'allocation-all-invoices-detail' invoice.pk %}" role="button">Details</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="alert alert-info">
+    There are no allocation invoices to list!
+  </div>                          
+{% endif %}
+
+{% endblock %}
