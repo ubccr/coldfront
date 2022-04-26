@@ -31,18 +31,22 @@ class ProjectSearchForm(forms.Form):
     PROJECT_NAME = 'Project Name'
     CLUSTER_NAME = 'Cluster Name'
 
-    CLUSTER_NAME_CHOICES = \
-        [('', '-----')] + [(x, x) for x in get_compute_resource_names()]
-
     last_name = forms.CharField(label=LAST_NAME, max_length=100, required=False)
     username = forms.CharField(label=USERNAME, max_length=100, required=False)
     # field_of_science = forms.CharField(label=FIELD_OF_SCIENCE, max_length=100, required=False)
     project_title = forms.CharField(label=PROJECT_TITLE, max_length=100, required=False)
     project_name = forms.CharField(label=PROJECT_NAME, max_length=100, required=False)
-    cluster_name = forms.ChoiceField(
-        label=CLUSTER_NAME, choices=CLUSTER_NAME_CHOICES, required=False,
-        widget=forms.Select())
+    cluster_name = forms.ChoiceField(label=CLUSTER_NAME,
+                                     required=False,
+                                     widget=forms.Select())
     show_all_projects = forms.BooleanField(initial=False, required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        cluster_name_choices = \
+            [('', '-----')] + \
+            [(x, x) for x in get_compute_resource_names()]
+        self.fields['cluster_name'].choices = cluster_name_choices
 
 
 class ProjectAddUserForm(forms.Form):
