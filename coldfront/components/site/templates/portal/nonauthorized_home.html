@@ -5,19 +5,54 @@
 {% block content %}
 <div class="row mt-4">
   <div class="col mr-0">
-    <h2 class="text-center">Log In to ColdFront</h2>
+    <h1 class="text-center">Welcome to ColdFront</h1>
+    <br>
+
+    <p><a class="btn btn-primary btn-block" href="{% url 'login' %}?next={{request.get_full_path}}" role="button"><i class="fas fa-sign-in-alt" aria-hidden="true"></i> Log In</a></p>
+
+
     <hr>
-
-    <p><a class="btn btn-primary btn-block" href="{% url 'login' %}" role="button"><i class="fas fa-sign-in-alt" aria-hidden="true"></i> Log In</a></p>
-
     <div class="card bg-light">
       <div class="card-body">
-        <h3 class="card-title h5">Do not have an Account?</h3>
-        <p class="card-text" style="text-align: justify;text-justify: inter-word;">{% settings_value 'ACCOUNT_CREATION_TEXT' %}</p>
+        <!-- <h3 class="card-title h5">Do not have an Account?</h3>
+        <p class="card-text" style="text-align: justify;text-justify: inter-word;">{% settings_value 'ACCOUNT_CREATION_TEXT' %}</p> -->
+        <h3 class="card-title h5">What is ColdFront?</h3>
+        <p class="card-text" style="text-align: justify;text-justify: inter-word;">ColdFront provides an easy platform to discover and obtain access to high performance computing systems, storage, and other research resources supported by <a href="https://rt.iu.edu/">Research Technologies</a>. </p>
+        <h3 class="card-title h5">Who can use ColdFront?</h3>
+        <p class="card-text" style="text-align: justify;text-justify: inter-word;">
+          IU faculty, staff, and graduate students are able to create and manage Projects that connect their collaborators and students to the resources they need. Creating a Project is easy&mdash; just provide a quick description detailing your research or intended coursework, request the resources you need, and list participants that also need access. Undergraduate students needing these resources for a class are able to search for their course's Project and view Projects they have been added to.</p>
+        <h3 class="card-title h5">What resources are available through ColdFront?</h3>
+        <div>
+          <div class="float-left" style="margin-right: 10px;">
+          <h6>Computing</h6>
+            <ul>
+            <li><a href="https://kb.iu.edu/d/avjk">Carbonate Deep Learning (DL) Partition</a></li>
+            <li><a href="https://kb.iu.edu/d/avjk">Carbonate GPU Partition</a></li>
+            <li>Increased Priority on HPC Systems</li>
+            <li>Precision Health Initiative (PHI) Carbonate Nodes</li>
+            </ul>
+          </div>
+          <div class="float-left" style="margin-left: 10px; margin-right: 10px;"> 
+            <h6>Storage</h6>
+              <ul>
+                <li><a href="https://kb.iu.edu/d/auag">Geode-Project</a></li>
+                <li><a href="https://kb.iu.edu/d/aiyi">SDA Increased Allocation</a></li>
+                <li><a href="https://kb.iu.edu/d/aqnj">Slate-Project</a></li>
+              </ul>
+            </div>
+          <div class="float-left">
+            <h6>Services</h6>
+            <ul>
+              <li>cBioPortal</li>
+              <li><a href="https://kb.iu.edu/d/bgto">RStudioConnect</a></li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
   {% include "portal/extra_app_templates.html" %}
+  <br>
+  </div>
 </div>
 {% endblock %}
 
@@ -27,5 +62,17 @@
   <script>
     $("#navbar-main > ul > li.active").removeClass("active");
     $("#navbar-home").addClass("active");
+
+    $("#expand_button").click(function () {
+    $('#collapseOne').collapse();
+    icon = $("#plus_minus");
+    icon.toggleClass("fa-plus fa-minus");
+    });
+  </script>
+  <script>
+    var ref = document.referrer
+    if (ref.includes("idp")) {
+      window.location.reload()
+    }
   </script>
 {% endblock %}
