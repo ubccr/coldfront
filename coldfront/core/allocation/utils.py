@@ -225,12 +225,12 @@ def create_secure_dir(project, subdirectory_name):
     if not isinstance(subdirectory_name, str):
         raise TypeError(f'Invalid subdirectory_name {subdirectory_name}.')
 
-    scratch2_pl1_directory = Resource.objects.get(name='Scratch2 PL1 Directory')
-    groups_pl1_directory = Resource.objects.get(name='Groups PL1 Directory')
+    scratch2_p2p3_directory = Resource.objects.get(name='Scratch2 P2/P3 Directory')
+    groups_p2p3_directory = Resource.objects.get(name='Groups P2/P3 Directory')
 
     query = Allocation.objects.filter(project=project,
-                                      resources__in=[scratch2_pl1_directory,
-                                                     groups_pl1_directory])
+                                      resources__in=[scratch2_p2p3_directory,
+                                                     groups_p2p3_directory])
     if query.exists():
         raise ValidationError('Allocations already exist')
 
@@ -244,26 +244,26 @@ def create_secure_dir(project, subdirectory_name):
         status=AllocationStatusChoice.objects.get(name='Active'),
         start_date=utc_now_offset_aware())
 
-    groups_pl1_path = groups_pl1_directory.resourceattribute_set.get(
+    groups_p2p3_path = groups_p2p3_directory.resourceattribute_set.get(
         resource_attribute_type__name='path')
-    scratch2_pl1_path = scratch2_pl1_directory.resourceattribute_set.get(
+    scratch2_p2p3_path = scratch2_p2p3_directory.resourceattribute_set.get(
         resource_attribute_type__name='path')
 
-    groups_allocation.resources.add(groups_pl1_directory)
-    scratch2_allocation.resources.add(scratch2_pl1_directory)
+    groups_allocation.resources.add(groups_p2p3_directory)
+    scratch2_allocation.resources.add(scratch2_p2p3_directory)
 
     allocation_attribute_type = AllocationAttributeType.objects.get(
         name='Cluster Directory Access')
 
-    groups_pl1_subdirectory = AllocationAttribute.objects.create(
+    groups_p2p3_subdirectory = AllocationAttribute.objects.create(
         allocation_attribute_type=allocation_attribute_type,
         allocation=groups_allocation,
-        value=os.path.join(groups_pl1_path.value, subdirectory_name))
+        value=os.path.join(groups_p2p3_path.value, subdirectory_name))
 
-    scratch2_pl1_subdirectory = AllocationAttribute.objects.create(
+    scratch2_p2p3_subdirectory = AllocationAttribute.objects.create(
         allocation_attribute_type=allocation_attribute_type,
         allocation=scratch2_allocation,
-        value=os.path.join(scratch2_pl1_path.value, subdirectory_name))
+        value=os.path.join(scratch2_p2p3_path.value, subdirectory_name))
 
     # Automatically make PIs active AllocationUsers for both allocations.
     pis = project.projectuser_set.filter(role__name='Principal Investigator',

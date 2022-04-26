@@ -59,29 +59,29 @@ class Command(BaseCommand):
             resource=scratch2_directory,
             value='/global/scratch2/')
 
-        groups_pl1_directory, _ = Resource.objects.update_or_create(
+        groups_p2p3_directory, _ = Resource.objects.update_or_create(
             parent_resource=groups_directory,
             resource_type=cluster_directory,
-            name='Groups PL1 Directory',
-            description='The parent directory containing PL1 data '
+            name='Groups P2/P3 Directory',
+            description='The parent directory containing P2/P3 data '
                         'in the groups directory.')
 
-        groups_pl1_path, _ = ResourceAttribute.objects.update_or_create(
+        groups_p2p3_path, _ = ResourceAttribute.objects.update_or_create(
             resource_attribute_type=path,
-            resource=groups_pl1_directory,
-            value=os.path.join(groups_path.value, 'pl1data'))
+            resource=groups_p2p3_directory,
+            value=os.path.join(groups_path.value, 'p2p3data'))
 
-        scratch2_pl1_directory, _ = Resource.objects.update_or_create(
+        scratch2_p2p3_directory, _ = Resource.objects.update_or_create(
             parent_resource=scratch2_directory,
             resource_type=cluster_directory,
-            name='Scratch2 PL1 Directory',
-            description='The parent directory containing PL1 data in the '
+            name='Scratch2 P2/P3 Directory',
+            description='The parent directory containing P2/P3 data in the '
                         'scratch2 directory.')
 
-        scratch2_pl1_path, _ = ResourceAttribute.objects.update_or_create(
+        scratch2_p2p3_path, _ = ResourceAttribute.objects.update_or_create(
             resource_attribute_type=path,
-            resource=scratch2_pl1_directory,
-            value=os.path.join(scratch2_path.value, 'pl1data'))
+            resource=scratch2_p2p3_directory,
+            value=os.path.join(scratch2_path.value, 'p2p3data'))
 
         from coldfront.core.allocation.models import AttributeType
         attribute_type, _ = AttributeType.objects.get_or_create(name='Text')

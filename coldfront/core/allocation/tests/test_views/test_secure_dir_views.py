@@ -61,12 +61,12 @@ class TestSecureDirBase(TestAllocationBase):
         self.groups_allocation = Allocation.objects.get(
             project=self.project1,
             status=AllocationStatusChoice.objects.get(name='Active'),
-            resources__name='Groups PL1 Directory')
+            resources__name='Groups P2/P3 Directory')
 
         self.scratch2_allocation = Allocation.objects.get(
             project=self.project1,
             status=AllocationStatusChoice.objects.get(name='Active'),
-            resources__name='Scratch2 PL1 Directory')
+            resources__name='Scratch2 P2/P3 Directory')
 
         self.groups_path = self.groups_allocation.allocationattribute_set.get(
             allocation_attribute_type__name__icontains='Directory').value

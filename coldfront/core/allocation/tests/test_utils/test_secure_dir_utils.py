@@ -37,27 +37,27 @@ class TestCreateSecureDir(TestAllocationBase):
 
     def test_allocation_objects_created(self):
         """Testing that allocation objects are created"""
-        scratch2_pl1_directory = Resource.objects.get(
-            name='Scratch2 PL1 Directory')
-        groups_pl1_directory = Resource.objects.get(
-            name='Groups PL1 Directory')
+        scratch2_p2p3_directory = Resource.objects.get(
+            name='Scratch2 P2/P3 Directory')
+        groups_p2p3_directory = Resource.objects.get(
+            name='Groups P2/P3 Directory')
 
-        groups_pl1_path = \
-            groups_pl1_directory.resourceattribute_set.get(
+        groups_p2p3_path = \
+            groups_p2p3_directory.resourceattribute_set.get(
                 resource_attribute_type__name='path')
-        scratch2_pl1_path = \
-            scratch2_pl1_directory.resourceattribute_set.get(
+        scratch2_p2p3_path = \
+            scratch2_p2p3_directory.resourceattribute_set.get(
                 resource_attribute_type__name='path')
 
         groups_allocation = Allocation.objects.filter(
             project=self.project1,
             status=AllocationStatusChoice.objects.get(name='Active'),
-            resources=groups_pl1_directory)
+            resources=groups_p2p3_directory)
 
         scratch2_allocation = Allocation.objects.filter(
             project=self.project1,
             status=AllocationStatusChoice.objects.get(name='Active'),
-            resources=scratch2_pl1_directory)
+            resources=scratch2_p2p3_directory)
 
         self.assertTrue(groups_allocation.exists())
         self.assertTrue(scratch2_allocation.exists())
@@ -67,20 +67,20 @@ class TestCreateSecureDir(TestAllocationBase):
 
         allocation_attribute_type = AllocationAttributeType.objects.get(
             name='Cluster Directory Access')
-        groups_pl1_subdirectory = AllocationAttribute.objects.filter(
+        groups_p2p3_subdirectory = AllocationAttribute.objects.filter(
             allocation_attribute_type=allocation_attribute_type,
             allocation=groups_allocation,
-            value=os.path.join(groups_pl1_path.value,
+            value=os.path.join(groups_p2p3_path.value,
                                self.subdirectory_name))
 
-        scratch2_pl1_subdirectory = AllocationAttribute.objects.filter(
+        scratch2_p2p3_subdirectory = AllocationAttribute.objects.filter(
             allocation_attribute_type=allocation_attribute_type,
             allocation=scratch2_allocation,
-            value=os.path.join(scratch2_pl1_path.value,
+            value=os.path.join(scratch2_p2p3_path.value,
                                self.subdirectory_name))
 
-        self.assertTrue(groups_pl1_subdirectory.exists())
-        self.assertTrue(scratch2_pl1_subdirectory.exists())
+        self.assertTrue(groups_p2p3_subdirectory.exists())
+        self.assertTrue(scratch2_p2p3_subdirectory.exists())
 
         # Test that AllocationUsers are created for PIs
         self.assertEqual(groups_allocation.allocationuser_set.count(), 1)
