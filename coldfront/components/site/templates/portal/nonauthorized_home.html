@@ -8,7 +8,7 @@
     <h1 class="text-center">Welcome to ColdFront</h1>
     <br>
 
-    <p><a class="btn btn-primary btn-block" href="{% url 'login' %}" role="button"><i class="fas fa-sign-in-alt" aria-hidden="true"></i> Log In</a></p>
+    <p><a class="btn btn-primary btn-block" href="{% url 'login' %}?next={{request.get_full_path}}" role="button"><i class="fas fa-sign-in-alt" aria-hidden="true"></i> Log In</a></p>
 
 
     <hr>
@@ -69,6 +69,10 @@
     icon.toggleClass("fa-plus fa-minus");
     });
   </script>
-
-  
+  <script>
+    var ref = document.referrer
+    if (ref.includes("idp")) {
+      window.location.reload()
+    }
+  </script>
 {% endblock %}
