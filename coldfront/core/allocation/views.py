@@ -2220,7 +2220,7 @@ class AllocationInvoiceListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('allocation.can_manage_invoice'):
+        if self.request.user.is_staff and self.request.user.has_perm('allocation.can_manage_invoice'):
             return True
 
         messages.error(
@@ -2255,8 +2255,11 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('allocation.can_manage_invoice'):
+        if self.request.user.is_staff and self.request.user.has_perm('allocation.can_manage_invoice'):
             return True
+
+        messages.error(
+            self.request, 'You do not have permission to manage invoices.')
 
     def get(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
@@ -2319,7 +2322,7 @@ class AllocationAllInvoicesListView(LoginRequiredMixin, UserPassesTestMixin, Lis
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('allocation.can_manage_invoice'):
+        if self.request.user.is_staff and self.request.user.has_perm('allocation.can_manage_invoice'):
             return True
 
         messages.error(
@@ -2327,7 +2330,12 @@ class AllocationAllInvoicesListView(LoginRequiredMixin, UserPassesTestMixin, Lis
         return False
 
     def get_queryset(self):
-        invoices = AllocationInvoice.objects.all()
+        if self.request.user.is_superuser:
+            invoices = AllocationInvoice.objects.all()
+        else:
+            invoices = AllocationInvoice.objects.filter(
+                allocation__resources__review_groups__in=list(self.request.user.groups.all())
+            )
 
         return invoices
 
@@ -2340,7 +2348,7 @@ class AllocationAllInvoicesDetailView(LoginRequiredMixin, UserPassesTestMixin, T
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('allocation.can_manage_invoice'):
+        if self.request.user.is_staff and self.request.user.has_perm('allocation.can_manage_invoice'):
             return True
 
         messages.error(
