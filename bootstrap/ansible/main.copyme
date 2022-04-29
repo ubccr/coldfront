@@ -40,6 +40,15 @@ wsgi_conf_file_name: cf_mybrc_wsgi.conf
 # TODO: For LRC, use the substring 'cf_lrc'.
 wsgi_conf_log_prefix: cf_brc
 
+# Django Flags settings.
+# TODO: For LRC, disable BRC and enable LRC.
+flag_brc_enabled: True
+flag_lrc_enabled: False
+# The number of the month in which users should be able to request renewal for
+# the next allowance year.
+# TODO: For LRC, set the month number to 9 (September).
+flag_next_period_renewal_requestable_month: 5
+
 # Portal settings.
 # TODO: For LRC, use the string "MyLRC".
 portal_name: "MyBRC"
