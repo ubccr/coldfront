@@ -1,11 +1,13 @@
 import datetime
 import textwrap
 
+from collections import namedtuple
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import MinLengthValidator
 from django.db import models
 from django.db.models import Q
+from django.utils import timezone
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
@@ -345,8 +347,6 @@ def savio_project_request_ica_extra_fields_schema():
     SavioProjectAllocationRequest.extra_fields for Instructional Compute
     Allowance (ICA) projects."""
     return {
-        'semester': '',
-        'year': '',
         'num_students': 0,
         'num_gsis': 0,
         'manager_experience_description': '',
@@ -439,6 +439,10 @@ class SavioProjectAllocationRequest(TimeStampedModel):
     allocation_type = models.CharField(
         max_length=16, choices=ALLOCATION_TYPE_CHOICES)
 
+    allocation_period = models.ForeignKey(
+        'allocation.AllocationPeriod', blank=True, null=True,
+        on_delete=models.CASCADE, related_name='allocation_period')
+
     pi = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='savio_pi')
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
@@ -447,9 +451,63 @@ class SavioProjectAllocationRequest(TimeStampedModel):
     status = models.ForeignKey(
         ProjectAllocationRequestStatusChoice, on_delete=models.CASCADE,
         verbose_name='Status')
+
+    request_time = models.DateTimeField(
+        null=True, blank=True, default=timezone.now)
+    approval_time = models.DateTimeField(null=True, blank=True)
+    completion_time = models.DateTimeField(null=True, blank=True)
+
     state = models.JSONField(default=savio_project_request_state_schema)
     extra_fields = models.JSONField(default=dict)
     history = HistoricalRecords()
+
+    def denial_reason(self):
+        """Return the reason why the request was denied, based on its
+        'state' field."""
+        if self.status.name != 'Denied':
+            raise ValueError(
+                f'Provided request has unexpected status '
+                f'{self.status.name}.')
+
+        state = self.state
+        eligibility = state['eligibility']
+        readiness = state['readiness']
+        other = state['other']
+
+        DenialReason = namedtuple(
+            'DenialReason', 'category justification timestamp')
+
+        if other['timestamp']:
+            category = 'Other'
+            justification = other['justification']
+            timestamp = other['timestamp']
+        elif eligibility['status'] == 'Denied':
+            category = 'PI Ineligible'
+            justification = eligibility['justification']
+            timestamp = eligibility['timestamp']
+        elif readiness['status'] == 'Denied':
+            category = 'Readiness Criteria Unsatisfied'
+            justification = readiness['justification']
+            timestamp = readiness['timestamp']
+        else:
+            raise ValueError('Provided request has an unexpected state.')
+
+        return DenialReason(
+            category=category, justification=justification,
+            timestamp=timestamp)
+
+    def latest_update_timestamp(self):
+        """Return the latest timestamp stored in the request's 'state'
+        field, or the empty string.
+
+        The expected values are ISO 8601 strings, or the empty string,
+        so taking the maximum should provide the correct output."""
+        state = self.state
+        max_timestamp = ''
+        for field in state:
+            max_timestamp = max(
+                max_timestamp, state[field].get('timestamp', ''))
+        return max_timestamp
 
     def save(self, *args, **kwargs):
         # On creation, set the requested_name.
@@ -489,6 +547,44 @@ class VectorProjectAllocationRequest(TimeStampedModel):
             self.state['setup']['name_change']['requested_name'] = \
                 self.project.name
         super().save(*args, **kwargs)
+
+    def denial_reason(self):
+        """Return the reason why the request was denied, based on its
+        'state' field."""
+        if self.status.name != 'Denied':
+            raise ValueError(
+                f'Provided request has unexpected status '
+                f'{self.status.name}.')
+
+        state = self.state
+        eligibility = state['eligibility']
+
+        DenialReason = namedtuple(
+            'DenialReason', 'category justification timestamp')
+
+        if eligibility['status'] == 'Denied':
+            category = 'Requester Ineligible'
+            justification = eligibility['justification']
+            timestamp = eligibility['timestamp']
+        else:
+            raise ValueError('Provided request has an unexpected state.')
+
+        return DenialReason(
+            category=category, justification=justification,
+            timestamp=timestamp)
+
+    def latest_update_timestamp(self):
+        """Return the latest timestamp stored in the request's 'state'
+        field, or the empty string.
+
+        The expected values are ISO 8601 strings, or the empty string,
+        so taking the maximum should provide the correct output."""
+        state = self.state
+        max_timestamp = ''
+        for field in state:
+            max_timestamp = max(
+                max_timestamp, state[field].get('timestamp', ''))
+        return max_timestamp
 
     def __str__(self):
         return (

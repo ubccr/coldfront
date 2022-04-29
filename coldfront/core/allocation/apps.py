@@ -6,3 +6,4 @@ class AllocationConfig(AppConfig):
 
     def ready(self):
         import coldfront.core.allocation.signals
+        import coldfront.core.allocation.signals_.renewal_signals

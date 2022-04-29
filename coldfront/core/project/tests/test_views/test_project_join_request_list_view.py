@@ -136,7 +136,7 @@ class TestProjectJoinRequestListView(TestCase):
     def assert_request_shown(self, response, request):
         self.assertContains(response, request.reason)
         request_date = request.created.astimezone(
-            pytz.timezone('America/Los_Angeles')).strftime('%b. %d, %Y')
+            pytz.timezone(settings.DISPLAY_TIME_ZONE)).strftime('%b. %d, %Y')
         self.assertContains(response, request_date)
         self.assertContains(response, request.project_user.user.username)
         self.assertContains(response, request.project_user.user.email)

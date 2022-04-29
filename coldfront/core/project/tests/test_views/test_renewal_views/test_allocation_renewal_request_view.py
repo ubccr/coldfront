@@ -1,9 +1,11 @@
+from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
+from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 from django.urls import reverse
@@ -22,8 +24,7 @@ class TestAllocationRenewalRequestView(TestBase):
 
     @staticmethod
     def renew_pi_allocation_url():
-        """Return the URL for the requesting to renew a PI's
-        allocation."""
+        """Return the URL for requesting to renew a PI's allocation."""
         return reverse('renew-pi-allocation')
 
     def test_post_sets_request_request_time(self):
@@ -48,20 +49,30 @@ class TestAllocationRenewalRequestView(TestBase):
 
         pre_time = utc_now_offset_aware()
 
+        allocation_period = get_current_allowance_year_period()
+
+        view_name = 'allocation_renewal_request_view'
+        current_step_key = f'{view_name}-current_step'
+
+        allocation_period_form_data = {
+            '0-allocation_period': allocation_period.pk,
+            current_step_key: '0',
+        }
         pi_selection_form_data = {
-            '0-PI': project_user.pk,
-            'allocation_renewal_request_view-current_step': '0',
+            '1-PI': project_user.pk,
+            current_step_key: '1',
         }
         pooling_preference_form_data = {
-            '1-preference':
+            '2-preference':
                 AllocationRenewalRequest.UNPOOLED_TO_UNPOOLED,
-            'allocation_renewal_request_view-current_step': '1',
+            current_step_key: '2',
         }
         review_and_submit_form_data = {
-            '5-confirmation': True,
-            'allocation_renewal_request_view-current_step': '5',
+            '6-confirmation': True,
+            current_step_key: '6',
         }
         form_data = [
+            allocation_period_form_data,
             pi_selection_form_data,
             pooling_preference_form_data,
             review_and_submit_form_data,

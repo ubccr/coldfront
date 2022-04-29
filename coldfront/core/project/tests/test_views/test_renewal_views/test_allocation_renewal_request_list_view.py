@@ -5,7 +5,7 @@ from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
-from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
+from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 from django.contrib.auth.models import User
@@ -55,7 +55,7 @@ class TestViewMixin(object):
     def create_project_and_request(project_name, requester_and_pi):
         """Create an active Project with the given name, add the given
         user to it, and create an AllocationRenewalRequest with 'Under
-        Review' status."""
+        Review' status. Return both."""
         active_project_status = ProjectStatusChoice.objects.get(name='Active')
         project = Project.objects.create(
             name=project_name,
@@ -70,7 +70,7 @@ class TestViewMixin(object):
             role=pi_role,
             status=active_project_user_status,
             user=requester_and_pi)
-        allocation_period = get_current_allocation_period()
+        allocation_period = get_current_allowance_year_period()
         under_review_request_status = \
             AllocationRenewalRequestStatusChoice.objects.get(
                 name='Under Review')
@@ -119,9 +119,18 @@ class TestAllocationRenewalRequestCompletedListView(TestViewMixin, TestBase):
         """Set up test data."""
         super().setUp()
         self.url = self.completed_url
-        completed_status = AllocationRenewalRequestStatusChoice.objects.get(
-            name='Complete')
-        AllocationRenewalRequest.objects.update(status=completed_status)
+        self.request_a.status = \
+            AllocationRenewalRequestStatusChoice.objects.get(name='Approved')
+        self.request_a.save()
+        self.request_b.status = \
+            AllocationRenewalRequestStatusChoice.objects.get(name='Complete')
+        self.request_b.save()
+
+    def test_approved_requests_displayed_as_approved_scheduled(self):
+        """Test that requests with the 'Approved' status are displayed
+        as 'Approved - Scheduled'."""
+        response = self.client.get(self.completed_url)
+        self.assertContains(response, 'Approved - Scheduled')
 
     def test_pending_list_empty(self):
         """Test that no requests appear in the pending view, since all
@@ -143,13 +152,9 @@ class TestAllocationRenewalRequestPendingListView(TestViewMixin, TestBase):
         """Set up test data."""
         super().setUp()
         self.url = self.pending_url
-        self.request_a.status = \
-            AllocationRenewalRequestStatusChoice.objects.get(
-                name='Under Review')
-        self.request_a.save()
-        self.request_b.status = \
-            AllocationRenewalRequestStatusChoice.objects.get(name='Approved')
-        self.request_b.save()
+        under_review_status = AllocationRenewalRequestStatusChoice.objects.get(
+            name='Under Review')
+        AllocationRenewalRequest.objects.update(status=under_review_status)
 
     def test_completed_list_empty(self):
         """Test that no requests appear in the completed view, since all

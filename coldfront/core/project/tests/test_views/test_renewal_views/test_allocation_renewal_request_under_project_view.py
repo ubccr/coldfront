@@ -4,9 +4,11 @@ from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
+from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 from django.urls import reverse
+from http import HTTPStatus
 
 
 class TestAllocationRenewalRequestUnderProjectView(TestBase):
@@ -53,14 +55,41 @@ class TestAllocationRenewalRequestUnderProjectView(TestBase):
 
         pre_time = utc_now_offset_aware()
 
-        url = self.project_renew_url(project.pk)
-        data = {
-            'PI': project_user.pk,
+        allocation_period = get_current_allowance_year_period()
+
+        view_name = 'allocation_renewal_request_under_project_view'
+        current_step_key = f'{view_name}-current_step'
+
+        allocation_period_form_data = {
+            '0-allocation_period': allocation_period.pk,
+            current_step_key: '0',
         }
-        response = self.client.post(url, data)
-        self.assertRedirects(response, self.project_detail_url(project.pk))
+        pi_selection_form_data = {
+            '1-PI': project_user.pk,
+            current_step_key: '1',
+        }
+        review_and_submit_form_data = {
+            '2-confirmation': True,
+            current_step_key: '2',
+        }
+        form_data = [
+            allocation_period_form_data,
+            pi_selection_form_data,
+            review_and_submit_form_data,
+        ]
+
+        url = self.project_renew_url(project.pk)
+        for i, data in enumerate(form_data):
+            response = self.client.post(url, data)
+            if i == len(form_data) - 1:
+                self.assertRedirects(
+                    response, self.project_detail_url(project.pk))
+            else:
+                self.assertEqual(response.status_code, HTTPStatus.OK)
 
         post_time = utc_now_offset_aware()
 
-        request = AllocationRenewalRequest.objects.first()
+        requests = AllocationRenewalRequest.objects.all()
+        self.assertEqual(requests.count(), 1)
+        request = requests.first()
         self.assertTrue(pre_time <= request.request_time <= post_time)

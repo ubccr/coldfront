@@ -7,8 +7,8 @@ from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
-from coldfront.core.project.utils import ProjectDenialRunner
-from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
+from coldfront.core.project.utils_.new_project_utils import ProjectDenialRunner
+from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 
@@ -73,7 +73,7 @@ class TestProjectDenialRunner(TestBase):
         allocation_renewal_request = AllocationRenewalRequest.objects.create(
             requester=self.user,
             pi=self.user,
-            allocation_period=get_current_allocation_period(),
+            allocation_period=get_current_allowance_year_period(),
             status=under_review_request_status,
             pre_project=old_project,
             post_project=new_project,
