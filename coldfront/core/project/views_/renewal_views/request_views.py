@@ -425,7 +425,7 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
                 str(project_selection_form_step))
             if data:
                 dictionary.update(data)
-                dictionary['requested_project'] = data['project'].name
+                dictionary['requested_project'] = data['project']
 
         new_project_details_form_step = self.step_numbers_by_form_name[
             'new_project_details']
