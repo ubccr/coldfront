@@ -37,7 +37,8 @@ from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationRemoveUserFormset,
                                              AllocationReviewUserForm,
                                              AllocationSearchForm,
-                                             AllocationUpdateForm)
+                                             AllocationUpdateForm,
+                                             AllocationInvoiceSearchForm)
 from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationAttribute,
                                               AllocationAttributeType,
@@ -2316,6 +2317,7 @@ class AllocationAllInvoicesListView(LoginRequiredMixin, UserPassesTestMixin, Lis
     model = AllocationInvoice
     template_name = 'allocation/allocation_all_invoices_list.html'
     context_object_name = 'allocation_invoice_list'
+    paginate_by = 25
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -2330,14 +2332,111 @@ class AllocationAllInvoicesListView(LoginRequiredMixin, UserPassesTestMixin, Lis
         return False
 
     def get_queryset(self):
-        if self.request.user.is_superuser:
-            invoices = AllocationInvoice.objects.all()
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            if direction == 'asc':
+                direction = ''
+            elif direction == 'des':
+                direction = '-'
+            order_by = direction + order_by
         else:
-            invoices = AllocationInvoice.objects.filter(
-                allocation__resources__review_groups__in=list(self.request.user.groups.all())
-            )
+            order_by = 'id'
+
+        allocation_invoice_search_form = AllocationInvoiceSearchForm(self.request.GET)
+
+        if allocation_invoice_search_form.is_valid():
+            data = allocation_invoice_search_form.cleaned_data
+
+            if self.request.user.is_superuser:
+                invoices = AllocationInvoice.objects.all().order_by(order_by)
+            else:
+                invoices = AllocationInvoice.objects.filter(
+                    allocation__resources__review_groups__in=list(self.request.user.groups.all())
+                ).order_by(order_by)
+
+            # Resource Type
+            if data.get('resource_type'):
+                invoices = invoices.filter(
+                    allocation__resources__resource_type=data.get('resource_type')
+                )
+
+            # Resource Name
+            if data.get('resource_name'):
+                invoices = invoices.filter(
+                    allocation__resources__in=data.get('resource_name')
+                )
+
+            # Start Date
+            if data.get('start_date'):
+                invoices = invoices.filter(
+                    created__gt=data.get('start_date')
+                ).order_by('created')
+
+            # End Date
+            if data.get('end_date'):
+                invoices = invoices.filter(
+                    created__lt=data.get('end_date')
+                ).order_by('created')
+
+        else:
+            if self.request.user.is_superuser:
+                invoices = AllocationInvoice.objects.all().order_by(order_by)
+            else:
+                invoices = AllocationInvoice.objects.filter(
+                    allocation__resources__review_groups__in=list(self.request.user.groups.all())
+                ).order_by(order_by)
 
         return invoices
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        allocation_invoice_search_form = AllocationInvoiceSearchForm(self.request.GET)
+        if allocation_invoice_search_form.is_valid():
+            context['allocation_invoice_search_form'] = allocation_invoice_search_form
+            data = allocation_invoice_search_form.cleaned_data
+            filter_parameters = ''
+            for key, value in data.items():
+                if value:
+                    if isinstance(value, QuerySet):
+                        for ele in value:
+                            filter_parameters += '{}={}&'.format(key, ele.pk)
+                    elif hasattr(value, 'pk'):
+                        filter_parameters += '{}={}&'.format(key, value.pk)
+                    else:
+                        filter_parameters += '{}={}&'.format(key, value)
+        else:
+            filter_parameters = ''
+            context['allocation_invoice_search_form'] - AllocationInvoiceSearchForm()
+
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            filter_parameters_with_order_by = filter_parameters + \
+                'order_by={}&direction={}&'.format(order_by, direction)
+        else:
+            filter_parameters_with_order_by = filter_parameters
+
+        if filter_parameters:
+            context['expand_accordion'] = 'show'
+
+        context['filter_parameters'] = filter_parameters
+        context['filter_parameters_with_order_by'] = filter_parameters_with_order_by
+
+        allocation_invoice_list = context.get('allocation_invoice_list')
+        paginator = Paginator(allocation_invoice_list, self.paginate_by)
+        
+        page = self.request.GET.get('page')
+
+        try:
+            allocation_invoice_list = paginator.page(page)
+        except PageNotAnInteger:
+            allocation_invoice_list = paginator.page(1)
+        except EmptyPage:
+            allocation_invoice_list = paginator.page(paginator.num_pages)
+
+        return context
 
 
 class AllocationAllInvoicesDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):

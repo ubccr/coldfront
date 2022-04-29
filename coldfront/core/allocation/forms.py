@@ -562,6 +562,30 @@ class AllocationSearchForm(forms.Form):
     show_all_allocations = forms.BooleanField(initial=False, required=False)
 
 
+class AllocationInvoiceSearchForm(forms.Form):
+    resource_type = forms.ModelChoiceField(
+        label='Resource Type',
+        queryset=ResourceType.objects.all().order_by('name'),
+        required=False
+    )
+    resource_name = forms.ModelMultipleChoiceField(
+        label='Resource Name',
+        queryset=Resource.objects.filter(is_allocatable=True).order_by('name'),
+        required=False
+    )
+    start_date = forms.DateField(
+        label='Start Date',
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        required=False
+    )
+    end_date = forms.DateField(
+        label='End Date',
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        required=False
+    )
+
+
+
 class AllocationReviewUserForm(forms.Form):
     # No relation to AllocationUserReview model.
     ALLOCATION_REVIEW_USER_CHOICES = (
