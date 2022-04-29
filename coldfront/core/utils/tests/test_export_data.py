@@ -866,13 +866,7 @@ class TestSurveyResponses(TestBase):
     """ Test class to test export data subcommand survey_responses runs correctly """
 
     def setUp(self):
-        out, err = StringIO(), StringIO()
-        commands = ['add_default_project_choices', 'import_field_of_science_data']
-
-        sys.stdout = open(os.devnull, 'w')
-        for command in commands:
-            call_command(command, stdout=out, stderr=err)
-        sys.stdout = sys.__stdout__
+        super().setUp()
 
         # create dummy survey responses
         fixtures = []
