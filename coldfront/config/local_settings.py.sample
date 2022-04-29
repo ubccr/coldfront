@@ -64,6 +64,10 @@ CENTER_PROJECT_RENEWAL_HELP_URL = CENTER_BASE_URL + '/help'
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 
+# TIME_ZONE determines which time zone datetimes are stored in.
+# DISPLAY_TIME_ZONE determines which time zone they are displayed in.
+DISPLAY_TIME_ZONE = 'America/Los_Angeles'
+
 #------------------------------------------------------------------------------
 # Logging
 #------------------------------------------------------------------------------
@@ -389,8 +393,11 @@ GOOGLE_OAUTH2_KEY_FILE = "/tmp/credentials.json"
 #------------------------------------------------------------------------------
 
 FLAGS = {
-    'BRC_ONLY': [],
-    'LRC_ONLY': [],
+    'ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE': [
+        {'condition': 'during month', 'value': '5'},
+    ],
+    'BRC_ONLY': [{'condition': 'boolean', 'value': True}],
+    'LRC_ONLY': [{'condition': 'boolean', 'value': False}],
 }
 
 # -----------------------------------------------------------------------------

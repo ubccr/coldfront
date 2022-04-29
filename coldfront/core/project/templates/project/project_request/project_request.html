@@ -39,112 +39,20 @@ Project Request
 <div class="row">
   <div class="col-lg-6 mt-2">
     <h2>Savio</h2>
-    {% if savio_requests %}
-      <table class="table">
-        <thead>
-          <tr>
-            <th scope="col">Name</th>
-            <th scope="col">PI</th>
-            <th scope="col">Pooling</th>
-            <th scope="col">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for savio_request in savio_requests %}
-            <tr>
-              <td>
-                <a href="{% url 'savio-project-request-detail' savio_request.pk %}">
-                  {{ savio_request.project.name }}
-                </a>
-              </td>
-              {% with pi=savio_request.pi %}
-                <td>{{ pi.first_name }} {{ pi.last_name }} ({{ pi.email }})</td>
-              {% endwith %}
-              <td>
-                {% if savio_request.pool %}
-                  Yes
-                {% else %}
-                  No
-                {% endif %}
-              </td>
-              {% with status=savio_request.status.name %}
-                <td>
-                  {% if status == 'Under Review' %}
-                    <span class="badge badge-warning">{{ status }}</span>
-                  {% elif status == 'Approved - Processing' %}
-                    <span class="badge badge-warning">{{ status }}</span>
-                  {% elif status == 'Approved - Complete' %}
-                    <span class="badge badge-success">{{ status }}</span>
-                  {% else %}
-                    <span class="badge badge-danger">{{ status }}</span>
-                  {% endif %}
-                </td>
-              {% endwith %}
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    {% else %}
-      <div class="alert alert-info" role="alert">
-        <i class="fa fa-info-circle" aria-hidden="true"></i>
-        No pending requests.
-      </div>
-    {% endif %}
+    <p>
+      You may view your
+      <a href="{% url 'savio-project-pending-request-list' %}">pending</a> and
+      <a href="{% url 'savio-project-completed-request-list' %}">completed</a>
+      requests.
+    </p>
   </div>
   <div class="col-lg-6 mt-2">
     <h2>Vector</h2>
-    {% if vector_requests %}
-      <table class="table">
-        <thead>
-          <tr>
-            <th scope="col">Name</th>
-            <th scope="col">PI</th>
-            <th scope="col">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for vector_request in vector_requests %}
-            <tr>
-              <td>
-                <a href="{% url 'vector-project-request-detail' vector_request.pk %}">
-                  {{ vector_request.project.name }}
-                </a>
-              </td>
-              {% with pi=vector_request.pi %}
-                <td>{{ pi.first_name }} {{ pi.last_name }} ({{ pi.email }})</td>
-              {% endwith %}
-              {% with status=vector_request.status.name %}
-                <td>
-                  {% if status == 'Under Review' %}
-                    <span class="badge badge-warning">{{ status }}</span>
-                  {% elif status == 'Approved - Processing' %}
-                    <span class="badge badge-warning">{{ status }}</span>
-                  {% elif status == 'Approved - Complete' %}
-                    <span class="badge badge-success">{{ status }}</span>
-                  {% else %}
-                    <span class="badge badge-danger">{{ status }}</span>
-                  {% endif %}
-                </td>
-              {% endwith %}
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    {% else %}
-      <div class="alert alert-info" role="alert">
-        <i class="fa fa-info-circle" aria-hidden="true"></i>
-        No pending requests.
-      </div>
-    {% endif %}
-  </div>
-</div>
-
-<div class="row">
-  <div class="col-lg-12 mt-2">
     <p>
-      You may also view completed requests for
-      <a href="{% url 'savio-project-completed-request-list' %}">Savio</a> and
-      <a href="{% url 'vector-project-completed-request-list' %}">Vector</a>.
+      You may view your
+      <a href="{% url 'vector-project-pending-request-list' %}">pending</a> and
+      <a href="{% url 'vector-project-completed-request-list' %}">completed</a>
+      requests.
     </p>
   </div>
 </div>

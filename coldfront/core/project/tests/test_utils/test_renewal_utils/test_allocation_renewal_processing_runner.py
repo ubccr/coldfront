@@ -1,10 +1,8 @@
-from coldfront.api.statistics.utils import create_project_allocation
 from coldfront.api.statistics.utils import create_user_project_allocation
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationAttributeUsage
-from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
 from coldfront.core.allocation.models import AllocationStatusChoice
@@ -13,22 +11,19 @@ from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.allocation.models import AllocationUserStatusChoice
 from coldfront.core.allocation.utils import get_project_compute_allocation
-from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
-from coldfront.core.project.utils import ProjectClusterAccessRequestRunner
-from coldfront.core.project.utils import SavioProjectApprovalRunner
+from coldfront.core.project.tests.test_utils.test_renewal_utils.utils import TestRunnerMixinBase
+from coldfront.core.project.utils_.new_project_utils import SavioProjectProcessingRunner
 from coldfront.core.project.utils_.renewal_utils import AllocationRenewalProcessingRunner
-from coldfront.core.resource.models import Resource
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import utc_now_offset_aware
-from coldfront.core.utils.tests.test_base import TestBase
 from datetime import date
 from datetime import timedelta
 from decimal import Decimal
@@ -40,146 +35,8 @@ from django.test import override_settings
 from django.test import TestCase
 
 
-class TestRunnerMixin(object):
+class TestRunnerMixin(TestRunnerMixinBase):
     """A mixin for testing AllocationRenewalProcessingRunner."""
-
-    def setUp(self):
-        """Set up test data."""
-        TestBase.call_setup_commands()
-
-        self.allocation_period = AllocationPeriod.objects.get(name='AY21-22')
-
-        # Create a requester user and multiple PI users.
-        self.requester = User.objects.create(
-            email='requester@email.com',
-            first_name='Requester',
-            last_name='User',
-            username='requester')
-        for i in range(4):
-            username = f'pi{i}'
-            user = User.objects.create(
-                email=f'{username}@email.com',
-                first_name=f'PI{i}',
-                last_name='User',
-                username=username)
-            # Set self.pi{i} to the created user.
-            setattr(self, username, user)
-            # Set each PI's is_pi status.
-            user_profile = UserProfile.objects.get(user=user)
-            user_profile.is_pi = True
-            user_profile.save()
-
-        active_project_status = ProjectStatusChoice.objects.get(name='Active')
-        inactive_project_status = ProjectStatusChoice.objects.get(
-            name='Inactive')
-        active_project_user_status = ProjectUserStatusChoice.objects.get(
-            name='Active')
-        manager_project_user_role = ProjectUserRoleChoice.objects.get(
-            name='Manager')
-        pi_project_user_role = ProjectUserRoleChoice.objects.get(
-            name='Principal Investigator')
-
-        # Create Projects.
-        self.unpooled_project0 = Project.objects.create(
-            name='unpooled_project0', status=active_project_status)
-        self.unpooled_project1 = Project.objects.create(
-            name='unpooled_project1', status=inactive_project_status)
-        self.pooled_project0 = Project.objects.create(
-            name='pooled_project0', status=active_project_status)
-        self.pooled_project1 = Project.objects.create(
-            name='pooled_project1', status=active_project_status)
-
-        # Add the designated PIs to each Project.
-        self.projects_and_pis = {
-            self.unpooled_project0: [self.pi0],
-            self.unpooled_project1: [self.pi1],
-            self.pooled_project0: [self.pi0, self.pi1],
-            self.pooled_project1: [self.pi2, self.pi3],
-        }
-        for project, pi_users in self.projects_and_pis.items():
-            for pi_user in pi_users:
-                ProjectUser.objects.create(
-                    project=project,
-                    user=pi_user,
-                    role=pi_project_user_role,
-                    status=active_project_user_status)
-            # Add the requester as a manager on each Project.
-            ProjectUser.objects.create(
-                project=project,
-                user=self.requester,
-                role=manager_project_user_role,
-                status=active_project_user_status)
-
-        # Create a compute Allocation for each Project.
-        self.project_service_units = {}
-        self.projects_and_allocations = {}
-        for i, project in enumerate(self.projects_and_pis.keys()):
-            value = Decimal(str(i * 1000))
-            allocation = create_project_allocation(project, value).allocation
-            self.project_service_units[project] = value
-            self.projects_and_allocations[project] = allocation
-
-        # Create AllocationUsers on the compute Allocation.
-        active_allocation_user_status = AllocationUserStatusChoice.objects.get(
-            name='Active')
-        for project, pi_users in self.projects_and_pis.items():
-            allocation = self.projects_and_allocations[project]
-            for pi_user in pi_users:
-                AllocationUser.objects.create(
-                    allocation=allocation,
-                    user=pi_user,
-                    status=active_allocation_user_status)
-            # For the requesters only, also create cluster access requests and
-            # approve them.
-            project_user_obj = ProjectUser.objects.get(
-                project=project, user=self.requester)
-            request_runner = ProjectClusterAccessRequestRunner(
-                project_user_obj)
-            runner_result = request_runner.run()
-
-            self.assertTrue(runner_result.success)
-        # Clear the mail outbox.
-        mail.outbox = []
-
-        # This should be set by the subclasses.
-        self.request_obj = None
-
-    def assert_allocation_service_units_value(self, allocation, expected):
-        """Assert that the given Allocation has an AllocationAttribute
-        with type 'Service Units' and the given expected value."""
-        allocation_attribute_type = AllocationAttributeType.objects.get(
-            name='Service Units')
-        kwargs = {
-            'allocation_attribute_type': allocation_attribute_type,
-        }
-        attributes = allocation.allocationattribute_set.filter(**kwargs)
-        self.assertEqual(attributes.count(), 1)
-        self.assertEqual(str(expected), attributes.first().value)
-
-    def assert_pooling_preference_case(self, expected):
-        """Assert that the pooling preference case of the request_obj is
-        the provided, expected one."""
-        actual = self.request_obj.get_pooling_preference_case()
-        self.assertEqual(expected, actual)
-
-    def create_request(self, pi=None, pre_project=None, post_project=None,
-                       new_project_request=None):
-        """Create and return an AllocationRenewalRequest with the given
-        parameters."""
-        assert pi and pre_project and post_project
-        approved_renewal_request_status = \
-            AllocationRenewalRequestStatusChoice.objects.get(name='Approved')
-        kwargs = {
-            'requester': self.requester,
-            'pi': pi,
-            'allocation_period': self.allocation_period,
-            'status': approved_renewal_request_status,
-            'pre_project': pre_project,
-            'post_project': post_project,
-            'request_time': utc_now_offset_aware(),
-            'new_project_request': new_project_request,
-        }
-        return AllocationRenewalRequest.objects.create(**kwargs)
 
     def test_cluster_access_requests_created(self):
         """Test that the runner creates an AllocationUserAttribute with
@@ -957,7 +814,11 @@ class TestPreProjectDeactivationMixin(object):
             role=pi_role,
             status=active_status)
         request_ = self.create_request(
-            pi=pi_not_on_project, pre_project=project, post_project=project)
+            status=AllocationRenewalRequestStatusChoice.objects.get(
+                name='Approved'),
+            pi=pi_not_on_project,
+            pre_project=project,
+            post_project=project)
         runner = AllocationRenewalProcessingRunner(request_, num_service_units)
         runner.run()
 
@@ -997,12 +858,13 @@ class TestPreProjectDeactivationMixin(object):
         new_project_request = SavioProjectAllocationRequest.objects.create(
             requester=self.requester,
             allocation_type=SavioProjectAllocationRequest.FCA,
+            allocation_period=request.allocation_period,
             pi=pi_not_on_project,
             pool=True,
             project=project,
             survey_answers={},
             status=under_review_request_status)
-        runner = SavioProjectApprovalRunner(
+        runner = SavioProjectProcessingRunner(
             new_project_request, num_service_units)
         runner.run()
 
@@ -1042,6 +904,8 @@ class TestUnpooledToUnpooled(TestRunnerMixin, TestCase):
         """Set up test data."""
         super().setUp()
         self.request_obj = self.create_request(
+            status=AllocationRenewalRequestStatusChoice.objects.get(
+                name='Approved'),
             pi=self.pi0,
             pre_project=self.unpooled_project0,
             post_project=self.unpooled_project0)
@@ -1062,6 +926,8 @@ class TestUnpooledToPooled(TestPreProjectDeactivationMixin, TestRunnerMixin,
         """Set up test data."""
         super().setUp()
         self.request_obj = self.create_request(
+            status=AllocationRenewalRequestStatusChoice.objects.get(
+                name='Approved'),
             pi=self.pi0,
             pre_project=self.unpooled_project0,
             post_project=self.pooled_project1)
@@ -1081,6 +947,8 @@ class TestPooledToPooledSame(TestRunnerMixin, TestCase):
         """Set up test data."""
         super().setUp()
         self.request_obj = self.create_request(
+            status=AllocationRenewalRequestStatusChoice.objects.get(
+                name='Approved'),
             pi=self.pi0,
             pre_project=self.pooled_project0,
             post_project=self.pooled_project0)
@@ -1102,6 +970,8 @@ class TestPooledToPooledDifferent(TestPreProjectDeactivationMixin,
         """Set up test data."""
         super().setUp()
         self.request_obj = self.create_request(
+            status=AllocationRenewalRequestStatusChoice.objects.get(
+                name='Approved'),
             pi=self.pi0,
             pre_project=self.pooled_project0,
             post_project=self.pooled_project1)
@@ -1122,6 +992,8 @@ class TestPooledToUnpooledOld(TestPreProjectDeactivationMixin,
         """Set up test data."""
         super().setUp()
         self.request_obj = self.create_request(
+            status=AllocationRenewalRequestStatusChoice.objects.get(
+                name='Approved'),
             pi=self.pi0,
             pre_project=self.pooled_project0,
             post_project=self.unpooled_project0)
@@ -1144,6 +1016,8 @@ class TestPooledToUnpooledNew(TestPreProjectDeactivationMixin,
         new_project_request = \
             self.simulate_new_project_allocation_request_processing()
         self.request_obj = self.create_request(
+            status=AllocationRenewalRequestStatusChoice.objects.get(
+                name='Approved'),
             pi=self.pi0,
             pre_project=self.pooled_project0,
             post_project=new_project_request.project,
@@ -1152,39 +1026,12 @@ class TestPooledToUnpooledNew(TestPreProjectDeactivationMixin,
     def simulate_new_project_allocation_request_processing(self):
         """Create a new Project and simulate its processing. Return the
         created SavioProjectAllocationRequest."""
-        # Create a new Project.
-        new_project_name = 'unpooled_project2'
-        new_project_status = ProjectStatusChoice.objects.get(name='New')
-        new_project = Project.objects.create(
-            name=new_project_name,
-            status=new_project_status,
-            title=new_project_name,
-            description=f'Description of {new_project_name}.')
-
-        # Create a compute Allocation for the new Project.
-        new_allocation_status = AllocationStatusChoice.objects.get(name='New')
-        allocation = Allocation.objects.create(
-            project=new_project, status=new_allocation_status)
-        resource = Resource.objects.get(name='Savio Compute')
-        allocation.resources.add(resource)
-        allocation.save()
-
-        # Create an 'Under Review' SavioProjectAllocationRequest for the new
-        # Project.
-        under_review_request_status = \
-            ProjectAllocationRequestStatusChoice.objects.get(
-                name='Under Review')
-        new_project_request = SavioProjectAllocationRequest.objects.create(
-            requester=self.requester,
-            allocation_type=SavioProjectAllocationRequest.FCA,
-            pi=self.pi0,
-            project=new_project,
-            survey_answers={},
-            status=under_review_request_status)
+        new_project_request = self.create_under_review_new_project_request()
+        new_project = new_project_request.project
 
         # Process the request.
         num_service_units = Decimal('1000.00')
-        runner = SavioProjectApprovalRunner(
+        runner = SavioProjectProcessingRunner(
             new_project_request, num_service_units)
         runner.run()
         # Clear the mail outbox.

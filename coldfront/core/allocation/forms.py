@@ -1,4 +1,5 @@
 from django import forms
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.core.validators import MinLengthValidator
@@ -10,10 +11,13 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationStatusChoice,
                                               AllocationUserAttribute)
 from coldfront.core.allocation.utils import get_user_resources
+from coldfront.core.allocation.utils import prorated_allocation_amount
 from coldfront.core.project.models import Project
+from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.resource.models import Resource, ResourceType
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import import_from_settings
+from coldfront.core.utils.common import utc_now_offset_aware
 
 ALLOCATION_ACCOUNT_ENABLED = import_from_settings(
     'ALLOCATION_ACCOUNT_ENABLED', False)
@@ -263,3 +267,29 @@ class AllocationClusterAccountRequestActivationForm(forms.Form):
                 raise forms.ValidationError(
                     f'A user with cluster_uid {cluster_uid} already exists.')
         return cluster_uid
+
+
+class AllocationPeriodChoiceField(forms.ModelChoiceField):
+
+    def __init__(self, *args, **kwargs):
+        self.allocation_type = kwargs.pop('allocation_type', None)
+        super().__init__(*args, **kwargs)
+
+    def label_from_instance(self, obj):
+        num_service_units = prorated_allocation_amount(
+            self.allocation_value(), utc_now_offset_aware(), obj)
+        return (
+            f'{obj.name} ({obj.start_date} - {obj.end_date}) '
+            f'({num_service_units} SUs)')
+
+    def allocation_value(self):
+        """Return the default allocation value (Decimal) to use based on
+        the allocation type."""
+        if self.allocation_type == 'FCA':
+            return settings.FCA_DEFAULT_ALLOCATION
+        elif self.allocation_type == 'ICA':
+            return settings.ICA_DEFAULT_ALLOCATION
+        elif self.allocation_type == 'PCA':
+            return settings.PCA_DEFAULT_ALLOCATION
+        else:
+            return settings.ALLOCATION_MIN

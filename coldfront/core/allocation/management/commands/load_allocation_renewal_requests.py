@@ -1,10 +1,10 @@
+from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
-from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
 from coldfront.core.project.utils_.renewal_utils import has_non_denied_renewal_request
 from coldfront.core.user.models import EmailAddress
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -14,6 +14,7 @@ from decimal import Decimal
 from decimal import InvalidOperation
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
+from django.core.management.base import CommandError
 import json
 import logging
 import os
@@ -37,6 +38,10 @@ class Command(BaseCommand):
                 'name of the Project their allowance was renewed under.'),
             type=self.existent_file)
         parser.add_argument(
+            'alloacation_period_name',
+            help='The name of the AllocationPeriod the renewals are under.',
+            type=str)
+        parser.add_argument(
             '--dry_run', action='store_true',
             help='Display updates without performing them.')
 
@@ -44,7 +49,15 @@ class Command(BaseCommand):
         """Process the input JSON. Create requests for valid pairs, or
         display what requests would be created (if dry_run)."""
         file_path = options['json']
-        allocation_period = get_current_allocation_period()
+
+        allocation_period_name = options['allocation_period_name']
+        try:
+            allocation_period = AllocationPeriod.objects.get(
+                name=allocation_period_name)
+        except AllocationPeriod.DoesNotExist:
+            raise CommandError(
+                f'Invalid AllocationPeriod {allocation_period_name}.')
+
         valid, already_renewed, invalid = self.parse_input_file(
             file_path, allocation_period)
         self.process_valid_tuples(valid, allocation_period, options['dry_run'])

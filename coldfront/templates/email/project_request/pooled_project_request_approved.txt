@@ -1,6 +1,6 @@
 Dear {{ center_name }} user,
 
-Your request to pool your allocation with project {{ project_name }} has been approved, and the project has been set up on the cluster.
+Your request to pool your allocation with project {{ project_name }} under Allocation Period "{{ allocation_period.name }}" has been approved. When the request is processed on {{ allocation_period.start_date }}, {{ num_service_units }} will be added to the project, and you will gain the permission to manage the project. You will receive another notification then.
 
 You may manage your project at {{ project_url }}.
 

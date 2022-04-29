@@ -18,6 +18,8 @@ Savio Project Request Detail
       <span class="badge badge-warning" style="float: right;">{{ status }}</span>
     {% elif status == 'Approved - Processing' %}
       <span class="badge badge-warning" style="float: right;">{{ status }}</span>
+    {% elif status == 'Approved - Scheduled' %}
+      <span class="badge badge-warning" style="float: right;">{{ status }}</span>
     {% elif status == 'Approved - Complete' %}
       <span class="badge badge-success" style="float: right;">{{ status }}</span>
     {% else %}
@@ -65,9 +67,20 @@ Savio Project Request Detail
                     {% endif %}
                   </p>
                 {% elif status == 'Approved - Processing' %}
-                  <p>This request has been approved, and is currently being set up on the cluster.</p>
+                  <p>
+                    This request has been approved, and is currently being set
+                    up on the cluster.
+                  </p>
+                {% elif status == 'Approved - Scheduled' %}
+                  <p>
+                    This request has been approved, and final processing is
+                    scheduled for
+                    {{ savio_request.allocation_period.start_date }}.
+                  </p>
                 {% elif status == 'Approved - Complete' %}
-                  <p>This request has been approved, and is fully set up on the cluster.</p>
+                  <p>
+                    This request has been approved, and is fully processed.
+                  </p>
                 {% else %}
                   <p>This request has been denied. Below are specific details:</p>
                   <p>
@@ -105,7 +118,7 @@ Savio Project Request Detail
   </div>
 </div>
 
-{% if is_allowed_to_manage_request and savio_request.status.name not in 'Denied,Approved - Complete' %}
+{% if is_allowed_to_manage_request and savio_request.status.name not in 'Approved - Complete,Approved - Scheduled,Denied' %}
   <div class="card mb-3">
     <div class="card-header">
       <h2>
@@ -114,7 +127,26 @@ Savio Project Request Detail
       </h2>
     </div>
     <div class="card-body">
-      <p>This section, which is only visible for system administrators, activates this request. Please review the given information and complete the checklist in the following order before final approval. You may also deny the request for some other reason.</p>
+      <p>
+        This section, which is only visible for system administrators,
+        manages this request. Please review the given information and complete
+        the checklist in the following order before final approval. You may
+        also deny the request for some other reason.
+      </p>
+      {% with allocation_period=savio_request.allocation_period %}
+        {% if has_allocation_period_started %}
+          <p>
+            If approved, the request will be processed immediately, since its
+            Allocation Period ({{ allocation_period.name }}) has already begun.
+          </p>
+        {% else %}
+          <p>
+            If approved, the request will be scheduled for processing at the
+            beginning of its Allocation Period ({{ allocation_period.name }}),
+            on {{ allocation_period.start_date|date:"M. d, Y" }}.
+          </p>
+        {% endif %}
+      {% endwith %}
       <div class="table-responsive">
         <table class="table table-sm">
           <thead>

@@ -1,5 +1,6 @@
 {% extends "common/base.html" %}
 {% load crispy_forms_tags %}
+{% load feature_flags %}
 {% load static %}
 
 
@@ -15,6 +16,18 @@ Renew PI Allowance
 
 {% block content %}
 <h1>Renew PI Allowance</h1><hr>
+
+{% flag_enabled 'ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE' as next_period_requestable %}
+{% if next_period_requestable %}
+  <div class="alert alert-info" role="alert">
+    <i class="fas fa-info-circle" aria-hidden="true"></i>
+    The allowance year for FCAs is ending soon, on
+    {{ CURRENT_ALLOWANCE_YEAR_ALLOCATION_PERIOD.end_date|date:"M. d, Y" }}.
+    Between now and then, you may request to renew a PI's allocation and/or
+    update pooling preferences for the remainder of the current allocation
+    year, and/or for the next allocation year.
+  </div>
+{% endif %}
 
 <p style="color: red;">
   <b>

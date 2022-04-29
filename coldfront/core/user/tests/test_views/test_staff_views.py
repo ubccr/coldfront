@@ -4,14 +4,14 @@ from http import HTTPStatus
 from coldfront.core.project.models import *
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.allocation.models import *
-from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
-from coldfront.core.utils.tests.test_base import TestBase
+from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
+from coldfront.core.utils.tests.test_base import TestBase as AllTestsBase
 
 from django.contrib.auth.models import User
 from django.core import mail
 
 
-class TestBase(TestBase):
+class TestBase(AllTestsBase):
     """Base class for testing staff view permissions"""
 
     def setUp(self):
@@ -82,7 +82,7 @@ class TestStaffViewPermissions(TestBase):
             user=self.user1)
 
         # Create an AllocationRenewalRequest.
-        allocation_period = get_current_allocation_period()
+        allocation_period = get_current_allowance_year_period()
         under_review_request_status = \
             AllocationRenewalRequestStatusChoice.objects.get(
                 name='Under Review')
@@ -158,6 +158,7 @@ class TestStaffViewPermissions(TestBase):
         request = SavioProjectAllocationRequest.objects.create(
             requester=self.user1,
             allocation_type=SavioProjectAllocationRequest.FCA,
+            allocation_period=get_current_allowance_year_period(),
             pi=self.user1,
             project=new_project,
             survey_answers={},
