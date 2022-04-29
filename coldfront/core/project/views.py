@@ -47,9 +47,9 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectReviewEmailForm,
                                           ProjectReviewForm, ProjectSearchForm, ProjectSelectForm,
                                           ProjectUserUpdateForm, ProjectImportForm)
-from coldfront.core.project.models import (Project, ProjectReview,
+from coldfront.core.project.models import (Project, ProjectAdminComment, ProjectReview,
                                            ProjectReviewStatusChoice,
-                                           ProjectStatusChoice, ProjectUser,
+                                           ProjectStatusChoice, ProjectUser, ProjectUserMessage,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice)
 from coldfront.core.publication.models import Publication
@@ -943,8 +943,18 @@ class ProjectImportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             )
 
             # Add project ids
+            # NOTE: If a model has a project ID, add it here to the list.
             _batch_update_field(
-                ["project.projectuser", "allocation.allocation", "publication.publication", "grant.grant"]
+                [
+                    "project.projectuser",
+                    "allocation.allocation",
+                    "publication.publication",
+                    "grant.grant",
+                    "project.projectadmincomment",
+                    "project.projectusermessage",
+                    "project.projectreview",
+                    "research_output.researchoutput",
+                ]
                 , "project.project", "project_id", pk_translation_table
             )
 
@@ -1077,7 +1087,11 @@ class ProjectExportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 fix_serialize_data(alloc_attrs),
                 fix_serialize_data(alloc_change_request),
                 fix_serialize_data(alloc_admin_notes),
-                fix_serialize_data(alloc_user_notes)
+                fix_serialize_data(alloc_user_notes),
+                fix_serialize_data(ProjectAdminComment.objects.filter(project_id=p_id)),
+                fix_serialize_data(ProjectUserMessage.objects.filter(project_id=p_id)),
+                fix_serialize_data(ProjectReview.objects.filter(project_id=p_id)),
+                fix_serialize_data(ResearchOutput.objects.filter(project_id=p_id)),
             ]
             response = JsonResponse(serialized_data, content_type='application/json', safe=False, json_dumps_params={'indent': 2})
             response['Content-Disposition'] = 'attachment; filename="project.json"'
