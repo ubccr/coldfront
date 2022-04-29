@@ -59,8 +59,8 @@ Project Detail
             &nbsp;<span class="badge badge-light">{{ num_join_requests }}</span>
           </a>
         {% endif %}
-        {% if renew_allowance_current_visible %}
-          {% if renew_allowance_current_clickable %}
+        {% if renew_allowance_visible %}
+          {% if renew_allowance_clickable %}
             <a
                 class="btn btn-success"
                 href="{% url 'project-renew' project.pk %}"
@@ -111,7 +111,9 @@ Project Detail
     <p class="card-text text-justify"><strong>Description: </strong>{{ project.description }}</p>
     <p class="card-text text-justify">
       <strong>Cluster: </strong>
-      {% if project.name|slice:":1" == "v" %}
+      {% if project.name == "abc" %}
+        ABC
+      {% elif project.name|slice:":1" == "v" %}
         Vector
       {% else %}
         Savio
@@ -143,11 +145,22 @@ Project Detail
 <!-- Start Project Allocations -->
 <div class="card mb-3">
   <div class="card-header">
-  <h2 class="d-inline">
-    <i class="fas fa-server"></i>
-    Allocations
-    <span class="badge badge-secondary">{{allocations.count}}</span>
-  </h2>
+    <h2 class="d-inline">
+      <i class="fas fa-server"></i>
+      Allocations
+      <span class="badge badge-secondary">{{allocations.count}}</span>
+    </h2>
+    <div class="float-right">
+      {% if purchase_sus_visible %}
+        <a
+            class="btn btn-success"
+            href="{% url 'purchase-service-units-landing' project.pk %}"
+            role="button">
+          <i class="fas fa-dollar-sign" aria-hidden="true"></i>
+          Purchase Service Units
+        </a>
+      {% endif %}
+    </div>
   </div>
   <div class="card-body">
     {% if allocations %}
@@ -226,8 +239,6 @@ Project Detail
         <a class="btn btn-success" href="{% url 'project-add-users-search' project.pk %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
         <a class="btn btn-danger" href="{% url 'project-remove-users' project.pk %}" role="button"><i class="fas fa-user-times" aria-hidden="true"></i> Remove Users</a>
       {% endif %}
-    </div>
-    <div class="float-right">
       {% if project.status.name != 'Archived' and can_leave_project %}
         <div class="modal fade" id="denial{{ user.pk }}Modal" tabindex="-1" role="dialog" aria-labelledby="denial{{ user.pk }}ModalLabel" aria-hidden="true">
           <div class="modal-dialog" role="document">
@@ -259,7 +270,7 @@ Project Detail
             </form>
           </div>
         </div>
-        <button class="btn btn-danger mr-1" data-toggle="modal" data-target="#denial{{ user.pk }}Modal">
+        <button class="btn btn-danger" data-toggle="modal" data-target="#denial{{ user.pk }}Modal">
           Leave Project
         </button>
       {% endif %}

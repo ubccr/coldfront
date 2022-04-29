@@ -54,10 +54,12 @@ INSTALLED_APPS += [
     # 'coldfront.core.publication',
     # 'coldfront.core.research_output',
     'coldfront.core.statistics',
+    'coldfront.core.billing',
 ]
 
 # Savio-specific Additional Apps
 INSTALLED_APPS += [
+    'flags',
     'formtools',
 ]
 
@@ -139,6 +141,8 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'django_settings_export.settings_export',
+                'coldfront.core.utils.context_processors.current_allowance_year_allocation_period',
+                'coldfront.core.utils.context_processors.display_time_zone',
             ],
         },
     },
@@ -215,7 +219,7 @@ ALLOCATION_YEAR_START_DAY = 1
 CO_DEFAULT_ALLOCATION = ALLOCATION_MAX
 FCA_DEFAULT_ALLOCATION = Decimal('300000.00')
 ICA_DEFAULT_ALLOCATION = Decimal('200000.00')
-PCA_DEFAULT_ALLOCATION = Decimal('200000.00')
+PCA_DEFAULT_ALLOCATION = Decimal('300000.00')
 
 # Whether or not to allow all jobs, bypassing all checks.
 ALLOW_ALL_JOBS = False

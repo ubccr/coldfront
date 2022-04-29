@@ -1,27 +1,14 @@
-from django.test import TestCase
+from coldfront.core.utils.tests.test_base import TestBase
 
 from django.contrib.auth.models import User, Group
-from django.core.management import call_command
 
-from io import StringIO
-import os
-import sys
 
-class TestStaffGroup(TestCase):
+class TestStaffGroup(TestBase):
     """ Test class to test that staff are created properly """
 
     def setUp(self):
         """Setup test data"""
-        out, err = StringIO(), StringIO()
-        commands = [
-            'create_staff_group',
-        ]
-        sys.stdout = open(os.devnull, 'w')
-        for command in commands:
-            call_command(command, stdout=out, stderr=err)
-        sys.stdout = sys.__stdout__
-
-        self.password = 'password'
+        super().setUp()
 
         self.user1 = User.objects.create(
             email='user1@email.com',
@@ -39,6 +26,7 @@ class TestStaffGroup(TestCase):
         self.assertTrue(Group.objects.filter(name='staff_group').exists())
 
         perm_codename_lst = [
+            'view_allocationadditionrequest',
             'view_allocationrenewalrequest',
             'view_vectorprojectallocationrequest',
             'view_savioprojectallocationrequest',

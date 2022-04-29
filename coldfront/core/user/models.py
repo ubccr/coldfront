@@ -1,3 +1,4 @@
+from coldfront.core.billing.models import BillingActivity
 from django.contrib.auth.models import User
 from django.core.validators import EmailValidator
 from django.core.validators import MinLengthValidator
@@ -31,6 +32,9 @@ class UserProfile(models.Model):
     phone_number = PhoneNumberField(blank=True, null=True)
     access_agreement_signed_date = models.DateTimeField(blank=True, null=True)
     upgrade_request = models.DateTimeField(blank=True, null=True)
+
+    billing_activity = models.ForeignKey(
+        BillingActivity, blank=True, null=True, on_delete=models.SET_NULL)
 
 
 class EmailAddress(models.Model):

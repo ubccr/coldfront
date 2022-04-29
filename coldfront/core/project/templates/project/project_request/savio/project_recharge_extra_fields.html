@@ -14,15 +14,22 @@ Savio Project Request - Recharge Details
 
 
 {% block content %}
+<script type="text/javascript" src="{% static 'common/js/leave_form_alert.js' %}"></script>
 <h1>Savio: Recharge Details</h1><hr>
 
 <ol class="breadcrumb">
   <li>Allocation Type: {{ allocation_type }}</li>
   <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>
+  <li>Allocation Period: {{ allocation_period.name }}</li>
+  <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>
   <li>{{ breadcrumb_pi }}</li>
 </ol>
 
-<p>Please provide the following details to buy time on Savio. You will also need to return a signed copy of a Memorandum of Understanding that will be sent to you.</p>
+<p>
+  Please provide the following details to purchase time on Savio. You will also
+  need to return a signed copy of a Memorandum of Understanding that will be
+  sent to you.
+</p>
 
 <form action="" method="post">
   {% csrf_token %}

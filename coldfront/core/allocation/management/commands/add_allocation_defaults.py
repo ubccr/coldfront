@@ -1,10 +1,13 @@
 from django.core.management.base import BaseCommand
 
 from coldfront.core.allocation.models import (AttributeType,
+                                              AllocationAdditionRequestStatusChoice,
                                               AllocationAttributeType,
                                               AllocationRenewalRequestStatusChoice,
                                               AllocationStatusChoice,
                                               AllocationUserStatusChoice)
+
+from flags.state import flag_enabled
 
 
 class Command(BaseCommand):
@@ -54,6 +57,20 @@ class Command(BaseCommand):
         AllocationAttributeType.objects.filter(
             name='Cluster Account Status').update(is_unique=True)
 
+        # Create LRC-only AllocationAttributeTypes.
+        if flag_enabled('LRC_ONLY'):
+            # The primary key of the BillingActivity object to be treated as
+            # the default for the Allocation.
+            AllocationAttributeType.objects.update_or_create(
+                attribute_type=AttributeType.objects.get(name='Int'),
+                name='Billing Activity',
+                defaults={
+                    'has_usage': False,
+                    'is_required': False,
+                    'is_unique': True,
+                    'is_private': True,
+                })
+
         choices = [
             'Under Review',
             'Approved',
@@ -62,4 +79,13 @@ class Command(BaseCommand):
         ]
         for choice in choices:
             AllocationRenewalRequestStatusChoice.objects.get_or_create(
+                name=choice)
+
+        choices = [
+            'Under Review',
+            'Denied',
+            'Complete',
+        ]
+        for choice in choices:
+            AllocationAdditionRequestStatusChoice.objects.get_or_create(
                 name=choice)

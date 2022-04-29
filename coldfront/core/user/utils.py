@@ -178,6 +178,14 @@ class ExpiringTokenGenerator(PasswordResetTokenGenerator):
         return True
 
 
+def access_agreement_signed(user):
+    """Return whether the given User has signed the User Access
+    Agreement."""
+    if not isinstance(user, User):
+        raise TypeError(f'{user} is not a User object.')
+    return bool(user.userprofile.access_agreement_signed_date)
+
+
 def account_activation_url(user):
     domain = import_from_settings('CENTER_BASE_URL')
     uidb64 = urlsafe_base64_encode(force_bytes(user.id))

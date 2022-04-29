@@ -3,22 +3,19 @@ from http import HTTPStatus
 from django.contrib.messages import get_messages
 from django.urls import reverse
 
-from coldfront.core.project.forms import ProjectReviewUserJoinForm
 from coldfront.core.project.models import *
 from coldfront.core.user.models import UserProfile
-from django.test import TestCase
 from django.contrib.auth.models import User
 from django.core import mail
-from django.core.management import call_command
+from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.utils.tests.test_base import TestBase as AllTestsBase
 from django.conf import settings
 
-from io import StringIO
-import os
-import sys
+from urllib.parse import urljoin
 
 
-class TestBase(TestCase):
+class TestBase(AllTestsBase):
     """
     Class for testing project join requests after removing
     all auto approval code
@@ -26,20 +23,7 @@ class TestBase(TestCase):
 
     def setUp(self):
         """Set up test data."""
-        out, err = StringIO(), StringIO()
-        commands = [
-            'add_resource_defaults',
-            'add_allocation_defaults',
-            'import_field_of_science_data',
-            'add_default_project_choices',
-            'create_staff_group',
-        ]
-        sys.stdout = open(os.devnull, 'w')
-        for command in commands:
-            call_command(command, stdout=out, stderr=err)
-        sys.stdout = sys.__stdout__
-
-        self.password = 'password'
+        super().setUp()
 
         # Create a requester user and multiple PI users.
         self.user1 = User.objects.create(
@@ -155,13 +139,21 @@ class TestProjectJoinView(TestBase):
                              role__name__in=['Manager', 'Principal Investigator'],
                              status__name='Active')]
 
-        email_body = f'User {self.user1.first_name} {self.user1.last_name} ' \
-                     f'({self.user1.email}) has requested to join your ' \
-                     f'project, {self.project1.name} via MyBRC user portal. ' \
-                     f'Please approve/deny this request.'
+        domain = import_from_settings('CENTER_BASE_URL')
+        view = reverse(
+            'project-review-join-requests', kwargs={'pk': self.project1.pk})
+        review_url = urljoin(domain, view)
+
+        body_components = [
+            (f'User {self.user1.first_name} {self.user1.last_name} '
+             f'({self.user1.email}) has requested to join your project, '
+             f'{self.project1.name} via the MyBRC User Portal.'),
+            f'Please approve/deny this request here: {review_url}.',
+        ]
 
         for email in mail.outbox:
-            self.assertIn(email_body, email.body)
+            for component in body_components:
+                self.assertIn(component, email.body)
             for recipient in email.to:
                 self.assertIn(recipient, email_to_list)
             self.assertEqual(settings.EMAIL_SENDER, email.from_email)

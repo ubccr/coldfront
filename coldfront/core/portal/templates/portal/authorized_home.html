@@ -128,187 +128,75 @@
       <h3>My BRC Cluster Projects &raquo;</h3>
     </a>
     <hr>
-  {% if num_join_requests %}
+    {% if num_join_requests %}
       <div class="alert alert-warning" role="alert">
-          <i class="fa fa-exclamation-circle" aria-hidden="true"></i>
-          You have {{ num_join_requests }} project join requests pending manager approval.
-          Click <a href="{% url 'project-join-list' %}">here</a> to view your pending project join requests.
+        <i class="fa fa-exclamation-circle" aria-hidden="true"></i>
+        You have {{ num_join_requests }} project join requests pending manager
+        approval. Click <a href="{% url 'project-join-list' %}">here</a> to view
+        your pending project join requests.
       </div>
-  {% endif %}
+    {% endif %}
 
     {% if project_list %}
       <div class="row">
-        <div class="col-lg-6 mt-2">
-          <h4>Savio</h4>
-          {% if savio_projects %}
-              <table class="table table-sm">
-                  <thead>
-                    <tr>
-                      <th scope="col" class="text-nowrap">Project Name</th>
-                      <th scope="col" class="text-nowrap">Project Access on Cluster</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                      {% for project in project_list %}
-                          {% if project.name in savio_projects %}
-                          <tr>
-                              <td>
-                                  <a href="{% url 'project-detail' project.pk %}">
-                                    <i class="fa fa-folder fa-lg" aria-hidden="true"></i>
-                                    {{ project.name }}
-                                  </a>
-                                  {% if project.needs_review %}
-                                    <a href="{% url 'project-review' project.pk %}">
-                                      <span class="badge badge-warning">Needs Review</span>
-                                    </a>
-                                  {% endif %}
-                              </td>
-
-                              <td>
-                                    {% if project.name in pending_removal_request_projects %}
-                                        <span class="badge badge-danger">Pending Removal</span>
-                                    {% elif 'Active' in project.display_status %}
-                                        <span class="badge badge-success">Active</span>
-                                    {% elif 'Pending' in project.display_status %}
-                                        <span class="badge badge-warning">Pending</span>
-                                    {% elif 'Processing' in project.display_status %}
-                                        <span class="badge badge-warning">Processing</span>
-                                    {% else %}
-                                        <span class="badge badge-danger">No Access</span>
-                                    {% endif %}
-                              </td>
-                          </tr>
-                          {% endif %}
-                      {% endfor %}
-                  </tbody>
-              </table>
-          {% else %}
-              <hr>
-              <div class="alert alert-info" role="alert">
-                <i class="fa fa-info-circle" aria-hidden="true"></i>
-                You are not part of any Savio projects at this time. Please click Join to join any of the existing projects. You can also click Create to request setup of a new project.
-              </div>
-          {% endif %}
-        </div>
-
-        <div class="col-lg-6 mt-2">
-          <h4>Vector</h4>
-
-          {% if vector_projects %}
-              <table class="table table-sm">
-                  <thead>
-                    <tr>
-                      <th scope="col" class="text-nowrap">Project Name</th>
-                      <th scope="col" class="text-nowrap">Project Access on Cluster</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                      {% for project in project_list %}
-                      {% if project.name in vector_projects %}
-                          <tr>
-                              <td>
-                                  <a href="{% url 'project-detail' project.pk %}">
-                                  <i class="fa fa-folder fa-lg" aria-hidden="true"></i>
-                                  {{ project.name }}
-                                  </a>
-
-                                  {% if project.needs_review %}
-                                  <a href="{% url 'project-review' project.pk %}">
-                                  <span class="badge badge-warning">Needs Review</span>
-                                  </a>
-                                  {% endif %}
-                              </td>
-
-                              <td>
-                                  {% if project.name in pending_removal_request_projects %}
-                                      <span class="badge badge-danger">Pending Removal</span>
-                                  {% elif 'Active' in project.display_status %}
-                                      <span class="badge badge-success">Active</span>
-                                  {% elif 'Pending' in project.display_status %}
-                                      <span class="badge badge-warning">Pending</span>
-                                  {% else %}
-                                      <span class="badge badge-danger">No Access</span>
-                                  {% endif %}
-                              </td>
-                          </tr>
-                      {% endif %}
-                      {% endfor %}
-                  </tbody>
-              </table>
-          {% else %}
-            <hr>
-            <div class="alert alert-info" role="alert">
-              <i class="fa fa-info-circle" aria-hidden="true"></i>
-              You are not part of any Vector projects at this time. Please click Join to join any of the existing projects. You can also click Create to request setup of a new project.
-            </div>
-          {% endif %}
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="col-lg-6 mt-2"></div>
-        <div class="col-lg-6 mt-2">
-          <h4>ABC</h4>
-
-          {% if abc_projects %}
-              <table class="table table-sm">
-                  <thead>
-                    <tr>
-                      <th scope="col" class="text-nowrap">Project Name</th>
-                      <th scope="col" class="text-nowrap">Project Access on Cluster</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                      {% for project in project_list %}
-                        {% if project.name in abc_projects %}
-                        <tr>
-                            <td>
-                                <a href="{% url 'project-detail' project.pk %}">
-                                  <i class="fa fa-folder fa-lg" aria-hidden="true"></i>
-                                  {{ project.name }}
-                                </a>
-
-                                {% if project.needs_review %}
-                                  <a href="{% url 'project-review' project.pk %}">
-                                    <span class="badge badge-warning">Needs Review</span>
-                                  </a>
-                                {% endif %}
-                            </td>
-
-                            <td>
-                                {% if project.name in pending_removal_request_projects %}
-                                    <span class="badge badge-danger">Pending Removal</span>
-                                {% elif 'Active' in project.display_status %}
-                                    <span class="badge badge-success">Active</span>
-                                {% elif 'Pending' in project.display_status %}
-                                    <span class="badge badge-warning">Pending</span>
-                                {% else %}
-                                    <span class="badge badge-danger">No Access</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endif %}
-                      {% endfor %}
-                  </tbody>
-              </table>
-          {% else %}
-            <hr>
-            <div class="alert alert-info" role="alert">
-              <i class="fa fa-info-circle" aria-hidden="true"></i>
-              You are not part of any ABC projects at this time. Please click Join to join any of the existing projects.
-            </div>
-          {% endif %}
+        <div class="col-lg-12">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th scope="col" class="text-nowrap">Project Name</th>
+                <th scope="col" class="text-nowrap">Cluster</th>
+                <th scope="col" class="text-nowrap">
+                  Access to Project on Cluster
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for project in project_list %}
+                <tr>
+                  <td>
+                    <a href="{% url 'project-detail' project.pk %}">
+                      <i class="fa fa-folder fa-lg" aria-hidden="true"></i>
+                      {{ project.name }}
+                    </a>
+                    {% if project.needs_review %}
+                      <a href="{% url 'project-review' project.pk %}">
+                        <span class="badge badge-warning">Needs Review</span>
+                      </a>
+                    {% endif %}
+                  </td>
+                  <td>{{ project.cluster_name }}</td>
+                  <td>
+                    {% if project.name in pending_removal_request_projects %}
+                        <span class="badge badge-danger">Pending Removal</span>
+                    {% elif 'Active' in project.display_status %}
+                        <span class="badge badge-success">Active</span>
+                    {% elif 'Pending' in project.display_status %}
+                        <span class="badge badge-warning">Pending</span>
+                    {% elif 'Processing' in project.display_status %}
+                        <span class="badge badge-warning">Processing</span>
+                    {% else %}
+                        <span class="badge badge-danger">No Access</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
       </div>
     {% else %}
       <div class="alert alert-info" role="alert">
         <i class="fa fa-info-circle" aria-hidden="true"></i>
-        You are not part of any BRC cluster projects at this time. Please click Join to join any of the existing projects. You can also click Create to request setup of a new project.
+        You are not part of any cluster projects at this time. Please click
+        Join to join any of the existing projects. You can also click Create to
+        request setup of a new project.
       </div>
     {% endif %}
+
     <a class="btn btn-primary" href="{% url 'user-projects-managers' %}">
       View all projects and managers
     </a>
+
   </div>
 
 

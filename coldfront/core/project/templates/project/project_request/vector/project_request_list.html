@@ -15,76 +15,17 @@ Vector Project {{ request_filter|title }} Requests
 
 <p>
   {% if request_filter == 'completed' %}
-    View completed requests for new Vector projects. You may also view pending requests <a href="{% url 'vector-project-pending-request-list' %}">here</a>.
+    Viewing completed requests for new Vector projects. You may also view pending requests <a href="{% url 'vector-project-pending-request-list' %}">here</a>.
   {% else %}
-    View pending requests for new Vector projects. You may also view completed requests <a href="{% url 'vector-project-completed-request-list' %}">here</a>.
+    Viewing pending requests for new Vector projects. You may also view completed requests <a href="{% url 'vector-project-completed-request-list' %}">here</a>.
   {% endif %}
 </p>
 
 {% if vector_project_request_list %}
 <div class="table-responsive">
-  <table class="table table-sm">
-    <thead>
-      <tr>
-        <th scope="col">
-         #
-         <a href="?order_by=id&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-         <a href="?order_by=id&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
-        </th>
-        <th scope="col">
-         Date Requested/<br>Last Modified
-         <a href="?order_by=modified&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-         <a href="?order_by=modified&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
-        </th>
-        <th scope="col">
-         Requester Email
-         <a href="?order_by=requester__email&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-         <a href="?order_by=requester__email&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
-        </th>
-        <th scope="col">
-         Project
-         <a href="?order_by=project&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-         <a href="?order_by=project&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
-        </th>
-        <th scope="col">
-         PI
-         <a href="?order_by=pi&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-         <a href="?order_by=pi&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
-        </th>
-        <th scope="col">
-         Status
-        </th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for vector_project_request in vector_project_request_list %}
-      <tr>
-        <td>
-          <a href="{% url 'vector-project-request-detail' vector_project_request.pk %}">
-            {{ vector_project_request.pk }}
-          </a>
-        </td>
-        <td>{{ vector_project_request.modified|date:"M. d, Y" }}</td>
-        <td>{{ vector_project_request.requester.email }}</td>
-        <td>{{ vector_project_request.project.name }}</td>
-        <td>{{ vector_project_request.pi.email }}</td>
-        <td>
-          {% with status=vector_project_request.status.name %}
-            {% if status == 'Under Review' %}
-              <span class="badge badge-warning">{{ status }}</span>
-            {% elif status == 'Approved - Processing' %}
-              <span class="badge badge-warning">{{ status }}</span>
-            {% elif status == 'Approved - Complete' %}
-              <span class="badge badge-success">{{ status }}</span>
-            {% else %}
-              <span class="badge badge-danger">{{ status }}</span>
-            {% endif %}
-          {% endwith %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  {% with queryset=vector_project_request_list %}
+    {% include 'project/project_request/vector/project_request_list_table.html' %}
+  {% endwith %}
 </div>
 {% else %}
 <div class="alert alert-info">

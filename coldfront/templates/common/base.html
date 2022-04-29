@@ -1,7 +1,7 @@
 {% load static %}
 
 {% load tz %}
-{% timezone "America/Los_Angeles" %}
+{% timezone DISPLAY_TIME_ZONE %}
 
 <!DOCTYPE html>
 <html lang="en">
@@ -39,6 +39,9 @@
 
   <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
   <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js"></script>
+
+  <!-- jquery.dirty -->
+  <script src="https://cdn.jsdelivr.net/npm/jquery.dirty@0.8.3"></script>
 
    <!-- Custom -->
   <link rel="stylesheet" href="{% static 'common/css/common.css' %}">

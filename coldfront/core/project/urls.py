@@ -1,6 +1,15 @@
 from django.urls import path
+from django.views.generic import TemplateView
 
 import coldfront.core.project.views as project_views
+import coldfront.core.project.views_.addition_views.approval_views as addition_approval_views
+import coldfront.core.project.views_.addition_views.request_views as addition_request_views
+import coldfront.core.project.views_.new_project_views.approval_views as new_project_approval_views
+import coldfront.core.project.views_.new_project_views.request_views as new_project_request_views
+import coldfront.core.project.views_.removal_views as removal_views
+import coldfront.core.project.views_.renewal_views.approval_views as renewal_approval_views
+import coldfront.core.project.views_.renewal_views.request_views as renewal_request_views
+
 
 urlpatterns = [
     path('<int:pk>/', project_views.ProjectDetailView.as_view(), name='project-detail'),
@@ -14,7 +23,6 @@ urlpatterns = [
     path('<int:pk>/add-users-search/', project_views.ProjectAddUsersSearchView.as_view(), name='project-add-users-search'),
     path('<int:pk>/add-users-search-results/', project_views.ProjectAddUsersSearchResultsView.as_view(), name='project-add-users-search-results'),
     path('<int:pk>/add-users/', project_views.ProjectAddUsersView.as_view(), name='project-add-users'),
-    path('<int:pk>/remove-users/', project_views.ProjectRemoveUsersView.as_view(), name='project-remove-users'),
     path('<int:pk>/user-detail/<int:project_user_pk>', project_views.ProjectUserDetail.as_view(), name='project-user-detail'),
     path('<int:pk>/review/', project_views.ProjectReviewView.as_view(), name='project-review'),
     path('<int:pk>/join/', project_views.ProjectJoinView.as_view(), name='project-join'),
@@ -24,42 +32,13 @@ urlpatterns = [
          name='project-review-complete'),
     path('project-review/<int:pk>/email', project_views.ProjectReivewEmailView.as_view(), name='project-review-email'),
     path('join-list/', project_views.ProjectJoinRequestListView.as_view(), name='project-join-request-list'),
-
 ]
 
 
-# TODO: Once finalized, move these imports above.
-from coldfront.core.project.views import ProjectRequestView
-from coldfront.core.project.views import SavioProjectRequestDetailView
-from coldfront.core.project.views import SavioProjectRequestListView
-from coldfront.core.project.views import SavioProjectRequestWizard
-from coldfront.core.project.views import SavioProjectReviewAllocationDatesView
-from coldfront.core.project.views import SavioProjectReviewDenyView
-from coldfront.core.project.views import SavioProjectReviewEligibilityView
-from coldfront.core.project.views import SavioProjectReviewMemorandumSignedView
-from coldfront.core.project.views import SavioProjectReviewReadinessView
-from coldfront.core.project.views import SavioProjectReviewSetupView
-from coldfront.core.project.views import SavioProjectUndenyRequestView
-from coldfront.core.project.views import show_details_form_condition
-from coldfront.core.project.views import show_ica_extra_fields_form_condition
-from coldfront.core.project.views import show_new_pi_form_condition
-from coldfront.core.project.views import show_pool_allocations_form_condition
-from coldfront.core.project.views import show_pooled_project_selection_form_condition
-from coldfront.core.project.views import show_recharge_extra_fields_form_condition
-from coldfront.core.project.views import VectorProjectRequestDetailView
-from coldfront.core.project.views import VectorProjectRequestListView
-from coldfront.core.project.views import VectorProjectRequestView
-from coldfront.core.project.views import VectorProjectReviewEligibilityView
-from coldfront.core.project.views import VectorProjectReviewSetupView
-from coldfront.core.project.views import VectorProjectUndenyRequestView
-from coldfront.core.project.views import ProjectRemoveSelf
-from coldfront.core.project.views import ProjectRemovalRequestUpdateStatusView
-from django.views.generic import TemplateView
-
-
+# New Project Requests
 urlpatterns += [
     path('project-request/',
-         ProjectRequestView.as_view(),
+         new_project_request_views.ProjectRequestView.as_view(),
          name='project-request'),
     path('project-request-savio-landing/',
          TemplateView.as_view(
@@ -68,46 +47,41 @@ urlpatterns += [
          ),
          name='project-request-savio-landing'),
     path('savio-project-request/',
-         SavioProjectRequestWizard.as_view(
-             condition_dict={
-                 '2': show_new_pi_form_condition,
-                 '3': show_ica_extra_fields_form_condition,
-                 '4': show_recharge_extra_fields_form_condition,
-                 '5': show_pool_allocations_form_condition,
-                 '6': show_pooled_project_selection_form_condition,
-                 '7': show_details_form_condition,
-             }
+         new_project_request_views.SavioProjectRequestWizard.as_view(
+             condition_dict=new_project_request_views.SavioProjectRequestWizard.condition_dict(),
          ),
          name='savio-project-request'),
     path('savio-project-pending-request-list/',
-         SavioProjectRequestListView.as_view(completed=False),
+         new_project_approval_views.SavioProjectRequestListView.as_view(
+             completed=False),
          name='savio-project-pending-request-list'),
     path('savio-project-completed-request-list/',
-         SavioProjectRequestListView.as_view(completed=True),
+         new_project_approval_views.SavioProjectRequestListView.as_view(
+             completed=True),
          name='savio-project-completed-request-list'),
     path('savio-project-request/<int:pk>/',
-         SavioProjectRequestDetailView.as_view(),
+         new_project_approval_views.SavioProjectRequestDetailView.as_view(),
          name='savio-project-request-detail'),
     path('savio-project-request/<int:pk>/eligibility/',
-         SavioProjectReviewEligibilityView.as_view(),
+         new_project_approval_views.SavioProjectReviewEligibilityView.as_view(),
          name='savio-project-request-review-eligibility'),
     path('savio-project-request/<int:pk>/readiness/',
-         SavioProjectReviewReadinessView.as_view(),
+         new_project_approval_views.SavioProjectReviewReadinessView.as_view(),
          name='savio-project-request-review-readiness'),
     path('savio-project-request/<int:pk>/allocation-dates/',
-         SavioProjectReviewAllocationDatesView.as_view(),
+         new_project_approval_views.SavioProjectReviewAllocationDatesView.as_view(),
          name='savio-project-request-review-allocation-dates'),
     path('savio-project-request/<int:pk>/memorandum-signed/',
-         SavioProjectReviewMemorandumSignedView.as_view(),
+         new_project_approval_views.SavioProjectReviewMemorandumSignedView.as_view(),
          name='savio-project-request-review-memorandum-signed'),
     path('savio-project-request/<int:pk>/setup/',
-         SavioProjectReviewSetupView.as_view(),
+         new_project_approval_views.SavioProjectReviewSetupView.as_view(),
          name='savio-project-request-review-setup'),
     path('savio-project-request/<int:pk>/deny/',
-         SavioProjectReviewDenyView.as_view(),
+         new_project_approval_views.SavioProjectReviewDenyView.as_view(),
          name='savio-project-request-review-deny'),
     path('savio-project-request/<int:pk>/undeny',
-         SavioProjectUndenyRequestView.as_view(),
+         new_project_approval_views.SavioProjectUndenyRequestView.as_view(),
          name='savio-project-undeny-request'),
     path('project-request-vector-landing/',
          TemplateView.as_view(
@@ -116,85 +90,115 @@ urlpatterns += [
          ),
          name='project-request-vector-landing'),
     path('vector-project-request/',
-         VectorProjectRequestView.as_view(),
+         new_project_request_views.VectorProjectRequestView.as_view(),
          name='vector-project-request'),
     path('vector-project-pending-request-list/',
-         VectorProjectRequestListView.as_view(completed=False),
+         new_project_approval_views.VectorProjectRequestListView.as_view(
+             completed=False),
          name='vector-project-pending-request-list'),
     path('vector-project-completed-request-list/',
-         VectorProjectRequestListView.as_view(completed=True),
+         new_project_approval_views.VectorProjectRequestListView.as_view(
+             completed=True),
          name='vector-project-completed-request-list'),
     path('vector-project-request/<int:pk>/',
-         VectorProjectRequestDetailView.as_view(),
+         new_project_approval_views.VectorProjectRequestDetailView.as_view(),
          name='vector-project-request-detail'),
     path('vector-project-request/<int:pk>/eligibility',
-         VectorProjectReviewEligibilityView.as_view(),
+         new_project_approval_views.VectorProjectReviewEligibilityView.as_view(),
          name='vector-project-request-review-eligibility'),
     path('vector-project-request/<int:pk>/setup',
-         VectorProjectReviewSetupView.as_view(),
+         new_project_approval_views.VectorProjectReviewSetupView.as_view(),
          name='vector-project-request-review-setup'),
     path('vector-project-request/<int:pk>/undeny',
-         VectorProjectUndenyRequestView.as_view(),
+         new_project_approval_views.VectorProjectUndenyRequestView.as_view(),
          name='vector-project-undeny-request'),
-    path('<int:pk>/remove-self',
-         ProjectRemoveSelf.as_view(),
-         name='project-remove-self'),
-    path('project-removal-request-list',
-         project_views.ProjectRemovalRequestListView.as_view(completed=False),
-         name='project-removal-request-list'),
-    path('project-removal-request-list-completed',
-         project_views.ProjectRemovalRequestListView.as_view(completed=True),
-         name='project-removal-request-list-completed'),
-    path('project-removal-request/<int:pk>/update-status',
-         project_views.ProjectRemovalRequestUpdateStatusView.as_view(),
-         name='project-removal-request-update-status'),
-    path('project-removal-request/<int:pk>/complete-status',
-         project_views.ProjectRemovalRequestCompleteStatusView.as_view(),
-         name='project-removal-request-complete-status'),
 ]
 
 
-from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestListView
-from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestDetailView
-from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestReviewDenyView
-from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestReviewEligibilityView
-# This is disabled because a PI may always make a new request.
-# from coldfront.core.project.views_.renewal_views.approval_views import AllocationRenewalRequestUndenyView
-from coldfront.core.project.views_.renewal_views.request_views import AllocationRenewalRequestUnderProjectView
-from coldfront.core.project.views_.renewal_views.request_views import AllocationRenewalRequestView
+# ProjectUser Removal Requests
+urlpatterns += [
+    path('<int:pk>/remove-self',
+         removal_views.ProjectRemoveSelf.as_view(),
+         name='project-remove-self'),
+    path('project-removal-request-list',
+         removal_views.ProjectRemovalRequestListView.as_view(completed=False),
+         name='project-removal-request-list'),
+    path('project-removal-request-list-completed',
+         removal_views.ProjectRemovalRequestListView.as_view(completed=True),
+         name='project-removal-request-list-completed'),
+    path('project-removal-request/<int:pk>/update-status',
+         removal_views.ProjectRemovalRequestUpdateStatusView.as_view(),
+         name='project-removal-request-update-status'),
+    path('project-removal-request/<int:pk>/complete-status',
+         removal_views.ProjectRemovalRequestCompleteStatusView.as_view(),
+         name='project-removal-request-complete-status'),
+    path('<int:pk>/remove-users/',
+         removal_views.ProjectRemoveUsersView.as_view(),
+         name='project-remove-users'),
+]
 
 
+# Allocation Renewal Requests
 urlpatterns += [
     path('<int:pk>/renew',
-         AllocationRenewalRequestUnderProjectView.as_view(),
+         renewal_request_views.AllocationRenewalRequestUnderProjectView.as_view(),
          name='project-renew'),
     path('renew-pi-allocation-landing/',
          TemplateView.as_view(
              template_name='project/project_renewal/request_landing.html'),
          name='renew-pi-allocation-landing'),
     path('renew-pi-allocation/',
-         AllocationRenewalRequestView.as_view(
-             condition_dict=AllocationRenewalRequestView.condition_dict(),
+         renewal_request_views.AllocationRenewalRequestView.as_view(
+             condition_dict=renewal_request_views.AllocationRenewalRequestView.condition_dict(),
          ),
          name='renew-pi-allocation'),
     path('pi-allocation-renewal-pending-request-list/',
-         AllocationRenewalRequestListView.as_view(completed=False),
+         renewal_approval_views.AllocationRenewalRequestListView.as_view(
+             completed=False),
          name='pi-allocation-renewal-pending-request-list'),
     path('pi-allocation-renewal-completed-request-list/',
-         AllocationRenewalRequestListView.as_view(completed=True),
+         renewal_approval_views.AllocationRenewalRequestListView.as_view(
+             completed=True),
          name='pi-allocation-renewal-completed-request-list'),
     path('pi-allocation-renewal-request-detail/<int:pk>/',
-         AllocationRenewalRequestDetailView.as_view(),
+         renewal_approval_views.AllocationRenewalRequestDetailView.as_view(),
          name='pi-allocation-renewal-request-detail'),
     path('pi-allocation-renewal-request/<int:pk>/eligibility/',
-         AllocationRenewalRequestReviewEligibilityView.as_view(),
+         renewal_approval_views.AllocationRenewalRequestReviewEligibilityView.as_view(),
          name='pi-allocation-renewal-request-review-eligibility'),
     path('pi-allocation-renewal-request/<int:pk>/deny/',
-         AllocationRenewalRequestReviewDenyView.as_view(),
+         renewal_approval_views.AllocationRenewalRequestReviewDenyView.as_view(),
          name='pi-allocation-renewal-request-review-deny'),
     # This is disabled because a PI may always make a new request.
     # path('pi-allocation-renewal-request/<int:pk>/undeny/',
     #      AllocationRenewalRequestUndenyView.as_view(),
     #      name='pi-allocation-renewal-request-review-undeny'),
+]
 
+
+# Purchase Service Units
+urlpatterns += [
+    path('<int:pk>/purchase-service-units-landing/',
+         addition_request_views.AllocationAdditionRequestLandingView.as_view(),
+         name='purchase-service-units-landing'),
+    path('<int:pk>/purchase-service-units/',
+         addition_request_views.AllocationAdditionRequestView.as_view(),
+         name='purchase-service-units'),
+    path('service-units-purchase-pending-request-list/',
+         addition_approval_views.AllocationAdditionRequestListView.as_view(
+             completed=False),
+         name='service-units-purchase-pending-request-list'),
+    path('service-units-purchase-completed-request-list/',
+         addition_approval_views.AllocationAdditionRequestListView.as_view(
+             completed=True),
+         name='service-units-purchase-completed-request-list'),
+    path('service-units-purchase-request/<int:pk>/',
+         addition_approval_views.AllocationAdditionRequestDetailView.as_view(),
+         name='service-units-purchase-request-detail'),
+    path('service-units-purchase-request/<int:pk>/memorandum-signed',
+         addition_approval_views.AllocationAdditionReviewMemorandumSignedView.as_view(),
+         name='service-units-purchase-request-review-memorandum-signed'),
+    path('service-units-purchase-request/<int:pk>/deny',
+         addition_approval_views.AllocationAdditionReviewDenyView.as_view(),
+         name='service-units-purchase-request-review-deny'),
 ]

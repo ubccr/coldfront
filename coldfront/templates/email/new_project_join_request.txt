@@ -1,6 +1,8 @@
 Dear managers of {{ project_name }},
 
-User {{ user_string }} has requested to join your project, {{ project_name }} via MyBRC user portal. Please approve/deny this request.
+User {{ user_string }} has requested to join your project, {{ project_name }} via the MyBRC User Portal.
+
+Please approve/deny this request here: {{ review_url }}.
 
 Thank you,
 {{ signature }}

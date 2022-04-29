@@ -9,6 +9,7 @@
         all staff can perform a user search
     {% endcomment %}
         <li><a class="dropdown-item" href="{% url 'allocation-list' %}?show_all_allocations=on">All Allocations</a></li>
+        <li><a id="navbar-jobs-list" class="dropdown-item" href="{% url 'slurm-job-list' %}?show_all_jobs=on">All Jobs</a></li>
         <li><a class="dropdown-item" href="{% url 'project-list' %}?show_all_projects=on">All Projects</a></li>
         <li><a id="navbar-user-list" class="dropdown-item" href="{% url 'user-search-all' %}">All Users</a></li>
         <li><a id="navbar-project-reviews" class="dropdown-item" href="{% url 'project-review-list' %}">Project Reviews</a></li>
@@ -20,6 +21,12 @@
                 <li><a id="navbar-allocation-cluster-account-requests" class="dropdown-item" href="{% url 'allocation-cluster-account-request-list' %}?show_all_requests=on">
                     Cluster Account Requests
                 </a></li>
+                <li><a id="navbar-project-savio-project-requests" class="dropdown-item" href="{% url 'savio-project-pending-request-list' %}">
+                    New Savio Project Requests
+                </a></li>
+                <li><a id="navbar-project-vector-project-requests" class="dropdown-item" href="{% url 'vector-project-pending-request-list' %}">
+                    New Vector Project Requests
+                </a></li>
                 <li><a id="navbar-project-join-request-list" class="dropdown-item" href="{% url 'project-join-request-list' %}">
                     Project Join Requests
                 </a></li>
@@ -29,11 +36,8 @@
                 <li><a id="navbar-pi-allocation-renewal-requests" class="dropdown-item" href="{% url 'pi-allocation-renewal-pending-request-list' %}">
                     Project Renewal Requests
                 </a></li>
-                <li><a id="navbar-project-savio-project-requests" class="dropdown-item" href="{% url 'savio-project-pending-request-list' %}">
-                    Savio Project Requests
-                </a></li>
-                <li><a id="navbar-project-vector-project-requests" class="dropdown-item" href="{% url 'vector-project-pending-request-list' %}">
-                    Vector Project Requests
+                <li><a id="navbar-service-units-purchase-requests" class="dropdown-item" href="{% url 'service-units-purchase-pending-request-list' %}">
+                    Service Units Purchase Requests
                 </a></li>
             </ul>
         </li>

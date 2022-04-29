@@ -1,15 +1,17 @@
 from coldfront.core.allocation.models import AllocationRenewalRequest
-from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
+from coldfront.core.allocation.utils import annotate_queryset_with_allocation_period_not_started_bool
 from coldfront.core.allocation.utils import prorated_allocation_amount
 from coldfront.core.project.forms import ReviewDenyForm
 from coldfront.core.project.forms import ReviewStatusForm
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
+from coldfront.core.project.utils_.renewal_utils import AllocationRenewalApprovalRunner
 from coldfront.core.project.utils_.renewal_utils import AllocationRenewalDenialRunner
 from coldfront.core.project.utils_.renewal_utils import AllocationRenewalProcessingRunner
 from coldfront.core.project.utils_.renewal_utils import allocation_renewal_request_denial_reason
 from coldfront.core.project.utils_.renewal_utils import allocation_renewal_request_latest_update_timestamp
 from coldfront.core.project.utils_.renewal_utils import allocation_renewal_request_state_status
-from coldfront.core.project.utils_.request_utils import project_allocation_request_latest_update_timestamp
+from coldfront.core.utils.common import display_time_zone_current_date
+from coldfront.core.utils.common import format_date_month_name_day_year
 from coldfront.core.utils.common import utc_now_offset_aware
 
 from django.conf import settings
@@ -21,7 +23,6 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.urls import reverse_lazy
-from django.views import View
 from django.views.generic import DetailView
 from django.views.generic import TemplateView
 from django.views.generic.edit import FormView
@@ -49,7 +50,8 @@ class AllocationRenewalRequestListView(LoginRequiredMixin, TemplateView):
             order_by = direction + order_by
         else:
             order_by = 'id'
-        return AllocationRenewalRequest.objects.order_by(order_by)
+        return annotate_queryset_with_allocation_period_not_started_bool(
+            AllocationRenewalRequest.objects.order_by(order_by))
 
     def get_context_data(self, **kwargs):
         """Include either pending or completed requests. If the user is
@@ -65,9 +67,9 @@ class AllocationRenewalRequestListView(LoginRequiredMixin, TemplateView):
         if not (user.is_superuser or user.has_perm(permission)):
             args.append(Q(requester=user) | Q(pi=user))
         if self.completed:
-            status__name__in = ['Complete', 'Denied']
+            status__name__in = ['Approved', 'Complete', 'Denied']
         else:
-            status__name__in = ['Approved', 'Under Review']
+            status__name__in = ['Under Review']
         kwargs['status__name__in'] = status__name__in
         context['renewal_request_list'] = request_list.filter(*args, **kwargs)
         context['request_filter'] = (
@@ -78,6 +80,7 @@ class AllocationRenewalRequestListView(LoginRequiredMixin, TemplateView):
 
 class AllocationRenewalRequestMixin(object):
 
+    allocation_period_obj = None
     request_obj = None
 
     def get_context_data(self, **kwargs):
@@ -95,17 +98,18 @@ class AllocationRenewalRequestMixin(object):
         return reverse(
             'pi-allocation-renewal-request-detail', kwargs={'pk': pk})
 
-    @staticmethod
-    def get_service_units_to_allocate():
+    def get_service_units_to_allocate(self):
         """Return the number of service units to allocate to the project
         if it were to be approved now."""
-        now = utc_now_offset_aware()
-        return prorated_allocation_amount(settings.FCA_DEFAULT_ALLOCATION, now)
+        return prorated_allocation_amount(
+            settings.FCA_DEFAULT_ALLOCATION, self.request_obj.request_time,
+            self.allocation_period_obj)
 
-    def set_request_obj(self, pk):
+    def set_objs(self, pk):
         self.request_obj = get_object_or_404(
             AllocationRenewalRequest.objects.prefetch_related(
                 'pi', 'post_project', 'pre_project', 'requester'), pk=pk)
+        self.allocation_period_obj = self.request_obj.allocation_period
 
 
 class AllocationRenewalRequestDetailView(LoginRequiredMixin,
@@ -139,7 +143,7 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
+        self.set_objs(pk)
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -183,6 +187,8 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
             }
             context['support_email'] = settings.CENTER_HELP_EMAIL
 
+        context['has_allocation_period_started'] = \
+            self.__has_request_allocation_period_started()
         context['is_allowed_to_manage_request'] = is_superuser
         if is_superuser:
             context['checklist'] = self.__get_checklist()
@@ -190,6 +196,8 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
         return context
 
     def post(self, request, *args, **kwargs):
+        """Approve the request. Process it if its AllocationPeriod has
+        already started."""
         pk = self.request_obj.pk
         if not request.user.is_superuser:
             message = 'You do not have permission to POST to this page.'
@@ -200,27 +208,36 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
             messages.error(request, message)
             return HttpResponseRedirect(self.get_redirect_url(pk))
         try:
-            # TODO: The status can be set to 'Approved' because the checklist
-            # TODO: is complete. When processing can occur at an arbitrary time
-            # TODO: after approval, the status should be set to 'Approved'
-            # TODO: elsewhere, and not here.
-            self.request_obj.status = \
-                AllocationRenewalRequestStatusChoice.objects.get(
-                    name='Approved')
-            self.request_obj.approval_time = utc_now_offset_aware()
-            self.request_obj.save()
+            has_allocation_period_started = \
+                self.__has_request_allocation_period_started()
             num_service_units = self.get_service_units_to_allocate()
-            runner = AllocationRenewalProcessingRunner(
-                self.request_obj, num_service_units)
-            runner.run()
+
+            # Skip sending an approval email if a processing email will be sent
+            # immediately afterward.
+            approval_runner = AllocationRenewalApprovalRunner(
+                self.request_obj, num_service_units,
+                send_email=not has_allocation_period_started)
+            approval_runner.run()
+
+            if has_allocation_period_started:
+                self.request_obj.refresh_from_db()
+                processing_runner = AllocationRenewalProcessingRunner(
+                    self.request_obj, num_service_units)
+                processing_runner.run()
         except Exception as e:
             logger.exception(e)
             messages.error(self.request, self.error_message)
         else:
+            if not has_allocation_period_started:
+                formatted_start_date = format_date_month_name_day_year(
+                    self.request_obj.allocation_period.start_date)
+                phrase = f'is scheduled for renewal on {formatted_start_date}.'
+            else:
+                phrase = 'has been renewed.'
             message = (
-                f'PI {self.request_obj.pi.username}\'s allocation has been '
-                f'renewed.')
+                f'PI {self.request_obj.pi.username}\'s allocation {phrase}')
             messages.success(self.request, message)
+            logger.info(message)
 
         return HttpResponseRedirect(
             reverse_lazy('pi-allocation-renewal-pending-request-list'))
@@ -238,8 +255,7 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
             checklist.append([
                 'Approve and process the new project request.',
                 new_project_request.status.name,
-                project_allocation_request_latest_update_timestamp(
-                    new_project_request),
+                new_project_request.latest_update_timestamp(),
                 True,
                 reverse(
                     'savio-project-request-detail',
@@ -258,6 +274,12 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
                     kwargs={'pk': self.request_obj.pk}),
             ])
         return checklist
+
+    def __has_request_allocation_period_started(self):
+        """Return whether the request's AllocationPeriod has started."""
+        return (
+            self.request_obj.allocation_period.start_date <=
+            display_time_zone_current_date())
 
     def __is_checklist_complete(self):
         """Return whether the request is ready for final submission."""
@@ -292,7 +314,7 @@ class AllocationRenewalRequestReviewEligibilityView(LoginRequiredMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
+        self.set_objs(pk)
         response_redirect = HttpResponseRedirect(self.get_redirect_url(pk))
         status_name = self.request_obj.status.name
         if status_name in ['Approved', 'Complete', 'Denied']:
@@ -366,7 +388,7 @@ class AllocationRenewalRequestReviewDenyView(LoginRequiredMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
+        self.set_objs(pk)
         response_redirect = HttpResponseRedirect(self.get_redirect_url(pk))
 
         status_name = self.request_obj.status.name
@@ -442,7 +464,7 @@ class AllocationRenewalRequestReviewDenyView(LoginRequiredMixin,
 #
 #     def dispatch(self, request, *args, **kwargs):
 #         pk = self.kwargs.get('pk')
-#         self.set_request_obj(pk)
+#         self.set_objs(pk)
 #         response_redirect = HttpResponseRedirect(self.get_redirect_url(pk))
 #
 #         status_name = self.request_obj.status.name

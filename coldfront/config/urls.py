@@ -21,6 +21,7 @@ urlpatterns = [
     path('user/', include('coldfront.core.user.urls')),
     path('project/', include('coldfront.core.project.urls')),
     path('allocation/', include('coldfront.core.allocation.urls')),
+    path('jobs/', include('coldfront.core.statistics.urls')),
     # path('grant/', include('coldfront.core.grant.urls')),
     # path('publication/', include('coldfront.core.publication.urls')),
     # path('research-output/', include('coldfront.core.research_output.urls')),

@@ -1,4 +1,3 @@
-from django.test import TestCase
 from django.contrib.messages import get_messages
 from django.urls import reverse
 from http import HTTPStatus
@@ -6,6 +5,7 @@ from http import HTTPStatus
 from coldfront.core.project.models import *
 from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestRunner
 from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.utils.tests.test_base import TestBase as AllTestsBase
 from coldfront.core.user.models import *
 from coldfront.core.allocation.models import *
 from coldfront.api.statistics.utils import create_project_allocation
@@ -13,33 +13,14 @@ from coldfront.api.statistics.utils import create_user_project_allocation
 
 from django.contrib.auth.models import User, Permission
 from django.core import mail
-from django.core.management import call_command
-
-from io import StringIO
-import os
-import sys
 
 
-class TestBase(TestCase):
+class TestBase(AllTestsBase):
     """Base class for testing project removal request views"""
 
     def setUp(self):
         """Set up test data."""
-        out, err = StringIO(), StringIO()
-        commands = [
-            'add_resource_defaults',
-            'add_allocation_defaults',
-            'import_field_of_science_data',
-            'add_default_project_choices',
-            'create_staff_group',
-            'add_brc_accounting_defaults',
-        ]
-        sys.stdout = open(os.devnull, 'w')
-        for command in commands:
-            call_command(command, stdout=out, stderr=err)
-        sys.stdout = sys.__stdout__
-
-        self.password = 'password'
+        super().setUp()
 
         # Create a requester user and multiple PI users.
         self.user1 = User.objects.create(
@@ -176,7 +157,7 @@ class TestProjectRemoveSelf(TestBase):
             status_code = HTTPStatus.FOUND if has_access else HTTPStatus.FORBIDDEN
             response = self.client.post(url, {})
             if expected_messages:
-                actual_messages = get_message_strings(response)
+                actual_messages = self.get_message_strings(response)
                 for message in expected_messages:
                     self.assertIn(message, actual_messages)
             self.assertEqual(response.status_code, status_code)
@@ -228,6 +209,34 @@ class TestProjectRemoveSelf(TestBase):
         url = reverse(
             'project-remove-self', kwargs={'pk': self.project1.pk})
 
+        pre_time = utc_now_offset_aware()
+        response = self.client.post(url, {})
+
+        self.assertRedirects(response, reverse('home'))
+        self.assertTrue(ProjectUserRemovalRequest.objects.filter(
+            requester=self.user1).exists())
+
+        removal_request = \
+            ProjectUserRemovalRequest.objects.filter(requester=self.user1).first()
+        self.assertTrue(pre_time <= removal_request.request_time <=
+                        utc_now_offset_aware())
+
+        self.client.logout()
+
+    def test_remove_self_superuser(self):
+        """Test that ProjectRemoveSelf POST performs the correct actions when
+        requester is a superuser."""
+        self.user1.is_superuser = True
+        self.user1.save()
+        self.assertTrue(self.user1.is_superuser)
+        self.client.login(username=self.user1.username, password=self.password)
+
+        url = reverse('project-detail', kwargs={'pk': self.project1.pk})
+        response = self.client.get(url)
+        self.assertContains(response, 'Leave Project')
+
+        url = reverse(
+            'project-remove-self', kwargs={'pk': self.project1.pk})
         pre_time = utc_now_offset_aware()
         response = self.client.post(url, {})
 

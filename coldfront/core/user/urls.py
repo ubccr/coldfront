@@ -7,6 +7,7 @@ from django.contrib.auth.views import PasswordResetView
 from django.urls import path, reverse_lazy
 
 import coldfront.core.user.views as user_views
+import coldfront.core.user.views_.request_hub_views as request_hub_views
 from coldfront.core.user.forms import VerifiedEmailAddressPasswordResetForm
 from coldfront.core.user.forms import UserLoginForm
 
@@ -113,4 +114,13 @@ urlpatterns = [
     path('identity-linking-request',
          user_views.IdentityLinkingRequestView.as_view(),
          name='identity-linking-request'),
+
+    # Request Hub
+    path('request-hub',
+         request_hub_views.RequestHubView.as_view(show_all_requests=False),
+         name='request-hub'),
+
+    path('request-hub-admin',
+         request_hub_views.RequestHubView.as_view(show_all_requests=True),
+         name='request-hub-admin'),
 ]

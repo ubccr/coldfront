@@ -13,10 +13,13 @@ Savio Project Request - New PI
 {% endblock %}
 
 {% block content %}
+<script type="text/javascript" src="{% static 'common/js/leave_form_alert.js' %}"></script>
 <h1>Savio: Principal Investigator</h1><hr>
 
 <ol class="breadcrumb">
   <li>Allocation Type: {{ allocation_type }}</li>
+  <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>
+  <li>Allocation Period: {{ allocation_period.name }}</li>
 </ol>
 
 <p>Provide details about a new user, who will be a Principal Investigator for the project. An existing user should have been selected in the previous step.</p>

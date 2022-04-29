@@ -14,6 +14,10 @@ Savio Project Request - Allocation Type
 
 
 {% block content %}
+<script type="text/javascript" src="{% static 'common/js/leave_form_alert.js' %}"></script>
+<script type='text/javascript' src="{% static 'selectize/selectize.min.js' %}"></script>
+<link rel='stylesheet' type='text/css' href="{% static 'selectize/selectize.bootstrap3.css' %}"/>
+
 <h1>Savio: Allocation Type</h1><hr>
 
 <p>Select the project's allocation type.</p>
@@ -54,5 +58,11 @@ Savio Project Request - Allocation Type
 <br>
 
 <p>Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
+
+<script>
+  $('select').selectize({
+    create: false,
+  })
+</script>
 
 {% endblock %}

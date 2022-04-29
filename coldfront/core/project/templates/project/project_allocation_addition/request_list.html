@@ -1,0 +1,54 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+
+
+{% block title %}
+Service Units Purchase {{ request_filter|title }} Requests %}
+{% endblock %}
+
+
+{% block content %}
+<h1>{{ request_filter|title }} Service Units Purchase Requests</h1>
+<hr>
+
+<p>
+  {% if request_filter == 'completed' %}
+    View completed requests to purchase additional Service Units. You may also
+    view pending requests
+    <a href="{% url 'service-units-purchase-pending-request-list' %}">
+      <span class="accessibility-link-text">Pending Requests</span>
+      here</a>.
+  {% else %}
+    View pending requests to purchase additional Service Units. You may also
+    view completed requests
+    <a href="{% url 'service-units-purchase-completed-request-list' %}">
+      <span class="accessibility-link-text">Completed Requests</span>
+      here</a>.
+  {% endif %}
+</p>
+
+<p>
+  Note: Requests to purchase additional Service Units are limited to Recharge
+  (ac_) projects on Savio.
+</p>
+
+{% if addition_request_list %}
+<div class="table-responsive">
+  {% with queryset=addition_request_list %}
+    {% include 'project/project_allocation_addition/request_list_table.html' %}
+  {% endwith %}
+</div>
+{% else %}
+<div class="alert alert-info">
+  No {{ request_filter }} purchase requests!
+</div>
+{% endif %}
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-admin").addClass("active");
+</script>
+
+{% endblock %}

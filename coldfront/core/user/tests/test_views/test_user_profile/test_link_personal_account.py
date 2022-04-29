@@ -5,6 +5,7 @@ from coldfront.core.user.tests.utils import grant_user_cluster_access_under_test
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 from datetime import timedelta
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils.formats import localize
@@ -175,8 +176,9 @@ class TestLinkPersonalAccount(TestBase):
             format used by the application.
 
             Datetimes are stored in UTC, but displayed in
-            'America/Los_Angeles'."""
-            return localize(d.astimezone(pytz.timezone('America/Los_Angeles')))
+            settings.DISPLAY_TIME_ZONE."""
+            return localize(
+                d.astimezone(pytz.timezone(settings.DISPLAY_TIME_ZONE)))
 
         # Create four IdentityLinkingRequests: two pending and two complete.
         status_choices = IdentityLinkingRequestStatusChoice.objects.all()

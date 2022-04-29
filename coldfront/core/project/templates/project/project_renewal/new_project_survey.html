@@ -14,12 +14,15 @@ Project Renewal - New Project Survey
 
 
 {% block content %}
+<script type="text/javascript" src="{% static 'common/js/leave_form_alert.js' %}"></script>
 <script type='text/javascript' src="{% static 'selectize/selectize.min.js' %}"></script>
 <link rel='stylesheet' type='text/css' href="{% static 'selectize/selectize.bootstrap3.css' %}"/>
 
 <h1>New Project Survey</h1><hr>
 
 <ol class="breadcrumb">
+  <li>Allocation Period: {{ allocation_period.name }}</li>
+  <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>
   <li>PI: {{ PI.user.username}}, Current Project: {{ current_project }}</li>
   <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>
   <li>Preference: {{ breadcrumb_pooling_preference }}</li>

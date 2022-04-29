@@ -1,0 +1,11 @@
+Dear managers of {{ project_name }},
+
+Your request to purchase {{ num_sus }} service units for Project {{ project_name }}'s allowance has been denied for the following reason:
+
+Category: {{ reason_category }}
+Justification: {{ reason_justification }}
+
+If you have any questions, contact us at {{ support_email }}.
+
+Thank you,
+{{ signature }}

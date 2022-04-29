@@ -14,6 +14,7 @@ Savio Project Request - Existing PI
 
 
 {% block content %}
+<script type="text/javascript" src="{% static 'common/js/leave_form_alert.js' %}"></script>
 <script type='text/javascript' src="{% static 'selectize/selectize.min.js' %}"></script>
 <link rel='stylesheet' type='text/css' href="{% static 'selectize/selectize.bootstrap3.css' %}"/>
 
@@ -21,6 +22,8 @@ Savio Project Request - Existing PI
 
 <ol class="breadcrumb">
   <li>Allocation Type: {{ allocation_type }}</li>
+  <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>
+  <li>Allocation Period: {{ allocation_period.name }}</li>
 </ol>
 
 <p>Select an existing user to be a Principal Investigator of the project. You may search for the user in the selection field. If the desired user is not listed, you may skip this step and specify information for a new PI in the next step.</p>

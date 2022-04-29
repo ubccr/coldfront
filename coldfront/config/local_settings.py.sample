@@ -26,6 +26,9 @@ if DEBUG is False and SECRET_KEY == 'vtri&lztlbinerr4+yg1yzm23ez@+ub6=4*63z1%d!)
 # This should be set to True in production when using HTTPS
 SESSION_COOKIE_SECURE = False
 
+# Sessions should last for one hour.
+SESSION_COOKIE_AGE = 60 * 60
+
 # ------------------------------------------------------------------------------
 # myBRC settings
 # ------------------------------------------------------------------------------
@@ -60,6 +63,10 @@ CENTER_PROJECT_RENEWAL_HELP_URL = CENTER_BASE_URL + '/help'
 # https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
+
+# TIME_ZONE determines which time zone datetimes are stored in.
+# DISPLAY_TIME_ZONE determines which time zone they are displayed in.
+DISPLAY_TIME_ZONE = 'America/Los_Angeles'
 
 #------------------------------------------------------------------------------
 # Logging
@@ -335,9 +342,9 @@ LOCAL_SETTINGS_EXPORT += [
 
 # XDMOD_API_URL = 'http://localhost'
 
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Enable myBRC REST API
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 EXTRA_APPS += [
     'rest_framework',
     'django_filters',
@@ -402,6 +409,13 @@ SOCIALACCOUNT_QUERY_EMAIL = True
 
 # The credentials needed to read from Google Sheets.
 GOOGLE_OAUTH2_KEY_FILE = "/tmp/credentials.json"
+
+# -----------------------------------------------------------------------------
+# Miscellaneous settings
+# -----------------------------------------------------------------------------
+EXTRA_MIDDLEWARE += [
+    'coldfront.core.utils.middleware.ExceptionMiddleware',
+]
 
 #------------------------------------------------------------------------------
 # Deployment-specific settings
