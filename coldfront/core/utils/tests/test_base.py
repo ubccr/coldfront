@@ -9,6 +9,7 @@ from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.utils.common import utc_now_offset_aware
 from django.test import Client
 from django.test import TestCase
+from flags.state import enable_flag
 from http import HTTPStatus
 from io import StringIO
 import os
@@ -23,24 +24,7 @@ class TestBase(TestCase):
 
     def setUp(self):
         """Set up test data."""
-        out, err = StringIO(), StringIO()
-        commands = [
-            'add_resource_defaults',
-            'add_allocation_defaults',
-            'add_brc_accounting_defaults',
-            'create_allocation_periods',
-            # This command calls 'print', whose output must be suppressed.
-            'import_field_of_science_data',
-            'add_default_project_choices',
-            'create_staff_group',
-            'add_default_user_choices',
-        ]
-        sys.stdout = open(os.devnull, 'w')
-        for command in commands:
-            call_command(command, stdout=out, stderr=err)
-        sys.stdout = sys.__stdout__
-
-        # Create a test client.
+        self.call_setup_commands()
         self.client = Client()
 
     def assert_has_access(self, url, user, has_access=True,
@@ -61,6 +45,32 @@ class TestBase(TestCase):
                 self.assertIn(message, actual_messages)
         self.assertEqual(response.status_code, status_code)
         self.client.logout()
+
+    @staticmethod
+    def call_setup_commands():
+        """Call the management commands that load required database
+        objects."""
+        # Run the setup commands with the BRC_ONLY flag enabled.
+        # TODO: Implement a long-term solution that enables testing of multiple
+        # TODO: types of deployments.
+        enable_flag('BRC_ONLY', create_boolean_condition=True)
+
+        out, err = StringIO(), StringIO()
+        commands = [
+            'add_resource_defaults',
+            'add_allocation_defaults',
+            'add_accounting_defaults',
+            'create_allocation_periods',
+            # This command calls 'print', whose output must be suppressed.
+            'import_field_of_science_data',
+            'add_default_project_choices',
+            'create_staff_group',
+            'add_default_user_choices',
+        ]
+        sys.stdout = open(os.devnull, 'w')
+        for command in commands:
+            call_command(command, stdout=out, stderr=err)
+        sys.stdout = sys.__stdout__
 
     @staticmethod
     def create_active_project_with_pi(project_name, pi_user):

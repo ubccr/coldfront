@@ -20,9 +20,10 @@ from coldfront.core.allocation.models import (Allocation,
                                               AllocationUser,
                                               AllocationUserAttribute,
                                               AllocationUserStatusChoice)
+from coldfront.core.allocation.signals import allocation_activate_user
 from coldfront.core.allocation.utils import get_allocation_user_cluster_access_status
 from coldfront.core.allocation.utils import get_project_compute_allocation
-from coldfront.core.allocation.signals import allocation_activate_user
+# from coldfront.core.grant.models import Grant
 from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectAddUsersToAllocationForm,
                                           ProjectReviewEmailForm,

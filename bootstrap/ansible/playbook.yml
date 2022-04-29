@@ -47,7 +47,7 @@
        owner: '{{ djangooperator }}'
        group: 'apache'
 
-    - name: Install CF MyBRC User Portal Django application dependencies
+    - name: Install Django application dependencies
       pip:
         requirements: '{{ git_prefix }}/{{ reponame }}/requirements.txt'
         executable: '{{ git_prefix }}/venv/bin/pip3'
@@ -113,22 +113,22 @@
       vars:
         ansible_python_interpreter: '{{ git_prefix}}/venv/bin/python3'
 
-    - name: Copy CF MyBRC local_settings sample file
+    - name: Copy the ColdFront local_settings.py file from the sample
       ansible.builtin.copy:
         src: '{{ git_prefix }}/{{ reponame }}/coldfront/config/local_settings.py.sample'
         dest: '{{ git_prefix }}/{{ reponame }}/coldfront/config/local_settings.py'
 
-    - name: Copy CF MyBRC local_strings sample file
+    - name: Copy the ColdFront local_strings.py file from the sample
       ansible.builtin.copy:
         src: '{{ git_prefix }}/{{ reponame }}/coldfront/config/local_strings.py.sample'
         dest: '{{ git_prefix }}/{{ reponame }}/coldfront/config/local_strings.py'
 
-    - name: Create the CF MyBRC Django app settings module
-      template: src={{ git_prefix }}/{{ reponame }}/bootstrap/ansible/cf_mybrc_settings_template.tmpl
+    - name: Create the deployment-specific _settings.py file from a template
+      template: src={{ git_prefix }}/{{ reponame }}/bootstrap/ansible/settings_template.tmpl
                 dest={{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/config/{{ deployment }}_settings.py
       become_user:  "{{ djangooperator }}"
 
-    - name: CF MyBRC Django app initial_setup
+    - name: Run Django management command - initial_setup
       django_manage:
         command: initial_setup
         app_path: "{{ git_prefix }}/{{ reponame }}"
@@ -137,7 +137,7 @@
         virtualenv: "{{ git_prefix }}/venv"
       become_user: "{{ djangooperator }}"
 
-    - name: CF MyBRC Django app migrate
+    - name: Run Django management command - migrate
       django_manage:
         command: migrate
         app_path: "{{ git_prefix }}/{{ reponame }}"
@@ -146,16 +146,16 @@
         virtualenv: "{{ git_prefix }}/venv"
       become_user: "{{ djangooperator }}"
 
-    - name: CF MyBRC Django app add_brc_accounting_defaults
+    - name: Run Django management command - add_accounting_defaults
       django_manage:
-        command: add_brc_accounting_defaults
+        command: add_accounting_defaults
         app_path: "{{ git_prefix }}/{{ reponame }}"
         settings: "config.settings"
         pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
         virtualenv: "{{ git_prefix }}/venv"
       become_user: "{{ djangooperator }}"
 
-    - name: CF MyBRC Django app create_staff_group
+    - name: Run Django management command - create_staff_group
       django_manage:
         command: create_staff_group
         app_path: "{{ git_prefix }}/{{ reponame }}"
@@ -164,7 +164,7 @@
         virtualenv: "{{ git_prefix }}/venv"
       become_user: "{{ djangooperator }}"
 
-    - name: CF MyBRC Django app collectstatic
+    - name: Run Django management command - collectstatic
       django_manage:
         command: collectstatic --noinput
         app_path: "{{ git_prefix }}/{{ reponame }}"
@@ -189,13 +189,13 @@
         group: apache
 
     - name: Create a wsgi conf file from a template without SSL
-      template: src={{ git_prefix }}/{{ reponame }}/bootstrap/ansible/cf_mybrc_wsgi_conf.tmpl
-                dest=/etc/httpd/conf.d/cf_mybrc_wsgi.conf
+      template: src={{ git_prefix }}/{{ reponame }}/bootstrap/ansible/wsgi_conf.tmpl
+                dest=/etc/httpd/conf.d/{{ wsgi_conf_file_name }}
       when: not ssl_enabled
 
     - name: Create a wsgi conf file from a template with SSL
-      template: src={{ git_prefix }}/{{ reponame }}/bootstrap/ansible/cf_mybrc_wsgi_conf_ssl.tmpl
-                dest=/etc/httpd/conf.d/cf_mybrc_wsgi.conf
+      template: src={{ git_prefix }}/{{ reponame }}/bootstrap/ansible/wsgi_conf_ssl.tmpl
+                dest=/etc/httpd/conf.d/{{ wsgi_conf_file_name }}
       when: ssl_enabled
 
     - name: Restart Apache

@@ -19,7 +19,7 @@ EMAIL_PROJECT_REVIEW_CONTACT = 'review@{{ hostname }}'
 EMAIL_DEVELOPMENT_EMAIL_LIST = ['dev1@{{ hostname }}', 'dev2@{{ hostname }}']
 EMAIL_OPT_OUT_INSTRUCTION_URL = CENTER_BASE_URL + '/optout'
 EMAIL_SIGNATURE = """
-MyBRC User Portal team
+{{ portal_name }} User Portal team
 {{ full_host_path }}
 Email : {{ from_email }}
 """
@@ -72,3 +72,15 @@ if SENTRY_DSN:
     # Ignore noisy loggers.
     ignore_logger('coldfront.api')
     ignore_logger('coldfront.core.utils.middleware')
+
+#------------------------------------------------------------------------------
+# django-flags settings
+#------------------------------------------------------------------------------
+
+FLAGS = {
+    'ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE': [
+        {'condition': 'during month', 'value': '{{ flag_next_period_renewal_requestable_month }}'},
+    ],
+    'BRC_ONLY': [{'condition': 'boolean', 'value': {{ flag_brc_enabled }}}],
+    'LRC_ONLY': [{'condition': 'boolean', 'value': {{ flag_lrc_enabled }}}],
+}

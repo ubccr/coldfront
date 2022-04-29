@@ -18,9 +18,9 @@ from collections import namedtuple
 from django.conf import settings
 from django.core.exceptions import MultipleObjectsReturned
 from django.core.exceptions import ObjectDoesNotExist
-
 from django.urls import reverse
 from urllib.parse import urljoin
+
 import logging
 
 

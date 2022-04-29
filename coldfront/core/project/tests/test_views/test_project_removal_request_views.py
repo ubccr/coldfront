@@ -1,4 +1,3 @@
-from django.test import TestCase
 from django.contrib.messages import get_messages
 from django.urls import reverse
 from http import HTTPStatus
@@ -6,6 +5,7 @@ from http import HTTPStatus
 from coldfront.core.project.models import *
 from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestRunner
 from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.utils.tests.test_base import TestBase as AllTestsBase
 from coldfront.core.user.models import *
 from coldfront.core.allocation.models import *
 from coldfront.api.statistics.utils import create_project_allocation
@@ -13,35 +13,14 @@ from coldfront.api.statistics.utils import create_user_project_allocation
 
 from django.contrib.auth.models import User, Permission
 from django.core import mail
-from django.core.management import call_command
-
-from io import StringIO
-import os
-import sys
 
 
-class TestBase(TestCase):
+class TestBase(AllTestsBase):
     """Base class for testing project removal request views"""
 
     def setUp(self):
         """Set up test data."""
-        out, err = StringIO(), StringIO()
-        commands = [
-            'add_resource_defaults',
-            'add_allocation_defaults',
-            'add_brc_accounting_defaults',
-            'create_allocation_periods',
-            'import_field_of_science_data',
-            'add_default_project_choices',
-            'create_staff_group',
-            'add_default_user_choices',
-        ]
-        sys.stdout = open(os.devnull, 'w')
-        for command in commands:
-            call_command(command, stdout=out, stderr=err)
-        sys.stdout = sys.__stdout__
-
-        self.password = 'password'
+        super().setUp()
 
         # Create a requester user and multiple PI users.
         self.user1 = User.objects.create(
