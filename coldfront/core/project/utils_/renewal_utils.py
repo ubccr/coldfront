@@ -15,10 +15,9 @@ from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
-from coldfront.core.project.utils_.request_utils import project_allocation_request_latest_update_timestamp
-from coldfront.core.project.utils_.request_utils import savio_request_denial_reason
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
+from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.common import project_detail_url
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -38,8 +37,26 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def get_current_allocation_period():
-    return AllocationPeriod.objects.get(name='AY21-22')
+def get_current_allowance_year_period():
+    """Return the AllocationPeriod representing the current allowance
+    year, of which there should be exactly one.
+
+    Parameters:
+        - None
+
+    Returns:
+        - An AllocationPeriod object.
+
+    Raises:
+        - AllocationPeriod.DoesNotExist, if no such period is found.
+        - AllocationPeriod.MultipleObjectsReturned, if multiple such
+          periods are found.
+    """
+    date = display_time_zone_current_date()
+    return AllocationPeriod.objects.get(
+        name__startswith='Allowance Year',
+        start_date__lte=date,
+        end_date__gte=date)
 
 
 def get_pi_current_active_fca_project(pi_user):
@@ -47,8 +64,9 @@ def get_pi_current_active_fca_project(pi_user):
     active fc_ Project.
 
     A Project is considered "active" if it has a completed
-    AllocationRenewalRequest for the current AllocationPeriod or if it
-    has a completed SavioProjectAllocationRequest during the period.
+    AllocationRenewalRequest for the current "Allowance Year"
+    AllocationPeriod or if it has a completed
+    SavioProjectAllocationRequest during the period.
 
     Parameters:
         - pi_user: a User object.
@@ -57,6 +75,9 @@ def get_pi_current_active_fca_project(pi_user):
         - A Project object.
 
     Raises:
+        - AllocationPeriod.DoesNotExist, if no such period is found.
+        - AllocationPeriod.MultipleObjectsReturned, if multiple such
+          periods are found.
         - AllocationRenewalRequest.MultipleObjectsReturned, if the PI
           has more than one 'Complete' renewal request during the
           current AllocationPeriod.
@@ -65,14 +86,11 @@ def get_pi_current_active_fca_project(pi_user):
         - SavioProjectAllocationRequest.MultipleObjectsReturned, if the
           PI has more than one 'Approved - Complete' request.
         - Exception, if any other errors occur.
-
-    TODO: Once the first AllocationPeriod has ended, this will need to
-    TODO: be refined to filter on time.
     """
     project = None
+    allocation_period = get_current_allowance_year_period()
 
     # Check AllocationRenewalRequests.
-    allocation_period = get_current_allocation_period()
     renewal_request_status = AllocationRenewalRequestStatusChoice.objects.get(
         name='Complete')
     renewal_requests = AllocationRenewalRequest.objects.filter(
@@ -85,7 +103,7 @@ def get_pi_current_active_fca_project(pi_user):
             message = (
                 f'PI {pi_user.username} unexpectedly has more than one '
                 f'completed FCA AllocationRenewalRequest during '
-                f'AllocationPeriod {allocation_period.name}.')
+                f'AllocationPeriod "{allocation_period.name}".')
             logger.error(message)
             raise AllocationRenewalRequest.MultipleObjectsReturned(message)
         project = renewal_requests.first().post_project
@@ -95,13 +113,15 @@ def get_pi_current_active_fca_project(pi_user):
         name='Approved - Complete')
     project_requests = SavioProjectAllocationRequest.objects.filter(
         allocation_type=SavioProjectAllocationRequest.FCA,
+        allocation_period=allocation_period,
         pi=pi_user,
         status=project_request_status)
     if project_requests.exists():
         if project_requests.count() > 1:
             message = (
                 f'PI {pi_user.username} unexpectedly has more than one '
-                f'completed FCA SavioProjectAllocationRequest.')
+                f'completed FCA SavioProjectAllocationRequest during '
+                f'AllocationPeriod "{allocation_period.name}".')
             logger.error(message)
             raise SavioProjectAllocationRequest.MultipleObjectsReturned(
                 message)
@@ -121,24 +141,8 @@ def get_pi_current_active_fca_project(pi_user):
     return project
 
 
-def has_non_denied_project_request(pi):
-    """Return whether or not the given PI User has a non-"Denied"
-    SavioProjectAllocationRequest.
-
-    TODO: Once the first AllocationPeriod has ended, this will need to
-    TODO: be refined to filter on time.
-    """
-    if not isinstance(pi, User):
-        raise TypeError(f'{pi} is not a User object.')
-    status_names = [
-        'Under Review', 'Approved - Processing', 'Approved - Complete']
-    return SavioProjectAllocationRequest.objects.filter(
-        pi=pi,
-        status__name__in=status_names).exists()
-
-
 def has_non_denied_renewal_request(pi, allocation_period):
-    """Return whether or not the given PI User has a non-"Denied"
+    """Return whether the given PI User has a non-"Denied"
     AllocationRenewalRequest for the given AllocationPeriod."""
     if not isinstance(pi, User):
         raise TypeError(f'{pi} is not a User object.')
@@ -160,6 +164,45 @@ def is_any_project_pi_renewable(project, allocation_period):
         if not has_non_denied_renewal_request(pi, allocation_period):
             return True
     return False
+
+
+def non_denied_renewal_request_statuses():
+    """Return a queryset of AllocationRenewalRequestStatusChoices that
+    do not have the name 'Denied'."""
+    return AllocationRenewalRequestStatusChoice.objects.filter(
+        ~Q(name='Denied'))
+
+
+def send_allocation_renewal_request_approval_email(request, num_service_units):
+    """Send a notification email to the requester and PI associated with
+    the given AllocationRenewalRequest stating that the request has been
+    approved, and the given number of service units will be added when
+    the request is processed."""
+    email_enabled = import_from_settings('EMAIL_ENABLED', False)
+    if not email_enabled:
+        return
+
+    subject = f'{str(request)} Approved'
+    template_name = (
+        'email/project_renewal/project_renewal_request_approved.txt')
+
+    context = {
+        'allocation_period': request.allocation_period,
+        'center_name': settings.CENTER_NAME,
+        'num_service_units': str(num_service_units),
+        'pi_name': f'{request.pi.first_name} {request.pi.last_name}',
+        'requested_project_name': request.post_project.name,
+        'requested_project_url': project_detail_url(request.post_project),
+        'signature': settings.EMAIL_SIGNATURE,
+        'support_email': settings.CENTER_HELP_EMAIL,
+    }
+
+    sender = settings.EMAIL_SENDER
+    receiver_list = [request.requester.email, request.pi.email]
+    cc = settings.REQUEST_APPROVAL_CC_LIST
+
+    send_email_template(
+        subject, template_name, context, sender, receiver_list, cc=cc)
 
 
 def send_allocation_renewal_request_denial_email(request):
@@ -365,7 +408,7 @@ def allocation_renewal_request_denial_reason(request):
         justification = eligibility['justification']
         timestamp = eligibility['timestamp']
     elif new_project_request and new_project_request.status.name == 'Denied':
-        reason = savio_request_denial_reason(new_project_request)
+        reason = new_project_request.denial_reason()
         category = reason.category
         justification = reason.justification
         timestamp = reason.timestamp
@@ -393,8 +436,7 @@ def allocation_renewal_request_latest_update_timestamp(request):
 
     new_project_request = request.new_project_request
     if new_project_request:
-        request_updated = project_allocation_request_latest_update_timestamp(
-            new_project_request)
+        request_updated = new_project_request.latest_update_timestamp()
         max_timestamp = max(max_timestamp, request_updated)
 
     return max_timestamp
@@ -412,12 +454,6 @@ def allocation_renewal_request_state_status(request):
            processing.
         - 'Complete' should be set when the request is actually
           processed.
-
-    # TODO: Currently, the request is set to 'Approved' and then
-    # TODO: immediately changed to 'Complete' when an administrator
-    # TODO: clicks the 'Submit' button. In the future, requests may not
-    # TODO: be processed immediately; instead, it will be handled by
-    # TODO: some other process (e.g., a cron job).
     """
     if not isinstance(request, AllocationRenewalRequest):
         raise TypeError(
@@ -456,9 +492,17 @@ class AllocationRenewalRunnerBase(object):
 
     def __init__(self, request_obj, *args, **kwargs):
         self.request_obj = request_obj
+        self.current_display_tz_date = display_time_zone_current_date()
+        self.assert_request_allocation_period_not_ended()
 
     def run(self):
         raise NotImplementedError('This method is not implemented.')
+
+    def assert_request_allocation_period_not_ended(self):
+        """Raise an assertion error if the request's AllocationPeriod
+        has already ended."""
+        allocation_period_obj = self.request_obj.allocation_period
+        assert self.current_display_tz_date <= allocation_period_obj.end_date
 
     def assert_request_not_status(self, unexpected_status):
         """Raise an assertion error if the request has the given
@@ -628,49 +672,67 @@ class AllocationRenewalApprovalRunner(AllocationRenewalRunnerBase):
     """An object that performs necessary database changes when an
     AllocationRenewalRequest is approved."""
 
-    # TODO: This class will become relevant when there is a need to approve,
-    # TODO: but not yet process, a request. Namely, when support for requesting
-    # TODO: renewal for the next allocation period is added, requests may be
-    # TODO: approved days or weeks before the request is actually processed.
-
-    def __init__(self, request_obj, num_service_units):
+    def __init__(self, request_obj, num_service_units, send_email=False):
         super().__init__(request_obj)
         expected_status = AllocationRenewalRequestStatusChoice.objects.get(
             name='Under Review')
         self.assert_request_status(expected_status)
         validate_num_service_units(num_service_units)
+        self.num_service_units = num_service_units
+        # Note: send_email is already the name of a method.
+        self.can_send_email = bool(send_email)
 
     def run(self):
-        pass
+        self.approve_request()
+        if self.can_send_email:
+            self.send_email()
+
+    def approve_request(self):
+        """Set the status of the request to 'Approved' and set its
+        approval_time."""
+        self.request_obj.status = \
+            AllocationRenewalRequestStatusChoice.objects.get(name='Approved')
+        self.request_obj.approval_time = utc_now_offset_aware()
+        self.request_obj.save()
 
     def handle_unpooled_to_unpooled(self):
         """Handle the case when the preference is to stay unpooled."""
-        raise NotImplementedError('This method is not implemented.')
+        pass
 
     def handle_unpooled_to_pooled(self):
         """Handle the case when the preference is to start pooling."""
-        raise NotImplementedError('This method is not implemented.')
+        pass
 
     def handle_pooled_to_pooled_same(self):
         """Handle the case when the preference is to stay pooled with
         the same project."""
-        raise NotImplementedError('This method is not implemented.')
+        pass
 
     def handle_pooled_to_pooled_different(self):
         """Handle the case when the preference is to stop pooling with
         the current project and start pooling with a different
         project."""
-        raise NotImplementedError('This method is not implemented.')
+        pass
 
     def handle_pooled_to_unpooled_old(self):
         """Handle the case when the preference is to stop pooling and
         reuse another existing project owned by the PI."""
-        raise NotImplementedError('This method is not implemented.')
+        pass
 
     def handle_pooled_to_unpooled_new(self):
         """Handle the case when the preference is to stop pooling and
         create a new project."""
-        raise NotImplementedError('This method is not implemented.')
+        pass
+
+    def send_email(self):
+        """Send a notification email to the requester and PI."""
+        request = self.request_obj
+        try:
+            send_allocation_renewal_request_approval_email(
+                request, self.num_service_units)
+        except Exception as e:
+            logger.error('Failed to send notification email. Details:')
+            logger.exception(e)
 
 
 class AllocationRenewalDenialRunner(AllocationRenewalRunnerBase):
@@ -801,16 +863,13 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
 
     def deactivate_pre_project(self):
         """Deactivate the request's pre_project, which involves setting
-        its status to 'Inactive and its corresponding compute
-        Allocation's status to 'Expired', unless either of the following
-        is true:
+        its status to 'Inactive' and its corresponding 'CLUSTER_NAME
+        Compute' Allocation's status to 'Expired', unless either of the
+        following is true:
             (a) The pre_project has been renewed during this
                 AllocationPeriod, or
             (b) A different PI made an approved and complete request to
                 pool with the pre_project.
-
-        TODO: Once the first AllocationPeriod has ended, criterion (b)
-        TODO: will need to be refined to filter on time.
 
         If the pre_project is None, do nothing."""
         request = self.request_obj
@@ -821,10 +880,11 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
                 f'Skipping deactivation.')
             return
 
+        # TODO: Set this dynamically when supporting other types.
+        allocation_period = get_current_allowance_year_period()
+
         # (a) If the pre_project has been renewed during this AllocationPeriod,
         # do not deactivate it.
-        # TODO: Reconsider the use of this AllocationPeriod moving forward.
-        allocation_period = get_current_allocation_period()
         complete_renewal_request_status = \
             AllocationRenewalRequestStatusChoice.objects.get(name='Complete')
         completed_renewals = AllocationRenewalRequest.objects.filter(
@@ -840,14 +900,14 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
             return
 
         # (b) If a different PI made an 'Approved - Complete' request to pool
-        # with the pre_project, do not deactivate it.
-        # TODO: Once the first AllocationPeriod has ended, this will need to be
-        # TODO: refined to filter on time.
+        # with the pre_project during this AllocationPeriod, do not deactivate
+        # it.
         approved_complete_request_status = \
             ProjectAllocationRequestStatusChoice.objects.get(
                 name='Approved - Complete')
         approved_complete_pool_requests_from_other_pis = \
             SavioProjectAllocationRequest.objects.filter(
+                Q(allocation_period=allocation_period) &
                 Q(allocation_type=SavioProjectAllocationRequest.FCA) &
                 ~Q(pi=request.pi) &
                 Q(pool=True) &
@@ -856,7 +916,8 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         if approved_complete_pool_requests_from_other_pis.exists():
             message = (
                 f'Project {pre_project.name} has been pooled with by a '
-                f'different PI. Skipping deactivation.')
+                f'different PI during AllocationPeriod '
+                f'"{allocation_period.name}". Skipping deactivation.')
             logger.info(message)
             return
 
@@ -943,7 +1004,7 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         self.deactivate_pre_project()
 
     def send_email(self):
-        """Send a notification email to the request and PI."""
+        """Send a notification email to the requester and PI."""
         request = self.request_obj
         try:
             send_allocation_renewal_request_processing_email(

@@ -7,7 +7,8 @@ from coldfront.core.project.models import (Project, ProjectAdminComment,
                                             ProjectReview, ProjectStatusChoice,
                                             ProjectUser, ProjectUserMessage,
                                             ProjectUserRoleChoice,
-                                            ProjectUserStatusChoice)
+                                            ProjectUserStatusChoice,
+                                            SavioProjectAllocationRequest)
 from coldfront.core.statistics.models import (ProjectTransaction,
                                               ProjectUserTransaction)
 
@@ -163,6 +164,14 @@ class ProjectReviewAdmin(SimpleHistoryAdmin):
             '{} {} ({})'.format(
                 pi_user.first_name, pi_user.last_name, pi_user.username)
             for pi_user in pi_users])
+
+    def project(self, obj):
+        return obj.project.name
+
+
+@admin.register(SavioProjectAllocationRequest)
+class SavioProjectAllocationRequestAdmin(SimpleHistoryAdmin):
+    list_display = ('pk', 'project', 'requester', 'pi', 'allocation_period')
 
     def project(self, obj):
         return obj.project.name
