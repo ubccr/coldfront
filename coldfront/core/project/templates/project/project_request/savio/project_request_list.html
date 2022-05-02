@@ -15,14 +15,14 @@ Savio Project {{ request_filter|title }} Requests
 
 <p>
   {% if request_filter == 'completed' %}
-    Viewing completed requests for new Savio projects. You may also view pending
-    requests
+    Viewing completed requests for new Savio projects (including approved
+    requests scheduled for processing). You may also view pending requests
     <a href="{% url 'savio-project-pending-request-list' %}">
       <span class="accessibility-link-text">Pending Requests</span>
       here</a>.
   {% else %}
-    Viewing pending requests for new Savio projects. You may also view completed
-    requests
+    Viewing pending requests for new Savio projects. You may also view
+    completed requests (including approved requests scheduled for processing)
     <a href="{% url 'savio-project-completed-request-list' %}">
       <span class="accessibility-link-text">Completed Requests</span>
       here</a>.
@@ -45,6 +45,11 @@ Savio Project {{ request_filter|title }} Requests
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-admin").addClass("active");
   $("#navbar-project-savio-project-requests").addClass("active");
+
+  $(document).ready(function(){
+      $('[data-toggle="popover"]').popover();
+  });
+
 </script>
 
 {% endblock %}

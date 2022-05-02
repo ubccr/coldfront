@@ -11,9 +11,21 @@
       {{ renewal_request.pk }}
     </p>
     <p class="card-text text-justify">
-      <strong>Date Requested/Last Modified: </strong>
-      {{ renewal_request.modified|date:"M. d, Y" }}
+      <strong>Date Requested: </strong>
+      {{ renewal_request.request_time|date:"M. d, Y" }}
     </p>
+    {% if renewal_request.approval_time %}
+      <p class="card-text text-justify">
+        <strong>Date Approved: </strong>
+        {{ renewal_request.approval_time|date:"M. d, Y" }}
+      </p>
+    {% endif %}
+    {% if renewal_request.completion_time %}
+      <p class="card-text text-justify">
+        <strong>Date Completed: </strong>
+        {{ renewal_request.completion_time|date:"M. d, Y" }}
+      </p>
+    {% endif %}
     <p class="card-text text-justify">
       <strong>Requester: </strong>
       {% with requester=renewal_request.requester %}
@@ -30,7 +42,10 @@
       <strong>Current Project: </strong>
       {% with pre_project=renewal_request.pre_project %}
         {% if pre_project %}
-          {{ pre_project.name }}
+          <a href="{% url 'project-detail' pre_project.pk %}">
+            <span class="accessibility-link-text">{{ pre_project.name }}</span>
+            {{ pre_project.name }}
+          </a>
         {% else %}
           N/A
         {% endif %}
@@ -40,23 +55,28 @@
       <strong>Requested Project: </strong>
       {% with post_project=renewal_request.post_project %}
         {% if post_project %}
-          {{ post_project.name }}
+          <a href="{% url 'project-detail' post_project.pk %}">
+            <span class="accessibility-link-text">{{ post_project.name }}</span>
+            {{ post_project.name }}
+          </a>
         {% else %}
           N/A
         {% endif %}
       {% endwith %}
     </p>
     <p class="card-text text-justify">
+      <strong>Allocation Period: </strong>
+      {{ renewal_request.allocation_period.name }}
+    </p>
+    <p class="card-text text-justify">
       {% if renewal_request.status.name == 'Approved' %}
         <strong>Number of Service Units Approved to be Added: </strong>
-        {{ renewal_request.num_service_units }}
       {% elif renewal_request.status.name == 'Complete' %}
         <strong>Number of Service Units Added: </strong>
-        {{ renewal_request.num_service_units }}
       {% else %}
-        <strong>Number of Service Units to Add (if approved now): </strong>
-        {{ allocation_amount }}
+        <strong>Number of Service Units to Add: </strong>
       {% endif %}
+      {{ allocation_amount }}
     </p>
   </div>
 </div>

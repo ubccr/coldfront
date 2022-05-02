@@ -15,14 +15,16 @@ Project Renewal {{ request_filter|title }} Requests %}
 
 <p>
   {% if request_filter == 'completed' %}
-    View completed requests for allocation renewals under projects. You may
-    also view pending requests
+    View completed requests for allocation renewals under projects (including
+    approved requests scheduled for processing). You may also view pending
+    requests
     <a href="{% url 'pi-allocation-renewal-pending-request-list' %}">
       <span class="accessibility-link-text">Pending Requests</span>
       here</a>.
   {% else %}
     View pending requests for allocation renewals under projects. You may also
-    view completed requests
+    view completed requests (including approved requests scheduled for
+    processing)
     <a href="{% url 'pi-allocation-renewal-completed-request-list' %}">
       <span class="accessibility-link-text">Completed Requests</span>
       here</a>.
@@ -44,7 +46,11 @@ Project Renewal {{ request_filter|title }} Requests %}
 <script>
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-admin").addClass("active");
-  // TODO
+
+  $(document).ready(function(){
+      $('[data-toggle="popover"]').popover();
+  });
+
 </script>
 
 {% endblock %}

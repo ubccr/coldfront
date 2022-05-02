@@ -4,11 +4,16 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.db.models import BooleanField
+from django.db.models import Case
 from django.db.models import Q
+from django.db.models import Value
+from django.db.models import When
 from django.urls import reverse
 from urllib.parse import urljoin
 
 from coldfront.core.allocation.models import (AllocationAttributeType,
+                                              AllocationPeriod,
                                               AllocationUser,
                                               AllocationUserAttribute,
                                               AllocationUserStatusChoice,
@@ -22,7 +27,10 @@ from coldfront.core.allocation.models import (AllocationAttributeType,
 from coldfront.core.allocation.signals import allocation_activate_user
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
+from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import utc_now_offset_aware
+
+from flags.state import flag_enabled
 
 import math
 import pytz
@@ -85,6 +93,22 @@ def test_allocation_function(allocation_pk):
     # print('test_allocation_function', allocation_pk)
 
 
+def annotate_queryset_with_allocation_period_not_started_bool(queryset):
+    """Given a queryset of instances that may have an AllocationPeriod,
+    annotate each instance with a boolean field named
+    'allocation_period_not_started', which is True if it (a) has an
+    AllocationPeriod and (b) that period has not started."""
+    date = display_time_zone_current_date()
+    return queryset.annotate(
+        allocation_period_not_started=Case(
+            When(
+                Q(allocation_period__isnull=False) &
+                Q(allocation_period__start_date__gt=date),
+                then=Value(True)),
+            default=Value(False),
+            output_field=BooleanField()))
+
+
 def get_or_create_active_allocation_user(allocation_obj, user_obj):
     allocation_user_status_choice = \
         AllocationUserStatusChoice.objects.get(name='Active')
@@ -123,19 +147,32 @@ def get_allocation_user_cluster_access_status(allocation_obj, user_obj):
 
 
 def get_project_compute_resource_name(project_obj):
-    """Return the name of the Compute Resource that corresponds to the
-    given Project."""
-    if project_obj.name == 'abc':
-        resource_name = 'ABC Compute'
-    elif project_obj.name.startswith('vector_'):
-        resource_name = 'Vector Compute'
-    else:
-        resource_name = 'Savio Compute'
-    return resource_name
+    """Return the name of the '{cluster_name} Compute' Resource that
+    corresponds to the given Project.
+
+    The name is based on currently-enabled flags (i.e., BRC, LRC). If
+    one cannot be determined, return the empty string."""
+    if flag_enabled('BRC_ONLY'):
+        if project_obj.name == 'abc':
+            resource_name = 'ABC Compute'
+        elif project_obj.name.startswith('vector_'):
+            resource_name = 'Vector Compute'
+        else:
+            resource_name = 'Savio Compute'
+        return resource_name
+    if flag_enabled('LRC_ONLY'):
+        if project_obj.name.startswith(('ac_', 'lr_', 'pc_')):
+            resource_name = 'LAWRENCIUM Compute'
+        else:
+            # TODO: Verify this behavior.
+            resource_name = f'{project_obj.name.upper()} Compute'
+        return resource_name
+    return ''
 
 
 def get_project_compute_allocation(project_obj):
-    """Return the given Project's Allocation to a Compute Resource."""
+    """Return the given Project's Allocation to a
+    '{cluster_name} Compute' Resource."""
     resource_name = get_project_compute_resource_name(project_obj)
     return project_obj.allocation_set.get(resources__name=resource_name)
 
@@ -152,7 +189,7 @@ def next_allocation_start_datetime():
     """
     start_month = settings.ALLOCATION_YEAR_START_MONTH
     start_day = settings.ALLOCATION_YEAR_START_DAY
-    local_tz = pytz.timezone('America/Los_Angeles')
+    local_tz = pytz.timezone(settings.DISPLAY_TIME_ZONE)
     dt = utc_now_offset_aware().astimezone(local_tz)
     start_year = dt.year + int(dt.month >= start_month)
     return datetime(
@@ -160,35 +197,48 @@ def next_allocation_start_datetime():
             pytz.timezone(settings.TIME_ZONE))
 
 
-def prorated_allocation_amount(amount, dt):
+def prorated_allocation_amount(amount, dt, allocation_period):
     """Given a number of service units and a datetime, return the
     prorated number of service units that would be allocated in the
-    current allocation year, based on the datetime's month.
+    given AllocationPeriod, based on the datetime's position within that
+    period. If it is before, return the full amount. If it is after,
+    return zero.
 
     Parameters:
         - amount (Decimal): a number of service units (e.g.,
                             settings.FCA_DEFAULT_ALLOCATION).
         - dt (datetime): a datetime object whose month is used in the
                          calculation, based on its position relative to
-                         the start month of the allocation year.
+                         the start month of the given AllocationPeriod.
+        - allocation_period (AllocationPeriod): an AllocationPeriod
+                                                object to compare the
+                                                datetime against.
 
     Returns:
         - Decimal
 
     Raises:
-        - TypeError, if either argument has an invalid type
-        - ValueError, if the provided amount is outside of the allowed
+        - TypeError, if any argument has an invalid type
+        - ValueError, if the provided amount is outside the allowed
         range for allocations
     """
     if not isinstance(amount, Decimal):
         raise TypeError(f'Invalid Decimal {amount}.')
     if not isinstance(dt, datetime):
         raise TypeError(f'Invalid datetime {dt}.')
+    if not isinstance(allocation_period, AllocationPeriod):
+        raise TypeError(f'Invalid AllocationPeriod {allocation_period}.')
     if not (settings.ALLOCATION_MIN < amount < settings.ALLOCATION_MAX):
         raise ValueError(f'Invalid amount {amount}.')
-    month = dt.month
+    date = dt.astimezone(pytz.timezone(settings.DISPLAY_TIME_ZONE)).date()
+    start, end = allocation_period.start_date, allocation_period.end_date
+    if date < start:
+        return amount
+    if date > end:
+        return settings.ALLOCATION_MIN
+    month = date.month
     amount_per_month = amount / 12
-    start_month = settings.ALLOCATION_YEAR_START_MONTH
+    start_month = start.month
     if month >= start_month:
         amount = amount - amount_per_month * (month - start_month)
     else:

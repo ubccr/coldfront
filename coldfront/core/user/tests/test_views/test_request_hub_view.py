@@ -9,7 +9,7 @@ from coldfront.api.statistics.utils import create_project_allocation, \
     create_user_project_allocation, get_accounting_allocation_objects
 from coldfront.core.allocation.models import AllocationUserAttribute, \
     AllocationAttributeType, \
-    allocation_renewal_request_state_schema, AllocationPeriod, \
+    allocation_renewal_request_state_schema, \
     AllocationRenewalRequestStatusChoice, AllocationRenewalRequest, \
     allocation_addition_request_state_schema, \
     AllocationAdditionRequestStatusChoice, AllocationAdditionRequest
@@ -19,6 +19,7 @@ from coldfront.core.project.models import ProjectStatusChoice, \
     SavioProjectAllocationRequest, ProjectAllocationRequestStatusChoice, \
     savio_project_request_state_schema, vector_project_request_state_schema, \
     VectorProjectAllocationRequest, ProjectUserJoinRequest
+from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
@@ -259,7 +260,7 @@ class TestRequestHubView(TestBase):
             # completed request is shown
             completed_div = str(
                 soup.find(id=f'{section}_completed'))
-            self.assertIn(str(completed_req.pk), pending_div)
+            self.assertIn(str(completed_req.pk), completed_div)
             self.assertIn(completed_req.project_user.user.username, completed_div)
             self.assertIn(completed_req.requester.username, completed_div)
             self.assertIn(completed_req.completion_time.strftime("%b. %d, %Y"), completed_div)
@@ -530,7 +531,7 @@ class TestRequestHubView(TestBase):
         kwargs = {
             'pi': self.pi,
             'requester': self.user0,
-            'allocation_period': AllocationPeriod.objects.get(name='AY21-22'),
+            'allocation_period': get_current_allowance_year_period(),
             'pre_project': self.project0,
             'post_project': self.project0,
             'num_service_units': 1000,
@@ -538,7 +539,7 @@ class TestRequestHubView(TestBase):
             'state': allocation_renewal_request_state_schema()
         }
         pending_status = AllocationRenewalRequestStatusChoice.objects.get(
-            name='Approved')
+            name='Under Review')
         complete_status = AllocationRenewalRequestStatusChoice.objects.get(
             name='Complete')
         pending_req = AllocationRenewalRequest.objects.create(

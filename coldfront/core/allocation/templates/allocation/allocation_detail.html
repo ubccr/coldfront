@@ -2,6 +2,7 @@
 {% load crispy_forms_tags %}
 {% load common_tags %}
 {% load static %}
+{% load feature_flags %}
 
 
 {% block title %}
@@ -152,13 +153,13 @@ Allocation Detail
           {% for attribute in attributes %}
           {% if attribute.allocation_attribute_type.is_private %}
           <tr style="background-color:#eee">
-            <td><i class="fas fa-lock" aria-hidden="true"></i> {{attribute}}</td>
-            <td>{{attribute.value}}</td>
+            <td><i class="fas fa-lock" aria-hidden="true"></i> {{attribute.display_name}}</td>
+            <td>{{attribute.display_value}}</td>
           </tr>
           {% else %}
           <tr>
-            <td>{{attribute}}</td>
-            <td>{{attribute.value}}</td>
+            <td>{{attribute.display_name}}</td>
+            <td>{{attribute.display_value}}</td>
           </tr>
           {% endif %}
           {% endfor %}
@@ -211,6 +212,10 @@ Allocation Detail
             <th scope="col">Cluster Username</th>
 <!--            <th scope="col">Last Modified</th>-->
             <th scope="col">Usage</th>
+            {% flag_enabled 'LRC_ONLY' as lrc_only %}
+            {% if lrc_only %}
+              <th scope="col">Billing ID</th>
+            {% endif %}
           </tr>
         </thead>
         <tbody>
@@ -229,6 +234,10 @@ Allocation Detail
             {% endif %}
 <!--            <td>{{ user.modified|date:"M. d, Y" }}</td>-->
             <td>{{ allocation_user_su_usages|get_value_from_dict:user.user.username }}</td>
+            {% flag_enabled 'LRC_ONLY' as lrc_only %}
+            {% if lrc_only %}
+              <td>{{ allocation_user_billing_ids|get_value_from_dict:user.user.username}}</td>
+            {% endif %}
           </tr>
           {% endfor %}
         </tbody>

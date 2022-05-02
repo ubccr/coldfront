@@ -1,81 +1,127 @@
-#########################################################
-## Settings need for ColdFront based MyBRC Django APP
-
-####################################
+###############################################################################
 # General Settings
-#####################################
-
-# The user running the playbook.
+###############################################################################
 
 domain: localhost
 reponame: coldfront
 djangoprojname: coldfront 
 
-#####################################
-#BRC Config
-#####################################
+###############################################################################
+# BRC/LRC Config
+###############################################################################
 
 # The name of the PostgreSQL database.
+# TODO: For LRC, set this to 'cf_lrc_db'.
 db_name: cf_brc_db
 
 # The credentials for the database admin user.
+# TODO: Replace the username and password.
 db_admin_user: admin
 db_admin_passwd: ''
 
-log_path: '/var/log/user_portals/cf_mybrc'
-portal_log_file: 'cf_mybrc_portal.log'
-api_log_file: 'cf_mybrc_api.log'
+# Log paths.
+# TODO: For LRC, use the substring 'cf_mylrc'.
+log_path: /var/log/user_portals/cf_mybrc
+portal_log_file: cf_mybrc_portal.log
+api_log_file: cf_mybrc_api.log
 
+# Email settings.
 email_port: 25
+# TODO: Set these addresses to yours.
 from_email: brc-hpc-help@berkeley.edu
 admin_email: brc-hpcs@berkeley.edu
+# TODO: For LRC, use the substring 'MyLRC'.
 email_subject_prefix: '[MyBRC-User-Portal]'
 
-google_sheets_credentials: '/tmp/credentials.json'
+# Apache settings.
+# The name of the copy of the generated WSGI template in the Apache directory.
+# TODO: For LRC, use the substring 'cf_mylrc'.
+wsgi_conf_file_name: cf_mybrc_wsgi.conf
+# TODO: For LRC, use the substring 'cf_lrc'.
+wsgi_conf_log_prefix: cf_brc
+
+# Django Flags settings.
+# TODO: For LRC, disable BRC and enable LRC.
+flag_brc_enabled: True
+flag_lrc_enabled: False
+# The number of the month in which users should be able to request renewal for
+# the next allowance year.
+# TODO: For LRC, set the month number to 9 (September).
+flag_next_period_renewal_requestable_month: 5
+
+# Portal settings.
+# TODO: For LRC, use the string "MyLRC".
+portal_name: "MyBRC"
 
 # The URL of the Sentry instance to send errors to.
 sentry_dsn: ""
 
-#####################################
-#STAGING SETTINGS
-#####################################
-#deployment: staging
-#djangooperator: root
+###############################################################################
+# staging_settings
+###############################################################################
 
-#debug: True
-#git_prefix: /var/www/coldfront_app/
-#hostname: scgup-dev.lbl.gov
-#host_ip: 131.243.130.236
-#app_port: 8000
-#full_host_path: http://scgup-dev.lbl.gov:8000
+# The type of deployment ('dev', 'prod', 'staging').
+# deployment: staging
 
-#ssl_enabled: false
-#ssl_certificate_file: /etc/ssl/ssl_certificate.file
-#ssl_certificate_key_file: /etc/ssl/ssl_certificate_key.file
-#ssl_certificate_chain_file: /etc/ssl/ssl_certification_chain.file
+# The user to run commands under and set permissions using.
+# djangooperator: root
 
-ip_range_with_api_access: 0.0.0.0/24
+# Whether to run the Django application in DEBUG mode.
+# debug: True
 
-request_approval_cc_list: []
+# The path to the parent directory containing the Git repository.
+# git_prefix: /var/www/coldfront_app
 
-#####################################
-#PROD SETTINGS
-#####################################
-#deployment: prod
-#djangooperator: meli
+# Host settings.
+# hostname: scgup-dev.lbl.gov
+# host_ip: 131.243.130.236
+# app_port: 8000
+# full_host_path: http://scgup-dev.lbl.gov:8000
 
-#debug: False
-#git_prefix: /var/www/coldfront_app/
-#hostname: mybrc.brc.berkeley.edu
-#host_ip: 136.152.224.34
-#app_port: 8000
-#full_host_path: https://mybrc.brc.berkeley.edu
+# SSL settings.
+# ssl_enabled: false
+# ssl_certificate_file: /etc/ssl/ssl_certificate.file
+# ssl_certificate_key_file: /etc/ssl/ssl_certificate_key.file
+# ssl_certificate_chain_file: /etc/ssl/ssl_certification_chain.file
 
-#ssl_enabled: true
-#ssl_certificate_file: /etc/ssl/ssl_certificate.file
-#ssl_certificate_key_file: /etc/ssl/ssl_certificate_key.file
-#ssl_certificate_chain_file: /etc/ssl/ssl_certification_chain.file
+# An IP range, in CIDR notation, to which the REST API is accessible.
+# ip_range_with_api_access: 0.0.0.0/24
 
-ip_range_with_api_access: 10.0.0.0/8
+# A list of email addresses to CC when certain requests are processed.
+# TODO: Set this address to yours.
+# request_approval_cc_list: []
 
-request_approval_cc_list: ['wfeinstein@lbl.gov']
+###############################################################################
+# prod_settings
+###############################################################################
+
+# The type of deployment ('dev', 'prod', 'staging').
+# deployment: prod
+
+# The user to run commands under and set permissions using.
+# djangooperator: meli
+
+# Whether to run the Django application in DEBUG mode.
+# debug: False
+
+# The path to the parent directory containing the Git repository.
+# git_prefix: /var/www/coldfront_app
+
+# Host settings.
+# hostname: mybrc.brc.berkeley.edu
+# host_ip: 136.152.224.34
+# app_port: 8000
+# full_host_path: https://mybrc.brc.berkeley.edu
+
+# SSL settings.
+# ssl_enabled: true
+# ssl_certificate_file: /etc/ssl/ssl_certificate.file
+# ssl_certificate_key_file: /etc/ssl/ssl_certificate_key.file
+# ssl_certificate_chain_file: /etc/ssl/ssl_certification_chain.file
+
+# An IP range, in CIDR notation, to which the REST API is accessible.
+# ip_range_with_api_access: 10.0.0.0/8
+
+# A list of email addresses to CC when certain requests are processed.
+# TODO: Set this address to yours.
+# request_approval_cc_list: ['wfeinstein@lbl.gov']

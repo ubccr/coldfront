@@ -64,6 +64,10 @@ CENTER_PROJECT_RENEWAL_HELP_URL = CENTER_BASE_URL + '/help'
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 
+# TIME_ZONE determines which time zone datetimes are stored in.
+# DISPLAY_TIME_ZONE determines which time zone they are displayed in.
+DISPLAY_TIME_ZONE = 'America/Los_Angeles'
+
 #------------------------------------------------------------------------------
 # Logging
 #------------------------------------------------------------------------------
@@ -383,14 +387,6 @@ EMAIL_VERIFICATION_TIMEOUT = 24 * 60 * 60
 
 # The credentials needed to read from Google Sheets.
 GOOGLE_OAUTH2_KEY_FILE = "/tmp/credentials.json"
-
-#------------------------------------------------------------------------------
-# django-flags settings
-#------------------------------------------------------------------------------
-
-FLAGS = {
-    'LRC_ONLY': [],
-}
 
 # -----------------------------------------------------------------------------
 # Miscellaneous settings

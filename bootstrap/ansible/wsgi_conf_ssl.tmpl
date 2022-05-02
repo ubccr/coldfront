@@ -1,0 +1,50 @@
+WSGISocketPrefix /var/run/wsgi
+LoadModule auth_basic_module modules/mod_auth_basic.so
+LoadModule authz_user_module modules/mod_authz_user.so
+LoadModule headers_module modules/mod_headers.so
+LoadModule ssl_module modules/mod_ssl.so
+
+WSGIPassAuthorization On
+
+<VirtualHost 0.0.0.0:443>
+
+    ServerName {{ hostname }}
+    ServerAlias {{ hostname }}
+
+    Alias /static/ {{ git_prefix }}/{{ reponame }}/static_root/
+    <Directory {{ git_prefix }}/{{ reponame }}/static_root/>
+        Require all granted
+    </Directory>
+
+    WSGIDaemonProcess coldfront python-path={{ git_prefix }}/{{ reponame }} python-home={{ git_prefix }}/venv/ processes=2 threads=15 display-name=coldfront
+    WSGIProcessGroup coldfront
+
+    WSGIScriptAlias / {{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/config/wsgi.py process-group=coldfront
+
+    <Directory {{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/config/>
+        <Files wsgi.py>
+            Require all granted
+        </Files>
+    </Directory>
+
+    SSLEngine on
+    SSLProtocol all -SSLv2 -SSLv3
+    SSLCertificateFile {{ ssl_certificate_file }}
+    SSLCertificateKeyFile {{ ssl_certificate_key_file }}
+    SSLCertificateChainFile {{ ssl_certificate_chain_file }}
+
+    ErrorLog /var/log/httpd/{{ wsgi_conf_log_prefix }}.error.log
+    CustomLog /var/log/httpd/{{ wsgi_conf_log_prefix }}.custom.log combined
+
+    <LocationMatch /(api(/|$))>
+        Require ip {{ ip_range_with_api_access }}
+    </LocationMatch>
+
+</VirtualHost>
+
+<VirtualHost {{ host_ip }}:80>
+
+    ServerName {{ hostname }}
+    Redirect permanent "/" "{{ full_host_path }}"
+
+</VirtualHost>
