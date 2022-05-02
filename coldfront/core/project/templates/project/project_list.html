@@ -15,7 +15,6 @@ Project List
     {% if user.userprofile.is_pi or user.is_superuser %}
       <a class="btn btn-primary" href="{% url 'project-create' %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add a project</a>
       <a class="btn btn-secondary" href="{% url 'project-import' %}" role="button"><i class="fas fa-file-import"></i> Import a Project</a>
-      <a class="btn btn-secondary" href="{% url 'project-merge' %}" role="button"><i class="fas fa-boxes"></i> Merge Projects</a>
     {% endif %}
     <div class="float-right">
       <a class="btn btn-primary" href="{% url 'project-archived-list' %}?{{filter_parameters}}" role="button"><i class="fas fa-archive" aria-hidden="true"></i> View archived projects</a>

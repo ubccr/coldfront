@@ -10,7 +10,6 @@ urlpatterns = [
     path('archived/', project_views.ProjectArchivedListView.as_view(), name='project-archived-list'),
     path('create/', project_views.ProjectCreateView.as_view(), name='project-create'),
     path('import/', project_views.ProjectImportView.as_view(), name='project-import'),
-    path('merge/', project_views.ProjectMergeView.as_view(), name='project-merge'),
     path('<int:pk>/update/', project_views.ProjectUpdateView.as_view(), name='project-update'),
     path('<int:pk>/export/', project_views.ProjectExportView.as_view(), name='project-export'),
     path('<int:pk>/add-users-search/', project_views.ProjectAddUsersSearchView.as_view(), name='project-add-users-search'),
