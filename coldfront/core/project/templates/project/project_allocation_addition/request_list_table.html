@@ -54,7 +54,14 @@
       </td>
       <td>{{ addition_request.modified|date:"M. d, Y" }}</td>
       <td>{{ addition_request.requester.email }}</td>
-      <td>{{ addition_request.project.name }}</td>
+
+      <td>
+        <a href="{% url 'project-detail' addition_request.project.pk %}">
+          <span class="accessibility-link-text">Project {{ addition_request.project.name }}</span>
+          {{ addition_request.project.name }}
+        </a>
+      </td>
+
       <td>{{ addition_request.num_service_units }}</td>
       <td>
         {% with status=addition_request.status.name %}

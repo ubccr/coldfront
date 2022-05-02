@@ -53,7 +53,12 @@
       </td>
       <td>{{ savio_project_request.request_time|date:"M. d, Y" }}</td>
       <td>{{ savio_project_request.requester.email }}</td>
-      <td>{{ savio_project_request.project.name }}</td>
+      <td>
+        <a href="{% url 'project-detail' savio_project_request.project.pk %}">
+          <span class="accessibility-link-text">Project {{ savio_project_request.project.name }}</span>
+          {{ savio_project_request.project.name }}
+        </a>
+      </td>
       <td>{{ savio_project_request.pi.email }}</td>
       <td>
         {% with status=savio_project_request.status.name %}
