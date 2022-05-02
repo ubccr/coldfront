@@ -1,4 +1,5 @@
 {% extends "common/base.html" %}
+{% load feature_flags %}
 {% load crispy_forms_tags %}
 {% load static %}
 
@@ -23,6 +24,11 @@ Savio Project Request - New PI
 </ol>
 
 <p>Provide details about a new user, who will be a Principal Investigator for the project. An existing user should have been selected in the previous step.</p>
+
+{% flag_enabled 'LRC_ONLY' as lrc_only %}
+{% if lrc_only %}
+  <p>Note: Only LBL employees, users with an "@lbl.gov" email, can be a PI.</p>
+{% endif %}
 
 <form action="" method="post">
   {% csrf_token %}

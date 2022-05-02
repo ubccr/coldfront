@@ -205,4 +205,5 @@ class TestSavioProjectExistingPIForm(TestBase):
             else:
                 self.assertNotIn(self.user.pk, pi_field_disabled_choices)
 
-    # TODO
+    # TODO: Test LRC-only functionality. PIs are only shown/allowed if
+    #  they have an lbl.gov email
