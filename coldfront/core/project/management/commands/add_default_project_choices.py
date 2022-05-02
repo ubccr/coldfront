@@ -34,6 +34,7 @@ class Command(BaseCommand):
         choices = [
             'Under Review',
             'Approved - Processing',
+            'Approved - Scheduled',
             'Approved - Complete',
             'Denied',
         ]

@@ -11,16 +11,16 @@
       </a>
     </th>
     <th scope="col">
-      Date Requested/<br>Last Modified
-      <a href="?order_by=modified&direction=asc&{{filter_parameters}}">
+      Requested
+      <a href="?order_by=request_time&direction=asc&{{filter_parameters}}">
         <i class="fas fa-sort-up"></i>
       </a>
-      <a href="?order_by=modified&direction=des&{{filter_parameters}}">
+      <a href="?order_by=request_time&direction=des&{{filter_parameters}}">
         <i class="fas fa-sort-down"></i>
       </a>
     </th>
     <th scope="col">
-      Requester Email
+      Requester
       <a href="?order_by=requester__email&direction=asc&{{filter_parameters}}">
         <i class="fas fa-sort-up"></i>
       </a>
@@ -29,16 +29,7 @@
       </a>
     </th>
     <th scope="col">
-      Current Project
-      <a href="?order_by=project&direction=asc&{{filter_parameters}}">
-        <i class="fas fa-sort-up"></i>
-      </a>
-      <a href="?order_by=project&direction=des&{{filter_parameters}}">
-        <i class="fas fa-sort-down"></i>
-      </a>
-    </th>
-    <th scope="col">
-      Requested Project
+      Project
       <a href="?order_by=project&direction=asc&{{filter_parameters}}">
         <i class="fas fa-sort-up"></i>
       </a>
@@ -56,6 +47,19 @@
       </a>
     </th>
     <th scope="col">Status</th>
+    <th scope="col">
+      <a
+          href="#"
+          data-toggle="popover"
+          title="Allocation Period Started?"
+          data-trigger="hover"
+          data-content="Green indicates that the request's Allocation Period has already started. Red indicates that it has not.">
+        <span class="accessibility-link-text">
+          Allocation Period Started?
+        </span>
+        <i class="fas fa-info-circle"></i>
+      </a>
+    </th>
   </tr>
   </thead>
   <tbody>
@@ -67,18 +71,14 @@
           {{ renewal_request.pk }}
         </a>
       </td>
-      <td>{{ renewal_request.modified|date:"M. d, Y" }}</td>
+      <td>{{ renewal_request.request_time|date:"M. d, Y" }}</td>
       <td>{{ renewal_request.requester.email }}</td>
       <td>
-        {% with pre_project=renewal_request.pre_project %}
-          {% if pre_project %}
-            {{ pre_project.name }}
-          {% else %}
-            N/A
-          {% endif %}
-        {% endwith %}
+        <a href="{% url 'project-detail' renewal_request.post_project.pk %}">
+          <span class="accessibility-link-text">{{ renewal_request.post_project.name }}</span>
+          {{ renewal_request.post_project.name }}
+        </a>
       </td>
-      <td>{{ renewal_request.post_project.name }}</td>
       <td>{{ renewal_request.pi.email }}</td>
       <td>
         {% with status=renewal_request.status.name %}
@@ -86,7 +86,7 @@
             <span class="badge badge-warning">{{ status }}</span>
           {% elif status == 'Approved' %}
             <span class="badge badge-warning">
-                {{ status }} - Incomplete
+                {{ status }} - Scheduled
               </span>
           {% elif status == 'Complete' %}
             <span class="badge badge-success">{{ status }}</span>
@@ -94,6 +94,15 @@
             <span class="badge badge-danger">{{ status }}</span>
           {% endif %}
         {% endwith %}
+      </td>
+      <td>
+        {% if not renewal_request.allocation_period_not_started %}
+          <div class="col-1 p-1 badge-success d-inline-block rounded-circle"></div>
+          <span class="accessibility-link-text">Yes</span>
+        {% else %}
+          <div class="col-1 p-1 badge-danger d-inline-block rounded-circle"></div>
+          <span class="accessibility-link-text">No</span>
+        {% endif %}
       </td>
     </tr>
   {% endfor %}

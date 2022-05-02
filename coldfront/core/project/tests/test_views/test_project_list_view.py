@@ -1,5 +1,8 @@
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectStatusChoice
+from coldfront.core.project.models import ProjectUser
+from coldfront.core.project.models import ProjectUserRoleChoice
+from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.utils.tests.test_base import TestBase
 from django.urls import reverse
 from urllib.parse import urlencode
@@ -45,5 +48,48 @@ class TestProjectListView(TestBase):
 
         self.assertContains(response, active_name)
         self.assertContains(response, inactive_name)
+
+    def test_renew_pi_allowance_button_conditionally_visible(self):
+        """Test that the button for renewing a PI's allowance is only
+        visible for Users who are Active Managers or PIs of Projects."""
+        url = self.project_list_url()
+        button_text = 'Renew a PI\'s Allowance'
+
+        project = Project.objects.create(
+            name='fc_project',
+            status=ProjectStatusChoice.objects.get(name='Active'))
+
+        all_roles = ProjectUserRoleChoice.objects.distinct()
+        all_statuses = ProjectUserStatusChoice.objects.distinct()
+
+        successful_pairs = {
+            ('Active', 'Manager'),
+            ('Active', 'Principal Investigator'),
+        }
+        expected_num_successes = len(successful_pairs)
+        actual_num_successes = 0
+        expected_num_failures = (all_roles.count() * all_statuses.count() -
+                                 expected_num_successes)
+        actual_num_failures = 0
+
+        for role in all_roles:
+            for status in all_statuses:
+                defaults = {
+                    'role': role,
+                    'status': status,
+                }
+                ProjectUser.objects.update_or_create(
+                    project=project, user=self.user, defaults=defaults)
+                response = self.client.get(url)
+
+                if (status.name, role.name) in successful_pairs:
+                    self.assertContains(response, button_text)
+                    actual_num_successes = actual_num_successes + 1
+                else:
+                    self.assertNotContains(response, button_text)
+                    actual_num_failures = actual_num_failures + 1
+
+        self.assertEqual(expected_num_successes, actual_num_successes)
+        self.assertEqual(expected_num_failures, actual_num_failures)
 
     # TODO

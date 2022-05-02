@@ -11,9 +11,21 @@
       {{ savio_request.pk }}
     </p>
     <p class="card-text text-justify">
-      <strong>Date Requested/Last Modified: </strong>
-      {{ savio_request.modified|date:"M. d, Y" }}
+      <strong>Date Requested: </strong>
+      {{ savio_request.request_time|date:"M. d, Y" }}
     </p>
+    {% if savio_request.approval_time %}
+      <p class="card-text text-justify">
+        <strong>Date Approved: </strong>
+        {{ savio_request.approval_time|date:"M. d, Y" }}
+      </p>
+    {% endif %}
+    {% if savio_request.completion_time %}
+      <p class="card-text text-justify">
+        <strong>Date Completed: </strong>
+        {{ savio_request.completion_time|date:"M. d, Y" }}
+      </p>
+    {% endif %}
     <p class="card-text text-justify">
       <strong>Requester: </strong>
       {% with requester=savio_request.requester %}
@@ -59,7 +71,15 @@
       {% endif %}
     </p>
     <p class="card-text text-justify">
-      <strong>Number of Service Units to Add (if approved now): </strong>
+      <strong>Initial Allocation Period: </strong>
+      {% if savio_request.allocation_period %}
+        {{ savio_request.allocation_period.name }}
+      {% else %}
+        N/A
+      {% endif %}
+    </p>
+    <p class="card-text text-justify">
+      <strong>Number of Service Units to Add: </strong>
       {{ allocation_amount }}
     </p>
     <p class="card-text text-justify">

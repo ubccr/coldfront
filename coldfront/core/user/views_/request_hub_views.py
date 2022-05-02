@@ -7,6 +7,7 @@ from coldfront.core.allocation.models import (AllocationAttributeType,
                                               AllocationUserAttribute,
                                               AllocationRenewalRequest,
                                               AllocationAdditionRequest)
+from coldfront.core.allocation.utils import annotate_queryset_with_allocation_period_not_started_bool
 from coldfront.core.project.models import (ProjectUserRemovalRequest,
                                            SavioProjectAllocationRequest,
                                            VectorProjectAllocationRequest,
@@ -157,17 +158,20 @@ class RequestHubView(LoginRequiredMixin,
         if not self.show_all_requests:
             args.append(Q(pi=user) | Q(requester=user))
 
+        pending_status_names = ['Under Review', 'Approved - Processing']
         project_request_pending = \
-            SavioProjectAllocationRequest.objects.filter(
-                status__name__in=['Under Review', 'Approved - Processing'],
-                *args).order_by(
-                'modified')
+            annotate_queryset_with_allocation_period_not_started_bool(
+                SavioProjectAllocationRequest.objects.filter(
+                    status__name__in=pending_status_names, *args
+                ).order_by('request_time'))
 
+        complete_status_names = [
+            'Approved - Complete', 'Approved - Scheduled', 'Denied']
         project_request_complete = \
-            SavioProjectAllocationRequest.objects.filter(
-                status__name__in=['Approved - Complete', 'Denied'],
-                *args).order_by(
-                'modified')
+            annotate_queryset_with_allocation_period_not_started_bool(
+                SavioProjectAllocationRequest.objects.filter(
+                    status__name__in=complete_status_names, *args
+                ).order_by('request_time'))
 
         savio_proj_request_object.num = self.paginators
         savio_proj_request_object.pending_queryset = \
@@ -279,7 +283,8 @@ class RequestHubView(LoginRequiredMixin,
         return proj_join_request_object
 
     def get_project_renewal_request(self):
-        """Populates a RequestListItem with data for project renewal requests"""
+        """Populates a RequestListItem with data for project renewal
+        requests"""
         proj_renewal_request_object = RequestListItem()
         user = self.request.user
 
@@ -287,15 +292,19 @@ class RequestHubView(LoginRequiredMixin,
         if not self.show_all_requests:
             args.append(Q(requester=user) | Q(pi=user))
 
+        pending_status_names = ['Under Review']
         project_renewal_request_pending = \
-            AllocationRenewalRequest.objects.filter(
-                status__name__in=['Approved', 'Under Review'], *args).order_by(
-                'modified')
+            annotate_queryset_with_allocation_period_not_started_bool(
+                AllocationRenewalRequest.objects.filter(
+                    status__name__in=pending_status_names, *args
+                ).order_by('request_time'))
 
+        complete_status_names = ['Approved', 'Complete', 'Denied']
         project_renewal_request_complete = \
-            AllocationRenewalRequest.objects.filter(
-                status__name__in=['Complete', 'Denied'], *args).order_by(
-                'modified')
+            annotate_queryset_with_allocation_period_not_started_bool(
+                AllocationRenewalRequest.objects.filter(
+                    status__name__in=complete_status_names, *args
+                ).order_by('request_time'))
 
         proj_renewal_request_object.num = self.paginators
         proj_renewal_request_object.pending_queryset = \

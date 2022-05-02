@@ -4,7 +4,9 @@ from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
-from coldfront.core.project.utils_.renewal_utils import get_current_allocation_period
+from coldfront.core.project.utils_.new_project_utils import non_denied_new_project_request_statuses
+from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
+from coldfront.core.project.utils_.renewal_utils import non_denied_renewal_request_statuses
 from django.core.management.base import BaseCommand
 from django.db.models import Q
 import logging
@@ -35,18 +37,14 @@ class Command(BaseCommand):
                 AllocationRenewalRequest during the current
                 AllocationPeriod,
             (b) The Project is the project of a non-denied
-                SavioProjectAllocationRequest.
-
-        TODO: Once the first AllocationPeriod has ended, criterion (b)
-        TODO: will need to be refined to filter on time.
-        """
+                SavioProjectAllocationRequest during the current
+                AllocationPeriod."""
+        allocation_period = get_current_allowance_year_period()
         # Retrieve IDs of projects with non-denied renewal requests.
-        allocation_period = get_current_allocation_period()
-        a = self.fca_projects_with_non_denied_renewal_requests(
-            allocation_period)
+        a = self.non_denied_fca_allocation_renewal_requests(allocation_period)
         a_ids = set(a.values_list('post_project', flat=True))
         # Retrieve IDs of projects with non-denied project requests.
-        b = self.fca_projects_with_non_denied_project_requests()
+        b = self.non_denied_fca_new_project_requests(allocation_period)
         b_ids = set(b.values_list('project', flat=True))
 
         ineligible_project_ids = set.union(a_ids, b_ids)
@@ -57,8 +55,8 @@ class Command(BaseCommand):
 
     def deactivate_projects(self, projects, dry_run):
         """Given a queryset of Projects, set each one's status to
-        'Inactive' and set the status of the corresponding compute
-        Allocation to 'Expired'.
+        'Inactive' and set the status of the corresponding 'CLUSTER_NAME
+        Compute' Allocation to 'Expired'.
 
         If dry_run is True, write the pair to stdout without creating
         the request."""
@@ -85,30 +83,24 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(message))
 
     @staticmethod
-    def fca_projects_with_non_denied_project_requests():
-        """Return a queryset of FCA Projects that are the project on a
-        non-denied SavioProjectAllocationRequest.
-
-        TODO: Once the first AllocationPeriod has ended, this will need
-        TODO: to be refined to filter on time.
-        """
-        status_names = [
-            'Under Review', 'Approved - Processing', 'Approved - Complete']
+    def non_denied_fca_new_project_requests(allocation_period):
+        """Return a queryset of new project requests for FCAs under the
+        given AllocationPeriod that are not denied."""
         kwargs = {
+            'allocation_period': allocation_period,
             'allocation_type': SavioProjectAllocationRequest.FCA,
-            'status__name__in': status_names,
+            'status__in': non_denied_new_project_request_statuses(),
         }
         return SavioProjectAllocationRequest.objects.filter(**kwargs)
 
     @staticmethod
-    def fca_projects_with_non_denied_renewal_requests(allocation_period):
-        """Return a queryset of FCA Projects that are the post_project
-        on a non-denied AllocationRenewalRequest during the given
-        AllocationPeriod."""
-        status_names = ['Under Review', 'Approved', 'Complete']
+    def non_denied_fca_allocation_renewal_requests(allocation_period):
+        """Return a queryset of allocation renewal requests for FCAs
+        under the given AllocationPeriod that are not denied."""
         kwargs = {
             'allocation_period': allocation_period,
-            'post_project__name__startswith': 'fc_',
-            'status__name__in': status_names,
+            'post_project__name__startswith': (
+                SavioProjectAllocationRequest.FCA),
+            'status__in': non_denied_renewal_request_statuses(),
         }
         return AllocationRenewalRequest.objects.filter(**kwargs)

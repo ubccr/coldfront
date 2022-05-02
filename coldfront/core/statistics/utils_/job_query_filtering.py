@@ -73,8 +73,8 @@ def job_query_filtering(job_list, data):
 
 
 def convert_time_to_utc(time):
-    """Convert naive LA time to UTC time"""
-    local_tz = pytz.timezone('America/Los_Angeles')
+    """Convert naive display timezone time to UTC time."""
+    local_tz = pytz.timezone(settings.DISPLAY_TIME_ZONE)
     tz = pytz.timezone(settings.TIME_ZONE)
     naive_dt = datetime.datetime.combine(time, datetime.datetime.min.time())
     new_time = local_tz.localize(naive_dt).astimezone(tz).isoformat()

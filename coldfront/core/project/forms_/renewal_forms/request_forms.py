@@ -1,12 +1,14 @@
 from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.project.forms import DisabledChoicesSelectWidget
-from coldfront.core.project.forms import PooledProjectChoiceField
+from coldfront.core.project.forms_.new_project_forms.request_forms import PooledProjectChoiceField
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
+from coldfront.core.project.utils_.new_project_utils import non_denied_new_project_request_statuses
+from coldfront.core.project.utils_.renewal_utils import non_denied_renewal_request_statuses
 
 from django import forms
 
@@ -27,9 +29,15 @@ class ProjectRenewalPISelectionForm(forms.Form):
         widget=DisabledChoicesSelectWidget())
 
     def __init__(self, *args, **kwargs):
-        self.allocation_period_pk = kwargs.pop('allocation_period_pk')
+        # TODO: Set this dynamically when supporting other types.
+        self.allocation_type = SavioProjectAllocationRequest.FCA
+        self.allocation_period_pk = kwargs.pop('allocation_period_pk', None)
         self.project_pks = kwargs.pop('project_pks', None)
         super().__init__(*args, **kwargs)
+
+        if not (self.allocation_type and self.allocation_period_pk
+                and self.project_pks):
+            return
 
         role = ProjectUserRoleChoice.objects.get(name='Principal Investigator')
         status = ProjectUserStatusChoice.objects.get(name='Active')
@@ -41,35 +49,42 @@ class ProjectRenewalPISelectionForm(forms.Form):
 
         allocation_period = AllocationPeriod.objects.get(
             pk=self.allocation_period_pk)
-        renewal_request_status_names = ['Under Review', 'Approved', 'Complete']
-        pis_with_non_denied_renewal_requests_this_period = set(list(
-            AllocationRenewalRequest.objects.filter(
-                pi__in=users,
-                allocation_period=allocation_period,
-                status__name__in=renewal_request_status_names
-            ).values_list('pi', flat=True)))
+        renewal_request_statuses = non_denied_renewal_request_statuses()
+        project_request_statuses = non_denied_new_project_request_statuses()
 
-        project_request_status_names = [
-            'Under Review', 'Approved - Processing', 'Approved - Complete']
-        pis_with_non_denied_project_requests = set(list(
-            SavioProjectAllocationRequest.objects.filter(
-                status__name__in=project_request_status_names
-            ).values_list('pi', flat=True)))
-
-        # Disable any PIs who:
-        #     (a) have non-denied AllocationRenewalRequests during this
-        #         AllocationPeriod, or
-        #     (b) have non-denied SavioProjectAllocationRequests.
-        #         TODO: Once the first AllocationPeriod has ended, this will
-        #         TODO: need to be refined to filter on time.
         exclude_project_user_pks = set()
-        for project_user in pi_project_users:
-            if (project_user.user.pk in
-                    pis_with_non_denied_renewal_requests_this_period):
-                exclude_project_user_pks.add(project_user.pk)
-            if (project_user.user.pk in
-                    pis_with_non_denied_project_requests):
-                exclude_project_user_pks.add(project_user.pk)
+
+        if self.allocation_type == SavioProjectAllocationRequest.FCA:
+
+            # PIs may only have one FCA, so disable any PIs who:
+            #     (a) have non-denied AllocationRenewalRequests during the
+            #         specified AllocationPeriod, or
+            #     (b) have non-denied SavioProjectAllocationRequests during
+            #         the specified AllocationPeriod.
+
+            pis_with_non_denied_renewal_requests_this_period = set(list(
+                AllocationRenewalRequest.objects.filter(
+                    pi__in=users,
+                    allocation_period=allocation_period,
+                    status__in=renewal_request_statuses
+                ).values_list('pi', flat=True)))
+            pis_with_non_denied_project_requests = set(list(
+                SavioProjectAllocationRequest.objects.filter(
+                    allocation_type=self.allocation_type,
+                    allocation_period=allocation_period,
+                    status__in=project_request_statuses
+                ).values_list('pi', flat=True)))
+            for project_user in pi_project_users:
+                if (project_user.user.pk in
+                        pis_with_non_denied_renewal_requests_this_period):
+                    exclude_project_user_pks.add(project_user.pk)
+                if (project_user.user.pk in
+                        pis_with_non_denied_project_requests):
+                    exclude_project_user_pks.add(project_user.pk)
+
+        else:
+            raise ValueError(
+                f'Unsupported allocation type: {self.allocation_type}.')
 
         self.fields['PI'].queryset = pi_project_users
         self.fields['PI'].widget.disabled_choices = exclude_project_user_pks

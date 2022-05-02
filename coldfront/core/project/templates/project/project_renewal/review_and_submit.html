@@ -18,6 +18,8 @@ Project Renewal - Review and Submit
 <h1>Review and Submit</h1><hr>
 
 <ol class="breadcrumb">
+  <li>Allocation Period: {{ allocation_period.name }}</li>
+  <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>
   <li>PI: {{ PI.user.username}}, Current Project: {{ current_project }}</li>
   <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>
   <li>Preference: {{ breadcrumb_pooling_preference }}</li>
@@ -32,6 +34,14 @@ Project Renewal - Review and Submit
 <div class="table-responsive">
   <table class="table table-sm">
     <tbody>
+      <tr>
+        <th>Allocation Period</th>
+        <td>
+          {{ allocation_period.name }}
+          ({{ allocation_period.start_date|date:"Y-m-d" }} -
+          {{ allocation_period.end_date|date:"Y-m-d" }})
+        </td>
+      </tr>
       <tr>
         <th>Principal Investigator (PI)</th>
         <td>
@@ -76,8 +86,7 @@ Project Renewal - Review and Submit
   {% endif %}
   <li>
     Requested Project {{ requested_project }} will be granted
-    {{ allocation_amount }} service units. (Note that this number may be
-    prorated based on when the request is processed.)
+    {{ allocation_amount }} service units.
   </li>
 </ol>
 

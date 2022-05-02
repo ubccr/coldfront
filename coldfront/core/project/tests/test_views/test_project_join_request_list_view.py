@@ -1,40 +1,24 @@
-from django.test import TestCase
 from django.urls import reverse
 from http import HTTPStatus
 
 from coldfront.core.project.models import *
 from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.utils.tests.test_base import TestBase
 from coldfront.core.user.models import *
 from coldfront.core.allocation.models import *
 
 from django.contrib.auth.models import User
 from django.core import mail
-from django.core.management import call_command
 
-from io import StringIO
-import os
 import pytz
-import sys
 
 
-class TestProjectJoinRequestListView(TestCase):
+class TestProjectJoinRequestListView(TestBase):
     """A class for testing ProjectJoinRequestListView."""
 
     def setUp(self):
         """Set up test data."""
-
-        out, err = StringIO(), StringIO()
-        commands = [
-            'add_resource_defaults',
-            'add_allocation_defaults',
-            'import_field_of_science_data',
-            'add_default_project_choices',
-            'create_staff_group',
-        ]
-        sys.stdout = open(os.devnull, 'w')
-        for command in commands:
-            call_command(command, stdout=out, stderr=err)
-        sys.stdout = sys.__stdout__
+        super().setUp()
 
         # Create a normal users
         self.user1 = User.objects.create(
@@ -136,7 +120,7 @@ class TestProjectJoinRequestListView(TestCase):
     def assert_request_shown(self, response, request):
         self.assertContains(response, request.reason)
         request_date = request.created.astimezone(
-            pytz.timezone('America/Los_Angeles')).strftime('%b. %d, %Y')
+            pytz.timezone(settings.DISPLAY_TIME_ZONE)).strftime('%b. %d, %Y')
         self.assertContains(response, request_date)
         self.assertContains(response, request.project_user.user.username)
         self.assertContains(response, request.project_user.user.email)

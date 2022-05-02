@@ -22,7 +22,10 @@
     </p>
     <p class="card-text text-justify">
       <strong>Project: </strong>
-      {{ addition_request.project.name }}
+      <a href="{% url 'project-detail' addition_request.project.pk %}">
+          <span class="accessibility-link-text">{{ addition_request.project.name }}</span>
+          {{ addition_request.project.name }}
+      </a>
     </p>
     <p class="card-text text-justify">
       <strong>Number of Service Units: </strong>

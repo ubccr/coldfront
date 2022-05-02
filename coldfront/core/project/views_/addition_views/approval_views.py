@@ -2,7 +2,7 @@ from copy import deepcopy
 
 from coldfront.core.allocation.models import AllocationAdditionRequest
 from coldfront.core.project.forms import MemorandumSignedForm
-from coldfront.core.project.forms import SavioProjectRechargeExtraFieldsForm
+from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectRechargeExtraFieldsForm
 from coldfront.core.project.forms import ReviewDenyForm
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.utils_.addition_utils import AllocationAdditionDenialRunner
