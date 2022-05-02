@@ -10,7 +10,7 @@ class SecureDirManageUsersForm(forms.Form):
 
 
 class SecureDirManageUsersSearchForm(forms.Form):
-    allocation_name = forms.CharField(label='Allocation Name',
+    project_name = forms.CharField(label='Project Name',
                                       max_length=100, required=False)
     resource_name = forms.CharField(label='Directory Name',
                                     max_length=100, required=False)

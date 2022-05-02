@@ -365,11 +365,11 @@ class SecureDirManageUsersRequestListView(LoginRequiredMixin,
                 request_list = request_list.filter(
                     user__email__icontains=data.get('email'))
 
-            if data.get('allocation_name'):
+            if data.get('project_name'):
                 request_list = \
                     request_list.filter(
                         allocation__project__name__icontains=data.get(
-                            'allocation_name'))
+                            'project_name'))
 
             if data.get('resource_name'):
                 request_list = \
