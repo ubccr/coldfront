@@ -99,16 +99,16 @@ class SecureDirManageUsersView(LoginRequiredMixin,
             set(request.user for request in
                 SecureDirAddUserRequest.objects.filter(
                     allocation=alloc_obj,
-                    status__name__in=['Pending - Add',
-                                      'Processing - Add']))
+                    status__name__in=['Pending',
+                                      'Processing']))
 
         # Excluding users that have active removal requests.
         users_to_exclude |= \
             set(request.user for request in
                 SecureDirRemoveUserRequest.objects.filter(
                     allocation=alloc_obj,
-                    status__name__in=['Pending - Remove',
-                                      'Processing - Remove']))
+                    status__name__in=['Pending',
+                                      'Processing']))
 
         users_to_add -= users_to_exclude
 
@@ -133,8 +133,8 @@ class SecureDirManageUsersView(LoginRequiredMixin,
         users_to_remove -= set(request.user for request in
                                SecureDirRemoveUserRequest.objects.filter(
                                    allocation=alloc_obj,
-                                   status__name__in=['Pending - Remove',
-                                                     'Processing - Remove']))
+                                   status__name__in=['Pending',
+                                                     'Processing']))
 
         # PIs cannot request to remove themselves from their
         # own secure directories.
@@ -163,6 +163,7 @@ class SecureDirManageUsersView(LoginRequiredMixin,
             user_list = self.get_users_to_add(alloc_obj)
         else:
             user_list = self.get_users_to_remove(alloc_obj)
+
         context = {}
 
         if user_list:
@@ -314,6 +315,10 @@ class SecureDirManageUsersRequestListView(LoginRequiredMixin,
         if self.request.user.is_superuser:
             return True
 
+        if self.request.user.has_perm('allocation.view_securediradduserrequest') and \
+                self.request.user.has_perm('allocation.view_securedirremoveuserrequest'):
+            return True
+
         message = (
             f'You do not have permission to review secure directory '
             f'{self.action} user requests.')
@@ -342,7 +347,7 @@ class SecureDirManageUsersRequestListView(LoginRequiredMixin,
             Q(name__icontains='Pending') | Q(name__icontains='Processing'))
 
         complete_status = self.request_status_obj.objects.filter(
-            name__in=['Completed', 'Denied'])
+            name__in=['Complete', 'Denied'])
 
         secure_dir_request_search_form = \
             SecureDirManageUsersSearchForm(self.request.GET)
@@ -371,11 +376,11 @@ class SecureDirManageUsersRequestListView(LoginRequiredMixin,
                         allocation__project__name__icontains=data.get(
                             'project_name'))
 
-            if data.get('resource_name'):
+            if data.get('directory_name'):
                 request_list = \
                     request_list.filter(
-                        allocation__resources__name__icontains=data.get(
-                            'resource_name'))
+                        directory__icontains=data.get(
+                            'directory_name'))
 
         return request_list.order_by(order_by)
 
@@ -410,7 +415,10 @@ class SecureDirManageUsersRequestListView(LoginRequiredMixin,
         else:
             filter_parameters_with_order_by = filter_parameters
 
-        context['expand_accordion'] = 'toggle'
+        if filter_parameters:
+            context['expand_accordion'] = 'show'
+        else:
+            context['expand_accordion'] = 'toggle'
 
         context['filter_parameters'] = filter_parameters
         context['filter_parameters_with_order_by'] = \

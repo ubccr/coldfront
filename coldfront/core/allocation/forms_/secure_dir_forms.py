@@ -11,9 +11,11 @@ class SecureDirManageUsersForm(forms.Form):
 
 class SecureDirManageUsersSearchForm(forms.Form):
     project_name = forms.CharField(label='Project Name',
-                                      max_length=100, required=False)
-    resource_name = forms.CharField(label='Directory Name',
-                                    max_length=100, required=False)
+                                   max_length=100, required=False,
+                                   help_text='Name of associated project.')
+    directory_name = forms.CharField(label='Directory Name',
+                                     max_length=100, required=False,
+                                     help_text='Directory name on cluster.')
     username = forms.CharField(
         label='User Username', max_length=100, required=False)
     email = forms.CharField(label='User Email', max_length=100, required=False)
