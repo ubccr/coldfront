@@ -32,7 +32,7 @@ class TestCreateSecureDir(TestAllocationBase):
         pi.save()
 
         self.subdirectory_name = 'test_dir'
-        call_command('create_directory_defaults')
+        call_command('add_directory_defaults')
         create_secure_dir(self.project1, self.subdirectory_name)
 
     def test_allocation_objects_created(self):
@@ -106,7 +106,7 @@ class TestGetSecureDirManageUserRequestObjects(TestAllocationBase):
     def setUp(self):
         """Set up test data."""
         super().setUp()
-        call_command('create_directory_defaults')
+        call_command('add_directory_defaults')
 
     def test_action_add(self):
         """Testing that the correct fields are set when action=add"""

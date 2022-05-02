@@ -50,7 +50,7 @@ class TestSecureDirBase(TestAllocationBase):
         self.staff = User.objects.get(username='staff')
 
         self.subdirectory_name = 'test_dir'
-        call_command('create_directory_defaults')
+        call_command('add_directory_defaults')
         create_secure_dir(self.project1, self.subdirectory_name)
 
         self.password = 'password'
