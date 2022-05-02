@@ -1,5 +1,6 @@
 import os
 
+from django.contrib.auth.models import User
 from django.core.management import call_command
 
 from coldfront.api.allocation.tests.test_allocation_base import \
@@ -9,31 +10,34 @@ from coldfront.core.allocation.models import AllocationAttributeType, \
     AllocationUserStatusChoice, SecureDirAddUserRequest, \
     SecureDirAddUserRequestStatusChoice, SecureDirRemoveUserRequest, \
     SecureDirRemoveUserRequestStatusChoice
-from coldfront.core.allocation.utils import create_secure_dir, \
+from coldfront.core.allocation.utils import create_secure_dirs, \
     get_secure_dir_manage_user_request_objects
 from coldfront.core.project.models import ProjectUser, ProjectUserRoleChoice, \
     ProjectUserStatusChoice
 from coldfront.core.resource.models import Resource
+from coldfront.core.user.models import UserProfile
+from coldfront.core.utils.tests.test_base import TestBase
 
 
-class TestCreateSecureDir(TestAllocationBase):
-    """A class for testing create_secure_dir."""
+class TestCreateSecureDir(TestBase):
+    """A class for testing create_secure_dirs."""
 
     def setUp(self):
         """Set up test data."""
         super().setUp()
 
-        pi = ProjectUser.objects.get(project=self.project1,
-                                     user=self.pi,
-                                     status=ProjectUserStatusChoice.objects.get(
-                                         name='Active'))
-        pi.role = ProjectUserRoleChoice.objects.get(name='Principal '
-                                                         'Investigator')
-        pi.save()
+        # Create a PI.
+        self.pi = User.objects.create(
+            username='pi0', email='pi0@nonexistent.com')
+        user_profile = UserProfile.objects.get(user=self.pi)
+        user_profile.is_pi = True
+        user_profile.save()
+
+        self.project1 = self.create_active_project_with_pi('project1', self.pi)
 
         self.subdirectory_name = 'test_dir'
         call_command('add_directory_defaults')
-        create_secure_dir(self.project1, self.subdirectory_name)
+        create_secure_dirs(self.project1, self.subdirectory_name)
 
     def test_allocation_objects_created(self):
         """Testing that allocation objects are created"""
@@ -82,25 +86,8 @@ class TestCreateSecureDir(TestAllocationBase):
         self.assertTrue(groups_p2p3_subdirectory.exists())
         self.assertTrue(scratch2_p2p3_subdirectory.exists())
 
-        # Test that AllocationUsers are created for PIs
-        self.assertEqual(groups_allocation.allocationuser_set.count(), 1)
-        self.assertEqual(scratch2_allocation.allocationuser_set.count(), 1)
 
-        active_status = AllocationUserStatusChoice.objects.get(name='Active')
-        pi_groups_alloc_user = \
-            groups_allocation.allocationuser_set.filter(
-                user=self.pi,
-                status=active_status)
-        self.assertTrue(pi_groups_alloc_user.exists())
-
-        pi_scratch2_alloc_user = \
-            scratch2_allocation.allocationuser_set.filter(
-                user=self.pi,
-                status=active_status)
-        self.assertTrue(pi_scratch2_alloc_user.exists())
-
-
-class TestGetSecureDirManageUserRequestObjects(TestAllocationBase):
+class TestGetSecureDirManageUserRequestObjects(TestBase):
     """A class for testing get_secure_dir_manage_user_request_objects."""
 
     def setUp(self):

@@ -394,7 +394,7 @@ class RequestHubView(LoginRequiredMixin,
         user = self.request.user
 
         secure_dir_join_pending = SecureDirAddUserRequest.objects.filter(
-            status__name__in=['Pending - Add', 'Processing - Add']).order_by('modified')
+            status__name__in=['Pending', 'Processing']).order_by('modified')
 
         secure_dir_join_complete = SecureDirAddUserRequest.objects.filter(
             status__name__in=['Complete', 'Denied']).order_by('modified')
@@ -410,7 +410,7 @@ class RequestHubView(LoginRequiredMixin,
                            ).exists()]
             pi_cond = Q(pk__in=request_pks)
 
-            secure_dir_join_pending.filter(user_cond | pi_cond)
+            secure_dir_join_pending = secure_dir_join_pending.filter(user_cond | pi_cond)
 
             request_pks = [request.pk for request in secure_dir_join_complete if
                            request.allocation.project.projectuser_set.filter(
@@ -420,7 +420,7 @@ class RequestHubView(LoginRequiredMixin,
                            ).exists()]
             pi_cond = Q(pk__in=request_pks)
 
-            secure_dir_join_complete.filter(user_cond | pi_cond)
+            secure_dir_join_complete = secure_dir_join_complete.filter(user_cond | pi_cond)
 
         secure_dir_join_request_object.num = self.paginators
         secure_dir_join_request_object.pending_queryset = \
@@ -457,7 +457,7 @@ class RequestHubView(LoginRequiredMixin,
         user = self.request.user
 
         secure_dir_remove_pending = SecureDirRemoveUserRequest.objects.filter(
-            status__name__in=['Pending - Remove', 'Processing - Remove']).order_by('modified')
+            status__name__in=['Pending', 'Processing']).order_by('modified')
 
         secure_dir_remove_complete = SecureDirRemoveUserRequest.objects.filter(
             status__name__in=['Complete', 'Denied']).order_by('modified')
@@ -473,7 +473,7 @@ class RequestHubView(LoginRequiredMixin,
                            ).exists()]
             pi_cond = Q(pk__in=request_pks)
 
-            secure_dir_remove_pending.filter(user_cond | pi_cond)
+            secure_dir_remove_pending = secure_dir_remove_pending.filter(user_cond | pi_cond)
 
             request_pks = [request.pk for request in secure_dir_remove_complete if
                            request.allocation.project.projectuser_set.filter(
@@ -483,7 +483,7 @@ class RequestHubView(LoginRequiredMixin,
                            ).exists()]
             pi_cond = Q(pk__in=request_pks)
 
-            secure_dir_remove_complete.filter(user_cond | pi_cond)
+            secure_dir_remove_complete = secure_dir_remove_complete.filter(user_cond | pi_cond)
 
         secure_dir_remove_request_object.num = self.paginators
         secure_dir_remove_request_object.pending_queryset = \

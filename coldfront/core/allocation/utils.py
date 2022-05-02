@@ -252,11 +252,11 @@ def review_cluster_access_requests_url():
     return urljoin(domain, view)
 
 
-def create_secure_dir(project, subdirectory_name):
+def create_secure_dirs(project, subdirectory_name):
     """
     Creates two secure directory allocations: group directory and
     scratch2 directory. Additionally creates an AllocationAttribute for each
-    new allocation that corresponds to the directory path on the cluster
+    new allocation that corresponds to the directory path on the cluster.
 
     Parameters:
         - project (Project): a Project object to create a secure directory
@@ -268,6 +268,7 @@ def create_secure_dir(project, subdirectory_name):
 
     Raises:
         - TypeError, if either argument has an invalid type
+        - ValidationError, if the Allocations already exist
     """
 
     if not isinstance(project, Project):
@@ -314,19 +315,6 @@ def create_secure_dir(project, subdirectory_name):
         allocation_attribute_type=allocation_attribute_type,
         allocation=scratch2_allocation,
         value=os.path.join(scratch2_p2p3_path.value, subdirectory_name))
-
-    # Automatically make PIs active AllocationUsers for both allocations.
-    pis = project.projectuser_set.filter(role__name='Principal Investigator',
-                                         status__name='Active')
-
-    active_status = AllocationUserStatusChoice.objects.get(name='Active')
-    for pi in pis:
-        for alloc in [groups_allocation, scratch2_allocation]:
-            AllocationUser.objects.create(
-                allocation=alloc,
-                user=pi.user,
-                status=active_status
-            )
 
     return groups_allocation, scratch2_allocation
 

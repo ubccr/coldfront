@@ -23,6 +23,8 @@ class Command(BaseCommand):
             'view_projectuserjoinrequest',
             'view_projectuserremovalrequest',
             'view_job',
+            'view_securediradduserrequest',
+            'view_securedirremoveuserrequest'
         ]
 
         for perm_codename in perm_codename_lst:

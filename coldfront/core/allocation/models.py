@@ -133,6 +133,9 @@ class Allocation(TimeStampedModel):
                 )
                 html_string += string
 
+            if attribute.allocation_attribute_type.name == 'Cluster Directory Access':
+                html_string += 'Directory Name: {}'.format(attribute.value)
+
         return mark_safe(html_string)
 
     @property
@@ -609,7 +612,7 @@ class AllocationAdditionRequest(TimeStampedModel):
 
 class SecureDirAddUserRequestStatusChoice(TimeStampedModel):
     name = models.CharField(max_length=64)
-    # One of "Pending - Add", "Processing - Add", "Completed - Add"
+    # One of "Pending", "Processing", "Complete", "Denied"
 
     def __str__(self):
         return self.name
@@ -633,7 +636,7 @@ class SecureDirAddUserRequest(TimeStampedModel):
 
 class SecureDirRemoveUserRequestStatusChoice(TimeStampedModel):
     name = models.CharField(max_length=64)
-    # One of "Pending - Remove", "Processing - Remove", "Completed - Remove"
+    # One of "Pending", "Processing", "Complete", "Denied"
 
     def __str__(self):
         return self.name

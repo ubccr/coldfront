@@ -1,3 +1,4 @@
+from decimal import Decimal
 from http import HTTPStatus
 
 from django.conf import settings
@@ -7,8 +8,8 @@ from django.core import mail
 from django.core.management import call_command
 from django.urls import reverse
 
-from coldfront.api.allocation.tests.test_allocation_base import \
-    TestAllocationBase
+from coldfront.api.statistics.utils import create_project_allocation, \
+    create_user_project_allocation
 from coldfront.core.allocation.models import (Allocation,
                                               AllocationStatusChoice,
                                               SecureDirAddUserRequest,
@@ -17,20 +18,66 @@ from coldfront.core.allocation.models import (Allocation,
                                               SecureDirRemoveUserRequestStatusChoice,
                                               AllocationUser,
                                               AllocationUserStatusChoice)
-from coldfront.core.allocation.utils import create_secure_dir
+from coldfront.core.allocation.utils import create_secure_dirs
 from coldfront.core.project.models import (ProjectUser,
                                            ProjectUserStatusChoice,
                                            ProjectUserRoleChoice, Project,
                                            ProjectStatusChoice)
+from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.utils.tests.test_base import TestBase
 
 
-class TestSecureDirBase(TestAllocationBase):
+class TestSecureDirBase(TestBase):
     """A base testing class for secure directory manage user requests."""
 
     def setUp(self):
         """Set up test data."""
         super().setUp()
+
+        self.pi = User.objects.create(
+            username='pi0', email='pi0@nonexistent.com')
+        user_profile = UserProfile.objects.get(user=self.pi)
+        user_profile.is_pi = True
+        user_profile.save()
+
+        # Create two Users.
+        for i in range(2):
+            user = User.objects.create(
+                username=f'user{i}', email=f'user{i}@nonexistent.com')
+            user_profile = UserProfile.objects.get(user=user)
+            user_profile.cluster_uid = f'{i}'
+            user_profile.save()
+            setattr(self, f'user{i}', user)
+            setattr(self, f'user_profile{i}', user_profile)
+
+        # Create Projects and associate Users with them.
+        project_status = ProjectStatusChoice.objects.get(name='Active')
+        project_user_status = ProjectUserStatusChoice.objects.get(
+            name='Active')
+        user_role = ProjectUserRoleChoice.objects.get(name='User')
+        manager_role = ProjectUserRoleChoice.objects.get(name='Manager')
+        for i in range(2):
+            # Create a Project and ProjectUsers.
+            project = Project.objects.create(
+                name=f'project{i}', status=project_status)
+            setattr(self, f'project{i}', project)
+            for j in range(2):
+                ProjectUser.objects.create(
+                    user=getattr(self, f'user{j}'), project=project,
+                    role=user_role, status=project_user_status)
+            ProjectUser.objects.create(
+                user=self.pi, project=project, role=manager_role,
+                status=project_user_status)
+
+            # Create a compute allocation for the Project.
+            allocation = Decimal(f'{i + 1}000.00')
+            create_project_allocation(project, allocation)
+
+            # Create a compute allocation for each User on the Project.
+            for j in range(2):
+                create_user_project_allocation(
+                    getattr(self, f'user{j}'), project, allocation / 2)
 
         # Make PI for project1
         pi = ProjectUser.objects.get(project=self.project1,
@@ -47,26 +94,20 @@ class TestSecureDirBase(TestAllocationBase):
         self.admin.save()
 
         # Create staff user
-        self.staff = User.objects.get(username='staff')
+        self.staff = User.objects.create(
+            username='staff', email='staff@nonexistent.com', is_staff=True)
 
         self.subdirectory_name = 'test_dir'
         call_command('add_directory_defaults')
-        create_secure_dir(self.project1, self.subdirectory_name)
+        self.groups_allocation, self.scratch2_allocation = \
+            create_secure_dirs(self.project1, self.subdirectory_name)
 
-        self.password = 'password'
-        for user in User.objects.all():
-            user.set_password(self.password)
-            user.save()
-
-        self.groups_allocation = Allocation.objects.get(
-            project=self.project1,
-            status=AllocationStatusChoice.objects.get(name='Active'),
-            resources__name='Groups P2/P3 Directory')
-
-        self.scratch2_allocation = Allocation.objects.get(
-            project=self.project1,
-            status=AllocationStatusChoice.objects.get(name='Active'),
-            resources__name='Scratch2 P2/P3 Directory')
+        for alloc in [self.groups_allocation, self.scratch2_allocation]:
+            AllocationUser.objects.create(
+                allocation=alloc,
+                user=self.pi,
+                status=AllocationUserStatusChoice.objects.get(name='Active')
+            )
 
         self.groups_path = self.groups_allocation.allocationattribute_set.get(
             allocation_attribute_type__name__icontains='Directory').value
@@ -74,6 +115,12 @@ class TestSecureDirBase(TestAllocationBase):
         self.scratch2_path = \
             self.scratch2_allocation.allocationattribute_set.get(
                 allocation_attribute_type__name__icontains='Directory').value
+
+        self.password = 'password'
+        for user in User.objects.all():
+            user.set_password(self.password)
+            user.save()
+
 
     def get_response(self, user, url, kwargs=None):
         """Returns the response to a GET request."""
@@ -114,7 +161,8 @@ class TestSecureDirManageUsersView(TestSecureDirBase):
         self.url = 'secure-dir-manage-users'
 
     def test_access(self):
-        """Test that the correct users have access to """
+        """Test that the correct users have access to
+        SecureDirManageUsersView"""
         url = self.url
         for allocation in [self.groups_allocation, self.scratch2_allocation]:
             for action in ['add', 'remove']:
@@ -157,21 +205,21 @@ class TestSecureDirManageUsersView(TestSecureDirBase):
             user=self.user1,
             allocation=self.groups_allocation,
             status=SecureDirAddUserRequestStatusChoice.objects.get(
-                name='Pending - Add'))
+                name='Pending'))
 
         # Users with a pending SecureDirRemoveUserRequest should not be shown
         SecureDirRemoveUserRequest.objects.create(
             user=self.user2,
             allocation=self.groups_allocation,
             status=SecureDirRemoveUserRequestStatusChoice.objects.get(
-                name='Pending - Remove'))
+                name='Pending'))
 
         # Users with a completed SecureDirRemoveUserRequest should be shown
         SecureDirRemoveUserRequest.objects.create(
             user=self.user3,
             allocation=self.groups_allocation,
             status=SecureDirRemoveUserRequestStatusChoice.objects.get(
-                name='Completed'))
+                name='Complete'))
 
         # Users that are already part of the allocation should not be shown.
         AllocationUser.objects.create(
@@ -225,7 +273,7 @@ class TestSecureDirManageUsersView(TestSecureDirBase):
             user=self.user2,
             allocation=self.groups_allocation,
             status=SecureDirRemoveUserRequestStatusChoice.objects.get(
-                name='Pending - Remove'))
+                name='Pending'))
 
         # Testing users shown on groups_allocation remove users page
         kwargs = {'pk': self.groups_allocation.pk, 'action': 'remove'}
@@ -276,7 +324,7 @@ class TestSecureDirManageUsersView(TestSecureDirBase):
         request = SecureDirAddUserRequest.objects.filter(
             allocation=self.scratch2_allocation,
             status=SecureDirAddUserRequestStatusChoice.objects.get(
-                name='Pending - Add'),
+                name='Pending'),
             directory=self.scratch2_path)
         self.assertTrue(request.exists())
 
@@ -336,7 +384,7 @@ class TestSecureDirManageUsersView(TestSecureDirBase):
                 user=user,
                 allocation=self.groups_allocation,
                 status=SecureDirRemoveUserRequestStatusChoice.objects.get(
-                    name='Pending - Remove'))
+                    name='Pending'))
             self.assertTrue(request.exists())
 
             request = request.first()
@@ -404,17 +452,18 @@ class TestSecureDirManageUsersRequestListView(TestSecureDirBase):
             for action in ['add', 'remove']:
                 kwargs = {'status': status, 'action': action}
 
-                # Admins have access
+                # Admins and staff have access.
                 self.assert_has_access(self.admin, self.url, True, kwargs)
+                self.assert_has_access(self.staff, self.url, True, kwargs)
 
-                # Staff and normal users do not have access
-                self.assert_has_access(self.staff, self.url, False, kwargs)
+                # Normal users do not have access.
                 self.assert_has_access(self.user0, self.url, False, kwargs)
                 self.assert_has_access(self.user1, self.url, False, kwargs)
                 self.assert_has_access(self.pi, self.url, False, kwargs)
 
     def test_no_requests(self):
-        """Testing access to SecureDirManageUsersRequestListView"""
+        """Testing messages in SecureDirManageUsersRequestListView when
+        there are no requests."""
         for status in ['pending', 'completed']:
             for action in ['add', 'remove']:
                 kwargs = {'status': status, 'action': action}
@@ -444,14 +493,14 @@ class TestSecureDirManageUsersRequestListView(TestSecureDirBase):
             user=self.user0,
             allocation=self.groups_allocation,
             status=SecureDirAddUserRequestStatusChoice.objects.get(
-                name='Pending - Add'),
+                name='Pending'),
             directory=self.groups_path)
 
         SecureDirAddUserRequest.objects.create(
             user=self.user1,
             allocation=self.groups_allocation,
             status=SecureDirAddUserRequestStatusChoice.objects.get(
-                name='Completed'),
+                name='Complete'),
             directory=self.groups_path)
 
         SecureDirAddUserRequest.objects.create(
@@ -468,7 +517,7 @@ class TestSecureDirManageUsersRequestListView(TestSecureDirBase):
 
         self.assertIn(self.user0.username, html)
         self.assertIn(self.groups_path, html)
-        self.assertIn('Pending - Add', html)
+        self.assertIn('Pending', html)
 
         # Testing completed requests
         kwargs = {'status': 'completed', 'action': 'add'}
@@ -478,7 +527,7 @@ class TestSecureDirManageUsersRequestListView(TestSecureDirBase):
         self.assertIn(self.user1.username, html)
         self.assertIn(self.user2.username, html)
         self.assertIn(self.groups_path, html)
-        self.assertIn('Completed', html)
+        self.assertIn('Complete', html)
         self.assertIn('Denied', html)
 
     def test_correct_remove_user_requests_shown(self):
@@ -493,14 +542,14 @@ class TestSecureDirManageUsersRequestListView(TestSecureDirBase):
             user=self.user0,
             allocation=self.groups_allocation,
             status=SecureDirRemoveUserRequestStatusChoice.objects.get(
-                name='Pending - Remove'),
+                name='Pending'),
             directory=self.groups_path)
 
         SecureDirRemoveUserRequest.objects.create(
             user=self.user1,
             allocation=self.groups_allocation,
             status=SecureDirRemoveUserRequestStatusChoice.objects.get(
-                name='Completed'),
+                name='Complete'),
             directory=self.groups_path)
 
         SecureDirRemoveUserRequest.objects.create(
@@ -517,7 +566,7 @@ class TestSecureDirManageUsersRequestListView(TestSecureDirBase):
 
         self.assertIn(self.user0.username, html)
         self.assertIn(self.groups_path, html)
-        self.assertIn('Pending - Remove', html)
+        self.assertIn('Pending', html)
 
         # Testing completed requests
         kwargs = {'status': 'completed', 'action': 'remove'}
@@ -527,7 +576,7 @@ class TestSecureDirManageUsersRequestListView(TestSecureDirBase):
         self.assertIn(self.user1.username, html)
         self.assertIn(self.user2.username, html)
         self.assertIn(self.groups_path, html)
-        self.assertIn('Completed', html)
+        self.assertIn('Complete', html)
         self.assertIn('Denied', html)
 
 
@@ -541,14 +590,14 @@ class TestSecureDirManageUsersDenyRequestView(TestSecureDirBase):
             user=self.user0,
             allocation=self.groups_allocation,
             status=SecureDirAddUserRequestStatusChoice.objects.get(
-                name='Pending - Add'),
+                name='Pending'),
             directory=self.groups_path)
 
         self.remove_request = SecureDirRemoveUserRequest.objects.create(
             user=self.user1,
             allocation=self.scratch2_allocation,
             status=SecureDirRemoveUserRequestStatusChoice.objects.get(
-                name='Pending - Remove'),
+                name='Pending'),
             directory=self.scratch2_path)
 
         for i, user in enumerate([self.user0, self.user1]):
@@ -707,7 +756,7 @@ class TestSecureDirManageUsersDenyRequestView(TestSecureDirBase):
         made to the request if the status is not pending or processing"""
 
         self.remove_request.status = \
-            SecureDirRemoveUserRequestStatusChoice.objects.get(name='Completed')
+            SecureDirRemoveUserRequestStatusChoice.objects.get(name='Complete')
         self.remove_request.save()
 
         kwargs = {'pk': self.remove_request.pk, 'action': 'remove'}
@@ -718,7 +767,7 @@ class TestSecureDirManageUsersDenyRequestView(TestSecureDirBase):
 
         messages = self.get_message_strings(response)
         expected_message = f'Secure directory user removal request ' \
-                           f'has unexpected status "Completed."'
+                           f'has unexpected status "Complete."'
         self.assertEqual(len(messages), 1)
         self.assertEqual(messages[0], expected_message)
 
@@ -730,7 +779,7 @@ class TestSecureDirManageUsersDenyRequestView(TestSecureDirBase):
 
         # Test that the status and completion time are not changed
         self.remove_request.refresh_from_db()
-        self.assertEqual(self.remove_request.status.name, 'Completed')
+        self.assertEqual(self.remove_request.status.name, 'Complete')
         self.assertTrue(self.remove_request.completion_time is None)
 
 
@@ -744,14 +793,14 @@ class TestSecureDirManageUsersUpdateStatusView(TestSecureDirBase):
             user=self.user0,
             allocation=self.groups_allocation,
             status=SecureDirAddUserRequestStatusChoice.objects.get(
-                name='Pending - Add'),
+                name='Pending'),
             directory=self.groups_path)
 
         self.remove_request = SecureDirRemoveUserRequest.objects.create(
             user=self.user1,
             allocation=self.scratch2_allocation,
             status=SecureDirRemoveUserRequestStatusChoice.objects.get(
-                name='Pending - Remove'),
+                name='Pending'),
             directory=self.scratch2_path)
 
         self.url = 'secure-dir-manage-user-update-status'
@@ -784,7 +833,7 @@ class TestSecureDirManageUsersUpdateStatusView(TestSecureDirBase):
 
             request.refresh_from_db()
             self.assertEqual(request.status.name,
-                             f'Processing - {action.title()}')
+                             f'Processing')
 
             # Test that the correct message is shown
             expected_message = (
@@ -815,7 +864,7 @@ class TestSecureDirManageUsersUpdateStatusView(TestSecureDirBase):
                                           data=data)
 
             request.refresh_from_db()
-            self.assertEqual(request.status.name, f'Pending - {action.title()}')
+            self.assertEqual(request.status.name, 'Pending')
 
             # Test that the correct message is shown
             expected_message = (
@@ -843,7 +892,7 @@ class TestSecureDirManageUsersUpdateStatusView(TestSecureDirBase):
         self.add_request.save()
         self.remove_request.status = \
             SecureDirRemoveUserRequestStatusChoice.objects.get(
-                name='Processing - Remove')
+                name='Processing')
         self.remove_request.save()
 
         for request, action in [(self.add_request, 'add'),
@@ -875,14 +924,14 @@ class TestSecureDirManageUsersCompleteStatusView(TestSecureDirBase):
             user=self.user0,
             allocation=self.groups_allocation,
             status=SecureDirAddUserRequestStatusChoice.objects.get(
-                name='Processing - Add'),
+                name='Processing'),
             directory=self.groups_path)
 
         self.remove_request = SecureDirRemoveUserRequest.objects.create(
             user=self.user1,
             allocation=self.scratch2_allocation,
             status=SecureDirRemoveUserRequestStatusChoice.objects.get(
-                name='Processing - Remove'),
+                name='Processing'),
             directory=self.scratch2_path)
 
         for i, user in enumerate([self.user0, self.user1]):
@@ -921,7 +970,7 @@ class TestSecureDirManageUsersCompleteStatusView(TestSecureDirBase):
 
             request.refresh_from_db()
             self.assertEqual(request.status.name,
-                             f'Processing - {action.title()}')
+                             f'Processing')
 
             # Test that the correct message is shown
             expected_message = (
@@ -948,7 +997,7 @@ class TestSecureDirManageUsersCompleteStatusView(TestSecureDirBase):
         self.add_request.save()
         self.remove_request.status = \
             SecureDirRemoveUserRequestStatusChoice.objects.get(
-                name='Pending - Remove')
+                name='Pending')
         self.remove_request.save()
 
         for request, action in [(self.add_request, 'add'),
@@ -986,7 +1035,7 @@ class TestSecureDirManageUsersCompleteStatusView(TestSecureDirBase):
 
         # Test that the status is updated.
         self.add_request.refresh_from_db()
-        self.assertEqual(self.add_request.status.name, f'Completed')
+        self.assertEqual(self.add_request.status.name, 'Complete')
 
         # Test that the user is redirected.
         self.assertRedirects(response,
@@ -1040,7 +1089,7 @@ class TestSecureDirManageUsersCompleteStatusView(TestSecureDirBase):
 
         # Test that the status is updated.
         self.remove_request.refresh_from_db()
-        self.assertEqual(self.remove_request.status.name, f'Completed')
+        self.assertEqual(self.remove_request.status.name, 'Complete')
 
         # Test that the user is redirected.
         self.assertRedirects(response,

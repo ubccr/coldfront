@@ -42,13 +42,6 @@
           ({{ user.email }})
         </p>
       {% endwith %}
-{#      {% with requester=project_removal_request.requester %}#}
-{#        <p class="card-text text-justify">#}
-{#          <strong>Requester:</strong>#}
-{#          <a href="{% url 'user-profile' requester.username %}">{{ requester.first_name }} {{requester.last_name }}</a>#}
-{#          ({{ requester.email }})#}
-{#        </p>#}
-{#      {% endwith %}#}
       {% with allocation=request.allocation %}
         <p class="card-text text-justify">
           <strong>Allocation:</strong>

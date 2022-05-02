@@ -5,12 +5,12 @@
 
 
 {% block title %}
-  Secure Directory User Management Requests
+  Secure Directory {{ request_filter|title }} {{ action|title }} User Requests
 {% endblock %}
 
 
 {% block content %}
-  <h1>Secure Directory {{ request_filter|title }} {{ action|title }} Requests</h1>
+  <h1>Secure Directory {{ request_filter|title }} {{ action|title }} User Requests</h1>
 
   <div class="table-responsive">
     <table class="table table-sm">

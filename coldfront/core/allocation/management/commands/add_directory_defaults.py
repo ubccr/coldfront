@@ -69,7 +69,7 @@ class Command(BaseCommand):
         groups_p2p3_path, _ = ResourceAttribute.objects.update_or_create(
             resource_attribute_type=path,
             resource=groups_p2p3_directory,
-            value=os.path.join(groups_path.value, 'p2p3data'))
+            value=os.path.join(groups_path.value, 'pl1data'))
 
         scratch2_p2p3_directory, _ = Resource.objects.update_or_create(
             parent_resource=scratch2_directory,
@@ -81,7 +81,7 @@ class Command(BaseCommand):
         scratch2_p2p3_path, _ = ResourceAttribute.objects.update_or_create(
             resource_attribute_type=path,
             resource=scratch2_p2p3_directory,
-            value=os.path.join(scratch2_path.value, 'p2p3data'))
+            value=os.path.join(scratch2_path.value, 'pl1data'))
 
         from coldfront.core.allocation.models import AttributeType
         attribute_type, _ = AttributeType.objects.get_or_create(name='Text')
@@ -96,17 +96,11 @@ class Command(BaseCommand):
                     'is_private': False,
                 })
 
-        for status in ['Pending - Add',
-                       'Processing - Add',
-                       'Completed',
+        for status in ['Pending',
+                       'Processing',
+                       'Complete',
                        'Denied']:
             SecureDirAddUserRequestStatusChoice.objects.get_or_create(
                 name=status)
-
-        for status in ['Pending - Remove',
-                       'Processing - Remove',
-                       'Completed',
-                       'Denied']:
             SecureDirRemoveUserRequestStatusChoice.objects.get_or_create(
                 name=status)
-
