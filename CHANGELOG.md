@@ -1,5 +1,13 @@
 # ColdFront Changelog
 
+## [1.1.1] - 2022-04-26
+
+- Fix grant export to only download those found under search [#222](https://github.com/ubccr/coldfront/issues/222) 
+- Fix bug that allowed users to be added to inactive allocations [#386](https://github.com/ubccr/coldfront/issues/386)
+- Fix allocation request approval redirect [#388](https://github.com/ubccr/coldfront/issues/388)
+- Upgrade to Django 3.2.13
+- Fix bug in slurm plugin where `SLURM_NOOP` was a str instead of a bool [#392](https://github.com/ubccr/coldfront/pull/392)
+
 ## [1.1.0] - 2022-03-09
 
 - Add a checkbox to 'select all' users on the project to enable/disable notifications [#291](https://github.com/ubccr/coldfront/issues/291)
@@ -80,4 +88,5 @@
 [1.0.3]: https://github.com/ubccr/coldfront/releases/tag/v1.0.3
 [1.0.4]: https://github.com/ubccr/coldfront/releases/tag/v1.0.4
 [1.1.0]: https://github.com/ubccr/coldfront/releases/tag/v1.1.0
-[Unreleased]: https://github.com/ubccr/coldfront/compare/v1.1.0...HEAD
+[1.1.1]: https://github.com/ubccr/coldfront/releases/tag/v1.1.1
+[Unreleased]: https://github.com/ubccr/coldfront/compare/v1.1.1...HEAD
