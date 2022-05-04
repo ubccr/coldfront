@@ -3,8 +3,9 @@ from django.core.management.base import BaseCommand
 from coldfront.core.allocation.models import (AttributeType,
                                               AllocationAttributeType,
                                               AllocationStatusChoice,
-                                              AllocationChangeStatusChoice,
-                                              AllocationUserStatusChoice)
+                                              AllocationUserStatusChoice,
+                                              AllocationUserRequestStatusChoice,
+                                              AllocationChangeStatusChoice)
 
 
 class Command(BaseCommand):
@@ -25,8 +26,11 @@ class Command(BaseCommand):
         for choice in ('Pending', 'Approved', 'Denied',):
             AllocationChangeStatusChoice.objects.get_or_create(name=choice)
 
-        for choice in ('Active', 'Error', 'Removed', ):
+        for choice in ('Active', 'Error', 'Removed', 'Pending - Add', 'Pending - Remove'):
             AllocationUserStatusChoice.objects.get_or_create(name=choice)
+
+        for choice in ('Approved', 'Pending', 'Denied', ):
+            AllocationUserRequestStatusChoice.objects.get_or_create(name=choice)
 
         for name, attribute_type, has_usage, is_private in (
             ('Cloud Account Name', 'Text', False, False),

@@ -24,7 +24,18 @@ def home(request):
     if request.user.is_authenticated:
         template_name = 'portal/authorized_home.html'
         project_list = Project.objects.filter(
-            (Q(pi=request.user) & Q(status__name__in=['New', 'Active', ])) |
+            (
+                Q(pi=request.user) &
+                Q(
+                    status__name__in=[
+                        'New',
+                        'Active',
+                        'Waiting For Admin Approval',
+                        'Review Pending',
+                        'Expired'
+                    ]
+                )
+            ) |
             (Q(status__name__in=['New', 'Active', ]) &
              Q(projectuser__user=request.user) &
              Q(projectuser__status__name__in=['Active', ]))
@@ -32,12 +43,14 @@ def home(request):
 
         allocation_list = Allocation.objects.filter(
             Q(status__name__in=['Active', 'New', 'Renewal Requested', ]) &
-            Q(project__status__name__in=['Active', 'New']) &
+            Q(project__status__name__in=['Active', 'New', 'Review Pending', 'Expired']) &
             Q(project__projectuser__user=request.user) &
             Q(project__projectuser__status__name__in=['Active', ]) &
             Q(allocationuser__user=request.user) &
-            Q(allocationuser__status__name__in=['Active', ])
+            Q(allocationuser__status__name__in=['Active', 'Pending - Remove'])
         ).distinct().order_by('-created')[:5]
+
+        context['user'] = request.user
         context['project_list'] = project_list
         context['allocation_list'] = allocation_list
         try:

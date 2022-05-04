@@ -1,9 +1,7 @@
 import datetime
-import importlib
 import logging
 from ast import literal_eval
 
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -27,6 +25,15 @@ ALLOCATION_RESOURCE_ORDERING = import_from_settings(
     'ALLOCATION_RESOURCE_ORDERING',
     ['-is_allocatable', 'name'])
 
+EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
+if EMAIL_ENABLED:
+    EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
+    EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings(
+        'EMAIL_TICKET_SYSTEM_ADDRESS')
+    EMAIL_OPT_OUT_INSTRUCTION_URL = import_from_settings(
+        'EMAIL_OPT_OUT_INSTRUCTION_URL')
+    EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
+    EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
 
 class AllocationStatusChoice(TimeStampedModel):
     name = models.CharField(max_length=64)
@@ -39,14 +46,117 @@ class AllocationStatusChoice(TimeStampedModel):
 
 
 class Allocation(TimeStampedModel):
+    YES_NO_CHOICES = (
+        ('No', 'No'),
+        ('Yes', 'Yes')
+    )
+    CAMPUS_CHOICES = (
+        ('BL', 'IU Bloomington'),
+        ('IN', 'IUPUI (Indianapolis)'),
+        ('CO', 'IUPUC (Columbus)'),
+        ('EA', 'IU East (Richmond)'),
+        ('FW', 'IU Fort Wayne'),
+        ('CO', 'IU Kokomo'),
+        ('NW', 'IU Northwest (Gary)'),
+        ('SB', 'IU South Bend'),
+        ('SE', 'IU Southeast (New Albany)'),
+        ('OR', 'Other')
+    )
+    TRAINING_INFERENCE_CHOICES = (
+        ('Training', 'Training'),
+        ('Inference', 'Inference'),
+        ('Both', 'Both')
+    )
+    GRAND_CHALLENGE_CHOICES = (
+        ('healthinitiative', 'Precision Health Initiative'),
+        ('envchange', 'Prepared for Environmental Change'),
+        ('addiction', 'Responding to the Addiction Crisis')
+    )
+    SYSTEM_CHOICES = (
+        ('Carbonate', 'Carbonate'),
+        ('BigRed3', 'Big Red 3')
+    )
+    ACCESS_LEVEL_CHOICES = (
+        ('Masked', 'Masked'),
+        ('Unmasked', 'Unmasked')
+    )
+    LICENSE_TERM_CHOICES = (
+        ('current', 'Current license'),
+        ('current_and_next_year', 'Current license + next annual license')
+    )
+
     """ Allocation to a system Resource. """
     project = models.ForeignKey(Project, on_delete=models.CASCADE,)
     resources = models.ManyToManyField(Resource)
     status = models.ForeignKey(
         AllocationStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
-    quantity = models.IntegerField(default=1)
+    quantity = models.IntegerField(blank=True, null=True)
+    storage_space = models.IntegerField(blank=True, null=True)
+    storage_space_with_unit = models.CharField(max_length=10, blank=True, null=True)
+    leverage_multiple_gpus = models.CharField(
+        max_length=4,
+        choices=YES_NO_CHOICES,
+        blank=True,
+        null=True
+    )
+    dl_workflow = models.CharField(max_length=4, choices=YES_NO_CHOICES, blank=True, null=True)
+    applications_list = models.CharField(max_length=150, blank=True, null=True)
+    training_or_inference = models.CharField(
+        max_length=9,
+        choices=TRAINING_INFERENCE_CHOICES,
+        blank=True,
+        null=True
+    )
+    for_coursework = models.CharField(max_length=4, choices=YES_NO_CHOICES, blank=True, null=True)
+    system = models.CharField(max_length=9, choices=SYSTEM_CHOICES, blank=True, null=True)
+    is_grand_challenge = models.BooleanField(blank=True, null=True)
+    grand_challenge_program = models.CharField(
+        max_length=100,
+        choices=GRAND_CHALLENGE_CHOICES,
+        blank=True,
+        null=True
+    )
     start_date = models.DateField(blank=True, null=True)
     end_date = models.DateField(blank=True, null=True)
+    use_indefinitely = models.BooleanField(blank=True, null=True)
+    phi_association = models.CharField(max_length=4, choices=YES_NO_CHOICES, blank=True, null=True)
+    access_level = models.CharField(
+        max_length=8,
+        choices=ACCESS_LEVEL_CHOICES,
+        blank=True,
+        null=True
+    )
+    confirm_understanding = models.BooleanField(blank=True, null=True)
+    primary_contact = models.CharField(max_length=20, blank=True, null=True)
+    secondary_contact = models.CharField(max_length=20, blank=True, null=True)
+    department_full_name = models.CharField(max_length=30, blank=True, null=True)
+    department_short_name = models.CharField(max_length=15, blank=True, null=True)
+    fiscal_officer = models.CharField(max_length=20, blank=True, null=True)
+    account_number = models.CharField(max_length=9, blank=True, null=True)
+    sub_account_number = models.CharField(max_length=20, blank=True, null=True)
+    it_pros = models.CharField(max_length=100, blank=True, null=True)
+    devices_ip_addresses = models.CharField(max_length=200, blank=True, null=True)
+    data_management_plan = models.TextField(blank=True, null=True)
+    project_directory_name = models.CharField(max_length=10, blank=True, null=True)
+    total_cost = models.IntegerField(blank=True, null=True)
+    first_name = models.CharField(max_length=40, blank=True, null=True)
+    last_name = models.CharField(max_length=40, blank=True, null=True)
+    campus_affiliation = models.CharField(
+        max_length=2,
+        choices=CAMPUS_CHOICES,
+        blank=True,
+        null=True
+    )
+    email = models.EmailField(max_length=40, blank=True, null=True)
+    url = models.CharField(max_length=50, blank=True, null=True)
+    faculty_email = models.EmailField(max_length=40, blank=True, null=True)
+    store_ephi = models.CharField(
+        max_length=3,
+        choices=YES_NO_CHOICES,
+        blank=True,
+        null=True
+    )
+    data_manager = models.CharField(max_length=50, blank=True, null=True)
     justification = models.TextField()
     description = models.CharField(max_length=512, blank=True, null=True)
     is_locked = models.BooleanField(default=False)
@@ -80,10 +190,10 @@ class Allocation(TimeStampedModel):
             if not self.start_date:
                 raise ValidationError('You have to set the start date.')
 
-            if not self.end_date:
+            if not self.end_date and not self.use_indefinitely:
                 raise ValidationError('You have to set the end date.')
 
-            if self.start_date > self.end_date:
+            if not self.use_indefinitely and self.start_date > self.end_date:
                 raise ValidationError(
                     'Start date cannot be greater than the end date.')
 
@@ -232,6 +342,41 @@ class Allocation(TimeStampedModel):
                 return [a.typed_value() for a in attr]
             else:
                 return [a.value for a in attr]
+
+    def check_user_account_exists_on_resource(self, username):
+        resource = self.get_parent_resource.get_attribute('check_user_account')
+        if self.get_parent_resource.name == 'Priority Boost':
+            resource = self.system
+
+        if resource is None:
+            return True
+
+        return self.get_parent_resource.check_user_account_exists(username, resource)
+
+    def create_user_request(self, requestor_user, allocation_user, allocation_user_status):
+        """
+        Check if the allocation's resource has the 'requires_user_request' attribute set to
+        'Yes'. If it is then create a new AllocationUserRequest.
+
+        :param request_user: User who requested the change. User object required.
+        :param allocation_user: User who had the requested change. AllocationUser object required.
+        :param allocation_user_status: Type of requested change. AllocationUserStatusChoice object
+        required.
+        :returns: A new AllocationUserRequest object or None if the 'requires_user_request' resource
+        attribute is not 'Yes'.
+        """
+        requires_user_request = self.get_parent_resource.get_attribute('requires_user_request')
+        if requires_user_request is not None and requires_user_request == 'Yes':
+            allocation_user_request_obj = AllocationUserRequest.objects.create(
+                requestor_user=requestor_user,
+                allocation_user=allocation_user,
+                allocation_user_status=allocation_user_status,
+                status=AllocationUserRequestStatusChoice.objects.get(name='Pending')
+            )
+
+            return allocation_user_request_obj
+
+        return None
 
     def __str__(self):
         return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
@@ -448,6 +593,16 @@ class AllocationAccount(TimeStampedModel):
         ordering = ['name', ]
 
 
+class AllocationUserRequestStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]
+
+
 class AllocationChangeStatusChoice(TimeStampedModel):
     name = models.CharField(max_length=64)
 
@@ -456,6 +611,17 @@ class AllocationChangeStatusChoice(TimeStampedModel):
 
     class Meta:
         ordering = ['name', ]
+
+
+class AllocationUserRequest(TimeStampedModel):
+    requestor_user = models.ForeignKey(User, on_delete=models.CASCADE)
+    allocation_user = models.ForeignKey(AllocationUser, on_delete=models.CASCADE)
+    allocation_user_status = models.ForeignKey(AllocationUserStatusChoice, on_delete=models.CASCADE)
+    status = models.ForeignKey(AllocationUserRequestStatusChoice, on_delete=models.CASCADE)
+    history = HistoricalRecords()
+
+    def __str__(self):
+        return '{} ({})'.format(self.allocation_user.user.username, self.allocation_user_status)
 
 
 class AllocationChangeRequest(TimeStampedModel):

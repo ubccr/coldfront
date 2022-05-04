@@ -52,9 +52,11 @@ class PublicationSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(
             Project, pk=self.kwargs.get('project_pk'))
-        if project_obj.status.name not in ['Active', 'New', ]:
+        if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
             messages.error(
-                request, 'You cannot add publications to an archived project.')
+                request,
+                'You cannot add publications to a project with status "{}".'.format(project_obj.status.name)
+            )
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
@@ -87,9 +89,11 @@ class PublicationSearchResultView(LoginRequiredMixin, UserPassesTestMixin, Templ
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(
             Project, pk=self.kwargs.get('project_pk'))
-        if project_obj.status.name not in ['Active', 'New', ]:
+        if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
             messages.error(
-                request, 'You cannot add publications to an archived project.')
+                request,
+                'You cannot add publications to a project with status "{}".'.format(project_obj.status.name)
+            )
             return HttpResponseRedirect(reverse('project-detail', kwargs={'project_pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
@@ -195,9 +199,11 @@ class PublicationAddView(LoginRequiredMixin, UserPassesTestMixin, View):
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(
             Project, pk=self.kwargs.get('project_pk'))
-        if project_obj.status.name not in ['Active', 'New', ]:
+        if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
             messages.error(
-                request, 'You cannot add publications to an archived project.')
+                request,
+                'You cannot add publications to a project with status "{}".'.format(project_obj.status.name)
+            )
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)
@@ -273,8 +279,11 @@ class PublicationAddManuallyView(LoginRequiredMixin, UserPassesTestMixin, FormVi
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
-        if project_obj.status.name not in ['Active', 'New', ]:
-            messages.error(request, 'You cannot add publications to an archived project.')
+        if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
+            messages.error(
+                request,
+                'You cannot add publications to a project with status "{}".'.format(project_obj.status.name)
+            )
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         else:
             return super().dispatch(request, *args, **kwargs)

@@ -4,7 +4,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.forms import formset_factory
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.views.generic import TemplateView, ListView
@@ -22,6 +22,16 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def test_func(self):
         """ UserPassesTestMixin Tests"""
         return True
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        resource_obj = get_object_or_404(Resource, pk=pk)
+        if not resource_obj.is_allocatable:
+            if not request.user.is_staff:
+                messages.error(request, 'You do not have permission to view this resource.')
+                return HttpResponseRedirect(reverse('resource-list'))
+
+        return super().dispatch(request, *args, **kwargs)
 
     def get_child_resources(self, resource_obj):
         child_resources = [resource for resource in resource_obj.resource_set.all(
@@ -197,7 +207,10 @@ class ResourceListView(LoginRequiredMixin, ListView):
 
         if resource_search_form.is_valid():
             data = resource_search_form.cleaned_data
-            resources = Resource.objects.all().order_by(order_by)
+            if self.request.user.is_staff:
+                resources = Resource.objects.all().order_by(order_by)
+            else:
+                resources = Resource.objects.filter(is_allocatable=True).order_by(order_by)
 
             if data.get('show_allocatable_resources'):
                 resources = resources.filter(is_allocatable=True)
@@ -237,7 +250,10 @@ class ResourceListView(LoginRequiredMixin, ListView):
                     Q(resourceattribute__value=data.get('vendor'))
                 )
         else:
-            resources = Resource.objects.all().order_by(order_by)
+            if self.request.user.is_staff:
+                resources = Resource.objects.all().order_by(order_by)
+            else:
+                resources = Resource.objects.filter(is_allocatable=True).order_by(order_by)
         return resources.distinct()
 
     def get_context_data(self, **kwargs):

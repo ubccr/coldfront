@@ -1,0 +1,10 @@
+Dear {{ center_name }} user,
+
+Your project request for "{{ project_title }}" has been denied. You can view your project here: {{ project_url }}
+
+If you have any questions please email us at {{ help_email }}
+
+This is an unmonitored email, replies to this email will not be seen.
+
+Thank you,
+{{signature}}
