@@ -1,4 +1,5 @@
 import logging
+import pytz
 
 from collections import OrderedDict
 from datetime import date
@@ -198,12 +199,14 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
 
             # Convert Unix timestamps to UTC datetimes.
             try:
-                start_time = datetime.utcfromtimestamp(float(start_time))
+                start_time = datetime.utcfromtimestamp(
+                    float(start_time)).replace(tzinfo=pytz.utc)
             except (TypeError, ValueError) as e:
                 raise serializers.ValidationError(
                     f'Invalid starting timestamp {start_time}. Details: {e}')
             try:
-                end_time = datetime.utcfromtimestamp((float(end_time)))
+                end_time = datetime.utcfromtimestamp(
+                    float(end_time)).replace(tzinfo=pytz.utc)
             except (TypeError, ValueError) as e:
                 raise serializers.ValidationError(
                     f'Invalid ending timestamp {start_time}. Details: {e}')

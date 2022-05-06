@@ -26,12 +26,10 @@ from coldfront.core.user.models import UserProfile
 
 from django.contrib.auth.models import User
 from django.db.models import Sum
-from django.test import override_settings
 
 from rest_framework.test import APIClient
 
 
-# @override_settings(USE_TZ=False)
 class TestJobList(TestJobBase):
     """A suite for testing requests to retrieve Jobs."""
 
@@ -740,37 +738,35 @@ class TestJobViewSet(TestJobBase):
         """Test that jobs are returned from a GET request."""
         response = self.client.post(self.post_url, self.data, format='json')
         self.assertEqual(response.status_code, 201)
-        with override_settings(USE_TZ=False):
-            response = self.client.get(self.get_url)
-            json = response.json()
-            self.assertEqual(len(json['results']), 1)
-            job = json['results'][0]
-            self.assertEqual(job['jobslurmid'], self.data['jobslurmid'])
-            for field in ('submitdate', 'startdate', 'enddate'):
-                self.assertEqual(
-                    job[field].replace('T', ' ').replace('Z', ''),
-                    self.data[field])
-            self.assertEqual(job['userid'], self.data['userid'])
-            self.assertEqual(job['accountid'], self.data['accountid'])
-            self.assertEqual(job['amount'], self.data['amount'])
+        response = self.client.get(self.get_url)
+        json = response.json()
+        self.assertEqual(len(json['results']), 1)
+        job = json['results'][0]
+        self.assertEqual(job['jobslurmid'], self.data['jobslurmid'])
+        for field in ('submitdate', 'startdate', 'enddate'):
+            self.assertEqual(
+                job[field].replace('T', ' ').replace('Z', ''),
+                self.data[field])
+        self.assertEqual(job['userid'], self.data['userid'])
+        self.assertEqual(job['accountid'], self.data['accountid'])
+        self.assertEqual(job['amount'], self.data['amount'])
 
     def test_get_by_jobslurmid(self):
         """Test that a single job can be retrieved from a GET
         request."""
         response = self.client.post(self.post_url, self.data, format='json')
         self.assertEqual(response.status_code, 201)
-        with override_settings(USE_TZ=False):
-            response = self.client.get(TestJobViewSet.put_url(1))
-            self.assertEqual(response.status_code, 200)
-            job = response.json()
-            self.assertEqual(job['jobslurmid'], self.data['jobslurmid'])
-            for field in ('submitdate', 'startdate', 'enddate'):
-                self.assertEqual(
-                    job[field].replace('T', ' ').replace('Z', ''),
-                    self.data[field])
-            self.assertEqual(job['userid'], self.data['userid'])
-            self.assertEqual(job['accountid'], self.data['accountid'])
-            self.assertEqual(job['amount'], self.data['amount'])
+        response = self.client.get(TestJobViewSet.put_url(1))
+        self.assertEqual(response.status_code, 200)
+        job = response.json()
+        self.assertEqual(job['jobslurmid'], self.data['jobslurmid'])
+        for field in ('submitdate', 'startdate', 'enddate'):
+            self.assertEqual(
+                job[field].replace('T', ' ').replace('Z', ''),
+                self.data[field])
+        self.assertEqual(job['userid'], self.data['userid'])
+        self.assertEqual(job['accountid'], self.data['accountid'])
+        self.assertEqual(job['amount'], self.data['amount'])
 
     def test_post(self):
         """Test that fields set during a POST (create) request are saved
