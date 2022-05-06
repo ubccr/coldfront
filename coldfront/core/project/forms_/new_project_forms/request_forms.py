@@ -58,10 +58,10 @@ class SavioProjectAllocationPeriodForm(forms.Form):
                                   display_timezone):
         """Return a queryset of AllocationPeriods to be available in the
         form if rendered at the given datetime, whose tzinfo must be
-        pytz.UTC and which will be converted to the given timezone, for
+        pytz.utc and which will be converted to the given timezone, for
         an allocation with the given type."""
-        if utc_dt.tzinfo != pytz.UTC:
-            raise ValueError(f'Datetime {utc_dt}\'s tzinfo is not pytz.UTC.')
+        if utc_dt.tzinfo != pytz.utc:
+            raise ValueError(f'Datetime {utc_dt}\'s tzinfo is not pytz.utc.')
         dt = utc_dt.astimezone(display_timezone)
         date = datetime.date(dt)
         f = Q(end_date__gte=date)

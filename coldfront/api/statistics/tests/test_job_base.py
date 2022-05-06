@@ -1,5 +1,4 @@
-from coldfront.api.statistics.utils import create_project_allocation, \
-    get_allocation_year_range
+from coldfront.api.statistics.utils import create_project_allocation
 from coldfront.api.statistics.utils import create_user_project_allocation
 from coldfront.api.utils.tests.test_api_base import TestAPIBase
 from coldfront.core.allocation.models import AllocationAttributeUsage
@@ -9,7 +8,9 @@ from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
+from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.user.models import UserProfile
+from coldfront.core.utils.common import display_time_zone_date_to_utc_datetime
 from datetime import datetime
 from decimal import Decimal
 from django.contrib.auth.models import User
@@ -57,13 +58,21 @@ class TestJobBase(TestAPIBase):
             user=self.pi, project=self.project, role=manager_role,
             status=status)
 
-        # Create a compute allocation for the Project.
+        # Get the start and end times of the current Allowance Year.
+        current_allowance_year_period = get_current_allowance_year_period()
+        period_start_date = current_allowance_year_period.start_date
+        period_end_date = current_allowance_year_period.end_date
+        self.default_start = display_time_zone_date_to_utc_datetime(
+            period_start_date)
+        self.default_end = display_time_zone_date_to_utc_datetime(
+            period_end_date)
+
+        # Create a "CLUSTER_NAME Compute" Allocation for the Project.
         allocation_objects = create_project_allocation(
             self.project, Decimal('1000.00'))
         self.allocation = allocation_objects.allocation
-        default_start, default_end = get_allocation_year_range()
-        self.allocation.start_date = default_start
-        self.allocation.end_date = default_end
+        self.allocation.start_date = period_start_date
+        self.allocation.end_date = period_end_date
         self.allocation.save()
         self.allocation_attribute = allocation_objects.allocation_attribute
         self.account_usage = AllocationAttributeUsage.objects.first()
@@ -99,5 +108,3 @@ class TestJobBase(TestAPIBase):
             'partition': self.partition,
             'qos': self.qos
         }
-
-        self.default_start, self.default_end = get_allocation_year_range()

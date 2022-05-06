@@ -2,9 +2,11 @@ from datetime import datetime
 from datetime import timedelta
 from decimal import Decimal
 
+import pytz
+
 from coldfront.api.statistics.tests.test_job_base import TestJobBase
-from coldfront.api.statistics.utils import convert_datetime_to_unix_timestamp, \
-    get_accounting_allocation_objects
+from coldfront.api.statistics.utils import convert_utc_datetime_to_unix_timestamp
+from coldfront.api.statistics.utils import get_accounting_allocation_objects
 from coldfront.api.statistics.utils import create_project_allocation
 from coldfront.api.statistics.utils import create_user_project_allocation
 from coldfront.core.allocation.models import AllocationAttributeUsage
@@ -88,10 +90,10 @@ class TestJobList(TestJobBase):
             create_user_project_allocation(user, project, value)
 
         # Create Jobs with PUT requests.
-        index = 1
+        index = 12
         dt = self.default_start.replace(
             hour=index, minute=0, second=0, microsecond=0)
-        # Jobs were submitted on the hour from 1 - 8 a.m. on the current day.
+        # Jobs were submitted on the hour from 12 to 7 p.m. on the current day.
         for allocation_user in AllocationUser.objects.all():
             for i in range(self.num_projects):
                 allocation_amount = int(
@@ -101,7 +103,7 @@ class TestJobList(TestJobBase):
                     'jobslurmid': str(index),
                     'submitdate': dt.replace(hour=index),
                     'startdate': dt.replace(hour=index),
-                    'enddate': dt.replace(hour=index+1),
+                    'enddate': dt.replace(hour=index + 1),
                     'userid': UserProfile.objects.get(
                         user=allocation_user.user).cluster_uid,
                     'accountid': allocation_user.allocation.project.name,
@@ -158,7 +160,8 @@ class TestJobList(TestJobBase):
             job = results_dict[jobslurmid]
             self.assertIn('submitdate', job)
             submitdate = datetime.strptime(
-                job['submitdate'], "%Y-%m-%dT%H:%M:%SZ")
+                job['submitdate'], "%Y-%m-%dT%H:%M:%SZ").replace(
+                    tzinfo=pytz.utc)
             self.assertGreaterEqual(submitdate, self.default_start)
             self.assertLessEqual(submitdate, self.default_end)
 
@@ -231,7 +234,13 @@ class TestJobList(TestJobBase):
             status_code, count)
         # Set half of the jobs to have amount 750.00.
         amount = Decimal('750.00')
-        Job.objects.filter(jobslurmid__in=range(1, 5)).update(amount=amount)
+        n, i = Job.objects.count(), 0
+        for job in Job.objects.all():
+            if i == n // 2:
+                break
+            job.amount = amount
+            job.save()
+            i = i + 1
 
         # Ensure that various combinations give the expected results.
         minimum, maximum = Decimal(250), Decimal(750)
@@ -281,10 +290,10 @@ class TestJobList(TestJobBase):
 
     def test_start_time_filter(self):
         """Test that the start_time filter filters properly."""
-        # Four jobs were submitted at or after 5 a.m. today.
+        # Four jobs were submitted at or after 4 p.m. today.
         start_dt = self.default_start.replace(
-            hour=5, minute=0, second=0, microsecond=0)
-        start_time = convert_datetime_to_unix_timestamp(start_dt)
+            hour=16, minute=0, second=0, microsecond=0)
+        start_time = convert_utc_datetime_to_unix_timestamp(start_dt)
         url = TestJobList.get_url(start_time=start_time)
         status_code, count = 200, 4
         results_dict = self.assert_results(url, status_code, count)
@@ -293,7 +302,8 @@ class TestJobList(TestJobBase):
             job = results_dict[jobslurmid]
             self.assertIn('submitdate', job)
             submitdate = datetime.strptime(
-                job['submitdate'], "%Y-%m-%dT%H:%M:%SZ")
+                job['submitdate'], "%Y-%m-%dT%H:%M:%SZ").replace(
+                    tzinfo=pytz.utc)
             self.assertGreaterEqual(submitdate, start_dt)
             self.assertLessEqual(submitdate, self.default_end)
 
@@ -307,10 +317,10 @@ class TestJobList(TestJobBase):
 
     def test_end_time_filter(self):
         """Test that the end_time filter filters properly."""
-        # Four jobs were submitted before or at 4 a.m. today.
+        # Four jobs were submitted before or at 3 p.m. today.
         end_dt = self.default_start.replace(
-            hour=4, minute=0, second=0, microsecond=0)
-        end_time = convert_datetime_to_unix_timestamp(end_dt)
+            hour=15, minute=0, second=0, microsecond=0)
+        end_time = convert_utc_datetime_to_unix_timestamp(end_dt)
         url = TestJobList.get_url(end_time=end_time)
         status_code, count = 200, 4
         results_dict = self.assert_results(url, status_code, count)
@@ -319,7 +329,8 @@ class TestJobList(TestJobBase):
             job = results_dict[jobslurmid]
             self.assertIn('submitdate', job)
             submitdate = datetime.strptime(
-                job['submitdate'], "%Y-%m-%dT%H:%M:%SZ")
+                job['submitdate'], "%Y-%m-%dT%H:%M:%SZ").replace(
+                    tzinfo=pytz.utc)
             self.assertGreaterEqual(submitdate, self.default_start)
             self.assertLessEqual(submitdate, end_dt)
 
@@ -332,13 +343,13 @@ class TestJobList(TestJobBase):
 
     def test_multiple_filters(self):
         """Test that the query filters filter in conjunction."""
-        # Six jobs were submitted at or after 2 a.m. and before or at 7 a.m.
+        # Six jobs were submitted at or after 1 p.m. and before or at 6 p.m.
         start_dt = self.default_start.replace(
-            hour=2, minute=0, second=0, microsecond=0)
-        start_time = convert_datetime_to_unix_timestamp(start_dt)
+            hour=13, minute=0, second=0, microsecond=0)
+        start_time = convert_utc_datetime_to_unix_timestamp(start_dt)
         end_dt = self.default_start.replace(
-            hour=7, minute=0, second=0, microsecond=0)
-        end_time = convert_datetime_to_unix_timestamp(end_dt)
+            hour=18, minute=0, second=0, microsecond=0)
+        end_time = convert_utc_datetime_to_unix_timestamp(end_dt)
         url = TestJobList.get_url(start_time=start_time, end_time=end_time)
         status_code, count = 200, 6
         results_dict = self.assert_results(url, status_code, count)
@@ -346,7 +357,8 @@ class TestJobList(TestJobBase):
             job = results_dict[jobslurmid]
             self.assertIn('submitdate', job)
             submitdate = datetime.strptime(
-                job['submitdate'], "%Y-%m-%dT%H:%M:%SZ")
+                job['submitdate'], "%Y-%m-%dT%H:%M:%SZ").replace(
+                    tzinfo=pytz.utc)
             self.assertGreaterEqual(submitdate, start_dt)
             self.assertLessEqual(submitdate, end_dt)
         # If end_time comes before start_time, no jobs should be returned.
@@ -357,13 +369,13 @@ class TestJobList(TestJobBase):
     def test_result_ordering(self):
         """Test that results are returned in ascending submitdate
         order."""
-        # Six jobs were submitted at or after 2 a.m. and before or at 7 a.m.
+        # Six jobs were submitted at or after 1 p.m. and before or at 6 p.m.
         start_dt = self.default_start.replace(
-            hour=2, minute=0, second=0, microsecond=0)
-        start_time = convert_datetime_to_unix_timestamp(start_dt)
+            hour=13, minute=0, second=0, microsecond=0)
+        start_time = convert_utc_datetime_to_unix_timestamp(start_dt)
         end_dt = self.default_start.replace(
-            hour=7, minute=0, second=0, microsecond=0)
-        end_time = convert_datetime_to_unix_timestamp(end_dt)
+            hour=18, minute=0, second=0, microsecond=0)
+        end_time = convert_utc_datetime_to_unix_timestamp(end_dt)
         url = TestJobList.get_url(start_time=start_time, end_time=end_time)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)

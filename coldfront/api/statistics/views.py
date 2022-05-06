@@ -6,7 +6,6 @@ from datetime import datetime
 from datetime import MAXYEAR
 from decimal import Decimal, InvalidOperation
 
-from django.core.exceptions import ImproperlyConfigured
 from django.core.exceptions import MultipleObjectsReturned
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
@@ -23,15 +22,15 @@ from rest_framework.response import Response
 from coldfront.api.permissions import IsAdminUserOrReadOnly
 from coldfront.api.statistics.pagination import JobPagination
 from coldfront.api.statistics.serializers import JobSerializer
-from coldfront.api.statistics.utils import convert_datetime_to_unix_timestamp
+from coldfront.api.statistics.utils import convert_utc_datetime_to_unix_timestamp
 from coldfront.api.statistics.utils import get_accounting_allocation_objects
-from coldfront.api.statistics.utils import get_allocation_year_range
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttributeUsage
 from coldfront.core.allocation.models import AllocationUser
 from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectUser
+from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.statistics.models import Job
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import display_time_zone_date_to_utc_datetime
@@ -176,12 +175,20 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
             # Retrieve the default allocation year start and end as Unix
             # timestamps.
             try:
-                default_start, default_end = get_allocation_year_range()
-            except (TypeError, ValueError) as e:
-                raise ImproperlyConfigured(f'Invalid settings. Details: {e}')
-            default_start_time = convert_datetime_to_unix_timestamp(
+                current_allowance_year_period = \
+                    get_current_allowance_year_period()
+                default_start = display_time_zone_date_to_utc_datetime(
+                    current_allowance_year_period.start_date)
+                default_end = display_time_zone_date_to_utc_datetime(
+                    current_allowance_year_period.end_date)
+            except Exception as e:
+                raise serializers.ValidationError(
+                    f'Failed to retrieve default start and end times. '
+                    f'Details: {e}')
+            default_start_time = convert_utc_datetime_to_unix_timestamp(
                 default_start)
-            default_end_time = convert_datetime_to_unix_timestamp(default_end)
+            default_end_time = convert_utc_datetime_to_unix_timestamp(
+                default_end)
 
             # Use the user-provided times if provided, or the defaults.
             start_time = self.request.query_params.get(
