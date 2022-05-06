@@ -1,6 +1,9 @@
 import logging
+
 from collections import OrderedDict
+from datetime import date
 from datetime import datetime
+from datetime import MAXYEAR
 from decimal import Decimal, InvalidOperation
 
 from django.core.exceptions import ImproperlyConfigured
@@ -20,8 +23,7 @@ from rest_framework.response import Response
 from coldfront.api.permissions import IsAdminUserOrReadOnly
 from coldfront.api.statistics.pagination import JobPagination
 from coldfront.api.statistics.serializers import JobSerializer
-from coldfront.api.statistics.utils import convert_datetime_to_unix_timestamp, \
-    convert_time_to_utc
+from coldfront.api.statistics.utils import convert_datetime_to_unix_timestamp
 from coldfront.api.statistics.utils import get_accounting_allocation_objects
 from coldfront.api.statistics.utils import get_allocation_year_range
 from coldfront.core.allocation.models import Allocation
@@ -32,8 +34,10 @@ from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.statistics.models import Job
 from coldfront.core.user.models import UserProfile
+from coldfront.core.utils.common import display_time_zone_date_to_utc_datetime
 
-DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
+
+DATE_FORMAT = '%Y-%m-%d %H:%M:%SZ'
 
 
 authorization_parameter = openapi.Parameter(
@@ -219,6 +223,7 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
 
         # These must exist because they are verified in JobSerializer.validate,
         # part of this atomic block.
+        jobslurmid = serializer.validated_data['jobslurmid']
         user = serializer.validated_data['userid']
         account = serializer.validated_data['accountid']
         allocation_objects = get_accounting_allocation_objects(
@@ -234,50 +239,26 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
             AllocationUserAttributeUsage.objects.select_for_update().get(
                 pk=allocation_objects.allocation_user_attribute_usage.pk))
 
-        job_submit_date = \
-            convert_time_to_utc(serializer.validated_data.get('submitdate',
-                                                              None))
-        job_start_date = \
-            convert_time_to_utc(serializer.validated_data.get('startdate',
-                                                              None))
-        jobslurmid = serializer.validated_data.get('jobslurmid', None)
-        update_usage = True
-
-        # Checking that the job has a start date.
-        if not bool(job_submit_date) or not bool(job_start_date):
-            message = (
-                f'Job {jobslurmid} does not '
-                f'have a start or submit date.')
-            logger.error(message)
-            update_usage = False
-
-        # All project types should have allocation start_dates.
-        # We are ensuring that the allocation has a start_date.
-        allocation_start_date = \
-            convert_time_to_utc(allocation_objects.allocation.start_date)
-        if not bool(allocation_start_date):
-            message = (
-                f'Allocation {account} does not have a '
-                f'start date')
-            logger.error(message)
-            update_usage = False
-
-        # Checking that the job's start date is after the
-        # allocation's start date.
-        elif bool(job_start_date) and job_start_date < allocation_start_date:
-            message = (
-                f'Job {jobslurmid}\'s start date '
-                f'{job_start_date.strftime(DATE_FORMAT)} occurs before '
-                f'allocation {account}\'s start date '
-                f'{allocation_start_date.strftime(DATE_FORMAT)}.')
-            logger.error(message)
-            update_usage = False
-
         logger.info(
             f'New Job POST request with data: {serializer.validated_data}.')
 
-        # If amount is specified, update usages.
-        if 'amount' in serializer.validated_data and update_usage:
+        job_has_amount = 'amount' in serializer.validated_data
+        if not job_has_amount:
+            logger.warning(f'Job {jobslurmid} has no amount.')
+
+        try:
+            job_dates_valid = self.validate_job_dates(
+                serializer.validated_data, allocation_objects.allocation,
+                end_date_expected=False)
+        except Exception as e:
+            job_dates_valid = False
+            logger.exception(
+                f'Failed to determine whether dates for Job {jobslurmid} are '
+                f'valid. Details:\n'
+                f'{e}')
+
+        # If an amount is specified, and job dates are valid, update usages.
+        if job_has_amount and job_dates_valid:
             amount = Decimal(serializer.validated_data['amount'])
 
             # Because of Slurm limitations, 'can_submit_job' and 'create' are
@@ -316,6 +297,8 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                 f'{new_user_account_usage}.')
             user_account_usage.value = new_user_account_usage
             user_account_usage.save()
+        else:
+            logger.warning(f'Skipping usage updates for Job {jobslurmid}.')
 
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
@@ -355,6 +338,7 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
 
         # These must exist because they are verified in JobSerializer.validate,
         # part of this atomic block.
+        jobslurmid = serializer.validated_data['jobslurmid']
         user = serializer.validated_data['userid']
         account = serializer.validated_data['accountid']
         allocation_objects = get_accounting_allocation_objects(
@@ -366,82 +350,27 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
             AllocationUserAttributeUsage.objects.select_for_update().get(
                 pk=allocation_objects.allocation_user_attribute_usage.pk))
 
-        # All project types will have start_dates.
-        job_submit_date = \
-            convert_time_to_utc(serializer.validated_data.get('submitdate',
-                                                              None))
-        job_start_date = \
-            convert_time_to_utc(serializer.validated_data.get('startdate',
-                                                              None))
-        job_end_date = \
-            convert_time_to_utc(serializer.validated_data.get('enddate',
-                                                              None))
-        jobslurmid = serializer.validated_data.get('jobslurmid', None)
-        update_usage = True
-
-        # Throw error if there is no start or end date given.
-        if not bool(job_submit_date) or \
-                not bool(job_start_date) or \
-                not bool(job_end_date):
-            message = (
-                f'Job {jobslurmid} does not '
-                f'have submit, start or end dates.')
-            logger.error(message)
-            update_usage = False
-
-        # This ensures that the allocation start_date exists even though
-        # it should exist for every allocation.
-        allocation_start_date = \
-            convert_time_to_utc(allocation_objects.allocation.start_date)
-        if not bool(allocation_start_date):
-            message = (
-                f'Allocation {account} does not have a '
-                f'start date')
-            logger.error(message)
-            update_usage = False
-
-        # Checking that job start date is not before allocation start date.
-        elif bool(job_start_date) and job_start_date < allocation_start_date:
-            message = (
-                f'Job {jobslurmid}\'s start date '
-                f'{job_start_date.strftime(DATE_FORMAT)} occurs '
-                f'before allocation {account}\'s start date '
-                f'{allocation_start_date.strftime(DATE_FORMAT)}.')
-            logger.error(message)
-            update_usage = False
-
-        # ac_ and co_ projects do not have end dates to check.
-        # fc_, ic_ and pc_ projects' allocations should have end dates.
-        name = account.name
-        if name.startswith('fc_') or name.startswith('ic_') or \
-                name.startswith('pc_'):
-
-            # Ensuring that the allocation end_date exists.
-            allocation_end_date = \
-                convert_time_to_utc(allocation_objects.allocation.end_date)
-            if not bool(allocation_end_date):
-                message = (
-                    f'Allocation {account} does not have an end date.')
-                logger.error(message)
-                update_usage = False
-
-            # Checking that the job end date is not after allocation end date.
-            elif bool(job_end_date) and job_end_date > allocation_end_date:
-                message = (
-                    f'Job {jobslurmid}\'s end date '
-                    f'{job_end_date.strftime(DATE_FORMAT)} occurs after '
-                    f'allocation {account}\'s end date '
-                    f'{allocation_end_date.strftime(DATE_FORMAT)}.')
-                logger.error(message)
-                update_usage = False
-
         logger.info(
             f'New Job PUT request with data: {serializer.validated_data}.')
 
-        # If amount is specified, update usages.
-        if 'amount' in serializer.validated_data and update_usage:
+        job_has_amount = 'amount' in serializer.validated_data
+        if not job_has_amount:
+            logger.warning(f'Job {jobslurmid} has no amount.')
+
+        try:
+            job_dates_valid = self.validate_job_dates(
+                serializer.validated_data, allocation_objects.allocation,
+                end_date_expected=True)
+        except Exception as e:
+            job_dates_valid = False
+            logger.exception(
+                f'Failed to determine whether dates for Job {jobslurmid} are '
+                f'valid. Details:\n'
+                f'{e}')
+
+        # If an amount is specified and job dates are valid, update usages.
+        if job_has_amount and job_dates_valid:
             amount = Decimal(serializer.validated_data['amount'])
-            jobslurmid = serializer.validated_data['jobslurmid']
             try:
                 job = Job.objects.get(jobslurmid=jobslurmid)
             except Job.DoesNotExist:
@@ -483,6 +412,8 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                 user_account_usage.value = new_user_account_usage
             account_usage.save()
             user_account_usage.save()
+        else:
+            logger.warning(f'Skipping usage updates for Job {jobslurmid}.')
 
         self.perform_update(serializer)
 
@@ -493,6 +424,85 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                 instance._prefetched_objects_cache = {}
 
         return Response(serializer.data)
+
+    @staticmethod
+    def validate_job_dates(job_data, allocation, end_date_expected=False):
+        """Given a dictionary representing a Job, its corresponding
+        Allocation, and whether the Job is expected to include an end
+        date, return whether:
+            (a) The Job has the expected dates,
+            (b) The Job's corresponding Allocation has the expected
+                dates, and
+            (c) The Job started and ended within the Allocation's dates.
+
+        Write errors or warnings to the log if not."""
+        logger = logging.getLogger(__name__)
+
+        jobslurmid = job_data['jobslurmid']
+        account_name = job_data['accountid'].name
+
+        # The Job should have submit, start, and, if applicable, end dates.
+        expected_date_keys = ['submitdate', 'startdate']
+        if end_date_expected:
+            expected_date_keys.append('enddate')
+        expected_dates = {
+            key: job_data.get(key, None) for key in expected_date_keys}
+        for key, expected_date in expected_dates.items():
+            if not isinstance(expected_date, datetime):
+                logger.error(f'Job {jobslurmid} does not have a {key}.')
+                return False
+
+        # The Job's corresponding Allocation should have a start date.
+        allocation_start_date = allocation.start_date
+        if not isinstance(allocation_start_date, date):
+            logger.error(
+                f'Allocation {allocation.pk} (Project {account_name}) does '
+                f'not have a start date.')
+            return False
+
+        # The Job should not have started before its corresponding Allocation's
+        # start date.
+        job_start_dt_utc = expected_dates['startdate']
+        allocation_start_dt_utc = display_time_zone_date_to_utc_datetime(
+            allocation_start_date)
+        if job_start_dt_utc < allocation_start_dt_utc:
+            logger.warning(
+                f'Job {jobslurmid} start date '
+                f'({job_start_dt_utc.strftime(DATE_FORMAT)}) is before '
+                f'Allocation {allocation.pk} (Project {account_name}) start '
+                f'date ({allocation_start_dt_utc.strftime(DATE_FORMAT)}).')
+            return False
+
+        if not end_date_expected:
+            return True
+
+        # The Job's corresponding Allocation may have an end date. (Compare
+        # against the maximum date if not.)
+        allocation_types_with_end_dates = ('fc_', 'ic_', 'pc_')
+        if account_name.startswith(allocation_types_with_end_dates):
+            allocation_end_date = allocation.end_date
+            if not isinstance(allocation_end_date, date):
+                logger.error(
+                    f'Allocation {allocation.pk} (Project {account_name}) '
+                    f'does not have an end date.')
+                return False
+        else:
+            allocation_end_date = date(MAXYEAR, 12, 31)
+
+        # The Job should not have ended after its corresponding Allocation's
+        # end date.
+        job_end_dt_utc = expected_dates['enddate']
+        allocation_end_dt_utc = display_time_zone_date_to_utc_datetime(
+            allocation_end_date)
+        if job_end_dt_utc > allocation_end_dt_utc:
+            logger.warning(
+                f'Job {jobslurmid} end date '
+                f'({job_end_dt_utc.strftime(DATE_FORMAT)}) is after '
+                f'Allocation {allocation.pk} (Project {account_name}) end '
+                f'date ({allocation_end_dt_utc.strftime(DATE_FORMAT)}).')
+            return False
+
+        return True
 
 
 job_cost_parameter = openapi.Parameter(

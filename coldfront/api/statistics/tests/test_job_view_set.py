@@ -724,41 +724,41 @@ class TestJobViewSet(TestJobBase):
         message = 'You do not have permission to perform this action.'
         self.assertEqual(json['detail'], message)
 
-    @override_settings(USE_TZ=False)
     def test_get(self):
         """Test that jobs are returned from a GET request."""
         response = self.client.post(self.post_url, self.data, format='json')
         self.assertEqual(response.status_code, 201)
-        response = self.client.get(self.get_url)
-        json = response.json()
-        self.assertEqual(len(json['results']), 1)
-        job = json['results'][0]
-        self.assertEqual(job['jobslurmid'], self.data['jobslurmid'])
-        for field in ('submitdate', 'startdate', 'enddate'):
-            self.assertEqual(
-                job[field].replace('T', ' ').replace('Z', ''),
-                self.data[field])
-        self.assertEqual(job['userid'], self.data['userid'])
-        self.assertEqual(job['accountid'], self.data['accountid'])
-        self.assertEqual(job['amount'], self.data['amount'])
+        with override_settings(USE_TZ=False):
+            response = self.client.get(self.get_url)
+            json = response.json()
+            self.assertEqual(len(json['results']), 1)
+            job = json['results'][0]
+            self.assertEqual(job['jobslurmid'], self.data['jobslurmid'])
+            for field in ('submitdate', 'startdate', 'enddate'):
+                self.assertEqual(
+                    job[field].replace('T', ' ').replace('Z', ''),
+                    self.data[field])
+            self.assertEqual(job['userid'], self.data['userid'])
+            self.assertEqual(job['accountid'], self.data['accountid'])
+            self.assertEqual(job['amount'], self.data['amount'])
 
-    @override_settings(USE_TZ=False)
     def test_get_by_jobslurmid(self):
         """Test that a single job can be retrieved from a GET
         request."""
         response = self.client.post(self.post_url, self.data, format='json')
         self.assertEqual(response.status_code, 201)
-        response = self.client.get(TestJobViewSet.put_url(1))
-        self.assertEqual(response.status_code, 200)
-        job = response.json()
-        self.assertEqual(job['jobslurmid'], self.data['jobslurmid'])
-        for field in ('submitdate', 'startdate', 'enddate'):
-            self.assertEqual(
-                job[field].replace('T', ' ').replace('Z', ''),
-                self.data[field])
-        self.assertEqual(job['userid'], self.data['userid'])
-        self.assertEqual(job['accountid'], self.data['accountid'])
-        self.assertEqual(job['amount'], self.data['amount'])
+        with override_settings(USE_TZ=False):
+            response = self.client.get(TestJobViewSet.put_url(1))
+            self.assertEqual(response.status_code, 200)
+            job = response.json()
+            self.assertEqual(job['jobslurmid'], self.data['jobslurmid'])
+            for field in ('submitdate', 'startdate', 'enddate'):
+                self.assertEqual(
+                    job[field].replace('T', ' ').replace('Z', ''),
+                    self.data[field])
+            self.assertEqual(job['userid'], self.data['userid'])
+            self.assertEqual(job['accountid'], self.data['accountid'])
+            self.assertEqual(job['amount'], self.data['amount'])
 
     def test_post(self):
         """Test that fields set during a POST (create) request are saved
