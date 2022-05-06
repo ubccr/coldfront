@@ -2244,7 +2244,7 @@ class AllocationInvoiceListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
             resources.append(
                 (resource.name, resource.name)
             )
-        context['allocation_invoice_search_form'] = AllocationInvoiceExportForm(resources=resources)
+        context['allocation_invoice_export_form'] = AllocationInvoiceExportForm(resources=resources)
         return context
 
     def get_queryset(self):

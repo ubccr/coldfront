@@ -26,7 +26,7 @@ Allocation Invoice List
       <div class="modal-body">
         <form id="id_export_form" action="{% url 'invoice-export' %}" method="post">
           {% csrf_token %}
-          {{ allocation_invoice_search_form|crispy }}
+          {{ allocation_invoice_export_form|crispy }}
           <div class="float-right form-inline">
             <button id="id_export_button" type="submit" class="btn btn-success float-right"><i class="fas fa-download" aria-hidden="true"></i> Export</button>
           </div>
