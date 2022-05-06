@@ -6,7 +6,6 @@ from django.forms.widgets import RadioSelect
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 from django.utils.html import format_html
-from django.utils.module_loading import import_string
 
 from coldfront.core.allocation.models import (AllocationAccount,
                                               AllocationAttributeType,
@@ -476,16 +475,6 @@ class AllocationInvoiceUpdateForm(forms.Form):
         'Payment Pending', 'Payment Requested', 'Payment Declined', 'Paid']).order_by('name'), empty_label=None)
 
 
-class AllocationInvoiceExportForm(forms.Form):
-    RESOURCE_CHOICES = (
-        ('RStudio Connect', 'RStudio Connect'),
-        ('Slate-Project', 'Slate Project')
-    )
-
-    file_name = forms.CharField(max_length=64, initial='invoices')
-    resource = forms.ChoiceField(choices=RESOURCE_CHOICES)
-
-
 class AllocationAddUserForm(forms.Form):
     username = forms.CharField(max_length=150, disabled=True)
     first_name = forms.CharField(max_length=30, required=False, disabled=True)
@@ -584,6 +573,26 @@ class AllocationInvoiceSearchForm(forms.Form):
         required=False
     )
 
+
+class AllocationInvoiceExportForm(forms.Form):
+    file_name = forms.CharField(max_length=64, initial='invoices')
+    resource = forms.ChoiceField(choices=())
+    start_date = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        required=False
+    )
+    end_date = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        required=False
+    )
+
+    def __init__(self, *args, resources=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if resources is None:
+            self.fields['resource'].choices = ()
+        else:
+            self.fields['resource'].choices = resources
 
 
 class AllocationReviewUserForm(forms.Form):

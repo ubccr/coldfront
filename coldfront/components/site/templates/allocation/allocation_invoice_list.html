@@ -26,7 +26,7 @@ Allocation Invoice List
       <div class="modal-body">
         <form id="id_export_form" action="{% url 'invoice-export' %}" method="post">
           {% csrf_token %}
-          {{ AllocationInvoiceExportForm|crispy }}
+          {{ allocation_invoice_search_form|crispy }}
           <div class="float-right form-inline">
             <button id="id_export_button" type="submit" class="btn btn-success float-right"><i class="fas fa-download" aria-hidden="true"></i> Export</button>
           </div>
@@ -45,6 +45,7 @@ Allocation Invoice List
           <th scope="col">Resource</th>
           <th scope="col">Status</th>
           <th scope="col">PI</th>
+          <th scope="col">Created</th>
         </tr>
       </thead>
       <tbody>
@@ -54,6 +55,7 @@ Allocation Invoice List
             <td>{{allocation.get_resources_as_string}}</td>
             <td>{{allocation.status}}</td>
             <td>{{allocation.project.pi.username }}</td>
+            <td>{{allocation.created|date:"M d, Y"}}</td>
           </tr>
         {% endfor %}
       </tbody>
@@ -69,5 +71,7 @@ Allocation Invoice List
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-invoice").addClass("active");
   $("#navbar-allocation-invoice-list").addClass("active");
+
+  $(".datepicker").datepicker();
 </script>
 {% endblock %}

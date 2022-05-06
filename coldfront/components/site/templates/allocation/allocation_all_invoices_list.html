@@ -8,8 +8,33 @@ Allocation Invoice List
 {% endblock %}
 
 {% block content %}
-<h2>All Allocation Invoices</h2>
+<h2 class="d-inline">All Allocation Invoices</h2>
+<button type="button" class="btn btn-success float-right" data-toggle="modal" data-target="#id_export_csv">
+  Export to CSV
+</button>
 <hr>
+
+<div class="modal fade" id="id_export_csv" tabindex="-1" role="dialog" aria-labelledby="id_export_csv_label" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="id_export_csv_label">Export to CSV</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="id_export_form" action="{% url 'all-invoices-export' %}" method="post">
+          {% csrf_token %}
+          {{ allocation_invoice_export_form|crispy }}
+          <div class="float-right form-inline">
+            <button id="id_export_button" type="submit" class="btn btn-success float-right"><i class="fas fa-download" aria-hidden="true"></i> Export</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
 
 {% if expand_accordion == "show" or allocation_invoice_list %}
   <div class="mb-s" id="accordion">
@@ -32,6 +57,7 @@ Allocation Invoice List
     </div>
   </div>
 {% endif %}
+<br>
 
 {% if allocation_invoice_list %}
   <div class="table-responsive">
