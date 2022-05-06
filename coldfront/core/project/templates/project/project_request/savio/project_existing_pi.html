@@ -1,4 +1,5 @@
 {% extends "common/base.html" %}
+{% load feature_flags %}
 {% load crispy_forms_tags %}
 {% load static %}
 
@@ -27,6 +28,10 @@ Savio Project Request - Existing PI
 </ol>
 
 <p>Select an existing user to be a Principal Investigator of the project. You may search for the user in the selection field. If the desired user is not listed, you may skip this step and specify information for a new PI in the next step.</p>
+{% flag_enabled 'LRC_ONLY' as lrc_only %}
+{% if lrc_only %}
+  <p>Note: Only LBL employees, users with an "@lbl.gov" email, can be selected as a PI.</p>
+{% endif %}
 
 {% if allocation_type == 'FCA' %}
   <p>Note: Each PI may only have one FCA at a time, so any that have pending requests or active allocations are not selectable.</p>
