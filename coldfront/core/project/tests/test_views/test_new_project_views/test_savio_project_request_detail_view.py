@@ -1,5 +1,6 @@
 from coldfront.api.statistics.utils import create_project_allocation
 from coldfront.core.allocation.models import AllocationPeriod
+from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.tests.utils import create_fca_project_and_request
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.utils.common import display_time_zone_current_date
@@ -182,6 +183,146 @@ class TestSavioProjectRequestDetailView(TestBase):
         # increased.
         self.service_units_attribute.refresh_from_db()
         self.assertEqual(
+            Decimal(self.service_units_attribute.value),
+            self.existing_service_units)
+
+    def test_post_approves_and_processes_request_for_null_period_condo(self):
+        """Test that a POST request for a new project request (Condo)
+        with a null AllocationPeriod is both approved and processed."""
+        self.project.name = f'co_{self.project.name[3:]}'
+        self.project.save()
+        self.new_project_request.allocation_type = \
+            SavioProjectAllocationRequest.CO
+        self.new_project_request.save()
+
+        self.assertEqual(len(mail.outbox), 0)
+
+        self.user.is_superuser = True
+        self.user.save()
+
+        # Set the request's state.
+        new_project_request = self.new_project_request
+        new_project_request.state['eligibility']['status'] = 'Approved'
+        new_project_request.state['readiness']['status'] = 'Approved'
+        new_project_request.state['setup']['status'] = 'Complete'
+        new_project_request.save()
+
+        # The request has no AllocationPeriod.
+        new_project_request.allocation_period = None
+        new_project_request.save()
+
+        pre_time = utc_now_offset_aware()
+
+        url = self.detail_view_url(new_project_request.pk)
+        data = {}
+        response = self.client.post(url, data)
+
+        post_time = utc_now_offset_aware()
+
+        # The view should redirect to the list of requests and display a
+        # message.
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        self.assertEqual(response.url, self.list_view_url())
+        message = (
+            f'Project {new_project_request.project.name} and its Allocation '
+            f'have been activated')
+        self.assertIn(message, self.get_message_strings(response)[0])
+
+        # The request's status should have been set to 'Approved - Complete',
+        # and its approval_time and completion_time should have been set.
+        new_project_request.refresh_from_db()
+        self.assertEqual(
+            new_project_request.status.name, 'Approved - Complete')
+        self.assertTrue(
+            pre_time <=
+            new_project_request.approval_time <=
+            new_project_request.completion_time <=
+            post_time)
+
+        # One email about processing should have been sent; an email about
+        # approval should not have been sent.
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+        self.assertIn(
+            (f'New Project Request ({new_project_request.project.name}) '
+             f'Processed'),
+            email.subject)
+
+        # The 'CLUSTER_NAME Compute' Allocation's Service Units should have
+        # increased.
+        self.service_units_attribute.refresh_from_db()
+        self.assertGreater(
+            Decimal(self.service_units_attribute.value),
+            self.existing_service_units)
+
+    def test_post_approves_and_processes_request_for_null_period_recharge(self):
+        """Test that a POST request for a new project request (Recharge)
+        with a null AllocationPeriod is both approved and processed."""
+        self.project.name = f'ac_{self.project.name[3:]}'
+        self.project.save()
+        self.new_project_request.allocation_type = \
+            SavioProjectAllocationRequest.RECHARGE
+        self.new_project_request.extra_fields = {'num_service_units': 100000}
+        self.new_project_request.save()
+
+        self.assertEqual(len(mail.outbox), 0)
+
+        self.user.is_superuser = True
+        self.user.save()
+
+        # Set the request's state.
+        new_project_request = self.new_project_request
+        new_project_request.state['eligibility']['status'] = 'Approved'
+        new_project_request.state['readiness']['status'] = 'Approved'
+        new_project_request.state['memorandum_signed'] = {'status': 'Complete'}
+        new_project_request.state['setup']['status'] = 'Complete'
+        new_project_request.save()
+
+        # The request has no AllocationPeriod.
+        new_project_request.allocation_period = None
+        new_project_request.save()
+
+        pre_time = utc_now_offset_aware()
+
+        url = self.detail_view_url(new_project_request.pk)
+        data = {}
+        response = self.client.post(url, data)
+
+        post_time = utc_now_offset_aware()
+
+        # The view should redirect to the list of requests and display a
+        # message.
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        self.assertEqual(response.url, self.list_view_url())
+        message = (
+            f'Project {new_project_request.project.name} and its Allocation '
+            f'have been activated')
+        self.assertIn(message, self.get_message_strings(response)[0])
+
+        # The request's status should have been set to 'Approved - Complete',
+        # and its approval_time and completion_time should have been set.
+        new_project_request.refresh_from_db()
+        self.assertEqual(
+            new_project_request.status.name, 'Approved - Complete')
+        self.assertTrue(
+            pre_time <=
+            new_project_request.approval_time <=
+            new_project_request.completion_time <=
+            post_time)
+
+        # One email about processing should have been sent; an email about
+        # approval should not have been sent.
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+        self.assertIn(
+            (f'New Project Request ({new_project_request.project.name}) '
+             f'Processed'),
+            email.subject)
+
+        # The 'CLUSTER_NAME Compute' Allocation's Service Units should have
+        # increased.
+        self.service_units_attribute.refresh_from_db()
+        self.assertGreater(
             Decimal(self.service_units_attribute.value),
             self.existing_service_units)
 
