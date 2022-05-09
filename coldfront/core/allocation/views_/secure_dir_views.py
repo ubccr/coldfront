@@ -31,13 +31,13 @@ from coldfront.core.project.models import ProjectUser
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.mail import send_email_template
 
+logger = logging.getLogger(__name__)
+
 
 class SecureDirManageUsersView(LoginRequiredMixin,
                                UserPassesTestMixin,
                                TemplateView):
     template_name = 'secure_dir/secure_dir_manage_users.html'
-
-    logger = logging.getLogger(__name__)
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -284,8 +284,8 @@ class SecureDirManageUsersView(LoginRequiredMixin,
                 except Exception as e:
                     message = f'Failed to send notification email.'
                     messages.error(request, message)
-                    self.logger.error(message)
-                    self.logger.exception(e)
+                    logger.error(message)
+                    logger.exception(e)
 
             message = (
                 f'Successfully requested to {self.action} '
@@ -638,8 +638,8 @@ class SecureDirManageUsersCompleteStatusView(LoginRequiredMixin,
                 except Exception as e:
                     message = f'Failed to send notification email.'
                     messages.error(self.request, message)
-                    self.logger.error(message)
-                    self.logger.exception(e)
+                    logger.error(message)
+                    logger.exception(e)
 
         message = (
             f'Secure directory {self.language_dict["noun"]} request for user '
@@ -755,8 +755,8 @@ class SecureDirManageUsersDenyRequestView(LoginRequiredMixin,
                 except Exception as e:
                     message = 'Failed to send notification email.'
                     messages.error(self.request, message)
-                    self.logger.error(message)
-                    self.logger.exception(e)
+                    logger.error(message)
+                    logger.exception(e)
 
         return HttpResponseRedirect(
             reverse(f'secure-dir-manage-users-request-list',
