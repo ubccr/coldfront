@@ -8,6 +8,13 @@
   <div class="col-lg-6 mt-2">
     <h2><a href="{% url 'project-list' %}">Projects &raquo;</a></h2>
     <hr>
+    <p>
+      If you are a faculty/staff member you can submit a project request using <a href="{% url 'project-create' %}">this form</a>. Once submitted you can add
+      any additional users to your project and request a resource allocation. If you are a student you do not have access
+      to submitting a project request. You can, however, search you PI's username <a href="{% url 'project-list' %}">here</a> and request access to a project
+      they already have.
+    </p>
+    
 
     {% if project_list %}
       <table class="table">
@@ -84,6 +91,11 @@
   <div class="col-lg-6 mt-2">
     <h2><a href="{% url 'allocation-list' %}">Allocations &raquo;</a></h2>
     <hr>
+    <p>
+      Resource allocations are required if you want to gain access to IU's resources. You must have a project to request an allocation.
+      A list of what is available can be found <a href="{% url 'resource-list' %}">here</a>. Users must be added to an allocation in
+      order to gain access to its resource. A project can have multiple allocations.
+    </p>
 
     {% if allocation_list %}
       <table class="table">
