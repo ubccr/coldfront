@@ -310,7 +310,7 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
         """Return the AllocationPeriod the user selected."""
         step_number = self.step_numbers_by_form_name['allocation_period']
         data = form_data[step_number]
-        return data.get('allocation_period', None)
+        return data['allocation_period'] if data['allocation_period'] else None
 
     def __get_allocation_type(self, form_data):
         """Return the allocation type matching the provided input."""

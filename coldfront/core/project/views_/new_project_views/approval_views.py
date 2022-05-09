@@ -373,12 +373,10 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         return state['setup']['status']
 
     def has_request_allocation_period_started(self):
-        """Return whether the request's AllocationPeriod has started. If
-        the request has no period, return True."""
-        allocation_period = self.request_obj.allocation_period
-        if not allocation_period:
-            return True
-        return allocation_period.start_date <= display_time_zone_current_date()
+        """Return whether the request's AllocationPeriod has started."""
+        return (
+            self.request_obj.allocation_period.start_date <=
+            display_time_zone_current_date())
 
     def is_checklist_complete(self):
         status_choice = savio_request_state_status(self.request_obj)

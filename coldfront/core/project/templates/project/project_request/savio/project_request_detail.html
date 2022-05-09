@@ -135,14 +135,10 @@ Savio Project Request Detail
       </p>
       {% with allocation_period=savio_request.allocation_period %}
         {% if has_allocation_period_started %}
-          {% if allocation_period %}
-            <p>
-              If approved, the request will be processed immediately, since its
-              Allocation Period ({{ allocation_period.name }}) has already begun.
-            </p>
-          {% else %}
-            <p>If approved, the request will be processed immediately.</p>
-          {% endif %}
+          <p>
+            If approved, the request will be processed immediately, since its
+            Allocation Period ({{ allocation_period.name }}) has already begun.
+          </p>
         {% else %}
           <p>
             If approved, the request will be scheduled for processing at the
