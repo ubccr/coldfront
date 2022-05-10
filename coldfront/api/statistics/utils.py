@@ -15,12 +15,11 @@ from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.utils.common import utc_now_offset_aware
 from datetime import datetime
-from datetime import timedelta
 from decimal import Decimal
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import transaction
 import logging
+import pytz
 
 
 class AccountingAllocationObjects(object):
@@ -39,22 +38,27 @@ class AccountingAllocationObjects(object):
         self.allocation_user_attribute_usage = allocation_user_attribute_usage
 
 
-def convert_datetime_to_unix_timestamp(dt):
-    """Return the given datetime object as the number of seconds since
-    the beginning of the epoch.
+def convert_utc_datetime_to_unix_timestamp(utc_dt):
+    """Return the given UTC datetime object as the number of seconds
+    since the beginning of the epoch.
 
     Parameters:
-        - dt (datetime): the datetime object to convert
+        - dt (datetime): the datetime object to convert, whose tzinfo
+          must be pytz.utc
 
     Returns:
         - int
 
     Raises:
         - TypeError, if the input is not a datetime object
+        - ValueError, if the datetime's tzinfo is not pytz.utc
     """
-    if not isinstance(dt, datetime):
-        raise TypeError(f'Datetime {dt} is not a datetime.')
-    return (dt - datetime(1970, 1, 1)).total_seconds()
+    if not isinstance(utc_dt, datetime):
+        raise TypeError(f'Datetime {utc_dt} is not a datetime.')
+    if utc_dt.tzinfo != pytz.utc:
+        raise ValueError(f'Datetime {utc_dt}\'s tzinfo is not pytz.utc.')
+    epoch_start_utc_dt = datetime(1970, 1, 1).replace(tzinfo=pytz.utc)
+    return (utc_dt - epoch_start_utc_dt).total_seconds()
 
 
 def create_project_allocation(project, value):
@@ -235,53 +239,6 @@ def get_accounting_allocation_objects(project, user=None):
     objects.allocation_user_attribute_usage = allocation_user_attribute_usage
 
     return objects
-
-
-def get_allocation_year_range():
-    """Return a pair of datetime objects corresponding to the start and
-    end times, inclusive, of the current allocation year. The method may
-    fail if the starting date is February 29th.
-
-    Parameters:
-        - None
-
-    Returns:
-        - Pair of datetime objects
-
-    Raises:
-        - TypeError, if settings variables are not integers
-        - ValueError, if settings variables represent an invalid date
-    """
-    # Validate the types of the starting month and day, provided in the
-    # settings.
-    start_month = settings.ALLOCATION_YEAR_START_MONTH
-    start_day = settings.ALLOCATION_YEAR_START_DAY
-    if not isinstance(start_month, int):
-        raise TypeError(f'Starting month {start_month} is not an integer.')
-    if not isinstance(start_day, int):
-        raise TypeError(f'Starting day {start_day} is not an integer.')
-    # Run the calculation in a loop in case midnight is crossed, which may
-    # change the result.
-    while True:
-        now = datetime.now()
-        start_date_this_year = datetime(now.year, start_month, start_day)
-        if now < start_date_this_year:
-            # The start date has not occurred yet this year.
-            # The period began last year and will end this year.
-            start = start_date_this_year.replace(
-                year=start_date_this_year.year - 1)
-            end = start_date_this_year - timedelta(microseconds=1)
-        else:
-            # The start date has already occurred this year.
-            # The period began this year and will end next year.
-            start = start_date_this_year
-            end = (start.replace(year=start.year + 1) -
-                   timedelta(microseconds=1))
-        # Check that the day did not change during calculation.
-        if datetime.now().day == now.day:
-            # The result is stable, so break and return.
-            break
-    return start, end
 
 
 def set_project_allocation_value(project, value):
