@@ -1,4 +1,7 @@
 from coldfront.core.utils.tests.test_base import TestBase
+from copy import deepcopy
+from django.conf import settings
+from django.test import override_settings
 from django.urls import reverse
 from flags.state import disable_flag
 from flags.state import enable_flag
@@ -34,6 +37,10 @@ class TestProjectRequestSavioLanding(TestBase):
         self.assertContains(response, alert_text)
 
         disable_flag(flag_name)
-        url = self.view_url()
-        response = self.client.get(url)
-        self.assertNotContains(response, alert_text)
+        # The flag must also be disabled in settings.
+        flags_copy = deepcopy(settings.FLAGS)
+        flags_copy.pop(flag_name)
+        with override_settings(FLAGS=flags_copy):
+            url = self.view_url()
+            response = self.client.get(url)
+            self.assertNotContains(response, alert_text)

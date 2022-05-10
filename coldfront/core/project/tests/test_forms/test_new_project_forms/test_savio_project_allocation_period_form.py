@@ -4,7 +4,10 @@ from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.tests.test_base import TestBase
 
+from copy import deepcopy
 from datetime import timedelta
+from django.conf import settings
+from django.test import override_settings
 
 from flags.state import disable_flag
 from flags.state import enable_flag
@@ -78,11 +81,14 @@ class TestSavioProjectAllocationPeriodForm(TestBase):
         # If renewal for the next period may not be requested, the next period
         # should not be selectable.
         disable_flag(flag_name)
-        for allocation_type in allocation_types:
-            form = self.form_class(allocation_type=allocation_type)
-            period_choices = form.fields['allocation_period'].queryset
-            self.assertEqual(period_choices.count(), 1)
-            self.assertIn(self.current_fca_pca_period, period_choices)
+        flags_copy = deepcopy(settings.FLAGS)
+        flags_copy.pop(flag_name)
+        with override_settings(FLAGS=flags_copy):
+            for allocation_type in allocation_types:
+                form = self.form_class(allocation_type=allocation_type)
+                period_choices = form.fields['allocation_period'].queryset
+                self.assertEqual(period_choices.count(), 1)
+                self.assertIn(self.current_fca_pca_period, period_choices)
 
         # Otherwise, it should be selectable.
         enable_flag(flag_name)

@@ -8,8 +8,11 @@ from coldfront.core.project.utils_.renewal_utils import get_current_allowance_ye
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 
+from copy import deepcopy
 from decimal import Decimal
+from django.conf import settings
 from django.contrib.auth.models import User
+from django.test import override_settings
 from django.urls import reverse
 
 from flags.state import enable_flag
@@ -139,53 +142,62 @@ class TestProjectDetailView(TestBase):
             status=ProjectUserStatusChoice.objects.get(name='Active'),
             user=pi_2)
 
-        # 0/2 PIs have non-denied renewal requests under the current period.
-        allocation_period = get_current_allowance_year_period()
-        self.assertFalse(
-            AllocationRenewalRequest.objects.filter(
+        # Renewals for the next allocation period cannot be requested.
+        flag_name = 'ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE'
+        flags_copy = deepcopy(settings.FLAGS)
+        flags_copy.pop(flag_name)
+        with override_settings(FLAGS=flags_copy):
+            # 0/2 PIs have non-denied renewal requests under the current
+            # period.
+            allocation_period = get_current_allowance_year_period()
+            self.assertFalse(
+                AllocationRenewalRequest.objects.filter(
+                    allocation_period=allocation_period,
+                    pi__in=[self.user, pi_2]).exists())
+            response = self.client.get(project_detail_url)
+            self.assertContains(response, renewal_url)
+
+            # 1/2 PIs have non-denied renewal requests under the current
+            # period.
+            under_review_request_status = \
+                AllocationRenewalRequestStatusChoice.objects.get(
+                    name='Under Review')
+            AllocationRenewalRequest.objects.create(
+                requester=self.user,
+                pi=self.user,
                 allocation_period=allocation_period,
-                pi__in=[self.user, pi_2]).exists())
-        response = self.client.get(project_detail_url)
-        self.assertContains(response, renewal_url)
+                status=under_review_request_status,
+                pre_project=project,
+                post_project=project,
+                request_time=utc_now_offset_aware())
+            response = self.client.get(project_detail_url)
+            self.assertContains(response, renewal_url)
 
-        # 1/2 PIs have non-denied renewal requests under the current period.
-        under_review_request_status = \
-            AllocationRenewalRequestStatusChoice.objects.get(
-                name='Under Review')
-        AllocationRenewalRequest.objects.create(
-            requester=self.user,
-            pi=self.user,
-            allocation_period=allocation_period,
-            status=under_review_request_status,
-            pre_project=project,
-            post_project=project,
-            request_time=utc_now_offset_aware())
-        response = self.client.get(project_detail_url)
-        self.assertContains(response, renewal_url)
+            denied_request_status = \
+                AllocationRenewalRequestStatusChoice.objects.get(name='Denied')
+            request_2 = AllocationRenewalRequest.objects.create(
+                requester=self.user,
+                pi=pi_2,
+                allocation_period=allocation_period,
+                status=denied_request_status,
+                pre_project=project,
+                post_project=project,
+                request_time=utc_now_offset_aware())
+            response = self.client.get(project_detail_url)
+            self.assertContains(response, renewal_url)
 
-        denied_request_status = \
-            AllocationRenewalRequestStatusChoice.objects.get(name='Denied')
-        request_2 = AllocationRenewalRequest.objects.create(
-            requester=self.user,
-            pi=pi_2,
-            allocation_period=allocation_period,
-            status=denied_request_status,
-            pre_project=project,
-            post_project=project,
-            request_time=utc_now_offset_aware())
-        response = self.client.get(project_detail_url)
-        self.assertContains(response, renewal_url)
-
-        # 2/2 PIs have non-denied renewal requests under the current period.
-        approved_request_status = \
-            AllocationRenewalRequestStatusChoice.objects.get(name='Approved')
-        request_2.status = approved_request_status
-        request_2.save()
-        response = self.client.get(project_detail_url)
-        self.assertNotContains(response, renewal_url)
+            # 2/2 PIs have non-denied renewal requests under the current
+            # period.
+            approved_request_status = \
+                AllocationRenewalRequestStatusChoice.objects.get(
+                    name='Approved')
+            request_2.status = approved_request_status
+            request_2.save()
+            response = self.client.get(project_detail_url)
+            self.assertNotContains(response, renewal_url)
 
         # Renewals for the next allocation period can be requested.
-        enable_flag('ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE')
+        enable_flag(flag_name)
         response = self.client.get(project_detail_url)
         self.assertContains(response, renewal_url)
 

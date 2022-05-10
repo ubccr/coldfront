@@ -2042,21 +2042,16 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
                 'center_help_email': CENTER_HELP_EMAIL,
                 'signature': EMAIL_SIGNATURE,
             }
-            sender = EMAIL_SENDER
 
-            user_filter = Q(user=self.user_obj)
-            manager_pi_filter = Q(
-                role__name__in=['Manager', 'Principal Investigator'],
-                status__name='Active')
-            receiver_list = list(
-                project_obj.projectuser_set.filter(
-                    user_filter | manager_pi_filter, enable_notifications=True
-                ).values_list(
-                    'user__email', flat=True
-                ))
+            cc_list = project_obj.managers_and_pis_emails()
 
             send_email_template(
-                subject, template, template_context, sender, receiver_list)
+                subject,
+                template,
+                template_context,
+                EMAIL_SENDER,
+                [self.user_obj.email],
+                cc=cc_list)
 
         return super().form_valid(form)
 
@@ -2158,27 +2153,23 @@ class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,
             subject = 'Cluster Access Denied'
             template = 'email/cluster_access_denied.txt'
             template_context = {
+                'user': self.user_obj,
                 'center_name': EMAIL_CENTER_NAME,
                 'project': project_obj.name,
                 'allocation': allocation_obj.pk,
                 'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL,
                 'signature': EMAIL_SIGNATURE,
             }
-            sender = EMAIL_SENDER
 
-            user_filter = Q(user=self.user_obj)
-            manager_pi_filter = Q(
-                role__name__in=['Manager', 'Principal Investigator'],
-                status__name='Active')
-            receiver_list = list(
-                project_obj.projectuser_set.filter(
-                    user_filter | manager_pi_filter, enable_notifications=True
-                ).values_list(
-                    'user__email', flat=True
-                ))
+            cc_list = project_obj.managers_and_pis_emails()
 
             send_email_template(
-                subject, template, template_context, sender, receiver_list)
+                subject,
+                template,
+                template_context,
+                EMAIL_SENDER,
+                [self.user_obj.email],
+                cc=cc_list)
 
         return HttpResponseRedirect(
             reverse('allocation-cluster-account-request-list'))

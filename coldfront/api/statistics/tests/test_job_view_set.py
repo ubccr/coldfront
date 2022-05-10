@@ -1,9 +1,14 @@
+from datetime import datetime
+from datetime import timedelta
+from decimal import Decimal
+
+import pytz
+
 from coldfront.api.statistics.tests.test_job_base import TestJobBase
-from coldfront.api.statistics.utils import convert_datetime_to_unix_timestamp
+from coldfront.api.statistics.utils import convert_utc_datetime_to_unix_timestamp
+from coldfront.api.statistics.utils import get_accounting_allocation_objects
 from coldfront.api.statistics.utils import create_project_allocation
 from coldfront.api.statistics.utils import create_user_project_allocation
-from coldfront.api.statistics.utils import get_allocation_year_range
-from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttributeUsage
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.models import AllocationUser
@@ -15,24 +20,19 @@ from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
-from coldfront.core.resource.models import Resource
 from coldfront.core.statistics.models import Job
 from coldfront.core.user.models import ExpiringToken
 from coldfront.core.user.models import UserProfile
-from datetime import datetime
-from datetime import timedelta
-from decimal import Decimal
+
 from django.contrib.auth.models import User
 from django.db.models import Sum
-from django.test import override_settings
+
 from rest_framework.test import APIClient
+from unittest.mock import patch
 
 
-# @override_settings(USE_TZ=False)
 class TestJobList(TestJobBase):
     """A suite for testing requests to retrieve Jobs."""
-
-    date_format = '%Y-%m-%d %H:%M:%S'
 
     @classmethod
     def jobs_put_url(cls, jobslurmid):
@@ -69,6 +69,9 @@ class TestJobList(TestJobBase):
                 name=f'PROJECT_{i}', status=project_status)
             allocation_objects = create_project_allocation(
                 project, allocation_amount)
+            allocation_objects.allocation.start_date = self.default_start
+            allocation_objects.allocation.end_date = self.default_end
+            allocation_objects.allocation.save()
             allocation_pks[project.pk] = allocation_objects.allocation.pk
 
         # Create compute allocations for the Users on the Projects.
@@ -84,10 +87,10 @@ class TestJobList(TestJobBase):
             create_user_project_allocation(user, project, value)
 
         # Create Jobs with PUT requests.
-        index = 1
-        dt = datetime.now().replace(
+        index = 12
+        dt = self.default_start.replace(
             hour=index, minute=0, second=0, microsecond=0)
-        # Jobs were submitted on the hour from 1 - 8 a.m. on the current day.
+        # Jobs were submitted on the hour from 12 to 7 p.m. on the current day.
         for allocation_user in AllocationUser.objects.all():
             for i in range(self.num_projects):
                 allocation_amount = int(
@@ -96,6 +99,8 @@ class TestJobList(TestJobBase):
                 data = {
                     'jobslurmid': str(index),
                     'submitdate': dt.replace(hour=index),
+                    'startdate': dt.replace(hour=index),
+                    'enddate': dt.replace(hour=index + 1),
                     'userid': UserProfile.objects.get(
                         user=allocation_user.user).cluster_uid,
                     'accountid': allocation_user.allocation.project.name,
@@ -148,14 +153,14 @@ class TestJobList(TestJobBase):
         url = TestJobList.get_url()
         status_code, count = 200, 8
         results_dict = self.assert_results(url, status_code, count)
-        start_time, end_time = get_allocation_year_range()
         for jobslurmid in results_dict:
             job = results_dict[jobslurmid]
             self.assertIn('submitdate', job)
             submitdate = datetime.strptime(
-                job['submitdate'], "%Y-%m-%dT%H:%M:%SZ")
-            self.assertGreaterEqual(submitdate, start_time)
-            self.assertLessEqual(submitdate, end_time)
+                job['submitdate'], "%Y-%m-%dT%H:%M:%SZ").replace(
+                    tzinfo=pytz.utc)
+            self.assertGreaterEqual(submitdate, self.default_start)
+            self.assertLessEqual(submitdate, self.default_end)
 
     def test_user_filter(self):
         """Test that the user filter filters properly."""
@@ -226,7 +231,13 @@ class TestJobList(TestJobBase):
             status_code, count)
         # Set half of the jobs to have amount 750.00.
         amount = Decimal('750.00')
-        Job.objects.filter(jobslurmid__in=range(1, 5)).update(amount=amount)
+        n, i = Job.objects.count(), 0
+        for job in Job.objects.all():
+            if i == n // 2:
+                break
+            job.amount = amount
+            job.save()
+            i = i + 1
 
         # Ensure that various combinations give the expected results.
         minimum, maximum = Decimal(250), Decimal(750)
@@ -276,22 +287,22 @@ class TestJobList(TestJobBase):
 
     def test_start_time_filter(self):
         """Test that the start_time filter filters properly."""
-        # Four jobs were submitted at or after 5 a.m. today.
-        start_dt = datetime.now().replace(
-            hour=5, minute=0, second=0, microsecond=0)
-        start_time = convert_datetime_to_unix_timestamp(start_dt)
+        # Four jobs were submitted at or after 4 p.m. today.
+        start_dt = self.default_start.replace(
+            hour=16, minute=0, second=0, microsecond=0)
+        start_time = convert_utc_datetime_to_unix_timestamp(start_dt)
         url = TestJobList.get_url(start_time=start_time)
         status_code, count = 200, 4
         results_dict = self.assert_results(url, status_code, count)
         # Since no end_time was provided, the default should be used.
-        _, default_end = get_allocation_year_range()
         for jobslurmid in results_dict:
             job = results_dict[jobslurmid]
             self.assertIn('submitdate', job)
             submitdate = datetime.strptime(
-                job['submitdate'], "%Y-%m-%dT%H:%M:%SZ")
+                job['submitdate'], "%Y-%m-%dT%H:%M:%SZ").replace(
+                    tzinfo=pytz.utc)
             self.assertGreaterEqual(submitdate, start_dt)
-            self.assertLessEqual(submitdate, default_end)
+            self.assertLessEqual(submitdate, self.default_end)
 
     def test_invalid_start_time(self):
         """Test that an invalid start time raises an appropriate
@@ -303,21 +314,21 @@ class TestJobList(TestJobBase):
 
     def test_end_time_filter(self):
         """Test that the end_time filter filters properly."""
-        # Four jobs were submitted before or at 4 a.m. today.
-        end_dt = datetime.now().replace(
-            hour=4, minute=0, second=0, microsecond=0)
-        end_time = convert_datetime_to_unix_timestamp(end_dt)
+        # Four jobs were submitted before or at 3 p.m. today.
+        end_dt = self.default_start.replace(
+            hour=15, minute=0, second=0, microsecond=0)
+        end_time = convert_utc_datetime_to_unix_timestamp(end_dt)
         url = TestJobList.get_url(end_time=end_time)
         status_code, count = 200, 4
         results_dict = self.assert_results(url, status_code, count)
         # Since no start_time was provided, the default should be used.
-        default_start, _ = get_allocation_year_range()
         for jobslurmid in results_dict:
             job = results_dict[jobslurmid]
             self.assertIn('submitdate', job)
             submitdate = datetime.strptime(
-                job['submitdate'], "%Y-%m-%dT%H:%M:%SZ")
-            self.assertGreaterEqual(submitdate, default_start)
+                job['submitdate'], "%Y-%m-%dT%H:%M:%SZ").replace(
+                    tzinfo=pytz.utc)
+            self.assertGreaterEqual(submitdate, self.default_start)
             self.assertLessEqual(submitdate, end_dt)
 
     def test_invalid_end_time(self):
@@ -329,13 +340,13 @@ class TestJobList(TestJobBase):
 
     def test_multiple_filters(self):
         """Test that the query filters filter in conjunction."""
-        # Six jobs were submitted at or after 2 a.m. and before or at 7 a.m.
-        start_dt = datetime.now().replace(
-            hour=2, minute=0, second=0, microsecond=0)
-        start_time = convert_datetime_to_unix_timestamp(start_dt)
-        end_dt = datetime.now().replace(
-            hour=7, minute=0, second=0, microsecond=0)
-        end_time = convert_datetime_to_unix_timestamp(end_dt)
+        # Six jobs were submitted at or after 1 p.m. and before or at 6 p.m.
+        start_dt = self.default_start.replace(
+            hour=13, minute=0, second=0, microsecond=0)
+        start_time = convert_utc_datetime_to_unix_timestamp(start_dt)
+        end_dt = self.default_start.replace(
+            hour=18, minute=0, second=0, microsecond=0)
+        end_time = convert_utc_datetime_to_unix_timestamp(end_dt)
         url = TestJobList.get_url(start_time=start_time, end_time=end_time)
         status_code, count = 200, 6
         results_dict = self.assert_results(url, status_code, count)
@@ -343,7 +354,8 @@ class TestJobList(TestJobBase):
             job = results_dict[jobslurmid]
             self.assertIn('submitdate', job)
             submitdate = datetime.strptime(
-                job['submitdate'], "%Y-%m-%dT%H:%M:%SZ")
+                job['submitdate'], "%Y-%m-%dT%H:%M:%SZ").replace(
+                    tzinfo=pytz.utc)
             self.assertGreaterEqual(submitdate, start_dt)
             self.assertLessEqual(submitdate, end_dt)
         # If end_time comes before start_time, no jobs should be returned.
@@ -354,13 +366,13 @@ class TestJobList(TestJobBase):
     def test_result_ordering(self):
         """Test that results are returned in ascending submitdate
         order."""
-        # Six jobs were submitted at or after 2 a.m. and before or at 7 a.m.
-        start_dt = datetime.now().replace(
-            hour=2, minute=0, second=0, microsecond=0)
-        start_time = convert_datetime_to_unix_timestamp(start_dt)
-        end_dt = datetime.now().replace(
-            hour=7, minute=0, second=0, microsecond=0)
-        end_time = convert_datetime_to_unix_timestamp(end_dt)
+        # Six jobs were submitted at or after 1 p.m. and before or at 6 p.m.
+        start_dt = self.default_start.replace(
+            hour=13, minute=0, second=0, microsecond=0)
+        start_time = convert_utc_datetime_to_unix_timestamp(start_dt)
+        end_dt = self.default_start.replace(
+            hour=18, minute=0, second=0, microsecond=0)
+        end_time = convert_utc_datetime_to_unix_timestamp(end_dt)
         url = TestJobList.get_url(start_time=start_time, end_time=end_time)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
@@ -665,6 +677,23 @@ class TestJobSerializer(TestJobBase):
 class TestJobViewSet(TestJobBase):
     """A suite for testing the functionality of JobViewSet."""
 
+    @staticmethod
+    def get_usage_values(allocation_objects):
+        """
+        allocation_objects: object returned by get_accounting_allocation_objects
+        with project and user passed as args
+
+        Returns tuple of the allocation and user usage objects
+        """
+        account_usage = (
+            AllocationAttributeUsage.objects.get(
+                pk=allocation_objects.allocation_attribute_usage.pk))
+        user_account_usage = (
+            AllocationUserAttributeUsage.objects.get(
+                pk=allocation_objects.allocation_user_attribute_usage.pk))
+
+        return account_usage, user_account_usage
+
     def test_unauthorized_post_denied(self):
         """Test that unauthorized POST requests from non-staff accounts
         are denied."""
@@ -705,7 +734,6 @@ class TestJobViewSet(TestJobBase):
         message = 'You do not have permission to perform this action.'
         self.assertEqual(json['detail'], message)
 
-    @override_settings(USE_TZ=False)
     def test_get(self):
         """Test that jobs are returned from a GET request."""
         response = self.client.post(self.post_url, self.data, format='json')
@@ -723,7 +751,6 @@ class TestJobViewSet(TestJobBase):
         self.assertEqual(job['accountid'], self.data['accountid'])
         self.assertEqual(job['amount'], self.data['amount'])
 
-    @override_settings(USE_TZ=False)
     def test_get_by_jobslurmid(self):
         """Test that a single job can be retrieved from a GET
         request."""
@@ -863,3 +890,472 @@ class TestJobViewSet(TestJobBase):
         self.assertEqual(self.client.put(self.post_url).status_code, 405)
         self.assertEqual(self.client.delete(self.post_url).status_code, 405)
         self.assertEqual(self.client.delete(self.post_url).status_code, 405)
+
+    def test_post_invalid_job_start_date(self):
+        """Test that a POST (create) request does not update usages if
+        the job's start date is before the allocation's start date."""
+        data = self.data.copy()
+        user = UserProfile.objects.get(cluster_uid=data['userid']).user
+        project = Project.objects.get(name=data['accountid'])
+        allocation_objects = get_accounting_allocation_objects(project, user)
+
+        allocation_usage, user_usage = self.get_usage_values(allocation_objects)
+
+        pre_allocation_usage, pre_user_usage = \
+            allocation_usage.value, user_usage.value
+
+        # Set the Job's submitdate and startdate to be within the Allocation's
+        # start_date and end_date. Set its enddate to be 5 days after the
+        # Allocation's end_date.
+        data['submitdate'] = (allocation_objects.allocation.start_date -
+                              timedelta(days=6)).strftime(self.date_format)
+        data['startdate'] = (allocation_objects.allocation.start_date -
+                             timedelta(days=5)).strftime(self.date_format)
+
+        response = self.client.post(
+            TestJobViewSet.post_url, data, format='json')
+        self.assertEqual(response.status_code, 201)
+
+        # A Job should have been created.
+        self.assertTrue(
+            Job.objects.filter(jobslurmid=data['jobslurmid']).exists())
+
+        # Usages should not have been updated.
+        allocation_usage.refresh_from_db()
+        user_usage.refresh_from_db()
+        self.assertEqual(pre_allocation_usage, allocation_usage.value)
+        self.assertEqual(pre_user_usage, user_usage.value)
+
+    def test_post_invalid_job_end_date(self):
+        """Test that POST (create) request does update usages if the job
+        unexpectedly has an end date, and it is after the allocation's
+        end date."""
+        data = self.data.copy()
+        user = UserProfile.objects.get(cluster_uid=data['userid']).user
+        project = Project.objects.get(name=data['accountid'])
+        allocation_objects = get_accounting_allocation_objects(project, user)
+
+        allocation_usage, user_usage = self.get_usage_values(
+            allocation_objects)
+
+        pre_allocation_usage, pre_user_usage = \
+            allocation_usage.value, user_usage.value
+
+        # Set the Job's submitdate and startdate to be within the Allocation's
+        # start_date and end_date. Set its enddate to be 5 days after the
+        # Allocation's end_date.
+        data['submitdate'] = (allocation_objects.allocation.start_date +
+                              timedelta(days=4)).strftime(self.date_format)
+        data['startdate'] = (allocation_objects.allocation.start_date +
+                             timedelta(days=5)).strftime(self.date_format)
+        data['enddate'] = (allocation_objects.allocation.end_date +
+                           timedelta(days=5)).strftime(self.date_format)
+
+        response = self.client.post(
+            TestJobViewSet.post_url, data, format='json')
+        self.assertEqual(response.status_code, 201)
+
+        # A Job should have been created.
+        self.assertTrue(
+            Job.objects.filter(jobslurmid=data['jobslurmid']).exists())
+
+        # Usages should have been updated.
+        allocation_usage.refresh_from_db()
+        user_usage.refresh_from_db()
+        self.assertLess(pre_allocation_usage, allocation_usage.value)
+        self.assertLess(pre_user_usage, user_usage.value)
+
+    def test_post_job_missing_dates(self):
+        """Test that a POST (create) request does not update usages if
+        the job is missing submit or start dates."""
+        data = self.data.copy()
+        user = UserProfile.objects.get(cluster_uid=data['userid']).user
+        project = Project.objects.get(name=data['accountid'])
+        allocation_objects = get_accounting_allocation_objects(project, user)
+
+        allocation_usage, user_usage = self.get_usage_values(
+            allocation_objects)
+
+        pre_allocation_usage, pre_user_usage = \
+            allocation_usage.value, user_usage.value
+
+        # Remove Job dates, one at a time.
+        for date in ['submitdate', 'startdate']:
+            popped_date = data.pop(date)
+
+            response = self.client.post(
+                TestJobViewSet.post_url, data, format='json')
+            self.assertEqual(response.status_code, 201)
+
+            # A Job should have been created.
+            self.assertTrue(
+                Job.objects.filter(jobslurmid=data['jobslurmid']).exists())
+
+            # Usages should not have been updated.
+            allocation_usage.refresh_from_db()
+            user_usage.refresh_from_db()
+            self.assertEqual(pre_allocation_usage, allocation_usage.value)
+            self.assertEqual(pre_user_usage, user_usage.value)
+
+            # Reset data for the next test.
+            data[date] = popped_date
+            Job.objects.get(jobslurmid=data['jobslurmid']).delete()
+            self.assertFalse(
+                Job.objects.filter(jobslurmid=data['jobslurmid']).exists())
+            allocation_usage.value = pre_allocation_usage
+            allocation_usage.save()
+            user_usage.value = pre_user_usage
+            user_usage.save()
+
+    def test_post_allocation_missing_dates(self):
+        """Test that a POST (create) request conditionally updates
+        usages based on which date its Allocation is missing. In
+        particular, for any allocation type, iff the start date is
+        missing, usages should not be updated."""
+        data = self.data.copy()
+        user = UserProfile.objects.get(cluster_uid=data['userid']).user
+        project = Project.objects.get(name=data['accountid'])
+
+        allocation_types = ('ac_', 'co_', 'fc_', 'ic_', 'pc_')
+        for allocation_type in allocation_types:
+            project.name = f'{allocation_type}{project.name[3:]}'
+            project.save()
+            project.refresh_from_db()
+            data['accountid'] = project.name
+            allocation_objects = get_accounting_allocation_objects(
+                project, user)
+
+            allocation_usage, user_usage = self.get_usage_values(
+                allocation_objects)
+            allocation_usage.value = Decimal('0.00')
+            allocation_usage.save()
+            user_usage.value = Decimal('0.00')
+            user_usage.save()
+
+            pre_allocation_usage, pre_user_usage = \
+                allocation_usage.value, user_usage.value
+
+            for date in ['start_date', 'end_date']:
+                # Remove the date.
+                original_date = getattr(allocation_objects.allocation, date)
+                setattr(allocation_objects.allocation, date, None)
+                allocation_objects.allocation.save()
+                self.assertIsNone(getattr(allocation_objects.allocation, date))
+
+                response = self.client.post(
+                    TestJobViewSet.post_url, data, format='json')
+                self.assertEqual(response.status_code, 201)
+
+                # A Job should have been created.
+                self.assertTrue(
+                    Job.objects.filter(jobslurmid=data['jobslurmid']).exists())
+
+                # Usage should not have been updated if the start_date was
+                # removed, but not if the end_date was removed.
+                allocation_usage.refresh_from_db()
+                user_usage.refresh_from_db()
+                if date == 'start_date':
+                    self.assertEqual(
+                        pre_allocation_usage, allocation_usage.value)
+                    self.assertEqual(
+                        pre_user_usage, user_usage.value)
+                else:
+                    self.assertLess(
+                        pre_allocation_usage, allocation_usage.value)
+                    self.assertLess(
+                        pre_user_usage, user_usage.value)
+
+                # Reset the date.
+                setattr(allocation_objects.allocation, date, original_date)
+                allocation_objects.allocation.save()
+
+                # Delete the Job for the next test.
+                Job.objects.get(jobslurmid=data['jobslurmid']).delete()
+                self.assertFalse(
+                    Job.objects.filter(jobslurmid=data['jobslurmid']).exists())
+
+    @patch('coldfront.api.statistics.views.JobViewSet.validate_job_dates')
+    def test_post_handles_exception_when_validating_dates(self, mock_method):
+        """Test that a POST (create) request does not fail to create a
+        job even if an exception is raised when determining whether
+        dates are valid."""
+        # Patch the method for validating dates to raise an exception.
+        def raise_exception(*args, **kwargs):
+            raise Exception('Test exception.')
+        mock_method.side_effect = raise_exception
+
+        data = self.data.copy()
+        user = UserProfile.objects.get(cluster_uid=data['userid']).user
+        project = Project.objects.get(name=data['accountid'])
+        allocation_objects = get_accounting_allocation_objects(project, user)
+
+        allocation_usage, user_usage = self.get_usage_values(
+            allocation_objects)
+
+        pre_allocation_usage, pre_user_usage = \
+            allocation_usage.value, user_usage.value
+
+        with self.assertLogs('coldfront.api.statistics.views', 'ERROR') as cm:
+            response = self.client.post(
+                TestJobViewSet.post_url, data, format='json')
+        self.assertEqual(response.status_code, 201)
+
+        all_log_output = '\n'.join(cm.output)
+        self.assertIn(
+            (f'Failed to determine whether dates for Job {data["jobslurmid"]} '
+             f'are valid.'),
+            all_log_output)
+        self.assertIn('Test exception.', all_log_output)
+
+        # A Job should have been created.
+        self.assertTrue(
+            Job.objects.filter(jobslurmid=data['jobslurmid']).exists())
+
+        # Usages should not have been updated.
+        allocation_usage.refresh_from_db()
+        user_usage.refresh_from_db()
+        self.assertEqual(pre_allocation_usage, allocation_usage.value)
+        self.assertEqual(pre_user_usage, user_usage.value)
+
+    def test_put_invalid_job_start_date(self):
+        """Test that a PUT (update) request does not update usages if
+        the job's start date is before the allocation's start date."""
+        data = self.data.copy()
+        user = UserProfile.objects.get(cluster_uid=data['userid']).user
+        project = Project.objects.get(name=data['accountid'])
+        allocation_objects = get_accounting_allocation_objects(project, user)
+
+        allocation_usage, user_usage = self.get_usage_values(
+            allocation_objects)
+
+        pre_allocation_usage, pre_user_usage = \
+            allocation_usage.value, user_usage.value
+
+        # Set the Job's submitdate and startdate to be before the Allocation's
+        # start_date.
+        data['submitdate'] = (allocation_objects.allocation.start_date -
+                              timedelta(days=6)).strftime(self.date_format)
+        data['startdate'] = (allocation_objects.allocation.start_date -
+                             timedelta(days=5)).strftime(self.date_format)
+
+        response = self.client.put(
+            TestJobViewSet.put_url(data['jobslurmid']), data,
+            format='json')
+        self.assertEqual(response.status_code, 200)
+
+        # A Job should have been created.
+        self.assertTrue(
+            Job.objects.filter(jobslurmid=data['jobslurmid']).exists())
+
+        # Usages should not have been updated.
+        allocation_usage.refresh_from_db()
+        user_usage.refresh_from_db()
+        self.assertEqual(pre_allocation_usage, allocation_usage.value)
+        self.assertEqual(pre_user_usage, user_usage.value)
+
+    def test_put_invalid_job_end_date(self):
+        """Test that a PUT (update) request does not update usages if
+        the job's end date is after the allocation's end date."""
+        data = self.data.copy()
+        project = Project.objects.get(name=data['accountid'])
+        new_project_name = f'fc_{data["accountid"]}'
+        project.name = new_project_name
+        project.save()
+        data['accountid'] = new_project_name
+
+        user = UserProfile.objects.get(cluster_uid=data['userid']).user
+        project = Project.objects.get(name=data['accountid'])
+        allocation_objects = get_accounting_allocation_objects(project, user)
+
+        allocation_usage, user_usage = self.get_usage_values(
+            allocation_objects)
+
+        pre_allocation_usage, pre_user_usage = \
+            allocation_usage.value, user_usage.value
+
+        # Set the Job's submitdate and startdate to be within the Allocation's
+        # start_date and end_date. Set its enddate to be 5 days after the
+        # Allocation's end_date.
+        data['submitdate'] = (allocation_objects.allocation.start_date +
+                              timedelta(days=4)).strftime(self.date_format)
+        data['startdate'] = (allocation_objects.allocation.start_date +
+                             timedelta(days=5)).strftime(self.date_format)
+        data['enddate'] = (allocation_objects.allocation.end_date +
+                           timedelta(days=5)).strftime(self.date_format)
+
+        response = self.client.put(
+            TestJobViewSet.put_url(data['jobslurmid']), data,
+            format='json')
+        self.assertEqual(response.status_code, 200)
+
+        # A Job should have been created.
+        self.assertTrue(
+            Job.objects.filter(jobslurmid=data['jobslurmid']).exists())
+
+        # Usages should not have been updated.
+        allocation_usage.refresh_from_db()
+        user_usage.refresh_from_db()
+        self.assertEqual(pre_allocation_usage, allocation_usage.value)
+        self.assertEqual(pre_user_usage, user_usage.value)
+
+    def test_put_job_missing_dates(self):
+        """Test that a PUT (update) request does not update usages if
+        the job does not have a start or end date."""
+        data = self.data.copy()
+        user = UserProfile.objects.get(cluster_uid=data['userid']).user
+        project = Project.objects.get(name=data['accountid'])
+        allocation_objects = get_accounting_allocation_objects(project, user)
+
+        allocation_usage, user_usage = self.get_usage_values(
+            allocation_objects)
+
+        pre_allocation_usage, pre_user_usage = \
+            allocation_usage.value, user_usage.value
+
+        # Remove Job dates, one at a time.
+        for date in ['submitdate', 'startdate', 'enddate']:
+            popped_date = data.pop(date)
+            response = self.client.put(
+                TestJobViewSet.put_url(data['jobslurmid']), data,
+                format='json')
+            self.assertEqual(response.status_code, 200)
+
+            response = self.client.put(
+                TestJobViewSet.put_url(data['jobslurmid']), data,
+                format='json')
+            self.assertEqual(response.status_code, 200)
+
+            # A Job should have been created.
+            self.assertTrue(
+                Job.objects.filter(jobslurmid=data['jobslurmid']).exists())
+
+            # Usages should not have been updated.
+            allocation_usage.refresh_from_db()
+            user_usage.refresh_from_db()
+            self.assertEqual(pre_allocation_usage, allocation_usage.value)
+            self.assertEqual(pre_user_usage, user_usage.value)
+
+            # Reset data for the next test.
+            data[date] = popped_date
+            Job.objects.get(jobslurmid=data['jobslurmid']).delete()
+            allocation_usage.value = pre_allocation_usage
+            allocation_usage.save()
+            user_usage.value = pre_user_usage
+            user_usage.save()
+
+    def test_put_allocation_missing_dates(self):
+        """Test that a PUT (update) request conditionally updates usages
+        based on which date its Allocation is missing and the Project's
+        allocation type. In particular, for any allocation type, if the
+        start date is missing, or the end date is missing and the
+        allocation type is one expected to have an end date, usages
+        should not be updated."""
+        data = self.data.copy()
+        user = UserProfile.objects.get(cluster_uid=data['userid']).user
+        project = Project.objects.get(name=data['accountid'])
+
+        allocation_types = ('ac_', 'co_', 'fc_', 'ic_', 'pc_')
+        allocation_types_with_end_dates = {'fc_', 'ic_', 'pc_'}
+        for allocation_type in allocation_types:
+            project.name = f'{allocation_type}{project.name[3:]}'
+            project.save()
+            project.refresh_from_db()
+            data['accountid'] = project.name
+            allocation_objects = get_accounting_allocation_objects(
+                project, user)
+
+            allocation_usage, user_usage = self.get_usage_values(
+                allocation_objects)
+            allocation_usage.value = Decimal('0.00')
+            allocation_usage.save()
+            user_usage.value = Decimal('0.00')
+            user_usage.save()
+
+            pre_allocation_usage, pre_user_usage = \
+                allocation_usage.value, user_usage.value
+
+            for date in ['start_date', 'end_date']:
+                # Remove the date.
+                original_date = getattr(allocation_objects.allocation, date)
+                setattr(allocation_objects.allocation, date, None)
+                allocation_objects.allocation.save()
+                self.assertIsNone(getattr(allocation_objects.allocation, date))
+
+                response = self.client.put(
+                    TestJobViewSet.put_url(data['jobslurmid']), data,
+                    format='json')
+                self.assertEqual(response.status_code, 200)
+
+                # A Job should have been created.
+                self.assertTrue(
+                    Job.objects.filter(jobslurmid=data['jobslurmid']).exists())
+
+                # Usages should not have been updated if the start_date was
+                # removed, or if the end_date was removed and it was expected
+                # to be there.
+                allocation_usage.refresh_from_db()
+                user_usage.refresh_from_db()
+                if (date == 'start_date' or
+                        (date == 'end_date' and
+                         allocation_type in allocation_types_with_end_dates)):
+                    self.assertEqual(
+                        pre_allocation_usage, allocation_usage.value)
+                    self.assertEqual(pre_user_usage, user_usage.value)
+                else:
+                    self.assertLess(
+                        pre_allocation_usage, allocation_usage.value)
+                    self.assertLess(
+                        pre_user_usage, user_usage.value)
+
+                # Reset the date.
+                setattr(allocation_objects.allocation, date, original_date)
+                allocation_objects.allocation.save()
+
+                # Delete the Job for the next test.
+                Job.objects.get(jobslurmid=data['jobslurmid']).delete()
+                self.assertFalse(
+                    Job.objects.filter(jobslurmid=data['jobslurmid']).exists())
+
+    @patch('coldfront.api.statistics.views.JobViewSet.validate_job_dates')
+    def test_put_handles_exception_when_validating_dates(self, mock_method):
+        """Test that a PUT (update) request does not fail to create a
+        job even if an exception is raised when determining whether
+        dates are valid."""
+        # Patch the method for validating dates to raise an exception.
+        def raise_exception(*args, **kwargs):
+            raise Exception('Test exception.')
+        mock_method.side_effect = raise_exception
+
+        data = self.data.copy()
+        user = UserProfile.objects.get(cluster_uid=data['userid']).user
+        project = Project.objects.get(name=data['accountid'])
+        allocation_objects = get_accounting_allocation_objects(project, user)
+
+        allocation_usage, user_usage = self.get_usage_values(
+            allocation_objects)
+
+        pre_allocation_usage, pre_user_usage = \
+            allocation_usage.value, user_usage.value
+
+        with self.assertLogs('coldfront.api.statistics.views', 'ERROR') as cm:
+            response = self.client.put(
+                TestJobViewSet.put_url(data['jobslurmid']), data,
+                format='json')
+        self.assertEqual(response.status_code, 200)
+
+        all_log_output = '\n'.join(cm.output)
+        self.assertIn(
+            (f'Failed to determine whether dates for Job {data["jobslurmid"]} '
+             f'are valid.'),
+            all_log_output)
+        self.assertIn('Test exception.', all_log_output)
+
+        # A Job should have been created.
+        self.assertTrue(
+            Job.objects.filter(jobslurmid=data['jobslurmid']).exists())
+
+        # Usages should not have been updated.
+        allocation_usage.refresh_from_db()
+        user_usage.refresh_from_db()
+        self.assertEqual(pre_allocation_usage, allocation_usage.value)
+        self.assertEqual(pre_user_usage, user_usage.value)

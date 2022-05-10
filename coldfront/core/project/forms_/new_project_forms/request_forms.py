@@ -8,6 +8,7 @@ from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils_.new_project_utils import non_denied_new_project_request_statuses
 from coldfront.core.project.utils_.renewal_utils import non_denied_renewal_request_statuses
+from coldfront.core.user.models import EmailAddress
 from coldfront.core.utils.common import utc_now_offset_aware
 
 from django import forms
@@ -58,10 +59,10 @@ class SavioProjectAllocationPeriodForm(forms.Form):
                                   display_timezone):
         """Return a queryset of AllocationPeriods to be available in the
         form if rendered at the given datetime, whose tzinfo must be
-        pytz.UTC and which will be converted to the given timezone, for
+        pytz.utc and which will be converted to the given timezone, for
         an allocation with the given type."""
-        if utc_dt.tzinfo != pytz.UTC:
-            raise ValueError(f'Datetime {utc_dt}\'s tzinfo is not pytz.UTC.')
+        if utc_dt.tzinfo != pytz.utc:
+            raise ValueError(f'Datetime {utc_dt}\'s tzinfo is not pytz.utc.')
         dt = utc_dt.astimezone(display_timezone)
         date = datetime.date(dt)
         f = Q(end_date__gte=date)
@@ -184,6 +185,24 @@ class SavioProjectExistingPIForm(forms.Form):
             exclude_user_pks.update(
                 set.union(pis_with_existing_pcas, pis_with_pending_requests))
 
+        if flag_enabled('LRC_ONLY'):
+            # Exclude users with non-LBL emails.
+            users_with_non_lbl_primary_emails = set(ProjectUser.objects.exclude(
+                user__email__endswith='@lbl.gov'
+            ).values_list('user__pk', flat=True))
+
+            # Checking if users have a non-primary LBL email.
+            users_with_lbl_nonprimary_emails = set(EmailAddress.objects.filter(
+                email__endswith='@lbl.gov',
+                is_verified=True
+            ).values_list('user__pk', flat=True))
+
+            users_with_non_lbl_email = \
+                users_with_non_lbl_primary_emails.difference(
+                    users_with_lbl_nonprimary_emails)
+
+            exclude_user_pks.update(users_with_non_lbl_email)
+
         # Exclude any user that does not have an email address.
         queryset = queryset.exclude(Q(email__isnull=True) | Q(email__exact=''))
         self.fields['PI'].queryset = queryset
@@ -211,6 +230,12 @@ class SavioProjectNewPIForm(forms.Form):
                 User.objects.filter(email=email).exists()):
             raise forms.ValidationError(
                 'A user with that email address already exists.')
+
+        if flag_enabled('LRC_ONLY'):
+            if not email.endswith('@lbl.gov'):
+                raise forms.ValidationError(
+                    'New PI must be an LBL employee with an LBL email.')
+
         return email
 
 
