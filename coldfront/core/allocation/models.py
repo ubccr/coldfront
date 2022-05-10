@@ -133,6 +133,9 @@ class Allocation(TimeStampedModel):
                 )
                 html_string += string
 
+            if attribute.allocation_attribute_type.name == 'Cluster Directory Access':
+                html_string += 'Directory Name: {}'.format(attribute.value)
+
         return mark_safe(html_string)
 
     @property
@@ -605,3 +608,51 @@ class AllocationAdditionRequest(TimeStampedModel):
             max_timestamp = max(
                 max_timestamp, state[field].get('timestamp', ''))
         return max_timestamp
+
+
+class SecureDirAddUserRequestStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+    # One of "Pending", "Processing", "Complete", "Denied"
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]
+
+
+class SecureDirAddUserRequest(TimeStampedModel):
+    """A request to add a user to a secure directory"""
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE)
+    allocation = models.ForeignKey(
+        Allocation, on_delete=models.CASCADE)
+    directory = models.CharField(max_length=200)
+    request_time = models.DateTimeField(auto_now_add=True)
+    completion_time = models.DateTimeField(null=True)
+    status = models.ForeignKey(
+        SecureDirAddUserRequestStatusChoice, on_delete=models.CASCADE)
+
+
+class SecureDirRemoveUserRequestStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+    # One of "Pending", "Processing", "Complete", "Denied"
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]
+
+
+class SecureDirRemoveUserRequest(TimeStampedModel):
+    """A request to add a user to a secure directory"""
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE)
+    allocation = models.ForeignKey(
+        Allocation, on_delete=models.CASCADE)
+    directory = models.CharField(max_length=200)
+    request_time = models.DateTimeField(auto_now_add=True)
+    completion_time = models.DateTimeField(null=True)
+    status = models.ForeignKey(
+        SecureDirRemoveUserRequestStatusChoice, on_delete=models.CASCADE)

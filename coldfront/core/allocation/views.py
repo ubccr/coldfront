@@ -266,6 +266,23 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         context['notes'] = notes
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
+
+        context['secure_dir'] = \
+            allocation_obj.resources.filter(
+                name__icontains='Directory').exists()
+
+        can_edit_users = False
+        if allocation_obj.project.projectuser_set.filter(
+                user=self.request.user,
+                role__name='Principal Investigator',
+                status__name='Active').exists():
+            can_edit_users = True
+
+        if self.request.user.is_superuser:
+            can_edit_users = True
+
+        context['can_edit_users'] = can_edit_users
+
         return context
 
     def get(self, request, *args, **kwargs):
@@ -418,10 +435,16 @@ class AllocationListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     def test_func(self):
         """Temporary block: Only allow superusers access."""
         # TODO: Remove this block when allocations should be displayed.
-        if self.request.user.is_superuser:
+
+        if self.request.user.is_superuser or self.request.user.is_staff:
             return True
 
-        if self.request.user.has_perm('allocation.can_view_all_allocations'):
+        project_user = ProjectUser.objects.filter(
+            Q(role__name__in=['Manager', 'Principal Investigator']) &
+            Q(status__name='Active') &
+            Q(user=self.request.user))
+
+        if project_user.exists():
             return True
 
     def get_queryset(self):
