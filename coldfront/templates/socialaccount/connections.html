@@ -1,0 +1,64 @@
+{% extends "common/base.html" %}
+{% load static %}
+
+
+{% block title %}
+Account Connections
+{% endblock %}
+
+{% block content %}
+
+<h1>Account Connections</h1>
+<hr>
+
+{% if form.accounts %}
+  <p>
+    You can sign in to your account using any of the following third-party
+	  accounts:
+  </p>
+
+  <form method="post" action="{% url 'socialaccount_connections' %}">
+    {% csrf_token %}
+
+    <fieldset>
+      {% if form.non_field_errors %}
+        <div id="errorMsg">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      {% for base_account in form.accounts %}
+        {% with base_account.get_provider_account as account %}
+          <div>
+            <label for="id_account_{{ base_account.id }}">
+		      <input id="id_account_{{ base_account.id }}" type="radio" name="account" value="{{ base_account.id }}"/>
+              <span class="socialaccount_provider {{ base_account.provider }} {{ account.get_brand.id }}">{{account.get_brand.name}} ({{ account.account.extra_data.idp_name }})</span> |
+              {{ account.account.extra_data.email }} |
+              {{ account }}
+            </label>
+          </div>
+        {% endwith %}
+      {% endfor %}
+      <br>
+
+      <div>
+        <button type="submit" class="btn btn-danger">Remove</button>
+      </div>
+    </fieldset>
+  </form>
+
+{% else %}
+  <p>
+	You currently have no third-party accounts connected to this account.
+  </p>
+{% endif %}
+
+<hr>
+
+<h3>Add a Third-Party Account</h3>
+
+<ul class="socialaccount_providers">
+  {% include "socialaccount/snippets/provider_list.html" with process="connect" %}
+</ul>
+
+{% include "socialaccount/snippets/login_extra.html" %}
+
+{% endblock %}
