@@ -3,12 +3,12 @@
 
 
 {% block title %}
-Account Connections
+Third-Party Accounts
 {% endblock %}
 
 {% block content %}
 
-<h1>Account Connections</h1>
+<h1>Third-Party Accounts</h1>
 <hr>
 
 {% if form.accounts %}
@@ -53,7 +53,7 @@ Account Connections
 
 <hr>
 
-<h3>Add a Third-Party Account</h3>
+<h3>Add an Account</h3>
 
 <ul class="socialaccount_providers">
   {% include "socialaccount/snippets/provider_list.html" with process="connect" %}

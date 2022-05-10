@@ -178,7 +178,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
   <div class="card">
     <div class="card-header">
       <i class="far fa-envelope"></i>
-      Other Email Addresses{% if not user == viewed_user %}: {{ viewed_user.username}}{% endif %}
+      Other Email Addresses{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif %}
       {% if user == viewed_user %}
         <div class="float-right">
           <a class="btn btn-success float-right" href="{% url 'add-email-address' %}" role="button">
@@ -242,23 +242,46 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
   <div class="card">
     <div class="card-header">
       <i class="far fa-user-circle"></i>
-      Link Your Personal Account
-      <div class="float-right">
-        {% if not has_cluster_access or linking_request and linking_request.status.name == 'Pending' %}
-          <a class="btn btn-secondary float-right disabled" id="request-linking-email-button">
-            <i class="fas fa-paper-plane"></i>
-            Request Linking Email
-          </a>
-        {% else %}
-          <form action="{% url 'identity-linking-request' %}" method="post">
-            {% csrf_token %}
-            <button class="btn btn-success float-right" type="submit">
+      Third-Party Accounts
+      {% if user == viewed_user %}
+        <a class="btn btn-success float-right" href="{% url 'socialaccount_connections' %}" id="manage-third-party-accounts-button">
+          <i class="fas fa-edit"></i>
+          Manage Accounts
+        </a>
+      {% endif %}
+    </div>
+    <div class="card-body">
+      <p>
+        You may manage the third-party accounts used to sign in to your
+        account.
+      </p>
+    </div>
+  </div>
+
+  <br>
+
+  <div class="card">
+    <div class="card-header">
+      <i class="far fa-user-circle"></i>
+      Link Your Personal Account{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif %}
+      {% if user == viewed_user %}
+        <div class="float-right">
+          {% if not has_cluster_access or linking_request and linking_request.status.name == 'Pending' %}
+            <a class="btn btn-secondary float-right disabled" id="request-linking-email-button">
               <i class="fas fa-paper-plane"></i>
               Request Linking Email
-            </button>
-          </form>
-        {% endif %}
-      </div>
+            </a>
+          {% else %}
+            <form action="{% url 'identity-linking-request' %}" method="post">
+              {% csrf_token %}
+              <button class="btn btn-success float-right" type="submit">
+                <i class="fas fa-paper-plane"></i>
+                Request Linking Email
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      {% endif %}
     </div>
     <div class="card-body">
       <p>
