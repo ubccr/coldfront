@@ -2310,7 +2310,7 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
                 messages.error(request, 'Project must be approved first before you can update this allocation\'s status!')
                 return HttpResponseRedirect(reverse('allocation-invoice-detail', kwargs={'pk': pk}))
 
-            if initial_data.get('status') != status and status.name in ['Paid', 'Payment Declined']:
+            if initial_data.get('status') != status and status.name in ['Paid', ]:
                 AllocationInvoice.objects.create(
                     allocation=allocation_obj,
                     account_number=allocation_obj.account_number,
