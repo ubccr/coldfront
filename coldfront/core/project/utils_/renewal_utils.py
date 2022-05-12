@@ -7,7 +7,6 @@ from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoic
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.utils import get_or_create_active_allocation_user
 from coldfront.core.allocation.utils import get_project_compute_allocation
-from coldfront.core.allocation.utils import next_allocation_start_datetime
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.models import ProjectStatusChoice
@@ -24,7 +23,6 @@ from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.common import validate_num_service_units
 from coldfront.core.utils.mail import send_email_template
 from collections import namedtuple
-from datetime import timedelta
 from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -1037,17 +1035,18 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         ProjectStatusChoice, which the post_project had prior to being
         activated, to potentially set the start and end dates."""
         project = self.request_obj.post_project
+        # TODO: Set this dynamically when supporting other types.
         allocation_type = SavioProjectAllocationRequest.FCA
+        allocation_period = self.request_obj.allocation_period
 
         allocation = get_project_compute_allocation(project)
         allocation.status = AllocationStatusChoice.objects.get(name='Active')
         # For the start and end dates, if the Project is not 'Active' or the
         # date is not set, set it.
         if old_project_status.name != 'Active' or not allocation.start_date:
-            allocation.start_date = utc_now_offset_aware()
+            allocation.start_date = display_time_zone_current_date()
         if old_project_status.name != 'Active' or not allocation.end_date:
-            allocation.end_date = \
-                next_allocation_start_datetime() - timedelta(seconds=1)
+            allocation.end_date = getattr(allocation_period, 'end_date', None)
         allocation.save()
 
         # Set the allocation's allocation type.
