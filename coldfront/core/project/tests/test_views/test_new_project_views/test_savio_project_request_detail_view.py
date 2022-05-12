@@ -1,8 +1,8 @@
 from coldfront.api.statistics.utils import create_project_allocation
-from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.tests.utils import create_fca_project_and_request
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
+from coldfront.core.project.utils_.renewal_utils import get_next_allowance_year_period
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import format_date_month_name_day_year
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -133,12 +133,11 @@ class TestSavioProjectRequestDetailView(TestBase):
 
         # Set the request's AllocationPeriod to one that has not already
         # started.
-        next_allowance_year_period = \
-            AllocationPeriod.objects.filter(
-                name__startswith='Allowance Year',
-                start_date__gt=display_time_zone_current_date()).first()
-        self.assertIsNotNone(next_allowance_year_period)
-        new_project_request.allocation_period = next_allowance_year_period
+        next_allowance_year_allocation_period = \
+            get_next_allowance_year_period()
+        self.assertIsNotNone(next_allowance_year_allocation_period)
+        new_project_request.allocation_period = \
+            next_allowance_year_allocation_period
         new_project_request.save()
 
         pre_time = utc_now_offset_aware()

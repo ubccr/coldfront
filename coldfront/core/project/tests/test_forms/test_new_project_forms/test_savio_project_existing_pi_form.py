@@ -1,4 +1,3 @@
-from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
 from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectExistingPIForm
@@ -10,7 +9,7 @@ from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.tests.utils import create_fca_project_and_request
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
-from coldfront.core.utils.common import display_time_zone_current_date
+from coldfront.core.project.utils_.renewal_utils import get_next_allowance_year_period
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 
@@ -69,9 +68,7 @@ class TestSavioProjectExistingPIForm(TestBase):
 
         # Select a different AllocationPeriod.
         next_allowance_year_allocation_period = \
-            AllocationPeriod.objects.filter(
-                name__startswith='Allowance Year',
-                start_date__gt=display_time_zone_current_date()).first()
+            get_next_allowance_year_period()
         self.assertIsNotNone(next_allowance_year_allocation_period)
         kwargs = {
             'allocation_type': 'FCA',

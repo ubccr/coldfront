@@ -1,5 +1,4 @@
 from coldfront.api.statistics.utils import create_project_allocation
-from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
 from coldfront.core.project.models import Project
@@ -10,6 +9,7 @@ from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
+from coldfront.core.project.utils_.renewal_utils import get_next_allowance_year_period
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import format_date_month_name_day_year
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -273,9 +273,7 @@ class TestAllocationRenewalRequestDetailView(TestBase):
         # Set the request's AllocationPeriod to one that has not already
         # started.
         next_allowance_year_allocation_period = \
-            AllocationPeriod.objects.filter(
-                name__startswith='Allowance Year',
-                start_date__gt=display_time_zone_current_date()).first()
+            get_next_allowance_year_period()
         self.assertIsNotNone(next_allowance_year_allocation_period)
         allocation_renewal_request.allocation_period = \
             next_allowance_year_allocation_period
