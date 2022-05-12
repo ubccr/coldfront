@@ -18,6 +18,7 @@ IFX_APP = {
 
 class GROUPS():
     ADMIN_GROUP_NAME = 'rc_admin'
+    PREFERRED_BILLING_RECORD_APPROVAL_ACCOUNT_GROUP_NAME = 'Preferred Billing Record Approval Account'
 
 # Ignore billing models in the django-author pre-save so that values are set directly
 AUTHOR_IGNORE_MODELS = [

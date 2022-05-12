@@ -230,7 +230,6 @@ Allocation Detail
               <td data-sort = "{{user.usage_bytes}}" name = "usage_bytes">{{ user.usage }}{{ user.unit }}</td>
               <td>{{user.usage_bytes|div:1099511627776|div:allocation_usage_tb|floatformat:2 }}</td>
               <td>{{4.16|mul:allocation_quota_tb.value|mul:user.usage_bytes|div:1024|div:allocation_usage_tb|div:1073741824|floatformat:2}}</td>
-
             </tr>
 
           {% endfor %}
@@ -240,7 +239,7 @@ Allocation Detail
 
         <script type="text/javascript">
         function findTotal(){
-            var arr = document.getElementsByName('usage_bytes');
+            var arr = document.getElementsByName('usage');
             var tot=0;
             for(var i=0;i<arr.length;i++){
                 if(parseInt(arr[i].value))

@@ -7,12 +7,16 @@ from coldfront.plugins.sftocf.pipeline import *
 
 class UploadTests(TestCase):
     """Catch issues that may cause database not to upload properly."""
+    fixtures = ["coldfront/plugins/sftocf/tests/testdata/fixtures/field_of_science.json",
+                "coldfront/plugins/sftocf/tests/testdata/fixtures/all_res_choices.json",
+                "coldfront/plugins/sftocf/tests/testdata/fixtures/poisson_fixtures.json",
+                "coldfront/plugins/sftocf/tests/testdata/fixtures/project_choices.json"]
     pref = "./coldfront/plugins/sftocf/tests/testdata/"
 
     def setUp(self):
         self.cfconn = ColdFrontDB()
-        suf = "_test.json"
-        files = ["holman_lab_holysfdb01", "hoekstra_lab_holysfdb02", "ham_lab_holysfdb02", "lemos_lab_holysfdb02", "zhang_lab_holysfdb01"]
+        suf = "_holysfdb10.json"
+        files = ["poisson_lab"]
         self.testfiles = [self.pref + s + suf for s in files]
 
     def test_push_cf(self):
@@ -20,13 +24,17 @@ class UploadTests(TestCase):
 
 
     def test_update_usage(self):
-        content = read_json(f"{self.pref}holman_lab_holysfdb01_test.json")
+        content = read_json(f"{self.pref}poisson_lab_holysfdb10.json")
         statdicts = content['contents']
         errors = False
+        unames = [d['username'] for d in content['contents']]
+        models = get_user_model().objects.only("id","username")\
+                .filter(username__in=unames)
+        allocation = Allocation.objects.get(project_id=1)
         for statdict in statdicts:
             try:
                 server_tier = content['server'] + "/" + content['tier']
-                self.cfconn.update_usage(statdict, server_tier)
+                self.cfconn.update_usage(models, statdict, allocation)
             except Exception as e:
                 logger.debug("EXCEPTION FOR ENTRY: {}".format(e),  exc_info=True)
                 print("ERROR:", e)

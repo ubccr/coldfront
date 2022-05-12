@@ -4,7 +4,7 @@ from coldfront.config.env import ENV
 #------------------------------------------------------------------------------
 # Database settings
 #------------------------------------------------------------------------------
-# Set this using the DB_URL env variable. Defaults to sqlite. 
+# Set this using the DB_URL env variable. Defaults to sqlite.
 #
 # Examples:
 #

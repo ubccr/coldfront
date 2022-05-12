@@ -123,7 +123,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
         allocation_users = allocation_obj.allocationuser_set.exclude(
-            status__name__in=['Removed']).exclude(usage_bytes__isnull=True).order_by('user__username')
+            status__name__in=['Removed']).exclude(usage__isnull=True).order_by('user__username')
         if self.request.user.is_superuser:
             attributes_with_usage = [attribute for attribute in allocation_obj.allocationattribute_set.all(
             ).order_by('allocation_attribute_type__name') if hasattr(attribute, 'allocationattributeusage')]
@@ -1732,7 +1732,7 @@ dict_obj = []
 # Opens up page as PDF
 # for e in one_allocation_users:
 #     print(e.user.username)
-#     print(e.usage_bytes)
+#     print(e.usage)
 # I can access the allocation id in ViewPDF function now
 class ViewPDF(View):
 
