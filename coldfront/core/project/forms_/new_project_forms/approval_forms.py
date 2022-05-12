@@ -10,47 +10,6 @@ from django.core.validators import RegexValidator
 # =============================================================================
 
 
-class SavioProjectReviewAllocationDatesForm(forms.Form):
-
-    status = forms.ChoiceField(
-        choices=(
-            ('', 'Select one.'),
-            ('Pending', 'Pending'),
-            ('Complete', 'Complete'),
-        ),
-        help_text='If you are unsure, leave the status as "Pending".',
-        label='Status',
-        required=True)
-    start_date = forms.DateField(
-        help_text=(
-            'Specify the date on which the allocation should start, in local '
-            'time.'),
-        label='Start Date',
-        required=False,
-        widget=forms.widgets.DateInput())
-    end_date = forms.DateField(
-        help_text=(
-            'Specify the date on which the allocation should end, in local '
-            'time.'),
-        label='End Date',
-        required=False,
-        widget=forms.widgets.DateInput())
-
-    def clean(self):
-        cleaned_data = super().clean()
-        status = cleaned_data.get('status')
-        start_date = cleaned_data.get('start_date')
-        end_date = cleaned_data.get('end_date')
-        if start_date and end_date:
-            if end_date < start_date:
-                raise forms.ValidationError(
-                    'End date cannot be less than start date.')
-        else:
-            if status == 'Complete':
-                raise forms.ValidationError(
-                    'One or more dates have not been set.')
-
-
 class SavioProjectReviewSetupForm(forms.Form):
 
     status = forms.ChoiceField(

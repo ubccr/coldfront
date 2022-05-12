@@ -445,13 +445,6 @@ def savio_request_state_status(savio_request):
     ica = SavioProjectAllocationRequest.ICA
     recharge = SavioProjectAllocationRequest.RECHARGE
 
-    # For ICA projects, retrieve whether both allocation dates are set.
-    if savio_request.allocation_type == ica:
-        allocation_dates = state['allocation_dates']
-        allocation_dates_not_set = allocation_dates['status'] == 'Pending'
-    else:
-        allocation_dates_not_set = False
-
     # For ICA and Recharge projects, retrieve the signed status of the
     # Memorandum of Understanding.
     if savio_request.allocation_type in (ica, recharge):
@@ -463,7 +456,6 @@ def savio_request_state_status(savio_request):
     # One or more steps is pending.
     if (eligibility['status'] == 'Pending' or
             readiness['status'] == 'Pending' or
-            allocation_dates_not_set or
             memorandum_not_signed):
         return ProjectAllocationRequestStatusChoice.objects.get(
             name='Under Review')
