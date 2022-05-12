@@ -20,7 +20,7 @@ class Command(BaseCommand):
         parser.add_argument(
             '--clean',
             dest='clean',
-            default=True,
+            default=False,
             help='if true, remove json after entry',
         )
 

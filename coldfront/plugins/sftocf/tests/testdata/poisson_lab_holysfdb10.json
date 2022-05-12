@@ -1,0 +1,30 @@
+{
+    "contents": [
+        {
+            "count": 222,
+            "groupname": "poisson_lab",
+            "size_sum": 227338,
+            "size_sum_hum": "222.0KiB",
+            "username": "ljbortkiewicz"
+        },
+        {
+            "count": 321,
+            "groupname": "poisson_lab",
+            "size_sum": 227338,
+            "size_sum_hum": "222.0KiB",
+            "username": "sdpoisson"
+        },
+        {
+            "count": 1500,
+            "groupname": "poisson_lab",
+            "size_sum": 328431,
+            "size_sum_hum": "320.7KiB",
+            "username": "snewcomb"
+        }
+    ],
+    "date": "20220222",
+    "path": "",
+    "server": "holysfdb10",
+    "tier": "tier1",
+    "volume": "holy-isilon"
+}

@@ -1,0 +1,23 @@
+{
+    "contents": [
+        {
+            "count": 1023740,
+            "groupname": "gordon_lab",
+            "size_sum": 12345678910111,
+            "size_sum_hum": "11.2TiB",
+            "username": "alice"
+        },
+        {
+            "count": 1,
+            "groupname": "gordon_lab",
+            "size_sum": 343925,
+            "size_sum_hum": "320.7KiB",
+            "username": "bob"
+        }
+    ],
+    "date": "20220222",
+    "path": "",
+    "server": "holysfdb10",
+    "tier": "tier1",
+    "volume": "holy-isilon"
+}
