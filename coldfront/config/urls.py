@@ -41,5 +41,15 @@ if 'mozilla_django_oidc' in settings.EXTRA_APPS:
 if 'django_su.backends.SuBackend' in settings.EXTRA_AUTHENTICATION_BACKENDS:
     urlpatterns.append(path('su/', include('django_su.urls')))
 
-if 'allauth.account.auth_backends.AuthenticationBackend' in settings.EXTRA_AUTHENTICATION_BACKENDS:
-    urlpatterns.append(path('accounts/', include('allauth.urls')))
+if ('allauth.account.auth_backends.AuthenticationBackend' in
+        settings.EXTRA_AUTHENTICATION_BACKENDS):
+    # Manually include only the desired URLs, rather than all of them.
+    # urlpatterns.append(path('accounts/', include('allauth.urls')))
+    prefixes_and_module_paths = [('accounts/', 'coldfront.core.account.urls')]
+    if 'allauth.socialaccount' in settings.INSTALLED_APPS:
+        prefixes_and_module_paths.extend([
+            ('accounts/social/', 'coldfront.core.socialaccount.urls'),
+            ('accounts/', 'allauth.socialaccount.providers.cilogon.urls'),
+        ])
+    for prefix, module_path in prefixes_and_module_paths:
+        urlpatterns.append(path(prefix, include(module_path)))
