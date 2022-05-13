@@ -5,10 +5,8 @@ from allauth.account.utils import user_username
 from allauth.exceptions import ImmediateHttpResponse
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from allauth.utils import valid_email_or_none
-from coldfront.core.utils.context_processors import display_time_zone
 from collections import defaultdict
 from django.conf import settings
-from django.http import HttpRequest
 from django.http import HttpResponseBadRequest
 from django.http import HttpResponseServerError
 from django.template.loader import render_to_string
@@ -180,9 +178,7 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
         """Raise an ImmediateHttpResponse with a client error and the
         given message."""
         template = 'error_with_message.html'
-        context = {'message': message}
-        context.update(display_time_zone(HttpRequest()))
-        html = render_to_string(template, context=context)
+        html = render_to_string(template, context={'message': message})
         response = HttpResponseBadRequest(html)
         raise ImmediateHttpResponse(response)
 
@@ -191,8 +187,6 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
         """Raise an ImmediateHttpResponse with a server error and the
         given message."""
         template = 'error_with_message.html'
-        context = {'message': message}
-        context.update(display_time_zone(HttpRequest()))
-        html = render_to_string(template, context=context)
+        html = render_to_string(template, context={'message': message})
         response = HttpResponseServerError(html)
         raise ImmediateHttpResponse(response)

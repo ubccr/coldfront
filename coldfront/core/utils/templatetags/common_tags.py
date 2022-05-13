@@ -14,6 +14,7 @@ def settings_value(name):
         'CENTER_NAME',
         'CENTER_HELP_URL',
         'EMAIL_PROJECT_REVIEW_CONTACT',
+        'DISPLAY_TIME_ZONE',
     ]
     return mark_safe(getattr(settings, name, '') if name in allowed_names else '')
 
@@ -46,8 +47,6 @@ def convert_status_to_icon(project):
         return mark_safe('<h4><span class="badge badge-danger"><i class="fas fa-question-circle"></i></span></h4>')
     elif not project.needs_review:
         return mark_safe('<h4><span class="badge badge-success"><i class="fas fa-check-circle"></i></span></h4>')
-
-
 
 
 @register.filter('get_value_from_dict')
