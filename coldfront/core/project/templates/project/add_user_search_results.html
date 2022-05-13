@@ -87,14 +87,14 @@
     }
   });
 
-  $("#id_allocationform-allocation_1").click(function () {
+  $("#id_allocationform-allocation_0").click(function () {
     $("input[name^='allocationform-']").prop('checked', $(this).prop('checked'));
   });
 
   $("input[name^='allocationform-']").click(function (ele) {
     var id = $(this).attr('id');
-    if ( id != "id_allocationform-allocation_1") {
-      $("#id_allocationform-allocation_1").prop('checked', false);
+    if ( id != "id_allocationform-allocation_0") {
+      $("#id_allocationform-allocation_0").prop('checked', false);
     }
   });
 </script>
