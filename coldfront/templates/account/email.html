@@ -1,4 +1,4 @@
-{% extends "common/base.html" %}
+{% extends "account/base.html" %}
 {% load crispy_forms_tags %}
 {% load static %}
 
@@ -67,7 +67,7 @@ Email Addresses
 {% endblock %}
 
 
-{% block extra_body %}
+{% block javascript %}
   <script type="text/javascript">
   (function() {
     var message = "Do you really want to remove the selected email address?";
