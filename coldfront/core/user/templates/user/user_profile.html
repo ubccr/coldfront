@@ -241,6 +241,26 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
 
   <div class="card">
     <div class="card-header">
+      <i class="far fa-envelope"></i>
+      Other Email Addresses
+      {% if user == viewed_user %}
+        <a class="btn btn-success float-right" href="{% url 'account_email' %}" id="manage-emails-button">
+          <i class="fas fa-edit"></i>
+          Manage Emails
+        </a>
+      {% endif %}
+    </div>
+    <div class="card-body">
+      <p>
+        You may manage the emails associated with your account.
+      </p>
+    </div>
+  </div>
+
+  <br>
+
+  <div class="card">
+    <div class="card-header">
       <i class="far fa-user-circle"></i>
       Third-Party Accounts
       {% if user == viewed_user %}
