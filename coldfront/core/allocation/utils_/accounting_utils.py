@@ -330,16 +330,21 @@ def set_service_units_for_allocation(accounting_allocation_objects,
     allocation_attribute_usage = \
         accounting_allocation_objects.allocation_attribute_usage
 
-    assert_num_service_units_in_bounds(allowance)
-    assert_num_service_units_in_bounds(usage)
+    set_allowance = allowance is not None
+    set_usage = usage is not None
+
+    if set_allowance:
+        assert_num_service_units_in_bounds(allowance)
+    if set_usage:
+        assert_num_service_units_in_bounds(usage)
 
     with transaction.atomic():
-        if allowance is not None:
+        if set_allowance:
             set_allocation_service_units_allowance(
                 allocation_attribute, allowance,
                 transaction_date_time=transaction_date_time,
                 change_reason=change_reason)
-        if usage is not None:
+        if set_usage:
             set_allocation_service_units_usage(
                 allocation_attribute_usage, usage, change_reason=change_reason)
 
@@ -374,8 +379,13 @@ def set_service_units_for_allocation_users(accounting_allocation_objects,
     """
     allocation = accounting_allocation_objects.allocation
 
-    assert_num_service_units_in_bounds(allowance)
-    assert_num_service_units_in_bounds(usage)
+    set_allowance = allowance is not None
+    set_usage = usage is not None
+
+    if set_allowance:
+        assert_num_service_units_in_bounds(allowance)
+    if set_usage:
+        assert_num_service_units_in_bounds(usage)
 
     service_units_type = AllocationAttributeType.objects.get(
         name='Service Units')
@@ -385,12 +395,12 @@ def set_service_units_for_allocation_users(accounting_allocation_objects,
 
     with transaction.atomic():
         for allocation_user_attribute in service_units_user_attributes:
-            if allowance is not None:
+            if set_allowance:
                 set_allocation_user_service_units_allowance(
                     allocation_user_attribute, allowance,
                     transaction_date_time=transaction_date_time,
                     change_reason=change_reason)
-            if usage is not None:
+            if set_usage:
                 allocation_user_attribute_usage = \
                     allocation_user_attribute.allocationuserattributeusage
                 set_allocation_user_service_units_usage(
