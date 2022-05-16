@@ -76,6 +76,16 @@ def add_argparse_dry_run_argument(parser):
         help='Display updates without performing them.')
 
 
+def assert_obj_type(obj, expected_obj_type, null_allowed=False):
+    """Raise an AssertionError if the given object does not have the
+    given type. If null_allowed is True, do nothing if the object is
+    None."""
+    if null_allowed and obj is None:
+        return
+    message = f'{obj} does not have type {expected_obj_type}.'
+    assert isinstance(obj, expected_obj_type), message
+
+
 def delete_scheduled_tasks(func, *args):
     """Delete scheduled tasks (Schedule objects) for running the given
     function with the given arguments. Write a message to the log."""
