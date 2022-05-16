@@ -190,7 +190,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         # set price
         tier = allocation_obj.get_resources_as_string.split("/")[1]
-        price_dict = {"tier0":4.16, "tier1":20.80, "tier2":.41}
+        price_dict = {"tier0":4.16, "tier1":20.80, "tier3":.41}
         context['price'] = price_dict[tier]
 
         # Can the user update the project?
