@@ -190,7 +190,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         # set price
         tier = allocation_obj.get_resources_as_string.split("/")[1]
-        price_dict = {"tier0":4.16, "tier1":20.80, "tier3":.41}
+        price_dict = {"tier0":4.16, "tier1":20.80, "tier2": 100/12, "tier3":.41}
         context['price'] = price_dict[tier]
 
         # Can the user update the project?
@@ -1548,19 +1548,16 @@ class AllocationAddInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, Crea
         allocation_users = allocation_obj.allocationuser_set.exclude(
             status__name__in=['Removed']).order_by('user__username')
 
+        # set visible usage attributes
         if self.request.user.is_superuser:
-            attributes_with_usage = [attribute for attribute in allocation_obj.allocationattribute_set.all(
-            ).order_by('allocation_attribute_type__name') if hasattr(attribute, 'allocationattributeusage')]
-
-            attributes = [attribute for attribute in allocation_obj.allocationattribute_set.all(
-            ).order_by('allocation_attribute_type__name')]
-
+            alloc_attr_set = allocation_obj.allocationattribute_set.\
+                            all().order_by('allocation_attribute_type__name')
         else:
-            attributes_with_usage = [attribute for attribute in allocation_obj.allocationattribute_set.filter(
-                allocation_attribute_type__is_private=False) if hasattr(attribute, 'allocationattributeusage')]
+            alloc_attr_set = allocation_obj.allocationattribute_set.\
+                            filter(allocation_attribute_type__is_private=False)
 
-            attributes = [attribute for attribute in allocation_obj.allocationattribute_set.filter(
-                allocation_attribute_type__is_private=False)]
+        attributes_with_usage = [a for a in alloc_attr_set if hasattr(a, 'allocationattributeusage')]
+        attributes = [a for a in alloc_attr_set]
 
         guage_data = []
         invalid_attributes = []
