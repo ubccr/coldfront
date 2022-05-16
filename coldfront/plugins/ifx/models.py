@@ -5,7 +5,7 @@ import logging
 from decimal import Decimal
 from datetime import datetime
 from django.utils import timezone
-from django.db import models
+from django.db import models, connection
 from django.contrib.auth import get_user_model
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -147,3 +147,53 @@ class SuUser(get_user_model()):
     '''
     class Meta:
         proxy = True
+
+
+def get_resource_allocation_authorization_map():
+    '''
+    What labs have what auth for products, in tall skinny form, ready for Excel Pivot Table
+    All projects / organizations are returned along with any allocations and expense code authorizations
+    '''
+    sql = '''
+        select
+            p.title as project,
+            o.name as organization,
+            r.name as resource,
+            al.id as allocation_id,
+            a.name as account
+        from
+            project_project p
+            inner join allocation_allocation al on al.project_id = p.id
+            inner join allocation_allocation_resources ar on ar.allocation_id=al.id
+            inner join resource_resource r on r.id=ar.resource_id
+            inner join ifx_productresource ipr on ipr.resource_id = r.id
+            inner join product pr on pr.id = ipr.product_id
+            left join ifx_projectorganization po on p.id=po.project_id
+            left join nanites_organization o on po.organization_id=o.id
+            left join account a on o.id=a.organization_id
+            left join user_product_account upa on upa.account_id = a.id
+        where
+            exists (select 1 from user_product_account upa where upa.account_id = a.id and upa.product_id=pr.id)
+        union
+        select
+            p.title as project,
+            o.name as organization,
+            r.name as resource,
+            al.id as allocation_id,
+            '' as account
+        from
+            project_project p
+            inner join allocation_allocation al on al.project_id = p.id
+            inner join allocation_allocation_resources ar on ar.allocation_id=al.id
+            inner join resource_resource r on r.id=ar.resource_id
+            inner join ifx_productresource ipr on ipr.resource_id = r.id
+            inner join product pr on pr.id = ipr.product_id
+            left join ifx_projectorganization po on p.id=po.project_id
+            left join nanites_organization o on po.organization_id=o.id
+        where
+            not exists (select 1 from user_product_account upa where upa.product_id=pr.id)
+    '''
+    cursor = connection.cursor()
+    cursor.execute(sql)
+    desc = cursor.description
+    return [dict(zip([col[0] for col in desc], row)) for row in cursor.fetchall()]
