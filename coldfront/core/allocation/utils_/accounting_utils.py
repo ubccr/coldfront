@@ -35,7 +35,7 @@ def assert_num_service_units_in_bounds(num_service_units):
     minimum, maximum = settings.ALLOCATION_MIN, settings.ALLOCATION_MAX
     message = (
         f'Number of service units {num_service_units} is not in the '
-        f'acceptable bounds.')
+        f'acceptable bounds: [{minimum}, {maximum}].')
     assert minimum <= num_service_units <= maximum, message
 
 
@@ -334,12 +334,12 @@ def set_service_units_for_allocation(accounting_allocation_objects,
     assert_num_service_units_in_bounds(usage)
 
     with transaction.atomic():
-        if allowance:
+        if allowance is not None:
             set_allocation_service_units_allowance(
                 allocation_attribute, allowance,
                 transaction_date_time=transaction_date_time,
                 change_reason=change_reason)
-        if usage:
+        if usage is not None:
             set_allocation_service_units_usage(
                 allocation_attribute_usage, usage, change_reason=change_reason)
 
@@ -385,12 +385,12 @@ def set_service_units_for_allocation_users(accounting_allocation_objects,
 
     with transaction.atomic():
         for allocation_user_attribute in service_units_user_attributes:
-            if allowance:
+            if allowance is not None:
                 set_allocation_user_service_units_allowance(
                     allocation_user_attribute, allowance,
                     transaction_date_time=transaction_date_time,
                     change_reason=change_reason)
-            if usage:
+            if usage is not None:
                 allocation_user_attribute_usage = \
                     allocation_user_attribute.allocationuserattributeusage
                 set_allocation_user_service_units_usage(
