@@ -6,6 +6,7 @@ from django.core.management.base import BaseCommand
 from coldfront.api.statistics.utils import get_accounting_allocation_objects
 from coldfront.core.project.models import Project
 from coldfront.core.project.utils import deactivate_project_and_allocation
+from coldfront.core.utils.common import add_argparse_dry_run_argument
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.mail import send_email_template
 
@@ -21,10 +22,7 @@ class Command(BaseCommand):
     logger = logging.getLogger(__name__)
 
     def add_arguments(self, parser):
-        parser.add_argument(
-            '--dry_run',
-            action='store_true',
-            help='Display updates without performing them.')
+        add_argparse_dry_run_argument(parser)
         parser.add_argument(
             '--send_emails',
             action='store_true',
