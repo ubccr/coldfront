@@ -195,5 +195,10 @@ def get_resource_allocation_authorization_map():
     '''
     cursor = connection.cursor()
     cursor.execute(sql)
-    desc = cursor.description
-    return [dict(zip([col[0] for col in desc], row)) for row in cursor.fetchall()]
+    result = [
+        ['Project', 'Organization', 'Resource', 'Allocation ID', 'Account']
+    ]
+    for row in cursor.fetchall():
+        result.append(row)
+
+    return result

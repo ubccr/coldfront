@@ -20,4 +20,6 @@ class Command(BaseCommand):
         '''
         Get all of the Organizations in the Research Computing AD tree
         '''
-        print(get_resource_allocation_authorization_map())
+        rows = get_resource_allocation_authorization_map()
+        for row in rows:
+            print('\t'.join(row))
