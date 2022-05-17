@@ -22,4 +22,4 @@ class Command(BaseCommand):
         '''
         rows = get_resource_allocation_authorization_map()
         for row in rows:
-            print('\t'.join(row))
+            print('\t'.join([str(f) for f in row]))
