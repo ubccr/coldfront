@@ -158,10 +158,10 @@ def get_resource_allocation_authorization_map():
         select
             p.title as project,
             o.name as organization,
-            parent.name as parent,
             r.name as resource,
             al.id as allocation_id,
-            a.name as account
+            a.name as account,
+            parent.name as parent
         from
             project_project p
             inner join allocation_allocation al on al.project_id = p.id
@@ -181,10 +181,31 @@ def get_resource_allocation_authorization_map():
         select
             p.title as project,
             o.name as organization,
-            parent.name as parent,
             r.name as resource,
             al.id as allocation_id,
-            '' as account
+            a.name as account,
+            parent.name as parent
+        from
+            project_project p
+            inner join allocation_allocation al on al.project_id = p.id
+            inner join allocation_allocation_resources ar on ar.allocation_id=al.id
+            inner join resource_resource r on r.id=ar.resource_id
+            inner join ifx_productresource ipr on ipr.resource_id = r.id
+            inner join product pr on pr.id = ipr.product_id
+            inner join ifx_projectorganization po on p.id=po.project_id
+            inner join nanites_organization o on po.organization_id=o.id
+            inner join account a on o.id=a.organization_id
+            inner join user_account ua on ua.account_id = a.id
+            left join nanites_org_relation rel on rel.child_id = o.id
+            left join nanites_organization parent on parent.id = rel.parent_id
+        union
+        select
+            p.title as project,
+            o.name as organization,
+            r.name as resource,
+            al.id as allocation_id,
+            '' as account,
+            parent.name as parent
         from
             project_project p
             inner join allocation_allocation al on al.project_id = p.id
@@ -202,7 +223,7 @@ def get_resource_allocation_authorization_map():
     cursor = connection.cursor()
     cursor.execute(sql)
     result = [
-        ['Project', 'Organization', 'Parent', 'Resource', 'Allocation ID', 'Account']
+        ['Project', 'Organization', 'Resource', 'Allocation ID', 'Account', 'Parent']
     ]
     for row in cursor.fetchall():
         result.append(row)
