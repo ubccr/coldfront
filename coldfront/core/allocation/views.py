@@ -119,7 +119,6 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         return False
 
     def get_context_data(self, **kwargs):
-        bytes_in_tb = 1099511627776
         context = super().get_context_data(**kwargs)
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
@@ -163,6 +162,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         else:
             context['is_allowed_to_update_project'] = False
 
+        bytes_in_tb = 1099511627776
         allocation_quota_tb = next((a for a in attributes_with_usage if a.allocation_attribute_type.name == "Storage Quota (TB)"
         ), "None")
         allocation_usage_tb = float(allocation_quota_tb.allocationattributeusage.value)
@@ -180,17 +180,13 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context['allocation_usage_bytes'] = allocation_usage_tb*bytes_in_tb if allocation_usage_tb != 0 \
                     else user_usage_sum
 
-
-        context['allocation_quota_tb'] = allocation_quota_tb
-        context['allocation_usage_tb'] = allocation_usage_tb if allocation_usage_tb != 0 else .00001
-
         context['guage_data'] = guage_data
         context['attributes_with_usage'] = attributes_with_usage
         context['attributes'] = attributes
 
         # set price
         tier = allocation_obj.get_resources_as_string.split("/")[1]
-        price_dict = {"tier0":4.16, "tier1":20.80, "tier3":.41}
+        price_dict = {"tier0":4.16, "tier1":20.80, "tier2": 100/12, "tier3":.41}
         context['price'] = price_dict[tier]
 
         # Can the user update the project?
@@ -1419,28 +1415,24 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
         allocation_users = allocation_obj.allocationuser_set.exclude(
-            status__name__in=['Removed']).order_by('user__username')
+            status__name__in=['Removed']).exclude(usage_bytes__isnull=True).order_by('user__username')
 
         if self.request.user.is_superuser:
-            attributes_with_usage = [attribute for attribute in allocation_obj.allocationattribute_set.all(
-            ).order_by('allocation_attribute_type__name') if hasattr(attribute, 'allocationattributeusage')]
-
-            attributes = [attribute for attribute in allocation_obj.allocationattribute_set.all(
-            ).order_by('allocation_attribute_type__name')]
-
+            alloc_attr_set = allocation_obj.allocationattribute_set.\
+                            all().order_by('allocation_attribute_type__name')
         else:
-            attributes_with_usage = [attribute for attribute in allocation_obj.allocationattribute_set.filter(
-                allocation_attribute_type__is_private=False) if hasattr(attribute, 'allocationattributeusage')]
+            alloc_attr_set = allocation_obj.allocationattribute_set.\
+                            filter(allocation_attribute_type__is_private=False)
 
-            attributes = [attribute for attribute in allocation_obj.allocationattribute_set.filter(
-                allocation_attribute_type__is_private=False)]
+        attributes_with_usage = [a for a in alloc_attr_set if hasattr(a, 'allocationattributeusage')]
+        attributes = [a for a in alloc_attr_set]
 
         guage_data = []
         invalid_attributes = []
         for attribute in attributes_with_usage:
             try:
                 guage_data.append(generate_guauge_data_from_usage(attribute.allocation_attribute_type.name,
-                                                                float(attribute.value), float(attribute.allocationattributeusage.value)))
+                            float(attribute.value), float(attribute.allocationattributeusage.value)))
             except ValueError:
                 logger.error("Allocation attribute '%s' is not an int but has a usage",
                             attribute.allocation_attribute_type.name)
@@ -1461,9 +1453,33 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
         else:
             context['is_allowed_to_update_project'] = False
 
+
+        bytes_in_tb = 1099511627776
+        allocation_quota_tb = next((a for a in attributes_with_usage if a.allocation_attribute_type.name == "Storage Quota (TB)"
+        ), "None")
+        allocation_usage_tb = float(allocation_quota_tb.allocationattributeusage.value)
+
+        # usage_bytes_list written the way it should work
+        usage_bytes_list = [u.usage_bytes for u in allocation_users]
+        user_usage_sum = sum(usage_bytes_list)
+
+        allocation_quota_in_tb = float(allocation_quota_tb.value)
+        #context['allocation_quota_tb'] = allocation_quota_in_tb
+        #context['allocation_usage_tb'] = allocation_usage_tb if allocation_usage_tb != 0 \
+        #            else user_usage_sum/bytes_in_tb
+
+        context['allocation_quota_bytes'] = float(allocation_quota_in_tb)*bytes_in_tb
+        context['allocation_usage_bytes'] = allocation_usage_tb*bytes_in_tb if allocation_usage_tb != 0 \
+                    else user_usage_sum
+
         context['guage_data'] = guage_data
         context['attributes_with_usage'] = attributes_with_usage
         context['attributes'] = attributes
+
+        # set price
+        tier = allocation_obj.get_resources_as_string.split("/")[1]
+        price_dict = {"tier0":4.16, "tier1":20.80, "tier2": 100/12, "tier3":.41}
+        context['price'] = price_dict[tier]
 
         # Can the user update the project?
         if self.request.user.is_superuser:
@@ -1548,19 +1564,16 @@ class AllocationAddInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, Crea
         allocation_users = allocation_obj.allocationuser_set.exclude(
             status__name__in=['Removed']).order_by('user__username')
 
+        # set visible usage attributes
         if self.request.user.is_superuser:
-            attributes_with_usage = [attribute for attribute in allocation_obj.allocationattribute_set.all(
-            ).order_by('allocation_attribute_type__name') if hasattr(attribute, 'allocationattributeusage')]
-
-            attributes = [attribute for attribute in allocation_obj.allocationattribute_set.all(
-            ).order_by('allocation_attribute_type__name')]
-
+            alloc_attr_set = allocation_obj.allocationattribute_set.\
+                            all().order_by('allocation_attribute_type__name')
         else:
-            attributes_with_usage = [attribute for attribute in allocation_obj.allocationattribute_set.filter(
-                allocation_attribute_type__is_private=False) if hasattr(attribute, 'allocationattributeusage')]
+            alloc_attr_set = allocation_obj.allocationattribute_set.\
+                            filter(allocation_attribute_type__is_private=False)
 
-            attributes = [attribute for attribute in allocation_obj.allocationattribute_set.filter(
-                allocation_attribute_type__is_private=False)]
+        attributes_with_usage = [a for a in alloc_attr_set if hasattr(a, 'allocationattributeusage')]
+        attributes = [a for a in alloc_attr_set]
 
         guage_data = []
         invalid_attributes = []

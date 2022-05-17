@@ -99,7 +99,7 @@ Allocation Detail
             <tr>
                 <th  style="background-color:#D3D3D3" bordercolor="red" scope="row" class="text-nowrap">Total Amount Due:	</th>
 
-                <td style="background-color:#D3D3D3">${{allocation_quota_bytes|div:1099511627776|mul:50| div:12|floatformat:2}}</td>
+                <td style="background-color:#D3D3D3">${{allocation_quota_bytes|div:1099511627776|mul:price|floatformat:2}}</td>
               </tr>
           <tr>
           <tr>
@@ -228,7 +228,7 @@ Allocation Detail
 
               <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
               <td data-sort = "{{user.usage_bytes}}" name = "usage_bytes">{{ user.usage }}{{ user.unit }}</td>
-              <td>{{user.usage_bytes|div:1099511627776|div:allocation_usage_tb|mul:100|floatformat:2 }}</td>
+              <td>{{user.usage_bytes|div:allocation_usage_bytes|mul:100|floatformat:2 }}</td>
               <td>{{user.usage_bytes|div:1099511627776|mul:price|floatformat:2}}</td>
             </tr>
 
