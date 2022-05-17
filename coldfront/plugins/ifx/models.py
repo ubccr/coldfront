@@ -158,6 +158,7 @@ def get_resource_allocation_authorization_map():
         select
             p.title as project,
             o.name as organization,
+            parent.name as parent,
             r.name as resource,
             al.id as allocation_id,
             a.name as account
@@ -172,12 +173,15 @@ def get_resource_allocation_authorization_map():
             left join nanites_organization o on po.organization_id=o.id
             left join account a on o.id=a.organization_id
             left join user_product_account upa on upa.account_id = a.id
+            left join nanites_org_relation rel on rel.child_id = o.id
+            left join nanites_organization parent on parent.id = rel.parent_id
         where
             exists (select 1 from user_product_account upa where upa.account_id = a.id and upa.product_id=pr.id)
         union
         select
             p.title as project,
             o.name as organization,
+            parent.name as parent,
             r.name as resource,
             al.id as allocation_id,
             '' as account
@@ -190,13 +194,15 @@ def get_resource_allocation_authorization_map():
             inner join product pr on pr.id = ipr.product_id
             left join ifx_projectorganization po on p.id=po.project_id
             left join nanites_organization o on po.organization_id=o.id
+            left join nanites_org_relation rel on rel.child_id = o.id
+            left join nanites_organization parent on parent.id = rel.parent_id
         where
             not exists (select 1 from user_product_account upa where upa.product_id=pr.id)
     '''
     cursor = connection.cursor()
     cursor.execute(sql)
     result = [
-        ['Project', 'Organization', 'Resource', 'Allocation ID', 'Account']
+        ['Project', 'Organization', 'Parent', 'Resource', 'Allocation ID', 'Account']
     ]
     for row in cursor.fetchall():
         result.append(row)
