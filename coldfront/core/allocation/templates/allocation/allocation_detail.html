@@ -90,16 +90,16 @@ Allocation Detail
             </tr>
             <tr>
                 <th scope="row" class="text-nowrap">Total Usage (TB):</th>
-                <td>{{ allocation_usage_tb|floatformat:2 }}</td>
+                <td>{{ allocation_usage_bytes|div:1099511627776|floatformat:2 }}</td>
             </tr>
             <tr>
                 <th scope="row" class="text-nowrap">Quota (TB):</th>
-                <td id = "group_quota">{{ allocation_quota_tb.value|floatformat:2 }}</td>
+                <td id = "group_quota">{{ allocation_quota_bytes|div:1099511627776|floatformat:2 }}</td>
             </tr>
             <tr>
                 <th  style="background-color:#D3D3D3" bordercolor="red" scope="row" class="text-nowrap">Total Amount Due:	</th>
 
-                <td style="background-color:#D3D3D3">${{allocation_quota_tb.value|mul:50| div:12|floatformat:2}}</td>
+                <td style="background-color:#D3D3D3">${{allocation_quota_bytes|div:1099511627776|mul:price|floatformat:2}}</td>
               </tr>
           <tr>
           <tr>
@@ -212,7 +212,7 @@ Allocation Detail
 
             <th scope="col">Logical Usage</th>
             <th scope="col">Percentage Usage</th>
-            <th scope="col">Cost Per user (TB/month)</th>
+            <th scope="col">Cost Per User (TB/month)</th>
 
 
             <!-- <th scope="col">Status</th> -->
@@ -228,8 +228,8 @@ Allocation Detail
 
               <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
               <td data-sort = "{{user.usage_bytes}}" name = "usage_bytes">{{ user.usage }}{{ user.unit }}</td>
-              <td>{{user.usage_bytes|div:1099511627776|div:allocation_usage_tb|floatformat:2 }}</td>
-              <td>{{4.16|mul:allocation_quota_tb.value|mul:user.usage_bytes|div:1024|div:allocation_usage_tb|div:1073741824|floatformat:2}}</td>
+              <td>{{user.usage_bytes|div:allocation_usage_bytes|mul:100|floatformat:2 }}</td>
+              <td>{{user.usage_bytes|div:1099511627776|mul:price|floatformat:2}}</td>
             </tr>
 
           {% endfor %}
