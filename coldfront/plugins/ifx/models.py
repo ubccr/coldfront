@@ -154,6 +154,14 @@ def get_resource_allocation_authorization_map():
     What labs have what auth for products, in tall skinny form, ready for Excel Pivot Table
     All projects / organizations are returned along with any allocations and expense code authorizations
     '''
+
+    # Three sections of query
+    # 1. Groups with user product account authorizations
+    # 2. Groups with user account authorizations (which cover all products / resources)
+    # 3. Groups with neither user product account or user account authorizations
+    #
+    # project_organizations are left joined so that we can find the unmapped projects
+    # parent orgs are left joined, since many of those are not mapped
     sql = '''
         select
             p.title as project,
@@ -218,7 +226,21 @@ def get_resource_allocation_authorization_map():
             left join nanites_org_relation rel on rel.child_id = o.id
             left join nanites_organization parent on parent.id = rel.parent_id
         where
-            not exists (select 1 from user_product_account upa where upa.product_id=pr.id)
+            not exists (
+                select 1
+                from
+                    user_product_account upa inner join account a on upa.account_id = a.id
+                where
+                    upa.product_id=pr.id and
+                    a.organization_id=o.id
+            ) and
+            not exists (
+                select 1
+                from
+                    user_account ua inner join account a on ua.account_id = a.id
+                where
+                    a.organization_id=o.id
+            )
     '''
     cursor = connection.cursor()
     cursor.execute(sql)
