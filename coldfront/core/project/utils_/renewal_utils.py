@@ -878,79 +878,6 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         self.request_obj.completion_time = utc_now_offset_aware()
         self.request_obj.save()
 
-    def deactivate_pre_project(self):
-        """Deactivate the request's pre_project, which involves setting
-        its status to 'Inactive' and its corresponding 'CLUSTER_NAME
-        Compute' Allocation's status to 'Expired', unless either of the
-        following is true:
-            (a) The pre_project has been renewed during this
-                AllocationPeriod, or
-            (b) A different PI made an approved and complete request to
-                pool with the pre_project.
-
-        If the pre_project is None, do nothing."""
-        request = self.request_obj
-        pre_project = request.pre_project
-        if not pre_project:
-            logger.info(
-                f'AllocationRenewalRequest {request.pk} has no pre-Project. '
-                f'Skipping deactivation.')
-            return
-
-        # TODO: Set this dynamically when supporting other types.
-        allocation_period = get_current_allowance_year_period()
-
-        # (a) If the pre_project has been renewed during this AllocationPeriod,
-        # do not deactivate it.
-        complete_renewal_request_status = \
-            AllocationRenewalRequestStatusChoice.objects.get(name='Complete')
-        completed_renewals = AllocationRenewalRequest.objects.filter(
-            allocation_period=allocation_period,
-            status=complete_renewal_request_status,
-            post_project=pre_project)
-        if completed_renewals.exists():
-            message = (
-                f'Project {pre_project.name} has been renewed during '
-                f'AllocationPeriod {allocation_period.name}. Skipping '
-                f'deactivation.')
-            logger.info(message)
-            return
-
-        # (b) If a different PI made an 'Approved - Complete' request to pool
-        # with the pre_project during this AllocationPeriod, do not deactivate
-        # it.
-        approved_complete_request_status = \
-            ProjectAllocationRequestStatusChoice.objects.get(
-                name='Approved - Complete')
-        approved_complete_pool_requests_from_other_pis = \
-            SavioProjectAllocationRequest.objects.filter(
-                Q(allocation_period=allocation_period) &
-                Q(allocation_type=SavioProjectAllocationRequest.FCA) &
-                ~Q(pi=request.pi) &
-                Q(pool=True) &
-                Q(project=pre_project),
-                Q(status=approved_complete_request_status))
-        if approved_complete_pool_requests_from_other_pis.exists():
-            message = (
-                f'Project {pre_project.name} has been pooled with by a '
-                f'different PI during AllocationPeriod '
-                f'"{allocation_period.name}". Skipping deactivation.')
-            logger.info(message)
-            return
-
-        pre_project.status = ProjectStatusChoice.objects.get(
-            name='Inactive')
-        pre_project.save()
-        allocation = get_project_compute_allocation(pre_project)
-        allocation.status = AllocationStatusChoice.objects.get(
-            name='Expired')
-        allocation.save()
-        message = (
-            f'Set Project {pre_project.name}\'s status to '
-            f'{pre_project.status.name} and Allocation {allocation.pk}\'s '
-            f'status to {allocation.status.name}.')
-        logger.info(message)
-
     def demote_pi_to_user_on_pre_project(self):
         """If the pre_project is pooled (i.e., it has more than one PI),
         demote the PI from 'Principal Investigator' to 'User'.
@@ -994,7 +921,7 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
 
     def handle_unpooled_to_pooled(self):
         """Handle the case when the preference is to start pooling."""
-        self.deactivate_pre_project()
+        pass
 
     def handle_pooled_to_pooled_same(self):
         """Handle the case when the preference is to stay pooled with
@@ -1006,19 +933,16 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         the current project and start pooling with a different
         project."""
         self.demote_pi_to_user_on_pre_project()
-        self.deactivate_pre_project()
 
     def handle_pooled_to_unpooled_old(self):
         """Handle the case when the preference is to stop pooling and
         reuse another existing project owned by the PI."""
         self.demote_pi_to_user_on_pre_project()
-        self.deactivate_pre_project()
 
     def handle_pooled_to_unpooled_new(self):
         """Handle the case when the preference is to stop pooling and
         create a new project."""
         self.demote_pi_to_user_on_pre_project()
-        self.deactivate_pre_project()
 
     def send_email(self):
         """Send a notification email to the requester and PI."""
