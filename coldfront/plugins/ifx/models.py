@@ -218,7 +218,21 @@ def get_resource_allocation_authorization_map():
             left join nanites_org_relation rel on rel.child_id = o.id
             left join nanites_organization parent on parent.id = rel.parent_id
         where
-            not exists (select 1 from user_product_account upa where upa.product_id=pr.id)
+            not exists (
+                select 1
+                from
+                    user_product_account upa inner join account a on upa.account_id = a.id
+                where
+                    upa.product_id=pr.id and
+                    a.organization_id=o.id
+            ) and
+            not exists (
+                select 1
+                from
+                    user_account ua inner join account a on ua.account_id = a.id
+                where
+                    a.organization_id=o.id
+            )
     '''
     cursor = connection.cursor()
     cursor.execute(sql)
