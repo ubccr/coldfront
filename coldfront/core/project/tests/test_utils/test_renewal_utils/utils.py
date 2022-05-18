@@ -1,6 +1,7 @@
 from coldfront.api.statistics.utils import create_project_allocation
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttributeType
+from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.models import AllocationUser
@@ -17,6 +18,7 @@ from coldfront.core.project.utils_.renewal_utils import get_current_allowance_ye
 from coldfront.core.resource.models import Resource
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import utc_now_offset_aware
+from datetime import date
 from decimal import Decimal
 from django.contrib.auth.models import User
 from django.core import mail
@@ -51,6 +53,12 @@ class TestRunnerMixinBase(object):
         sys.stdout = sys.__stdout__
 
         self.allocation_period = get_current_allowance_year_period()
+
+        # Create a past AllocationPeriod.
+        AllocationPeriod.objects.create(
+            name='Allowance Year 2020 - 2021',
+            start_date=date(2020, 6, 1),
+            end_date=date(2021, 5, 31))
 
         # Create a requester user and multiple PI users.
         self.requester = User.objects.create(

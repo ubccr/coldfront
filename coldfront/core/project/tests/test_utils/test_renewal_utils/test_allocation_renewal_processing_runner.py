@@ -3,6 +3,7 @@ from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationAttributeUsage
+from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
 from coldfront.core.allocation.models import AllocationStatusChoice
@@ -11,7 +12,6 @@ from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.allocation.models import AllocationUserStatusChoice
 from coldfront.core.allocation.utils import get_project_compute_allocation
-from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
@@ -20,17 +20,17 @@ from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.tests.test_utils.test_renewal_utils.utils import TestRunnerMixinBase
 from coldfront.core.project.utils_.new_project_utils import SavioProjectProcessingRunner
 from coldfront.core.project.utils_.renewal_utils import AllocationRenewalProcessingRunner
+from coldfront.core.project.utils_.renewal_utils import get_next_allowance_year_period
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.user.models import UserProfile
+from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import utc_now_offset_aware
 from datetime import date
 from datetime import timedelta
 from decimal import Decimal
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.core import mail
-from django.db.models import Q
 from django.test import override_settings
 from django.test import TestCase
 
@@ -284,6 +284,42 @@ class TestRunnerMixin(TestRunnerMixinBase):
         project_user = project_users.first()
         self.assertEqual(project_user.status, active_status)
         self.assertEqual(project_user.role.name, 'Principal Investigator')
+
+    def test_request_allocation_period_not_ended_enforced(self):
+        """Test that the provided AllocationRenewalRequest's
+        AllocationPeriod must not have ended, or an exception will be
+        raised."""
+        allocation_period = AllocationPeriod.objects.filter(
+            name__startswith='Allowance Year',
+            end_date__lt=display_time_zone_current_date()).first()
+        self.request_obj.allocation_period = allocation_period
+        self.request_obj.save()
+        num_service_units = Decimal('0.00')
+        try:
+            AllocationRenewalProcessingRunner(
+                self.request_obj, num_service_units)
+        except AssertionError as e:
+            message = (
+                f'The request\'s AllocationPeriod already ended on '
+                f'{allocation_period.end_date}.')
+            self.assertEqual(str(e), message)
+
+    def test_request_allocation_period_started_enforced(self):
+        """Test that the provided AllocationRenewalRequest's
+        AllocationPeriod must have started, or an exception will be
+        raised."""
+        allocation_period = get_next_allowance_year_period()
+        self.request_obj.allocation_period = allocation_period
+        self.request_obj.save()
+        num_service_units = Decimal('0.00')
+        try:
+            AllocationRenewalProcessingRunner(
+                self.request_obj, num_service_units)
+        except AssertionError as e:
+            message = (
+                f'The request\'s AllocationPeriod does not start until '
+                f'{allocation_period.start_date}.')
+            self.assertEqual(str(e), message)
 
     def test_request_initial_approved_status_enforced(self):
         """Test that the provided AllocationRenewalRequest must be in
