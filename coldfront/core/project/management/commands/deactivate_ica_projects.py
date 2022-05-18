@@ -63,8 +63,6 @@ class Command(BaseCommand):
         allocation = accounting_allocation_objects.allocation
         current_allowance = \
             accounting_allocation_objects.allocation_attribute.value
-
-        change_reason = 'Resetting SUs for expired allocation.'
         updated_allowance = settings.ALLOCATION_MIN
 
         if dry_run:
@@ -74,8 +72,7 @@ class Command(BaseCommand):
                 f'from {current_allowance} to {updated_allowance}.')
             self.stdout.write(self.style.WARNING(message))
         else:
-            deactivate_project_and_allocation(
-                project, change_reason=change_reason)
+            deactivate_project_and_allocation(project)
             message = (
                 f'Deactivated Project {project.name} ({project.pk}), updated '
                 f'Allocation {allocation.pk}, and updated Service Units from '

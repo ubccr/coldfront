@@ -421,6 +421,9 @@ def deactivate_project_and_allocation(project, change_reason=None):
         - TypeError"""
     assert isinstance(project, Project)
 
+    if change_reason is None:
+        change_reason = 'Zeroing service units during allocation expiration.'
+
     project.status = ProjectStatusChoice.objects.get(name='Inactive')
 
     accounting_allocation_objects = get_accounting_allocation_objects(project)

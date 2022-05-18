@@ -173,7 +173,7 @@ class TestDeactivateICAProjects(TestSUBase):
         self.transactions_created(project, pre_time, post_time, 0.00)
 
         # test historical objects created and updated
-        reason = 'Resetting SUs for expired allocation.'
+        reason = 'Zeroing service units during allocation expiration.'
         post_length_dict = self.record_historical_objects_len(project)
         self.historical_objects_created(pre_length_dict, post_length_dict)
         self.historical_objects_updated(project, reason)
