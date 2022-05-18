@@ -154,6 +154,14 @@ def get_resource_allocation_authorization_map():
     What labs have what auth for products, in tall skinny form, ready for Excel Pivot Table
     All projects / organizations are returned along with any allocations and expense code authorizations
     '''
+
+    # Three sections of query
+    # 1. Groups with user product account authorizations
+    # 2. Groups with user account authorizations (which cover all products / resources)
+    # 3. Groups with neither user product account or user account authorizations
+    #
+    # project_organizations are left joined so that we can find the unmapped projects
+    # parent orgs are left joined, since many of those are not mapped
     sql = '''
         select
             p.title as project,
