@@ -859,6 +859,8 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
             self.create_cluster_access_request_for_requester(
                 requester_allocation_user)
 
+        self.update_pre_projects_of_future_period_requests()
+
         self.handle_by_preference()
         self.complete_request(self.num_service_units)
         self.send_email()
@@ -1041,3 +1043,49 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         pi = self.request_obj.pi
         pi.userprofile.is_pi = True
         pi.userprofile.save()
+
+    def update_pre_projects_of_future_period_requests(self):
+        """Update the pre_project fields of any 'Under Review',
+        same-allocation-type AllocationRenewalRequests under future
+        AllocationPeriods and under this request's PI to this request's
+        post_project.
+
+        This is necessary to cover the following case:
+            - A request R1 is made to go from Project A to B under
+              AllocationPeriod P1.
+            - A request R2 is made to go from Project A to C under
+              AllocationPeriod P2.
+            - R1 is processed first, potentially demoting the PI on
+              Project A, and promoting the PI on Project B.
+            - When R2 is processed, the PI must be demoted on Project B,
+              not Project A, before being promoted on Project C.
+
+        Warning: This only applies to pooling-eligible allocation types.
+        """
+        request_pk = self.request_obj.pk
+        pi = self.request_obj.pi
+        post_project = self.request_obj.post_project
+
+        # TODO: Set this dynamically when supporting other types.
+        allocation_type = 'fc_'
+
+        future_period_requests = AllocationRenewalRequest.objects.filter(
+            ~Q(pk=request_pk) &
+            ~Q(status__name__in=['Complete', 'Denied']) &
+            Q(allocation_period__start_date__gt=self.current_display_tz_date) &
+            Q(pre_project__name__startswith=allocation_type) &
+            Q(pi=pi) &
+            ~Q(pre_project=post_project))
+        if future_period_requests.exists():
+            message_template = (
+                f'Updated AllocationRenewalRequest {{0}}\'s pre_project from '
+                f'{{1}} to {post_project.pk} since AllocationRenewalRequest '
+                f'{request_pk} updated PI {pi.username}\'s active '
+                f'{allocation_type} Project to {post_project.name}.')
+            for future_period_request in future_period_requests:
+                tmp_pre_project = future_period_request.pre_project
+                future_period_request.pre_project = post_project
+                future_period_request.save()
+                message = message_template.format(
+                    future_period_request.pk, tmp_pre_project.pk)
+                logger.info(message)
