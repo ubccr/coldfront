@@ -1,0 +1,73 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+
+
+{% block title %}
+Remove Project Attribute
+{% endblock %}
+
+
+{% block content %}
+<h2>Removing project attribute from {{ project }}</h2>
+
+{% if formset %}
+  <div class="card border-light">
+    <div class="card-body">
+      <form action="{% url 'project-attribute-delete' project.pk %}" method="post">
+        {% csrf_token %}
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th>
+                  <input type="checkbox" class="check" id="selectAll">
+                </th>
+                <th scope="col">Type</th>
+                <th scope="col">Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for form in formset %}
+                <tr>
+                  <td>{{ form.selected }}</td>
+                  <td>{{ form.name.value }}</td>
+                  <td>{{ form.value.value }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {{ formset.management_form }}
+        <div>
+          <button type="submit" class="btn btn-danger"><i class="fas fa-minus" aria-hidden="true"></i> Delete Selected Attributes from
+            Project</button>
+          <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button"><i
+              class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a>
+          <br>
+        </div>
+      </form>
+    </div>
+  </div>
+{% else %}
+  <div class="alert alert-info">
+    No attributes to remove!
+  </div>
+  <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project.pk %}" role="button"><i
+      class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a>
+{% endif %}
+
+<script>
+  $("#selectAll").click(function () {
+    $("input[name^='attributeform-']").prop('checked', $(this).prop('checked'));
+  });
+
+  $("input[name^='attributeform-']").click(function (ele) {
+    var id = $(this).attr('id');
+    if (id != "selectAll") {
+      $("#selectAll").prop('checked', false);
+    }
+  });
+</script>
+{% endblock %}

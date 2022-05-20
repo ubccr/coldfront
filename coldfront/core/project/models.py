@@ -1,3 +1,4 @@
+from ast import literal_eval
 import datetime
 import textwrap
 
@@ -191,3 +192,75 @@ class ProjectUser(TimeStampedModel):
     class Meta:
         unique_together = ('user', 'project')
         verbose_name_plural = "Project User Status"
+
+
+class AttributeType(TimeStampedModel):
+    """ AttributeType. """
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]
+
+
+class ProjectAttributeType(TimeStampedModel):
+    attribute_type = models.ForeignKey(AttributeType, on_delete=models.CASCADE)
+    name = models.CharField(max_length=50)
+    has_usage = models.BooleanField(default=False)
+    is_required = models.BooleanField(default=False)
+    is_unique = models.BooleanField(default=False)
+    is_private = models.BooleanField(default=True)
+    is_changeable = models.BooleanField(default=False)
+    history = HistoricalRecords()
+
+    def __str__(self):
+        return '%s (%s)' % (self.name, self.attribute_type.name)
+
+    def __repr__(self) -> str:
+        return str(self)
+
+    class Meta:
+        ordering = ['name', ]
+
+
+class ProjectAttribute(TimeStampedModel):
+    proj_attr_type = models.ForeignKey(ProjectAttributeType, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    
+    value = models.CharField(max_length=128)
+    history = HistoricalRecords()
+
+    def clean(self):
+        if self.proj_attr_type.is_unique and self.allocation.allocationattribute_set.filter(proj_attr_type=self.proj_attr_type).exists():
+            raise ValidationError("'{}' attribute already exists for this allocation.".format(
+                self.proj_attr_type))
+
+        expected_value_type = self.proj_attr_type.attribute_type.name.strip()
+
+        if expected_value_type == "Int":
+            # Changed from the literal casting to try catch because certain invalid inputs could lead to SyntaxErrors and
+            # other errors.
+            try:
+                _ = int(self.value)
+            except ValueError:
+                raise ValidationError(
+                'Invalid Value "%s" for "%s". Value must be an integer.' % (self.value, self.proj_attr_type.name))
+        elif expected_value_type == "Float":
+            try:
+                _ = float(self.value)
+            except ValueError:
+                raise ValidationError(
+                    'Invalid Value "%s" for "%s". Value must be a float.' % (self.value, self.proj_attr_type.name))
+        elif expected_value_type == "Yes/No" and self.value not in ["Yes", "No"]:
+            raise ValidationError(
+                'Invalid Value "%s" for "%s". Allowed inputs are "Yes" or "No".' % (self.value, self.proj_attr_type.name))
+        elif expected_value_type == "Date":
+            try:
+                datetime.datetime.strptime(self.value.strip(), "%Y-%m-%d")
+            except ValueError:
+                raise ValidationError(
+                    'Invalid Value "%s" for "%s". Date must be in format YYYY-MM-DD' % (self.value, self.proj_attr_type.name))
+    
+    
