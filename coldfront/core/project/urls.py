@@ -16,6 +16,8 @@ urlpatterns = [
     path('<int:pk>/remove-users/', project_views.ProjectRemoveUsersView.as_view(), name='project-remove-users'),
     path('<int:pk>/user-detail/<int:project_user_pk>', project_views.ProjectUserDetail.as_view(), name='project-user-detail'),
     path('<int:pk>/review/', project_views.ProjectReviewView.as_view(), name='project-review'),
+    path('<int:pk>/project-attribute-create/', project_views.ProjectAttributeCreateView.as_view(), name='project-attribute-create'),
+    path('<int:pk>/project-attribute-delete/', project_views.ProjectAttributeDeleteView.as_view(), name='project-attribute-delete'),
     path('project-review-list', project_views.ProjectReviewListView.as_view(),name='project-review-list'),
     path('project-review-complete/<int:project_review_pk>/', project_views.ProjectReviewCompleteView.as_view(),
          name='project-review-complete'),

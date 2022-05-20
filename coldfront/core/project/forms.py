@@ -1,9 +1,11 @@
+from ast import Constant
+from cProfile import label
 import datetime
 
 from django import forms
 from django.shortcuts import get_object_or_404
 
-from coldfront.core.project.models import (Project, ProjectReview,
+from coldfront.core.project.models import (Project, ProjectAttribute, ProjectAttributeType, ProjectReview,
                                            ProjectUserRoleChoice)
 from coldfront.core.utils.common import import_from_settings
 
@@ -123,3 +125,60 @@ class ProjectReviewEmailForm(forms.Form):
             project_review_obj.project.pi.first_name, project_review_obj.project.pi.last_name, EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL)
         self.fields['cc'].initial = ', '.join(
             [EMAIL_DIRECTOR_EMAIL_ADDRESS] + EMAIL_ADMIN_LIST)
+
+
+class ProjectAttributeAddForm(forms.ModelForm):    
+    class Meta:
+        fields = '__all__'
+        model = ProjectAttribute
+        labels = {
+            'proj_attr_type' : "Attribute Type",
+        }
+
+class ProjectAttributeDeleteForm(forms.Form):
+    pk = forms.IntegerField(required=False, disabled=True)
+    name = forms.CharField(max_length=150, required=False, disabled=True)
+    value = forms.CharField(max_length=150, required=False, disabled=True)
+    selected = forms.BooleanField(initial=False, required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['pk'].widget = forms.HiddenInput()
+
+# class ProjectAttributeChangeForm(forms.Form):
+#     pk = forms.IntegerField(required=False, disabled=True)
+#     name = forms.CharField(max_length=150, required=False, disabled=True)
+#     value = forms.CharField(max_length=150, required=False, disabled=True)
+#     new_value = forms.CharField(max_length=150, required=False, disabled=False)
+
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.fields['pk'].widget = forms.HiddenInput()
+
+#     def clean(self):
+#         cleaned_data = super().clean()
+
+#         if cleaned_data.get('new_value') != "":
+#             proj_attr = ProjectAttribute.objects.get(pk=cleaned_data.get('pk'))
+#             proj_attr.value = cleaned_data.get('new_value')
+#             proj_attr.clean()
+
+
+# class ProjectAttributeUpdateForm(forms.Form):
+#     change_pk = forms.IntegerField(required=False, disabled=True)
+#     attribute_pk = forms.IntegerField(required=False, disabled=True)
+#     name = forms.CharField(max_length=150, required=False, disabled=True)
+#     value = forms.CharField(max_length=150, required=False, disabled=True)
+#     new_value = forms.CharField(max_length=150, required=False, disabled=False)
+
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.fields['change_pk'].widget = forms.HiddenInput()
+#         self.fields['attribute_pk'].widget = forms.HiddenInput()
+
+#     def clean(self):
+#         cleaned_data = super().clean()
+#         proj_attr = ProjectAttribute.objects.get(pk=cleaned_data.get('attribute_pk'))
+
+#         proj_attr.value = cleaned_data.get('new_value')
+#         proj_attr.clean()

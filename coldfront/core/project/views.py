@@ -1,5 +1,8 @@
 import datetime
+from pipes import Template
 import pprint
+import django
+from django import forms
 
 from django.conf import settings
 from django.contrib import messages
@@ -10,7 +13,7 @@ from coldfront.core.utils.common import import_from_settings
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
-from django.forms import formset_factory
+from django.forms import formset_factory, modelformset_factory
 from django.http import (HttpResponse, HttpResponseForbidden,
                          HttpResponseRedirect)
 from django.shortcuts import get_object_or_404, redirect, render
@@ -30,13 +33,19 @@ from coldfront.core.allocation.signals import (allocation_activate_user,
 from coldfront.core.grant.models import Grant
 from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectAddUsersToAllocationForm,
+                                          ProjectAttributeAddForm,
+                                          ProjectAttributeDeleteForm,
                                           ProjectRemoveUserForm,
                                           ProjectReviewEmailForm,
-                                          ProjectReviewForm, ProjectSearchForm,
+                                          ProjectReviewForm,
+                                          ProjectSearchForm,
                                           ProjectUserUpdateForm)
-from coldfront.core.project.models import (Project, ProjectReview,
+from coldfront.core.project.models import (Project,
+                                           ProjectAttribute,
+                                           ProjectReview,
                                            ProjectReviewStatusChoice,
-                                           ProjectStatusChoice, ProjectUser,
+                                           ProjectStatusChoice,
+                                           ProjectUser,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice)
 from coldfront.core.publication.models import Publication
@@ -125,6 +134,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['grants'] = Grant.objects.filter(
             project=self.object, status__name__in=['Active', 'Pending', 'Archived'])
         context['allocations'] = allocations
+        context['attributes'] = ProjectAttribute.objects.filter(project=self.object).order_by("value")
         context['project_users'] = project_users
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
 
@@ -1112,3 +1122,133 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
     def get_success_url(self):
         return reverse('project-review-list')
+
+
+class ProjectAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    model = ProjectAttribute
+    form_class = ProjectAttributeAddForm
+    template_name = 'project/project_attribute_create.html'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+
+        if self.request.user.is_superuser:
+            return True
+        else:
+            messages.error(
+                self.request, 'You do not have permission to add project attributes.')
+
+    def get_initial(self):
+        initial = super().get_initial()
+        pk = self.kwargs.get('pk')
+        initial['project'] = get_object_or_404(Project, pk=pk)
+        return initial
+
+    def get_form(self, form_class=None):
+        """Return an instance of the form to be used in this view."""
+        form = super().get_form(form_class)
+        form.fields['project'].widget = forms.HiddenInput()
+        return form
+
+    def get_context_data(self, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        context = super().get_context_data(*args, **kwargs)
+        context['project'] = get_object_or_404(Project, pk=pk)
+        return context
+
+    def get_success_url(self):
+        return reverse('project-detail', kwargs={'pk': self.object.project_id})
+
+
+class ProjectAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    model = ProjectAttribute
+    form_class = ProjectAttributeDeleteForm
+    template_name = 'project/project_attribute_delete.html'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+
+        if self.request.user.is_superuser:
+            return True
+        else:
+            messages.error(
+                self.request, 'You do not have permission to add project attributes.')
+    
+    def get_initial(self):
+        initial = super().get_initial()
+        pk = self.kwargs.get('pk')
+        initial['project'] = get_object_or_404(Project, pk=pk)
+        return initial
+
+    def get_form(self, form_class=None):
+        """Return an instance of the form to be used in this view."""
+        form = super().get_form(form_class)
+        form.fields['project'].widget = forms.HiddenInput()
+        return form
+
+    def get_avail_attrs(self, pk: int) -> list:
+        avail_attrs = ProjectAttribute.objects.filter(project_id=pk)
+        avail_attrs_dicts = [
+            {
+                'pk' : attr.pk,
+                'selected' : False,
+                'name' : str(attr.proj_attr_type),
+                'value' : attr.value
+            }
+
+            for attr in avail_attrs
+        ]
+
+        return avail_attrs_dicts
+
+    def get_context_data(self, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        context = super().get_context_data(*args, **kwargs)
+        context['project'] = get_object_or_404(Project, pk=pk)
+
+        avail_attrs = ProjectAttribute.objects.filter(project_id=pk)
+        proj_attr_formset = formset_factory(
+            ProjectAttributeDeleteForm,
+            max_num=len(avail_attrs)
+        )
+        formset = proj_attr_formset(
+            initial=self.get_avail_attrs(pk),
+            prefix="attributeform"
+        )
+
+        context['formset'] = formset
+        return context
+
+    def post(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        attr_to_delete = self.get_avail_attrs(pk)
+
+        formset = formset_factory(
+            ProjectAttributeDeleteForm,
+            max_num=len(attr_to_delete)
+            )
+        formset = formset(
+            request.POST,
+            initial=attr_to_delete,
+            prefix='attributeform'
+            )
+
+        attributes_deleted_count = 0
+
+        if formset.is_valid():
+            for form in formset:
+                form_data = form.cleaned_data
+                if form_data['selected']:
+                    attributes_deleted_count += 1
+
+                    proj_attr = ProjectAttribute.objects.get(
+                        pk=form_data['pk'])
+                    proj_attr.delete()
+
+            messages.success(request, 'Deleted {} attributes from project.'.format(
+                attributes_deleted_count))
+        else:
+            for error in formset.errors:
+                messages.error(request, error)
+        
+        return reverse('project-detail', kwargs={'pk': pk})
