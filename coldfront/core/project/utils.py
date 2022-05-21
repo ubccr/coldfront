@@ -426,7 +426,8 @@ def deactivate_project_and_allocation(project, change_reason=None):
 
     project.status = ProjectStatusChoice.objects.get(name='Inactive')
 
-    accounting_allocation_objects = get_accounting_allocation_objects(project)
+    accounting_allocation_objects = get_accounting_allocation_objects(
+        project, enforce_allocation_active=False)
     allocation = accounting_allocation_objects.allocation
     allocation.status = AllocationStatusChoice.objects.get(name='Expired')
     allocation.start_date = display_time_zone_current_date()
