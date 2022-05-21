@@ -1,3 +1,4 @@
+from coldfront.api.statistics.utils import get_accounting_allocation_objects
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
@@ -40,7 +41,8 @@ class Command(BaseCommand):
         add_argparse_dry_run_argument(parser)
 
     def handle(self, *args, **options):
-        """TODO"""
+        """Perform allocation-type-specific handling for the given
+        AllocationPeriod."""
         allocation_period_id = options['allocation_period_id']
         try:
             allocation_period = AllocationPeriod.objects.get(
@@ -65,19 +67,46 @@ class Command(BaseCommand):
                 self.handle_instructional_period(allocation_period, dry_run)
 
     def deactivate_projects(self, projects, dry_run):
-        """Deactivate the given queryset of Projects. Return whether
-        all deactivations succeeded.
+        """Deactivate the given queryset of Projects. Return the number
+        of deactivations that succeeded.
 
         Optionally display updates instead of performing them."""
-        # TODO: dry_run: ensure that expected objects exist.
-        success = True
+        num_successes = 0
         for project in projects:
-            try:
-                deactivate_project_and_allocation(project)
-            except Exception as e:
-                # TODO
-                success = False
-        return success
+            if dry_run:
+                # Retrieve expected database objects to check that they exist.
+                try:
+                    get_accounting_allocation_objects(project)
+                except Exception as e:
+                    message = (
+                        f'Failed to retrieve expected accounting objects for '
+                        f'Project {project.pk} ({project.name}).')
+                    self.stderr.write(self.style.ERROR(message))
+                    log_message = message + f' Details:\n{e}'
+                    self.logger.exception(log_message)
+                else:
+                    num_successes = num_successes + 1
+                    message = (
+                        f'Would deactivate Project {project.pk} '
+                        f'({project.name}) and reset Service Units.')
+                    self.stdout.write(self.style.WARNING(message))
+            else:
+                try:
+                    deactivate_project_and_allocation(project)
+                except Exception as e:
+                    message = (
+                        f'Failed to deactivate Project {project.pk} '
+                        f'({project.name}).')
+                    self.stderr.write(self.style.ERROR(message))
+                    log_message = message + f' Details:\n{e}'
+                    self.logger.exception(log_message)
+                else:
+                    num_successes = num_successes + 1
+                    message = (
+                        f'Deactivated Project {project.pk} ({project.name}) '
+                        f'and reset Service Units.')
+                    self.stdout.write(self.style.SUCCESS(message))
+        return num_successes
 
     def handle_allowance_year_period(self, allocation_period, dry_run):
         """Deactivate all FCA and PCA projects, whose prior
@@ -85,21 +114,32 @@ class Command(BaseCommand):
         process all requests for new projects and allocation renewals
         that are scheduled for this period.
 
+        If any deactivations fail, do not proceed with processing
+        requests.
+
         Optionally display updates instead of performing them."""
+        fc_projects = Project.objects.filter(
+            name__startswith='fc_', status__name='Active')
+        fc_num_projects = fc_projects.count()
+        fc_num_successes = self.deactivate_projects(fc_projects, dry_run)
+        fc_num_failures = fc_num_projects - fc_num_successes
 
-        fc_projects = Project.objects.filter(name__startswith='fc_')
-        fc_deactivations_successful = self.deactivate_projects(
-            fc_projects, dry_run)
+        pc_projects = Project.objects.filter(
+            name__startswith='pc_', status__name='Active')
+        pc_num_projects = pc_projects.count()
+        pc_num_successes = self.deactivate_projects(pc_projects, dry_run)
+        pc_num_failures = pc_num_projects - pc_num_successes
 
-        pc_projects = Project.objects.filter(name__startswith='pc_')
-        pc_deactivations_successful = self.deactivate_projects(
-            pc_projects, dry_run)
-
-        # TODO
-        if not fc_deactivations_successful:
-            raise CommandError()
-        if not pc_deactivations_successful:
-            raise CommandError()
+        failure_messages = []
+        if fc_num_failures > 0:
+            failure_messages.append(
+                f'{fc_num_failures}/{fc_num_projects} FCA Projects')
+        if pc_num_failures > 0:
+            failure_messages.append(
+                f'{pc_num_failures}/{pc_num_projects} PCA Projects')
+        if failure_messages:
+            raise CommandError(
+                f'Failed to deactivate {" and ".join(failure_messages)}.')
 
         self.process_new_project_requests(allocation_period, dry_run)
         self.process_allocation_renewal_requests(allocation_period, dry_run)
@@ -121,12 +161,14 @@ class Command(BaseCommand):
             ).values_list('project__pk', flat=True))
         ic_projects = Project.objects.filter(
             pk__in=expired_instructional_project_pks)
-        ic_deactivations_successful = self.deactivate_projects(
-            ic_projects, dry_run)
+        ic_num_projects = ic_projects.count()
+        ic_num_successes = self.deactivate_projects(ic_projects, dry_run)
+        ic_num_failures = ic_num_projects - ic_num_successes
 
-        # TODO
-        if not ic_deactivations_successful:
-            raise CommandError()
+        if ic_num_failures > 0:
+            raise CommandError(
+                f'Failed to deactivate {ic_num_failures}/{ic_num_projects} '
+                f'ICA Projects.')
 
         self.process_new_project_requests(allocation_period, dry_run)
         self.process_allocation_renewal_requests(allocation_period, dry_run)
