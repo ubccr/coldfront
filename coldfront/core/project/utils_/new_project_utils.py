@@ -316,6 +316,8 @@ class SavioProjectApprovalRunner(ProjectApprovalRunner):
         validate_num_service_units(num_service_units)
         self.num_service_units = num_service_units
         super().__init__(request_obj)
+        if self.request_obj.allocation_period:
+            self.request_obj.allocation_period.assert_not_ended()
         # Note: send_email is already the name of a method.
         self.can_send_email = bool(send_email)
 
@@ -352,6 +354,9 @@ class SavioProjectProcessingRunner(ProjectProcessingRunner):
         validate_num_service_units(num_service_units)
         self.num_service_units = num_service_units
         super().__init__(request_obj)
+        if self.request_obj.allocation_period:
+            self.request_obj.allocation_period.assert_started()
+            self.request_obj.allocation_period.assert_not_ended()
 
     def update_allocation(self):
         """Perform allocation-related handling."""
