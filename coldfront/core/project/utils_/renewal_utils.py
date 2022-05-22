@@ -514,14 +514,6 @@ class AllocationRenewalRunnerBase(object):
     def run(self):
         raise NotImplementedError('This method is not implemented.')
 
-    def assert_request_allocation_period_not_ended(self):
-        """Raise an assertion error if the request's AllocationPeriod
-        has ended."""
-        end_date = self.request_obj.allocation_period.end_date
-        message = (
-            f'The request\'s AllocationPeriod already ended on {end_date}.')
-        assert self.current_display_tz_date <= end_date, message
-
     def assert_request_not_status(self, unexpected_status):
         """Raise an assertion error if the request has the given
         unexpected status."""
@@ -692,7 +684,7 @@ class AllocationRenewalApprovalRunner(AllocationRenewalRunnerBase):
 
     def __init__(self, request_obj, num_service_units, send_email=False):
         super().__init__(request_obj)
-        self.assert_request_allocation_period_not_ended()
+        self.request_obj.allocation_period.assert_not_ended()
         expected_status = AllocationRenewalRequestStatusChoice.objects.get(
             name='Under Review')
         self.assert_request_status(expected_status)
@@ -827,8 +819,8 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
 
     def __init__(self, request_obj, num_service_units):
         super().__init__(request_obj)
-        self.assert_request_allocation_period_started()
-        self.assert_request_allocation_period_not_ended()
+        self.request_obj.allocation_period.assert_started()
+        self.request_obj.allocation_period.assert_not_ended()
         expected_status = AllocationRenewalRequestStatusChoice.objects.get(
             name='Approved')
         self.assert_request_status(expected_status)
@@ -874,15 +866,6 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         project.status = status
         project.save()
         return project
-
-    def assert_request_allocation_period_started(self):
-        """Raise an assertion error if the request's AllocationPeriod
-        has not started."""
-        start_date = self.request_obj.allocation_period.start_date
-        message = (
-            f'The request\'s AllocationPeriod does not start until '
-            f'{start_date}.')
-        assert start_date <= self.current_display_tz_date, message
 
     def complete_request(self, num_service_units):
         """Set the status of the request to 'Complete', set its number

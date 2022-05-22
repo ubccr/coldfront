@@ -302,7 +302,7 @@ class TestRunnerMixin(TestRunnerMixinBase):
                 self.request_obj, num_service_units)
         except AssertionError as e:
             message = (
-                f'The request\'s AllocationPeriod already ended on '
+                f'AllocationPeriod already ended on '
                 f'{allocation_period.end_date}.')
             self.assertEqual(str(e), message)
 
@@ -319,7 +319,7 @@ class TestRunnerMixin(TestRunnerMixinBase):
                 self.request_obj, num_service_units)
         except AssertionError as e:
             message = (
-                f'The request\'s AllocationPeriod does not start until '
+                f'AllocationPeriod does not start until '
                 f'{allocation_period.start_date}.')
             self.assertEqual(str(e), message)
 
