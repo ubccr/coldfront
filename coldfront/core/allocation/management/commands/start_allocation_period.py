@@ -14,7 +14,11 @@ from coldfront.core.utils.common import display_time_zone_current_date
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
+from django.db.models import Case
+from django.db.models import CharField
 from django.db.models import Q
+from django.db.models import Value
+from django.db.models import When
 
 from flags.state import flag_enabled
 
@@ -222,9 +226,22 @@ class Command(BaseCommand):
         performing them."""
         model = AllocationRenewalRequest
         runner_class = AllocationRenewalProcessingRunner
+
+        fca = SavioProjectAllocationRequest.FCA
+        ica = SavioProjectAllocationRequest.ICA
+        pca = SavioProjectAllocationRequest.PCA
+        allocation_type_case = Case(
+            When(post_project__name__startswith='fc_', then=Value(fca)),
+            When(post_project__name__startswith='ic_', then=Value(ica)),
+            When(post_project__name__startswith='pc_', then=Value(pca)),
+            default=Value('Invalid'),
+            output_field=CharField())
+
         eligible_requests = model.objects.filter(
             allocation_period=allocation_period,
-            status__name='Approved')
+            status__name='Approved'
+        ).annotate(
+            allocation_type=allocation_type_case)
         self.process_requests(model, runner_class, eligible_requests, dry_run)
 
     def process_new_project_requests(self, allocation_period, dry_run):
@@ -248,6 +265,8 @@ class Command(BaseCommand):
 
         for request in requests:
             try:
+                # Note: AllocationRenewalRequests do not have allocation_types,
+                # so the queryset must be annotated beforehand.
                 allocation_type = request.allocation_type
                 if allocation_type == SavioProjectAllocationRequest.FCA:
                     num_service_units = prorated_allocation_amount(
@@ -270,9 +289,8 @@ class Command(BaseCommand):
                 num_failures = num_failures + 1
                 message = (
                     f'Failed to compute service units to grant to '
-                    f'{model_name} {request.pk}. Details:')
+                    f'{model_name} {request.pk}: {e}')
                 self.stderr.write(self.style.ERROR(message))
-                self.stderr.write(self.style.ERROR(e))
                 continue
 
             try:
@@ -296,10 +314,8 @@ class Command(BaseCommand):
                 except Exception as e:
                     num_failures = num_failures + 1
                     message = (
-                        f'Failed to process {model_name} {request.pk}. '
-                        f'Details:')
+                        f'Failed to process {model_name} {request.pk}: {e}')
                     self.stderr.write(self.style.ERROR(message))
-                    self.stderr.write(self.style.ERROR(e))
                     self.logger.exception(e)
                 else:
                     num_successes = num_successes + 1
