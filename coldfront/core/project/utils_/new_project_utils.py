@@ -367,10 +367,11 @@ class SavioProjectProcessingRunner(ProjectProcessingRunner):
 
         allocation = get_project_compute_allocation(project)
         allocation.status = AllocationStatusChoice.objects.get(name='Active')
-        # If this is a new Project, set its Allocation's dates.
+        # If this is a new Project, set its Allocation's start dates. Always
+        # set its end date.
         if not pool:
             allocation.start_date = display_time_zone_current_date()
-            allocation.end_date = getattr(allocation_period, 'end_date', None)
+        allocation.end_date = getattr(allocation_period, 'end_date', None)
         allocation.save()
 
         # Set the allocation's allocation type.
