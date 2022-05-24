@@ -76,6 +76,28 @@ def get_next_allowance_year_period():
         start_date__gt=date).first()
 
 
+def get_previous_allowance_year_period():
+    """Return the AllocationPeriod representing the previous allowance
+    year, of which there should be at most one.
+
+    Parameters:
+        - None
+
+    Returns:
+        - An AllocationPeriod object, or None.
+
+    Raises:
+        - None
+    """
+    date = display_time_zone_current_date()
+    allocation_periods = AllocationPeriod.objects.filter(
+        name__startswith='Allowance Year',
+        end_date__lt=date)
+    if not allocation_periods.exists():
+        return None
+    return allocation_periods.latest('end_date')
+
+
 def get_pi_current_active_fca_project(pi_user):
     """Given a User object representing a PI, return its current,
     active fc_ Project.
