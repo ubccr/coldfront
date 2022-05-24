@@ -467,6 +467,59 @@ class TestStartAllocationPeriod(TestBase):
             AllocationRenewalRequest.objects.filter(
                 status__name='Complete').count())
 
+    def test_multiple_runs_avoid_redundant_work(self):
+        """Test that running the command multiple times does not
+        re-deactivate Projects or re-process already completed
+        requests."""
+        allocation_period_id = self.current_allowance_year.id
+
+        # Run the command the first time,
+        output, error = self.call_command(allocation_period_id, dry_run=False)
+        self.assertTrue(output)
+        self.assertFalse(error)
+
+        fc_existing = Project.objects.get(name='fc_existing')
+        fc_existing_str = (
+            f'Deactivated Project {fc_existing.id} ({fc_existing.name})')
+        self.assertIn(fc_existing_str, output)
+
+        pc_existing = Project.objects.get(name='pc_existing')
+        pc_existing_str = (
+            f'Deactivated Project {pc_existing.id} ({pc_existing.name})')
+        self.assertIn(pc_existing_str, output)
+
+        fc_new_request = SavioProjectAllocationRequest.objects.get(
+            project=Project.objects.get(name='fc_new'))
+        fc_new_request_str = (
+            f'Processed SavioProjectAllocationRequest {fc_new_request.id}')
+        self.assertIn(fc_new_request_str, output)
+
+        pc_new_request = SavioProjectAllocationRequest.objects.get(
+            project=Project.objects.get(name='pc_new'))
+        pc_new_request_str = (
+            f'Processed SavioProjectAllocationRequest {pc_new_request.id}')
+        self.assertIn(pc_new_request_str, output)
+
+        fc_renewal_request = AllocationRenewalRequest.objects.get(
+            post_project=fc_existing)
+        fc_renewal_request_str = (
+            f'Processed AllocationRenewalRequest {fc_renewal_request.id}')
+        self.assertIn(fc_renewal_request_str, output)
+
+        # The Projects should not appear in a subsequent run because their end
+        # dates are no longer less than the start date of the AllocationPeriod.
+        # The requests should not appear because they are in a completed state.
+        output, error = self.call_command(allocation_period_id, dry_run=False)
+        self.assertNotIn('Deactivated', output)
+        self.assertNotIn(fc_existing_str, output)
+        self.assertNotIn(pc_existing_str, output)
+        self.assertNotIn(fc_new_request_str, output)
+        self.assertNotIn(pc_new_request_str, output)
+        self.assertNotIn(fc_renewal_request_str, output)
+        self.assertIn('Processed 0 SavioProjectAllocationRequests', output)
+        self.assertIn('Processed 0 AllocationRenewalRequests', output)
+        self.assertFalse(error)
+
     def test_output_for_allowance_year_period(self):
         """Test that the messages written to stdout and stderr are
         exactly the ones expected for an AllocationPeriod representing

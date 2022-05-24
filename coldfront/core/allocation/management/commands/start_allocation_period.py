@@ -121,6 +121,7 @@ class Command(BaseCommand):
                         f'Deactivated Project {project.pk} ({project.name}) '
                         f'and reset Service Units.')
                     self.stdout.write(self.style.SUCCESS(message))
+                    self.logger.info(message)
         return num_successes
 
     @staticmethod
@@ -142,7 +143,7 @@ class Command(BaseCommand):
             raise ValueError(f'Unexpected allocation type: {allocation_type}.')
         expired_project_pks = set(
             Allocation.objects.filter(
-                (Q(end_date__isnull=False) |
+                (Q(end_date__isnull=True) |
                  Q(end_date__lt=allocation_period.start_date)) &
                 Q(project__name__startswith=prefix) &
                 Q(project__status__name='Active') &
