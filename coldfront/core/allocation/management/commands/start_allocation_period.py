@@ -184,6 +184,8 @@ class Command(BaseCommand):
                 raise CommandError(
                     f'Failed to deactivate {" and ".join(failure_messages)}.')
 
+        # New project requests should be processed prior to renewal requests,
+        # since a renewal request may depend on a new project request.
         self.process_new_project_requests(allocation_period, dry_run)
         self.process_allocation_renewal_requests(allocation_period, dry_run)
 
@@ -304,7 +306,8 @@ class Command(BaseCommand):
                 continue
 
             message_template = (
-                f'{{0}} {model_name} with {num_service_units} service units.')
+                f'{{0}} {model_name} {request.pk} with {num_service_units} '
+                f'service units.')
             if dry_run:
                 message = message_template.format('Would process')
                 self.stdout.write(self.style.WARNING(message))
