@@ -414,6 +414,59 @@ class TestStartAllocationPeriod(TestBase):
                 self.call_command(_id)
             self.assertIn('is not current', str(cm.exception))
 
+    def test_failed_deactivations_preempt_processing(self):
+        """Test that, if one or more Projects fail to be deactivated,
+        request processing does not proceed."""
+
+        def assert_outcome(_id, error_message):
+            """Assert that the command raises an exception for the
+            AllocationPeriod with the given ID, including the given
+            error message, for both dry runs and non-dry runs."""
+            path = (
+                'coldfront.core.allocation.management.commands.'
+                'start_allocation_period')
+            dry_run_and_methods_to_patch = [
+                (True, f'{path}.get_accounting_allocation_objects'),
+                (False, f'{path}.deactivate_project_and_allocation'),
+            ]
+            for dry_run, method_to_patch in dry_run_and_methods_to_patch:
+                with patch(method_to_patch) as patched_method:
+                    patched_method.side_effect = raise_exception
+                    with self.assertRaises(CommandError) as cm:
+                        self.call_command(_id, dry_run=dry_run)
+                    self.assertEqual(error_message, str(cm.exception))
+
+        # Retrieve the numbers of deactivated Projects and complete requests.
+        num_deactivated_projects = Project.objects.filter(
+            status__name='Inactive').count()
+        num_complete_new_project_requests = \
+            SavioProjectAllocationRequest.objects.filter(
+                status__name='Approved - Complete').count()
+        num_complete_renewal_requests = \
+            AllocationRenewalRequest.objects.filter(
+                status__name='Complete').count()
+
+        assert_outcome(
+            self.current_allowance_year.id,
+            'Failed to deactivate 1/1 FCA Projects and 1/1 PCA Projects.')
+        assert_outcome(
+            self.current_instructional_period.id,
+            'Failed to deactivate 1/1 ICA Projects.')
+
+        # The numbers of deactivated Projects and complete requests should not
+        # have increased.
+        self.assertEqual(
+            num_deactivated_projects,
+            Project.objects.filter(status__name='Inactive').count())
+        self.assertEqual(
+            num_complete_new_project_requests,
+            SavioProjectAllocationRequest.objects.filter(
+                status__name='Approved - Complete').count())
+        self.assertEqual(
+            num_complete_renewal_requests,
+            AllocationRenewalRequest.objects.filter(
+                status__name='Complete').count())
+
     def test_output_for_allowance_year_period(self):
         """Test that the messages written to stdout and stderr are
         exactly the ones expected for an AllocationPeriod representing
