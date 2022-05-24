@@ -10,6 +10,7 @@ from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.core.management.base import CommandError
 
+from coldfront.core.allocation.management.commands.start_allocation_period import Command as StartAllocationPeriodCommand
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
@@ -29,6 +30,16 @@ from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
+
+
+def no_op(*args, **kwargs):
+    """Do nothing."""
+    pass
+
+
+def raise_exception(*args, **kwargs):
+    """Raise an exception."""
+    raise Exception('Test exception.')
 
 
 class TestStartAllocationPeriod(TestBase):
@@ -113,12 +124,15 @@ class TestStartAllocationPeriod(TestBase):
                 approve=True, process=False)
 
     @staticmethod
-    def call_command(allocation_period_id, dry_run=False):
+    def call_command(allocation_period_id, skip_deactivations=False,
+                     dry_run=False):
         """Call the command with the given AllocationPeriod ID and
-        optional dry_run flag, returning the messages written to stdout
-        and stderr."""
+        optional skip_deactivation and dry_run flags, returning the
+        messages written to stdout and stderr."""
         out, err = StringIO(), StringIO()
         args = ['start_allocation_period', allocation_period_id]
+        if skip_deactivations:
+            args.append('--skip_deactivations')
         if dry_run:
             args.append('--dry_run')
         kwargs = {'stdout': out, 'stderr': err}
@@ -162,8 +176,6 @@ class TestStartAllocationPeriod(TestBase):
             request_time=utc_now_offset_aware())
 
         # Allow runners to process requests with non-current periods.
-        def no_op(*no_op_args, **no_op_kwargs):
-            pass
         runner_args = (new_project_request, num_service_units)
         with patch.object(AllocationPeriod, 'assert_not_ended', no_op):
             with patch.object(AllocationPeriod, 'assert_started', no_op):
@@ -468,3 +480,36 @@ class TestStartAllocationPeriod(TestBase):
                 deepcopy(project_names_by_id),
                 deepcopy(num_sus_by_new_project_request_id),
                 deepcopy(num_sus_by_renewal_request_id), dry_run=dry_run)
+
+    def test_skip_deactivations_flag(self):
+        """Test that deactivations are not run if the skip_deactivations
+        flag is provided."""
+        allocation_period_id = self.current_allowance_year.id
+
+        dry_run = True
+
+        output, error = self.call_command(
+            allocation_period_id, skip_deactivations=False, dry_run=dry_run)
+        self.assertIn('Would deactivate', output)
+        self.assertFalse(error)
+
+        output, error = self.call_command(
+            allocation_period_id, skip_deactivations=True, dry_run=dry_run)
+        self.assertNotIn('Would deactivate', output)
+        self.assertFalse(error)
+
+        # Raise an exception during deactivation so that processing is avoided
+        # on the first run.
+        dry_run = False
+        with patch.object(
+                StartAllocationPeriodCommand, 'deactivate_projects',
+                raise_exception):
+            with self.assertRaises(Exception):
+                self.call_command(
+                    allocation_period_id, skip_deactivations=False,
+                    dry_run=dry_run)
+
+            output, error = self.call_command(
+                allocation_period_id, skip_deactivations=True, dry_run=dry_run)
+            self.assertNotIn('Deactivated', output)
+            self.assertFalse(error)
