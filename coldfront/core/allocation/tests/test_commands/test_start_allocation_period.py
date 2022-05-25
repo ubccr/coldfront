@@ -414,6 +414,51 @@ class TestStartAllocationPeriod(TestBase):
                 self.call_command(_id)
             self.assertIn('is not current', str(cm.exception))
 
+    def test_allocation_renewal_request_processing_eligibility(self):
+        """Test that AllocationRenewalRequests that do not meet all
+        conditions for processing are not processed."""
+        message_prefix = 'Would process AllocationRenewalRequest {0}'
+        approved_status = AllocationRenewalRequestStatusChoice.objects.get(
+            name='Approved')
+
+        # A request for a past AllocationPeriod should not be processed.
+        fc_existing_request = AllocationRenewalRequest.objects.get(
+            post_project__name='fc_existing')
+        self.assertEqual(fc_existing_request.status, approved_status)
+        fc_existing_request.allocation_period = self.previous_allowance_year
+        fc_existing_request.save()
+
+        output, error = self.call_command(
+            self.current_allowance_year.id, dry_run=True)
+        self.assertNotIn(message_prefix.format(fc_existing_request.id), output)
+        self.assertFalse(error)
+
+        # A request for a future AllocationPeriod should not be processed.
+        fc_existing_request.allocation_period = self.next_allowance_year
+        fc_existing_request.save()
+
+        output, error = self.call_command(
+            self.current_allowance_year.id, dry_run=True)
+        self.assertNotIn(message_prefix.format(fc_existing_request.id), output)
+        self.assertFalse(error)
+
+        # A request with a status other than 'Approved' should not be
+        # processed.
+        fc_existing_request.allocation_period = self.current_allowance_year
+        statuses = AllocationRenewalRequestStatusChoice.objects.all()
+        self.assertGreater(statuses.count(), 1)
+        fc_message = message_prefix.format(fc_existing_request.id)
+        for status in statuses:
+            fc_existing_request.status = status
+            fc_existing_request.save()
+            output, error = self.call_command(
+                self.current_allowance_year.id, dry_run=True)
+            if status == approved_status:
+                self.assertIn(fc_message, output)
+            else:
+                self.assertNotIn(fc_message, output)
+            self.assertFalse(error)
+
     def test_failed_deactivations_preempt_processing(self):
         """Test that, if one or more Projects fail to be deactivated,
         request processing does not proceed."""
@@ -519,6 +564,58 @@ class TestStartAllocationPeriod(TestBase):
         self.assertIn('Processed 0 SavioProjectAllocationRequests', output)
         self.assertIn('Processed 0 AllocationRenewalRequests', output)
         self.assertFalse(error)
+
+    def test_new_project_request_processing_eligibility(self):
+        """Test that new project requests that do not meet all
+        conditions for processing are not processed."""
+        message_prefix = 'Would process SavioProjectAllocationRequest {0}'
+        approved_scheduled_status = \
+            ProjectAllocationRequestStatusChoice.objects.get(
+                name='Approved - Scheduled')
+
+        # A request for a past AllocationPeriod should not be processed.
+        fc_existing = Project.objects.get(name='fc_existing')
+        fc_existing_request = SavioProjectAllocationRequest.objects.get(
+            project=fc_existing)
+        fc_existing_request.status = approved_scheduled_status
+        fc_existing_request.save()
+
+        # A request for a future AllocationPeriod should not be processed.
+        num_service_units = Decimal('300000.00')
+        fc_future = self.create_project(
+            'fc_future', self.fca, self.next_allowance_year, num_service_units,
+            approve=True)
+        fc_future_request = SavioProjectAllocationRequest.objects.get(
+            project=fc_future)
+        self.assertEqual(fc_future_request.status, approved_scheduled_status)
+
+        output, error = self.call_command(
+            self.current_allowance_year.id, dry_run=True)
+        for request in (fc_existing_request, fc_future_request):
+            self.assertNotIn(message_prefix.format(request.id), output)
+        self.assertFalse(error)
+
+        # A request with a status other than 'Approved - Scheduled' should not
+        # be processed.
+        fc_new_request = SavioProjectAllocationRequest.objects.get(
+            project__name='fc_new')
+        pc_new_request = SavioProjectAllocationRequest.objects.get(
+            project__name='pc_new')
+        statuses = ProjectAllocationRequestStatusChoice.objects.all()
+        self.assertGreater(statuses.count(), 1)
+        fc_message = message_prefix.format(fc_new_request.id)
+        pc_message = message_prefix.format(pc_new_request.id)
+        for status in statuses:
+            pc_new_request.status = status
+            pc_new_request.save()
+            output, error = self.call_command(
+                self.current_allowance_year.id, dry_run=True)
+            self.assertIn(fc_message, output)
+            if status == approved_scheduled_status:
+                self.assertIn(pc_message, output)
+            else:
+                self.assertNotIn(pc_message, output)
+            self.assertFalse(error)
 
     def test_output_for_allowance_year_period(self):
         """Test that the messages written to stdout and stderr are
