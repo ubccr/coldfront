@@ -22,6 +22,7 @@ Python and released under the GPLv3 license.
 
 - [OpenStack Plugin](https://github.com/nerc-project/coldfront-plugin-openstack)
 - [Keycloak User Search](https://github.com/nerc-project/coldfront-plugin-keycloak)
+- [Starfish Plugin](https://github.com/fasrc/coldfront/tree/master/coldfront/plugins/sftocf)
 
 _Submit a PR to add your plugin to the list above._
 

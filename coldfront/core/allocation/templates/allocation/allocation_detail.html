@@ -28,7 +28,7 @@ Allocation Detail
 
 <div class="card mb-3">
   <div class="card-header">
-    {% if allocation.is_changeable and is_allowed_to_update_project %}
+    {% if allocation.is_changeable and not allocation.is_locked and is_allowed_to_update_project and allocation.status.name in 'Active, Renewal Requested, Payment Pending, Payment Requested, Paid' %}
     <div class="row">
       <div class="col">
         <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
@@ -55,7 +55,15 @@ Allocation Detail
           </tr>
           <tr>
             <th scope="row" class="text-nowrap">Resource{{ allocation.resources.all|pluralize }} in allocation:</th>
-            <td>{{ allocation.get_resources_as_string }}</td>
+            <td>
+              {% if allocation.get_resources_as_list %}
+                {% for resource in allocation.get_resources_as_list %}
+                  <a href="{% url 'resource-detail' resource.pk %}">{{ resource }}</a> <br>
+                {% endfor %}
+              {% else %}
+                None
+              {% endif %}
+            </td>
           </tr>
           {% if request.user.is_superuser %}
             <tr>

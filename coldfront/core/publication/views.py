@@ -337,17 +337,19 @@ class PublicationAddView(LoginRequiredMixin, UserPassesTestMixin, View):
                 # Was missing if statement to check if element was selected
                 if form_data['selected']:
                     source_obj = PublicationSource.objects.get(
-                        pk=form_data.get('source_pk')
-                    )
-                    
+                        pk=form_data.get('source_pk'))
+                    author = form_data.get('author')
+                    if len(author) > 1024: author = author[:1024]
                     publication_obj, created = Publication.objects.get_or_create(
                         project=project_obj,
-                        title=form_data.get('title'),
-                        author=form_data.get('author'),
-                        year=form_data.get('year'),
-                        journal=form_data.get('journal'),
                         unique_id=form_data.get('unique_id'),
-                        source=source_obj
+                        defaults = {
+                            'title':form_data.get('title'),
+                            'author':author,
+                            'year':form_data.get('year'),
+                            'journal':form_data.get('journal'),
+                            'source':source_obj                            
+                        }                        
                     )
                     if created:
                         publications_added += 1

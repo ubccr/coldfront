@@ -1,0 +1,177 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Resource Detail
+{% endblock %}
+
+
+{% block content %}
+
+
+<div class="mb-3">
+  <h2>Resource Detail</h2>
+  <hr>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">
+      <h3><i class="fas fa-list" aria-hidden="true"></i> Resource Information</h3>   
+  </div>
+  
+  <div class="card-body">
+      {% csrf_token %}
+      <div class="table-responsive">
+        <table class="table table-bordered table-sm">
+          <tr>
+            <th scope="row" class="text-nowrap">Name:</th>
+            <td>{{ resource.name }}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Description:</th>
+            <td>{{ resource.description }}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Resource Type:</th>
+            <td>{{ resource.resource_type }}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Parent Resource:</th>
+            <td>
+              {% if resource.parent_resource %}
+                <a href="{% url 'resource-detail' resource.parent_resource.pk %}">
+                  {{ resource.parent_resource }}
+                </a>
+              {% else %}
+                {{ resource.parent_resource }}
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Linked Resources:</th>
+            <td>
+            {% if resource.linked_resources.all %}
+              {% for resource in resource.linked_resources.all %}
+                <a href="{% url 'resource-detail' resource.pk %}">{{ resource }}</a> <br>
+              {% endfor %}
+            {% else %}
+              None
+            {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Public/Private:</th>
+            <td>
+              {% if resource.is_public %}
+                Public
+              {% else %}
+                Private
+              {% endif %}
+            </td>
+          </tr>
+        </table>
+      </div>
+  </div>
+</div>
+
+<!-- Start Resource Attributes -->
+{% if attributes or request.user.is_superuser %}
+  <div class="card mb-3">
+    <div class="card-header">
+      <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Resource Attributes</h3>
+      <div class="float-right">
+        {% if request.user.is_superuser %}
+          <a class="btn btn-success" href="{% url 'resource-attribute-add' resource.pk %}" role="button">
+            <i class="fas fa-plus" aria-hidden="true"></i> Add Resource Attribute
+          </a>
+          <a class="btn btn-danger" href="{% url 'resource-attribute-delete' resource.pk %}" role="button">
+            <i class="fas fa-minus" aria-hidden="true"></i> Delete Resource Attributes
+          </a>
+        {% endif %}
+      </div>
+    </div>
+    <div class="card-body">
+      {% if attributes %}
+        <div class="table-responsive">
+          <table class="table table-bordered table-sm">
+            <thead>
+              <tr>
+                <th scope="col">Attribute</th>
+                <th scope="col">Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for attribute in attributes %}
+                  <tr>
+                    <td>{{attribute.resource_attribute_type.name}}</td>
+                    <td>{{attribute.value}}</td>
+                  </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
+
+<!-- Start Child Resources -->
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Child Resources</h3>
+  </div>
+
+  <div class="card-body">
+    {% if child_resources %}
+      <div class="table-responsive">
+        <table id="child_resource_table" class="table table-bordered table-sm">
+          <thead>
+            <tr>
+              <th scope="col">Resource Name</th>
+              <th scope="col">WarrantyExpire</th>
+              <th scope="col">ServiceEnd</th>
+              <th scope="col">Vendor</th>
+              <th scope="col">Serial #</th>
+              <th scope="col">Model</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for child in child_resources %}
+                <tr>
+                  <td><a href="{% url 'resource-detail' child.object.pk %}">{{child.object}}</a></td>
+                  <td>{{child.WarrantyExpirationDate}}</td>
+                  <td>{{child.ServiceEnd}}</td>
+                  <td>{{child.Vendor}}</td>
+                  <td>{{child.SerialNumber}}</td>
+                  <td>{{child.Model}}</td>
+                </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <div class="alert alert-info" role="alert">
+          <i class="fas fa-info-circle" aria-hidden="true"></i>
+          There are no child resources to display.
+        </div>
+      {% endif %}
+  </div>
+</div>
+
+
+<script>
+  $(document).ready(function () { 
+    $('#child_resource_table').DataTable({
+      lengthMenu: [5, 10, 20, 50, 100],
+      "pageLength": 5,
+      "ordering": false,
+      'aoColumnDefs': [{
+        'bSortable': false,
+        'aTargets': ['nosort']
+      }]
+    });
+  });
+</script>
+{% endblock %}

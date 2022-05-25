@@ -3,6 +3,25 @@
 This document describes upgrading ColdFront. New releases of ColdFront may
 introduce breaking changes so please refer to this document before upgrading.
 
+## v1.1.0
+
+This release includes a new allocation change workflow along with a major
+Django upgrade from v2.2 to v3.2, both of which will require database
+migrations. Before upgrading, be sure to backup your database and any custom
+changes. 
+
+To upgrade via pip, following these steps:
+
+```
+$ source /path/to/your/venv/bin/activate
+$ pip install --upgrade coldfront
+$ coldfront migrate
+$ coldfront collectstatic
+
+# Optionally, add new default Resource Attribute Types
+$ coldfront add_resource_defaults
+```
+
 ## v1.0.3
 
 This release changed the way ColdFront is configured. Before, there were two
