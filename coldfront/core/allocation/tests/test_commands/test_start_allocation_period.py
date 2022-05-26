@@ -10,6 +10,7 @@ from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.core.management.base import CommandError
 
+from coldfront.api.statistics.utils import get_accounting_allocation_objects
 from coldfront.core.allocation.management.commands.start_allocation_period import Command as StartAllocationPeriodCommand
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationPeriod
@@ -683,6 +684,107 @@ class TestStartAllocationPeriod(TestBase):
                 deepcopy(project_names_by_id),
                 deepcopy(num_sus_by_new_project_request_id),
                 deepcopy(num_sus_by_renewal_request_id), dry_run=dry_run)
+
+    def test_project_deactivation_eligibility(self):
+        """Test that Projects that do not meet all conditions for
+        deactivation are not deactivated."""
+
+        def assert_message_in_command_output(included,
+                                             project_name='fc_existing'):
+            message_template = (
+                'Would deactivate Project {0} ({1}) and reset Service Units.')
+            message = message_template.format(fc_existing.id, project_name)
+            output, error = self.call_command(
+                allocation_period.id, dry_run=True)
+            if included:
+                self.assertIn(message, output)
+            else:
+                self.assertNotIn(message, output)
+            self.assertFalse(error)
+
+        allocation_period = self.current_allowance_year
+        active_status = ProjectStatusChoice.objects.get(name='Active')
+        resource = Resource.objects.get(name='Savio Compute')
+
+        fc_existing = Project.objects.get(name='fc_existing')
+        accounting_allocation_objects = get_accounting_allocation_objects(
+            fc_existing)
+        allocation = accounting_allocation_objects.allocation
+        # The Project's Allocation's end date must be null or less than the
+        # AllocationPeriod's end date.
+        self.assertTrue(
+            allocation.end_date is None or
+            allocation.end_date < allocation_period.start_date)
+        # The Project's name must begin with a prefix matching those associated
+        # with the AllocationPeriod.
+        self.assertTrue(fc_existing.name.startswith('fc_'))
+        # The Project's status must be 'Active'.
+        self.assertEqual(fc_existing.status, active_status)
+        # The Project's Allocation must be for the 'Savio Compute' Resource.
+        self.assertIn(resource, allocation.resources.all())
+
+        # A Project meeting all conditions should be deactivated.
+        assert_message_in_command_output(True)
+
+        # A Project with a null Allocation end date should be deactivated.
+        allocation.end_date = None
+        allocation.save()
+        assert_message_in_command_output(True)
+
+        # A Project failing to meet all conditions should not be deactivated.
+
+        # Allocation end date is >= AllocationPeriod's start date.
+        tmp_allocation_end_date = allocation.end_date
+        for offset_days in (0, 1):
+            allocation.end_date = (allocation_period.start_date +
+                                   timedelta(days=offset_days))
+            allocation.save()
+            assert_message_in_command_output(False)
+        allocation.end_date = tmp_allocation_end_date
+        allocation.save()
+
+        assert_message_in_command_output(True)
+
+        # Project name with non-associated or invalid prefix
+        tmp_project_name = fc_existing.name
+        associated_prefixes = ('fc_', 'pc_')
+        invalid_prefixes = ('ac_', 'co_')
+        Project.objects.filter(
+            name__in=['ic_existing', 'pc_existing']).delete()
+        for prefix in ('ac_', 'co_', 'fc_', 'ic_', 'pc_'):
+            fc_existing.name = f'{prefix}{fc_existing.name[3:]}'
+            fc_existing.save()
+            if prefix not in invalid_prefixes:
+                assert_message_in_command_output(
+                    prefix in associated_prefixes,
+                    project_name=fc_existing.name)
+            else:
+                _, err = self.call_command(allocation_period.id, dry_run=True)
+                self.assertTrue(err)
+        fc_existing.name = tmp_project_name
+        fc_existing.save()
+
+        assert_message_in_command_output(True)
+
+        # Project with non-'Active' status
+        other_statuses = ProjectStatusChoice.objects.exclude(
+            pk=active_status.pk)
+        self.assertTrue(other_statuses.exists())
+        for status in other_statuses:
+            fc_existing.status = status
+            fc_existing.save()
+            assert_message_in_command_output(False)
+        fc_existing.status = active_status
+        fc_existing.save()
+
+        assert_message_in_command_output(True)
+
+        # Allocation not to 'Savio Compute' Resource
+        allocation.resources.remove(resource)
+        assert_message_in_command_output(False)
+        allocation.resources.add(resource)
+
+        assert_message_in_command_output(True)
 
     def test_skip_deactivations_flag(self):
         """Test that deactivations are not run if the skip_deactivations
