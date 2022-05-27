@@ -54,12 +54,6 @@ class TestRunnerMixinBase(object):
 
         self.allocation_period = get_current_allowance_year_period()
 
-        # Create a past AllocationPeriod.
-        AllocationPeriod.objects.create(
-            name='Allowance Year 2020 - 2021',
-            start_date=date(2020, 6, 1),
-            end_date=date(2021, 5, 31))
-
         # Create a requester user and multiple PI users.
         self.requester = User.objects.create(
             email='requester@email.com',
