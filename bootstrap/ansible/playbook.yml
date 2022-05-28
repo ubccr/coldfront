@@ -13,6 +13,25 @@
     - "{{ cwd }}/main.yml"
 
   tasks:
+    - name: Install redis
+      yum:
+        name:
+          - redis
+        state: present
+
+    - name: Set redis password
+      lineinfile:
+        path: /etc/redis.conf
+        regexp: '^requirepass '
+        insertafter: '^# requirepass foobared'
+        line: 'requirepass {{ redis_passwd }}'
+
+    - name: Restart and enable Redis service
+      service:
+        name: redis
+        state: restarted
+        enabled: yes
+
     - name: Install Postgresql repo
       yum:
         name: https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm

@@ -84,3 +84,16 @@ FLAGS = {
     'BRC_ONLY': [{'condition': 'boolean', 'value': {{ flag_brc_enabled }}}],
     'LRC_ONLY': [{'condition': 'boolean', 'value': {{ flag_lrc_enabled }}}],
 }
+
+#------------------------------------------------------------------------------
+# django-q settings
+#------------------------------------------------------------------------------
+
+Q_CLUSTER = {
+    'redis': {
+        'host': '127.0.0.1',
+        'port': 6379,
+        'db': 0,
+        'password': '{{ redis_passwd }}',
+    }
+}
