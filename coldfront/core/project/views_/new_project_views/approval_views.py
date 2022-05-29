@@ -4,7 +4,6 @@ from coldfront.core.allocation.utils import prorated_allocation_amount
 from coldfront.core.project.forms import MemorandumSignedForm
 from coldfront.core.project.forms import ReviewDenyForm
 from coldfront.core.project.forms import ReviewStatusForm
-from coldfront.core.project.forms_.new_project_forms.approval_forms import SavioProjectReviewAllocationDatesForm
 from coldfront.core.project.forms_.new_project_forms.approval_forms import SavioProjectReviewSetupForm
 from coldfront.core.project.forms_.new_project_forms.approval_forms import VectorProjectReviewSetupForm
 from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectExtraFieldsForm
@@ -25,18 +24,13 @@ from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import format_date_month_name_day_year
 from coldfront.core.utils.common import utc_now_offset_aware
 
-from datetime import datetime
 from decimal import Decimal
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.mixins import UserPassesTestMixin
-from django.db.models import BooleanField
-from django.db.models import Case
 from django.db.models import Q
-from django.db.models import Value
-from django.db.models import When
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -48,7 +42,6 @@ from django.views.generic.edit import FormView
 
 import iso8601
 import logging
-import pytz
 
 
 # =============================================================================
@@ -365,9 +358,6 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             ica = SavioProjectAllocationRequest.ICA
             recharge = SavioProjectAllocationRequest.RECHARGE
             if allocation_type in (ica, recharge):
-                if allocation_type == ica:
-                    if state['allocation_dates']['status'] == pending:
-                        return pending
                 if state['memorandum_signed']['status'] == pending:
                     return pending
         return state['setup']['status']
@@ -529,109 +519,6 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
         readiness = self.request_obj.state['readiness']
         initial['status'] = readiness['status']
         initial['justification'] = readiness['justification']
-        return initial
-
-    def get_success_url(self):
-        return reverse(
-            'savio-project-request-detail',
-            kwargs={'pk': self.kwargs.get('pk')})
-
-
-class SavioProjectReviewAllocationDatesView(LoginRequiredMixin,
-                                            UserPassesTestMixin,
-                                            SavioProjectRequestMixin,
-                                            FormView):
-    form_class = SavioProjectReviewAllocationDatesForm
-    template_name = (
-        'project/project_request/savio/project_review_allocation_dates.html')
-    login_url = '/'
-
-    logger = logging.getLogger(__name__)
-
-    def test_func(self):
-        """UserPassesTestMixin tests."""
-        if self.request.user.is_superuser:
-            return True
-        message = 'You do not have permission to view the previous page.'
-        messages.error(self.request, message)
-        return False
-
-    def dispatch(self, request, *args, **kwargs):
-        pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
-        allocation_type = self.request_obj.allocation_type
-        if allocation_type != SavioProjectAllocationRequest.ICA:
-            message = (
-                f'This view is not applicable for projects with allocation '
-                f'type {allocation_type}.')
-            messages.error(request, message)
-            return HttpResponseRedirect(
-                reverse('savio-project-request-detail', kwargs={'pk': pk}))
-        redirect = self.redirect_if_disallowed_status(request)
-        if redirect is not None:
-            return redirect
-        return super().dispatch(request, *args, **kwargs)
-
-    def form_valid(self, form):
-        form_data = form.cleaned_data
-        status = form_data['status']
-        timestamp = utc_now_offset_aware().isoformat()
-
-        # The allocation starts at the beginning of the start date and ends at
-        # the end of the end date.
-        local_tz = pytz.timezone(settings.DISPLAY_TIME_ZONE)
-        tz = pytz.timezone(settings.TIME_ZONE)
-        if form_data['start_date']:
-            naive_dt = datetime.datetime.combine(
-                form_data['start_date'], datetime.datetime.min.time())
-            start = local_tz.localize(naive_dt).astimezone(tz).isoformat()
-        else:
-            start = ''
-        if form_data['end_date']:
-            naive_dt = datetime.datetime.combine(
-                form_data['end_date'], datetime.datetime.max.time())
-            end = local_tz.localize(naive_dt).astimezone(tz).isoformat()
-        else:
-            end = ''
-
-        self.request_obj.state['allocation_dates'] = {
-            'status': status,
-            'dates': {
-                'start': start,
-                'end': end,
-            },
-            'timestamp': timestamp,
-        }
-
-        self.request_obj.status = savio_request_state_status(self.request_obj)
-        self.request_obj.save()
-
-        message = (
-            f'Allocation Dates status for request {self.request_obj.pk} has '
-            f'been set to {status}.')
-        messages.success(self.request, message)
-
-        return super().form_valid(form)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['savio_request'] = self.request_obj
-        context['extra_fields_form'] = self.get_extra_fields_form(
-            self.request_obj.allocation_type, self.request_obj.extra_fields)
-        context['survey_form'] = SavioProjectSurveyForm(
-            initial=self.request_obj.survey_answers, disable_fields=True)
-        return context
-
-    def get_initial(self):
-        initial = super().get_initial()
-        allocation_dates = self.request_obj.state['allocation_dates']
-        initial['status'] = allocation_dates['status']
-        local_tz = pytz.timezone(settings.DISPLAY_TIME_ZONE)
-        for key in ('start', 'end'):
-            value = allocation_dates['dates'][key]
-            if value:
-                initial[f'{key}_date'] = iso8601.parse_date(value).astimezone(
-                    pytz.utc).astimezone(local_tz).date()
         return initial
 
     def get_success_url(self):

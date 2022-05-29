@@ -168,7 +168,8 @@ def create_user_project_allocation(user, project, value):
         allocation_user_attribute=allocation_user_attribute)
 
 
-def get_accounting_allocation_objects(project, user=None):
+def get_accounting_allocation_objects(project, user=None,
+                                      enforce_allocation_active=True):
     """Return a namedtuple of database objects related to accounting and
     allocation for the given project and optional user.
 
@@ -191,11 +192,16 @@ def get_accounting_allocation_objects(project, user=None):
 
     objects = AccountingAllocationObjects()
 
-    # Check that the project has an active allocation for the compute resource.
-    active_status = AllocationStatusChoice.objects.get(name='Active')
-
-    allocation = Allocation.objects.get(
-        project=project, status=active_status, resources__name='Savio Compute')
+    allocation_kwargs = {
+        'project': project,
+        'resources__name': 'Savio Compute',
+    }
+    if enforce_allocation_active:
+        # Check that the project has an active Allocation to the
+        # 'CLUSTER_NAME Compute' resource.
+        allocation_kwargs['status'] = AllocationStatusChoice.objects.get(
+            name='Active')
+    allocation = Allocation.objects.get(**allocation_kwargs)
 
     # Check that the allocation has an attribute for Service Units and
     # an associated usage.

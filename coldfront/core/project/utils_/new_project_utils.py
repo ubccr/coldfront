@@ -4,7 +4,6 @@ from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.utils import get_or_create_active_allocation_user
 from coldfront.core.allocation.utils import get_project_compute_allocation
-from coldfront.core.allocation.utils import next_allocation_start_datetime
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.models import ProjectUser
@@ -19,6 +18,7 @@ from coldfront.core.project.utils import send_added_to_project_notification_emai
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.user.utils import account_activation_url
+from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.common import project_detail_url
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -26,7 +26,6 @@ from coldfront.core.utils.common import validate_num_service_units
 from coldfront.core.utils.mail import send_email_template
 
 from collections import namedtuple
-from datetime import timedelta
 from decimal import Decimal
 
 from django.conf import settings
@@ -35,7 +34,6 @@ from django.urls import reverse
 
 from urllib.parse import urljoin
 
-import iso8601
 import logging
 
 
@@ -318,6 +316,8 @@ class SavioProjectApprovalRunner(ProjectApprovalRunner):
         validate_num_service_units(num_service_units)
         self.num_service_units = num_service_units
         super().__init__(request_obj)
+        if self.request_obj.allocation_period:
+            self.request_obj.allocation_period.assert_not_ended()
         # Note: send_email is already the name of a method.
         self.can_send_email = bool(send_email)
 
@@ -354,28 +354,24 @@ class SavioProjectProcessingRunner(ProjectProcessingRunner):
         validate_num_service_units(num_service_units)
         self.num_service_units = num_service_units
         super().__init__(request_obj)
+        if self.request_obj.allocation_period:
+            self.request_obj.allocation_period.assert_started()
+            self.request_obj.allocation_period.assert_not_ended()
 
     def update_allocation(self):
         """Perform allocation-related handling."""
         project = self.request_obj.project
         allocation_type = self.request_obj.allocation_type
+        allocation_period = self.request_obj.allocation_period
         pool = self.request_obj.pool
 
         allocation = get_project_compute_allocation(project)
         allocation.status = AllocationStatusChoice.objects.get(name='Active')
-        # If this is a new Project, set its Allocation's start and end dates.
+        # If this is a new Project, set its Allocation's start dates. Always
+        # set its end date.
         if not pool:
-            if allocation_type == SavioProjectAllocationRequest.ICA:
-                dates = self.request_obj.state['allocation_dates']['dates']
-                allocation.start_date = iso8601.parse_date(dates['start'])
-                allocation.end_date = iso8601.parse_date(dates['end'])
-            else:
-                allocation.start_date = utc_now_offset_aware()
-                # Only set the end date for FCAs and PCAs.
-                if (allocation_type == SavioProjectAllocationRequest.FCA or
-                        allocation_type == SavioProjectAllocationRequest.PCA):
-                    allocation.end_date = \
-                        next_allocation_start_datetime() - timedelta(seconds=1)
+            allocation.start_date = display_time_zone_current_date()
+        allocation.end_date = getattr(allocation_period, 'end_date', None)
         allocation.save()
 
         # Set the allocation's allocation type.
@@ -455,13 +451,6 @@ def savio_request_state_status(savio_request):
     ica = SavioProjectAllocationRequest.ICA
     recharge = SavioProjectAllocationRequest.RECHARGE
 
-    # For ICA projects, retrieve whether both allocation dates are set.
-    if savio_request.allocation_type == ica:
-        allocation_dates = state['allocation_dates']
-        allocation_dates_not_set = allocation_dates['status'] == 'Pending'
-    else:
-        allocation_dates_not_set = False
-
     # For ICA and Recharge projects, retrieve the signed status of the
     # Memorandum of Understanding.
     if savio_request.allocation_type in (ica, recharge):
@@ -473,7 +462,6 @@ def savio_request_state_status(savio_request):
     # One or more steps is pending.
     if (eligibility['status'] == 'Pending' or
             readiness['status'] == 'Pending' or
-            allocation_dates_not_set or
             memorandum_not_signed):
         return ProjectAllocationRequestStatusChoice.objects.get(
             name='Under Review')

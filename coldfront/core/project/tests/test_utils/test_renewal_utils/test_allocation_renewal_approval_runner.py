@@ -1,4 +1,5 @@
 from coldfront.core.allocation.models import Allocation
+from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
 from coldfront.core.allocation.models import AllocationStatusChoice
@@ -8,7 +9,9 @@ from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.tests.test_utils.test_renewal_utils.utils import TestRunnerMixinBase
 from coldfront.core.project.utils_.renewal_utils import AllocationRenewalApprovalRunner
+from coldfront.core.project.utils_.renewal_utils import get_next_allowance_year_period
 from coldfront.core.resource.models import Resource
+from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import utc_now_offset_aware
 from decimal import Decimal
 from django.conf import settings
@@ -19,6 +22,34 @@ from django.test import TestCase
 
 class TestRunnerMixin(TestRunnerMixinBase):
     """A mixin for testing AllocationRenewalApprovalRunner."""
+
+    def test_request_allocation_period_not_ended_enforced(self):
+        """Test that the provided AllocationRenewalRequest's
+        AllocationPeriod must not have ended, or an exception will be
+        raised."""
+        allocation_period = AllocationPeriod.objects.filter(
+            name__startswith='Allowance Year',
+            end_date__lt=display_time_zone_current_date()).first()
+        self.request_obj.allocation_period = allocation_period
+        self.request_obj.save()
+        num_service_units = Decimal('0.00')
+        try:
+            AllocationRenewalApprovalRunner(
+                self.request_obj, num_service_units)
+        except AssertionError as e:
+            message = (
+                f'AllocationPeriod already ended on '
+                f'{allocation_period.end_date}.')
+            self.assertEqual(str(e), message)
+
+    def test_request_allocation_period_started_not_enforced(self):
+        """Test that the provided AllocationRenewalRequest's
+        AllocationPeriod does not need to have started."""
+        allocation_period = get_next_allowance_year_period()
+        self.request_obj.allocation_period = allocation_period
+        self.request_obj.save()
+        num_service_units = Decimal('0.00')
+        AllocationRenewalApprovalRunner(self.request_obj, num_service_units)
 
     def test_request_initial_under_review_status_enforced(self):
         """Test that the provided AllocationRenewalRequest must be in

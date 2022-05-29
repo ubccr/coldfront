@@ -21,6 +21,7 @@ from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import import_from_settings
+from coldfront.core.utils.common import display_time_zone_current_date
 
 logger = logging.getLogger(__name__)
 
@@ -401,6 +402,18 @@ class AllocationPeriod(TimeStampedModel):
     name = models.CharField(max_length=255, unique=True)
     start_date = models.DateField()
     end_date = models.DateField()
+
+    def assert_not_ended(self):
+        """Raise an AssertionError if the AllocationPeriod has already
+        ended as of the current date."""
+        message = f'AllocationPeriod already ended on {self.end_date}.'
+        assert display_time_zone_current_date() <= self.end_date, message
+
+    def assert_started(self):
+        """Raise an AssertionError if the AllocationPeriod has not
+        started as of the current date."""
+        message = f'AllocationPeriod does not start until {self.start_date}.'
+        assert self.start_date <= display_time_zone_current_date(), message
 
     def __str__(self):
         return self.name
