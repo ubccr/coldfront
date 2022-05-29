@@ -42,7 +42,10 @@
       <strong>Current Project: </strong>
       {% with pre_project=renewal_request.pre_project %}
         {% if pre_project %}
-          {{ pre_project.name }}
+          <a href="{% url 'project-detail' pre_project.pk %}">
+            <span class="accessibility-link-text">{{ pre_project.name }}</span>
+            {{ pre_project.name }}
+          </a>
         {% else %}
           N/A
         {% endif %}
@@ -52,7 +55,10 @@
       <strong>Requested Project: </strong>
       {% with post_project=renewal_request.post_project %}
         {% if post_project %}
-          {{ post_project.name }}
+          <a href="{% url 'project-detail' post_project.pk %}">
+            <span class="accessibility-link-text">{{ post_project.name }}</span>
+            {{ post_project.name }}
+          </a>
         {% else %}
           N/A
         {% endif %}

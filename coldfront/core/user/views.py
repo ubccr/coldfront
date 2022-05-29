@@ -26,6 +26,7 @@ from django.views.generic.edit import FormView
 from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.project.models import Project, ProjectUser
 from coldfront.core.user.models import IdentityLinkingRequest, IdentityLinkingRequestStatusChoice
+from coldfront.core.user.models import UserProfile as UserProfileModel
 from coldfront.core.user.forms import EmailAddressAddForm
 from coldfront.core.user.forms import UserReactivateForm
 from coldfront.core.user.forms import PrimaryEmailAddressSelectionForm
@@ -43,6 +44,8 @@ from coldfront.core.user.utils import update_user_primary_email_address
 from coldfront.core.utils.common import (import_from_settings,
                                          utc_now_offset_aware)
 from coldfront.core.utils.mail import send_email_template
+
+from flags.state import flag_enabled
 
 logger = logging.getLogger(__name__)
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
@@ -99,6 +102,21 @@ class UserProfile(TemplateView):
             self.update_context_with_identity_linking_request_data(context)
 
         context['help_email'] = import_from_settings('CENTER_HELP_EMAIL')
+
+        if flag_enabled('LRC_ONLY'):
+            billing_id = 'N/A'
+            try:
+                user_profile = viewed_user.userprofile
+            except UserProfileModel.DoesNotExist:
+                message = (
+                    f'User {viewed_user.username} unexpectedly has no '
+                    f'UserProfile.')
+                logger.error(message)
+            else:
+                billing_activity = user_profile.billing_activity
+                if billing_activity:
+                    billing_id = billing_activity.full_id()
+            context['monthly_user_account_fee_billing_id'] = billing_id
 
         return context
 

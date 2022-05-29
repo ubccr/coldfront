@@ -53,6 +53,7 @@ from coldfront.core.allocation.signals import (allocation_activate_user,
 from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
                                              get_user_resources,
                                              set_allocation_user_attribute_value)
+from coldfront.core.billing.models import BillingActivity
 from coldfront.core.project.models import (Project, ProjectUser,
                                            ProjectUserStatusChoice)
 from coldfront.core.project.utils import ProjectClusterAccessRequestRunner
@@ -61,6 +62,8 @@ from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.mail import send_email_template
+
+from flags.state import flag_enabled
 
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
     'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
@@ -129,30 +132,47 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         # Manually display "Service Units" for each user if applicable.
         # TODO: Avoid doing this manually.
         kwargs = {
-            'allocation_attribute_type__name': 'Service Units',
+            'allocation_attribute_type__name__in': [
+                'Service Units', 'Billing Activity'],
         }
         has_service_units = allocation_obj.allocationattribute_set.filter(
             **kwargs)
         allocation_user_su_usages = {}
-        if has_service_units:
-            for allocation_user in allocation_users:
-                username = allocation_user.user.username
-                user_attributes = \
-                    allocation_user.allocationuserattribute_set.select_related(
-                        'allocationuserattributeusage'
-                    ).filter(**kwargs)
+        allocation_user_billing_ids = {}
+        for allocation_user in allocation_users:
+            username = allocation_user.user.username
+            user_attributes = \
+                allocation_user.allocationuserattribute_set.select_related(
+                    'allocationuserattributeusage'
+                ).filter(**kwargs)
+            try:
+                su_attribute = user_attributes.filter(
+                    allocation_attribute_type__name='Service Units').first()
+                usage = str(su_attribute.allocationuserattributeusage.value)
+            except (AllocationUserAttribute.DoesNotExist,
+                    AttributeError,
+                    ValueError):
                 usage = '0.00'
-                if user_attributes.exists():
-                    attribute = user_attributes.first()
-                    try:
-                        usage = str(
-                            attribute.allocationuserattributeusage.value)
-                    except AttributeError:
-                        pass
-                allocation_user_su_usages[username] = usage
+            if not flag_enabled('LRC_ONLY'):
+                continue
+            allocation_user_su_usages[username] = usage
+            try:
+                billing_attribute = user_attributes.filter(
+                    allocation_attribute_type__name='Billing Activity').first()
+                billing_id = BillingActivity.objects.get(
+                    pk=int(billing_attribute.value)).full_id()
+            except (AllocationUserAttribute.DoesNotExist,
+                    AttributeError,
+                    BillingActivity.DoesNotExist,
+                    ValueError):
+                billing_id = 'N/A'
+            allocation_user_billing_ids[username] = billing_id
 
         context['has_service_units'] = has_service_units
         context['allocation_user_su_usages'] = allocation_user_su_usages
+        if flag_enabled('LRC_ONLY'):
+            context['allocation_user_billing_ids'] = \
+                allocation_user_billing_ids
 
         if self.request.user.is_superuser:
             attributes_with_usage = [attribute for attribute in allocation_obj.allocationattribute_set.all(
@@ -167,6 +187,25 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
             attributes = [attribute for attribute in allocation_obj.allocationattribute_set.filter(
                 allocation_attribute_type__is_private=False)]
+
+        # Annotate each attribute with a display value.
+        filtered_attributes = []
+        for attribute in attributes:
+            is_billing_activity = (
+                attribute.allocation_attribute_type.name == 'Billing Activity')
+            if is_billing_activity:
+                attribute.display_name = 'Billing ID'
+                try:
+                    attribute.display_value = BillingActivity.objects.get(
+                        pk=int(attribute.value)).full_id()
+                except (BillingActivity.DoesNotExist, ValueError):
+                    attribute.display_value = attribute.value
+                if flag_enabled('LRC_ONLY'):
+                    filtered_attributes.append(attribute)
+            else:
+                attribute.display_name = str(attribute)
+                attribute.display_value = attribute.value
+                filtered_attributes.append(attribute)
 
         guage_data = []
         invalid_attributes = []
@@ -196,7 +235,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         context['guage_data'] = guage_data
         context['attributes_with_usage'] = attributes_with_usage
-        context['attributes'] = attributes
+        context['attributes'] = filtered_attributes
 
         # Can the user update the project?
         if self.request.user.is_superuser:
@@ -227,6 +266,23 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         context['notes'] = notes
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
+
+        context['secure_dir'] = \
+            allocation_obj.resources.filter(
+                name__icontains='Directory').exists()
+
+        can_edit_users = False
+        if allocation_obj.project.projectuser_set.filter(
+                user=self.request.user,
+                role__name='Principal Investigator',
+                status__name='Active').exists():
+            can_edit_users = True
+
+        if self.request.user.is_superuser:
+            can_edit_users = True
+
+        context['can_edit_users'] = can_edit_users
+
         return context
 
     def get(self, request, *args, **kwargs):
@@ -379,10 +435,16 @@ class AllocationListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     def test_func(self):
         """Temporary block: Only allow superusers access."""
         # TODO: Remove this block when allocations should be displayed.
-        if self.request.user.is_superuser:
+
+        if self.request.user.is_superuser or self.request.user.is_staff:
             return True
 
-        if self.request.user.has_perm('allocation.can_view_all_allocations'):
+        project_user = ProjectUser.objects.filter(
+            Q(role__name__in=['Manager', 'Principal Investigator']) &
+            Q(status__name='Active') &
+            Q(user=self.request.user))
+
+        if project_user.exists():
             return True
 
     def get_queryset(self):
@@ -1980,21 +2042,16 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
                 'center_help_email': CENTER_HELP_EMAIL,
                 'signature': EMAIL_SIGNATURE,
             }
-            sender = EMAIL_SENDER
 
-            user_filter = Q(user=self.user_obj)
-            manager_pi_filter = Q(
-                role__name__in=['Manager', 'Principal Investigator'],
-                status__name='Active')
-            receiver_list = list(
-                project_obj.projectuser_set.filter(
-                    user_filter | manager_pi_filter, enable_notifications=True
-                ).values_list(
-                    'user__email', flat=True
-                ))
+            cc_list = project_obj.managers_and_pis_emails()
 
             send_email_template(
-                subject, template, template_context, sender, receiver_list)
+                subject,
+                template,
+                template_context,
+                EMAIL_SENDER,
+                [self.user_obj.email],
+                cc=cc_list)
 
         return super().form_valid(form)
 
@@ -2096,27 +2153,23 @@ class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,
             subject = 'Cluster Access Denied'
             template = 'email/cluster_access_denied.txt'
             template_context = {
+                'user': self.user_obj,
                 'center_name': EMAIL_CENTER_NAME,
                 'project': project_obj.name,
                 'allocation': allocation_obj.pk,
                 'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL,
                 'signature': EMAIL_SIGNATURE,
             }
-            sender = EMAIL_SENDER
 
-            user_filter = Q(user=self.user_obj)
-            manager_pi_filter = Q(
-                role__name__in=['Manager', 'Principal Investigator'],
-                status__name='Active')
-            receiver_list = list(
-                project_obj.projectuser_set.filter(
-                    user_filter | manager_pi_filter, enable_notifications=True
-                ).values_list(
-                    'user__email', flat=True
-                ))
+            cc_list = project_obj.managers_and_pis_emails()
 
             send_email_template(
-                subject, template, template_context, sender, receiver_list)
+                subject,
+                template,
+                template_context,
+                EMAIL_SENDER,
+                [self.user_obj.email],
+                cc=cc_list)
 
         return HttpResponseRedirect(
             reverse('allocation-cluster-account-request-list'))

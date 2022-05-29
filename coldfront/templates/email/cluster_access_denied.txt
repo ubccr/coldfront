@@ -1,4 +1,4 @@
-Dear {{ center_user }} user,
+Dear {{ user.first_name }} {{ user.last_name }},
 
 Your cluster access request under project {{ project }} and allocation {{ allocation }} has been denied.
 

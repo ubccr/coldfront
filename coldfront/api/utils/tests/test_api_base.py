@@ -2,6 +2,7 @@ from coldfront.core.user.models import ExpiringToken
 from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.test import TestCase
+from flags.state import enable_flag
 from http import HTTPStatus
 from rest_framework.test import APIClient
 import os
@@ -16,16 +17,7 @@ class TestAPIBase(TestCase):
 
     def setUp(self):
         """Set up test data."""
-        # Create initial, required database objects.
-        sys.stdout = open(os.devnull, 'w')
-        call_command('import_field_of_science_data')
-        call_command('add_default_project_choices')
-        call_command('add_resource_defaults')
-        call_command('add_allocation_defaults')
-        call_command('add_brc_accounting_defaults')
-        call_command('create_staff_group')
-        sys.stdout = sys.__stdout__
-
+        self.call_setup_commands()
         # Create a test client with authorization.
         self.client = APIClient()
         staff_user = User.objects.create(
@@ -117,6 +109,26 @@ class TestAPIBase(TestCase):
         json = response.json()
         self.assert_result_format(json, result_fields)
         return json
+
+    @staticmethod
+    def call_setup_commands():
+        """Call the management commands that load required database
+        objects."""
+        # Run the setup commands with the BRC_ONLY flag enabled.
+        # TODO: Implement a long-term solution that enables testing of multiple
+        # TODO: types of deployments.
+        enable_flag('BRC_ONLY', create_boolean_condition=True)
+
+        # Create initial, required database objects.
+        sys.stdout = open(os.devnull, 'w')
+        call_command('import_field_of_science_data')
+        call_command('add_default_project_choices')
+        call_command('add_resource_defaults')
+        call_command('add_allocation_defaults')
+        call_command('add_accounting_defaults')
+        call_command('create_allocation_periods')
+        call_command('create_staff_group')
+        sys.stdout = sys.__stdout__
 
     @staticmethod
     def generate_invalid_pk(model):

@@ -119,17 +119,12 @@ class TestDeactivateICAProjects(TestSUBase):
         allocation = get_project_compute_allocation(project)
 
         # Messages that should be output to stdout during a dry run
-        messages = [f'Would update Project {project.name} ({project.pk})\'s '
-                    f'status to Inactive and Allocation '
-                    f'{allocation.pk}\'s status to Expired.',
-
-                    f'Would reset {project.name} and its users\' SUs from '
-                    f'1000.00 to 0.00. The reason '
-                    f'would be: "Resetting SUs while deactivating expired '
-                    f'ICA project."',
-
-                    'Would send a notification email to 1 user.']
-
+        messages = [
+            (f'Would deactivate Project {project.name} ({project.pk}), update '
+             f'Allocation {allocation.pk}, and update Service Units from '
+             f'1000.00 to 0.00.'),
+            'Would send a notification email to 1 user.',
+        ]
         for message in messages:
             self.assertIn(message, output)
 
@@ -152,16 +147,10 @@ class TestDeactivateICAProjects(TestSUBase):
         output, error = self.call_command('deactivate_ica_projects')
 
         messages = [
-            f'Updated Project {project.name} ({project.pk})\'s status to '
-            f'Inactive and Allocation {allocation.pk}\'s '
-            f'status to Expired.',
-
-            f'Successfully reset SUs for {project.name} '
-            f'and its users, updating {project.name}\'s SUs from '
-            f'1000.00 to 0.00. The reason '
-            f'was: "Resetting SUs while deactivating expired ICA '
-            f'project.".']
-
+            (f'Deactivated Project {project.name} ({project.pk}), updated '
+             f'Allocation {allocation.pk}, and updated Service Units from '
+             f'1000.00 to 0.00.'),
+        ]
         for message in messages:
             self.assertIn(message, output)
         self.assertEqual(error, '')
@@ -171,7 +160,8 @@ class TestDeactivateICAProjects(TestSUBase):
         allocation.refresh_from_db()
 
         # test project and allocation statuses
-        self.project_allocation_updates(project, allocation, pre_time, post_time)
+        self.project_allocation_updates(
+            project, allocation, pre_time, post_time)
 
         # test usages are updated
         self.usage_values_updated(project, '0.00')
@@ -183,7 +173,7 @@ class TestDeactivateICAProjects(TestSUBase):
         self.transactions_created(project, pre_time, post_time, 0.00)
 
         # test historical objects created and updated
-        reason = 'Resetting SUs while deactivating expired ICA project.'
+        reason = 'Zeroing service units during allocation expiration.'
         post_length_dict = self.record_historical_objects_len(project)
         self.historical_objects_created(pre_length_dict, post_length_dict)
         self.historical_objects_updated(project, reason)
@@ -205,16 +195,17 @@ class TestDeactivateICAProjects(TestSUBase):
                                           '--send_emails')
 
         recipients = project.managers_and_pis_emails()
+        num_recipients = len(recipients)
+        assert num_recipients == 1
 
         # Testing that the correct text is output to stdout
-        message = f'Sent deactivation notification email to ' \
-                  f'{len(recipients)} users.'
+        message = f'Sent a notification email to {num_recipients} user.'
 
         self.assertIn(message, output)
         self.assertEqual(error, '')
 
         # Testing that the correct number of emails were sent
-        self.assertEqual(len(mail.outbox), len(recipients))
+        self.assertEqual(len(mail.outbox), num_recipients)
 
         email_body = [f'Dear managers of {project.name},',
 

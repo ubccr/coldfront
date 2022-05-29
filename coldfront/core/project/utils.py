@@ -1,6 +1,8 @@
 from django.core.mail import send_mail
+from django.db import transaction
 from django.template.loader import render_to_string
 
+from coldfront.api.statistics.utils import get_accounting_allocation_objects
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationStatusChoice
@@ -9,18 +11,22 @@ from coldfront.core.allocation.utils import get_or_create_active_allocation_user
 from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.allocation.utils import review_cluster_access_requests_url
 from coldfront.core.allocation.utils import set_allocation_user_attribute_value
+from coldfront.core.allocation.utils_.accounting_utils import set_service_units
+from coldfront.core.project.models import Project
+from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.utils.common import import_from_settings
+from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import project_detail_url
 from coldfront.core.utils.mail import send_email_template
 from collections import namedtuple
 from django.conf import settings
 from django.core.exceptions import MultipleObjectsReturned
 from django.core.exceptions import ObjectDoesNotExist
-
 from django.urls import reverse
 from urllib.parse import urljoin
+
 import logging
 
 
@@ -389,3 +395,55 @@ class ProjectClusterAccessRequestRunner(object):
             message = f'Failed to send notification email. Details:'
             self.logger.error(message)
             self.logger.exception(e)
+
+
+def deactivate_project_and_allocation(project, change_reason=None):
+    """For the given Project, perform the following:
+        1. Set its status to 'Inactive',
+        2. Set its corresponding "CLUSTER_NAME Compute" Allocation's
+           status to 'Expired', its start_date to the current date, and
+           its end_date to None, and
+        3. Reset the Service Units values and usages for the Allocation
+           and its AllocationUsers.
+
+    Parameters:
+        - project (Project): an instance of the Project model
+        - change_reason (str or None): An optional reason to set in
+                                       created historical objects
+
+    Returns:
+        - None
+
+    Raises:
+        - AssertionError
+        - MultipleObjectsReturned
+        - ObjectDoesNotExist
+        - TypeError"""
+    assert isinstance(project, Project)
+
+    if change_reason is None:
+        change_reason = 'Zeroing service units during allocation expiration.'
+
+    project.status = ProjectStatusChoice.objects.get(name='Inactive')
+
+    accounting_allocation_objects = get_accounting_allocation_objects(
+        project, enforce_allocation_active=False)
+    allocation = accounting_allocation_objects.allocation
+    allocation.status = AllocationStatusChoice.objects.get(name='Expired')
+    allocation.start_date = display_time_zone_current_date()
+    allocation.end_date = None
+
+    num_service_units = settings.ALLOCATION_MIN
+    set_su_kwargs = {
+        'allocation_allowance': num_service_units,
+        'allocation_usage': num_service_units,
+        'allocation_change_reason': change_reason,
+        'user_allowance': num_service_units,
+        'user_usage': num_service_units,
+        'user_change_reason': change_reason,
+    }
+
+    with transaction.atomic():
+        project.save()
+        allocation.save()
+        set_service_units(accounting_allocation_objects, **set_su_kwargs)

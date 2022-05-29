@@ -388,18 +388,6 @@ EMAIL_VERIFICATION_TIMEOUT = 24 * 60 * 60
 # The credentials needed to read from Google Sheets.
 GOOGLE_OAUTH2_KEY_FILE = "/tmp/credentials.json"
 
-#------------------------------------------------------------------------------
-# django-flags settings
-#------------------------------------------------------------------------------
-
-FLAGS = {
-    'ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE': [
-        {'condition': 'during month', 'value': '5'},
-    ],
-    'BRC_ONLY': [{'condition': 'boolean', 'value': True}],
-    'LRC_ONLY': [{'condition': 'boolean', 'value': False}],
-}
-
 # -----------------------------------------------------------------------------
 # Miscellaneous settings
 # -----------------------------------------------------------------------------

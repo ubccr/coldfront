@@ -1,7 +1,9 @@
 import datetime
+import pytz
 from decimal import Decimal
 from bs4 import BeautifulSoup
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.urls import reverse
 
@@ -100,6 +102,14 @@ class TestRequestHubView(TestBase):
                          'project join request',
                          'project renewal request',
                          'service unit purchase request']
+
+    @staticmethod
+    def format_date(d):
+        """Return a string representing the given UTC datetime,
+        converted to the display time zone, in the format
+        '%b. %d, %Y'."""
+        return d.astimezone(
+            pytz.timezone(settings.DISPLAY_TIME_ZONE)).strftime('%b. %d, %Y')
 
     def get_response(self, user, url):
         self.client.login(username=user.username, password=self.password)
@@ -254,7 +264,7 @@ class TestRequestHubView(TestBase):
             self.assertIn(str(pending_req.pk), pending_div)
             self.assertIn(pending_req.project_user.user.username, pending_div)
             self.assertIn(pending_req.requester.username, pending_div)
-            self.assertIn(pending_req.request_time.strftime("%b. %d, %Y"), pending_div)
+            self.assertIn(self.format_date(pending_req.request_time), pending_div)
             self.assertIn(pending_req.status.name, pending_div)
 
             # completed request is shown
@@ -263,7 +273,7 @@ class TestRequestHubView(TestBase):
             self.assertIn(str(completed_req.pk), completed_div)
             self.assertIn(completed_req.project_user.user.username, completed_div)
             self.assertIn(completed_req.requester.username, completed_div)
-            self.assertIn(completed_req.completion_time.strftime("%b. %d, %Y"), completed_div)
+            self.assertIn(self.format_date(completed_req.completion_time), completed_div)
             self.assertIn(completed_req.status.name, completed_div)
 
         processing_status = \
@@ -320,7 +330,7 @@ class TestRequestHubView(TestBase):
             self.assertIn(str(pending_req.pk), pending_div)
             self.assertIn(pending_req.requester.email, pending_div)
             self.assertIn(pending_req.pi.email, pending_div)
-            self.assertIn(pending_req.modified.strftime("%b. %d, %Y"), pending_div)
+            self.assertIn(self.format_date(pending_req.modified), pending_div)
             self.assertIn(pending_req.status.name, pending_div)
 
             # completed request is shown
@@ -329,7 +339,7 @@ class TestRequestHubView(TestBase):
             self.assertIn(str(completed_req.pk), completed_div)
             self.assertIn(completed_req.requester.email, completed_div)
             self.assertIn(completed_req.pi.email, completed_div)
-            self.assertIn(completed_req.modified.strftime("%b. %d, %Y"), completed_div)
+            self.assertIn(self.format_date(completed_req.modified), completed_div)
             self.assertIn(completed_req.status.name, completed_div)
 
         kwargs = {
@@ -387,7 +397,7 @@ class TestRequestHubView(TestBase):
             self.assertIn(str(pending_req.pk), pending_div)
             self.assertIn(pending_req.requester.email, pending_div)
             self.assertIn(pending_req.pi.email, pending_div)
-            self.assertIn(pending_req.modified.strftime("%b. %d, %Y"), pending_div)
+            self.assertIn(self.format_date(pending_req.modified), pending_div)
             self.assertIn(pending_req.status.name, pending_div)
 
             # completed request is shown
@@ -396,7 +406,7 @@ class TestRequestHubView(TestBase):
             self.assertIn(str(completed_req.pk), completed_div)
             self.assertIn(completed_req.requester.email, completed_div)
             self.assertIn(completed_req.pi.email, completed_div)
-            self.assertIn(completed_req.modified.strftime("%b. %d, %Y"), completed_div)
+            self.assertIn(self.format_date(completed_req.modified), completed_div)
             self.assertIn(completed_req.status.name, completed_div)
 
         kwargs = {
@@ -453,7 +463,7 @@ class TestRequestHubView(TestBase):
                     soup.find(id=f'{section}_pending'))
                 self.assertIn(pending_req.project_user.user.username, pending_div)
                 self.assertIn(pending_req.project_user.project.name, pending_div)
-                self.assertIn(pending_req.created.strftime("%b. %d, %Y"), pending_div)
+                self.assertIn(self.format_date(pending_req.created), pending_div)
                 self.assertIn(pending_req.reason, pending_div)
 
             # completed request is shown
@@ -462,7 +472,7 @@ class TestRequestHubView(TestBase):
                     soup.find(id=f'{section}_completed'))
                 self.assertIn(completed_req.project_user.user.username, completed_div)
                 self.assertIn(completed_req.project_user.project.name, completed_div)
-                self.assertIn(completed_req.created.strftime("%b. %d, %Y"), completed_div)
+                self.assertIn(self.format_date(completed_req.created), completed_div)
                 self.assertIn(completed_req.reason, completed_div)
 
         project_user_status = ProjectUserStatusChoice.objects.get(
@@ -515,7 +525,7 @@ class TestRequestHubView(TestBase):
             self.assertIn(pending_req.requester.email, pending_div)
             self.assertIn(pending_req.pre_project.name, pending_div)
             self.assertIn(pending_req.post_project.name, pending_div)
-            self.assertIn(pending_req.modified.strftime("%b. %d, %Y"), pending_div)
+            self.assertIn(self.format_date(pending_req.modified), pending_div)
             self.assertIn(pending_req.status.name, pending_div)
 
             # completed request is shown
@@ -525,7 +535,7 @@ class TestRequestHubView(TestBase):
             self.assertIn(completed_req.requester.email, completed_div)
             self.assertIn(completed_req.pre_project.name, completed_div)
             self.assertIn(completed_req.post_project.name, completed_div)
-            self.assertIn(completed_req.modified.strftime("%b. %d, %Y"), completed_div)
+            self.assertIn(self.format_date(completed_req.modified), completed_div)
             self.assertIn(completed_req.status.name, completed_div)
         
         kwargs = {
@@ -583,7 +593,7 @@ class TestRequestHubView(TestBase):
             self.assertIn(pending_req.requester.email, pending_div)
             self.assertIn(pending_req.project.name, pending_div)
             self.assertIn(str(pending_req.num_service_units), pending_div)
-            self.assertIn(pending_req.modified.strftime("%b. %d, %Y"), pending_div)
+            self.assertIn(self.format_date(pending_req.modified), pending_div)
             self.assertIn(pending_req.status.name, pending_div)
 
             completed_div = str(
@@ -592,7 +602,7 @@ class TestRequestHubView(TestBase):
             self.assertIn(completed_req.requester.email, completed_div)
             self.assertIn(completed_req.project.name, completed_div)
             self.assertIn(str(completed_req.num_service_units), completed_div)
-            self.assertIn(completed_req.modified.strftime("%b. %d, %Y"), completed_div)
+            self.assertIn(self.format_date(completed_req.modified), completed_div)
             self.assertIn(completed_req.status.name, completed_div)
 
         current_time = utc_now_offset_aware()

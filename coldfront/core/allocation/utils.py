@@ -1,7 +1,9 @@
+import os
 from datetime import datetime
 from decimal import Decimal
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db.models import BooleanField
 from django.db.models import Case
 from django.db.models import Q
@@ -14,11 +16,21 @@ from coldfront.core.allocation.models import (AllocationAttributeType,
                                               AllocationPeriod,
                                               AllocationUser,
                                               AllocationUserAttribute,
-                                              AllocationUserStatusChoice)
+                                              AllocationUserStatusChoice,
+                                              Allocation,
+                                              AllocationStatusChoice,
+                                              AllocationAttribute,
+                                              SecureDirAddUserRequest,
+                                              SecureDirAddUserRequestStatusChoice,
+                                              SecureDirRemoveUserRequest,
+                                              SecureDirRemoveUserRequestStatusChoice)
 from coldfront.core.allocation.signals import allocation_activate_user
+from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import utc_now_offset_aware
+
+from flags.state import flag_enabled
 
 import math
 import pytz
@@ -68,7 +80,9 @@ def get_user_resources(user_obj):
         resources = Resource.objects.filter(
             Q(is_allocatable=True) &
             Q(is_available=True) &
-            (Q(is_public=True) | Q(allowed_groups__in=user_obj.groups.all()) | Q(allowed_users__in=[user_obj,]))
+            (Q(is_public=True) |
+             Q(allowed_groups__in=user_obj.groups.all()) |
+             Q(allowed_users__in=[user_obj]))
         ).distinct()
 
     return resources
@@ -133,41 +147,34 @@ def get_allocation_user_cluster_access_status(allocation_obj, user_obj):
 
 
 def get_project_compute_resource_name(project_obj):
-    """Return the name of the Compute Resource that corresponds to the
-    given Project."""
-    if project_obj.name == 'abc':
-        resource_name = 'ABC Compute'
-    elif project_obj.name.startswith('vector_'):
-        resource_name = 'Vector Compute'
-    else:
-        resource_name = 'Savio Compute'
-    return resource_name
+    """Return the name of the '{cluster_name} Compute' Resource that
+    corresponds to the given Project.
+
+    The name is based on currently-enabled flags (i.e., BRC, LRC). If
+    one cannot be determined, return the empty string."""
+    if flag_enabled('BRC_ONLY'):
+        if project_obj.name == 'abc':
+            resource_name = 'ABC Compute'
+        elif project_obj.name.startswith('vector_'):
+            resource_name = 'Vector Compute'
+        else:
+            resource_name = 'Savio Compute'
+        return resource_name
+    if flag_enabled('LRC_ONLY'):
+        if project_obj.name.startswith(('ac_', 'lr_', 'pc_')):
+            resource_name = 'LAWRENCIUM Compute'
+        else:
+            # TODO: Verify this behavior.
+            resource_name = f'{project_obj.name.upper()} Compute'
+        return resource_name
+    return ''
 
 
 def get_project_compute_allocation(project_obj):
-    """Return the given Project's Allocation to a Compute Resource."""
+    """Return the given Project's Allocation to a
+    '{cluster_name} Compute' Resource."""
     resource_name = get_project_compute_resource_name(project_obj)
     return project_obj.allocation_set.get(resources__name=resource_name)
-
-
-def next_allocation_start_datetime():
-    """Return a timezone-aware datetime object representing the start of
-    the next allocation year.
-
-    Parameters:
-        - None
-
-    Returns:
-        - datetime
-    """
-    start_month = settings.ALLOCATION_YEAR_START_MONTH
-    start_day = settings.ALLOCATION_YEAR_START_DAY
-    local_tz = pytz.timezone(settings.DISPLAY_TIME_ZONE)
-    dt = utc_now_offset_aware().astimezone(local_tz)
-    start_year = dt.year + int(dt.month >= start_month)
-    return datetime(
-        start_year, start_month, start_day, tzinfo=local_tz).astimezone(
-            pytz.timezone(settings.TIME_ZONE))
 
 
 def prorated_allocation_amount(amount, dt, allocation_period):
@@ -223,3 +230,110 @@ def review_cluster_access_requests_url():
     domain = settings.CENTER_BASE_URL
     view = reverse('allocation-cluster-account-request-list')
     return urljoin(domain, view)
+
+
+def create_secure_dirs(project, subdirectory_name):
+    """
+    Creates two secure directory allocations: group directory and
+    scratch2 directory. Additionally creates an AllocationAttribute for each
+    new allocation that corresponds to the directory path on the cluster.
+
+    Parameters:
+        - project (Project): a Project object to create a secure directory
+                            allocation for
+        - subdirectory_name (str): the name of the subdirectories on the cluster
+
+    Returns:
+        - Tuple of (groups_allocation, scratch2_allocation)
+
+    Raises:
+        - TypeError, if either argument has an invalid type
+        - ValidationError, if the Allocations already exist
+    """
+
+    if not isinstance(project, Project):
+        raise TypeError(f'Invalid Project {project}.')
+    if not isinstance(subdirectory_name, str):
+        raise TypeError(f'Invalid subdirectory_name {subdirectory_name}.')
+
+    scratch2_p2p3_directory = Resource.objects.get(name='Scratch2 P2/P3 Directory')
+    groups_p2p3_directory = Resource.objects.get(name='Groups P2/P3 Directory')
+
+    query = Allocation.objects.filter(project=project,
+                                      resources__in=[scratch2_p2p3_directory,
+                                                     groups_p2p3_directory])
+    if query.exists():
+        raise ValidationError('Allocations already exist')
+
+    groups_allocation = Allocation.objects.create(
+        project=project,
+        status=AllocationStatusChoice.objects.get(name='Active'),
+        start_date=utc_now_offset_aware())
+
+    scratch2_allocation = Allocation.objects.create(
+        project=project,
+        status=AllocationStatusChoice.objects.get(name='Active'),
+        start_date=utc_now_offset_aware())
+
+    groups_p2p3_path = groups_p2p3_directory.resourceattribute_set.get(
+        resource_attribute_type__name='path')
+    scratch2_p2p3_path = scratch2_p2p3_directory.resourceattribute_set.get(
+        resource_attribute_type__name='path')
+
+    groups_allocation.resources.add(groups_p2p3_directory)
+    scratch2_allocation.resources.add(scratch2_p2p3_directory)
+
+    allocation_attribute_type = AllocationAttributeType.objects.get(
+        name='Cluster Directory Access')
+
+    groups_p2p3_subdirectory = AllocationAttribute.objects.create(
+        allocation_attribute_type=allocation_attribute_type,
+        allocation=groups_allocation,
+        value=os.path.join(groups_p2p3_path.value, subdirectory_name))
+
+    scratch2_p2p3_subdirectory = AllocationAttribute.objects.create(
+        allocation_attribute_type=allocation_attribute_type,
+        allocation=scratch2_allocation,
+        value=os.path.join(scratch2_p2p3_path.value, subdirectory_name))
+
+    return groups_allocation, scratch2_allocation
+
+
+def get_secure_dir_manage_user_request_objects(self, action):
+    """
+    Sets attributes pertaining to a secure directory based on the
+    action being performed.
+
+    Parameters:
+        - self (object): object to set attributes for
+        - action (str): the action being performed, either 'add' or 'remove'
+
+    Raises:
+        - TypeError, if the 'self' object is not an object
+        - ValueError, if action is not one of 'add' or 'remove'
+    """
+
+    action = action.lower()
+    if not isinstance(self, object):
+        raise TypeError(f'Invalid self {self}.')
+    if action not in ['add', 'remove']:
+        raise ValueError(f'Invalid action {action}.')
+
+    add_bool = action == 'add'
+
+    request_obj = SecureDirAddUserRequest \
+        if add_bool else SecureDirRemoveUserRequest
+    request_status_obj = SecureDirAddUserRequestStatusChoice \
+        if add_bool else SecureDirRemoveUserRequestStatusChoice
+
+    language_dict = {
+        'preposition': 'to' if add_bool else 'from',
+        'noun': 'addition' if add_bool else 'removal',
+        'verb': 'add' if add_bool else 'remove'
+    }
+
+    setattr(self, 'action', action.lower())
+    setattr(self, 'add_bool', add_bool)
+    setattr(self, 'request_obj', request_obj)
+    setattr(self, 'request_status_obj', request_status_obj)
+    setattr(self, 'language_dict', language_dict)

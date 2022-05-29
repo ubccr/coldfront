@@ -1,6 +1,7 @@
 from coldfront.api.statistics.utils import create_project_allocation
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttributeType
+from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.models import AllocationUser
@@ -17,6 +18,7 @@ from coldfront.core.project.utils_.renewal_utils import get_current_allowance_ye
 from coldfront.core.resource.models import Resource
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import utc_now_offset_aware
+from datetime import date
 from decimal import Decimal
 from django.contrib.auth.models import User
 from django.core import mail
@@ -38,7 +40,7 @@ class TestRunnerMixinBase(object):
         commands = [
             'add_resource_defaults',
             'add_allocation_defaults',
-            'add_brc_accounting_defaults',
+            'add_accounting_defaults',
             'create_allocation_periods',
             # This command calls 'print', whose output must be suppressed.
             'import_field_of_science_data',

@@ -6,12 +6,14 @@ from django.views.generic.base import TemplateView
 from coldfront.core.allocation.models import (AllocationAttributeType,
                                               AllocationUserAttribute,
                                               AllocationRenewalRequest,
-                                              AllocationAdditionRequest)
+                                              AllocationAdditionRequest,
+                                              SecureDirAddUserRequest,
+                                              SecureDirRemoveUserRequest)
 from coldfront.core.allocation.utils import annotate_queryset_with_allocation_period_not_started_bool
 from coldfront.core.project.models import (ProjectUserRemovalRequest,
                                            SavioProjectAllocationRequest,
                                            VectorProjectAllocationRequest,
-                                           ProjectUserJoinRequest, Project)
+                                           ProjectUserJoinRequest)
 from coldfront.core.project.utils_.permissions_utils import \
     is_user_manager_or_pi_of_project
 
@@ -21,11 +23,19 @@ class RequestListItem:
     Object to keep track of all variables used in for each request type
     in the request hub
     """
-
-    __slots__ = ['num', 'title', 'num_pending', 'table',
-                 'pending_queryset', 'complete_queryset',
-                 'button_path', 'button_text', 'id',
-                 'help_text']
+    def __init__(self):
+        num = None
+        title = None
+        num_pending = None
+        table = None
+        pending_queryset = None
+        complete_queryset = None
+        button_path = None
+        button_arg1 = None
+        button_arg2 = None
+        button_text = None
+        id = None
+        help_text = None
 
 
 class RequestHubView(LoginRequiredMixin,
@@ -378,6 +388,133 @@ class RequestHubView(LoginRequiredMixin,
 
         return su_purchase_request_object
 
+    def get_secure_dir_join_request(self):
+        """Populates a RequestListItem with data for secure dir join requests"""
+        secure_dir_join_request_object = RequestListItem()
+        user = self.request.user
+
+        secure_dir_join_pending = SecureDirAddUserRequest.objects.filter(
+            status__name__in=['Pending', 'Processing']).order_by('modified')
+
+        secure_dir_join_complete = SecureDirAddUserRequest.objects.filter(
+            status__name__in=['Complete', 'Denied']).order_by('modified')
+
+        if not self.show_all_requests:
+            # limit secure_dir_requests to objects user is a PI of or user has
+            user_cond = Q(user=user)
+            request_pks = [request.pk for request in secure_dir_join_pending if
+                           request.allocation.project.projectuser_set.filter(
+                               user=user,
+                               role__name='Principle Investigator',
+                               status__name='Active'
+                           ).exists()]
+            pi_cond = Q(pk__in=request_pks)
+
+            secure_dir_join_pending = secure_dir_join_pending.filter(user_cond | pi_cond)
+
+            request_pks = [request.pk for request in secure_dir_join_complete if
+                           request.allocation.project.projectuser_set.filter(
+                               user=user,
+                               role__name='Principle Investigator',
+                               status__name='Active'
+                           ).exists()]
+            pi_cond = Q(pk__in=request_pks)
+
+            secure_dir_join_complete = secure_dir_join_complete.filter(user_cond | pi_cond)
+
+        secure_dir_join_request_object.num = self.paginators
+        secure_dir_join_request_object.pending_queryset = \
+            self.create_paginator(secure_dir_join_pending)
+
+        secure_dir_join_request_object.complete_queryset = \
+            self.create_paginator(secure_dir_join_complete)
+
+        secure_dir_join_request_object.num_pending = \
+            secure_dir_join_pending.count()
+
+        secure_dir_join_request_object.title = 'Secure Directory Join Requests'
+        secure_dir_join_request_object.table = \
+            'secure_dir/secure_dir_manage_user_request_list_table.html'
+        secure_dir_join_request_object.button_path = \
+            'secure-dir-manage-users-request-list'
+        secure_dir_join_request_object.button_arg1 = \
+            'add'
+        secure_dir_join_request_object.button_arg2 = \
+            'pending'
+        secure_dir_join_request_object.button_text = \
+            'Go To Secure Directory Join Requests Main Page'
+        secure_dir_join_request_object.id = 'secure_dir_join_request_section'
+        secure_dir_join_request_object.help_text = \
+            'Showing secure directory join requests in which you are a PI ' \
+            'for the associated project or in which you are the user.'
+
+        return secure_dir_join_request_object
+
+    def get_secure_dir_remove_request(self):
+        """Populates a RequestListItem with data for secure dir
+        remove requests"""
+        secure_dir_remove_request_object = RequestListItem()
+        user = self.request.user
+
+        secure_dir_remove_pending = SecureDirRemoveUserRequest.objects.filter(
+            status__name__in=['Pending', 'Processing']).order_by('modified')
+
+        secure_dir_remove_complete = SecureDirRemoveUserRequest.objects.filter(
+            status__name__in=['Complete', 'Denied']).order_by('modified')
+
+        if not self.show_all_requests:
+            # limit secure_dir_requests to objects user is a PI of or user has
+            user_cond = Q(user=user)
+            request_pks = [request.pk for request in secure_dir_remove_pending if
+                           request.allocation.project.projectuser_set.filter(
+                               user=user,
+                               role__name='Principle Investigator',
+                               status__name='Active'
+                           ).exists()]
+            pi_cond = Q(pk__in=request_pks)
+
+            secure_dir_remove_pending = secure_dir_remove_pending.filter(user_cond | pi_cond)
+
+            request_pks = [request.pk for request in secure_dir_remove_complete if
+                           request.allocation.project.projectuser_set.filter(
+                               user=user,
+                               role__name='Principle Investigator',
+                               status__name='Active'
+                           ).exists()]
+            pi_cond = Q(pk__in=request_pks)
+
+            secure_dir_remove_complete = secure_dir_remove_complete.filter(user_cond | pi_cond)
+
+        secure_dir_remove_request_object.num = self.paginators
+        secure_dir_remove_request_object.pending_queryset = \
+            self.create_paginator(secure_dir_remove_pending)
+
+        secure_dir_remove_request_object.complete_queryset = \
+            self.create_paginator(secure_dir_remove_complete)
+
+        secure_dir_remove_request_object.num_pending = \
+            secure_dir_remove_pending.count()
+
+        secure_dir_remove_request_object.title = \
+            'Secure Directory Removal Requests'
+        secure_dir_remove_request_object.table = \
+            'secure_dir/secure_dir_manage_user_request_list_table.html'
+        secure_dir_remove_request_object.button_path = \
+            'secure-dir-manage-users-request-list'
+        secure_dir_remove_request_object.button_arg1 = \
+            'remove'
+        secure_dir_remove_request_object.button_arg2 = \
+            'pending'
+        secure_dir_remove_request_object.button_text = \
+            'Go To Secure Directory Removal Requests Main Page'
+        secure_dir_remove_request_object.id = \
+            'secure_dir_remove_request_section'
+        secure_dir_remove_request_object.help_text = \
+            'Showing secure directory removal requests in which you are a PI ' \
+            'for the associated project or in which you are the user.'
+
+        return secure_dir_remove_request_object
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
@@ -387,7 +524,9 @@ class RequestHubView(LoginRequiredMixin,
                     'vector_project_request',
                     'project_join_request',
                     'project_renewal_request',
-                    'su_purchase_request']
+                    'su_purchase_request',
+                    'secure_dir_join_request',
+                    'secure_dir_remove_request']
 
         context['show_all'] = ((self.request.user.is_superuser or
                                 self.request.user.is_staff) and
