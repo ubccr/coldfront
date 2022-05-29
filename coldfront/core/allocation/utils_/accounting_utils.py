@@ -171,9 +171,14 @@ def set_allocation_user_service_units_allowance(allocation_user_attribute,
     transaction_date_time = transaction_date_time or utc_now_offset_aware()
     assert_obj_type(change_reason, str, null_allowed=True)
 
-    project_user = ProjectUser.objects.get(
-        project=allocation_user_attribute.allocation.project,
-        user=allocation_user_attribute.allocation_user.user)
+    # A ProjectUser may not exist for an AllocationUser who was removed from
+    # the Project. Only add a transaction if one exists.
+    try:
+        project_user = ProjectUser.objects.get(
+            project=allocation_user_attribute.allocation.project,
+            user=allocation_user_attribute.allocation_user.user)
+    except ProjectUser.DoesNotExist:
+        project_user = None
 
     with transaction.atomic():
         allocation_user_attribute = model.objects.select_for_update().get(
@@ -182,10 +187,11 @@ def set_allocation_user_service_units_allowance(allocation_user_attribute,
         allocation_user_attribute.save()
         allocation_user_attribute.refresh_from_db()
 
-        ProjectUserTransaction.objects.create(
-            project_user=project_user,
-            date_time=transaction_date_time,
-            allocation=num_service_units)
+        if project_user is not None:
+            ProjectUserTransaction.objects.create(
+                project_user=project_user,
+                date_time=transaction_date_time,
+                allocation=num_service_units)
 
         if change_reason is not None:
             set_latest_history_change_reason(
