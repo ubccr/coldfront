@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 from django.db.models import BooleanField, Prefetch
 from django.db.models.expressions import ExpressionWrapper, F, Q
 from django.db.models.functions import Lower
+from django.forms import ValidationError
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
@@ -15,7 +16,8 @@ from django.views import View
 from django.views.generic import ListView, TemplateView
 
 from coldfront.core.project.models import Project, ProjectUser
-from coldfront.core.user.forms import UserSearchForm
+from coldfront.core.user.forms import UserOrcidEditForm, UserSearchForm
+from coldfront.core.user.models import UserProfile
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
@@ -28,7 +30,7 @@ if EMAIL_ENABLED:
 
 
 @method_decorator(login_required, name='dispatch')
-class UserProfile(TemplateView):
+class UserProfileView(TemplateView):
     template_name = 'user/user_profile.html'
 
     def dispatch(self, request, *args, viewed_username=None, **kwargs):
@@ -56,12 +58,48 @@ class UserProfile(TemplateView):
             viewed_user = get_object_or_404(User, username=viewed_username)
         else:
             viewed_user = self.request.user
+        
+        viewed_user_profile: UserProfile = UserProfile.objects.get(user_id = viewed_user.id)
 
         group_list = ', '.join(
             [group.name for group in viewed_user.groups.all()])
+        
+
+        iod_keys = [f"orcid{i}" for i in range(1, 5)]
+        
+        if viewed_user_profile.orcid_id != None:
+            iod_vals = viewed_user_profile.orcid_id.split('-')
+            init_orcid_data = { k:v for (k,v) in zip(iod_keys, iod_vals) }
+        else:
+            init_orcid_data = { k:"" for k in iod_keys }
+
         context['group_list'] = group_list
         context['viewed_user'] = viewed_user
+        context['orcid_edit_form'] = UserOrcidEditForm(initial=init_orcid_data)
         return context
+    
+    def post(self, request, *args, **kwargs):
+        form = UserOrcidEditForm(request.POST)
+        viewed_username = kwargs['viewed_username']
+        if viewed_username:
+            viewed_user = get_object_or_404(User, username=viewed_username)
+        else:
+            viewed_user = self.request.user
+
+        if form.is_valid():
+            profile_cleaned = form.cleaned_data
+            orcids = [profile_cleaned[f"orcid{i}"] for i in range(1, 5)]
+
+            viewed_user_profile: UserProfile = UserProfile.objects.get(user_id=viewed_user.id)
+            viewed_user_profile.orcid_id = '-'.join(orcids)
+            
+            try:
+                viewed_user_profile.save()
+                messages.success(request, "ORCID successfully updated.")
+            except ValidationError as e:
+                messages.error(request, e.message)
+        
+        return HttpResponseRedirect(reverse('user-profile'))
 
 
 @method_decorator(login_required, name='dispatch')
