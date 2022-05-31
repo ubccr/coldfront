@@ -1,5 +1,6 @@
 {% extends "common/base.html" %}
 {% load static %}
+{% load crispy_forms_tags %}
 
 {% block title %}
 User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif %}
@@ -53,6 +54,16 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
             </td>
           </tr>
           <tr>
+            <th scope="row">ORCID:</th>
+            <td>
+              <form class="form-inline orcid-form" method="post" action="{% url 'user-profile' %}">
+                {% csrf_token %}
+                {{ orcid_edit_form|crispy }}
+                <button class="btn btn-primary mx-sm-3" type="submit"><i class="fas fa-edit" aria-hidden="true"></i> Update ORCID</button>
+              </form>
+            </td>
+          </tr>
+          <tr>
             <th scope="row">Last Login:</th>
             <td>{{viewed_user.last_login}}</td>
           </tr>
@@ -66,5 +77,22 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-user").addClass("active");
   $("#navbar-user-user-profile").addClass("active");
+
+  function next_orcid(n) {
+    console.log("n=" + (n.data.n));
+    if ($("#id_orcid" + n.data.n).val().length == 4)
+    {
+      $("#id_orcid" + (n.data.n + 1)).focus();
+    }
+  }
+
+  $(document).ready(function() {
+    console.log("ready");
+
+
+    $("#id_orcid1").on('input', {n: 1}, next_orcid);
+    $("#id_orcid2").on('input', {n: 2}, next_orcid);
+    $("#id_orcid3").on('input', {n: 3}, next_orcid);
+  });
 </script>
 {% endblock %}
