@@ -2,8 +2,8 @@
 
 {% if missing_orcid_api %}
 <p>
-  ORCID detected in search, but the ORCID API has not been set up yet. See the ORCID API settings in
-  local_settings.py.sample for more information.
+  ORCID detected in search, but the ORCID API has not been set up yet.
+  See the ORCID API settings in local_settings.py.sample for more information.
 </p>
 {% endif %}
 {% if formset %}
@@ -53,7 +53,7 @@
 {% else %}
   <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a>
   <div class="alert alert-info">
-    <!--Potencial mistyping: Should this be "No publications to add?"-->
+    <!--Potential mistyping: Should this be "No publications to add?"-->
     No users to remove!
   </div>
 {% endif %}

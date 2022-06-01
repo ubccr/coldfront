@@ -30,6 +30,14 @@ class PublicationResultForm(forms.Form):
     selected = forms.BooleanField(initial=False, required=False)
 
 
+class PublicationUserSelectForm(forms.Form):
+    username = forms.CharField(max_length=150, disabled=True)
+    first_name = forms.CharField(max_length=30, required=False, disabled=True)
+    last_name = forms.CharField(max_length=150, required=False, disabled=True)
+    email = forms.EmailField(max_length=100, required=False, disabled=True)
+    selected = forms.BooleanField(initial=False, required=False)
+
+
 class PublicationDeleteForm(forms.Form):
     title = forms.CharField(max_length=255, disabled=True)
     year = forms.CharField(max_length=30, disabled=True)
@@ -37,7 +45,7 @@ class PublicationDeleteForm(forms.Form):
 
 
 class PublicationExportForm(forms.Form):
-        title = forms.CharField(max_length=255, disabled=True)
-        year = forms.CharField(max_length=30, disabled=True)
-        unique_id = forms.CharField(max_length=255, disabled=True)
-        selected = forms.BooleanField(initial=False, required=False)
+    title = forms.CharField(max_length=255, disabled=True)
+    year = forms.CharField(max_length=30, disabled=True)
+    unique_id = forms.CharField(max_length=255, disabled=True)
+    selected = forms.BooleanField(initial=False, required=False)
