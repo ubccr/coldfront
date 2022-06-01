@@ -201,6 +201,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         if self.request.user.is_superuser:
             context['user_has_permissions'] = True
 
+        context['project'] = allocation_obj.project
         context['notes'] = notes
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
         return context
@@ -2064,14 +2065,22 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
                 allocation_obj.status.name))
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
-        if allocation_obj.project.needs_review:
+        if allocation_obj.project.status.name in ['Review Pending', 'Denied', 'Expired', ]:
             messages.error(
-                request, 'You cannot renew your allocation because you have to review your project first.')
-            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': allocation_obj.project.pk}))
+                request, 'You cannot renew an allocation with project status "{}".'.format(
+                    allocation_obj.project.status.name
+                )
+            )
+            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
+
+        if allocation_obj.project.needs_review or allocation_obj.project.can_be_reviewed:
+            messages.error(
+                request, 'You cannot renew your allocation until you review your project first.')
+            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
         if allocation_obj.expires_in > 30:
             messages.error(
-                request, 'It is too soon to review your allocation.')
+                request, 'It is too soon to renew your allocation.')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
         return super().dispatch(request, *args, **kwargs)

@@ -60,3 +60,8 @@ def get_value_from_dict(dict_data, key):
 @register.filter
 def split(string, char):
     return string.split(char)
+
+
+@register.filter
+def add(num1, num2):
+    return num1 + num2
