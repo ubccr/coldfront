@@ -2,7 +2,7 @@ import logging
 from smtplib import SMTPException
 
 from django.conf import settings
-from django.core.mail import EmailMessage, send_mail
+from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 
 from coldfront.core.utils.common import import_from_settings
@@ -15,7 +15,7 @@ if EMAIL_ENABLED:
         'EMAIL_DEVELOPMENT_EMAIL_LIST')
 
 
-def send_email(subject, body, sender, receiver_list, cc=[]):
+def send_email(subject, body, sender, receiver_list, html_body, cc=[]):
     """Helper function for sending emails
     """
 
@@ -40,29 +40,37 @@ def send_email(subject, body, sender, receiver_list, cc=[]):
         cc = EMAIL_DEVELOPMENT_EMAIL_LIST
 
     try:
-        if cc:
-            email = EmailMessage(
-                subject,
-                body,
-                sender,
-                receiver_list,
-                cc=cc)
-            email.send(fail_silently=False)
-        else:
-            send_mail(subject, body, sender,
-                      receiver_list, fail_silently=False)
+        email = EmailMultiAlternatives(
+            subject,
+            body,
+            sender,
+            receiver_list,
+            cc=cc)
+        if html_body:
+            email.attach_alternative(html_body, "text/html")
+        email.send(fail_silently=False)
+
     except SMTPException as e:
         logger.error('Failed to send email to %s from %s with subject %s',
                      sender, ','.join(receiver_list), subject)
 
 
 def send_email_template(subject, template_name, context, sender,
-                        receiver_list, cc=[]):
+                        receiver_list, cc=[], html_template=None):
     """Helper function for sending emails from a template
 
     It is the responsibility of the caller to avoid duplicates between the
     receiver_list and cc list.
     """
-    body = render_to_string(template_name, context)
+    plain_body = render_to_string(template_name, context)
 
-    return send_email(subject, body, sender, receiver_list, cc=cc)
+    html_body = None
+    if html_template:
+        html_body = render_to_string(html_template, context)
+
+    return send_email(subject,
+                      plain_body,
+                      sender,
+                      receiver_list,
+                      html_body,
+                      cc=cc)
