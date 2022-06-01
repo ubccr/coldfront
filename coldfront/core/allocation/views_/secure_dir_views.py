@@ -261,25 +261,20 @@ class SecureDirManageUsersView(LoginRequiredMixin,
                 }
 
                 try:
-                    msg_plain = \
-                        render_to_string(
-                            ('email/secure_dir_request/'
-                             'pending_secure_dir_manage_user_requests.txt'),
-                            context)
-                    msg_html = \
-                        render_to_string(
-                            ('email/secure_dir_request/'
-                             'pending_secure_dir_manage_user_requests.html'),
-                            context)
-
-                    send_mail(
-                        f'Pending Secure Directory '
-                        f'{self.language_dict["noun"]} Requests',
-                        msg_plain,
-                        settings.EMAIL_SENDER,
-                        settings.EMAIL_ADMIN_LIST,
-                        html_message=msg_html,
-                    )
+                    subject = f'Pending Secure Directory '\
+                              f'{self.language_dict["noun"]} Requests'
+                    plain_template = 'email/secure_dir_request/'\
+                                     'pending_secure_dir_manage_' \
+                                     'user_requests.txt'
+                    html_template = 'email/secure_dir_request/' \
+                                    'pending_secure_dir_manage_' \
+                                    'user_requests.html'
+                    send_email_template(subject,
+                                        plain_template,
+                                        context,
+                                        settings.EMAIL_SENDER,
+                                        settings.EMAIL_ADMIN_LIST,
+                                        html_template=html_template)
 
                 except Exception as e:
                     message = f'Failed to send notification email.'
