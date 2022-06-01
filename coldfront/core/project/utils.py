@@ -1,6 +1,4 @@
-from django.core.mail import send_mail
 from django.db import transaction
-from django.template.loader import render_to_string
 
 from coldfront.api.statistics.utils import get_accounting_allocation_objects
 from coldfront.core.allocation.models import Allocation
