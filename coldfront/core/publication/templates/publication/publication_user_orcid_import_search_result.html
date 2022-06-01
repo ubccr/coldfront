@@ -1,0 +1,66 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}
+Import Publications with User ORCID
+{% endblock %}
+
+{% block content %}
+{% if formset %}
+  <div class="card border-light">
+    <div class="card-body">
+      <form action="{% url 'user-orcid-import-result' project_pk %}" method="post">
+        {% csrf_token %}
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th>
+                  <input type="checkbox" class="check" id="selectAll">
+                </th>
+                <th scope="col">Username</th>
+                <th scope="col">First Name</th>
+                <th scope="col">Last Name</th>
+                <th scope="col">Email</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for form in formset %}
+                <tr>
+                  <td scope="col">{{ form.selected }}</td>
+                  <td scope="col">{{ form.username.value }}</td>
+                  <td scope="col">{{ form.first_name.value }}</td>
+                  <td scope="col">{{ form.last_name.value }}</td>
+                  <td scope="col">{{ form.email.value }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {{ formset.management_form }}
+        <button id="search-button" type="submit" class="btn btn-success"><i class="fas fa-search" aria-hidden="true"></i> Import ORCID</button>
+        <a class="btn btn-secondary" href="{% url 'user-orcid-import' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Search</a>
+      </form>
+    </div>
+  </div>
+{% else %}
+  <a class="btn btn-secondary mb-3" href="{% url 'user-orcid-import' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Search</a>
+  <div class="alert alert-info">
+    No users were found that matched the search query.
+  </div>
+{% endif %}
+
+<script>
+  $("#selectAll").click(function() {
+    $("input[name^='pubform-']").prop('checked', $(this).prop('checked'));
+  });
+
+  $("input[name^='pubform-']").click(function(ele) {
+    var id = $(this).attr('id');
+    if (id != "selectAll") {
+      $("#selectAll").prop('checked', false);
+    }
+  });
+</script>
+{% endblock %}

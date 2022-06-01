@@ -16,8 +16,9 @@ class UserSelectForm(forms.Form):
     SEARCH_OPTIONS = [
         ('ignore_case', "Ignore Case"), ('match_whole_word', "Match Whole Word"), ('regex', "Regex")
     ]
-    SEARCH_CHOICES = [('username_only', 'Exact Username Only'),
-        ('all_fields', mark_safe('All Fields <span class="text-secondary">This option will be ignored if multiple usernames are entered in the search user text area.</span>')),
+    SEARCH_CHOICES = [
+        ('username_only', 'Username Only'),
+        ('all_fields', 'All Fields'),
     ]
     query = forms.CharField(label='Search Query', widget=forms.Textarea(attrs={'rows': 4}),
                 help_text='Copy paste usernames separated by space or newline for multiple username searches!')
