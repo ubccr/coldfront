@@ -11,12 +11,23 @@
         <h2 class="text-center">Log In to MyBRC</h2>
         <hr>
         <p>
-          <a class="btn btn-primary btn-block" href="{% provider_login_url 'cilogon' process='login' %}" role="button">
+          <a class="btn btn-primary btn-block" href="{% provider_login_url 'cilogon' process='login' auth_params='idphint=urn:mace:incommon:lbl.gov' %}" role="button">
             <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
-            CILogon Log In
+            LBL Log In
           </a>
         </p>
-        <p><a class="btn btn-primary btn-block" href="{% url 'login' %}" role="button"><i class="fas fa-sign-in-alt" aria-hidden="true"></i> Log In</a></p>
+        <p>
+          <a class="btn btn-primary btn-block" href="{% provider_login_url 'cilogon' process='login' auth_params='idphint=urn:mace:incommon:berkeley.edu' %}" role="button">
+            <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+            UC Berkeley Log In
+          </a>
+        </p>
+        <p>
+          <a class="btn btn-primary btn-block" href="{% provider_login_url 'cilogon' process='login' auth_params='initialidp=https://accounts.google.com/o/oauth2/auth' %}" role="button">
+            <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+            Other Log In
+          </a>
+        </p>
         <div class="card bg-light">
             <div class="card-body">
                 <p class="card-title">
