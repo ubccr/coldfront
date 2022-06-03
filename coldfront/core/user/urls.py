@@ -75,6 +75,24 @@ with flagged_paths('BASIC_AUTH_ENABLED') as f_path:
                PasswordResetCompleteView.as_view(
                    template_name='user/passwords/password_reset_complete.html'),
                name='password-reset-complete'),
+
+        # Email views
+        f_path('add-email-address',
+               user_views.EmailAddressAddView.as_view(),
+               name='add-email-address'),
+        f_path('verify-email-address/<uidb64>/<eaidb64>/<token>/',
+               user_views.verify_email_address,
+               name='verify-email-address'),
+        f_path('send-email-verification-email/<int:pk>',
+               user_views.SendEmailAddressVerificationEmailView.as_view(),
+               name='send-email-verification-email'),
+        f_path('remove-email-address/<int:pk>',
+               user_views.RemoveEmailAddressView.as_view(),
+               name='remove-email-address'),
+        f_path('update-primary-email-address',
+               user_views.UpdatePrimaryEmailAddressView.as_view(),
+               name='update-primary-email-address'),
+
     ]
 
 
@@ -105,25 +123,7 @@ urlpatterns += [
     path('user-list-allocations/', user_views.UserListAllocations.as_view(), name='user-list-allocations'),
     path('user-search-all', user_views.UserSearchAll.as_view(), name='user-search-all'),
 
-    # Email views
-    path('add-email-address',
-         user_views.EmailAddressAddView.as_view(),
-         name='add-email-address'
-         ),
-    path('verify-email-address/<uidb64>/<eaidb64>/<token>/',
-         user_views.verify_email_address,
-         name='verify-email-address'
-         ),
-    path('send-email-verification-email/<int:pk>',
-         user_views.SendEmailAddressVerificationEmailView.as_view(),
-         name='send-email-verification-email'
-         ),
-    path('remove-email-address/<int:pk>',
-         user_views.RemoveEmailAddressView.as_view(),
-         name='remove-email-address'),
-    path('update-primary-email-address',
-         user_views.UpdatePrimaryEmailAddressView.as_view(),
-         name='update-primary-email-address'),
+
 
     # Link Personal Account
     path('identity-linking-request',
