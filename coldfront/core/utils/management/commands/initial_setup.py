@@ -17,6 +17,6 @@ class Command(BaseCommand):
         call_command('add_resource_defaults')
         call_command('add_allocation_defaults')
         # call_command('add_default_publication_sources')
-        call_command('add_scheduled_tasks')
+        # call_command('add_scheduled_tasks')
         # call_command('load_test_data')
         call_command('add_default_user_choices')

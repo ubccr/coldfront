@@ -51,10 +51,6 @@ Savio Project Request Detail
                     This request is currently under review. Administrators must
                     determine if the requested PI is eligible for an allowance,
                     and if the project is appropriate for Savio.
-                    {% if savio_request.allocation_type == 'ICA' %}
-                      They must also set the start and end dates of the
-                      allocation.
-                    {% endif %}
                     {% if savio_request.allocation_type in 'ICA,RECHARGE' %}
                       {% if savio_request.allocation_type == 'ICA' %}
                         They must also confirm that the Memorandum of
@@ -135,10 +131,14 @@ Savio Project Request Detail
       </p>
       {% with allocation_period=savio_request.allocation_period %}
         {% if has_allocation_period_started %}
-          <p>
-            If approved, the request will be processed immediately, since its
-            Allocation Period ({{ allocation_period.name }}) has already begun.
-          </p>
+          {% if allocation_period %}
+            <p>
+              If approved, the request will be processed immediately, since its
+              Allocation Period ({{ allocation_period.name }}) has already begun.
+            </p>
+          {% else %}
+            <p>If approved, the request will be processed immediately.</p>
+          {% endif %}
         {% else %}
           <p>
             If approved, the request will be scheduled for processing at the
@@ -214,44 +214,6 @@ Savio Project Request Detail
                   {% endif %}
                 </td>
               </tr>
-              <!--
-                Setting allocation dates and confirming that the memorandum is
-                signed are not dependent on each other, and can be completed in
-                either order.
-              -->
-              {% if savio_request.allocation_type == 'ICA' %}
-                {% with allocation_dates=savio_request.state.allocation_dates %}
-                  <tr>
-                    <td>Set the start and end dates of the allocation.</td>
-                    <td>
-                      {% if eligibility.status == 'Denied' or readiness.status == 'Denied' %}
-                        <span class="badge badge-danger">
-                          N/A
-                        </span>
-                      {% elif allocation_dates.status == 'Pending' %}
-                        <span class="badge badge-warning">
-                          {{ allocation_dates.status }}
-                        </span>
-                      {% else %}
-                        <span class="badge badge-success">
-                          {{ allocation_dates.status }} {{ allocation_dates.timestamp|iso8601_to_datetime }}
-                        </span>
-                      {% endif %}
-                    </td>
-                    <td>
-                      {% if eligibility.status == 'Approved' and readiness.status == 'Approved' %}
-                        <a href="{% url 'savio-project-request-review-allocation-dates' savio_request.pk %}" class="btn btn-primary">
-                          Manage
-                        </a>
-                      {% else %}
-                        <button class="btn btn-primary" disabled="true">
-                          Manage
-                        </button>
-                      {% endif %}
-                    </td>
-                  </tr>
-                {% endwith %}
-              {% endif %}
               {% if savio_request.allocation_type in 'ICA,RECHARGE' %}
                 {% with memorandum_signed=savio_request.state.memorandum_signed %}
                   <tr>
@@ -314,18 +276,16 @@ Savio Project Request Detail
                 </td>
                 <td>
                   {% if savio_request.allocation_type == 'ICA' %}
-                    {% with allocation_dates=savio_request.state.allocation_dates %}
-                      {% with memorandum_signed=savio_request.state.memorandum_signed %}
-                        {% if eligibility.status == 'Approved' and readiness.status == 'Approved' and allocation_dates.status == 'Complete' and memorandum_signed.status == 'Complete' %}
-                          <a href="{% url 'savio-project-request-review-setup' savio_request.pk %}" class="btn btn-primary">
-                            Manage
-                          </a>
-                        {% else %}
-                          <button class="btn btn-primary" disabled="true">
-                            Manage
-                          </button>
-                        {% endif %}
-                      {% endwith %}
+                    {% with memorandum_signed=savio_request.state.memorandum_signed %}
+                      {% if eligibility.status == 'Approved' and readiness.status == 'Approved' and memorandum_signed.status == 'Complete' %}
+                        <a href="{% url 'savio-project-request-review-setup' savio_request.pk %}" class="btn btn-primary">
+                          Manage
+                        </a>
+                      {% else %}
+                        <button class="btn btn-primary" disabled="true">
+                          Manage
+                        </button>
+                      {% endif %}
                     {% endwith %}
                   {% elif savio_request.allocation_type == 'RECHARGE' %}
                     {% with memorandum_signed=savio_request.state.memorandum_signed %}

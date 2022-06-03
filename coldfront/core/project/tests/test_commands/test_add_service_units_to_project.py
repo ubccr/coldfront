@@ -59,12 +59,10 @@ class TestAddServiceUnitsToProject(TestSUBase):
                                           f'--reason={self.reason}',
                                           '--dry_run')
 
-        dry_run_message = 'Would add 1000 additional SUs to project ' \
-                          'project0. This would increase project0 ' \
-                          'SUs from 1000.00 to 2000.00. ' \
-                          'The reason for updating SUs for project0 ' \
-                          'would be: "This is a test for ' \
-                          'add_service_units command".'
+        dry_run_message = (
+            f'Would add 1000 SUs for Project project0 and its users, '
+            f'increasing its SUs from 1000.00 to 2000.00, with reason '
+            f'"{self.reason}".')
 
         self.assertIn(dry_run_message, output)
         self.assertEqual(error, '')
@@ -84,9 +82,9 @@ class TestAddServiceUnitsToProject(TestSUBase):
                                           '--amount=1000',
                                           f'--reason={self.reason}')
 
-        message = f'Successfully added 1000 SUs to project0 and its users, ' \
-                  f'updating project0\'s SUs from 1000.00 to 2000.00. The ' \
-                  f'reason was: "This is a test for add_service_units command".'
+        message = (
+            f'Added 1000 SUs for Project project0 and its users, increasing '
+            f'its SUs from 1000.00 to 2000.00, with reason "{self.reason}".')
 
         self.assertIn(message, output)
         self.assertEqual(error, '')
@@ -119,9 +117,9 @@ class TestAddServiceUnitsToProject(TestSUBase):
                                           '--amount=-800',
                                           f'--reason={self.reason}')
 
-        message = f'Successfully added -800 SUs to project0 and its users, ' \
-                  f'updating project0\'s SUs from 1000.00 to 200.00. The ' \
-                  f'reason was: "This is a test for add_service_units command".'
+        message = (
+            f'Added -800 SUs for Project project0 and its users, decreasing '
+            f'its SUs from 1000.00 to 200.00, with reason "{self.reason}".')
 
         self.assertIn(message, output)
         self.assertEqual(error, '')

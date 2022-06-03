@@ -21,6 +21,7 @@ from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import import_from_settings
+from coldfront.core.utils.common import display_time_zone_current_date
 
 logger = logging.getLogger(__name__)
 
@@ -132,6 +133,9 @@ class Allocation(TimeStampedModel):
                     percent
                 )
                 html_string += string
+
+            if attribute.allocation_attribute_type.name == 'Cluster Directory Access':
+                html_string += 'Directory Name: {}'.format(attribute.value)
 
         return mark_safe(html_string)
 
@@ -399,6 +403,18 @@ class AllocationPeriod(TimeStampedModel):
     start_date = models.DateField()
     end_date = models.DateField()
 
+    def assert_not_ended(self):
+        """Raise an AssertionError if the AllocationPeriod has already
+        ended as of the current date."""
+        message = f'AllocationPeriod already ended on {self.end_date}.'
+        assert display_time_zone_current_date() <= self.end_date, message
+
+    def assert_started(self):
+        """Raise an AssertionError if the AllocationPeriod has not
+        started as of the current date."""
+        message = f'AllocationPeriod does not start until {self.start_date}.'
+        assert self.start_date <= display_time_zone_current_date(), message
+
     def __str__(self):
         return self.name
 
@@ -605,3 +621,51 @@ class AllocationAdditionRequest(TimeStampedModel):
             max_timestamp = max(
                 max_timestamp, state[field].get('timestamp', ''))
         return max_timestamp
+
+
+class SecureDirAddUserRequestStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+    # One of "Pending", "Processing", "Complete", "Denied"
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]
+
+
+class SecureDirAddUserRequest(TimeStampedModel):
+    """A request to add a user to a secure directory"""
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE)
+    allocation = models.ForeignKey(
+        Allocation, on_delete=models.CASCADE)
+    directory = models.CharField(max_length=200)
+    request_time = models.DateTimeField(auto_now_add=True)
+    completion_time = models.DateTimeField(null=True)
+    status = models.ForeignKey(
+        SecureDirAddUserRequestStatusChoice, on_delete=models.CASCADE)
+
+
+class SecureDirRemoveUserRequestStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+    # One of "Pending", "Processing", "Complete", "Denied"
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]
+
+
+class SecureDirRemoveUserRequest(TimeStampedModel):
+    """A request to add a user to a secure directory"""
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE)
+    allocation = models.ForeignKey(
+        Allocation, on_delete=models.CASCADE)
+    directory = models.CharField(max_length=200)
+    request_time = models.DateTimeField(auto_now_add=True)
+    completion_time = models.DateTimeField(null=True)
+    status = models.ForeignKey(
+        SecureDirRemoveUserRequestStatusChoice, on_delete=models.CASCADE)

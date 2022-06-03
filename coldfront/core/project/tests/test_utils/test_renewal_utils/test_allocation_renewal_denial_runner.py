@@ -1,8 +1,11 @@
+from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
 from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.tests.test_utils.test_renewal_utils.utils import TestRunnerMixinBase
 from coldfront.core.project.utils_.renewal_utils import AllocationRenewalDenialRunner
+from coldfront.core.project.utils_.renewal_utils import get_next_allowance_year_period
+from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import utc_now_offset_aware
 from django.conf import settings
 from django.core import mail
@@ -12,6 +15,24 @@ from django.test import TestCase
 
 class TestRunnerMixin(TestRunnerMixinBase):
     """A mixin for testing AllocationRenewalDenialRunner."""
+
+    def test_request_allocation_period_not_ended_not_enforced(self):
+        """Test that the provided AllocationRenewalRequest's
+        AllocationPeriod does not need to have not ended."""
+        allocation_period = AllocationPeriod.objects.filter(
+            name__startswith='Allowance Year',
+            end_date__lt=display_time_zone_current_date()).first()
+        self.request_obj.allocation_period = allocation_period
+        self.request_obj.save()
+        AllocationRenewalDenialRunner(self.request_obj)
+
+    def test_request_allocation_period_started_not_enforced(self):
+        """Test that the provided AllocationRenewalRequest's
+        AllocationPeriod does not need to have started."""
+        allocation_period = get_next_allowance_year_period()
+        self.request_obj.allocation_period = allocation_period
+        self.request_obj.save()
+        AllocationRenewalDenialRunner(self.request_obj)
 
     def test_request_initial_not_complete_status_enforced(self):
         """Test that the provided AllocationRenewalRequest must not be

@@ -18,7 +18,7 @@
           <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">Project</a>
           <div class="dropdown-menu">
             <a id="navbar-project" class="dropdown-item" href="{% url 'project-list' %}">Projects</a>
-            {% if request.user.is_superuser %}
+            {% if ALLOCATION_VISIBLE %}
             <a id="navbar-allocation" class="dropdown-item" href="{% url 'allocation-list' %}">Allocations</a>
             {% endif %}
 <!--            {% if settings.ALLOCATION_ACCOUNT_ENABLED  %}-->

@@ -143,6 +143,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'django_settings_export.settings_export',
+                'coldfront.core.utils.context_processors.allocation_navbar_visibility',
                 'coldfront.core.utils.context_processors.current_allowance_year_allocation_period',
                 'coldfront.core.utils.context_processors.display_time_zone',
             ],
@@ -212,10 +213,6 @@ DECIMAL_MAX_PLACES = 2
 # The minimum and maximum valid numbers of service units for allocations.
 ALLOCATION_MIN = Decimal('0.00')
 ALLOCATION_MAX = Decimal('100000000.00')
-
-# For accounting purposes, the year begins on June 1st and ends on May 31st.
-ALLOCATION_YEAR_START_MONTH = 6
-ALLOCATION_YEAR_START_DAY = 1
 
 # The default amount of service units to allocate to Savio projects.
 CO_DEFAULT_ALLOCATION = ALLOCATION_MAX
