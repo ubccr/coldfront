@@ -393,8 +393,14 @@ EXTRA_AUTHENTICATION_BACKENDS += [
 SOCIALACCOUNT_ADAPTER = (
     'coldfront.core.socialaccount.adapter.CILogonAccountAdapter')
 
+CILOGON_APP_CLIENT_ID = ''
+CILOGON_APP_SECRET = ''
 SOCIALACCOUNT_PROVIDERS = {
     'cilogon': {
+        'APP': {
+            'client_id': CILOGON_APP_CLIENT_ID,
+            'secret': CILOGON_APP_SECRET,
+        },
         # Interpret all email addresses provided by the provider as 'verified'.
         'VERIFIED_EMAIL': True,
     },
@@ -443,6 +449,9 @@ except ImportError:
             pass
 
 # Update logging settings based on potentially-updated variables.
-
 LOGGING['handlers']['file']['filename'] = LOG_PATH
 LOGGING['handlers']['api_file']['filename'] = API_LOG_PATH
+
+# Update allauth settings based on potentially-updated variables.
+SOCIALACCOUNT_PROVIDERS['cilogon']['APP']['client_id'] = CILOGON_APP_CLIENT_ID
+SOCIALACCOUNT_PROVIDERS['cilogon']['APP']['secret'] = CILOGON_APP_SECRET
