@@ -13,12 +13,7 @@ Import Grant from ORCID
 <div class="col">
     <form method="GET">
         {% csrf_token %}
-        <div id="div_id_orcid" class="form-group">
-            <label for="id_orcid" class="col-form-label requiredField">
-                ORCID ID<span class="asteriskField">*</span>
-            </label>
-            <input id="id_search_id" type="text" class="textinput textInput form-control" required/>
-        </div>
+        {{ grant_orcid_query_form|crispy }}
         <button id="search-btn" type="submit" class="btn btn-success btn-block">Import</button>
     </form>
 </div>
@@ -49,17 +44,6 @@ Import Grant from ORCID
       $("#search_results_inner").html('<div class="alert alert-info text-center"><i class="fas fa-sync fa-spin fa-fw"></i> Searching</div>')
       create_post();
     });
-  //   $('#post-form').on('submit', function(event){
-  //     console.log("Yeet");
-
-  //     //Test if this is actually running
-  //     window.print();
-
-  //     event.preventDefault();
-  //     $('#search_results').show();
-  //     $("#search_results_inner").html('<div class="alert alert-info text-center"><i class="fas fa-sync fa-spin fa-fw"></i> Searching</div>')
-  //     create_post();
-  // });
   
     function create_post() {
       search_id = $('#id_search_id').val().trim();
@@ -74,7 +58,6 @@ Import Grant from ORCID
           }, // data sent with the post request
           // handle a successful response
           success : function(data) {
-              $('#id_search_id').val(''); // remove the value from the input
               $('#search_results').show();
               $('#search_results_inner').html(data);
           },
@@ -89,7 +72,13 @@ Import Grant from ORCID
   };
   
   $(document).ready(function(){
-    $('[data-toggle="popover"]').popover(); 
+    $('[data-toggle="popover"]').popover();
+
+    console.log('{{ search_immediately }}')
+    if ('{{ search_immediately }}' == 'True')
+    {
+      $('#search-btn').click();
+    }
   });
   </script>
 

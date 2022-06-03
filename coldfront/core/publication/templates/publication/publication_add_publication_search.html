@@ -13,9 +13,14 @@ Add Publication to Project
 <hr>
 
 <div class="col">
-  <a class="btn btn-info" href="{% url 'add-publication-manually' project.pk %}" role="button"><i class="far fa-edit" aria-hidden="true"></i> Enter publication manually</a>
-  <a class="btn btn-info" href="{% url 'user-orcid-import' project.pk %}" role="button"><i class="far fa-edit" aria-hidden="true"></i> Import publications from project users</a>
-  <input type="hidden" id="searchImmediately" name="searchImmediately" value="{{ search_immediately }}"/>
+  <div class="mb-3">
+    <a class="btn btn-info" href="{% url 'add-publication-manually' project.pk %}" role="button">
+      <i class="far fa-edit" aria-hidden="true"></i> Enter Publication Manually
+    </a>
+    <a class="btn btn-info" href="{% url 'publication-user-orcid-import' project.pk %}" role="button">
+      <i class="far fa-user" aria-hidden="true"></i> Import Grants from User ORCIDs
+    </a>
+  </div>
   <form id="post-form">
     {% csrf_token %}
     {{ publication_search_form|crispy }}
@@ -58,7 +63,6 @@ Add Publication to Project
         }, // data sent with the post request
         // handle a successful response
         success : function(data) {
-            $('#post-text').val(''); // remove the value from the input
             $('#search_results').show();
             $('#search_results_inner').html(data);
         },

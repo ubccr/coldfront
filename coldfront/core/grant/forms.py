@@ -22,6 +22,11 @@ class GrantForm(ModelForm):
             'direct_funding': 'Funds budgeted specifically for {} services, hardware, software, and/or personnel'.format(CENTER_NAME)
         }
 
+
+class OrcidImportGrantQueryForm(forms.Form):
+    search_id = forms.CharField(required=True, widget=forms.Textarea, label="ORCID ID")
+
+
 class OrcidImportGrantResultForm(forms.Form):
     title = forms.CharField(max_length=1024, disabled=True)
     grant_number = forms.CharField(

@@ -1,4 +1,7 @@
+from argparse import ArgumentError
 import logging
+import re
+from typing import List
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -7,16 +10,18 @@ from django.contrib.auth.models import User
 from django.db.models import BooleanField, Prefetch
 from django.db.models.expressions import ExpressionWrapper, F, Q
 from django.db.models.functions import Lower
-from django.forms import ValidationError
+from django.forms import ValidationError, formset_factory
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import ListView, TemplateView
+from requests import session
 
 from coldfront.core.project.models import Project, ProjectUser
-from coldfront.core.user.forms import UserOrcidEditForm, UserSearchForm
+from coldfront.core.publication.forms import PublicationUserSelectForm
+from coldfront.core.user.forms import UserOrcidEditForm, UserSearchForm, UserSelectForm, UserSelectResultForm
 from coldfront.core.user.models import UserProfile
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.common import import_from_settings
@@ -280,6 +285,128 @@ class UserSearchResults(LoginRequiredMixin, UserPassesTestMixin, View):
         context = cobmined_user_search_obj.search()
 
         return render(request, self.template_name, context)
+
+    def test_func(self):
+        return self.request.user.is_staff
+
+
+class UserSelectHome(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'user/user_select_home.html'
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context['user_select_form'] = UserSelectForm()
+        return context
+
+    def test_func(self):
+        return self.request.user.is_staff
+
+
+class UserSelectResults(LoginRequiredMixin, UserPassesTestMixin, View):
+    """
+    Expects "user_select_avail_ids" (List[int]: list of selectable user ids)
+    and "user_select_redirect" (str: where to redirect to after selection is made).
+    If "user_select_avail" is not provided, defaults to all users.
+
+    Places all selected user pks into request.session['user_select_selected'].
+    """
+    template_name = 'user/user_select_results.html'
+    AVAIL_KEY = "user_select_avail_ids"
+    REDIRECT_KEY = "user_select_redirect"
+    SELECTED_STR = "user_select_selected"
+
+    _user_dict_values = [
+        "username", "first_name", "last_name", "email"
+    ]
+
+    def filter_users(self, users: List[User], query: str, search_by: str, search_options: List[str]) -> List[str]:
+        """
+        Filters the list of users based on the search options.
+        """
+        search_thru_values = ["username"] if 'exact_username' in search_by else self._user_dict_values
+        re_flags = re.IGNORECASE if 'ignore_case' in search_options else 0
+        query_list = query.split()
+        filtered_users = []
+
+        for user in users:
+            matched = False
+
+            for search_value_str in search_thru_values:
+                search_val = getattr(user, search_value_str)
+
+                for query in query_list:
+                    if 'regex' in search_options:
+                        if 'match_whole_word' in search_options:
+                            matched = re.match(query, search_val, re_flags) is not None
+                        else:
+                            matched = re.search(query, search_val, re_flags) is not None
+                    else:
+                        if 'match_whole_word' in search_options:
+                            if re_flags == re.IGNORECASE:
+                                matched = search_val.lower() == query.lower()
+                            else:
+                                matched = search_val == query
+                        else:
+                            if re_flags == re.IGNORECASE:
+                                matched = query.lower() in search_val.lower()
+                            else:
+                                matched = query in search_val
+                    
+                    if matched:
+                        break
+                
+                if matched:
+                    break
+            
+            
+            if matched:
+                user_dict = {}
+                for value in self._user_dict_values:
+                    user_dict[value] = getattr(user, value)
+                filtered_users.append(user_dict)
+
+        return filtered_users
+
+    def post(self, request, *args, **kwargs):
+        if self.REDIRECT_KEY not in request.session:
+            raise ValueError(f"'{self.REDIRECT_KEY}' not in request.session")
+        if "select_users" in request.POST:
+            # Submit button pressed
+            filtered_users: List = request.session.pop('user_select_filtered', [])
+            formset = formset_factory(PublicationUserSelectForm, max_num=len(filtered_users))
+            formset = formset(request.POST, initial=filtered_users, prefix='userform')
+            selected_users = []
+
+            if formset.is_valid():
+                for form in formset:
+                    user_form_data = form.cleaned_data
+                    if user_form_data['selected']:
+                        user: User = User.objects.get(username=user_form_data['username'])
+                        selected_users.append(user.pk)
+            
+            request.session[self.SELECTED_STR] = selected_users
+            return HttpResponseRedirect(request.session.get(self.REDIRECT_KEY))
+        else:
+            # Initial load
+            query = request.POST.get('query')
+            search_by = request.POST.get('search_by')
+            search_options = request.POST.getlist('search_options[]')
+
+            # List of users to filter
+            avail_user_ids = request.session.pop(self.AVAIL_KEY, list(User.objects.all().values_list('pk', flat=True)))
+            avail_users = User.objects.filter(pk__in=avail_user_ids)
+            filtered_users = self.filter_users(avail_users, query, search_by, search_options)
+            request.session['user_select_filtered'] = filtered_users
+
+            formset = formset_factory(UserSelectResultForm, max_num=len(filtered_users))
+            formset = formset(initial=filtered_users, prefix='userform')
+            context = {
+                "matches": filtered_users,
+                "formset": formset,
+                "redirect": request.session.get(self.REDIRECT_KEY, "")
+            }
+
+            return render(request, self.template_name, context)
 
     def test_func(self):
         return self.request.user.is_staff

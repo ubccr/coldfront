@@ -11,13 +11,21 @@ Create Grant
 
 {% block content %}
   {% if orcid_vars == True %}
-    <a class="btn btn-info" href="{% url 'grant-orcid-import' project.pk %}" role="button">
-      <i class="far fa-edit" aria-hidden="true"></i> Import Grants from ORCID
-    </a>
+    <div class="mb-3">
+      <a class="btn btn-info" href="{% url 'grant-orcid-import' project.pk %}" role="button">
+        <i class="far fa-edit" aria-hidden="true"></i> Import Grants from ORCID
+      </a>
+      <a class="btn btn-info" href="{% url 'grant-user-orcid-import' project.pk %}" role="button">
+        <i class="far fa-user" aria-hidden="true"></i> Import Grants from User ORCIDs
+      </a>
+    </div>
   {% else %}
-  <div title="{{orcid_config_msg}}">
+  <div title="{{orcid_config_msg}}" class="mb-3">
     <a class="btn btn-info disabled" href="{% url 'grant-orcid-import' project.pk %}" role="button">
       <i class="far fa-edit" aria-hidden="true"></i> Import Grants from ORCID
+    </a>
+    <a class="btn btn-info disabled" href="{% url 'grant-user-orcid-import' project.pk %}" role="button">
+      <i class="far fa-user" aria-hidden="true"></i> Import Grants from User ORCIDs
     </a>
   </div>
   {% endif %}

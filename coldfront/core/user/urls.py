@@ -23,5 +23,7 @@ urlpatterns = [
     path('user-upgrade/', user_views.UserUpgradeAccount.as_view(), name='user-upgrade'),
     path('user-search-home/', user_views.UserSearchHome.as_view(), name='user-search-home'),
     path('user-search-results/', user_views.UserSearchResults.as_view(), name='user-search-results'),
+    path('user-select-home/', user_views.UserSelectHome.as_view(), name='user-select-home'),
+    path('user-select-results/', user_views.UserSelectResults.as_view(), name='user-select-results'),
     path('user-list-allocations/', user_views.UserListAllocations.as_view(), name='user-list-allocations'),
 ]
