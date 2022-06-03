@@ -83,16 +83,33 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
     if ($("#id_orcid" + n.data.n).val().length == 4)
     {
       $("#id_orcid" + (n.data.n + 1)).focus();
+      $("#id_orcid" + (n.data.n + 1)).select();
     }
+  }
+
+  function handle_paste(e) {
+    var content = e.originalEvent.clipboardData.getData('text/plain');
+    content = content.replace(/-/g, '');
+    console.log(content);
+
+    for (let i = 0; i < 4; i++) {
+      $("#id_orcid" + (i + 1)).val(content.slice(4 * i, 4 * (i + 1)));
+    }
+
+    return false;
   }
 
   $(document).ready(function() {
     console.log("ready");
 
-
     $("#id_orcid1").on('input', {n: 1}, next_orcid);
     $("#id_orcid2").on('input', {n: 2}, next_orcid);
     $("#id_orcid3").on('input', {n: 3}, next_orcid);
+
+    $("#id_orcid1").on('paste', handle_paste);
+    $("#id_orcid2").on('paste', handle_paste);
+    $("#id_orcid3").on('paste', handle_paste);
+    $("#id_orcid4").on('paste', handle_paste);
   });
 </script>
 {% endblock %}
