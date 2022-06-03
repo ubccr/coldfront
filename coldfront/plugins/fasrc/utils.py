@@ -64,6 +64,8 @@ class AllTheThingsConn:
             "where":f"WHERE (e.filesystem =~ '.*({volumes}).*')",
             "storage_type":"\"Quota\"",
             "usedgb": "usedGB",
+            "sizebytes": "limitBytes",
+            "usedbytes": "usedBytes",
             "fs_path":"filesystem",
             "server":"filesystem",
             "unique":"datetime(e.DotsLFSUpdateDate) as begin_date"}
@@ -74,6 +76,8 @@ class AllTheThingsConn:
             "fs_path":"Path",
             "server":"Isilon",
             "usedgb": "UsedGB",
+            "sizebytes": "SizeBytes",
+            "usedbytes": "UsedBytes",
             "unique":"datetime(e.DotsUpdateDate) as begin_date"}
 
         # volume = {"match": "[:Owns]-(e:Volume)",
@@ -92,6 +96,8 @@ class AllTheThingsConn:
                     {d['unique']}, \
                     g.ADSamAccountName as lab,\
                     (e.SizeGB / 1024) as tb_allocation, \
+                    e.{d['sizebytes']} as byte_allocation,\
+                    e.{d['usedbytes']} as byte_usage,\
                     (e.{d['usedgb']} / 1024) as tb_usage,\
                     e.{d['fs_path']} as fs_path,\
                     {d['storage_type']} as storage_type, \
@@ -188,32 +194,32 @@ class AllTheThingsConn:
                 logger.info(f"allocation: {a.__dict__}")
 
                 # 4. get the storage quota TB allocation_attribute that has allocation=a.
-                allocation_attribute_type_obj = AllocationAttributeType.objects.get(
-                    name='Storage Quota (TB)')
-                try:
-                    allocation_attribute_obj = AllocationAttribute.objects.get(
-                        allocation_attribute_type=allocation_attribute_type_obj,
-                        allocation=a,
-                    )
-                    allocation_attribute_obj.value = lab_allocation
-                    allocation_attribute_obj.save()
-                    allocation_attribute_exist = True
-                except AllocationAttribute.DoesNotExist:
-                    allocation_attribute_exist = False
+                for alloc_attribute_type in ('Storage Quota (TB)', 'Quota_in_bytes'):
+                    allocation_attribute_type_obj = AllocationAttributeType.objects.get(
+                        name=alloc_attribute_type)
+                    try:
+                        allocation_attribute_obj = AllocationAttribute.objects.get(
+                            allocation_attribute_type=allocation_attribute_type_obj,
+                            allocation=a,
+                        )
+                        allocation_attribute_obj.value = lab_allocation
+                        allocation_attribute_obj.save()
+                        allocation_attribute_exist = True
+                    except AllocationAttribute.DoesNotExist:
+                        allocation_attribute_exist = False
 
-                if (not allocation_attribute_exist):
-                    allocation_attribute_obj,_ =AllocationAttribute.objects.get_or_create(
-                        allocation_attribute_type=allocation_attribute_type_obj,
-                        allocation=a,
-                        value = lab_allocation)
-                    allocation_attribute_type_obj.save()
+                    if (not allocation_attribute_exist):
+                        allocation_attribute_obj,_ =AllocationAttribute.objects.get_or_create(
+                            allocation_attribute_type=allocation_attribute_type_obj,
+                            allocation=a,
+                            value = lab_allocation)
+                        allocation_attribute_type_obj.save()
 
-                allocation_attribute_obj.allocationattributeusage.value = lab_usage
-                allocation_attribute_obj.allocationattributeusage.save()
+                    allocation_attribute_obj.allocationattributeusage.value = lab_usage
+                    allocation_attribute_obj.allocationattributeusage.save()
 
                 # 5. AllocationAttribute
-                allocation_attribute_type_payment = AllocationAttributeType.objects.get(
-                        name='RequiresPayment')
+                allocation_attribute_type_payment = AllocationAttributeType.objects.get(name='RequiresPayment')
                 allocation_attribute_payment, _ = AllocationAttribute.objects.get_or_create(
                         allocation_attribute_type=allocation_attribute_type_payment,
                         allocation=a,
