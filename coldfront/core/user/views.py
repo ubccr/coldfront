@@ -6,6 +6,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth.views import PasswordChangeView
+from django.core.exceptions import ImproperlyConfigured
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import IntegrityError
 from django.db.models import BooleanField, Prefetch
@@ -514,6 +515,22 @@ class CustomPasswordChangeView(PasswordChangeView):
             'to use your PIN and OTP to access the cluster.')
         messages.success(self.request, message)
         return super().form_valid(form)
+
+
+class UserLoginView(View):
+    """Redirect to the Basic Auth. login view or the SSO login view
+    based on enabled flags."""
+
+    def dispatch(self, request, *args, **kwargs):
+        basic_auth_enabled = 'BASIC_AUTH_ENABLED'
+        if flag_enabled(basic_auth_enabled):
+            return redirect(reverse('basic-auth-login'))
+        sso_enabled = 'SSO_ENABLED'
+        if flag_enabled(sso_enabled):
+            return redirect(reverse('sso-login'))
+        raise ImproperlyConfigured(
+            f'One of the following flags must be enabled: '
+            f'{basic_auth_enabled}, {sso_enabled}.')
 
 
 class UserRegistrationView(CreateView):

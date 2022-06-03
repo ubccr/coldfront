@@ -17,17 +17,21 @@ from coldfront.core.user.forms import UserLoginForm
 EXTRA_APPS = settings.EXTRA_APPS
 
 
-urlpatterns = []
+urlpatterns = [
+    path('login/',
+         user_views.UserLoginView.as_view(),
+         name='login'),
+]
 
 with flagged_paths('BASIC_AUTH_ENABLED') as f_path:
     urlpatterns += [
-        f_path('login',
+        f_path('basic_auth_login/',
                LoginView.as_view(
                    template_name='user/login.html',
                    form_class=UserLoginForm,
                    extra_context={'EXTRA_APPS': EXTRA_APPS},
                    redirect_authenticated_user=True),
-               name='login'),
+               name='basic-auth-login'),
         # Registration and activation views
         f_path('register/',
                user_views.UserRegistrationView.as_view(
@@ -42,14 +46,43 @@ with flagged_paths('BASIC_AUTH_ENABLED') as f_path:
         f_path('user-name-exists',
                user_views.UserNameExistsView.as_view(),
                name='user-name-exists'),
+        f_path('email-address-exists/<str:email>',
+               user_views.EmailAddressExistsView.as_view(),
+               name='email-address-exists'),
+
+        # Password management views
+        f_path('password-change/',
+               user_views.CustomPasswordChangeView.as_view(),
+               name='password-change'),
+        f_path('password-reset/',
+               PasswordResetView.as_view(
+                   form_class=VerifiedEmailAddressPasswordResetForm,
+                   template_name='user/passwords/password_reset_form.html',
+                   email_template_name='user/passwords/password_reset_email.html',
+                   subject_template_name='user/passwords/password_reset_subject.txt',
+                   success_url=reverse_lazy('password-reset-done')),
+               name='password-reset'),
+        f_path('password-reset-done/',
+               PasswordResetDoneView.as_view(
+                   template_name='user/passwords/password_reset_done.html'),
+               name='password-reset-done'),
+        f_path('password-reset-confirm/<uidb64>/<token>/',
+               PasswordResetConfirmView.as_view(
+                   template_name='user/passwords/password_reset_confirm.html',
+                   success_url=reverse_lazy('password-reset-complete')),
+               name='password-reset-confirm'),
+        f_path('password-reset-complete/',
+               PasswordResetCompleteView.as_view(
+                   template_name='user/passwords/password_reset_complete.html'),
+               name='password-reset-complete'),
     ]
 
 
 with flagged_paths('SSO_ENABLED') as f_path:
     urlpatterns += [
-        f_path('login',
+        f_path('sso_login/',
                TemplateView.as_view(template_name='user/sso_login.html'),
-               name='login'),
+               name='sso-login'),
     ]
 
 
@@ -72,34 +105,6 @@ urlpatterns += [
     path('user-list-allocations/', user_views.UserListAllocations.as_view(), name='user-list-allocations'),
     path('user-search-all', user_views.UserSearchAll.as_view(), name='user-search-all'),
 
-    # Password management views
-    path('password-change/', user_views.CustomPasswordChangeView.as_view(), name='password-change'),
-    path('password-reset/',
-         PasswordResetView.as_view(
-             form_class=VerifiedEmailAddressPasswordResetForm,
-             template_name='user/passwords/password_reset_form.html',
-             email_template_name='user/passwords/password_reset_email.html',
-             subject_template_name='user/passwords/password_reset_subject.txt',
-             success_url=reverse_lazy('password-reset-done')),
-         name='password-reset'
-         ),
-    path('password-reset-done/',
-         PasswordResetDoneView.as_view(
-             template_name='user/passwords/password_reset_done.html'),
-         name='password-reset-done'
-         ),
-    path('password-reset-confirm/<uidb64>/<token>/',
-         PasswordResetConfirmView.as_view(
-             template_name='user/passwords/password_reset_confirm.html',
-             success_url=reverse_lazy('password-reset-complete')),
-         name='password-reset-confirm'
-         ),
-    path('password-reset-complete/',
-         PasswordResetCompleteView.as_view(
-             template_name='user/passwords/password_reset_complete.html'),
-         name='password-reset-complete'
-         ),
-
     # Email views
     path('add-email-address',
          user_views.EmailAddressAddView.as_view(),
@@ -119,9 +124,6 @@ urlpatterns += [
     path('update-primary-email-address',
          user_views.UpdatePrimaryEmailAddressView.as_view(),
          name='update-primary-email-address'),
-    path('email-address-exists/<str:email>',
-         user_views.EmailAddressExistsView.as_view(),
-         name='email-address-exists'),
 
     # Link Personal Account
     path('identity-linking-request',
