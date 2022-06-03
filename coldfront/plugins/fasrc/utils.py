@@ -194,7 +194,7 @@ class AllTheThingsConn:
                 logger.info(f"allocation: {a.__dict__}")
 
                 # 4. get the storage quota TB allocation_attribute that has allocation=a.
-                for alloc_attribute_type in ('Storage Quota (TB)', 'Quota_in_bytes'):
+                for alloc_attribute_type in ('Storage Quota (TB)', 'Quota_In_Bytes'):
                     allocation_attribute_type_obj = AllocationAttributeType.objects.get(
                         name=alloc_attribute_type)
                     try:
