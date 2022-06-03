@@ -5,6 +5,9 @@ from django.contrib.auth.views import PasswordResetConfirmView
 from django.contrib.auth.views import PasswordResetDoneView
 from django.contrib.auth.views import PasswordResetView
 from django.urls import path, reverse_lazy
+from django.views.generic import TemplateView
+
+from flags.urls import flagged_paths
 
 import coldfront.core.user.views as user_views
 import coldfront.core.user.views_.request_hub_views as request_hub_views
@@ -14,15 +17,43 @@ from coldfront.core.user.forms import UserLoginForm
 EXTRA_APPS = settings.EXTRA_APPS
 
 
-urlpatterns = [
-    path('login',
-         LoginView.as_view(
-             template_name='user/login.html',
-             form_class=UserLoginForm,
-             extra_context={'EXTRA_APPS': EXTRA_APPS},
-             redirect_authenticated_user=True),
-         name='login'
-         ),
+urlpatterns = []
+
+with flagged_paths('BASIC_AUTH_ENABLED') as f_path:
+    urlpatterns += [
+        f_path('login',
+               LoginView.as_view(
+                   template_name='user/login.html',
+                   form_class=UserLoginForm,
+                   extra_context={'EXTRA_APPS': EXTRA_APPS},
+                   redirect_authenticated_user=True),
+               name='login'),
+        # Registration and activation views
+        f_path('register/',
+               user_views.UserRegistrationView.as_view(
+                   template_name='user/registration.html'),
+               name='register'),
+        f_path('activate/<uidb64>/<token>/',
+               user_views.activate_user_account,
+               name='activate',),
+        f_path('reactivate/',
+               user_views.UserReactivateView.as_view(),
+               name='reactivate'),
+        f_path('user-name-exists',
+               user_views.UserNameExistsView.as_view(),
+               name='user-name-exists'),
+    ]
+
+
+with flagged_paths('SSO_ENABLED') as f_path:
+    urlpatterns += [
+        f_path('login',
+               TemplateView.as_view(template_name='user/sso_login.html'),
+               name='login'),
+    ]
+
+
+urlpatterns += [
     path('logout',
          LogoutView.as_view(next_page=reverse_lazy('login')),
          name='logout'
@@ -69,20 +100,6 @@ urlpatterns = [
          name='password-reset-complete'
          ),
 
-    # Registration and activation views
-    path('register/',
-         user_views.UserRegistrationView.as_view(
-             template_name='user/registration.html'),
-         name='register'
-         ),
-    path('activate/<uidb64>/<token>/',
-         user_views.activate_user_account,
-         name='activate',
-         ),
-    path('reactivate/',
-         user_views.UserReactivateView.as_view(),
-         name='reactivate'),
-
     # Email views
     path('add-email-address',
          user_views.EmailAddressAddView.as_view(),
@@ -105,10 +122,6 @@ urlpatterns = [
     path('email-address-exists/<str:email>',
          user_views.EmailAddressExistsView.as_view(),
          name='email-address-exists'),
-
-    path('user-name-exists',
-         user_views.UserNameExistsView.as_view(),
-         name='user-name-exists'),
 
     # Link Personal Account
     path('identity-linking-request',

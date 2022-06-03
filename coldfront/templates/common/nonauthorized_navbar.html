@@ -1,5 +1,6 @@
 {% include 'common/navbar_brand.html' %}
-{% load common_tags %} 
+{% load common_tags %}
+{% load feature_flags %}
 <nav class="navbar navbar-expand-md navbar-dark bg-primary">
   <div class="container">
     <a class="navbar-brand d-block d-sm-none text-primary" href="#">MyBRC</a>
@@ -19,8 +20,20 @@
         </li>
       </ul>
       <ul class="navbar-nav ml-auto">
-        <li id="navbar-login" class="nav-item"><a class="nav-link" href="{% url 'login' %}"><i class="fas fa-sign-in-alt" aria-hidden="true"></i> Log In</a></li>
-        <li id="navbar-register" class="nav-item"><a class="nav-link" href="{% url 'register' %}">Register</a></li>
+        <li id="navbar-login" class="nav-item">
+          <a class="nav-link" href="{% url 'login' %}">
+            <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+            Log In
+          </a>
+        </li>
+        {% flag_enabled 'BASIC_AUTH_ENABLED' as basic_auth_enabled %}
+        {% if basic_auth_enabled %}
+        <li id="navbar-register" class="nav-item">
+          <a class="nav-link" href="{% url 'register' %}">
+            Register
+          </a>
+        </li>
+        {% endif %}
       </ul>
     </div>
   </div>

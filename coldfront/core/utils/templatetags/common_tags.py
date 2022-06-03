@@ -13,6 +13,7 @@ def settings_value(name):
         'ACCOUNT_CREATION_TEXT',
         'CENTER_NAME',
         'CENTER_HELP_URL',
+        'CENTER_USER_GUIDE',
         'EMAIL_PROJECT_REVIEW_CONTACT',
         'DISPLAY_TIME_ZONE',
     ]
