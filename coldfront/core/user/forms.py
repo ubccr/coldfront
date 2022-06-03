@@ -26,6 +26,14 @@ class UserSelectForm(forms.Form):
     search_by = forms.ChoiceField(choices=SEARCH_CHOICES, widget=forms.RadioSelect(), initial='username_only')
 
 
+class UserSelectResultForm(forms.Form):
+    username = forms.CharField(max_length=150, disabled=True)
+    first_name = forms.CharField(max_length=30, required=False, disabled=True)
+    last_name = forms.CharField(max_length=150, required=False, disabled=True)
+    email = forms.EmailField(max_length=100, required=False, disabled=True)
+    selected = forms.BooleanField(initial=False, required=False)
+
+
 class UserOrcidEditForm(forms.Form):
     orcid1 = forms.CharField(max_length=4, label="&nbsp;", initial=None, required=False)
     orcid2 = forms.CharField(max_length=4, label="-", initial=None, required=False)

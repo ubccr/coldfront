@@ -37,6 +37,7 @@ from coldfront.core.publication.forms import (
 from coldfront.core.publication.models import Publication, PublicationSource
 from doi2bib import crossref
 from coldfront.core.user.forms import UserSelectForm
+from coldfront.core.user.views import UserSelectResults
 # import orcid #NEW REQUIREMENT: orcid (pip install orcid)
 from coldfront.orcid_vars import OrcidAPI
 
@@ -75,15 +76,20 @@ class PublicationSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
 
-        if 'search_id' in self.request.session:
-            psf_init = {'search_id' : self.request.session.pop('search_id')}
-            context['publication_search_form'] = PublicationSearchForm(initial=psf_init)
+        if UserSelectResults.SELECTED_STR in self.request.session:
+            selected_ids = self.request.session.pop(UserSelectResults.SELECTED_STR)
+            selected_user_profiles = UserProfile.objects.filter(user_id__in=selected_ids)
+            selected_orcids = list(selected_user_profiles.values_list('orcid_id', flat=True))
+            
+            psf_initial = {
+                'search_id': '\n'.join(filter(lambda elem: elem is not None, selected_orcids)),
+            }
+            context['publication_search_form'] = PublicationSearchForm(initial=psf_initial)
             context['search_immediately'] = True
         else:
             context['publication_search_form'] = PublicationSearchForm()
             context['search_immediately'] = False
         
-        # context['publication_search_form'] = PublicationSearchForm()
         context['project'] = Project.objects.get(
             pk=self.kwargs.get('project_pk'))
         return context
@@ -438,45 +444,7 @@ class PublicationAddManuallyView(LoginRequiredMixin, UserPassesTestMixin, FormVi
         return reverse('project-detail', kwargs={'pk': self.kwargs.get('project_pk')})
 
 
-class PublicationImportUserOrcidHome(LoginRequiredMixin, UserPassesTestMixin, FormView):
-    form_class = UserSelectForm
-    template_name = "publication/publication_user_orcid_import_search.html"
-
-    def test_func(self):
-        """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
-            return True
-
-        project_obj = get_object_or_404(
-            Project, pk=self.kwargs.get('project_pk'))
-
-        if project_obj.pi == self.request.user:
-            return True
-
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
-            return True
-
-    def get_context_data(self, **kwargs: Any) -> Dict[str, Any]:
-        context = super().get_context_data(**kwargs)
-        context['project'] = Project.objects.get(pk=self.kwargs.get('project_pk'))
-        return context
-    
-    def post(self, request, *args, **kwargs):
-        # return render(HttpResponseRedirect(reverse('user-orcid-import-result',
-        #     kwargs={'project_pk': self.kwargs.get('project_pk')})), PublicationImportUserOrcidResult.template_name,
-        #     context={'project_pk': self.kwargs.get('project_pk'), 'proj_user_ids': proj_user_ids})
-        request.session['user_orcid_request'] = {
-            'query': request.POST['query'],
-            'search_by': request.POST['search_by'],
-            'search_options': request.POST.getlist('search_options') if 'search_options' in request.POST else []}
-        
-        return HttpResponseRedirect(reverse('user-orcid-import-result',
-            kwargs={'project_pk': self.kwargs.get('project_pk')}))
-
-
-class PublicationImportUserOrcidResult(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
-    template_name = "publication/publication_user_orcid_import_search_result.html"
-
+class PublicationUserOrcidImportView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
         """ UserPassesTestMixin Tests"""
         if self.request.user.is_superuser:
@@ -491,106 +459,19 @@ class PublicationImportUserOrcidResult(LoginRequiredMixin, UserPassesTestMixin, 
         if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
             return True
     
-    _user_dict_values = [
-        "username", "first_name", "last_name", "email"
-    ]
+    def get(self, request, *args, **kwargs):
+        project_pk = kwargs['project_pk']
 
-    def get_avail_users(self, project_pk: int) -> List[List[str]]:
-        """
-        Returns a list of all users in the project with pk project_pk.
-        Users are represented by a list of ['username', 'first_name', 'last_name', 'email'].
-        """
+        # User selection
         proj_users = ProjectUser.objects.filter(project_id=project_pk)
         proj_user_ids = proj_users.values_list("user_id", flat=True)
-        users = User.objects.filter(pk__in=proj_user_ids)
+        user_ids = list(User.objects.filter(pk__in=proj_user_ids).values_list('pk', flat=True))
+        request.session[UserSelectResults.AVAIL_KEY] = user_ids
+        request.session[UserSelectResults.REDIRECT_KEY] = reverse('publication-search', kwargs={'project_pk': project_pk})
 
-        search_settings = self.request.session['user_orcid_request']
-        search_thru_values = ["username"] if 'exact_username' in search_settings['search_by'] else self._user_dict_values
-        re_flags = re.IGNORECASE if 'ignore_case' in search_settings['search_options'] else 0
-        user_dict_list = []
+        # user-select-home is in Users
+        return HttpResponseRedirect(reverse('user-select-home'))
 
-        for user in users:
-            matched = False
-
-            query_list = search_settings['query'].split()
-
-            for search_value_str in search_thru_values:
-                search_val = getattr(user, search_value_str)
-
-                for query in query_list:
-                    if 'regex' in search_settings['search_options']:
-                        if 'match_whole_word' in search_settings['search_options']:
-                            matched = re.match(query, search_val, re_flags) is not None
-                        else:
-                            matched = re.search(query, search_val, re_flags) is not None
-                    else:
-                        if 'match_whole_word' in search_settings['search_options']:
-                            if re_flags == re.IGNORECASE:
-                                matched = search_val.lower() == query.lower()
-                            else:
-                                matched = search_val == query
-                        else:
-                            if re_flags == re.IGNORECASE:
-                                matched = query.lower() in search_val.lower()
-                            else:
-                                matched = query in search_val
-                    
-                    if matched:
-                        break
-                
-                if matched:
-                    break
-            
-            
-            if matched:
-                user_dict = {}
-                for value in self._user_dict_values:
-                    user_dict[value] = getattr(user, value)
-                user_dict_list.append(user_dict)
-        
-        return user_dict_list
-
-    def get_context_data(self, **kwargs: Any) -> Dict[str, Any]:
-        context = super().get_context_data(**kwargs)
-
-        proj_pk = self.kwargs.get('project_pk')
-        proj_users = ProjectUser.objects.filter(project_id=proj_pk)
-        proj_user_ids = proj_users.values_list("user_id", flat=True)
-
-        user_dict_list = self.get_avail_users(proj_pk)
-
-        formset = formset_factory(PublicationUserSelectForm, max_num=len(user_dict_list))
-        formset = formset(initial=user_dict_list, prefix='pubform')
-
-        context['project'] = Project.objects.get(pk=proj_pk)
-        context['proj_user_ids'] = proj_user_ids
-        context['formset'] = formset
-        
-        return context
-
-    def post(self, request, *args, **kwargs):
-        proj_pk = self.kwargs.get('project_pk')
-        user_dict_list = self.get_avail_users(proj_pk)
-
-        formset = formset_factory(PublicationUserSelectForm, max_num=len(user_dict_list))
-        formset = formset(request.POST, initial=user_dict_list, prefix='pubform')
-
-        all_orcids = []
-
-        if formset.is_valid():
-            for form in formset:
-                user_form_data = form.cleaned_data
-                if user_form_data['selected']:
-                    user_id: int = User.objects.get(username=user_form_data['username']).pk
-                    user_profile: UserProfile = UserProfile.objects.get(user_id=user_id)
-                    user_orcid = user_profile.orcid_id
-                    all_orcids.append('' if user_orcid is None else user_orcid)
-
-                    # We have user orcid now. Put into form or something.
-            # Will send all_orcids to session
-            request.session['search_id'] = '\n'.join(all_orcids)
-
-        return HttpResponseRedirect(reverse('publication-search', kwargs={'project_pk': proj_pk}))
 
 class PublicationDeletePublicationsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'publication/publication_delete_publications.html'
