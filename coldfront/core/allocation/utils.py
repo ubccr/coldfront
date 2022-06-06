@@ -241,7 +241,11 @@ def create_secure_dirs(project, groups_subdirectory_name, scratch_subdirectory_n
     Parameters:
         - project (Project): a Project object to create a secure directory
                             allocation for
-        - subdirectory_name (str): the name of the subdirectories on the cluster
+        - groups_subdirectory_name (str): the name of the groups subdirectory
+                                          on the cluster
+        - scratch_subdirectory_name (str): the name of the scratch subdirectory
+                                           on the cluster
+
 
     Returns:
         - Tuple of (groups_allocation, scratch2_allocation)
