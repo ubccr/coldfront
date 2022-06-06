@@ -97,10 +97,13 @@ class TestSecureDirBase(TestBase):
         self.staff = User.objects.create(
             username='staff', email='staff@nonexistent.com', is_staff=True)
 
-        self.subdirectory_name = 'test_dir'
+        self.groups_subdirectory_name = 'project1/test_groups'
+        self.scratch_subdirectory_name = 'test_scratch'
         call_command('add_directory_defaults')
         self.groups_allocation, self.scratch2_allocation = \
-            create_secure_dirs(self.project1, self.subdirectory_name)
+            create_secure_dirs(self.project1,
+                               self.groups_subdirectory_name,
+                               self.scratch_subdirectory_name)
 
         for alloc in [self.groups_allocation, self.scratch2_allocation]:
             AllocationUser.objects.create(
