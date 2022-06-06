@@ -383,6 +383,13 @@ Project Detail
 <div class="card mb-3">
   <div class="card-header">
     <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Notifications </h3> <span class="badge badge-secondary">{{project.projectusermessage_set.count}}</span>
+    <div class="float-right">
+      {% if request.user.is_superuser %}
+        <a class="btn btn-success" href="{% url 'project-note-add' project.pk %}" role="button">
+          <i class="fas fa-plus" aria-hidden="true"></i> Add Notification
+        </a>
+      {% endif %}
+    </div>
   </div>
   <div class="card-body">
     {% if project.projectusermessage_set.all %}
@@ -397,11 +404,13 @@ Project Detail
           </thead>
           <tbody>
             {% for message in project.projectusermessage_set.all %}
+              {% if not message.is_private or request.user.is_superuser %}
             <tr>
               <td>{{ message.message }}</td>
               <td>{{ message.author.first_name }} {{ message.author.last_name }}</td>
               <td>{{ message.modified }}</td>
             </tr>
+              {% endif %}
             {% endfor %}
           </tbody>
         </table>

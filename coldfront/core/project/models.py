@@ -132,6 +132,7 @@ class ProjectAdminComment(TimeStampedModel):
 class ProjectUserMessage(TimeStampedModel):
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     author = models.ForeignKey(User, on_delete=models.CASCADE)
+    is_private = models.BooleanField(default=True)
     message = models.TextField()
 
     def __str__(self):
