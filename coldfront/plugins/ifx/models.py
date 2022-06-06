@@ -184,7 +184,8 @@ def get_resource_allocation_authorization_map():
             left join nanites_org_relation rel on rel.child_id = o.id
             left join nanites_organization parent on parent.id = rel.parent_id
         where
-            exists (select 1 from user_product_account upa where upa.account_id = a.id and upa.product_id=pr.id)
+            exists (select 1 from user_product_account upa where upa.account_id = a.id and upa.product_id=pr.id) and
+            p.status_id in (1,2)
         union
         select
             p.title as project,
@@ -206,6 +207,8 @@ def get_resource_allocation_authorization_map():
             inner join user_account ua on ua.account_id = a.id
             left join nanites_org_relation rel on rel.child_id = o.id
             left join nanites_organization parent on parent.id = rel.parent_id
+        where
+            p.status_id in (1,2)
         union
         select
             p.title as project,
@@ -226,6 +229,7 @@ def get_resource_allocation_authorization_map():
             left join nanites_org_relation rel on rel.child_id = o.id
             left join nanites_organization parent on parent.id = rel.parent_id
         where
+            p.status_id in (1,2) and
             not exists (
                 select 1
                 from
