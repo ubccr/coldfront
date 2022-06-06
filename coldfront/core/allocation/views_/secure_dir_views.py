@@ -177,6 +177,8 @@ class SecureDirManageUsersView(LoginRequiredMixin,
             scratch2_p2p3_directory = Resource.objects.get(
                 name='Scratch2 P2/P3 Directory')
             if self.add_bool and alloc_obj.resources.filter(name='Scratch2 P2/P3 Directory').exists():
+                context['add_scratch'] = True
+
                 for i, form in enumerate(formset):
                     user = User.objects.get(username=user_list[i]['username'])
 

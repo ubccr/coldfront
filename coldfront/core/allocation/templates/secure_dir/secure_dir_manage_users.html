@@ -10,10 +10,12 @@
   {% if formset %}
     <div class="card border-light">
       <div class="card-body">
-        <div class="alert alert-warning" role="alert">
-          You may only add users who are not part of another secure
-          scratch directory (no check box will appear below for those users).
-        </div>
+        {% if add_scratch %}
+          <div class="alert alert-warning" role="alert">
+            You may only add users who are not part of another secure
+            scratch directory (no check box will appear below for those users).
+          </div>
+        {% endif %}
 
         <form action="{% url url allocation.pk action %}" method="post">
           {% csrf_token %}
