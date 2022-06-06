@@ -35,6 +35,7 @@ class UserSelectResultForm(forms.Form):
 
 
 class UserOrcidEditForm(forms.Form):
+    username = forms.CharField(max_length=150, required=True, widget=forms.HiddenInput)
     orcid1 = forms.CharField(max_length=4, label="&nbsp;", initial=None, required=False)
     orcid2 = forms.CharField(max_length=4, label="-", initial=None, required=False)
     orcid3 = forms.CharField(max_length=4, label="-", initial=None, required=False)

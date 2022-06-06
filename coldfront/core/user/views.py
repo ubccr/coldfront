@@ -77,6 +77,8 @@ class UserProfileView(TemplateView):
             init_orcid_data = { k:v for (k,v) in zip(iod_keys, iod_vals) }
         else:
             init_orcid_data = { k:"" for k in iod_keys }
+        
+        init_orcid_data['username'] = viewed_user.username
 
         context['group_list'] = group_list
         context['viewed_user'] = viewed_user
@@ -85,11 +87,8 @@ class UserProfileView(TemplateView):
     
     def post(self, request, *args, **kwargs):
         form = UserOrcidEditForm(request.POST)
-        viewed_username = kwargs['viewed_username']
-        if viewed_username:
-            viewed_user = get_object_or_404(User, username=viewed_username)
-        else:
-            viewed_user = self.request.user
+        viewed_username = request.POST['username']
+        viewed_user = get_object_or_404(User, username=viewed_username)
 
         if form.is_valid():
             profile_cleaned = form.cleaned_data
@@ -104,7 +103,7 @@ class UserProfileView(TemplateView):
             except ValidationError as e:
                 messages.error(request, e.message)
         
-        return HttpResponseRedirect(reverse('user-profile'))
+        return HttpResponseRedirect(reverse('user-profile', kwargs={'viewed_username': viewed_username}))
 
 
 @method_decorator(login_required, name='dispatch')
