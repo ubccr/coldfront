@@ -232,7 +232,7 @@ def review_cluster_access_requests_url():
     return urljoin(domain, view)
 
 
-def create_secure_dirs(project, subdirectory_name):
+def create_secure_dirs(project, groups_subdirectory_name, scratch_subdirectory_name):
     """
     Creates two secure directory allocations: group directory and
     scratch2 directory. Additionally creates an AllocationAttribute for each
@@ -253,8 +253,10 @@ def create_secure_dirs(project, subdirectory_name):
 
     if not isinstance(project, Project):
         raise TypeError(f'Invalid Project {project}.')
-    if not isinstance(subdirectory_name, str):
-        raise TypeError(f'Invalid subdirectory_name {subdirectory_name}.')
+    if not isinstance(groups_subdirectory_name, str):
+        raise TypeError(f'Invalid groups subdirectory_name {groups_subdirectory_name}.')
+    if not isinstance(scratch_subdirectory_name, str):
+        raise TypeError(f'Invalid scratch subdirectory_name {scratch_subdirectory_name}.')
 
     scratch2_p2p3_directory = Resource.objects.get(name='Scratch2 P2/P3 Directory')
     groups_p2p3_directory = Resource.objects.get(name='Groups P2/P3 Directory')
@@ -289,12 +291,12 @@ def create_secure_dirs(project, subdirectory_name):
     groups_p2p3_subdirectory = AllocationAttribute.objects.create(
         allocation_attribute_type=allocation_attribute_type,
         allocation=groups_allocation,
-        value=os.path.join(groups_p2p3_path.value, subdirectory_name))
+        value=os.path.join(groups_p2p3_path.value, groups_subdirectory_name))
 
     scratch2_p2p3_subdirectory = AllocationAttribute.objects.create(
         allocation_attribute_type=allocation_attribute_type,
         allocation=scratch2_allocation,
-        value=os.path.join(scratch2_p2p3_path.value, subdirectory_name))
+        value=os.path.join(scratch2_p2p3_path.value, scratch_subdirectory_name))
 
     return groups_allocation, scratch2_allocation
 
