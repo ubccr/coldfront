@@ -7,7 +7,6 @@ from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoic
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.utils import get_or_create_active_allocation_user
 from coldfront.core.allocation.utils import get_project_compute_allocation
-from coldfront.core.allocation.utils import next_allocation_start_datetime
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.models import ProjectStatusChoice
@@ -24,7 +23,6 @@ from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.common import validate_num_service_units
 from coldfront.core.utils.mail import send_email_template
 from collections import namedtuple
-from datetime import timedelta
 from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -57,6 +55,47 @@ def get_current_allowance_year_period():
         name__startswith='Allowance Year',
         start_date__lte=date,
         end_date__gte=date)
+
+
+def get_next_allowance_year_period():
+    """Return the AllocationPeriod representing the next allowance year,
+    of which there should be at most one.
+
+    Parameters:
+        - None
+
+    Returns:
+        - An AllocationPeriod object, or None.
+
+    Raises:
+        - None
+    """
+    date = display_time_zone_current_date()
+    return AllocationPeriod.objects.filter(
+        name__startswith='Allowance Year',
+        start_date__gt=date).first()
+
+
+def get_previous_allowance_year_period():
+    """Return the AllocationPeriod representing the previous allowance
+    year, of which there should be at most one.
+
+    Parameters:
+        - None
+
+    Returns:
+        - An AllocationPeriod object, or None.
+
+    Raises:
+        - None
+    """
+    date = display_time_zone_current_date()
+    allocation_periods = AllocationPeriod.objects.filter(
+        name__startswith='Allowance Year',
+        end_date__lt=date)
+    if not allocation_periods.exists():
+        return None
+    return allocation_periods.latest('end_date')
 
 
 def get_pi_current_active_fca_project(pi_user):
@@ -493,16 +532,9 @@ class AllocationRenewalRunnerBase(object):
     def __init__(self, request_obj, *args, **kwargs):
         self.request_obj = request_obj
         self.current_display_tz_date = display_time_zone_current_date()
-        self.assert_request_allocation_period_not_ended()
 
     def run(self):
         raise NotImplementedError('This method is not implemented.')
-
-    def assert_request_allocation_period_not_ended(self):
-        """Raise an assertion error if the request's AllocationPeriod
-        has already ended."""
-        allocation_period_obj = self.request_obj.allocation_period
-        assert self.current_display_tz_date <= allocation_period_obj.end_date
 
     def assert_request_not_status(self, unexpected_status):
         """Raise an assertion error if the request has the given
@@ -674,6 +706,7 @@ class AllocationRenewalApprovalRunner(AllocationRenewalRunnerBase):
 
     def __init__(self, request_obj, num_service_units, send_email=False):
         super().__init__(request_obj)
+        self.request_obj.allocation_period.assert_not_ended()
         expected_status = AllocationRenewalRequestStatusChoice.objects.get(
             name='Under Review')
         self.assert_request_status(expected_status)
@@ -808,6 +841,8 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
 
     def __init__(self, request_obj, num_service_units):
         super().__init__(request_obj)
+        self.request_obj.allocation_period.assert_started()
+        self.request_obj.allocation_period.assert_not_ended()
         expected_status = AllocationRenewalRequestStatusChoice.objects.get(
             name='Approved')
         self.assert_request_status(expected_status)
@@ -838,6 +873,8 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
             self.create_cluster_access_request_for_requester(
                 requester_allocation_user)
 
+        self.update_pre_projects_of_future_period_requests()
+
         self.handle_by_preference()
         self.complete_request(self.num_service_units)
         self.send_email()
@@ -860,79 +897,6 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         self.request_obj.num_service_units = num_service_units
         self.request_obj.completion_time = utc_now_offset_aware()
         self.request_obj.save()
-
-    def deactivate_pre_project(self):
-        """Deactivate the request's pre_project, which involves setting
-        its status to 'Inactive' and its corresponding 'CLUSTER_NAME
-        Compute' Allocation's status to 'Expired', unless either of the
-        following is true:
-            (a) The pre_project has been renewed during this
-                AllocationPeriod, or
-            (b) A different PI made an approved and complete request to
-                pool with the pre_project.
-
-        If the pre_project is None, do nothing."""
-        request = self.request_obj
-        pre_project = request.pre_project
-        if not pre_project:
-            logger.info(
-                f'AllocationRenewalRequest {request.pk} has no pre-Project. '
-                f'Skipping deactivation.')
-            return
-
-        # TODO: Set this dynamically when supporting other types.
-        allocation_period = get_current_allowance_year_period()
-
-        # (a) If the pre_project has been renewed during this AllocationPeriod,
-        # do not deactivate it.
-        complete_renewal_request_status = \
-            AllocationRenewalRequestStatusChoice.objects.get(name='Complete')
-        completed_renewals = AllocationRenewalRequest.objects.filter(
-            allocation_period=allocation_period,
-            status=complete_renewal_request_status,
-            post_project=pre_project)
-        if completed_renewals.exists():
-            message = (
-                f'Project {pre_project.name} has been renewed during '
-                f'AllocationPeriod {allocation_period.name}. Skipping '
-                f'deactivation.')
-            logger.info(message)
-            return
-
-        # (b) If a different PI made an 'Approved - Complete' request to pool
-        # with the pre_project during this AllocationPeriod, do not deactivate
-        # it.
-        approved_complete_request_status = \
-            ProjectAllocationRequestStatusChoice.objects.get(
-                name='Approved - Complete')
-        approved_complete_pool_requests_from_other_pis = \
-            SavioProjectAllocationRequest.objects.filter(
-                Q(allocation_period=allocation_period) &
-                Q(allocation_type=SavioProjectAllocationRequest.FCA) &
-                ~Q(pi=request.pi) &
-                Q(pool=True) &
-                Q(project=pre_project),
-                Q(status=approved_complete_request_status))
-        if approved_complete_pool_requests_from_other_pis.exists():
-            message = (
-                f'Project {pre_project.name} has been pooled with by a '
-                f'different PI during AllocationPeriod '
-                f'"{allocation_period.name}". Skipping deactivation.')
-            logger.info(message)
-            return
-
-        pre_project.status = ProjectStatusChoice.objects.get(
-            name='Inactive')
-        pre_project.save()
-        allocation = get_project_compute_allocation(pre_project)
-        allocation.status = AllocationStatusChoice.objects.get(
-            name='Expired')
-        allocation.save()
-        message = (
-            f'Set Project {pre_project.name}\'s status to '
-            f'{pre_project.status.name} and Allocation {allocation.pk}\'s '
-            f'status to {allocation.status.name}.')
-        logger.info(message)
 
     def demote_pi_to_user_on_pre_project(self):
         """If the pre_project is pooled (i.e., it has more than one PI),
@@ -977,7 +941,7 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
 
     def handle_unpooled_to_pooled(self):
         """Handle the case when the preference is to start pooling."""
-        self.deactivate_pre_project()
+        pass
 
     def handle_pooled_to_pooled_same(self):
         """Handle the case when the preference is to stay pooled with
@@ -989,19 +953,16 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         the current project and start pooling with a different
         project."""
         self.demote_pi_to_user_on_pre_project()
-        self.deactivate_pre_project()
 
     def handle_pooled_to_unpooled_old(self):
         """Handle the case when the preference is to stop pooling and
         reuse another existing project owned by the PI."""
         self.demote_pi_to_user_on_pre_project()
-        self.deactivate_pre_project()
 
     def handle_pooled_to_unpooled_new(self):
         """Handle the case when the preference is to stop pooling and
         create a new project."""
         self.demote_pi_to_user_on_pre_project()
-        self.deactivate_pre_project()
 
     def send_email(self):
         """Send a notification email to the requester and PI."""
@@ -1018,17 +979,18 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         ProjectStatusChoice, which the post_project had prior to being
         activated, to potentially set the start and end dates."""
         project = self.request_obj.post_project
+        # TODO: Set this dynamically when supporting other types.
         allocation_type = SavioProjectAllocationRequest.FCA
+        allocation_period = self.request_obj.allocation_period
 
         allocation = get_project_compute_allocation(project)
         allocation.status = AllocationStatusChoice.objects.get(name='Active')
         # For the start and end dates, if the Project is not 'Active' or the
         # date is not set, set it.
         if old_project_status.name != 'Active' or not allocation.start_date:
-            allocation.start_date = utc_now_offset_aware()
+            allocation.start_date = display_time_zone_current_date()
         if old_project_status.name != 'Active' or not allocation.end_date:
-            allocation.end_date = \
-                next_allocation_start_datetime() - timedelta(seconds=1)
+            allocation.end_date = getattr(allocation_period, 'end_date', None)
         allocation.save()
 
         # Set the allocation's allocation type.
@@ -1086,3 +1048,49 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         pi = self.request_obj.pi
         pi.userprofile.is_pi = True
         pi.userprofile.save()
+
+    def update_pre_projects_of_future_period_requests(self):
+        """Update the pre_project fields of any 'Under Review',
+        same-allocation-type AllocationRenewalRequests under future
+        AllocationPeriods and under this request's PI to this request's
+        post_project.
+
+        This is necessary to cover the following case:
+            - A request R1 is made to go from Project A to B under
+              AllocationPeriod P1.
+            - A request R2 is made to go from Project A to C under
+              AllocationPeriod P2.
+            - R1 is processed first, potentially demoting the PI on
+              Project A, and promoting the PI on Project B.
+            - When R2 is processed, the PI must be demoted on Project B,
+              not Project A, before being promoted on Project C.
+
+        Warning: This only applies to pooling-eligible allocation types.
+        """
+        request_pk = self.request_obj.pk
+        pi = self.request_obj.pi
+        post_project = self.request_obj.post_project
+
+        # TODO: Set this dynamically when supporting other types.
+        allocation_type = 'fc_'
+
+        future_period_requests = AllocationRenewalRequest.objects.filter(
+            ~Q(pk=request_pk) &
+            ~Q(status__name__in=['Complete', 'Denied']) &
+            Q(allocation_period__start_date__gt=self.current_display_tz_date) &
+            Q(pre_project__name__startswith=allocation_type) &
+            Q(pi=pi) &
+            ~Q(pre_project=post_project))
+        if future_period_requests.exists():
+            message_template = (
+                f'Updated AllocationRenewalRequest {{0}}\'s pre_project from '
+                f'{{1}} to {post_project.pk} since AllocationRenewalRequest '
+                f'{request_pk} updated PI {pi.username}\'s active '
+                f'{allocation_type} Project to {post_project.name}.')
+            for future_period_request in future_period_requests:
+                tmp_pre_project = future_period_request.pre_project
+                future_period_request.pre_project = post_project
+                future_period_request.save()
+                message = message_template.format(
+                    future_period_request.pk, tmp_pre_project.pk)
+                logger.info(message)

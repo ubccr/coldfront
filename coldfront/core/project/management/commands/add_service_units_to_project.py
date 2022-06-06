@@ -1,121 +1,121 @@
 import logging
+
 from decimal import Decimal
 
+from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.management import BaseCommand, CommandError
 
-from coldfront.config import settings
-from coldfront.core.project.models import Project
-from coldfront.core.project.management.commands.utils import set_service_units
 from coldfront.api.statistics.utils import get_accounting_allocation_objects
-from coldfront.core.allocation.models import AllocationAttributeType, Allocation
+from coldfront.core.allocation.utils_.accounting_utils import set_service_units
+from coldfront.core.project.models import Project
+from coldfront.core.utils.common import add_argparse_dry_run_argument
 
 
 class Command(BaseCommand):
+
     help = 'Command to add SUs to a given project.'
     logger = logging.getLogger(__name__)
 
     def add_arguments(self, parser):
-        parser.add_argument('--project_name',
-                            help='Name of project to add SUs to.',
-                            type=str,
-                            required=True)
-        parser.add_argument('--amount',
-                            help='Number of SUs to add to a given project.',
-                            type=int,
-                            required=True)
-        parser.add_argument('--reason',
-                            help='User given reason for adding SUs.',
-                            type=str,
-                            required=True)
-        parser.add_argument('--dry_run',
-                            help='Display updates without performing them.',
-                            action='store_true')
+        parser.add_argument(
+            '--project_name',
+            help='Name of project to add SUs to.',
+            required=True,
+            type=str)
+        parser.add_argument(
+            '--amount',
+            help='Number of SUs to add to a given project.',
+            required=True,
+            type=int)
+        parser.add_argument(
+            '--reason',
+            help='User given reason for adding SUs.',
+            required=True,
+            type=str)
+        add_argparse_dry_run_argument(parser)
 
-    def validate_inputs(self, options):
-        """
-        Validate inputs to add_service_units_to_project command
-
-        Returns a tuple of the project object, allocation objects, current
-        SU amount, and new SU amount
-        """
-
-        # Checking if project exists
-        project_query = Project.objects.filter(name=options.get('project_name'))
-        if not project_query.exists():
-            error_message = f"Requested project {options.get('project_name')}" \
-                            f" does not exist."
-            raise CommandError(error_message)
-
-        # Allocation must be in Savio Compute
-        project = project_query.first()
+    @staticmethod
+    def validate_inputs(options):
+        """Returns a tuple of the project object, allocation objects,
+        current SU amount, and new SU amount. If inputs are invalid,
+        raise a CommandError."""
+        # Check that the Project exists.
+        project_name = options.get('project_name')
         try:
-            allocation_objects = get_accounting_allocation_objects(project)
-        except Allocation.DoesNotExist:
-            error_message = 'Can only add SUs to projects that have an ' \
-                            'allocation in Savio Compute.'
+            project = Project.objects.get(name=project_name)
+        except Project.DoesNotExist:
+            error_message = f'Requested project {project_name} does not exist.'
             raise CommandError(error_message)
 
+        # Check that the Project has an active Allocation to the
+        # 'Savio Compute' resource.
+        try:
+            accounting_allocation_objects = get_accounting_allocation_objects(
+                project)
+        except ObjectDoesNotExist:
+            error_message = (
+                'Service units may not be added to a Project without an '
+                'active Allocation to "Savio Compute".')
+            raise CommandError(error_message)
+
+        # Check that the addition, and the updated number after the addition,
+        # are within the acceptable bounds for Service Units.
         addition = Decimal(options.get('amount'))
-        current_allocation = Decimal(allocation_objects.allocation_attribute.value)
+        current_allowance = Decimal(
+            accounting_allocation_objects.allocation_attribute.value)
+        updated_allowance = current_allowance + addition
 
-        # new service units value
-        allocation = addition + current_allocation
-
-        # checking SU values
-        if addition > settings.ALLOCATION_MAX:
-            error_message = f'Amount of SUs to add cannot be greater ' \
-                            f'than {settings.ALLOCATION_MAX}.'
+        minimum, maximum = settings.ALLOCATION_MIN, settings.ALLOCATION_MAX
+        if addition > maximum:
+            error_message = (
+                f'The amount of service units to add cannot exceed '
+                f'{settings.ALLOCATION_MAX}.')
             raise CommandError(error_message)
 
-        if allocation < settings.ALLOCATION_MIN or allocation > settings.ALLOCATION_MAX:
-            error_message = f'Total SUs for allocation {project.name} ' \
-                            f'cannot be less than {settings.ALLOCATION_MIN} ' \
-                            f'or greater than {settings.ALLOCATION_MAX}.'
+        if not (minimum <= updated_allowance <= maximum):
+            error_message = (
+                f'The updated number of service units ({updated_allowance}) '
+                f'must be in the range [{minimum}, {maximum}].')
             raise CommandError(error_message)
 
+        # Check that the reason provided for the update is long enough.
         if len(options.get('reason')) < 20:
-            error_message = f'Reason must be at least 20 characters.'
+            error_message = (
+                'The update reason must have at least 20 characters.')
             raise CommandError(error_message)
 
-        return project, allocation_objects, current_allocation, allocation
-
-    def set_historical_reason(self, obj, reason):
-        """Set the latest historical object reason"""
-        obj.refresh_from_db()
-        historical_obj = obj.history.latest('id')
-        historical_obj.history_change_reason = reason
-        historical_obj.save()
+        return (
+            project, accounting_allocation_objects, current_allowance,
+            updated_allowance)
 
     def handle(self, *args, **options):
         """ Add SUs to a given project """
-        project, allocation_objects, current_allocation, allocation = \
-            self.validate_inputs(options)
+        validated_inputs = self.validate_inputs(options)
+        project = validated_inputs[0]
+        accounting_allocation_objects = validated_inputs[1]
+        current_allowance = validated_inputs[2]
+        updated_allowance = validated_inputs[3]
 
         addition = Decimal(options.get('amount'))
-        reason = options.get('reason')
-        dry_run = options.get('dry_run', None)
+        change_reason = options.get('reason')
+        dry_run = options.get('dry_run', False)
 
+        message_text = (
+            f'{{0}} {addition} SUs for Project {project.name} and its users, '
+            f'{"increasing" if addition > 0 else "decreasing"} its SUs from '
+            f'{current_allowance} to {updated_allowance}, with reason '
+            f'"{change_reason}".')
         if dry_run:
-            verb = 'increase' if addition > 0 else 'decrease'
-            message = f'Would add {addition} additional SUs to project ' \
-                      f'{project.name}. This would {verb} {project.name} ' \
-                      f'SUs from {current_allocation} to {allocation}. ' \
-                      f'The reason for updating SUs for {project.name} ' \
-                      f'would be: "{reason}".'
-
+            message = message_text.format('Would add')
             self.stdout.write(self.style.WARNING(message))
-
         else:
-            set_service_units(project,
-                              allocation_objects,
-                              allocation,
-                              reason,
-                              False)
-
-            message = f'Successfully added {addition} SUs to {project.name} ' \
-                      f'and its users, updating {project.name}\'s SUs from ' \
-                      f'{current_allocation} to {allocation}. The reason ' \
-                      f'was: "{reason}".'
-
-            self.logger.info(message)
+            set_service_units(
+                accounting_allocation_objects,
+                allocation_allowance=updated_allowance,
+                allocation_change_reason=change_reason,
+                user_allowance=updated_allowance,
+                user_change_reason=change_reason)
+            message = message_text.format('Added')
             self.stdout.write(self.style.SUCCESS(message))
+            self.logger.info(message)

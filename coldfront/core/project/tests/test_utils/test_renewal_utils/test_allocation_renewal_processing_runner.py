@@ -3,6 +3,7 @@ from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationAttributeUsage
+from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
 from coldfront.core.allocation.models import AllocationStatusChoice
@@ -11,7 +12,7 @@ from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.allocation.models import AllocationUserStatusChoice
 from coldfront.core.allocation.utils import get_project_compute_allocation
-from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
+from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
@@ -20,17 +21,18 @@ from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.tests.test_utils.test_renewal_utils.utils import TestRunnerMixinBase
 from coldfront.core.project.utils_.new_project_utils import SavioProjectProcessingRunner
 from coldfront.core.project.utils_.renewal_utils import AllocationRenewalProcessingRunner
+from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
+from coldfront.core.project.utils_.renewal_utils import get_next_allowance_year_period
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.user.models import UserProfile
+from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import utc_now_offset_aware
 from datetime import date
 from datetime import timedelta
 from decimal import Decimal
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.core import mail
-from django.db.models import Q
 from django.test import override_settings
 from django.test import TestCase
 
@@ -284,6 +286,42 @@ class TestRunnerMixin(TestRunnerMixinBase):
         project_user = project_users.first()
         self.assertEqual(project_user.status, active_status)
         self.assertEqual(project_user.role.name, 'Principal Investigator')
+
+    def test_request_allocation_period_not_ended_enforced(self):
+        """Test that the provided AllocationRenewalRequest's
+        AllocationPeriod must not have ended, or an exception will be
+        raised."""
+        allocation_period = AllocationPeriod.objects.filter(
+            name__startswith='Allowance Year',
+            end_date__lt=display_time_zone_current_date()).first()
+        self.request_obj.allocation_period = allocation_period
+        self.request_obj.save()
+        num_service_units = Decimal('0.00')
+        try:
+            AllocationRenewalProcessingRunner(
+                self.request_obj, num_service_units)
+        except AssertionError as e:
+            message = (
+                f'AllocationPeriod already ended on '
+                f'{allocation_period.end_date}.')
+            self.assertEqual(str(e), message)
+
+    def test_request_allocation_period_started_enforced(self):
+        """Test that the provided AllocationRenewalRequest's
+        AllocationPeriod must have started, or an exception will be
+        raised."""
+        allocation_period = get_next_allowance_year_period()
+        self.request_obj.allocation_period = allocation_period
+        self.request_obj.save()
+        num_service_units = Decimal('0.00')
+        try:
+            AllocationRenewalProcessingRunner(
+                self.request_obj, num_service_units)
+        except AssertionError as e:
+            message = (
+                f'AllocationPeriod does not start until '
+                f'{allocation_period.start_date}.')
+            self.assertEqual(str(e), message)
 
     def test_request_initial_approved_status_enforced(self):
         """Test that the provided AllocationRenewalRequest must be in
@@ -750,6 +788,181 @@ class TestRunnerMixin(TestRunnerMixinBase):
             self.assertEqual(attribute.value, new_allocation_value)
 
 
+class TestFutureRequestsUpdateMixin(object):
+    """A mixin for testing that future AllocationRenewalRequests may be
+    updated as a result of processing."""
+
+    def create_different_project_and_request(self, project_name):
+        """Create an AllocationRenewalRequest that shares a pre_project
+        with the request to-be-processed, but has a different
+        post_project, with the given name."""
+        request = self.request_obj
+
+        self.different_project = Project.objects.create(
+            name=project_name,
+            title=project_name,
+            status=ProjectStatusChoice.objects.get(name='Active'))
+
+        allocation_period = get_next_allowance_year_period()
+        approved_status = AllocationRenewalRequestStatusChoice.objects.get(
+            name='Approved')
+
+        return AllocationRenewalRequest.objects.create(
+            requester=request.requester,
+            pi=request.pi,
+            allocation_period=allocation_period,
+            status=approved_status,
+            pre_project=request.pre_project,
+            post_project=self.different_project,
+            num_service_units=Decimal('0.00'),
+            request_time=utc_now_offset_aware())
+
+    def assert_update_message_logged(self, future_request, log_messages,
+                                     expected=True):
+        """Given a list of strings representing messages written to the
+        log during processing, assert that a message about the future
+        request being updated is (not) included.."""
+        expected_log_substring = (
+            f'Updated AllocationRenewalRequest {future_request.pk}\'s '
+            f'pre_project from {self.request_obj.pre_project.pk} to '
+            f'{self.request_obj.post_project.pk}')
+        message_found = False
+        for log_message in log_messages:
+            if expected_log_substring in log_message:
+                message_found = True
+                break
+        self.assertEqual(expected, message_found)
+
+    def test_not_updates_request_not_matching_all_conditions(self):
+        """Test that AllocationRenewalRequests that do not meet all
+        conditions for being updated are not updated."""
+        request = self.request_obj
+
+        future_requests = []
+        for i in range(4):
+            future_requests.append(
+                self.create_different_project_and_request(f'fc_different_{i}'))
+
+        # The first request has a 'Complete' or 'Denied' status.
+        future_requests[0].status = \
+            AllocationRenewalRequestStatusChoice.objects.get(name='Complete')
+        future_requests[0].save()
+        # The second request is for an AllocationPeriod that has already
+        # started.
+        future_requests[1].allocation_period = \
+            get_current_allowance_year_period()
+        future_requests[1].save()
+        # The third request has a different allocation type.
+        future_requests[2].pre_project.name = (
+            f'ic_{future_requests[2].pre_project.name}')
+        future_requests[2].pre_project.save()
+        # The fourth request has a different PI.
+        future_requests[3].pi = future_requests[3].requester
+        future_requests[3].save()
+
+        relevant_pooling_cases = [
+            AllocationRenewalRequest.UNPOOLED_TO_POOLED,
+            AllocationRenewalRequest.POOLED_TO_POOLED_DIFFERENT,
+            AllocationRenewalRequest.POOLED_TO_UNPOOLED_OLD,
+            AllocationRenewalRequest.POOLED_TO_UNPOOLED_NEW,
+        ]
+        project_changed = (
+            request.get_pooling_preference_case() in relevant_pooling_cases)
+
+        log_args = ('coldfront.core.project.utils_.renewal_utils', 'INFO')
+        tmp_status = request.status
+        tmp_pre_project = request.pre_project
+        tmp_post_project = request.post_project
+        already_pi_of_post = request.pi in tmp_post_project.pis()
+        project_pi_role = ProjectUserRoleChoice.objects.get(
+            name='Principal Investigator')
+        project_user_role = ProjectUserRoleChoice.objects.get(name='User')
+        for future_request in future_requests:
+            num_service_units = Decimal('0.00')
+            runner = AllocationRenewalProcessingRunner(
+                request, num_service_units)
+            with self.assertLogs(*log_args) as cm:
+                runner.run()
+            self.assert_update_message_logged(
+                future_request, cm.output, expected=False)
+            # Reset the request fields and other changed state.
+            request.status = tmp_status
+            request.pre_project = tmp_pre_project
+            request.post_project = tmp_post_project
+            ProjectUser.objects.filter(
+                project=request.pre_project, user=request.pi).update(
+                    role=project_pi_role)
+            if not already_pi_of_post:
+                ProjectUser.objects.filter(
+                    project=request.post_project, user=request.pi).update(
+                        role=project_user_role)
+            request.save()
+
+        # In cases where the pre_project of the future request was already
+        # equal to the post_project of the processed request, the two are
+        # trivially equal. In other cases, the future request's pre_project
+        # should not have been updated.
+        future_request.refresh_from_db()
+        if project_changed:
+            self.assertNotEqual(
+                future_request.pre_project, request.post_project)
+        else:
+            self.assertEqual(future_request.pre_project, request.post_project)
+
+    def test_updates_request_matching_all_conditions(self):
+        """Test that an AllocationRenewalRequest that meets all
+        conditions for being updated is updated."""
+        request = self.request_obj
+        # Update the pre_project to have a proper prefix.
+        request.pre_project.name = f'fc_{request.pre_project.name}'
+        request.pre_project.save()
+
+        future_request = self.create_different_project_and_request(
+            'fc_different')
+
+        relevant_pooling_cases = [
+            AllocationRenewalRequest.UNPOOLED_TO_POOLED,
+            AllocationRenewalRequest.POOLED_TO_POOLED_DIFFERENT,
+            AllocationRenewalRequest.POOLED_TO_UNPOOLED_OLD,
+            AllocationRenewalRequest.POOLED_TO_UNPOOLED_NEW,
+        ]
+        project_changed = (
+            request.get_pooling_preference_case() in relevant_pooling_cases)
+
+        # The future request has the 'Approved' status; more specifically, it
+        # does not have the 'Complete' or 'Denied' statuses.
+        self.assertEqual(future_request.status.name, 'Approved')
+        # The future request's AllocationPeriod has not started yet.
+        current_date = display_time_zone_current_date()
+        self.assertGreater(
+            future_request.allocation_period.start_date, current_date)
+        # The future request has the same allocation type as this one.
+        self.assertEqual(
+            future_request.pre_project.name[3:], request.pre_project.name[3:])
+        # The future request has the same PI as this one.
+        self.assertEqual(future_request.pi, request.pi)
+        # The future request has a different pre_project than this one's
+        # post_project, if this request's project changed.
+        if project_changed:
+            self.assertNotEqual(
+                future_request.pre_project, request.post_project)
+        else:
+            self.assertEqual(future_request.pre_project, request.post_project)
+
+        num_service_units = Decimal('0.00')
+        runner = AllocationRenewalProcessingRunner(request, num_service_units)
+        with self.assertLogs(
+                'coldfront.core.project.utils_.renewal_utils', 'INFO') as cm:
+            runner.run()
+        self.assert_update_message_logged(
+            future_request, cm.output, expected=project_changed)
+
+        # In all cases, the future request's pre_project should match this
+        # one's post_project.
+        future_request.refresh_from_db()
+        self.assertEqual(future_request.pre_project, request.post_project)
+
+
 class TestPIDemotionMixin(object):
     """A mixin for testing PI demotion to the 'User' role."""
 
@@ -782,121 +995,8 @@ class TestPIDemotionMixin(object):
         self.assertEqual(user_role, pi_project_user.role)
 
 
-class TestPreProjectDeactivationMixin(object):
-    """A mixin for testing that the pre_project is deactivated under
-    certain conditions."""
-
-    def test_not_deactivated_if_complete_renewal_request_exists(self):
-        """Test that, if the pre_project has been successfully renewed
-        during this AllocationPeriod, it is not deactivated."""
-        request = self.request_obj
-        project = request.pre_project
-        allocation = get_project_compute_allocation(project)
-
-        self.assertEqual(project.status.name, 'Active')
-        self.assertEqual(allocation.status.name, 'Active')
-
-        num_service_units = Decimal('0.00')
-
-        # Add another PI on the Project, and have it make a separate,
-        # 'Complete' AllocationRenewalRequest on it.
-        pi_role = ProjectUserRoleChoice.objects.get(
-            name='Principal Investigator')
-        active_status = ProjectUserStatusChoice.objects.get(name='Active')
-        already_pi_pks = set(list(
-            ProjectUser.objects.filter(
-                project=project, role=pi_role).values_list('user', flat=True)))
-        pi_not_on_project = User.objects.filter(
-            Q(userprofile__is_pi=True) & ~Q(pk__in=already_pi_pks)).first()
-        ProjectUser.objects.create(
-            project=project,
-            user=pi_not_on_project,
-            role=pi_role,
-            status=active_status)
-        request_ = self.create_request(
-            status=AllocationRenewalRequestStatusChoice.objects.get(
-                name='Approved'),
-            pi=pi_not_on_project,
-            pre_project=project,
-            post_project=project)
-        runner = AllocationRenewalProcessingRunner(request_, num_service_units)
-        runner.run()
-
-        runner = AllocationRenewalProcessingRunner(request, num_service_units)
-        runner.run()
-
-        # The Project should not be deactivated because of the other request.
-        project.refresh_from_db()
-        allocation.refresh_from_db()
-        self.assertEqual(project.status.name, 'Active')
-        self.assertEqual(allocation.status.name, 'Active')
-
-    def test_not_deactivated_if_approved_complete_project_request_exists(self):
-        """Test that, if the pre_project has been successfully pooled
-        with by a different PI, it is not deactivated."""
-        request = self.request_obj
-        project = request.pre_project
-        allocation = get_project_compute_allocation(project)
-
-        self.assertEqual(project.status.name, 'Active')
-        self.assertEqual(allocation.status.name, 'Active')
-
-        num_service_units = Decimal('0.00')
-
-        # Add another PI to the Project via an 'Approved - Complete', pooling
-        # SavioProjectAllocationRequest.
-        pi_role = ProjectUserRoleChoice.objects.get(
-            name='Principal Investigator')
-        already_pi_pks = set(list(
-            ProjectUser.objects.filter(
-                project=project, role=pi_role).values_list('user', flat=True)))
-        pi_not_on_project = User.objects.filter(
-            Q(userprofile__is_pi=True) & ~Q(pk__in=already_pi_pks)).first()
-        under_review_request_status = \
-            ProjectAllocationRequestStatusChoice.objects.get(
-                name='Under Review')
-        new_project_request = SavioProjectAllocationRequest.objects.create(
-            requester=self.requester,
-            allocation_type=SavioProjectAllocationRequest.FCA,
-            allocation_period=request.allocation_period,
-            pi=pi_not_on_project,
-            pool=True,
-            project=project,
-            survey_answers={},
-            status=under_review_request_status)
-        runner = SavioProjectProcessingRunner(
-            new_project_request, num_service_units)
-        runner.run()
-
-        runner = AllocationRenewalProcessingRunner(request, num_service_units)
-        runner.run()
-
-        # The Project should not be deactivated because of the other request.
-        project.refresh_from_db()
-        allocation.refresh_from_db()
-        self.assertEqual(project.status.name, 'Active')
-        self.assertEqual(allocation.status.name, 'Active')
-
-    def test_deactivated(self):
-        """Test that, otherwise, the pre_project is deactivated."""
-        request = self.request_obj
-        project = request.pre_project
-        allocation = get_project_compute_allocation(project)
-
-        self.assertEqual(project.status.name, 'Active')
-        self.assertEqual(allocation.status.name, 'Active')
-
-        num_service_units = Decimal('1000.00')
-        runner = AllocationRenewalProcessingRunner(request, num_service_units)
-        runner.run()
-
-        project.refresh_from_db()
-        allocation.refresh_from_db()
-        self.assertEqual(project.status.name, 'Inactive')
-        self.assertEqual(allocation.status.name, 'Expired')
-
-
-class TestUnpooledToUnpooled(TestRunnerMixin, TestCase):
+class TestUnpooledToUnpooled(TestFutureRequestsUpdateMixin, TestRunnerMixin,
+                             TestCase):
     """A class for testing the AllocationRenewalProcessingRunner in the
     'unpooled_to_unpooled' case."""
 
@@ -917,7 +1017,7 @@ class TestUnpooledToUnpooled(TestRunnerMixin, TestCase):
             AllocationRenewalRequest.UNPOOLED_TO_UNPOOLED)
 
 
-class TestUnpooledToPooled(TestPreProjectDeactivationMixin, TestRunnerMixin,
+class TestUnpooledToPooled(TestFutureRequestsUpdateMixin, TestRunnerMixin,
                            TestCase):
     """A class for testing the AllocationRenewalProcessingRunner in the
     'unpooled_to_pooled' case."""
@@ -939,7 +1039,8 @@ class TestUnpooledToPooled(TestPreProjectDeactivationMixin, TestRunnerMixin,
             AllocationRenewalRequest.UNPOOLED_TO_POOLED)
 
 
-class TestPooledToPooledSame(TestRunnerMixin, TestCase):
+class TestPooledToPooledSame(TestFutureRequestsUpdateMixin, TestRunnerMixin,
+                             TestCase):
     """A class for testing the AllocationRenewalProcessingRunner in the
     'pooled_to_pooled_same' case."""
 
@@ -960,7 +1061,7 @@ class TestPooledToPooledSame(TestRunnerMixin, TestCase):
             AllocationRenewalRequest.POOLED_TO_POOLED_SAME)
 
 
-class TestPooledToPooledDifferent(TestPreProjectDeactivationMixin,
+class TestPooledToPooledDifferent(TestFutureRequestsUpdateMixin,
                                   TestPIDemotionMixin, TestRunnerMixin,
                                   TestCase):
     """A class for testing the AllocationRenewalProcessingRunner in the
@@ -983,7 +1084,7 @@ class TestPooledToPooledDifferent(TestPreProjectDeactivationMixin,
             AllocationRenewalRequest.POOLED_TO_POOLED_DIFFERENT)
 
 
-class TestPooledToUnpooledOld(TestPreProjectDeactivationMixin,
+class TestPooledToUnpooledOld(TestFutureRequestsUpdateMixin,
                               TestPIDemotionMixin, TestRunnerMixin, TestCase):
     """A class for testing the AllocationRenewalProcessingRunner in the
     'pooled_to_unpooled_old' case."""
@@ -1005,7 +1106,7 @@ class TestPooledToUnpooledOld(TestPreProjectDeactivationMixin,
             AllocationRenewalRequest.POOLED_TO_UNPOOLED_OLD)
 
 
-class TestPooledToUnpooledNew(TestPreProjectDeactivationMixin,
+class TestPooledToUnpooledNew(TestFutureRequestsUpdateMixin,
                               TestPIDemotionMixin, TestRunnerMixin, TestCase):
     """A class for testing the AllocationRenewalProcessingRunner in the
     'pooled_to_unpooled_new' case."""

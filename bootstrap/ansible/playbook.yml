@@ -13,6 +13,59 @@
     - "{{ cwd }}/main.yml"
 
   tasks:
+    - name: Install redis
+      yum:
+        name:
+          - redis
+        state: present
+
+    - name: Set redis password
+      lineinfile:
+        path: /etc/redis.conf
+        regexp: '^requirepass '
+        insertafter: '^# requirepass foobared'
+        line: 'requirepass {{ redis_passwd }}'
+
+    - name: Restart and enable Redis service
+      service:
+        name: redis
+        state: restarted
+        enabled: yes
+
+    - name: Install Supervisor
+      yum:
+        name:
+          - supervisor
+        state: present
+
+    # ini_file is included in community.general.
+    - name: Set django_q command in supervisord.conf
+      ini_file:
+        path: /etc/supervisord.conf
+        section: 'program:django_q'
+        option: 'command'
+        value: '{{ git_prefix }}/venv/bin/python3 {{ git_prefix }}/{{ reponame }}/manage.py qcluster'
+
+    - name: Set django_q stopasgroup in supervisord.conf
+      ini_file:
+        path: /etc/supervisord.conf
+        section: 'program:django_q'
+        option: 'stopasgroup'
+        value: 'true'
+
+    - name: Set django_q numprocs in supervisord.conf
+      ini_file:
+        path: /etc/supervisord.conf
+        section: 'program:django_q'
+        option: 'numprocs'
+        value: '1'
+
+    - name: Restart and enable Supervisor
+      service:
+        name: supervisord
+        state: restarted
+        enabled: yes
+
     - name: Install Postgresql repo
       yum:
         name: https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
@@ -209,3 +262,9 @@
 
     - name: Restart Apache
       service: name=httpd state=restarted enabled=yes
+
+    # supervisorctl is included in community.general.
+    - name: Ensure that a Supervisor worker is running a django_q cluster
+      supervisorctl:
+        name: 'django_q'
+        state: started

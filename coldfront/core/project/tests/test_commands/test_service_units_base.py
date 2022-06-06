@@ -4,15 +4,9 @@ from django.contrib.auth.models import User
 from django.core import mail
 from django.core.management import call_command
 
-from coldfront.api.statistics.utils import AccountingAllocationObjects
-from coldfront.core.allocation.models import Allocation, \
-    AllocationAttributeType, AllocationAttribute, \
-    AllocationAttributeUsage, AllocationUserStatusChoice, AllocationUser, \
-    AllocationUserAttribute, AllocationUserAttributeUsage
-from coldfront.core.project.models import Project, \
-    ProjectUserStatusChoice, ProjectUser
-from coldfront.core.statistics.models import ProjectTransaction, \
-    ProjectUserTransaction
+from coldfront.api.statistics.utils import get_accounting_allocation_objects
+from coldfront.core.statistics.models import ProjectTransaction
+from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.tests.test_base import TestBase
 
@@ -55,77 +49,12 @@ class TestSUBase(TestBase):
         call_command(*args, **kwargs)
         return out.getvalue(), err.getvalue()
 
-    def get_accounting_allocation_objects(self, project, user=None):
-        """Return a namedtuple of database objects related to accounting and
-        allocation for the given project and optional user.
-
-        Parameters:
-            - project (Project): an instance of the Project model
-            - user (User): an instance of the User model
-
-        Returns:
-            - AccountingAllocationObjects instance
-
-        Raises:
-            - MultipleObjectsReturned, if a database retrieval returns more
-            than one object
-            - ObjectDoesNotExist, if a database retrieval returns less than
-            one object
-            - TypeError, if one or more inputs has the wrong type
-
-        NOTE: this function was taken from coldfront.core.statistics.utils.
-        This version does not check that the allocation status is Active
-        """
-        if not isinstance(project, Project):
-            raise TypeError(f'Project {project} is not a Project object.')
-
-        objects = AccountingAllocationObjects()
-
-        allocation = Allocation.objects.get(
-            project=project, resources__name='Savio Compute')
-
-        # Check that the allocation has an attribute for Service Units and
-        # an associated usage.
-        allocation_attribute_type = AllocationAttributeType.objects.get(
-            name='Service Units')
-        allocation_attribute = AllocationAttribute.objects.get(
-            allocation_attribute_type=allocation_attribute_type,
-            allocation=allocation)
-        allocation_attribute_usage = AllocationAttributeUsage.objects.get(
-            allocation_attribute=allocation_attribute)
-
-        objects.allocation = allocation
-        objects.allocation_attribute = allocation_attribute
-        objects.allocation_attribute_usage = allocation_attribute_usage
-
-        if user is None:
-            return objects
-
-        if not isinstance(user, User):
-            raise TypeError(f'User {user} is not a User object.')
-
-        # Check that there is an active association between the user and project.
-        active_status = ProjectUserStatusChoice.objects.get(name='Active')
-        ProjectUser.objects.get(user=user, project=project, status=active_status)
-
-        # Check that the user is an active member of the allocation.
-        active_status = AllocationUserStatusChoice.objects.get(name='Active')
-        allocation_user = AllocationUser.objects.get(
-            allocation=allocation, user=user, status=active_status)
-
-        # Check that the allocation user has an attribute for Service Units
-        # and an associated usage.
-        allocation_user_attribute = AllocationUserAttribute.objects.get(
-            allocation_attribute_type=allocation_attribute_type,
-            allocation=allocation, allocation_user=allocation_user)
-        allocation_user_attribute_usage = AllocationUserAttributeUsage.objects.get(
-            allocation_user_attribute=allocation_user_attribute)
-
-        objects.allocation_user = allocation_user
-        objects.allocation_user_attribute = allocation_user_attribute
-        objects.allocation_user_attribute_usage = allocation_user_attribute_usage
-
-        return objects
+    @staticmethod
+    def get_accounting_allocation_objects(project, user=None):
+        """Call get_accounting_allocation_objects, without the check
+        that the Allocation must be Active. Return its output."""
+        return get_accounting_allocation_objects(
+            project, user=user, enforce_allocation_active=False)
 
     def record_historical_objects_len(self, project):
         """
@@ -215,6 +144,6 @@ class TestSUBase(TestBase):
                 project, user=project_user.user)
 
             alloc_attr_hist_reason = \
-                allocation_user_obj.allocation_user_attribute.history. \
-                    latest('id').history_change_reason
+                allocation_user_obj.allocation_user_attribute.history.latest(
+                    'id').history_change_reason
             self.assertEqual(alloc_attr_hist_reason, reason)

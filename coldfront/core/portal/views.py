@@ -74,6 +74,13 @@ def home(request):
 
         context['num_join_requests'] = num_join_requests
 
+        context['pending_removal_request_projects'] = \
+            [removal_request.project_user.project.name
+             for removal_request in
+             ProjectUserRemovalRequest.objects.filter(
+                 Q(project_user__user__username=request.user.username) &
+                 Q(status__name='Pending'))]
+
     else:
         template_name = 'portal/nonauthorized_home.html'
 
@@ -82,13 +89,6 @@ def home(request):
     if 'coldfront.plugins.system_monitor' in settings.EXTRA_APPS:
         from coldfront.plugins.system_monitor.utils import get_system_monitor_context
         context.update(get_system_monitor_context())
-
-    context['pending_removal_request_projects'] = \
-        [removal_request.project_user.project.name
-         for removal_request in
-         ProjectUserRemovalRequest.objects.filter(
-             Q(project_user__user__username=request.user.username) &
-             Q(status__name='Pending'))]
 
     return render(request, template_name, context)
 

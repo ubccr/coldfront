@@ -177,26 +177,6 @@ def get_project_compute_allocation(project_obj):
     return project_obj.allocation_set.get(resources__name=resource_name)
 
 
-def next_allocation_start_datetime():
-    """Return a timezone-aware datetime object representing the start of
-    the next allocation year.
-
-    Parameters:
-        - None
-
-    Returns:
-        - datetime
-    """
-    start_month = settings.ALLOCATION_YEAR_START_MONTH
-    start_day = settings.ALLOCATION_YEAR_START_DAY
-    local_tz = pytz.timezone(settings.DISPLAY_TIME_ZONE)
-    dt = utc_now_offset_aware().astimezone(local_tz)
-    start_year = dt.year + int(dt.month >= start_month)
-    return datetime(
-        start_year, start_month, start_day, tzinfo=local_tz).astimezone(
-            pytz.timezone(settings.TIME_ZONE))
-
-
 def prorated_allocation_amount(amount, dt, allocation_period):
     """Given a number of service units and a datetime, return the
     prorated number of service units that would be allocated in the
@@ -357,4 +337,3 @@ def get_secure_dir_manage_user_request_objects(self, action):
     setattr(self, 'request_obj', request_obj)
     setattr(self, 'request_status_obj', request_status_obj)
     setattr(self, 'language_dict', language_dict)
-

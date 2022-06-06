@@ -127,36 +127,37 @@ We do not have information about your research. Please provide a detailed descri
 
     @property
     def needs_review(self):
-
-        if self.status.name == 'Archived':
-            return False
-
-        now = datetime.datetime.now(datetime.timezone.utc)
-
-        if self.force_review is True:
-            return True
-
-        if not PROJECT_ENABLE_PROJECT_REVIEW:
-            return False
-
-        if self.requires_review is False:
-            return False
-
-        if self.projectreview_set.exists():
-            last_review = self.projectreview_set.order_by('-created')[0]
-            last_review_over_365_days = (now - last_review.created).days > 365
-        else:
-            last_review = None
-
-        days_since_creation = (now - self.created).days
-
-        if days_since_creation > 365 and last_review is None:
-            return True
-
-        if last_review and last_review_over_365_days:
-            return True
-
         return False
+
+        # if self.status.name == 'Archived':
+        #     return False
+        #
+        # now = datetime.datetime.now(datetime.timezone.utc)
+        #
+        # if self.force_review is True:
+        #     return True
+        #
+        # if not PROJECT_ENABLE_PROJECT_REVIEW:
+        #     return False
+        #
+        # if self.requires_review is False:
+        #     return False
+        #
+        # if self.projectreview_set.exists():
+        #     last_review = self.projectreview_set.order_by('-created')[0]
+        #     last_review_over_365_days = (now - last_review.created).days > 365
+        # else:
+        #     last_review = None
+        #
+        # days_since_creation = (now - self.created).days
+        #
+        # if days_since_creation > 365 and last_review is None:
+        #     return True
+        #
+        # if last_review and last_review_over_365_days:
+        #     return True
+        #
+        # return False
 
     def pis(self):
         """Return a queryset of User objects that are PIs on this
@@ -360,14 +361,6 @@ def savio_project_request_ica_state_schema():
     """Return the schema for the SavioProjectAllocationRequest.state
     field for Instructional Compute Allowance (ICA) projects."""
     schema = savio_project_request_state_schema()
-    schema['allocation_dates'] = {
-        'status': 'Pending',
-        'dates': {
-            'start': '',
-            'end': '',
-        },
-        'timestamp': '',
-    }
     schema['memorandum_signed'] = {
         'status': 'Pending',
         'timestamp': '',

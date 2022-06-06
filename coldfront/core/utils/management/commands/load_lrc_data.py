@@ -2,12 +2,12 @@ from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationAttributeUsage
+from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.models import AllocationUser
 from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.allocation.utils import get_or_create_active_allocation_user
 from coldfront.core.allocation.utils import get_project_compute_allocation
-from coldfront.core.allocation.utils import next_allocation_start_datetime
 from coldfront.core.allocation.utils import set_allocation_user_attribute_value
 from coldfront.core.billing.models import BillingActivity
 from coldfront.core.billing.models import BillingProject
@@ -16,6 +16,7 @@ from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
+from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils import get_compute_resource_names
 from coldfront.core.statistics.models import ProjectTransaction
@@ -23,7 +24,6 @@ from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.user.models import UserProfile
 
 from collections import defaultdict
-from datetime import timedelta
 from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -796,6 +796,12 @@ class Command(BaseCommand):
 
         resource = Resource.objects.get(name='LAWRENCIUM Compute')
 
+        current_allowance_year_period = get_current_allowance_year_period()
+        if not isinstance(current_allowance_year_period, AllocationPeriod):
+            raise AllocationPeriod.DoesNotExist(
+                'Unexpected: No AllocationPeriod exists for the current '
+                'allowance year.')
+
         for project in Project.objects.all():
             if project.name.startswith('ac_'):
                 end_date = None
@@ -804,8 +810,7 @@ class Command(BaseCommand):
                 end_date = None
                 num_service_units = settings.ALLOCATION_MAX
             elif project.name.startswith('pc_'):
-                end_date = (
-                    next_allocation_start_datetime() - timedelta(seconds=1))
+                end_date = current_allowance_year_period.end_date
                 num_service_units = settings.ALLOCATION_MIN
             else:
                 continue
