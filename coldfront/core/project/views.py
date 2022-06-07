@@ -1471,7 +1471,8 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         host_user = None
         if select_host_user_form.is_valid():
             host_user = \
-                User.objects.get(username=select_host_user_form.cleaned_data)
+                User.objects.get(
+                    username=select_host_user_form.cleaned_data['host_user'])
 
         if project_users.exists():
             project_user = project_users.first()
