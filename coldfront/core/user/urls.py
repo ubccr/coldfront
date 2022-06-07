@@ -99,7 +99,7 @@ with flagged_paths('BASIC_AUTH_ENABLED') as f_path:
 with flagged_paths('SSO_ENABLED') as f_path:
     urlpatterns += [
         f_path('sso_login/',
-               TemplateView.as_view(template_name='user/sso_login.html'),
+               user_views.SSOLoginView.as_view(),
                name='sso-login'),
     ]
 

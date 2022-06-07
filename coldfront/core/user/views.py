@@ -561,6 +561,17 @@ class UserLoginView(View):
             f'{basic_auth_enabled}, {sso_enabled}.')
 
 
+class SSOLoginView(TemplateView):
+    """Display the template for SSO login. If the user is authenticated,
+    redirect to the home page."""
+    template_name = 'user/sso_login.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            return redirect(reverse('home'))
+        return super().dispatch(request, *args, **kwargs)
+
+
 class UserRegistrationView(CreateView):
 
     form_class = UserRegistrationForm
