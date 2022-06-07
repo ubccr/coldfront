@@ -161,8 +161,6 @@ class AllTheThingsConn:
             # 1. finding the project with a name that matches lab.lab
             proj_query = proj_models.get(title=lab)
             for allocation in allocations:
-                lab_allocation = allocation['tb_allocation']
-                lab_usage = allocation['tb_usage']
                 # 2. find the resource that matches/approximates the server value
                 r_str = allocation['server'].replace("01.rc.fas.harvard.edu", "")\
                             .replace("/n/", "")
@@ -193,16 +191,25 @@ class AllTheThingsConn:
 
                 logger.info(f"allocation: {a.__dict__}")
 
+
+
                 # 4. get the storage quota TB allocation_attribute that has allocation=a.
-                for alloc_attribute_type in ('Storage Quota (TB)', 'Quota_In_Bytes'):
+                allocation_values = {
+                    'Storage Quota (TB)':
+                            [allocation['tb_allocation'],allocation['tb_usage']],
+                    'Quota_In_Bytes':
+                            [allocation['byte_allocation'], allocation['byte_usage']]
+                        }
+
+                for k, v in allocation_values.items():
                     allocation_attribute_type_obj = AllocationAttributeType.objects.get(
-                        name=alloc_attribute_type)
+                        name=k)
                     try:
                         allocation_attribute_obj = AllocationAttribute.objects.get(
                             allocation_attribute_type=allocation_attribute_type_obj,
                             allocation=a,
                         )
-                        allocation_attribute_obj.value = lab_allocation
+                        allocation_attribute_obj.value = v[0]
                         allocation_attribute_obj.save()
                         allocation_attribute_exist = True
                     except AllocationAttribute.DoesNotExist:
@@ -212,10 +219,10 @@ class AllTheThingsConn:
                         allocation_attribute_obj,_ =AllocationAttribute.objects.get_or_create(
                             allocation_attribute_type=allocation_attribute_type_obj,
                             allocation=a,
-                            value = lab_allocation)
+                            value = v[0])
                         allocation_attribute_type_obj.save()
 
-                    allocation_attribute_obj.allocationattributeusage.value = lab_usage
+                    allocation_attribute_obj.allocationattributeusage.value = v[1]
                     allocation_attribute_obj.allocationattributeusage.save()
 
                 # 5. AllocationAttribute
