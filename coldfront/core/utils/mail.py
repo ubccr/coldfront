@@ -15,7 +15,7 @@ if EMAIL_ENABLED:
         'EMAIL_DEVELOPMENT_EMAIL_LIST')
 
 
-def send_email(subject, body, sender, receiver_list, html_body, cc=[]):
+def send_email(subject, body, sender, receiver_list, cc=[], html_body=''):
     """Helper function for sending emails
     """
 
@@ -72,5 +72,5 @@ def send_email_template(subject, template_name, context, sender,
                       plain_body,
                       sender,
                       receiver_list,
-                      html_body,
-                      cc=cc)
+                      cc=cc,
+                      html_body=html_body)
