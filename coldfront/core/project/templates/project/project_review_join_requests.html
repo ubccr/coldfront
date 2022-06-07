@@ -2,6 +2,8 @@
 {% load crispy_forms_tags %}
 {% load common_tags %}
 {% load static %}
+{% load feature_flags %}
+{% flag_enabled 'LRC_ONLY' as lrc_only %}
 
 {% block title %} Review Project Join Requests {% endblock %}
 
@@ -29,7 +31,9 @@
               <th scope="col">Last Name</th>
               <th scope="col">Email</th>
               <th scope="col">Role</th>
-              <th scope="col">Need Host</th>
+              {% if lrc_only %}
+                <th scope="col">Need Host</th>
+              {% endif %}
               <th scope="col">Reason</th>
             </tr>
           </thead>
@@ -45,13 +49,15 @@
               <td>{{ form.last_name.value }}</td>
               <td>{{ form.email.value }}</td>
               <td>{{ form.role.value }}</td>
-              {% with host=host_dict|get_value_from_dict:form.username.value %}
-                {% if host %}
-                  <td>Yes ({{ host }})</td>
-                {% else %}
-                  <td>No</td>
-                {% endif %}
-              {% endwith %}
+              {% if lrc_only %}
+                {% with host=host_dict|get_value_from_dict:form.username.value %}
+                  {% if host %}
+                    <td>Yes ({{ host }})</td>
+                  {% else %}
+                    <td>No</td>
+                  {% endif %}
+                {% endwith %}
+              {% endif %}
               <td>{{ form.reason.value }}</td>
             </tr>
             {% endfor %}
