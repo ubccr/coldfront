@@ -291,6 +291,11 @@ class ProjectUserJoinRequest(TimeStampedModel):
             validators=[
                 MinLengthValidator(20, 'The project join reason must be > 20 characters.',)
             ])
+    host_user = models.ForeignKey(
+        User,
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL)
 
     def __str__(self):
         user = self.project_user.user
