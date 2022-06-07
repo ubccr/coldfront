@@ -312,7 +312,7 @@ class UserSelectResults(LoginRequiredMixin, UserPassesTestMixin, View):
     template_name = 'user/user_select_results.html'
     AVAIL_KEY = "user_select_avail_ids"
     REDIRECT_KEY = "user_select_redirect"
-    SELECTED_STR = "user_select_selected"
+    SELECTED_KEY = "user_select_selected"
 
     _user_dict_values = [
         "username", "first_name", "last_name", "email"
@@ -383,7 +383,7 @@ class UserSelectResults(LoginRequiredMixin, UserPassesTestMixin, View):
                         user: User = User.objects.get(username=user_form_data['username'])
                         selected_users.append(user.pk)
             
-            request.session[self.SELECTED_STR] = selected_users
+            request.session[self.SELECTED_KEY] = selected_users
             return HttpResponseRedirect(request.session.get(self.REDIRECT_KEY))
         else:
             # Initial load
