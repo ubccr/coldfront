@@ -32,7 +32,8 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectSearchForm,
                                           ProjectUpdateForm,
                                           ProjectUserUpdateForm,
-                                          JoinRequestSearchForm)
+                                          JoinRequestSearchForm,
+                                          ProjectSelectHostUserForm)
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectReviewStatusChoice,
                                            ProjectStatusChoice, ProjectUser,
@@ -53,6 +54,7 @@ from coldfront.core.project.utils_.new_project_utils import add_vector_user_to_d
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.project.utils_.renewal_utils import is_any_project_pi_renewable
 from coldfront.core.user.forms import UserSearchForm
+from coldfront.core.user.models import UserProfile
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.common import (get_domain_url, import_from_settings)
 from coldfront.core.utils.mail import send_email, send_email_template
@@ -415,6 +417,21 @@ class ProjectListView(LoginRequiredMixin, ListView):
             ProjectUser.objects.filter(
                 user=self.request.user, role__name__in=role_names,
                 status=status)
+
+        context['need_host'] = False
+        if flag_enabled('LRC_ONLY') \
+                and not self.request.user.email.endswith('@lbl.gov') \
+                and not self.request.user.userprofile.host_user:
+            context['need_host'] = True
+
+            # Select host forms only available to non-LBL employees
+            # without a host.
+            selecthostform_dict = {}
+            for project in project_list:
+                selecthostform_dict[project.name] = \
+                    ProjectSelectHostUserForm(project=project.name)
+
+            context['selecthostform_dict'] = selecthostform_dict
 
         return context
 
@@ -1448,6 +1465,14 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         status = ProjectUserStatusChoice.objects.get(name='Pending - Add')
         reason = self.request.POST['reason']
 
+        select_host_user_form = ProjectSelectHostUserForm(
+            project=project_obj.name,
+            data=self.request.POST)
+        host_user = None
+        if select_host_user_form.is_valid():
+            host_user = \
+                User.objects.get(username=select_host_user_form.cleaned_data)
+
         if project_users.exists():
             project_user = project_users.first()
             project_user.role = role
@@ -1470,7 +1495,8 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         # Create a join request
         ProjectUserJoinRequest.objects.create(project_user=project_user,
-                                              reason=reason)
+                                              reason=reason,
+                                              host_user=host_user)
 
         message = (
             f'You have requested to join Project {project_obj.name}. The '
@@ -1709,6 +1735,18 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
                 status__name='Active').exists():
             context['can_add_users'] = True
 
+        if flag_enabled('LRC_ONLY'):
+            context['need_host'] = True
+
+            host_dict = {}
+            for user in users_to_review:
+                username = user.get('username')
+                host_dict[username] = \
+                    ProjectUserJoinRequest.objects.get(
+                        project_user__project=project_obj,
+                        project_user__user__username=username).host_user
+            context['host_dict'] = host_dict
+
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
@@ -1795,6 +1833,18 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
                                     f'Details:')
                                 self.logger.error(message)
                                 self.logger.exception(e)
+
+                        # Set the host user if one is provided.
+                        if flag_enabled('LRC_ONLY'):
+                            host_user = \
+                                ProjectUserJoinRequest.objects.get(
+                                    project_user__project=project_obj,
+                                    project_user=project_user_obj).host_user
+
+                            user_profile = \
+                                UserProfile.objects.get(user=user_obj)
+                            user_profile.host_user = host_user
+                            user_profile.save()
 
                     # Send an email to the user.
                     try:
