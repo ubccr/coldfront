@@ -1,10 +1,12 @@
 from django import forms
+from django.conf import settings
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.sites.shortcuts import get_current_site
+from django.core.exceptions import ImproperlyConfigured
 from django.urls import reverse
 from django.utils.encoding import force_bytes
 from django.utils.html import mark_safe
@@ -300,3 +302,21 @@ class VerifiedEmailAddressPasswordResetForm(PasswordResetForm):
                 subject_template_name, email_template_name, context,
                 from_email, user_email,
                 html_email_template_name=html_email_template_name)
+
+    def send_mail(self, subject_template_name, email_template_name,
+                  context, from_email, to_email,
+                  html_email_template_name=None):
+        """Only send an email if email is enabled. Replace the to_email
+        with a fake value if DEBUG is True."""
+        if not settings.EMAIL_ENABLED:
+            return
+        if settings.DEBUG:
+            dev_email_list = settings.EMAIL_DEVELOPMENT_EMAIL_LIST
+            if not dev_email_list:
+                raise ImproperlyConfigured(
+                    'There should be at least one address in '
+                    'EMAIL_DEVELOPMENT_EMAIL_LIST.')
+            to_email = dev_email_list[0]
+        super().send_mail(
+            subject_template_name, email_template_name, context, from_email,
+            to_email, html_email_template_name=html_email_template_name)
