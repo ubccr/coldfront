@@ -121,8 +121,8 @@ class GrantOrcidImportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
 
-        if UserSelectResults.SELECTED_STR in self.request.session:
-            selected_ids = self.request.session.pop(UserSelectResults.SELECTED_STR)
+        if UserSelectResults.SELECTED_KEY in self.request.session:
+            selected_ids = self.request.session.pop(UserSelectResults.SELECTED_KEY)
             selected_user_profiles = UserProfile.objects.filter(user_id__in=selected_ids)
             selected_orcids = list(selected_user_profiles.values_list('orcid_id', flat=True))
             
@@ -470,11 +470,18 @@ class GrantUserOrcidImportView(LoginRequiredMixin, UserPassesTestMixin, View):
         proj_users = ProjectUser.objects.filter(project_id=project_pk)
         proj_user_ids = proj_users.values_list("user_id", flat=True)
         user_ids = list(User.objects.filter(pk__in=proj_user_ids).values_list('pk', flat=True))
-        request.session[UserSelectResults.AVAIL_KEY] = user_ids
-        request.session[UserSelectResults.REDIRECT_KEY] = reverse('grant-orcid-import', kwargs={'project_pk': project_pk})
 
-        # user-select-home is in Users
-        return HttpResponseRedirect(reverse('user-select-home'))
+        redirect_key = reverse('grant-orcid-import', kwargs={'project_pk': project_pk})
+
+        ## Code to enable user search. ##
+        # request.session[UserSelectResults.AVAIL_KEY] = user_ids
+        # request.session[UserSelectResults.REDIRECT_KEY] = redirect_key
+        # # user-select-home is in Users
+        # return HttpResponseRedirect(reverse('user-select-home'))
+
+        ## Code to just use all project users. ##
+        request.session[UserSelectResults.SELECTED_KEY] = user_ids
+        return HttpResponseRedirect(redirect_key)
 
 
 class GrantUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
