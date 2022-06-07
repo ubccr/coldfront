@@ -3,11 +3,12 @@
 {% load common_tags %}
 {% load static %}
 {% load feature_flags %}
-{% flag_enabled 'LRC_ONLY' as lrc_only %}
 
 {% block title %} Review Project Join Requests {% endblock %}
 
 {% block content %}
+{% flag_enabled 'LRC_ONLY' as lrc_only %}
+
 <h1>Review requests to join project: {{project.title}}</h1>
 <hr>
 {% if formset %}
