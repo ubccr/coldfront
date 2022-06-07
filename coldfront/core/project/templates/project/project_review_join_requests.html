@@ -1,5 +1,6 @@
 {% extends "common/base.html" %}
 {% load crispy_forms_tags %}
+{% load common_tags %}
 {% load static %}
 
 {% block title %} Review Project Join Requests {% endblock %}
@@ -28,6 +29,7 @@
               <th scope="col">Last Name</th>
               <th scope="col">Email</th>
               <th scope="col">Role</th>
+              <th scope="col">Need Host</th>
               <th scope="col">Reason</th>
             </tr>
           </thead>
@@ -43,6 +45,13 @@
               <td>{{ form.last_name.value }}</td>
               <td>{{ form.email.value }}</td>
               <td>{{ form.role.value }}</td>
+              {% with host=host_dict|get_value_from_dict:form.username.value %}
+                {% if host %}
+                  <td>Yes ({{ host }})</td>
+                {% else %}
+                  <td>No</td>
+                {% endif %}
+              {% endwith %}
               <td>{{ form.reason.value }}</td>
             </tr>
             {% endfor %}
