@@ -194,14 +194,13 @@ class AllTheThingsConn:
 
 
                 # 4. get the storage quota TB allocation_attribute that has allocation=a.
-                allocation_values = {
-                    'Storage Quota (TB)':
-                            [allocation['tb_allocation'],allocation['tb_usage']],
-                    'Quota_In_Bytes':
-                            [allocation['byte_allocation'], allocation['byte_usage']]
-                        }
+                allocation_values = { 'Storage Quota (TB)':
+                            [allocation['tb_allocation'],allocation['tb_usage']]  }
+                if allocation['byte_allocation'] != None:
+                    allocation_values['Quota_In_Bytes'] = [allocation['byte_allocation'], allocation['byte_usage']]
 
                 for k, v in allocation_values.items():
+                    print(k, v)
                     allocation_attribute_type_obj = AllocationAttributeType.objects.get(
                         name=k)
                     try:
