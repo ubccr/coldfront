@@ -1,20 +1,16 @@
 from django.contrib.auth.models import User
+from django.conf import settings
+from django.core.management.base import BaseCommand
 
-from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
 from coldfront.core.project.models import ProjectUserJoinRequest, Project
 from coldfront.core.project.utils import project_join_list_url
 from coldfront.core.project.utils import review_project_join_requests_url
-from django.conf import settings
-from django.core.management.base import BaseCommand
-from django.urls import reverse
-from urllib.parse import urljoin
+
 import logging
-from django.db.models import Q
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
 
 """An admin command that sends PIs reminder emails of pending join requests."""
+
 
 class Command(BaseCommand):
 
@@ -63,20 +59,18 @@ class Command(BaseCommand):
 
                 recipients = project.managers_and_pis_emails()
                 try:
-                    msg_plain = \
-                        render_to_string('email/project_join_request/pending_project_join_requests.txt',
-                                         context)
-                    msg_html = \
-                        render_to_string('email/project_join_request/pending_project_join_requests.html',
-                                         context)
+                    subject = 'Pending Project Join Requests'
+                    plain_template = 'email/project_join_request/' \
+                                     'pending_project_join_requests.txt'
+                    html_template = 'email/project_join_request/' \
+                                    'pending_project_join_requests.html'
+                    send_email_template(subject,
+                                        plain_template,
+                                        context,
+                                        settings.EMAIL_SENDER,
+                                        recipients,
+                                        html_template=html_template)
 
-                    send_mail(
-                        'Pending Project Join Requests',
-                        msg_plain,
-                        settings.EMAIL_SENDER,
-                        recipients,
-                        html_message=msg_html,
-                    )
                     emails_sent += len(recipients)
                 except Exception as e:
                     message = 'Failed to send reminder email. Details:'

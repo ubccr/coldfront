@@ -1,6 +1,4 @@
-from django.core.mail import send_mail
 from django.db import transaction
-from django.template.loader import render_to_string
 
 from coldfront.api.statistics.utils import get_accounting_allocation_objects
 from coldfront.core.allocation.models import Allocation
@@ -87,20 +85,12 @@ def send_project_join_notification_email(project, project_user):
 
     receiver_list = project.managers_and_pis_emails()
 
-    msg_plain = \
-        render_to_string('email/new_project_join_request.txt',
-                         context)
-    msg_html = \
-        render_to_string('email/new_project_join_request.html',
-                         context)
-
-    send_mail(
-        subject,
-        msg_plain,
-        settings.EMAIL_SENDER,
-        receiver_list,
-        html_message=msg_html,
-    )
+    send_email_template(subject,
+                        'email/new_project_join_request.txt',
+                        context,
+                        settings.EMAIL_SENDER,
+                        receiver_list,
+                        html_template='email/new_project_join_request.html')
 
 
 def send_project_join_request_approval_email(project, project_user):
