@@ -56,7 +56,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
           <tr>
             <th scope="row">ORCID:</th>
             <td>
-              <form class="form-inline orcid-form" method="post" action="{% url 'user-profile' %}">
+              <form class="form-inline" method="post" action="{% url 'user-profile' %}">
                 {% csrf_token %}
                 {{ orcid_edit_form|crispy }}
                 <button class="btn btn-primary mx-sm-3" type="submit"><i class="fas fa-edit" aria-hidden="true"></i> Update ORCID</button>
@@ -77,39 +77,5 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-user").addClass("active");
   $("#navbar-user-user-profile").addClass("active");
-
-  function next_orcid(n) {
-    console.log("n=" + (n.data.n));
-    if ($("#id_orcid" + n.data.n).val().length == 4)
-    {
-      $("#id_orcid" + (n.data.n + 1)).focus();
-      $("#id_orcid" + (n.data.n + 1)).select();
-    }
-  }
-
-  function handle_paste(e) {
-    var content = e.originalEvent.clipboardData.getData('text/plain');
-    content = content.replace(/-/g, '');
-    console.log(content);
-
-    for (let i = 0; i < 4; i++) {
-      $("#id_orcid" + (i + 1)).val(content.slice(4 * i, 4 * (i + 1)));
-    }
-
-    return false;
-  }
-
-  $(document).ready(function() {
-    console.log("ready");
-
-    $("#id_orcid1").on('input', {n: 1}, next_orcid);
-    $("#id_orcid2").on('input', {n: 2}, next_orcid);
-    $("#id_orcid3").on('input', {n: 3}, next_orcid);
-
-    $("#id_orcid1").on('paste', handle_paste);
-    $("#id_orcid2").on('paste', handle_paste);
-    $("#id_orcid3").on('paste', handle_paste);
-    $("#id_orcid4").on('paste', handle_paste);
-  });
 </script>
 {% endblock %}

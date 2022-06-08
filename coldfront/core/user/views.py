@@ -66,17 +66,11 @@ class UserProfileView(TemplateView):
 
         group_list = ', '.join(
             [group.name for group in viewed_user.groups.all()])
-        
 
-        iod_keys = [f"orcid{i}" for i in range(1, 5)]
-        
-        if viewed_user_profile.orcid_id != None:
-            iod_vals = viewed_user_profile.orcid_id.split('-')
-            init_orcid_data = { k:v for (k,v) in zip(iod_keys, iod_vals) }
-        else:
-            init_orcid_data = { k:"" for k in iod_keys }
-        
-        init_orcid_data['username'] = viewed_user.username
+        init_orcid_data = {
+            'username': viewed_user.username,
+            'orcid': viewed_user_profile.orcid_id
+        }
 
         context['group_list'] = group_list
         context['viewed_user'] = viewed_user
@@ -90,7 +84,15 @@ class UserProfileView(TemplateView):
 
         if form.is_valid():
             profile_cleaned = form.cleaned_data
-            orcids = [profile_cleaned[f"orcid{i}"] for i in range(1, 5)]
+            orcid_raw = re.sub("[^0-9a-zA-Z]+", "", profile_cleaned['orcid'])
+
+            if len(orcid_raw) == 0:
+                # Only handle 0 length strings here; everything else is handled by
+                # the validator
+                messages.error(request, "Invalid formatting: ORCID must be 16 characters in length, not including dashes.")
+                return HttpResponseRedirect(reverse('user-profile', kwargs={'viewed_username': viewed_username}))
+
+            orcids = [orcid_raw[i:i+4] for i in range(0, 16, 4)]
 
             viewed_user_profile: UserProfile = UserProfile.objects.get(user_id=viewed_user.id)
             viewed_user_profile.orcid_id = '-'.join(orcids)
