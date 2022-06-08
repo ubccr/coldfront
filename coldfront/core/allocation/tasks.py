@@ -7,6 +7,8 @@ from django.core.exceptions import ImproperlyConfigured
 
 from coldfront.core.allocation.models import (Allocation, AllocationAttribute,
                                               AllocationStatusChoice)
+from coldfront.core.user.models import (User, UserProfile)
+from coldfront.core.project.models import (Project, ProjectUser)
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email_template
 
@@ -42,12 +44,24 @@ def update_statuses():
 
 def send_expiry_emails():
     # Allocations expiring
-
+    for users in User.objects.all():
+        print(users)
+    print('\n')
+    for user in UserProfile.user.get_queryset():
+        print(user)
+        print(user.projectuser_set.all())
+        for projects in user.projectuser_set.all():
+            print(projects.project.title)
+            for allocations in projects.project.allocation_set.filter(status__name__in=['Active', 'Payment Pending', 'Payment Requested', 'Unpaid',]):
+                print(allocations.start_date)
+                print(allocations.allocationattribute_set.all())
+            #print(projects.project.allocation_set.all())
+    # We want a set of [user, projects] where projects have expiring allocations
     for days_remaining in sorted(set(EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS)):
         expring_in_days = datetime.datetime.today(
         ) + datetime.timedelta(days=days_remaining)
 
-        for allocation_obj in Allocation.objects.filter(status__name='Active', end_date=expring_in_days):
+        for allocation_obj in Allocation.objects.filter(status__name__in=['Active', 'Payment Pending', 'Payment Requested', 'Unpaid',], end_date=expring_in_days):
 
             expire_notification = allocation_obj.allocationattribute_set.filter(
                 allocation_attribute_type__name='EXPIRE NOTIFICATION').first()
@@ -84,7 +98,7 @@ def send_expiry_emails():
                         and allocation_user.user.email not in email_receiver_list):
 
                     email_receiver_list.append(allocation_user.user.email)
-
+                
             send_email_template('Allocation to {} expiring in {} days'.format(resource_name, days_remaining),
                                 'email/allocation_expiring.txt',
                                 template_context,
