@@ -17,10 +17,8 @@ from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import ListView, TemplateView
-from requests import session
 
 from coldfront.core.project.models import Project, ProjectUser
-from coldfront.core.publication.forms import PublicationUserSelectForm
 from coldfront.core.user.forms import UserOrcidEditForm, UserSearchForm, UserSelectForm, UserSelectResultForm
 from coldfront.core.user.models import UserProfile
 from coldfront.core.user.utils import CombinedUserSearch
@@ -372,7 +370,7 @@ class UserSelectResults(LoginRequiredMixin, UserPassesTestMixin, View):
         if "select_users" in request.POST:
             # Submit button pressed
             filtered_users: List = request.session.pop('user_select_filtered', [])
-            formset = formset_factory(PublicationUserSelectForm, max_num=len(filtered_users))
+            formset = formset_factory(UserSelectResultForm, max_num=len(filtered_users))
             formset = formset(request.POST, initial=filtered_users, prefix='userform')
             selected_users = []
 
