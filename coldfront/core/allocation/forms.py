@@ -1,4 +1,5 @@
 from django import forms
+from django.db.models.functions import Lower
 from django.shortcuts import get_object_or_404
 
 from coldfront.core.allocation.models import (Allocation, AllocationAccount,
@@ -27,7 +28,7 @@ class AllocationForm(forms.Form):
     def __init__(self, request_user, project_pk,  *args, **kwargs):
         super().__init__(*args, **kwargs)
         project_obj = get_object_or_404(Project, pk=project_pk)
-        self.fields['resource'].queryset = get_user_resources(request_user)
+        self.fields['resource'].queryset = get_user_resources(request_user).order_by(Lower("name"))
         self.fields['quantity'].initial = 1
         user_query_set = project_obj.projectuser_set.select_related('user').filter(
             status__name__in=['Active', ])
