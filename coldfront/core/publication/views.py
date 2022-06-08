@@ -32,7 +32,6 @@ from coldfront.core.publication.forms import (
     PublicationResultForm,
     PublicationSearchForm,
     PublicationExportForm,
-    PublicationUserSelectForm,
 )
 from coldfront.core.publication.models import Publication, PublicationSource
 from doi2bib import crossref
