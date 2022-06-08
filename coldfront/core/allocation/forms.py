@@ -56,7 +56,7 @@ class AllocationForm(forms.Form):
 
 class AllocationUpdateForm(forms.Form):
     status = forms.ModelChoiceField(
-        queryset=AllocationStatusChoice.objects.all().order_by('name'), empty_label=None)
+        queryset=AllocationStatusChoice.objects.all().order_by(Lower("name")), empty_label=None)
     start_date = forms.DateField(
         label='Start Date',
         widget=forms.DateInput(attrs={'class': 'datepicker'}),
@@ -84,7 +84,7 @@ class AllocationUpdateForm(forms.Form):
 
 class AllocationInvoiceUpdateForm(forms.Form):
     status = forms.ModelChoiceField(queryset=AllocationStatusChoice.objects.filter(name__in=[
-        'Payment Pending', 'Payment Requested', 'Payment Declined', 'Paid']).order_by('name'), empty_label=None)
+        'Payment Pending', 'Payment Requested', 'Payment Declined', 'Paid']).order_by(Lower("name")), empty_label=None)
 
 
 class AllocationAddUserForm(forms.Form):
@@ -121,16 +121,16 @@ class AllocationSearchForm(forms.Form):
         label='Username', max_length=100, required=False)
     resource_type = forms.ModelChoiceField(
         label='Resource Type',
-        queryset=ResourceType.objects.all().order_by('name'),
+        queryset=ResourceType.objects.all().order_by(Lower("name")),
         required=False)
     resource_name = forms.ModelMultipleChoiceField(
         label='Resource Name',
         queryset=Resource.objects.filter(
-            is_allocatable=True).order_by('name'),
+            is_allocatable=True).order_by(Lower("name")),
         required=False)
     allocation_attribute_name = forms.ModelChoiceField(
         label='Allocation Attribute Name',
-        queryset=AllocationAttributeType.objects.all().order_by('name'),
+        queryset=AllocationAttributeType.objects.all().order_by(Lower("name")),
         required=False)
     allocation_attribute_value = forms.CharField(
         label='Allocation Attribute Value', max_length=100, required=False)
@@ -144,7 +144,7 @@ class AllocationSearchForm(forms.Form):
         required=False)
     status = forms.ModelMultipleChoiceField(
         widget=forms.CheckboxSelectMultiple,
-        queryset=AllocationStatusChoice.objects.all().order_by('name'),
+        queryset=AllocationStatusChoice.objects.all().order_by(Lower("name")),
         required=False)
     show_all_allocations = forms.BooleanField(initial=False, required=False)
 
