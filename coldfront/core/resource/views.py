@@ -3,6 +3,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
+from django.db.models.functions import Lower
 from django.forms import formset_factory
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, render
@@ -183,7 +184,9 @@ class ResourceListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
 
         order_by = self.request.GET.get('order_by')
-        if order_by:
+        if order_by == "name":
+            order_by = "name"
+        elif order_by != "name" and order_by != None:
             direction = self.request.GET.get('direction')
             if direction == 'asc':
                 direction = ''
@@ -197,7 +200,16 @@ class ResourceListView(LoginRequiredMixin, ListView):
 
         if resource_search_form.is_valid():
             data = resource_search_form.cleaned_data
-            resources = Resource.objects.all().order_by(order_by)
+            if order_by == "name":
+                direction = self.request.GET.get('direction')
+                if direction == "asc":
+                    resources = Resource.objects.all().order_by(Lower("name"))
+                elif direction == "des":
+                    resources = (Resource.objects.all().order_by(Lower("name")).reverse())
+                else:
+                    resources = Resource.objects.all().order_by(order_by)
+            else:
+                resources = Resource.objects.all().order_by(order_by)
 
             if data.get('show_allocatable_resources'):
                 resources = resources.filter(is_allocatable=True)
@@ -237,7 +249,16 @@ class ResourceListView(LoginRequiredMixin, ListView):
                     Q(resourceattribute__value=data.get('vendor'))
                 )
         else:
-            resources = Resource.objects.all().order_by(order_by)
+            if order_by == "name":
+                direction = self.request.GET.get('direction')
+                if direction == "asc":
+                    resources = Resource.objects.all().order_by(Lower("name"))
+                elif direction == "des":
+                    resources = Resource.objects.all().order_by(Lower("name").reverse())
+                else:
+                    resources = Resource.objects.all().order_by(order_by)
+            else:
+                resources = Resource.objects.all().order_by(order_by)
         return resources.distinct()
 
     def get_context_data(self, **kwargs):
