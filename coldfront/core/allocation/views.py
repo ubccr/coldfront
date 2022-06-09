@@ -153,9 +153,9 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                     AttributeError,
                     ValueError):
                 usage = '0.00'
+            allocation_user_su_usages[username] = usage
             if not flag_enabled('LRC_ONLY'):
                 continue
-            allocation_user_su_usages[username] = usage
             try:
                 billing_attribute = user_attributes.filter(
                     allocation_attribute_type__name='Billing Activity').first()
