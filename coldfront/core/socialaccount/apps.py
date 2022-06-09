@@ -6,4 +6,4 @@ class SocialAccountConfig(AppConfig):
     label = 'custom_socialaccount'
 
     def ready(self):
-        import coldfront.core.socialaccount.signals
+        pass
