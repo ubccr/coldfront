@@ -389,6 +389,9 @@ EXTRA_AUTHENTICATION_BACKENDS += [
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
+# Use a custom adapter to handle email differently.
+ACCOUNT_ADAPTER = 'coldfront.core.account.adapter.AccountAdapter'
+
 # Use a custom adapter to handle logins with CILogon differently.
 SOCIALACCOUNT_ADAPTER = (
     'coldfront.core.socialaccount.adapter.CILogonAccountAdapter')
