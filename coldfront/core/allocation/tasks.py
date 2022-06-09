@@ -44,6 +44,17 @@ def update_statuses():
 
 def send_expiry_emails():
     # Allocations expiring
+
+    #Go through all users
+
+        #Go thorugh each of their allocations
+
+                #If allocation is expiring (with set amount of days), expiring today, or expired
+                #then mark project as having allocation(s) expired 
+                #add project to list of their projects with expired allocations for that user
+
+        #Email user about projects listed with expiring allocations
+
     for users in User.objects.all():
         print(users)
     print('\n')
