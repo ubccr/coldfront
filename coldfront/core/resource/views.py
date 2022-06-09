@@ -26,7 +26,7 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
     def get_child_resources(self, resource_obj):
         child_resources = [resource for resource in resource_obj.resource_set.all(
-        ).order_by('name')]
+        ).order_by(Lower("name"))]
 
         child_resources = [
 
