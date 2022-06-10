@@ -623,7 +623,7 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
 class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Project
     template_name_suffix = '_create_form'
-    fields = ['title', 'description', 'slurm_account_name', 'field_of_science', 'type', ]
+    fields = ['title', 'description', 'pi_username', 'slurm_account_name', 'field_of_science', 'type', ]
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -650,7 +650,16 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
                 return self.form_invalid(form)
 
         project_obj = form.save(commit=False)
-        form.instance.pi = self.request.user
+        if not form.instance.pi_username:
+            form.instance.pi = self.request.user
+        else:
+            user = User.objects.filter(username=form.instance.pi_username).first()
+            if user is None:
+                messages.error(self.request, 'This username does not exist in ColdFront')
+                return super().form_invalid(form)
+            form.instance.pi = user
+
+        form.instance.requestor = self.request.user
         form.instance.status = ProjectStatusChoice.objects.get(name='Waiting For Admin Approval')
         if form.instance.type.name == 'Class':
             if not isinstance(PROJECT_CLASS_PROJECT_END_DATES[0], tuple):
@@ -698,6 +707,13 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
             role=ProjectUserRoleChoice.objects.get(name='Manager'),
             status=ProjectUserStatusChoice.objects.get(name='Active')
         )
+        if form.instance.pi != form.instance.requestor:
+            project_user_pi_user = ProjectUser.objects.create(
+                user=form.instance.pi,
+                project=project_obj,
+                role=ProjectUserRoleChoice.objects.get(name='Manager'),
+                status=ProjectUserStatusChoice.objects.get(name='Active')
+            )
 
         if EMAIL_ENABLED:
             domain_url = get_domain_url(self.request)

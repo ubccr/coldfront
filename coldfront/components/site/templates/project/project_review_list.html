@@ -20,6 +20,7 @@ Project Review List
           <th scope="col">Project Title</th>
           <th scope="col">Date Submitted</th>
           <th scope="col">PI</th>
+          <th scope="col">Requestor</th>
           <th scope="col">Type</th>
           <th scope="col">Private</th>
           <th scope="col">Project Review Actions</th>
@@ -31,6 +32,7 @@ Project Review List
             <td><a target="_target" href="{% url 'project-detail' project_request.pk %}">{{ project_request.title|truncatechars:50 }}</a></td>
             <td>{{ project_request.created|date:"M. d, Y" }}</td>
             <td>{{ project_request.pi.first_name }} {{project_request.pi.last_name}} ({{ project_request.pi.username }})</td>
+            <td>{{ project_request.requestor.first_name }} {{ project_request.requestor.last_name }} ({{ project_request.requestor.username }})</td>
             <td>{{ project_request.type.name }}</td>
             <td>{{ project_request.private }}</td>
             <td class="no-textwrap">

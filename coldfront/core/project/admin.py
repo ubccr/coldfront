@@ -90,15 +90,15 @@ class ProjectUserMessageInline(admin.TabularInline):
 
 @admin.register(Project)
 class ProjectAdmin(SimpleHistoryAdmin):
-    fields_change = ('title', 'pi', 'description', 'slurm_account_name', 'private', 'type', 'status', 'requires_review',
-                     'force_review', 'max_managers', 'created', 'end_date', 'modified', )
+    fields_change = ('title', 'pi', 'requestor', 'description', 'slurm_account_name', 'private', 'type', 'status',
+                     'requires_review', 'force_review', 'max_managers', 'created', 'end_date', 'modified', )
     readonly_fields_change = ('created', 'modified', )
     list_display = ('pk', 'title', 'PI', 'created', 'modified', 'end_date', 'type', 'status')
     search_fields = ['pi__username', 'projectuser__user__username',
                      'projectuser__user__last_name', 'projectuser__user__last_name', 'title']
     list_filter = ('status', 'force_review', 'type')
     inlines = [ProjectUserInline, ProjectAdminCommentInline, ProjectUserMessageInline]
-    raw_id_fields = ['pi', ]
+    raw_id_fields = ['pi', 'requestor', ]
 
     def PI(self, obj):
         return '{} {} ({})'.format(obj.pi.first_name, obj.pi.last_name, obj.pi.username)

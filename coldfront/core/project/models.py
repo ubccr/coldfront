@@ -43,6 +43,12 @@ We do not have information about your research. Please provide a detailed descri
 
     title = models.CharField(max_length=255,)
     pi = models.ForeignKey(User, on_delete=models.CASCADE,)
+    pi_username = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text='Required if you will not be the PI of this project. Graduate students cannot be the PI'
+    )
+    requestor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='requestor_user')
     description = models.TextField(
         default=DEFAULT_DESCRIPTION,
         validators=[
