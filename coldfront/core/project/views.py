@@ -48,6 +48,7 @@ from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
+from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email, send_email_template
 from coldfront.core.project.utils import get_new_end_date_from_list
@@ -651,11 +652,19 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
         project_obj = form.save(commit=False)
         if not form.instance.pi_username:
+            user_profile = UserProfile.objects.get(user=self.request.user)
+            if user_profile.title == 'Graduate':
+                messages.error(self.request, 'Graduate students must have a PI')
+                return super().form_invalid(form)
             form.instance.pi = self.request.user
         else:
             user = User.objects.filter(username=form.instance.pi_username).first()
             if user is None:
                 messages.error(self.request, 'This username does not exist in ColdFront')
+                return super().form_invalid(form)
+            user_profile = UserProfile.objects.get(user=user)
+            if user_profile.title == 'Graduate':
+                messages.error(self.request, 'Graduate students cannot be the PI')
                 return super().form_invalid(form)
             form.instance.pi = user
 
