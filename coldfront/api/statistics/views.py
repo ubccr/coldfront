@@ -704,11 +704,11 @@ def can_submit_job(request, job_cost, user_id, account_id):
         message = (
             f'User {user.username} is not a member of account {account.name}.')
         logger.error(message)
-        return client_error(message)
+        return non_affirmative(message)
     except Allocation.DoesNotExist:
         message = f'Account {account.name} has no active compute allocation.'
         logger.error(message)
-        return client_error(message)
+        return non_affirmative(message)
     except Allocation.MultipleObjectsReturned:
         logger.error(
             f'Account {account.name} has more than one active compute '
@@ -719,7 +719,7 @@ def can_submit_job(request, job_cost, user_id, account_id):
             f'User {user.username} is not an active member of the compute '
             f'allocation for account {account.name}.')
         logger.error(message)
-        return client_error(message)
+        return non_affirmative(message)
     except (MultipleObjectsReturned, ObjectDoesNotExist) as e:
         logger.error(
             f'Failed to retrieve a required database object. Details: {e}')

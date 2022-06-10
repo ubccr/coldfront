@@ -85,7 +85,7 @@ class TestCanSubmitJobView(TestJobBase):
         fail."""
         self.project_user.delete()
         message = f'User user0 is not a member of account test_project.'
-        self.assert_result('1.00', '0', 'test_project', 400, False, message)
+        self.assert_result('1.00', '0', 'test_project', 200, False, message)
 
     def test_no_active_compute_allocation(self):
         """Test that requests wherein the account has no active compute
@@ -95,17 +95,17 @@ class TestCanSubmitJobView(TestJobBase):
         self.allocation.status = AllocationStatusChoice.objects.get(
             name='Expired')
         self.allocation.save()
-        self.assert_result('1.00', '0', 'test_project', 400, False, message)
+        self.assert_result('1.00', '0', 'test_project', 200, False, message)
         # The allocation is active, but does not have Savio Compute as a
         # resource.
         self.allocation.status = AllocationStatusChoice.objects.get(
             name='Active')
         self.allocation.resources.all().delete()
         self.allocation.save()
-        self.assert_result('1.00', '0', 'test_project', 400, False, message)
+        self.assert_result('1.00', '0', 'test_project', 200, False, message)
         # The allocation does not exist.
         self.allocation.delete()
-        self.assert_result('1.00', '0', 'test_project', 400, False, message)
+        self.assert_result('1.00', '0', 'test_project', 200, False, message)
 
     def test_user_not_member_of_compute_allocation(self):
         """Test that requests wherein the user is not an active member
@@ -117,10 +117,10 @@ class TestCanSubmitJobView(TestJobBase):
         self.allocation_user.status = AllocationUserStatusChoice.objects.get(
             name='Removed')
         self.allocation_user.save()
-        self.assert_result('1.00', '0', 'test_project', 400, False, message)
+        self.assert_result('1.00', '0', 'test_project', 200, False, message)
         # The allocation user does not exist.
         self.allocation_user.delete()
-        self.assert_result('1.00', '0', 'test_project', 400, False, message)
+        self.assert_result('1.00', '0', 'test_project', 200, False, message)
 
     def test_bad_database_state_causes_server_error(self):
         """Test that requests fails if there are too few or too many of
