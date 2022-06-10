@@ -107,10 +107,15 @@ def display_time_zone_current_date():
 
 def display_time_zone_date_to_utc_datetime(date):
     """Return the given date, interpreted as being in
-    settings.DISPLAY_TIME_ZONE as a datetime object in the UTC
-    timezone."""
-    return datetime.combine(date, datetime.min.time()).replace(
-        tzinfo=pytz.timezone(settings.DISPLAY_TIME_ZONE)).astimezone(pytz.utc)
+    settings.DISPLAY_TIME_ZONE, as a datetime object in the UTC
+    timezone.
+
+    Source: https://stackoverflow.com/a/25390097
+    """
+    dt_tz_unaware = datetime.combine(date, datetime.min.time())
+    display_tz = pytz.timezone(settings.DISPLAY_TIME_ZONE)
+    dt_display_tz = display_tz.localize(dt_tz_unaware)
+    return pytz.utc.normalize(dt_display_tz)
 
 
 def format_date_month_name_day_year(date):
