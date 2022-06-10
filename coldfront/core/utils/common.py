@@ -150,6 +150,16 @@ def session_wizard_all_form_data(submitted_forms_list, step_num_to_data,
     return all_form_data
 
 
+def utc_datetime_to_display_time_zone_date(utc_dt):
+    """Return the given UTC datetime as a date object in
+    settings.DISPLAY_TIME_ZONE.
+
+    Source: https://stackoverflow.com/a/25390097
+    """
+    display_tz = pytz.timezone(settings.DISPLAY_TIME_ZONE)
+    return display_tz.normalize(utc_dt).date()
+
+
 def utc_now_offset_aware():
     """Return the offset-aware current UTC time."""
     return datetime.utcnow().replace(tzinfo=pytz.utc)
