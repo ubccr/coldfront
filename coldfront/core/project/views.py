@@ -272,7 +272,8 @@ class ProjectListView(LoginRequiredMixin, ListView):
             Q(projectuser__status__name='Active') &
             Q(status__name__in=['New', 'Active', 'Review Pending', 'Waiting For Admin Approval', ])
         ).distinct().count()
-        context['project_requests_remaining'] = max(0, max_projects - project_count)
+        # Not being used.
+        context['project_requests_remaining'] = 10  # max(0, max_projects - project_count)
 
         project_pi_search_form = ProjectPISearchForm()
         context['project_pi_search_form'] = project_pi_search_form
@@ -638,7 +639,8 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.userprofile.is_pi and max_projects - project_count > 0:
+        # Number of projects are not being checked.
+        if self.request.user.userprofile.is_pi:  # and max_projects - project_count > 0:
             return True
 
     def form_valid(self, form):

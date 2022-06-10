@@ -22,15 +22,15 @@ def create_user_profile(sender, instance, created, **kwargs):
 
             title = attributes['title'][0]
             max_projects = 0
-            # if title in ['Faculty', 'Staff', 'Academic (ACNP)', 'Affiliate', 'Regular Hourly', ]:
-            #     max_projects = 2
-            # elif title in ['Graduate', 'Student Hourly']:
-            #     max_projects = 1
-            # else:
-            #     logger.error(
-            #         'Max projects not set for title: {}'.format(title)
-            #     )
-            #     max_projects = -1
+            if title in ['Faculty', 'Staff', 'Academic (ACNP)', 'Affiliate', 'Regular Hourly', ]:
+                max_projects = 2
+            elif title in ['Graduate', 'Student Hourly']:
+                max_projects = 1
+            else:
+                logger.error(
+                    'Max projects not set for title: {}'.format(title)
+                )
+                max_projects = -1
             is_pi = False
             if title in ['Faculty', 'Staff', ]:
                 is_pi = True
