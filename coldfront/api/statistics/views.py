@@ -5,6 +5,7 @@ from collections import OrderedDict
 from datetime import date
 from datetime import datetime
 from datetime import MAXYEAR
+from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
 from django.core.exceptions import MultipleObjectsReturned
@@ -180,8 +181,11 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                     get_current_allowance_year_period()
                 default_start = display_time_zone_date_to_utc_datetime(
                     current_allowance_year_period.start_date)
-                default_end = display_time_zone_date_to_utc_datetime(
-                    current_allowance_year_period.end_date)
+                default_end = (
+                    display_time_zone_date_to_utc_datetime(
+                        current_allowance_year_period.end_date) +
+                    timedelta(hours=24) -
+                    timedelta(microseconds=1))
             except Exception as e:
                 raise serializers.ValidationError(
                     f'Failed to retrieve default start and end times. '
@@ -496,14 +500,16 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                     f'Allocation {allocation.pk} (Project {account_name}) '
                     f'does not have an end date.')
                 return False
+            allocation_end_dt_utc = (
+                display_time_zone_date_to_utc_datetime(allocation_end_date) +
+                timedelta(hours=24) -
+                timedelta(microseconds=1))
         else:
-            allocation_end_date = date(MAXYEAR, 12, 31)
+            allocation_end_dt_utc = datetime.max.replace(tzinfo=pytz.utc)
 
-        # The Job should not have ended after its corresponding Allocation's
-        # end date.
+        # The Job should not have ended after the last microsecond of its
+        # corresponding Allocation's end date.
         job_end_dt_utc = expected_dates['enddate']
-        allocation_end_dt_utc = display_time_zone_date_to_utc_datetime(
-            allocation_end_date)
         if job_end_dt_utc > allocation_end_dt_utc:
             logger.warning(
                 f'Job {jobslurmid} end date '
