@@ -350,7 +350,8 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
                     except Exception as e:
                         raise Exception(f'Unable to create Offer Letter Usage: {e}')
 
-                charge = Decimal(offer_letter_rate.price) * int(offer_letter_tb)
+                charge = offer_letter_data['offer_letter_charge']
+
                 transactions_data = [
                     {
                         'charge': charge,
