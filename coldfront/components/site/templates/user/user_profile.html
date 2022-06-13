@@ -45,7 +45,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
             <td>
               {% if viewed_user.userprofile.is_pi %}
                 <span class="badge badge-success"><i class="fas fa-check" aria-hidden="true"></i><span class="sr-only">Yes</span></span>
-              {% elif not user == viewed_user %}
+              {% elif not user == viewed_user or viewed_user.userprofile.title == '' or not viewed_user.userprofile.title in 'Faculty, Staff, Graduate' %}
                 <span class="badge badge-danger"><i class="fas fa-times" aria-hidden="true"></i><span class="sr-only">No</span></span>
               {% else %}
                 <form class="form-inline" method="post" action="{% url 'user-upgrade' %}">

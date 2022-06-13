@@ -225,10 +225,8 @@ class UserUpgradeAccount(LoginRequiredMixin, UserPassesTestMixin, View):
             return HttpResponseRedirect(reverse('user-profile'))
 
         if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
-            from coldfront.plugins.ldap_user_info.utils import get_user_info
-            attributes = get_user_info(request.user.username, ['title'])
-            if attributes['title'][0] == 'group':
-                messages.error(request, 'A group account cannt be a PI')
+            if request.user.userprofile.title not in ['Faculty', 'Staff', 'Graduate', ]:
+                messages.error(request, 'You cannot be a PI')
                 return HttpResponseRedirect(reverse('user-profile'))
 
         return super().dispatch(request, *args, **kwargs)
