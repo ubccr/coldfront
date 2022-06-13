@@ -1,4 +1,13 @@
 from django import forms
+from django.contrib.auth.models import User
+from django.core.validators import MinLengthValidator
+from django.db.models import Q
+
+from coldfront.core.allocation.models import SecureDirRequest
+from coldfront.core.project.forms_.new_project_forms.request_forms import \
+    PIChoiceField
+from coldfront.core.project.models import ProjectUserRoleChoice, ProjectUser, \
+    Project
 
 
 class SecureDirManageUsersForm(forms.Form):
@@ -42,3 +51,77 @@ class SecureDirManageUsersRequestCompletionForm(forms.Form):
     status = forms.ChoiceField(
         label='Status', choices=STATUS_CHOICES, required=True,
         widget=forms.Select())
+
+
+class SecureDirDataDescriptionForm(forms.Form):
+    data_description = forms.CharField(
+        label='Please explain the kind of P2/P3 data you are planning to '
+              'work with on Savio. Please include: (1) Dataset description '
+              '(2) Source of dataset (3) Security & Compliance requirements '
+              'for this dataset(s) (4) Number and sizes of files (5) '
+              'Anticipated duration of usage of datasets on Savio.',
+        validators=[MinLengthValidator(20)],
+        required=True,
+        widget=forms.Textarea(attrs={'rows': 3}))
+
+    rdm_consultation = forms.BooleanField(
+        initial=False,
+        label='Have you already talked with Research IT staff (and/or with '
+              'the Information Security and Policy team) about your data?',
+        required=False)
+
+
+class SecureDirRDMConsultationForm(forms.Form):
+    rdm_consultants = forms.CharField(
+        label='List the name(s) of the Research-IT or Information Security '
+              'and Policy (ISP) team member(s) with whom you have discussed '
+              'this data/project',
+        validators=[MinLengthValidator(3)],
+        required=True,
+        widget=forms.Textarea(attrs={'rows': 3}))
+
+
+class SecureDirExistingPIForm(forms.Form):
+    PI = PIChoiceField(
+        label='Principal Investigator',
+        queryset=User.objects.none(),
+        required=True)
+
+    def __init__(self, *args, **kwargs):
+        kwargs.pop('breadcrumb_rdm_consultation', None)
+        super().__init__(*args, **kwargs)
+
+        queryset = User.objects.all()
+        pi_role = ProjectUserRoleChoice.objects.get(
+            name='Principal Investigator')
+
+        # Only include active PIs that are apart of active projects.
+        pi_set = \
+            set(ProjectUser.objects.filter(role=pi_role,
+                                           project__status__name='Active',
+                                           status__name='Active'
+                                           ).values_list('user__pk', flat=True))
+        queryset = queryset.filter(pk__in=pi_set)
+        self.fields['PI'].queryset = queryset
+
+    def clean(self):
+        cleaned_data = super().clean()
+        pi = self.cleaned_data['PI']
+        if pi is not None and pi not in self.fields['PI'].queryset:
+            raise forms.ValidationError(f'Invalid selection {pi.username}.')
+        return cleaned_data
+
+
+class SecureDirExistingProjectForm(forms.Form):
+    project = forms.ModelChoiceField(
+        label='Project',
+        queryset=Project.objects.none(),
+        required=True)
+
+    def __init__(self, *args, **kwargs):
+        kwargs.pop('breadcrumb_rdm_consultation', None)
+        kwargs.pop('breadcrumb_pi', None)
+        super().__init__(*args, **kwargs)
+
+        fc_co_projects_cond = Q(name__startswith='fc_') | Q(name__startswith='co_')
+        self.fields['project'].queryset = Project.objects.filter(fc_co_projects_cond, status__name='Active')
