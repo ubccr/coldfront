@@ -1,9 +1,35 @@
-{% extends "common/base.html" %} {% load common_tags %} {% load crispy_forms_tags %} {% load static %} {% block title %}
-Allocation List {% endblock %} {% block content %}
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}
+Allocation List
+{% endblock %}
+
+{% block content %}
 
 
 <h1>Allocations</h1>
 <hr>
+<div class="card mb-3 bg-light">
+  <div class="card-body">
+    {% if user_agreement_signed and is_pi %}
+      <a class="btn btn-primary" href="{% url 'secure-dir-request-landing' %}" role="button">
+        <i class="fas fa-lock" aria-hidden="true"></i>
+        Request a Secure Directory
+      </a>
+    {% else %}
+      <button class="btn btn-primary" disabled="true">
+        <i class="fas fa-lock" aria-hidden="true"></i>
+        Request a Secure Directory
+      </button>
+    {% endif %}
+    <!--    <div class="float-right">-->
+    <!--      <a class="btn btn-primary" href="{% url 'project-archived-list' %}" role="button"><i class="fas fa-archive" aria-hidden="true"></i> View archived projects</a>-->
+    <!--    </div>-->
+  </div>
+</div>
 {% if expand_accordion == "show" or allocation_list %}
 <div class="mb-3" id="accordion">
   <div class="card">
