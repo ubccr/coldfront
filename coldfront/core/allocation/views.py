@@ -59,6 +59,7 @@ from coldfront.core.project.models import (Project, ProjectUser,
 from coldfront.core.project.utils import ProjectClusterAccessRequestRunner
 from coldfront.core.resource.models import Resource
 from coldfront.core.statistics.models import ProjectUserTransaction
+from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.mail import send_email_template
@@ -581,6 +582,9 @@ class AllocationListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
             allocation_list = paginator.page(1)
         except EmptyPage:
             allocation_list = paginator.page(paginator.num_pages)
+
+        context['is_pi'] = UserProfile.objects.get(user=self.request.user).is_pi
+        context['user_agreement_signed'] = self.request.user.userprofile.access_agreement_signed_date is not None
 
         return context
 
