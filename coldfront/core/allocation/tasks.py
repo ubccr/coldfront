@@ -1,3 +1,4 @@
+from collections import UserDict
 import datetime
 # import the logging library
 import logging
@@ -57,16 +58,91 @@ def send_expiry_emails():
 
         #Email user about projects listed with expiring allocations
 
-    for days_remaining in sorted(set(EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS)):
-        expring_in_days = datetime.datetime.today(
-        ) + datetime.timedelta(days=days_remaining)
+    # allocation attempt
+    for users in User.objects.all():
+        projectdict = {}
+        email_receiver_list = []
+        for days_remaining in sorted(set(EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS)):
+            expring_in_days = (datetime.datetime.today(
+                ) + datetime.timedelta(days=days_remaining)).date()
+                       
+                #User's project allocations
+            for allocationuser in users.allocationuser_set.all():
+                allocation = allocationuser.allocation
+
+                if ((allocation.status.name in ['Active', 'Payment Pending', 'Payment Requested', 'Unpaid']) and (allocation.end_date == expring_in_days)):
+                    
+                    project_renew_url = '{}/{}/{}/{}'.format(
+                    CENTER_BASE_URL.strip('/'), 'project', allocation.project.pk, 'renew')
+
+                    template_context = {
+                        'center_name': CENTER_NAME,
+                        'project_title': allocation.project.title,
+                        'expring_in_days': days_remaining,
+                        'project_dict': projectdict,
+                        'project_renewal_help_url': CENTER_PROJECT_RENEWAL_HELP_URL,
+                        'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL,
+                        'signature': EMAIL_SIGNATURE
+                    }
+
+                    #Check for if expire and cloud usage notifications are set to 'Yes'
+                    expire_notification = allocation.allocationattribute_set.filter(
+                        allocation_attribute_type__name='EXPIRE NOTIFICATION').first()
+                    if expire_notification and expire_notification.value == 'No':
+                        continue
+
+                    cloud_usage_notification = allocation.allocationattribute_set.filter(
+                        allocation_attribute_type__name='CLOUD_USAGE_NOTIFICATION').first()
+                    if cloud_usage_notification and cloud_usage_notification.value == 'No':
+                        continue
+
+                    #Filter allocationuser set for our user and append them to email list if they have notifications enabled and are active
+                    for projectuser in allocationuser.allocation.project.projectuser_set.filter(user=users, status__name='Active'): 
+                        if ((projectuser.enable_notifications) and 
+                            (allocationuser.user == users and allocationuser.status.name == 'Active')):
+                            print(users)
+                            if (users.email not in email_receiver_list):
+                                email_receiver_list.append(users.email)
+                            
+                            if users.email not in projectdict:
+                                projectdict[users.email] = list()
+                                projectdict[users.email].append(project_renew_url)
+                            else:
+                                if project_renew_url not in projectdict[users.email]:
+                                    projectdict[users.email].append(project_renew_url)
+
+                        logger.info('Allocation to {} expiring in {} days email sent to PI {}.'.format(
+                            allocation.get_parent_resource.name, days_remaining, allocation.project.pi.username))
+
+        if email_receiver_list:
+            send_email_template('{} your allocation(s) are expiring soon'.format(users),
+                        'email/allocation_expiring_test.txt',
+                        template_context,
+                        EMAIL_SENDER,
+                        email_receiver_list
+                        ) 
+    
         #Users
-        for users in User.objects.all():
+    """   for users in User.objects.all():
+        projectdict = {}
+        email_receiver_list = []
+        for days_remaining in sorted(set(EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS)):
+            expring_in_days = datetime.datetime.today(
+                ) + datetime.timedelta(days=days_remaining)
             #User's projects
             for project in users.projectuser_set.all():
-                email_receiver_list = []
                 project_renew_url = '{}/{}/{}/{}'.format(
                     CENTER_BASE_URL.strip('/'), 'project', project.project.pk, 'renew')
+
+                template_context = {
+                        'center_name': CENTER_NAME,
+                        'project_title': project.project.title,
+                        'expring_in_days': days_remaining,
+                        'project_dict': projectdict,
+                        'project_renewal_help_url': CENTER_PROJECT_RENEWAL_HELP_URL,
+                        'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL,
+                        'signature': EMAIL_SIGNATURE
+                    }
                 #User's project allocations
                 for allocation in project.project.allocation_set.filter(status__name__in=['Active', 'Payment Pending', 'Payment Requested', 'Unpaid',], end_date=expring_in_days):
 
@@ -81,56 +157,37 @@ def send_expiry_emails():
                     if cloud_usage_notification and cloud_usage_notification.value == 'No':
                         continue
 
-                    resource_name = allocation.get_parent_resource.name
-
-                    template_context = {
-                        'center_name': CENTER_NAME,
-                        'allocation_type': resource_name,
-                        'expring_in_days': days_remaining,
-                        'project_renew_url': project_renew_url,
-                        'project_renewal_help_url': CENTER_PROJECT_RENEWAL_HELP_URL,
-                        'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL,
-                        'signature': EMAIL_SIGNATURE
-
-                    }   
-
                     #Filter allocationuser set for our user and append them to email list if they have notifications enabled and are active 
                     if (project.enable_notifications and
                     allocation.allocationuser_set.filter(
-                        user=users, status__name='Active')
-                        and users.email not in email_receiver_list):
-                        
-                        email_receiver_list.append(users.email)
+                        user=users, status__name='Active')):
+                    
+                        if (users.email not in email_receiver_list):
+                            email_receiver_list.append(users.email)
 
-                    send_email_template('Allocation to {} expiring in {} days'.format(resource_name, days_remaining),
-                                'email/allocation_expiring_test.txt',
-                                template_context,
-                                EMAIL_SENDER,
-                                email_receiver_list
-                                )
+                        if users.email not in projectdict:
+                            projectdict[users.email] = list()
+                            projectdict[users.email].append(project_renew_url)
+                        else:
+                            projectdict[users.email].append(project_renew_url)
 
                     logger.info('Allocation to {} expiring in {} days email sent to PI {}.'.format(
-                        resource_name, days_remaining, project.project.pi.username))
-                    
+                        allocation.get_parent_resource.name, days_remaining, project.project.pi.username))
+
+        if email_receiver_list:
+            send_email_template('{} your allocation(s) are expiring soon'.format(users),
+                        'email/allocation_expiring_test.txt',
+                        template_context,
+                        EMAIL_SENDER,
+                        email_receiver_list 
+                        )        """
+        
             
-                
-   # print('\n')
-    #for user in UserProfile.user.get_queryset():
-     #   print(user)
-      #  print(user.projectuser_set.all())
-       # for projects in user.projectuser_set.all():
-        #    print(projects.project.title)
-         #   for allocations in projects.project.allocation_set.filter(status__name__in=['Active', 'Payment Pending', 'Payment Requested', 'Unpaid',]):
-          #      print(allocations.start_date)
-           #     print(allocations.allocationattribute_set.all())
-            #print(projects.project.allocation_set.all())
-    # We want a set of [user, projects] where projects have expiring allocations
     for days_remaining in sorted(set(EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS)):
         expring_in_days = datetime.datetime.today(
         ) + datetime.timedelta(days=days_remaining)
-
+        
         for allocation_obj in Allocation.objects.filter(status__name__in=['Active', 'Payment Pending', 'Payment Requested', 'Unpaid',], end_date=expring_in_days):
-
             expire_notification = allocation_obj.allocationattribute_set.filter(
                 allocation_attribute_type__name='EXPIRE NOTIFICATION').first()
             if expire_notification and expire_notification.value == 'No':
