@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db import IntegrityError
 from django.db.models import Q
 from django.forms import formset_factory
 from django.http import HttpResponseRedirect
@@ -12,21 +13,28 @@ from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.views.generic import ListView, FormView
 from django.views.generic.base import TemplateView, View
+from formtools.wizard.views import SessionWizardView
 
 from coldfront.core.allocation.forms_.secure_dir_forms import (
     SecureDirManageUsersForm,
     SecureDirManageUsersSearchForm,
     SecureDirManageUsersRequestUpdateStatusForm,
-    SecureDirManageUsersRequestCompletionForm)
+    SecureDirManageUsersRequestCompletionForm, SecureDirDataDescriptionForm,
+    SecureDirRDMConsultationForm, SecureDirExistingPIForm,
+    SecureDirExistingProjectForm)
 from coldfront.core.allocation.models import (Allocation,
                                               SecureDirAddUserRequest,
                                               SecureDirRemoveUserRequest,
                                               AllocationUserStatusChoice,
-                                              AllocationUser)
+                                              AllocationUser,
+                                              SecureDirRequestStatusChoice,
+                                              SecureDirRequest)
 from coldfront.core.allocation.utils import \
     get_secure_dir_manage_user_request_objects
 from coldfront.core.project.models import ProjectUser
-from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.user.models import UserProfile
+from coldfront.core.utils.common import utc_now_offset_aware, \
+    session_wizard_all_form_data
 from coldfront.core.utils.mail import send_email_template
 
 logger = logging.getLogger(__name__)
@@ -754,3 +762,205 @@ class SecureDirManageUsersDenyRequestView(LoginRequiredMixin,
         return HttpResponseRedirect(
             reverse(f'secure-dir-manage-users-request-list',
                     kwargs={'action': self.action, 'status': 'pending'}))
+
+
+class SecureDirRequestWizard(LoginRequiredMixin,
+                             UserPassesTestMixin,
+                             SessionWizardView):
+
+    FORMS = [
+        ('data_description', SecureDirDataDescriptionForm),
+        ('rdm_consultation', SecureDirRDMConsultationForm),
+        ('existing_pi', SecureDirExistingPIForm),
+        ('existing_project', SecureDirExistingProjectForm)
+    ]
+
+    TEMPLATES = {
+        'data_description':
+            'secure_dir/secure_dir_request/data_description.html',
+        'rdm_consultation':
+            'secure_dir/secure_dir_request/rdm_consultation.html',
+        'existing_pi':
+            'secure_dir/secure_dir_request/existing_pi.html',
+        'existing_project':
+            'secure_dir/secure_dir_request/existing_project.html'
+    }
+
+    form_list = [
+        SecureDirDataDescriptionForm,
+        SecureDirRDMConsultationForm,
+        SecureDirExistingPIForm,
+        SecureDirExistingProjectForm
+    ]
+
+    logger = logging.getLogger(__name__)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Define a lookup table from form name to step number.
+        self.step_numbers_by_form_name = {
+            name: i for i, (name, _) in enumerate(self.FORMS)}
+
+    def test_func(self):
+        if self.request.user.is_superuser:
+            return True
+        signed_date = (
+            self.request.user.userprofile.access_agreement_signed_date)
+        if signed_date is not None:
+            return True
+        message = (
+            'You must sign the User Access Agreement before you can request a '
+            'new secure directory.')
+        messages.error(self.request, message)
+
+    def get_context_data(self, form, **kwargs):
+        context = super().get_context_data(form=form, **kwargs)
+        current_step = int(self.steps.current)
+        self.__set_data_from_previous_steps(current_step, context)
+        return context
+
+    def get_form_kwargs(self, step=None):
+        kwargs = {}
+        step = int(step)
+        # The names of steps that require the past data.
+        step_names = [
+            'rdm_consultation',
+            'existing_pi',
+            'existing_project'
+        ]
+        step_numbers = [
+            self.step_numbers_by_form_name[name] for name in step_names]
+        if step in step_numbers:
+            self.__set_data_from_previous_steps(step, kwargs)
+        return kwargs
+
+    def get_template_names(self):
+        return [self.TEMPLATES[self.FORMS[int(self.steps.current)][0]]]
+
+    def done(self, form_list, **kwargs):
+        """Perform processing and store information in a request
+        object."""
+        redirect_url = '/'
+        try:
+            form_data = session_wizard_all_form_data(
+                form_list, kwargs['form_dict'], len(self.form_list))
+
+            request_kwargs = {
+                'requester': self.request.user,
+            }
+
+            data_description = self.__get_data_description(form_data)
+            rdm_consultation = self.__get_rdm_consultation(form_data)
+            pi = self.__handle_pi_data(form_data)
+            existing_project = self.__get_existing_project(form_data)
+
+            # Store transformed form data in a request.
+            request_kwargs['data_description'] = data_description
+            request_kwargs['rdm_consultation'] = rdm_consultation
+            request_kwargs['pi'] = pi
+            request_kwargs['project'] = existing_project
+            request_kwargs['status'] = \
+                SecureDirRequestStatusChoice.objects.get(
+                    name='Under Review')
+            request_kwargs['request_time'] = utc_now_offset_aware()
+            request = SecureDirRequest.objects.create(
+                **request_kwargs)
+
+            # Send a notification email to admins.
+            # try:
+            #     send_new_project_request_admin_notification_email(request)
+            # except Exception as e:
+            #     self.logger.error(
+            #         'Failed to send notification email. Details:\n')
+            #     self.logger.exception(e)
+            # # Send a notification email to the PI if the requester differs.
+            # if request.requester != request.pi:
+            #     try:
+            #         send_new_project_request_pi_notification_email(request)
+            #     except Exception as e:
+            #         self.logger.error(
+            #             'Failed to send notification email. Details:\n')
+            #         self.logger.exception(e)
+        except Exception as e:
+            self.logger.exception(e)
+            message = 'Unexpected failure. Please contact an administrator.'
+            messages.error(self.request, message)
+        else:
+            message = (
+                'Thank you for your submission. It will be reviewed and '
+                'processed by administrators.')
+            messages.success(self.request, message)
+
+        return HttpResponseRedirect(redirect_url)
+
+    @staticmethod
+    def condition_dict():
+        view = SecureDirRequestWizard
+        return {
+            '1': view.show_rdm_consultation_form_condition
+        }
+
+    def show_rdm_consultation_form_condition(self):
+        step_name = 'data_description'
+        step = str(self.step_numbers_by_form_name[step_name])
+        cleaned_data = self.get_cleaned_data_for_step(step) or {}
+        print(cleaned_data)
+        return cleaned_data.get('rdm_consultation', False)
+
+    def __get_data_description(self, form_data):
+        """Return the data description the user submitted."""
+        step_number = self.step_numbers_by_form_name['data_description']
+        data = form_data[step_number]
+        return data.get('data_description')
+
+    def __get_rdm_consultation(self, form_data):
+        """Return the consultants the user spoke to."""
+        step_number = self.step_numbers_by_form_name['rdm_consultation']
+        data = form_data[step_number]
+        return data.get('rdm_consultants', None)
+
+    def __handle_pi_data(self, form_data):
+        """Return the requested PI."""
+        # If an existing PI was selected, return the existing User object.
+        step_number = self.step_numbers_by_form_name['existing_pi']
+        data = form_data[step_number]
+        return data.get('PI', None)
+
+    def __get_existing_project(self, form_data):
+        """Return the project the user selected."""
+        step_number = self.step_numbers_by_form_name['existing_project']
+        data = form_data[step_number]
+        return data.get('project', None)
+
+    def __set_data_from_previous_steps(self, step, dictionary):
+        """Update the given dictionary with data from previous steps."""
+        rdm_consultation_step = \
+            self.step_numbers_by_form_name['rdm_consultation']
+        if step > rdm_consultation_step:
+            rdm_consultation_form_data = self.get_cleaned_data_for_step(
+                str(rdm_consultation_step))
+            dictionary.update({'breadcrumb_rdm_consultation': 'Yes' if rdm_consultation_form_data else 'No'})
+
+        existing_pi_step = self.step_numbers_by_form_name['existing_pi']
+        if step > existing_pi_step:
+            existing_pi_form_data = self.get_cleaned_data_for_step(
+                str(existing_pi_step))
+            if existing_pi_form_data:
+                if existing_pi_form_data['PI'] is not None:
+                    pi = existing_pi_form_data['PI']
+                    dictionary.update({
+                        'breadcrumb_pi': (
+                            f'Existing PI: {pi.first_name} {pi.last_name} '
+                            f'({pi.email})')
+                    })
+
+        existing_project_step = \
+            self.step_numbers_by_form_name['existing_project']
+        if step > existing_project_step:
+            existing_project_form_data = self.get_cleaned_data_for_step(
+                str(existing_project_step))
+            if existing_project_form_data:
+                project = existing_project_form_data['project']
+
+                dictionary.update({'breadcrumb_project':
+                                       f'Project: {project.name}'})
