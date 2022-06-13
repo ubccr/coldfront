@@ -669,3 +669,27 @@ class SecureDirRemoveUserRequest(TimeStampedModel):
     completion_time = models.DateTimeField(null=True)
     status = models.ForeignKey(
         SecureDirRemoveUserRequestStatusChoice, on_delete=models.CASCADE)
+
+
+class SecureDirRequestStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]
+
+
+class SecureDirRequest(TimeStampedModel):
+    requester = models.ForeignKey(User, on_delete=models.CASCADE)
+    data_description = models.TextField()
+    rdm_consultation = models.TextField(null=True)
+    pi = models.ForeignKey(User, on_delete=models.CASCADE, related_name='requested_pi')
+    project = models.ForeignKey(Project, null=True, on_delete=models.CASCADE)
+    status = models.ForeignKey(SecureDirRequestStatusChoice, on_delete=models.CASCADE)
+
+    request_time = models.DateTimeField(
+        null=True, blank=True, default=timezone.now)
+    approval_time = models.DateTimeField(null=True, blank=True)
+    completion_time = models.DateTimeField(null=True, blank=True)
