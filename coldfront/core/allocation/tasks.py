@@ -100,7 +100,7 @@ def send_expiry_emails():
                     for projectuser in allocationuser.allocation.project.projectuser_set.filter(user=users, status__name='Active'): 
                         if ((projectuser.enable_notifications) and 
                             (allocationuser.user == users and allocationuser.status.name == 'Active')):
-                            print(users)
+
                             if (users.email not in email_receiver_list):
                                 email_receiver_list.append(users.email)
                             
@@ -111,17 +111,18 @@ def send_expiry_emails():
                                 if project_renew_url not in projectdict[users.email]:
                                     projectdict[users.email].append(project_renew_url)
 
-                        logger.info('Allocation to {} expiring in {} days email sent to PI {}.'.format(
-                            allocation.get_parent_resource.name, days_remaining, allocation.project.pi.username))
-
-        if email_receiver_list:
+        if len(email_receiver_list) != 0:
+            #print('passed conditional')
+            #print(email_receiver_list)
             send_email_template('{} your allocation(s) are expiring soon'.format(users),
                         'email/allocation_expiring_test.txt',
                         template_context,
                         EMAIL_SENDER,
                         email_receiver_list
                         ) 
-    
+
+            logger.info('Allocation(s) expiring in soon, email sent to PI {}.'.format(
+                            allocation.project.pi.username))
         #Users
     """   for users in User.objects.all():
         projectdict = {}
@@ -183,7 +184,7 @@ def send_expiry_emails():
                         )        """
         
             
-    for days_remaining in sorted(set(EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS)):
+    """ for days_remaining in sorted(set(EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS)):
         expring_in_days = datetime.datetime.today(
         ) + datetime.timedelta(days=days_remaining)
         
@@ -223,7 +224,7 @@ def send_expiry_emails():
                         and allocation_user.user.email not in email_receiver_list):
 
                     email_receiver_list.append(allocation_user.user.email)
-                
+
             send_email_template('Allocation to {} expiring in {} days'.format(resource_name, days_remaining),
                                 'email/allocation_expiring.txt',
                                 template_context,
@@ -232,7 +233,7 @@ def send_expiry_emails():
                                 )
 
             logger.info('Allocation to {} expiring in {} days email sent to PI {}.'.format(
-                resource_name, days_remaining, allocation_obj.project.pi.username))
+                resource_name, days_remaining, allocation_obj.project.pi.username))"""
 
     # Allocations expiring today
     today = datetime.datetime.now().strftime('%Y-%m-%d')
