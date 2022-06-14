@@ -95,6 +95,22 @@ class Allocation(TimeStampedModel):
 
         super().save(*args, **kwargs)
 
+
+    def determine_size_fmt(num):
+        unit = "B"
+        for u in ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB"]:
+            if abs(num) < 1024.0:
+                return round(num, 3), unit
+            num /= 1024.0
+            unit = u
+
+    def convert_size_fmt(num, target_unit, source_unit="B"):
+        units = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB"]
+        convert_units = units[units.index(source_unit) :: units.index(target_unit)+1]
+        for u in convert_units:
+            num/=1024.0
+        return round(num, 3)
+
     @property
     def expires_in(self):
         return (self.end_date - datetime.date.today()).days
@@ -110,6 +126,10 @@ class Allocation(TimeStampedModel):
 
             if hasattr(attribute, 'allocationattributeusage'):
                 try:
+                    # # set measurement using attribute.value
+                    # quota, measurement = determine_size_fmt(attribute.allocation_attribute_type.name)
+
+                    # usage = convert_size_fmt(num, measurement)
                     percent = round(float(attribute.allocationattributeusage.value) /
                                     float(attribute.value) * 10000) / 100
                 except ValueError:
@@ -117,9 +137,12 @@ class Allocation(TimeStampedModel):
                     logger.error("Allocation attribute '%s' is not an int but has a usage",
                                  attribute.allocation_attribute_type.name)
 
+                # string = '{} : {}/{} ({} %) <br>'.format(
                 string = '{}: {}/{} ({} %) <br>'.format(
                     attribute.allocation_attribute_type.name,
+                    # quota,
                     attribute.allocationattributeusage.value,
+                    # usage,
                     attribute.value,
                     percent
                 )
@@ -300,6 +323,8 @@ class AllocationUser(TimeStampedModel): #allocation user and user are both datab
     allocation_group_usage_bytes = models.BigIntegerField(blank=True, null=True)
     allocation_group_quota = models.BigIntegerField(blank=True, null=True)
     unit = models.TextField(max_length=20, default="N/A Unit")
+    allocation_group_quota = models.BigIntegerField(blank=True, null=True)
+
     history = HistoricalRecords()
 
     def __str__(self):

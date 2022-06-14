@@ -1,10 +1,11 @@
 import os
+import sys
 from coldfront.config.env import ENV
 
 #------------------------------------------------------------------------------
 # Database settings
 #------------------------------------------------------------------------------
-# Set this using the DB_URL env variable. Defaults to sqlite. 
+# Set this using the DB_URL env variable. Defaults to sqlite.
 #
 # Examples:
 #
@@ -14,12 +15,22 @@ from coldfront.config.env import ENV
 # Postgresql:
 #  DB_URL=psql://user:password@127.0.0.1:8458/database
 #------------------------------------------------------------------------------
+
 DATABASES = {
-    'default': ENV.db_url(
-        var='DB_URL',
-        default='sqlite:///'+os.path.join(os.getcwd(), 'coldfront.db')
-    )
+     'default': {
+         'ENGINE': 'django.db.backends.mysql',
+         'NAME': ENV.str('DB', default="coldfront"),
+         'USER': ENV.str('DB_USER'),
+         'PASSWORD': ENV.str('DB_PASS'),
+         'HOST': ENV.str('DB_HOST', default="127.0.0.1"),
+         'PORT': '3306',
+     },
 }
+
+# Covers regular testing and django-coverage
+if 'test' in sys.argv or 'test_coverage' in sys.argv:
+    DATABASES['default']['ENGINE'] = 'django.db.backends.sqlite3'
+
 
 
 #------------------------------------------------------------------------------

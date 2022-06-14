@@ -1,3 +1,4 @@
+reportlab==3.6.6
 arrow==0.13.1
 bibtexparser==1.1.0
 blessed==1.15.0
@@ -38,6 +39,8 @@ djangorestframework-datatables==0.6.0
 django-mathfilters==1.0.0
 django-easy-pdf==0.1.1
 ipython==7.1.1
-logging_tree
-mysqlclient
-pandas
+logging_tree==1.9
+mysqlclient==2.1.0
+pandas==1.1.5
+reportlab==3.6.6
+pisa==3.0.33

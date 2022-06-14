@@ -162,7 +162,6 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         else:
             context['is_allowed_to_update_project'] = False
 
-
         # usage_bytes_list written the way it should work
         usage_bytes_list = [u.usage_bytes for u in allocation_users]
         user_usage_sum = sum(usage_bytes_list)

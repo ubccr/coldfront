@@ -18,12 +18,12 @@ coldfront.db
 *.code-workspace
 .vscode
 db.json
-coldfront/core/user/coldfront.log
-coldfront.log
+*/coldfront.log
 coldfront.env
 .env
 __pycache__
 environment.yml
 coldfront/fixtures*
 VERSION
+!*/.gitignore
 coldfront.db-journal
