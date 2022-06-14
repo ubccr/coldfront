@@ -162,23 +162,28 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         else:
             context['is_allowed_to_update_project'] = False
 
-        bytes_in_tb = 1099511627776
-        allocation_quota_tb = next((a for a in attributes_with_usage if a.allocation_attribute_type.name == "Storage Quota (TB)"
-        ), "None")
-        allocation_usage_tb = float(allocation_quota_tb.allocationattributeusage.value)
-
         # usage_bytes_list written the way it should work
         usage_bytes_list = [u.usage_bytes for u in allocation_users]
         user_usage_sum = sum(usage_bytes_list)
 
-        allocation_quota_in_tb = float(allocation_quota_tb.value)
-        #context['allocation_quota_tb'] = allocation_quota_in_tb
-        #context['allocation_usage_tb'] = allocation_usage_tb if allocation_usage_tb != 0 \
-        #            else user_usage_sum/bytes_in_tb
-
-        context['allocation_quota_bytes'] = float(allocation_quota_in_tb)*bytes_in_tb
-        context['allocation_usage_bytes'] = allocation_usage_tb*bytes_in_tb if allocation_usage_tb != 0 \
-                    else user_usage_sum
+        allocation_quota_bytes = next((a for a in attributes_with_usage if \
+                a.allocation_attribute_type.name == "Quota_in_bytes"), "None")
+        if allocation_quota_bytes != "None":
+            allocation_usage_bytes = float(allocation_quota_bytes.allocationattributeusage.value)
+            context['allocation_quota_bytes'] = allocation_quota_bytes
+            context['allocation_usage_bytes'] = allocation_usage_bytes
+        else:
+            bytes_in_tb = 1099511627776
+            allocation_quota_tb = next((a for a in attributes_with_usage if \
+                a.allocation_attribute_type.name == "Storage Quota (TB)"), "None")
+            allocation_usage_tb = float(allocation_quota_tb.allocationattributeusage.value)
+            allocation_quota_in_tb = float(allocation_quota_tb.value)
+            #context['allocation_quota_tb'] = allocation_quota_in_tb
+            #context['allocation_usage_tb'] = allocation_usage_tb if allocation_usage_tb != 0 \
+            #            else user_usage_sum/bytes_in_tba
+            context['allocation_quota_bytes'] = float(allocation_quota_in_tb)*bytes_in_tb
+            context['allocation_usage_bytes'] = allocation_usage_tb*bytes_in_tb if \
+                        allocation_usage_tb != 0 else user_usage_sum
 
         context['guage_data'] = guage_data
         context['attributes_with_usage'] = attributes_with_usage
