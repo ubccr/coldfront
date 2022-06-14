@@ -418,14 +418,17 @@ class ProjectListView(LoginRequiredMixin, ListView):
                 user=self.request.user, role__name__in=role_names,
                 status=status)
 
+        # Only non-LBL employees without a host user and without any pending
+        # join requests need access to the SelectHostUserForm.
         context['need_host'] = False
+        pending_status = ProjectUserStatusChoice.objects.get(name='Pending - Add')
         if flag_enabled('LRC_ONLY') \
                 and not self.request.user.email.endswith('@lbl.gov') \
-                and not self.request.user.userprofile.host_user:
+                and not self.request.user.userprofile.host_user\
+                and not ProjectUser.objects.filter(user=self.request.user,
+                                                   status=pending_status).exists():
             context['need_host'] = True
 
-            # Select host forms only available to non-LBL employees
-            # without a host.
             selecthostform_dict = {}
             for project in project_list:
                 selecthostform_dict[project.name] = \
@@ -1737,8 +1740,6 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
             context['can_add_users'] = True
 
         if flag_enabled('LRC_ONLY'):
-            context['need_host'] = True
-
             host_dict = {}
             for user in users_to_review:
                 username = user.get('username')
@@ -1844,8 +1845,18 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
 
                             user_profile = \
                                 UserProfile.objects.get(user=user_obj)
-                            user_profile.host_user = host_user
-                            user_profile.save()
+
+                            if host_user:
+                                if user_obj.email.endswith('@lbl.gov') or user_profile.host_user:
+                                    message = (
+                                        f'User {user_obj.username} requested '
+                                        f'a host user but already has '
+                                        f'{user_profile.host_user.username} as '
+                                        f'their host user.')
+                                    self.logger.error(message)
+                                else:
+                                    user_profile.host_user = host_user
+                                    user_profile.save()
 
                     # Send an email to the user.
                     try:
