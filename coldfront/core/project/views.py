@@ -418,24 +418,6 @@ class ProjectListView(LoginRequiredMixin, ListView):
                 user=self.request.user, role__name__in=role_names,
                 status=status)
 
-        # Only non-LBL employees without a host user and without any pending
-        # join requests need access to the SelectHostUserForm.
-        context['need_host'] = False
-        pending_status = ProjectUserStatusChoice.objects.get(name='Pending - Add')
-        if flag_enabled('LRC_ONLY') \
-                and not self.request.user.email.endswith('@lbl.gov') \
-                and not self.request.user.userprofile.host_user\
-                and not ProjectUser.objects.filter(user=self.request.user,
-                                                   status=pending_status).exists():
-            context['need_host'] = True
-
-            selecthostform_dict = {}
-            for project in project_list:
-                selecthostform_dict[project.name] = \
-                    ProjectSelectHostUserForm(project=project.name)
-
-            context['selecthostform_dict'] = selecthostform_dict
-
         return context
 
 
@@ -1656,6 +1638,25 @@ class ProjectJoinListView(ProjectListView, UserPassesTestMixin):
 
         context['join_requests'] = join_requests
         context['not_joinable'] = not_joinable
+
+        # Only non-LBL employees without a host user and without any pending
+        # join requests need access to the SelectHostUserForm.
+        context['need_host'] = False
+        pending_status = ProjectUserStatusChoice.objects.get(name='Pending - Add')
+        if flag_enabled('LRC_ONLY') \
+                and not self.request.user.email.endswith('@lbl.gov') \
+                and not self.request.user.userprofile.host_user \
+                and not ProjectUser.objects.filter(user=self.request.user,
+                                                   status=pending_status).exists():
+            context['need_host'] = True
+
+            selecthostform_dict = {}
+            for project in context.get('project_list'):
+                selecthostform_dict[project.name] = \
+                    ProjectSelectHostUserForm(project=project.name)
+
+            context['selecthostform_dict'] = selecthostform_dict
+
         return context
 
 
