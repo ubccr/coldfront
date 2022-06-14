@@ -40,7 +40,10 @@ class TestCreateSecureDir(TestBase):
         call_command('add_directory_defaults')
         create_secure_dirs(self.project1,
                            self.groups_subdirectory_name,
-                           self.scratch_subdirectory_name)
+                           'groups')
+        create_secure_dirs(self.project1,
+                           self.scratch_subdirectory_name,
+                           'scratch')
 
     def test_allocation_objects_created(self):
         """Testing that allocation objects are created"""
@@ -78,13 +81,13 @@ class TestCreateSecureDir(TestBase):
             allocation_attribute_type=allocation_attribute_type,
             allocation=groups_allocation,
             value=os.path.join(groups_p2p3_path.value,
-                               self.subdirectory_name))
+                               self.groups_subdirectory_name))
 
         scratch2_p2p3_subdirectory = AllocationAttribute.objects.filter(
             allocation_attribute_type=allocation_attribute_type,
             allocation=scratch2_allocation,
             value=os.path.join(scratch2_p2p3_path.value,
-                               self.subdirectory_name))
+                               self.scratch_subdirectory_name))
 
         self.assertTrue(groups_p2p3_subdirectory.exists())
         self.assertTrue(scratch2_p2p3_subdirectory.exists())

@@ -100,10 +100,15 @@ class TestSecureDirBase(TestBase):
         self.groups_subdirectory_name = 'project1/test_groups'
         self.scratch_subdirectory_name = 'test_scratch'
         call_command('add_directory_defaults')
-        self.groups_allocation, self.scratch2_allocation = \
+        self.groups_allocation = \
             create_secure_dirs(self.project1,
                                self.groups_subdirectory_name,
-                               self.scratch_subdirectory_name)
+                               'groups')
+
+        self.scratch2_allocation = \
+            create_secure_dirs(self.project1,
+                               self.scratch_subdirectory_name,
+                               'scratch')
 
         for alloc in [self.groups_allocation, self.scratch2_allocation]:
             AllocationUser.objects.create(
@@ -310,10 +315,15 @@ class TestSecureDirManageUsersView(TestSecureDirBase):
         """Test that users that are part of another scratch secure directory
         are greyed out and cannot be added."""
         # Create a second set of secure directories.
-        groups_allocation2, scratch2_allocation2 = \
+        groups_allocation2 = \
             create_secure_dirs(self.project0,
                                'groups_test',
-                               'scratch2_test')
+                               'groups')
+        scratch2_allocation2 = \
+            create_secure_dirs(self.project0,
+                               'scratch2_test',
+                               'scratch')
+
         # Add user to scratch2 directory.
         alloc_user = \
             AllocationUser.objects.create(
