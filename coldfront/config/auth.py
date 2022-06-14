@@ -13,7 +13,7 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
 SU_LOGIN_CALLBACK = "coldfront.core.utils.common.su_login_callback"
-SU_LOGOUT_REDIRECT_URL = "/admin/auth/user/"
+SU_LOGOUT_REDIRECT_URL = "/su/login/"
 
 SESSION_COOKIE_AGE = 60 * 15
 SESSION_SAVE_EVERY_REQUEST = True
