@@ -30,7 +30,7 @@ class AllocationForm(forms.Form):
         self.fields['resource'].queryset = get_user_resources(request_user)
         self.fields['quantity'].initial = 1
         user_query_set = project_obj.projectuser_set.select_related('user').filter(
-            status__name__in=['Active', ])
+            status__name__in=['Active', ]).order_by("user__username")
         user_query_set = user_query_set.exclude(user=project_obj.pi)
         if user_query_set:
             self.fields['users'].choices = ((user.user.username, "%s %s (%s)" % (

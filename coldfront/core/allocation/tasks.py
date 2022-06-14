@@ -34,7 +34,7 @@ def update_statuses():
     expired_status_choice = AllocationStatusChoice.objects.get(
         name='Expired')
     allocations_to_expire = Allocation.objects.filter(
-        status__name='Active', end_date__lt=datetime.datetime.now().date())
+        status__name__in=['Active','Payment Pending','Payment Requested', 'Unpaid',], end_date__lt=datetime.datetime.now().date())
     for sub_obj in allocations_to_expire:
         sub_obj.status = expired_status_choice
         sub_obj.save()
