@@ -12,9 +12,6 @@ from django.conf import settings
 from django.test import override_settings
 from django.urls import reverse
 
-from flags.state import disable_flag
-from flags.state import enable_flag
-
 
 class TestProjectJoinListView(TestBase):
     """A class for testing ProjectJoinListView."""
@@ -50,6 +47,20 @@ class TestProjectJoinListView(TestBase):
         self.assertContains(response, active_name)
         self.assertNotContains(response, inactive_name)
 
+    def create_join_request(self, user, project, host_user=None):
+        """Creates a join request for a certain project. Returns the response"""
+
+        url = reverse('project-join', kwargs={'pk': project.pk})
+        data = {
+            'reason': 'This is a test reason for joining the project '
+                      'with a host.',
+            'host_user': host_user.username if host_user else ''
+        }
+        self.client.login(username=user.username, password=self.password)
+        response = self.client.post(url, data)
+
+        return response
+
     def test_host_user_selectable(self):
         """Testing that the option to select a host user and the help text
         about selecting a host user are correctly displayed"""
@@ -64,15 +75,8 @@ class TestProjectJoinListView(TestBase):
         pi.save()
 
         # Create test project.
-        active_status = ProjectStatusChoice.objects.get(name='Active')
-        project0 = Project.objects.create(
-            name='project0', title='project0', status=active_status)
-        ProjectUser.objects.create(
-            project=project0,
-            user=pi,
-            status=ProjectUserStatusChoice.objects.get(name='Active'),
-            role=ProjectUserRoleChoice.objects.get(name='Principal Investigator')
-        )
+        project0 = self.create_active_project_with_pi('project0', pi)
+        project1 = self.create_active_project_with_pi('project1', pi)
 
         url = self.project_join_list_url()
 
@@ -110,6 +114,23 @@ class TestProjectJoinListView(TestBase):
             user_profile = UserProfile.objects.get(user=self.user)
             user_profile.host_user = pi
             user_profile.save()
+
+            response = self.client.get(url)
+            html = response.content.decode('utf-8')
+
+            help_message = 'not an LBL employee with an LBL email (@lbl.gov),'
+            host_user_form = '<div id="div_id_host_user" class="form-group"> ' \
+                             '<label for="id_host_user" class=" requiredField">'
+            self.assertNotIn(help_message, html)
+            self.assertNotIn(host_user_form, html)
+            user_profile.host_user = None
+            user_profile.save()
+
+            # Help text and form not available if the user has a pending
+            # join request.
+
+            # Create join request.
+            self.create_join_request(self.user, project0, host_user=pi)
 
             response = self.client.get(url)
             html = response.content.decode('utf-8')

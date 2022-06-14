@@ -93,15 +93,7 @@ class TestProjectJoinView(TestBase):
         pi.save()
 
         # Create test project.
-        active_status = ProjectStatusChoice.objects.get(name='Active')
-        project0 = Project.objects.create(
-            name='project0', title='project0', status=active_status)
-        ProjectUser.objects.create(
-            project=project0,
-            user=pi,
-            status=ProjectUserStatusChoice.objects.get(name='Active'),
-            role=ProjectUserRoleChoice.objects.get(name='Principal Investigator')
-        )
+        project0 = self.create_active_project_with_pi('project0', pi)
 
         url = self.project_join_url(project0.pk)
         data = {
