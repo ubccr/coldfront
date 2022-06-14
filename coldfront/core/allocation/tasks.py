@@ -61,6 +61,8 @@ def send_expiry_emails():
     # allocation attempt
     for users in User.objects.all():
         projectdict = {}
+        allocationdict = {}
+        expirationdict = {}
         email_receiver_list = []
         for days_remaining in sorted(set(EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS)):
             expring_in_days = (datetime.datetime.today(
@@ -75,11 +77,17 @@ def send_expiry_emails():
                     project_renew_url = '{}/{}/{}/{}'.format(
                     CENTER_BASE_URL.strip('/'), 'project', allocation.project.pk, 'renew')
 
+                    allocation_renew_url = '{}/{}/{}/{}'.format(
+                    CENTER_BASE_URL.strip('/'), 'allocation', allocation.pk, 'renew')
+
                     template_context = {
                         'center_name': CENTER_NAME,
                         'project_title': allocation.project.title,
                         'expring_in_days': days_remaining,
                         'project_dict': projectdict,
+                        'allocation_dict': allocationdict,
+                        'expiration_dict': expirationdict,
+                        'expiration_days': sorted(set(EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS)),
                         'project_renewal_help_url': CENTER_PROJECT_RENEWAL_HELP_URL,
                         'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL,
                         'signature': EMAIL_SIGNATURE
@@ -103,7 +111,17 @@ def send_expiry_emails():
 
                             if (users.email not in email_receiver_list):
                                 email_receiver_list.append(users.email)
+
+                            if allocation_renew_url not in expirationdict:
+                                expirationdict[allocation_renew_url] = days_remaining
                             
+                            if project_renew_url not in allocationdict:
+                                allocationdict[project_renew_url] = list()
+                                allocationdict[project_renew_url].append(allocation_renew_url)
+                            else:
+                                if allocation_renew_url not in allocationdict[project_renew_url]:
+                                    allocationdict[project_renew_url].append(allocation_renew_url)
+
                             if users.email not in projectdict:
                                 projectdict[users.email] = list()
                                 projectdict[users.email].append(project_renew_url)
@@ -114,6 +132,11 @@ def send_expiry_emails():
         if len(email_receiver_list) != 0:
             #print('passed conditional')
             #print(email_receiver_list)
+            print(projectdict)
+            print(allocationdict)
+            print(expirationdict)
+            print(template_context['expiration_days'])
+            print('\n')
             send_email_template('{} your allocation(s) are expiring soon'.format(users),
                         'email/allocation_expiring_test.txt',
                         template_context,
