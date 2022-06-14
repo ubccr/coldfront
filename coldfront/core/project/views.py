@@ -741,6 +741,27 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
                 [EMAIL_DIRECTOR_EMAIL_ADDRESS, ],
             )
 
+            if form.instance.pi != form.instance.requestor:
+                project_url = reverse('project-detail', kwargs={'pk': project_obj.pk})
+                template_context = {
+                    'center_name': EMAIL_CENTER_NAME,
+                    'project_title': project_obj.title,
+                    'requestor_first_name': form.instance.requestor.first_name,
+                    'requestor_last_name': form.instance.requestor.last_name,
+                    'requestor_username': form.instance.requestor.username,
+                    'project_url': '{}{}'.format(domain_url, project_url),
+                    'help_email': 'radl@iu.edu',
+                    'signature': EMAIL_SIGNATURE
+                }
+
+                send_email_template(
+                    'PI For Project Request',
+                    'email/pi_project_request.txt',
+                    template_context,
+                    EMAIL_SENDER,
+                    [project_user_pi_user.user.email, ]
+                )
+
         return super().form_valid(form)
 
     def reverse_with_params(self, path, **kwargs):
