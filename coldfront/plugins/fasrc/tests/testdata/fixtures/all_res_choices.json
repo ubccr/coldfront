@@ -19,6 +19,20 @@
   },
   {
     "model": "allocation.allocationattributetype",
+    "pk": 5,
+    "fields": {
+      "created": "2021-07-22T16:55:20.800Z",
+      "modified": "2021-12-07T20:39:45.056Z",
+      "attribute_type": 3,
+      "name": "Quota_In_Bytes",
+      "has_usage": true,
+      "is_required": false,
+      "is_unique": false,
+      "is_private": false
+    }
+  },
+  {
+    "model": "allocation.allocationattributetype",
     "pk": 1,
     "fields": {
       "created": "2021-07-22T16:55:20.800Z",

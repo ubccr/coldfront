@@ -130,7 +130,7 @@ class AllTheThingsConn:
         result_json = read_json(result_file)
         counts = {"proj_err": 0, "res_err":0, "all_err":0, "complete":0}
         # produce list of present labs
-        lablist = [k for k in result_json.keys()]
+        lablist = list(set(k for k in result_json))
         proj_models = Project.objects.filter(title__in=lablist)
         proj_titles = [p.title for p in proj_models]
         # log labs w/o projects, remove them from result_json
@@ -143,10 +143,9 @@ class AllTheThingsConn:
             for a in l:
                 a['server'] = a['server'].replace("01.rc.fas.harvard.edu", "")\
                         .replace("/n/", "")
-
         # produce set of server values for which to locate matching resources
         resource_set = set([a['server'] for l in result_json.values() for a in l])
-        # get resource models
+        # get resource model
         res_models = Resource.objects.filter(reduce(operator.or_, (Q(name__contains=x) for x in resource_set)))
         res_names = [str(r.name).split("/")[0] for r in res_models]
         missing_res = log_missing("resource", res_names, resource_set)
@@ -200,7 +199,6 @@ class AllTheThingsConn:
                     allocation_values['Quota_In_Bytes'] = [allocation['byte_allocation'], allocation['byte_usage']]
 
                 for k, v in allocation_values.items():
-                    print(k, v)
                     allocation_attribute_type_obj = AllocationAttributeType.objects.get(
                         name=k)
                     try:
