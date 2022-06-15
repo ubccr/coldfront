@@ -4,26 +4,13 @@ Your allocation(s) for access in your project(s) are expiring soon.
 Failure to renew the allocation(s) before expiration will result in removal of access to this resource for all accounts
 under the following project(s) below.
 To renew, login to ColdFront and complete the short process for the following project(s): 
-{% for project in project_dict.values %} 
-    {% for project_url in project%} Project: {{ project_url|striptags }} has the following allocations expiring soon:
-        {% spaceless %} 
-        {% for days in expiration_days %} 
-            {% for days_key, days_value in expiration_dict.items %}
-                {% for allocation_key, allocation_value in allocation_dict.items %}
-                    {% if allocation_key == project_url %}
-                        {% for allocation_url in allocation_value %}
-                            {% if allocation_url == days_key and days_value == days %}
-                            Allocation(s) expiring in {{days}} days:
-                                {{ allocation_url|striptags }}
-                            {% endif %}
-                        {% endfor %}
-                    {% endif %}
-                {% endfor %}
-            {% endfor %}
-        {% endfor %}
-        {% endspaceless %}
 
-    {% endfor %}
+{% for project_key, project_url in project_dict.items %}{{project_key}}: {{ project_url }} has the following allocations expiring soon:
+    {% spaceless %} {% for days in expiration_days %}{% for days_key, days_value in expiration_dict.items %}{% for allocation_key, allocation_value in allocation_dict.items %}{% if allocation_key == project_url %}{% for allocation_url, resource_name in allocation_value %}{% if allocation_url == days_key and days_value == days %}
+
+    Allocation(s) expiring in {{days}} days:
+    {{ resource_name }}:{{ allocation_url }}{% endif %}{% endfor %}{% endif %}{% endfor %}{% endfor %}{% endfor %}{% endspaceless %}
+
 {% endfor %}
 The group owner responsible for this project is required to renew it on a yearly basis. If you have not done so in the
 last year, you will be required to before renewing the allocation.
