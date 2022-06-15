@@ -91,6 +91,27 @@ MIDDLEWARE += [
     'author.middlewares.AuthorDefaultBackendMiddleware',
 ]
 
+
+#------------------------------------------------------------------------------
+# Django Q settings
+#------------------------------------------------------------------------------
+Q_CLUSTER = {
+    'name': 'coldfront-redis',
+    'workers': 8,
+    'recycle': 500,
+    'timeout': 60,
+    'compress': True,
+    'save_limit': 250,
+    'queue_limit': 500,
+    'cpu_affinity': 1,
+    'label': 'Django Q',
+    'redis': {
+                'host': 'coldfront-redis',
+                'port': 6379,
+                'db': 0, }
+    # 'redis': redis_conf(REDIS.get('default', {})),
+}
+
 #------------------------------------------------------------------------------
 # Django authentication backend. See auth.py
 #------------------------------------------------------------------------------
