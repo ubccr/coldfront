@@ -56,8 +56,9 @@ def display_time_zone(request):
     return {'DISPLAY_TIME_ZONE': settings.DISPLAY_TIME_ZONE}
 
 
-def program_name(request):
+def portal_and_program_names(request):
     return {
+        'PORTAL_NAME': settings.PORTAL_NAME,
         'PROGRAM_NAME_LONG': settings.PROGRAM_NAME_LONG,
         'PROGRAM_NAME_SHORT': settings.PROGRAM_NAME_SHORT,
     }

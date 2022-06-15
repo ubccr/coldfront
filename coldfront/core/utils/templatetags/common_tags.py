@@ -14,6 +14,7 @@ def settings_value(name):
         'CENTER_NAME',
         'CENTER_HELP_URL',
         'EMAIL_PROJECT_REVIEW_CONTACT',
+        'PORTAL_NAME',
         'PROGRAM_NAME_LONG',
         'PROGRAM_NAME_SHORT',
     ]
