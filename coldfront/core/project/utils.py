@@ -77,7 +77,8 @@ def send_project_join_notification_email(project, project_user):
     user = project_user.user
 
     subject = f'New request to join Project {project.name}'
-    context = {'project_name': project.name,
+    context = {'PORTAL_NAME': settings.PORTAL_NAME,
+               'project_name': project.name,
                'user_string': f'{user.first_name} {user.last_name} ({user.email})',
                'signature': import_from_settings('EMAIL_SIGNATURE', ''),
                'review_url': review_project_join_requests_url(project),

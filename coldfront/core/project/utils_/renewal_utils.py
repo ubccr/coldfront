@@ -370,6 +370,7 @@ def send_new_allocation_renewal_request_pi_notification_email(request):
     login_url = urljoin(center_base_url, reverse('login'))
 
     context = {
+        'PORTAL_NAME': settings.PORTAL_NAME,
         'login_url': login_url,
         'pi_str': pi_str,
         'requested_project_name': request.post_project.name,

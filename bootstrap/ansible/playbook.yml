@@ -179,7 +179,12 @@
     - name: Create the deployment-specific _settings.py file from a template
       template: src={{ git_prefix }}/{{ reponame }}/bootstrap/ansible/settings_template.tmpl
                 dest={{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/config/{{ deployment }}_settings.py
-      become_user:  "{{ djangooperator }}"
+      become_user: "{{ djangooperator }}"
+
+    - name: Create the deployment-specific password reset email subject text file from a template
+      template: src={{ git_prefix }}/{{ reponame }}/bootstrap/ansible/password_reset_subject_template.tmpl
+                dest={{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/core/user/templates/user/passwords/password_reset_subject.txt
+      become_user: "{{ djangooperator }}"
 
     - name: Run Django management command - initial_setup
       django_manage:

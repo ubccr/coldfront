@@ -116,8 +116,8 @@ class TestPendingJoinRequestReminderCommand(TestBase):
         verb = 'are' if num_requests > 1 else 'is'
         return (
             f'This is a reminder that there {verb} {num_requests} request(s) '
-            f'to join your project, {project_name}, via the MyBRC User '
-            f'Portal.')
+            f'to join your project, {project_name}, via the '
+            f'{settings.PORTAL_NAME} User Portal.')
 
     @staticmethod
     def user_message_body(num_requests):
@@ -125,7 +125,7 @@ class TestPendingJoinRequestReminderCommand(TestBase):
         given an integer number of requests."""
         return (
             f'This is a reminder that you have {num_requests} project join '
-            f'request(s) in the MyBRC User Portal.')
+            f'request(s) in the {settings.PORTAL_NAME} User Portal.')
 
     def test_command_single_proj_multiple_requests(self):
         """
