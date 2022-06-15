@@ -119,6 +119,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         return False
 
     def get_context_data(self, **kwargs):
+        bytes_in_tb = 1099511627776
         context = super().get_context_data(**kwargs)
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
@@ -1414,8 +1415,10 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
 
         if self.request.user.has_perm('allocation.can_manage_invoice'):
             return True
-    # get context data is where you create all the variables for allocation_invoice_detail.html page
     def get_context_data(self, **kwargs):
+        """Create all the variables for allocation_invoice_detail.html
+        
+        """
         context = super().get_context_data(**kwargs)
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
@@ -1492,10 +1495,13 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
         elif allocation_obj.project.projectuser_set.filter(user=self.request.user).exists():
             project_user = allocation_obj.project.projectuser_set.get(
                 user=self.request.user)
-            if project_user.role.name == 'Manager':
-                context['is_allowed_to_update_project'] = True
-            else:
-                context['is_allowed_to_update_project'] = False
+            
+            context['is_allowed_to_update_project'] = True \
+                            if project_user.role.name == 'Manager' else False
+            # if project_user.role.name == 'Manager':
+            #     context['is_allowed_to_update_project'] = True
+            # else:
+            #     context['is_allowed_to_update_project'] = False
         else:
             context['is_allowed_to_update_project'] = False
         context['allocation_users'] = allocation_users

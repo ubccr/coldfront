@@ -1,3 +1,4 @@
+import os
 import string
 import filecmp
 
@@ -26,12 +27,16 @@ class UploadTests(TestCase):
 
     def test_log_missing(self):
         vowels = ['a','e','i','o','u']
+
         datapath = "./coldfront/plugins/fasrc/tests/testdata/"
+        missing_projects = f"{datapath}missing_projects.csv"
+        if os.path.exists(missing_projects):
+            os.remove(missing_projects)
         modelname = "project"
         model_attr_list = [f"{v}_lab" for v in vowels]
         search_list = [f"{c}_lab" for c in list(string.ascii_lowercase)]
-        log_missing(modelname, model_attr_list, search_list, fpath_pref=datapath)
-        assert filecmp.cmp(f'{datapath}missing_projects.csv', f'{datapath}missing_projects_compare.csv') == True
+        log_missing(modelname, model_attr_list, search_list, fpath_pref=datapath, pattern = "I")
+        assert filecmp.cmp(missing_projects, f'{datapath}missing_projects_compare.csv') == True
 
 
 if __name__ == '__main__':
