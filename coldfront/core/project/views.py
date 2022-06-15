@@ -655,8 +655,8 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         project_obj = form.save(commit=False)
         if not form.instance.pi_username:
             user_profile = UserProfile.objects.get(user=self.request.user)
-            if user_profile.title == 'Graduate':
-                messages.error(self.request, 'Graduate students must have a PI')
+            if user_profile.title not in ['Faculty', 'Staff', ]:
+                messages.error(self.request, 'Only faculty and staff can be the PI')
                 return super().form_invalid(form)
             form.instance.pi = self.request.user
         else:
@@ -665,8 +665,8 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
                 messages.error(self.request, 'This username does not exist in ColdFront')
                 return super().form_invalid(form)
             user_profile = UserProfile.objects.get(user=user)
-            if user_profile.title == 'Graduate':
-                messages.error(self.request, 'Graduate students cannot be the PI')
+            if user_profile.title not in ['Faculty', 'Staff', ]:
+                messages.error(self.request, 'Only faculty and staff can be the PI')
                 return super().form_invalid(form)
             form.instance.pi = user
 
