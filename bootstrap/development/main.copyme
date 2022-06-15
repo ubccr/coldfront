@@ -54,8 +54,10 @@ flag_lrc_enabled: False
 flag_next_period_renewal_requestable_month: 5
 
 # Portal settings.
-# TODO: For LRC, use the string "MyLRC".
+# TODO: For LRC, use "MyLRC", "Laboratory Research Computing", and "LRC".
 portal_name: "MyBRC"
+program_name_long: "Berkeley Research Computing"
+program_name_short: "BRC"
 
 # The URL of the Sentry instance to send errors to.
 sentry_dsn: ""
@@ -80,7 +82,7 @@ git_prefix: /vagrant/coldfront_app
 hostname: localhost
 host_ip: localhost
 app_port: 80
-full_host_path: http://localhost
+full_host_path: http://localhost:8880
 
 # SSL settings.
 ssl_enabled: false

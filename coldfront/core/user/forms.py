@@ -142,13 +142,14 @@ class UserLoginForm(AuthenticationForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['username'].help_text = (
-            'This is your BRC cluster account username if you have one, or '
-            'any of the verified email addresses associated with your portal account, not your '
-            'CalNet username.')
+            f'This is your {settings.PROGRAM_NAME_SHORT} cluster account '
+            f'username if you have one, or any of the verified email '
+            f'addresses associated with your portal account, not your CalNet '
+            f'username.')
         self.fields['password'].help_text = (
-            'This password is unique to this portal, and is neither your '
-            'CalNet password nor the PIN and OTP used to access the BRC '
-            'cluster.')
+            f'This password is unique to this portal, and is neither your '
+            f'CalNet password nor the PIN and OTP used to access the '
+            f'{settings.PROGRAM_NAME_SHORT} cluster.')
 
     def clean_username(self):
         cleaned_data = super().clean()

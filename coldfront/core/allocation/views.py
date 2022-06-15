@@ -2035,6 +2035,7 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
             CENTER_HELP_EMAIL = import_from_settings('CENTER_HELP_EMAIL')
 
             template_context = {
+                'PROGRAM_NAME_SHORT': settings.PROGRAM_NAME_SHORT,
                 'user': self.user_obj,
                 'project_name': project_obj.name,
                 'center_user_guide': CENTER_USER_GUIDE,

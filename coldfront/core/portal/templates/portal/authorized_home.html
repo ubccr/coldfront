@@ -5,13 +5,7 @@
     <h2>Welcome</h2>
     <hr>
 
-    <div class="alert alert-success" role="alert">
-      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-        <span aria-hidden="true">&times;</span>
-      </button>
-      <p>MyBRC is a new user portal available to all users of BRC clusters, starting on June 1st, 2021.</p>
-      We'd love to hear your feedback. Please fill out this <a target="_blank" href="https://docs.google.com/forms/d/e/1FAIpQLScZoYXkFMAVEYhoqE2guG64JQb4dsPcwidlhZ0W-TZ2t_Va4w/viewform">Google Form</a> letting us know what you think.
-    </div>
+    {% include 'portal/feedback_alert.html' %}
 
     <p>If you would like to set up or update your access to a cluster, please complete the following steps.</p>
     <p>First review and sign the cluster user agreement. Only then you can join a cluster project and gain access to the cluster.</p>
@@ -112,7 +106,7 @@
 
 <div class="row">
   <div class="col-lg-12">
-    Your BRC Supercluster account username:
+    Your {{ PROGRAM_NAME_SHORT }} cluster account username:
     {% if cluster_username is not None %}
       <span class="alert alert-success"><b>{{ cluster_username }}</b></span>
     {% else %}
@@ -125,7 +119,7 @@
 <div class="row">
   <div class="col-lg-12 mt-2">
     <a href="{% url 'project-list' %}">
-      <h3>My BRC Cluster Projects &raquo;</h3>
+      <h3>My {{ PROGRAM_NAME_SHORT }} Cluster Projects &raquo;</h3>
     </a>
     <hr>
     {% if num_join_requests %}

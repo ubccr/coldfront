@@ -48,6 +48,8 @@ urlpatterns = [
              form_class=VerifiedEmailAddressPasswordResetForm,
              template_name='user/passwords/password_reset_form.html',
              email_template_name='user/passwords/password_reset_email.html',
+             extra_email_context={
+                 'PROGRAM_NAME_SHORT': settings.PROGRAM_NAME_SHORT},
              subject_template_name='user/passwords/password_reset_subject.txt',
              success_url=reverse_lazy('password-reset-done')),
          name='password-reset'

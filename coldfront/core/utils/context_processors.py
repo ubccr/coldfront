@@ -54,3 +54,10 @@ def current_allowance_year_allocation_period(request):
 
 def display_time_zone(request):
     return {'DISPLAY_TIME_ZONE': settings.DISPLAY_TIME_ZONE}
+
+
+def program_name(request):
+    return {
+        'PROGRAM_NAME_LONG': settings.PROGRAM_NAME_LONG,
+        'PROGRAM_NAME_SHORT': settings.PROGRAM_NAME_SHORT,
+    }

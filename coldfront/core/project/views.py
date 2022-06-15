@@ -1,5 +1,6 @@
 import datetime
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
@@ -1807,8 +1808,9 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
 
             message = (
                 f'{message_verb} {reviewed_users_count} user requests to join '
-                f'the project. BRC staff have been notified to set up cluster '
-                f'access for each approved request.')
+                f'the project. {settings.PROGRAM_NAME_SHORT} staff have been '
+                f'notified to set up cluster access for each approved '
+                f'request.')
             messages.success(request, message)
         else:
             for error in formset.errors:

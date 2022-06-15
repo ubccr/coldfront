@@ -136,6 +136,7 @@ TEMPLATES = [
                 'coldfront.core.utils.context_processors.allocation_navbar_visibility',
                 'coldfront.core.utils.context_processors.current_allowance_year_allocation_period',
                 'coldfront.core.utils.context_processors.display_time_zone',
+                'coldfront.core.utils.context_processors.program_name',
             ],
         },
     },
