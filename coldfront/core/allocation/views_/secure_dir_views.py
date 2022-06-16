@@ -812,6 +812,22 @@ class SecureDirRequestWizard(LoginRequiredMixin,
             self.request.user.userprofile.access_agreement_signed_date)
         if signed_date is not None:
             return True
+
+        eligible_project = Q(project__name__startswith='fc_') | \
+                           Q(project__name__startswith='ic_') | \
+                           Q(project__name__startswith='co_') & \
+                           Q(project__status__name='Active')
+
+        eligible_pi = ProjectUser.objects.filter(
+            eligible_project,
+            user=self.request.user,
+            role__name='Principal Investigator',
+            status__name='Active',
+        ).exists()
+
+        if eligible_pi:
+            return True
+
         message = (
             'You must sign the User Access Agreement before you can request a '
             'new secure directory.')
