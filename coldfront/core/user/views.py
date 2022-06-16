@@ -3,6 +3,7 @@ import logging
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
 from django.db.models import BooleanField, Prefetch
 from django.db.models.expressions import ExpressionWrapper, F, Q
@@ -86,7 +87,7 @@ class UserProjectsManagersView(ListView):
 
         # get_queryset does not get kwargs, so we need to store it off here
         if viewed_username:
-            self.viewed_user = get_object_or_404(User, username=viewed_username)
+            self.viewed_user = get_object_or_404(get_user_model(), username=viewed_username)
         else:
             self.viewed_user = self.request.user
 
