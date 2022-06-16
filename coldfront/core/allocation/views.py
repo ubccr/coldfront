@@ -584,7 +584,23 @@ class AllocationListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
             allocation_list = paginator.page(paginator.num_pages)
 
         context['is_pi'] = UserProfile.objects.get(user=self.request.user).is_pi
-        context['user_agreement_signed'] = self.request.user.userprofile.access_agreement_signed_date is not None
+
+        # Only active PIs of active FCAs, ICAs and Condos can request
+        # secure directories
+        eligible_project = Q(project__name__startswith='fc_') | \
+                           Q(project__name__startswith='ic_') | \
+                           Q(project__name__startswith='co_') & \
+                           Q(project__status__name='Active')
+
+        context['can_request_sec_dir'] = ProjectUser.objects.filter(
+            eligible_project,
+            user=self.request.user,
+            role__name='Principal Investigator',
+            status__name='Active',
+        ).exists()
+
+        context['user_agreement_signed'] = \
+            self.request.user.userprofile.access_agreement_signed_date is not None
 
         return context
 
