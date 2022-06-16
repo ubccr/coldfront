@@ -42,3 +42,6 @@ EXPOSE 80
 EXPOSE 25
 
 CMD ["python", "manage.py", "runserver", "0.0.0.0:80", "--insecure"]
+RUN ./manage.py qcluster &
+# RUN ./manage.py set_scheduled_tasks
+
