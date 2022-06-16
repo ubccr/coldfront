@@ -125,3 +125,79 @@ class SecureDirExistingProjectForm(forms.Form):
 
         fc_co_projects_cond = Q(name__startswith='fc_') | Q(name__startswith='co_')
         self.fields['project'].queryset = Project.objects.filter(fc_co_projects_cond, status__name='Active')
+
+
+class SecureDirReviewStatusForm(forms.Form):
+
+    status = forms.ChoiceField(
+        choices=(
+            ('', 'Select one.'),
+            ('Pending', 'Pending'),
+            ('Completed', 'Completed'),
+            ('Denied', 'Denied'),
+        ),
+        help_text='If you are unsure, leave the status as "Pending".',
+        label='Status',
+        required=True)
+    justification = forms.CharField(
+        help_text=(
+            'Provide reasoning for your decision. This field is only required '
+            'for denials, since it will be included in the notification '
+            'email.'),
+        label='Justification',
+        validators=[MinLengthValidator(10)],
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 3}))
+
+    def clean(self):
+        cleaned_data = super().clean()
+        status = cleaned_data.get('status', 'Pending')
+        # Require justification for denials.
+        if status == 'Denied':
+            justification = cleaned_data.get('justification', '')
+            if not justification.strip():
+                raise forms.ValidationError(
+                    'Please provide a justification for your decision.')
+        return cleaned_data
+
+
+class SecureDirRequestReviewDenyForm(forms.Form):
+
+    justification = forms.CharField(
+        help_text=(
+            'Provide reasoning for your decision. It will be included in the '
+            'notification email.'),
+        label='Justification',
+        validators=[MinLengthValidator(10)],
+        required=True,
+        widget=forms.Textarea(attrs={'rows': 3}))
+
+
+class SecureDirRequestDirectoryNamesForm(forms.Form):
+
+    status = forms.ChoiceField(
+        choices=(
+            ('', 'Select one.'),
+            ('Pending', 'Pending'),
+            ('Completed', 'Completed'),
+            ('Denied', 'Denied'),
+        ),
+        help_text='If you are unsure, leave the status as "Pending".',
+        label='Status',
+        required=True)
+
+    # TODO: change help text when scratch2 is migrated to scratch
+    # TODO: change to required when scratch2 is migrated to scratch
+    scratch_name = forms.CharField(
+        help_text=(
+            'Provide the name of the secure scratch directory. '
+            'While scratch2 is active, the directory should NOT be inputted.'),
+        label='Scratch Subdirectory Name',
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 1}))
+    groups_name = forms.CharField(
+        help_text=(
+            'Provide the name of the secure groups directory.'),
+        label='Groups Subdirectory Name',
+        required=True,
+        widget=forms.Textarea(attrs={'rows': 1}))
