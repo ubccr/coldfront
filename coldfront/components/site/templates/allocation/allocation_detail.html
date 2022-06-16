@@ -241,6 +241,12 @@ Allocation Detail
                     Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} - Click to renew
                   </span>
                 </a>
+              {% elif is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Expired' and allocation.expires_in > -30 %}
+                <a href="{% url 'allocation-renew' allocation.pk %}">
+                  <span class="badge badge-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>
+                    {{ allocation.expires_in|add:'30' }} days left to renew
+                  </span>
+                </a>
               {% endif %}
             </td>
           </tr>
@@ -451,7 +457,7 @@ Allocation Detail
               <td>{{ user.user.email }}</td>
               {% if user.status.name == 'Active' %}
                 <td class="text-success">{{ user.status.name }}</td>
-              {% elif user.status.name == 'Denied' or user.status.name == 'Error' %}
+              {% elif user.status.name in 'Denied, Error, Expired' %}
                 <td class="text-danger">{{ user.status.name }}</td>
               {% else %}
                 <td class="text-info">{{ user.status.name }}</td>

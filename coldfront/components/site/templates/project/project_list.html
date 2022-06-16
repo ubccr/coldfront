@@ -177,7 +177,7 @@ Project List
                       <a href="{% url 'project-review' project.pk %}">
                         <span class="badge badge-warning">
                           <i class="fas fa-redo-alt" aria-hidden="true"></i>
-                          Click to renew
+                          {{ project.expires_in|add:'30' }} days left to renew
                         </span>
                       </a>
                     {% endif %}

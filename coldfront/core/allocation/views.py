@@ -2059,7 +2059,7 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
                 request, 'Allocation renewal is disabled. Request a new allocation to this resource if you want to continue using it after the active until date.')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
-        if allocation_obj.status.name not in ['Active', ]:
+        if allocation_obj.status.name not in ['Active', 'Expired', ]:
             messages.error(request, 'You cannot renew an allocation with status "{}".'.format(
                 allocation_obj.status.name))
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
@@ -2071,7 +2071,13 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
 
         if allocation_obj.expires_in > 30:
             messages.error(
-                request, 'It is too soon to review your allocation.')
+                request, 'It is too soon to renew your allocation.')
+            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
+
+        if allocation_obj.expires_in < -30:
+            messages.error(
+                request, 'It is too late to renew your allocation.'
+            )
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
         return super().dispatch(request, *args, **kwargs)

@@ -149,6 +149,9 @@ characters long and cannot contain numbers or special characters. Once set it ca
         if self.expires_in <= 30:
             return True
 
+        if self.status.name == 'Expired' and self.expires_in >= -30:
+            return True
+
         return False
 
     @property
