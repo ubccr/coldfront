@@ -18,8 +18,12 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
 
         date = timezone.now() + datetime.timedelta(minutes=1)
-#         date = date.replace(hour=0, minute=0, second=0, microsecond=0)
+        kwargs = {  "repeats":-1, 
+                    "next_run":date, 
+                    "schedule_type": Schedule.DAILY }
         schedule('coldfront.plugins.sftocf.tasks.pull_sf_push_cf',
-                schedule_type=Schedule.DAILY,
-                repeats=-1,
-                next_run=date)
+                    **kwargs)
+        schedule('coldfront.plugins.fasrc.tasks.import_quotas',
+                    **kwargs)
+    
+    
