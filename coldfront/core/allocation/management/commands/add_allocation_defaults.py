@@ -5,8 +5,7 @@ from coldfront.core.allocation.models import (AttributeType,
                                               AllocationAttributeType,
                                               AllocationRenewalRequestStatusChoice,
                                               AllocationStatusChoice,
-                                              AllocationUserStatusChoice,
-                                              SecureDirRequestStatusChoice)
+                                              AllocationUserStatusChoice)
 
 from flags.state import flag_enabled
 
@@ -90,13 +89,3 @@ class Command(BaseCommand):
         for choice in choices:
             AllocationAdditionRequestStatusChoice.objects.get_or_create(
                 name=choice)
-
-        choices = [
-            'Approved - Complete',
-            'Approved - Processing',
-            'Approved - Scheduled',
-            'Denied',
-            'Under Review'
-        ]
-        for choice in choices:
-            SecureDirRequestStatusChoice.objects.get_or_create(name=choice)
