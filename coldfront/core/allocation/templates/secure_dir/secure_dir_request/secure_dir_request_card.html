@@ -1,0 +1,61 @@
+<div class="card mb-3">
+  <div class="card-header">
+    <h2>
+      <i class="fas fa-info-circle" aria-hidden="true"></i>
+      Request Information
+    </h2>
+  </div>
+  <div class="card-body">
+    <p class="card-text text-justify">
+      <strong>Request #: </strong>
+      {{ secure_dir_request.pk }}
+    </p>
+    <p class="card-text text-justify">
+      <strong>Date Requested: </strong>
+      {{ secure_dir_request.request_time|date:"M. d, Y" }}
+    </p>
+    {% if secure_dir_request.approval_time %}
+      <p class="card-text text-justify">
+        <strong>Date Approved: </strong>
+        {{ secure_dir_request.approval_time|date:"M. d, Y" }}
+      </p>
+    {% endif %}
+    {% if secure_dir_request.completion_time %}
+      <p class="card-text text-justify">
+        <strong>Date Completed: </strong>
+        {{ secure_dir_request.completion_time|date:"M. d, Y" }}
+      </p>
+    {% endif %}
+    <p class="card-text text-justify">
+      <strong>Requester: </strong>
+      {% with requester=secure_dir_request.requester %}
+        {{ requester.first_name }} {{ requester.last_name }} ({{ requester.email }})
+      {% endwith %}
+    </p>
+    <p class="card-text text-justify">
+      <strong>Title: </strong>
+      {{ secure_dir_request.project.title }}
+    </p>
+    <p class="card-text text-justify">
+      <strong>Description: </strong>
+      {{ secure_dir_request.data_description }}
+    </p>
+
+    <p class="card-text text-justify">
+      <strong>RDM Consultantation: </strong>
+      {% if secure_dir_request.rdm_consultation %}
+      {{ secure_dir_request.requester.first_name }} {{ secure_dir_request.requester.last_name }}
+        consulted with the following RDM consultants: {{ secure_dir_request.rdm_consultation }}.
+      {% else %}
+        Requester has not consulted with RDM.
+      {% endif %}
+    </p>
+
+    <p class="card-text text-justify">
+      <strong>PI: </strong>
+      {% with pi=secure_dir_request.pi %}
+        {{ pi.first_name }} {{ pi.last_name }} ({{ pi.email }})
+      {% endwith %}
+    </p>
+  </div>
+</div>

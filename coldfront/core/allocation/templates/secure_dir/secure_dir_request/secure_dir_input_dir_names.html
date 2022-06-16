@@ -1,0 +1,44 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Secure Directory Request - Subdirectory Names
+{% endblock %}
+
+
+{% block content %}
+<h1>Subdirectory Names</h1>
+<hr>
+
+<p>
+  Please input the names of the groups and scratch secure subdirectories.
+</p>
+<p>
+  For example, if the complete path to the subdirectory is
+  <strong>'/global/home/groups/pl1data/pl1_example'</strong>, please input <strong>'pl1_example'</strong>.
+</p>
+
+{% include 'secure_dir/secure_dir_request/secure_dir_request_card.html' with secure_dir_request=secure_dir_request %}
+
+<div class="card mb-3">
+  <div class="card-header">
+    <h2>
+      <i class="fas fa-check-circle" aria-hidden="true"></i>
+      Subdirectory Names
+    </h2>
+  </div>
+  <div class="card-body">
+    <form action="" method="post">
+      {% csrf_token %}
+      {{ form|crispy }}
+      <input class="btn btn-primary" type="submit" value="Submit" />
+      <a href="{% url 'secure-dir-request-detail' secure_dir_request.pk %}" class="btn btn-secondary">
+        Cancel
+      </a>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
