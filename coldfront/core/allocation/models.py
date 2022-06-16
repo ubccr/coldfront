@@ -681,6 +681,38 @@ class SecureDirRequestStatusChoice(TimeStampedModel):
         ordering = ['name', ]
 
 
+def secure_dir_request_state_schema():
+    """Return the schema for the SecureDirRequest.state
+    field."""
+    return {
+        'rdm_consultation': {
+            'status': 'Pending',
+            'justification': '',
+            'timestamp': ''
+        },
+        'mou': {
+            'status': 'Pending',
+            'justification': '',
+            'timestamp': ''
+        },
+        'setup': {
+            'status': 'Pending',
+            'justification': '',
+            'timestamp': ''
+        },
+        'other': {
+            'justification': '',
+            'timestamp': ''
+        },
+        'paths': {
+            'status': 'Pending',
+            'scratch': '',
+            'groups': '',
+            'timestamp': ''
+        }
+    }
+
+
 class SecureDirRequest(TimeStampedModel):
     requester = models.ForeignKey(User, on_delete=models.CASCADE)
     data_description = models.TextField()
@@ -691,5 +723,54 @@ class SecureDirRequest(TimeStampedModel):
 
     request_time = models.DateTimeField(
         null=True, blank=True, default=timezone.now)
-    approval_time = models.DateTimeField(null=True, blank=True)
     completion_time = models.DateTimeField(null=True, blank=True)
+
+    state = models.JSONField(default=secure_dir_request_state_schema)
+
+    def denial_reason(self):
+        """Return the reason why the request was denied, based on its
+        'state' field."""
+        if self.status.name != 'Denied':
+            raise ValueError(
+                f'Provided request has unexpected status '
+                f'{self.status.name}.')
+
+        state = self.state
+        rdm_consultation = state['rdm_consultation']
+        mou = state['mou']
+        other = state['other']
+
+        DenialReason = namedtuple(
+            'DenialReason', 'category justification timestamp')
+
+        if other['timestamp']:
+            category = 'Other'
+            justification = other['justification']
+            timestamp = other['timestamp']
+        elif rdm_consultation['status'] == 'Denied':
+            category = 'RDM Consultation'
+            justification = rdm_consultation['justification']
+            timestamp = rdm_consultation['timestamp']
+        elif mou['status'] == 'Denied':
+            category = 'Memorandum of Understanding'
+            justification = mou['justification']
+            timestamp = mou['timestamp']
+        else:
+            raise ValueError('Provided request has an unexpected state.')
+
+        return DenialReason(category=category,
+                            justification=justification,
+                            timestamp=timestamp)
+
+    def latest_update_timestamp(self):
+        """Return the latest timestamp stored in the request's 'state'
+        field, or the empty string.
+
+        The expected values are ISO 8601 strings, or the empty string,
+        so taking the maximum should provide the correct output."""
+        state = self.state
+        max_timestamp = ''
+        for field in state:
+            max_timestamp = max(
+                max_timestamp, state[field].get('timestamp', ''))
+        return max_timestamp
