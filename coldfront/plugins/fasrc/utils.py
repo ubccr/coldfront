@@ -68,6 +68,7 @@ class AllTheThingsConn:
             "usedbytes": "usedBytes",
             "fs_path":"filesystem",
             "server":"filesystem",
+            "replace": '/n/',
             "unique":"datetime(e.DotsLFSUpdateDate) as begin_date"}
 
         isilon = {"match": "[:Owns]-(e:IsilonPath)",
@@ -78,6 +79,7 @@ class AllTheThingsConn:
             "usedgb": "UsedGB",
             "sizebytes": "SizeBytes",
             "usedbytes": "UsedBytes",
+            "replace": '01.rc.fas.harvard.edu',
             "unique":"datetime(e.DotsUpdateDate) as begin_date"}
 
         # volume = {"match": "[:Owns]-(e:Volume)",
@@ -95,15 +97,14 @@ class AllTheThingsConn:
                     {d['where']} RETURN\
                     {d['unique']}, \
                     g.ADSamAccountName as lab,\
-                    (e.SizeGB / 1024) as tb_allocation, \
+                    (e.SizeGB / 1024.0) as tb_allocation, \
                     e.{d['sizebytes']} as byte_allocation,\
                     e.{d['usedbytes']} as byte_usage,\
-                    (e.{d['usedgb']} / 1024) as tb_usage,\
+                    (e.{d['usedgb']} / 1024.0) as tb_usage,\
                     e.{d['fs_path']} as fs_path,\
                     {d['storage_type']} as storage_type, \
-                    e.{d['server']} as server"}
+                    replace(e.{d['server']}, '{d['replace']}', '') as server"}
             queries['statements'].append(statement)
-
         resp = requests.post(self.url, headers=self.headers, data=json.dumps(queries), verify=False)
         resp_json = json.loads(resp.text)
         # logger.debug(resp_json)
@@ -138,11 +139,6 @@ class AllTheThingsConn:
         counts['proj_err'] = len(missing_projs)
         [result_json.pop(key) for key in missing_projs]
 
-        # clean result_json - edit "server" value
-        for l in result_json.values():
-            for a in l:
-                a['server'] = a['server'].replace("01.rc.fas.harvard.edu", "")\
-                        .replace("/n/", "")
         # produce set of server values for which to locate matching resources
         resource_set = set([a['server'] for l in result_json.values() for a in l])
         # get resource model
