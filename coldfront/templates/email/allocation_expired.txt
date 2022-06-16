@@ -4,12 +4,12 @@ Your allocation for access has expired. Any accounts under this allocation are n
 access this resource. If you wish to continue using it, the group owner responsible for this project must create a new
 allocation request. {{project_url}}
 
-To renew, login to ColdFront and complete the short process for the following project(s): 
+To create a new allocation request, login to ColdFront and complete the short process for the following project(s): 
 
 {% for project_key, project_url in project_dict.items %}{{project_key}}: {{ project_url }} has the following allocations expiring soon:
-    {% spaceless %} {% for allocation_key, allocation_value in allocation_dict.items %}{% if allocation_key == project_url %}{% for allocation_url, resource_name in allocation_value.items %}
+    {% spaceless %} {% for allocation_key, allocation_value in allocation_dict.items %}{% if allocation_key == project_url %}{% for allocation in allocation_value %}{% for allocation_url, resource_name in allocation.items %}
 
-    {{ resource_name }}:{{ allocation_url }}{% endfor %}{% endif %}{% endfor %}{% endspaceless %}
+    {{ resource_name }}{% endfor %}{% endfor %}{% endif %}{% endfor %}{% endspaceless %}
 
 {% endfor %}
 

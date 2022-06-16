@@ -6,10 +6,10 @@ under the following project(s) below.
 To renew, login to ColdFront and complete the short process for the following project(s): 
 
 {% for project_key, project_url in project_dict.items %}{{project_key}}: {{ project_url }} has the following allocations expiring soon:
-    {% spaceless %} {% for days in expiration_days %}{% for days_key, days_value in expiration_dict.items %}{% for allocation_key, allocation_value in allocation_dict.items %}{% if allocation_key == project_url %}{% for allocation_url, resource_name in allocation_value %}{% if allocation_url == days_key and days_value == days %}
+    {% spaceless %} {% for days in expiration_days %}{% for days_key, days_value in expiration_dict.items %}{% for allocation_key, allocation_value in allocation_dict.items %}{% if allocation_key == project_url %}{% for allocation in allocation_value %}{% for allocation_url, resource_name in allocation.items %}{% if allocation_url == days_key and days_value == days %}
 
     Allocation(s) expiring in {{days}} days:
-    {{ resource_name }}:{{ allocation_url }}{% endif %}{% endfor %}{% endif %}{% endfor %}{% endfor %}{% endfor %}{% endspaceless %}
+    {{ resource_name }}{% endif %}{% endfor %}{% endfor %}{% endif %}{% endfor %}{% endfor %}{% endfor %}{% endspaceless %}
 
 {% endfor %}
 The group owner responsible for this project is required to renew it on a yearly basis. If you have not done so in the
