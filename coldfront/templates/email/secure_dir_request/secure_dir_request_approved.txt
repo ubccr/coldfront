@@ -1,0 +1,10 @@
+Dear {{ user_first_name }} {{ user_last_name }},
+
+Your request for a secure directory for project '{{ project }}' was approved and setup on the cluster is complete.
+
+The paths to your secure group and scratch directories are '/global/home/groups/pl1_data/{{ groups }}' and '/global/scratch/pl1_data/{{ scratch }}', respectively.
+
+If you have any questions, please contact us at {{ support_email }}.
+
+Thank you,
+{{ signature }}

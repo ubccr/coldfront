@@ -1,0 +1,10 @@
+Dear {{ pi_str }},
+
+There is a new secure directory request for project {{ project_name }} from requester {{ requester_str }}.
+
+You may view the details of the request here: {{ review_url }}.
+
+If you have any questions or concerns, please contact us at {{ support_email }}.
+
+Thank you,
+{{ signature }}
