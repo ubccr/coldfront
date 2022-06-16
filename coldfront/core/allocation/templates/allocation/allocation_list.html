@@ -14,7 +14,7 @@ Allocation List
 <hr>
 <div class="card mb-3 bg-light">
   <div class="card-body">
-    {% if user_agreement_signed and is_pi %}
+    {% if user_agreement_signed and can_request_sec_dir %}
       <a class="btn btn-primary" href="{% url 'secure-dir-request-landing' %}" role="button">
         <i class="fas fa-lock" aria-hidden="true"></i>
         Request a Secure Directory
