@@ -18,7 +18,7 @@ from coldfront.core.allocation.models import (Allocation,
                                               SecureDirRemoveUserRequestStatusChoice,
                                               AllocationUser,
                                               AllocationUserStatusChoice)
-from coldfront.core.allocation.utils import create_secure_dirs
+from coldfront.core.allocation.utils_.secure_dir_utils import create_secure_dirs
 from coldfront.core.project.models import (ProjectUser,
                                            ProjectUserStatusChoice,
                                            ProjectUserRoleChoice, Project,
