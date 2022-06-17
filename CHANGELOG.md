@@ -1,18 +1,52 @@
 # ColdFront Changelog
 
-## [Unreleased]
+## [1.1.1] - 2022-04-26
+
+- Fix grant export to only download those found under search [#222](https://github.com/ubccr/coldfront/issues/222) 
+- Fix bug that allowed users to be added to inactive allocations [#386](https://github.com/ubccr/coldfront/issues/386)
+- Fix allocation request approval redirect [#388](https://github.com/ubccr/coldfront/issues/388)
+- Upgrade to Django 3.2.13
+- Fix bug in slurm plugin where `SLURM_NOOP` was a str instead of a bool [#392](https://github.com/ubccr/coldfront/pull/392)
+
+## [1.1.0] - 2022-03-09
+
+- Add a checkbox to 'select all' users on the project to enable/disable notifications [#291](https://github.com/ubccr/coldfront/issues/291)
+- Archived grant not viewable by PI [#259](https://github.com/ubccr/coldfront/issues/259)
+- Add more detail info when multiple allocations on a project for same resource [#193](https://github.com/ubccr/coldfront/issues/193)
+- Admins can prevent the renewal of allocations [#203](https://github.com/ubccr/coldfront/issues/203)
+- Allow logout redirect URL to be configured [#311](https://github.com/ubccr/coldfront/pull/311)
+- Fix empty user search exception [#313](https://github.com/ubccr/coldfront/issues/313)
+- Add allocation change requests [#294](https://github.com/ubccr/coldfront/issues/294)
+- Added signal dispatch for resource allocations [#319](https://github.com/ubccr/coldfront/pull/319)
+- mokey oidc plugin: Handle groups claim as list [#332](https://github.com/ubccr/coldfront/pull/332)
+- Fix divide by zero error when attribute that has 0 usage [#336](https://github.com/ubccr/coldfront/issues/336)
+- Allocation request flow updates [#341](https://github.com/ubccr/coldfront/issues/341) 
+- Add attribute expansion support [#324](https://github.com/ubccr/coldfront/pull/324)
+- Fix adding not-selected publications [#343](https://github.com/ubccr/coldfront/pull/343)
+- Add forward filter parameters between active-archived projects search pages [#347](https://github.com/ubccr/coldfront/pull/347)
+- Fix sorting arrows for allocation search [#344](https://github.com/ubccr/coldfront/pull/344)
+- SECURITY BUG FIX: Check permissions on notification updates [#348](https://github.com/ubccr/coldfront/pull/348) 
+- Allow site-level control of how resources ordered within an allocation [#334](https://github.com/ubccr/coldfront/issues/334)
+- LDAP user search plugin: Add ldap connect timeout config option [#351](https://github.com/ubccr/coldfront/pull/351)
+- Upgrade to Django v3.2 [#295](https://github.com/ubccr/coldfront/issues/295)
+- Fix error on duplicate publication entry [#369](https://github.com/ubccr/coldfront/issues/369)
+- Add resource list page [#323](https://github.com/ubccr/coldfront/issues/322)
+- Add resource detail page [#320](https://github.com/ubccr/coldfront/issues/320)
+- Fix adding publications with large number of authors [#283](https://github.com/ubccr/coldfront/issues/283)
+- Allow allocation users to see allocations of all statuses [#292](https://github.com/ubccr/coldfront/issues/292)
+- Show allocations for both Active and New projects [#365](https://github.com/ubccr/coldfront/pull/365)
 
 ## [1.0.4] - 2021-03-25
 
-- Fix [#235](https://github.com/ubccr/coldfront/issues/235)
-- Fix [#271](https://github.com/ubccr/coldfront/issues/271)
-- Fix [#279](https://github.com/ubccr/coldfront/issues/279)
+- Slurm plugin: disabled resource should not show up in slurm files [#235](https://github.com/ubccr/coldfront/issues/235)
+- Fix ldap config [#271](https://github.com/ubccr/coldfront/issues/271)
+- Add sample csv data to pip packaging [#279](https://github.com/ubccr/coldfront/issues/279)
 - Add LDAP User Search plugin configs
 
 ## [1.0.3] - 2021-03-02
 
-- Refactor ColdFront settings. See [PR #264](https://github.com/ubccr/coldfront/pull/264)
-- Lots of documenation updates. [See here](https://coldfront.readthedocs.io)
+- Refactor ColdFront settings [#264](https://github.com/ubccr/coldfront/pull/264)
+- Lots of documenation updates now hosted on readthedocs. [see here](https://coldfront.readthedocs.io)
 - Fix setuptools for pip installs
 
 ## [1.0.2] - 2021-02-15
@@ -53,4 +87,6 @@
 [1.0.2]: https://github.com/ubccr/coldfront/releases/tag/v1.0.2
 [1.0.3]: https://github.com/ubccr/coldfront/releases/tag/v1.0.3
 [1.0.4]: https://github.com/ubccr/coldfront/releases/tag/v1.0.4
-[Unreleased]: https://github.com/ubccr/coldfront/compare/v1.0.4...HEAD
+[1.1.0]: https://github.com/ubccr/coldfront/releases/tag/v1.1.0
+[1.1.1]: https://github.com/ubccr/coldfront/releases/tag/v1.1.1
+[Unreleased]: https://github.com/ubccr/coldfront/compare/v1.1.1...HEAD

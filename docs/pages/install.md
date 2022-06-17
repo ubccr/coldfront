@@ -131,8 +131,8 @@ $ coldfront load_test_data
 ```
 
 - You can log in as `admin` with password `test1234`.
-- You can log in as a PI using username `ccollins` with password `test1234`.
-- You can log in as center director using username `michardson` with password `test1234`.
+- You can log in as a PI using username `cgray` with password `test1234`.
+- You can log in as center director using username `csimmons` with password `test1234`.
 - Password for all users is also `test1234`.
 
 !!! danger "Danger"

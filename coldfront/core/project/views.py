@@ -5,6 +5,8 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth import get_user_model
+from django.contrib.auth.decorators import user_passes_test, login_required
+from django.contrib.auth.models import get_user_model
 from coldfront.core.utils.common import import_from_settings
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
@@ -124,7 +126,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['research_outputs'] = ResearchOutput.objects.filter(
             project=self.object).order_by('-created')
         context['grants'] = Grant.objects.filter(
-            project=self.object, status__name__in=['Active', 'Pending'])
+            project=self.object, status__name__in=['Active', 'Pending', 'Archived'])
         context['allocations'] = allocations
         context['project_users'] = project_users # context dictionary; key is project_users; project_users is a variable name
         # print(type(project_users))
@@ -898,25 +900,46 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_obj.pk, 'project_user_pk': project_user_obj.pk}))
 
 
+@login_required
 def project_update_email_notification(request):
 
     if request.method == "POST":
         data = request.POST
         project_user_obj = get_object_or_404(
             ProjectUser, pk=data.get('user_project_id'))
-        checked = data.get('checked')
-        if checked == 'true':
-            project_user_obj.enable_notifications = True
-            project_user_obj.save()
-            return HttpResponse('', status=200)
-        elif checked == 'false':
-            project_user_obj.enable_notifications = False
-            project_user_obj.save()
-            return HttpResponse('', status=200)
+
+
+        project_obj = project_user_obj.project
+
+        allowed = False
+        if project_obj.pi == request.user:
+            allowed = True
+
+        if project_obj.projectuser_set.filter(user=request.user, role__name='Manager', status__name='Active').exists():
+            allowed = True
+
+        if project_user_obj.user == request.user:
+            allowed = True
+
+        if request.user.is_superuser:
+            allowed = True
+
+        if allowed == False:
+             return HttpResponse('not allowed', status=403)
         else:
-            return HttpResponse('', status=400)
+            checked = data.get('checked')
+            if checked == 'true':
+                project_user_obj.enable_notifications = True
+                project_user_obj.save()
+                return HttpResponse('checked', status=200)
+            elif checked == 'false':
+                project_user_obj.enable_notifications = False
+                project_user_obj.save()
+                return HttpResponse('unchecked', status=200)
+            else:
+                return HttpResponse('no checked', status=400)
     else:
-        return HttpResponse('', status=400)
+        return HttpResponse('no POST', status=400)
 
 
 class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):

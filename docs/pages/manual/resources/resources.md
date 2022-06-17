@@ -1,6 +1,6 @@
 # What are Resources?
 
-The list of resources in ColdFront is everything that your center maintains and provides access to your user community.  These can be shared resources such as clusters and storage or they can be individual servers that only a single user or small group has access to.  A base install of ColdFront comes with the following types of resources:  Cluster, Cluster Partition, Server, Storage, Cloud, Software.  Additional resource types can be added and might include Database (for shared databases that a center restricts access to) or Instrument (for shared scientific instruments you need to manage access for).  Resources are managed in the ColdFront Administration Dashboard under Resources.
+The list of resources in ColdFront is everything that your center maintains and provides access for to your user community.  These can be shared resources such as clusters and storage or they can be individual servers that only a single user or small group has access to.  A base installation of ColdFront comes with the following types of resources:  Cloud, Cluster, Cluster Partition, Compute Node, Server, Software License, and Storage.  Additional resource types can be added and might include Database (for shared databases that a center restricts access to) or Instrument (for shared scientific instruments you need to manage access for).  Resources are managed in the ColdFront Administration dashboard under Resource Types.
 
 ### Adding a new resource type
 
@@ -50,3 +50,7 @@ Click the 'Add Attribute Type' to create a new one.  Enter a name and select the
 To add a new attribute type, click the green plus sign next to "attribute type" or go to Resource - Attribute types to add a new option.
 
 ![Resource Attribute Types](../../images/resourceattributetype.PNG)  
+
+###  Resource Detail Pages
+
+See more about [resource detail pages](resource_detail.md)

@@ -9,7 +9,10 @@ from coldfront.core.allocation.models import (Allocation,
                                               AllocationAttribute,
                                               AllocationAttributeType,
                                               AllocationAttributeUsage,
+                                              AllocationChangeRequest,
+                                              AllocationAttributeChangeRequest,
                                               AllocationStatusChoice,
+                                              AllocationChangeStatusChoice,
                                               AllocationUser,
                                               AllocationUserNote,
                                               AllocationUserStatusChoice,
@@ -53,7 +56,7 @@ class AllocationAdmin(SimpleHistoryAdmin):
     readonly_fields_change = (
         'project', 'justification', 'created', 'modified',)
     fields_change = ('project', 'resources', 'quantity', 'justification',
-                     'status', 'start_date', 'end_date', 'description', 'created', 'modified', 'is_locked')
+                     'status', 'start_date', 'end_date', 'description', 'created', 'modified', 'is_locked', 'is_changeable')
     list_display = ('pk', 'project_title', 'project_pi', 'resource', 'quantity',
                     'justification', 'start_date', 'end_date', 'status', 'created', 'modified', )
     inlines = [AllocationUserInline,
@@ -343,3 +346,23 @@ class AllocationAttributeUsageAdmin(SimpleHistoryAdmin):
 
     def project_pi(self, obj):
         return obj.allocation_attribute.allocation.project.pi.username
+
+
+@admin.register(AllocationAccount)
+class AllocationAccountAdmin(SimpleHistoryAdmin):
+    list_display = ('name', 'user', )
+
+
+@admin.register(AllocationChangeStatusChoice)
+class AllocationChangeStatusChoiceAdmin(admin.ModelAdmin):
+    list_display = ('name', )
+
+
+@admin.register(AllocationChangeRequest)
+class AllocationChangeRequestAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'allocation', 'status', 'end_date_extension', 'justification', 'notes', )
+
+
+@admin.register(AllocationAttributeChangeRequest)
+class AllocationChangeStatusChoiceAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'allocation_change_request', 'allocation_attribute', 'new_value', )
