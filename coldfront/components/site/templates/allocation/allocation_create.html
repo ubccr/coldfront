@@ -194,12 +194,6 @@ Request New Allocation
       more than 10 users on a project.</p>'
     )
 
-    $('#div_id_sub_account_number').after(
-      '<p id="additional_info_4">This account and sub account will be billed the total cost at \
-      the next monthly billing cycle. By filling in this account number you verify you are \
-      authorized to use funds from this account for this purpose.</p>'
-    )
-
     $('#div_id_store_ephi').append(
       '<p id="id_ephi_info">If you use the Slate-Project file system for storing electronic protected health \
       information (ePHI), please note that <strong>you and/or the Principal Investigator (PI) \
@@ -475,7 +469,6 @@ Request New Allocation
 
     if (resource_name === 'RStudio Connect') {
       $('#id_rstudio_connect_info').show();
-      $('#additional_info_4').show();
       if (checkDate(5, 10)) {
         $('#div_id_license_term').show();
       } else {
@@ -483,7 +476,6 @@ Request New Allocation
       }
     } else {
       $('#id_rstudio_connect_info').hide();
-      $('#additional_info_4').hide();
       $('#div_id_license_term').hide();
       $('#div_id_total_cost').hide();
     }
