@@ -2,4 +2,4 @@ from django.apps import AppConfig
 
 
 class ResourceConfig(AppConfig):
-    name = 'resource'
+    name = 'coldfront.core.resource'

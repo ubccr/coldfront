@@ -46,16 +46,6 @@ class TestResearchOutput(TestCase):
                 self.assertEqual(initial_value, saved_value)
         self.assertEqual(research_output_obj, retrieved_obj)
 
-    def test_no_duplicates(self):
-        fields = self.data.initial_fields
-
-        object_1 = ResearchOutput(**fields)
-        object_2 = ResearchOutput(**fields)
-
-        object_1.save()
-        with self.assertRaises(IntegrityError):
-            object_2.save()
-
     def test_title_optional(self):
         self.assertEqual(0, len(ResearchOutput.objects.all()))
 

@@ -33,6 +33,11 @@ USE_TZ = True
 #------------------------------------------------------------------------------
 # Django Apps
 #------------------------------------------------------------------------------
+
+# See: https://docs.djangoproject.com/en/3.2/releases/3.2/#customizing-type-of-auto-created-primary-keys
+# We should change this to BigAutoField at some point
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -98,6 +103,15 @@ MIDDLEWARE += [
 AUTHENTICATION_BACKENDS = []
 
 #------------------------------------------------------------------------------
+# Django Q
+#------------------------------------------------------------------------------
+Q_CLUSTER = {
+    'timeout': ENV.int('Q_CLUSTER_TIMEOUT', default=120),
+    'retry': ENV.int('Q_CLUSTER_RETRY', default=120),
+}
+
+
+#------------------------------------------------------------------------------
 # Django template and site settings
 #------------------------------------------------------------------------------
 TEMPLATES = [
@@ -143,7 +157,7 @@ REST_FRAMEWORK = {
 SITE_TEMPLATES = ENV.str('SITE_TEMPLATES', default='')
 if len(SITE_TEMPLATES) > 0:
     if os.path.isdir(SITE_TEMPLATES):
-        TEMPLATES[0].DIRS.insert(0, SITE_TEMPLATES)
+        TEMPLATES[0]['DIRS'].insert(0, SITE_TEMPLATES)
     else:
         raise ImproperlyConfigured('SITE_TEMPLATES should be a path to a directory')
 
