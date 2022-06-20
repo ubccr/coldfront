@@ -1,18 +1,16 @@
 Dear {{center_name}} user,
 
-Your allocation for access has expired. Any accounts under this allocation are now unable to
-access this resource. If you wish to continue using it, the group owner responsible for this project must create a new
-allocation request. {{project_url}}
+Your access to {{center_name}} resources has expired. Any accounts under these allocation(s) are now unable to
+access the associated resource. If you wish to continue using them, the group owners responsible for the following project(s) must create a new
+allocation request(s). Below is a list of links to your project(s) containing at least one expired allocation: 
+{% for project_key, project_url in project_dict.items %}
+Project Title: {{project_key}}
+Project URL: {{ project_url.0 }}
+Project PI: {{ project_url.1 }} 
 
-To create a new allocation request, login to ColdFront and complete the short process for the following project(s): 
-
-{% for project_key, project_url in project_dict.items %}{{project_key}}: {{ project_url }} has the following allocations expiring soon:
-    {% spaceless %} {% for allocation_key, allocation_value in allocation_dict.items %}{% if allocation_key == project_url %}{% for allocation in allocation_value %}{% for allocation_url, resource_name in allocation.items %}
-
-    {{ resource_name }}{% endfor %}{% endfor %}{% endif %}{% endfor %}{% endspaceless %}
-
+    {% spaceless %} {% for allocation_key, allocation_value in allocation_dict.items %}{% if allocation_key == project_url.0 %}Expired Allocation(s):{% for allocation in allocation_value %}{% for allocation_url, resource_name in allocation.items %}
+        {{ resource_name }}{% endfor %}{% endfor %}{% endif %}{% endfor %}{% endspaceless %}
 {% endfor %}
-
 The group owner responsible for this project is required to renew it on a yearly basis. If you have not done so in the
 last year, you will be required to before requesting a new allocation.
 For more information about the yearly renewal, visit our knowledge base: {{ project_renewal_help_url }}.
