@@ -190,10 +190,9 @@ class SecureDirRequestDirectoryNamesForm(forms.Form):
     # TODO: change to required when scratch2 is migrated to scratch
     scratch_name = forms.CharField(
         help_text=(
-            'Provide the name of the secure scratch directory. '
-            'While scratch2 is active, the directory should NOT be inputted.'),
+            'Provide the name of the secure scratch directory.'),
         label='Scratch Subdirectory Name',
-        required=False,
+        required=True,
         widget=forms.Textarea(attrs={'rows': 1}))
     groups_name = forms.CharField(
         help_text=(
