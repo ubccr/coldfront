@@ -96,8 +96,12 @@ class SecureDirExistingPIForm(forms.Form):
             name='Principal Investigator')
 
         # Only include active PIs that are apart of active projects.
+        eligible_project = Q(project__name__startswith='fc_') | \
+                           Q(project__name__startswith='ic_') | \
+                           Q(project__name__startswith='co_')
         pi_set = \
-            set(ProjectUser.objects.filter(role=pi_role,
+            set(ProjectUser.objects.filter(eligible_project,
+                                           role=pi_role,
                                            project__status__name='Active',
                                            status__name='Active'
                                            ).values_list('user__pk', flat=True))
@@ -123,8 +127,11 @@ class SecureDirExistingProjectForm(forms.Form):
         kwargs.pop('breadcrumb_pi', None)
         super().__init__(*args, **kwargs)
 
-        fc_co_projects_cond = Q(name__startswith='fc_') | Q(name__startswith='co_')
-        self.fields['project'].queryset = Project.objects.filter(fc_co_projects_cond, status__name='Active')
+        fc_co_ic_projects_cond = Q(name__startswith='fc_') | \
+                                 Q(name__startswith='co_') | \
+                                 Q(name__startswith='ic_')
+        self.fields['project'].queryset = \
+            Project.objects.filter(fc_co_ic_projects_cond, status__name='Active')
 
 
 class SecureDirReviewStatusForm(forms.Form):
