@@ -697,17 +697,12 @@ def secure_dir_request_state_schema():
         },
         'setup': {
             'status': 'Pending',
-            'justification': '',
+            'scratch': '',
+            'groups': '',
             'timestamp': ''
         },
         'other': {
             'justification': '',
-            'timestamp': ''
-        },
-        'paths': {
-            'status': 'Pending',
-            'scratch': '',
-            'groups': '',
             'timestamp': ''
         }
     }
