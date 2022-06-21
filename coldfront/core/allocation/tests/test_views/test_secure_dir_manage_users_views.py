@@ -121,7 +121,6 @@ class TestSecureDirBase(TestBase):
             user.set_password(self.password)
             user.save()
 
-
     def get_response(self, user, url, kwargs=None):
         """Returns the response to a GET request."""
         self.client.login(username=user.username, password=self.password)
