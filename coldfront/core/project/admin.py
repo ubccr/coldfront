@@ -7,7 +7,8 @@ from coldfront.core.project.models import (Project, ProjectAdminComment,
                                             ProjectReview, ProjectStatusChoice,
                                             ProjectUser, ProjectUserMessage,
                                             ProjectUserRoleChoice,
-                                            ProjectUserStatusChoice)
+                                            ProjectUserStatusChoice,
+                                            ProjectUserEmail)
 
 
 @admin.register(ProjectStatusChoice)
@@ -139,3 +140,21 @@ class ProjectReviewAdmin(SimpleHistoryAdmin):
     def PI(self, obj):
         return '{} {} ({})'.format(obj.project.pi.first_name, obj.project.pi.last_name, obj.project.pi.username)
 
+@admin.register(ProjectUserEmail)
+class ProjectUserEmailAdmin(SimpleHistoryAdmin):
+    inline = ProjectUserEmail
+    def get_inline_instances(self, request, obj=None):
+        if obj is None:
+            # We are adding an object
+            return []
+        else:
+            return super().get_inline_instances(request)
+
+    def save_formset(self, request, form, formset, change):
+        if formset.model in ProjectUserEmail:
+            instances = formset.save(commit=False)
+            for instance in instances:
+                instance.author = request.user
+                instance.save()
+        else:
+            formset.save()

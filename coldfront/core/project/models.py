@@ -191,3 +191,10 @@ class ProjectUser(TimeStampedModel):
     class Meta:
         unique_together = ('user', 'project')
         verbose_name_plural = "Project User Status"
+
+class ProjectUserEmail(TimeStampedModel):
+    subject = models.CharField(max_length=255, default='You have been added to Project')
+    cc = models.CharField(max_length=255, blank=True)
+    bcc = models.CharField(max_length=255, blank=True)
+    body = models.TextField(default='You have been added as a user to the Project')
+    history = HistoricalRecords()

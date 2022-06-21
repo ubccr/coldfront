@@ -676,6 +676,16 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                         allocation_activate_user.send(sender=self.__class__,
                                                       allocation_user_pk=allocation_user_obj.pk)
 
+                    """custom_template =
+
+                    send_email_template(
+                    'New project review has been submitted',
+                    'email/new_project_review.txt',
+                    {'url': url},
+                    EMAIL_SENDER,
+                    [EMAIL_DIRECTOR_EMAIL_ADDRESS, ]
+                    )"""
+
             messages.success(
                 request, 'Added {} users to project.'.format(added_users_count))
         else:
