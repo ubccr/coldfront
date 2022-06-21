@@ -214,7 +214,9 @@ class SecureDirRequestApprovalRunner(object):
 
     def run(self):
         self.approve_request()
-        self.send_email()
+        groups_alloc, scratch_alloc = self.create_secure_dir()
+        if groups_alloc and scratch_alloc:
+            self.send_email()
 
     def approve_request(self):
         """Set the status of the request to 'Approved - Complete'."""
@@ -222,6 +224,32 @@ class SecureDirRequestApprovalRunner(object):
             SecureDirRequestStatusChoice.objects.get(name='Approved - Complete')
         self.request_obj.completion_time = utc_now_offset_aware()
         self.request_obj.save()
+
+    def create_secure_dir(self):
+        """Creates the groups and scratch secure directories."""
+
+        groups_alloc, scratch_alloc = None, None
+        try:
+            groups_alloc = \
+                create_secure_dirs(self.request_obj.project,
+                                   self.request_obj.state['paths']['groups'])
+        except Exception as e:
+            message = f'Failed to create groups secure directory for ' \
+                      f'{self.request_obj.project.name}.'
+            logger.error(message)
+            logger.exception(e)
+
+        try:
+            scratch_alloc = \
+                create_secure_dirs(self.request_obj.project,
+                                   self.request_obj.state['paths']['scratch'])
+        except Exception as e:
+            message = f'Failed to create scratch secure directory for ' \
+                      f'{self.request_obj.project.name}.'
+            logger.error(message)
+            logger.exception(e)
+
+        return groups_alloc, scratch_alloc
 
     def send_email(self):
         """Send a notification email to the requester and PI."""
