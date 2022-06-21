@@ -186,8 +186,6 @@ class SecureDirRequestDirectoryNamesForm(forms.Form):
         label='Status',
         required=True)
 
-    # TODO: change help text when scratch2 is migrated to scratch
-    # TODO: change to required when scratch2 is migrated to scratch
     scratch_name = forms.CharField(
         help_text=(
             'Provide the name of the secure scratch directory.'),
