@@ -218,36 +218,6 @@ Secure Directory Request Detail
                   {% endif %}
                 </td>
               </tr>
-              <tr>
-                <td>Input the names of the secure directories on the cluster.</td>
-                <td>
-                  {% if paths.status == 'Pending' %}
-                    <span class="badge badge-warning">
-                      {{ paths.status }}
-                    </span>
-                  {% elif paths.status == 'Completed' %}
-                    <span class="badge badge-success">
-                      {{ paths.status }} {{ paths.timestamp|iso8601_to_datetime }}
-                    </span>
-                  {% else %}
-                    <span class="badge badge-danger">
-                      {{ paths.status }}
-                    </span>
-                  {% endif %}
-                </td>
-                <td>
-                  {% if setup.status == 'Completed' and not other.timestamp and paths.status == 'Pending' %}
-                    <a href="{% url 'secure-dir-request-subdirectory-names' secure_dir_request.pk %}" class="btn btn-primary">
-                      Manage
-                    </a>
-                  {% else %}
-                    <button class="btn btn-primary" disabled="true">
-                      Manage
-                    </button>
-                  {% endif %}
-
-                </td>
-              </tr>
             {% endwith %}
           </tbody>
         </table>
