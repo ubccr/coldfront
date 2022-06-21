@@ -1053,6 +1053,9 @@ class SecureDirRequestListView(LoginRequiredMixin,
         if self.request.user.is_superuser:
             return True
 
+        if self.request.user.has_perm('allocation.view_securedirrequest'):
+            return True
+
         message = (
             'You do not have permission to view the previous page.')
         messages.error(self.request, message)
@@ -1153,8 +1156,8 @@ class SecureDirRequestDetailView(LoginRequiredMixin,
         if self.request.user.is_superuser:
             return True
 
-        # if self.request.user.has_perm('project.view_savioprojectallocationrequest'):
-        #     return True
+        if self.request.user.has_perm('allocation.view_securedirrequest'):
+            return True
 
         message = 'You do not have permission to view the previous page.'
         messages.error(self.request, message)
@@ -1233,6 +1236,10 @@ class SecureDirRequestDetailView(LoginRequiredMixin,
         runner = SecureDirRequestApprovalRunner(self.request_obj)
         runner.run()
 
+        message = f'The secure directory for {self.request_obj.project.name} ' \
+                  f'was successfully created.'
+        messages.success(request, message)
+
         return HttpResponseRedirect(self.redirect)
 
     def get_setup_status(self):
@@ -1247,8 +1254,7 @@ class SecureDirRequestDetailView(LoginRequiredMixin,
     def is_checklist_complete(self):
         status_choice = secure_dir_request_state_status(self.request_obj)
         return (status_choice.name == 'Approved - Processing' and
-                self.request_obj.state['setup']['status'] == 'Completed' and
-                self.request_obj.state['paths']['status'] == 'Completed')
+                self.request_obj.state['setup']['status'] == 'Completed')
 
 
 class SecureDirRequestReviewRDMConsultView(LoginRequiredMixin,
@@ -1389,7 +1395,7 @@ class SecureDirRequestReviewSetupView(LoginRequiredMixin,
                                      UserPassesTestMixin,
                                      SecureDirRequestMixin,
                                      FormView):
-    form_class = SecureDirReviewStatusForm
+    form_class = SecureDirRequestDirectoryNamesForm
     template_name = (
         'secure_dir/secure_dir_request/secure_dir_setup.html')
     login_url = '/'
@@ -1413,11 +1419,13 @@ class SecureDirRequestReviewSetupView(LoginRequiredMixin,
     def form_valid(self, form):
         form_data = form.cleaned_data
         status = form_data['status']
-        justification = form_data['justification']
+        groups_name = form_data['groups_name']
+        scratch_name = form_data['scratch_name']
         timestamp = utc_now_offset_aware().isoformat()
         self.request_obj.state['setup'] = {
             'status': status,
-            'justification': justification,
+            'groups': groups_name,
+            'scratch': scratch_name,
             'timestamp': timestamp,
         }
         self.request_obj.status = secure_dir_request_state_status(self.request_obj)
@@ -1432,6 +1440,13 @@ class SecureDirRequestReviewSetupView(LoginRequiredMixin,
             f'secure directory request has been set to {status}.')
         messages.success(self.request, message)
 
+        message = (
+            f'Groups and scratch subdirectory names for '
+            f'{self.request_obj.project.name}\'s secure directory request '
+            f'have been set to "{self.request_obj.state["setup"]["groups"]}" '
+            f'and "{self.request_obj.state["setup"]["scratch"]}", respectively.')
+        messages.success(self.request, message)
+
         return super().form_valid(form)
 
     def get_context_data(self, **kwargs):
@@ -1443,7 +1458,8 @@ class SecureDirRequestReviewSetupView(LoginRequiredMixin,
         initial = super().get_initial()
         setup = self.request_obj.state['setup']
         initial['status'] = setup['status']
-        initial['justification'] = setup['justification']
+        initial['groups_name'] = setup['groups']
+        initial['scratch_name'] = setup['scratch']
         return initial
 
     def get_success_url(self):
@@ -1507,71 +1523,6 @@ class SecureDirRequestReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
         initial = super().get_initial()
         other = self.request_obj.state['other']
         initial['justification'] = other['justification']
-        return initial
-
-    def get_success_url(self):
-        return reverse(
-            'secure-dir-request-detail',
-            kwargs={'pk': self.kwargs.get('pk')})
-
-
-class SecureDirRequestInputDirNamesView(LoginRequiredMixin, UserPassesTestMixin,
-                                     SecureDirRequestMixin, FormView):
-    form_class = SecureDirRequestDirectoryNamesForm
-    template_name = (
-        'secure_dir/secure_dir_request/secure_dir_input_dir_names.html')
-    login_url = '/'
-
-    def test_func(self):
-        """UserPassesTestMixin tests."""
-        if self.request.user.is_superuser:
-            return True
-        message = 'You do not have permission to view the previous page.'
-        messages.error(self.request, message)
-        return False
-
-    def dispatch(self, request, *args, **kwargs):
-        pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
-        redirect = self.redirect_if_disallowed_status(request)
-        if redirect is not None:
-            return redirect
-        return super().dispatch(request, *args, **kwargs)
-
-    def form_valid(self, form):
-        form_data = form.cleaned_data
-        scratch_name = form_data['scratch_name']
-        groups_name = form_data['groups_name']
-        status = form_data['status']
-        timestamp = utc_now_offset_aware().isoformat()
-        self.request_obj.state['paths'] = {
-            'groups': groups_name,
-            'scratch': scratch_name,
-            'status': status,
-            'timestamp': timestamp,
-        }
-        self.request_obj.status = secure_dir_request_state_status(self.request_obj)
-        self.request_obj.save()
-
-        message = (
-            f'Groups and scratch subdirectory names for '
-            f'{self.request_obj.project.name}\'s secure directory request '
-            f'have been set to "{self.request_obj.state["paths"]["groups"]}" '
-            f'and "{self.request_obj.state["paths"]["scratch"]}", respectively.')
-        messages.success(self.request, message)
-
-        return super().form_valid(form)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['secure_dir_request'] = self.request_obj
-        return context
-
-    def get_initial(self):
-        initial = super().get_initial()
-        paths = self.request_obj.state['paths']
-        initial['scratch_name'] = paths['scratch']
-        initial['groups_name'] = paths['groups']
         return initial
 
     def get_success_url(self):
