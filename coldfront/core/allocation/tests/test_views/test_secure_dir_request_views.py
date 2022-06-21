@@ -18,7 +18,10 @@ from coldfront.core.allocation.models import (Allocation,
                                               SecureDirRemoveUserRequestStatusChoice,
                                               AllocationUser,
                                               AllocationUserStatusChoice,
-                                              SecureDirRequest)
+                                              SecureDirRequest,
+                                              SecureDirRequestStatusChoice,
+                                              AllocationAttribute,
+                                              AllocationAttributeType)
 from coldfront.core.allocation.tests.test_views.test_secure_dir_manage_users_views import \
     TestSecureDirBase
 from coldfront.core.allocation.utils_.secure_dir_utils import create_secure_dirs
@@ -26,6 +29,7 @@ from coldfront.core.project.models import (ProjectUser,
                                            ProjectUserStatusChoice,
                                            ProjectUserRoleChoice, Project,
                                            ProjectStatusChoice)
+from coldfront.core.resource.models import Resource
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
@@ -220,4 +224,232 @@ class TestSecureDirRequestWizard(TestSecureDirRequestBase):
                     self.assertIn(section, email.body)
             else:
                 self.fail(f'Emails should only be sent to PI0 and admins.')
+            self.assertEqual(settings.EMAIL_SENDER, email.from_email)
+
+
+class TestSecureDirRequestListView(TestSecureDirRequestBase):
+    """A class for testing SecureDirRequestListView"""
+
+    def setUp(self):
+        super().setUp()
+
+        self.completed_url = reverse('secure-dir-completed-request-list')
+        self.pending_url = reverse('secure-dir-pending-request-list')
+
+        # Create 2 SecureDirRequests
+        self.request0 = SecureDirRequest.objects.create(
+            requester=self.pi0,
+            data_description='a'*20,
+            pi=self.pi0,
+            project=self.project0,
+            status=SecureDirRequestStatusChoice.objects.get(name='Under Review'),
+            request_time=utc_now_offset_aware()
+        )
+
+        self.request1 = SecureDirRequest.objects.create(
+            requester=self.pi1,
+            data_description='a'*20,
+            pi=self.pi1,
+            project=self.project1,
+            status=SecureDirRequestStatusChoice.objects.get(name='Under Review'),
+            request_time=utc_now_offset_aware()
+        )
+
+    def test_access(self):
+        for url in [self.completed_url, self.pending_url]:
+            self.assert_has_access(url, self.admin, True)
+            self.assert_has_access(url, self.staff, True)
+            self.assert_has_access(url, self.user0, False)
+            self.assert_has_access(url, self.pi0, False)
+
+    def test_pending_requests(self):
+        """Test that pending requests are visible."""
+        self.request1.status = \
+            SecureDirRequestStatusChoice.objects.get(name='Approved - Processing')
+        self.request1.save()
+        self.request1.refresh_from_db()
+
+        self.client.login(username=self.admin.username, password=self.password)
+        response = self.client.get(self.pending_url)
+
+        format_badge = '<span class="badge badge-warning">{}</span>'
+        self.assertContains(response, self.project0.name)
+        self.assertContains(response,
+                            format_badge.format(self.request0.status.name))
+        self.assertContains(response, self.project1.name)
+        self.assertContains(response,
+                            format_badge.format(self.request1.status.name))
+
+        # Testing that the correct title is displayed.
+        self.assertContains(response, 'Pending Secure Directory Requests')
+
+    def test_no_pending_requests(self):
+        """Test that the correct content is displayed when there are no
+        pending requests."""
+        for request in SecureDirRequest.objects.all():
+            request.status = \
+                SecureDirRequestStatusChoice.objects.get(name='Denied')
+            request.save()
+
+        self.client.login(username=self.admin.username, password=self.password)
+        response = self.client.get(self.pending_url)
+
+        self.assertNotContains(response, self.project0.name)
+        self.assertNotContains(response, self.request0.status.name)
+        self.assertNotContains(response, self.project1.name)
+        self.assertNotContains(response, self.request1.status.name)
+
+        self.assertContains(response, 'No pending secure directory requests!')
+
+        # Testing that the correct title is displayed.
+        self.assertContains(response, 'Pending Secure Directory Requests')
+
+    def test_completed_requests(self):
+        """Test that completed requests are visible."""
+        self.request0.status = \
+            SecureDirRequestStatusChoice.objects.get(name='Approved - Complete')
+        self.request0.save()
+        self.request1.status = \
+            SecureDirRequestStatusChoice.objects.get(name='Denied')
+        self.request1.save()
+
+        self.client.login(username=self.admin.username, password=self.password)
+        response = self.client.get(self.completed_url)
+
+        self.assertContains(response, self.project0.name)
+        self.assertContains(response,
+                            '<span class="badge badge-success">Approved - Complete</span>')
+        self.assertContains(response, self.project1.name)
+        self.assertContains(response,
+                            '<span class="badge badge-danger">Denied</span>')
+
+        # Testing that the correct title is displayed.
+        self.assertContains(response, 'Completed Secure Directory Requests')
+
+    def test_no_completed_requests(self):
+        """Test that the correct content is displayed when there are no
+        completed requests."""
+        for request in SecureDirRequest.objects.all():
+            request.status = \
+                SecureDirRequestStatusChoice.objects.get(name='Under Review')
+            request.save()
+
+        self.client.login(username=self.admin.username, password=self.password)
+        response = self.client.get(self.completed_url)
+
+        self.assertNotContains(response, self.project0.name)
+        self.assertNotContains(response, self.request0.status.name)
+        self.assertNotContains(response, self.project1.name)
+        self.assertNotContains(response, self.request1.status.name)
+
+        self.assertContains(response, 'No completed secure directory requests!')
+
+        # Testing that the correct title is displayed.
+        self.assertContains(response, 'Completed Secure Directory Requests')
+
+
+class TestSecureDirRequestDetailView(TestSecureDirRequestBase):
+    """Testing class for SecureDirRequestDetailView"""
+
+    def setUp(self):
+        super().setUp()
+
+        # Create SecureDirRequest
+        self.request0 = SecureDirRequest.objects.create(
+            requester=self.pi0,
+            data_description='a'*20,
+            pi=self.pi0,
+            project=self.project0,
+            status=SecureDirRequestStatusChoice.objects.get(name='Approved - Processing'),
+            request_time=utc_now_offset_aware()
+        )
+
+        self.request0.state['rdm_consultation']['status'] = 'Completed'
+        self.request0.state['mou']['status'] = 'Completed'
+        self.request0.state['setup']['status'] = 'Completed'
+        self.request0.state['setup']['groups'] = 'test_groups'
+        self.request0.state['setup']['scratch'] = 'test_scratch'
+        self.request0.save()
+
+        self.url0 = reverse('secure-dir-request-detail',
+                            kwargs={'pk': self.request0.pk})
+
+    def test_access(self):
+        self.assert_has_access(self.url0, self.admin, True)
+        self.assert_has_access(self.url0, self.staff, True)
+        self.assert_has_access(self.url0, self.user0, False)
+        self.assert_has_access(self.url0, self.pi0, False)
+
+    def test_post_request_approves_request(self):
+        """Test that a POST request approves the SecureDirRequest."""
+        pre_time = utc_now_offset_aware()
+        self.client.login(username=self.admin.username, password=self.password)
+        response = self.client.post(self.url0, {})
+
+        self.request0.refresh_from_db()
+        self.assertRedirects(response, reverse('secure-dir-pending-request-list'))
+        self.assertEqual(self.request0.status.name, 'Approved - Complete')
+        self.assertTrue(pre_time < self.request0.completion_time < utc_now_offset_aware())
+
+    def test_post_request_creates_allocations(self):
+        """Test that a POST request creates the correct allocations."""
+        self.client.login(username=self.admin.username, password=self.password)
+        response = self.client.post(self.url0, {})
+
+        # Test that the groups directory is created correctly.
+        groups_p2p3_directory = Resource.objects.get(name='Groups P2/P3 Directory')
+        groups_alloc = Allocation.objects.filter(
+            project=self.project0,
+            resources__in=[groups_p2p3_directory])
+        self.assertTrue(groups_alloc.exists())
+
+        alloc_attr = AllocationAttribute.objects.filter(
+            allocation=groups_alloc.first(),
+            allocation_attribute_type=AllocationAttributeType.objects.get(
+                name='Cluster Directory Access')
+        )
+        self.assertTrue(alloc_attr.exists())
+        alloc_attr = alloc_attr.first()
+        self.assertTrue(alloc_attr.value.endswith(self.request0.state['setup']['groups']))
+
+        # Test that the scratch directory is created correctly.
+        scratch_p2p3_directory = Resource.objects.get(name='Scratch2 P2/P3 Directory')
+        scratch_alloc = Allocation.objects.filter(
+            project=self.project0,
+            resources__in=[scratch_p2p3_directory])
+        self.assertTrue(scratch_alloc.exists())
+
+        alloc_attr = AllocationAttribute.objects.filter(
+            allocation=scratch_alloc.first(),
+            allocation_attribute_type=AllocationAttributeType.objects.get(
+                name='Cluster Directory Access')
+        )
+        self.assertTrue(alloc_attr.exists())
+        alloc_attr = alloc_attr.first()
+        self.assertTrue(alloc_attr.value.endswith(self.request0.state['setup']['scratch']))
+
+    def test_post_request_emails_sent(self):
+        """Test that a POST request sends the correct emails."""
+        self.client.login(username=self.admin.username, password=self.password)
+        response = self.client.post(self.url0, {})
+
+        # Test that the correct emails are sent.
+        pi_emails = self.project0.projectuser_set.filter(
+            role__name='Principal Investigator'
+        ).values_list('user__email', flat=True)
+        email_body = [f'Your request for a secure directory for project '
+                      f'\'{self.project0.name}\' was approved. Setup '
+                      f'on the cluster is complete.',
+                      f'The paths to your secure group and scratch directories '
+                      f'are \'/global/home/groups/pl1_data/'
+                      f'{self.request0.state["setup"]["groups"]}\' and '
+                      f'\'/global/scratch/pl1_data/'
+                      f'{self.request0.state["setup"]["scratch"]}\', '
+                      f'respectively.']
+
+        self.assertEqual(len(pi_emails), len(mail.outbox))
+        for email in mail.outbox:
+            self.assertIn(email.to[0], pi_emails)
+            for section in email_body:
+                self.assertIn(section, email.body)
             self.assertEqual(settings.EMAIL_SENDER, email.from_email)
