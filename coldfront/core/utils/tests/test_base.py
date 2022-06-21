@@ -66,6 +66,7 @@ class TestBase(TestCase):
             'add_default_project_choices',
             'create_staff_group',
             'add_default_user_choices',
+            'add_directory_defaults'
         ]
         sys.stdout = open(os.devnull, 'w')
         for command in commands:
