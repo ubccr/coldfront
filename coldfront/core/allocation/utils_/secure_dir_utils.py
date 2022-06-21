@@ -8,8 +8,8 @@ from coldfront.core.allocation.models import Allocation, AllocationStatusChoice,
     AllocationAttributeType, AllocationAttribute, SecureDirAddUserRequest, \
     SecureDirRemoveUserRequest, SecureDirAddUserRequestStatusChoice, \
     SecureDirRemoveUserRequestStatusChoice, SecureDirRequest, \
-    SecureDirRequestStatusChoice
-from coldfront.core.project.models import Project
+    SecureDirRequestStatusChoice, AllocationUser, AllocationUserStatusChoice
+from coldfront.core.project.models import Project, ProjectUser
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.mail import send_email_template
@@ -17,22 +17,22 @@ from coldfront.core.utils.mail import send_email_template
 logger = logging.getLogger(__name__)
 
 
-def create_secure_dirs(project, subdirectory_name):
+def create_secure_dirs(project, subdirectory_name, scratch_or_groups):
     """
-    Creates two secure directory allocations: group directory and
-    scratch2 directory. Additionally creates an AllocationAttribute for each
-    new allocation that corresponds to the directory path on the cluster.
-
+    Creates one secure directory allocation: either a group directory or a
+    scratch2 directory, depending on scratch_or_groups. Additionally creates
+    an AllocationAttribute for the new allocation that corresponds to the
+    directory path on the cluster.
     Parameters:
         - project (Project): a Project object to create a secure directory
                             allocation for
-        - subdirectory_name (str): the name of the subdirectories on the cluster
-
+        - subdirectory_name (str): the name of the subdirectory on the cluster
+        - scratch_or_groups (str): one of either 'scratch' or 'groups'
     Returns:
-        - Tuple of (groups_allocation, scratch2_allocation)
-
+        - allocation
     Raises:
-        - TypeError, if either argument has an invalid type
+        - TypeError, if subdirectory_name has an invalid type
+        - ValueError, if scratch_or_groups does not have a valid value
         - ValidationError, if the Allocations already exist
     """
 
@@ -40,48 +40,39 @@ def create_secure_dirs(project, subdirectory_name):
         raise TypeError(f'Invalid Project {project}.')
     if not isinstance(subdirectory_name, str):
         raise TypeError(f'Invalid subdirectory_name {subdirectory_name}.')
+    if scratch_or_groups not in ['scratch', 'groups']:
+        raise ValueError(f'Invalid scratch_or_groups arg {scratch_or_groups}.')
 
-    scratch2_p2p3_directory = Resource.objects.get(name='Scratch2 P2/P3 Directory')
-    groups_p2p3_directory = Resource.objects.get(name='Groups P2/P3 Directory')
+    if scratch_or_groups == 'scratch':
+        p2p3_directory = Resource.objects.get(name='Scratch2 P2/P3 Directory')
+    else:
+        p2p3_directory = Resource.objects.get(name='Groups P2/P3 Directory')
 
     query = Allocation.objects.filter(project=project,
-                                      resources__in=[scratch2_p2p3_directory,
-                                                     groups_p2p3_directory])
+                                      resources__in=[p2p3_directory])
+
     if query.exists():
-        raise ValidationError('Allocations already exist')
+        raise ValidationError('Allocation already exist')
 
-    groups_allocation = Allocation.objects.create(
+    allocation = Allocation.objects.create(
         project=project,
         status=AllocationStatusChoice.objects.get(name='Active'),
         start_date=utc_now_offset_aware())
 
-    scratch2_allocation = Allocation.objects.create(
-        project=project,
-        status=AllocationStatusChoice.objects.get(name='Active'),
-        start_date=utc_now_offset_aware())
-
-    groups_p2p3_path = groups_p2p3_directory.resourceattribute_set.get(
-        resource_attribute_type__name='path')
-    scratch2_p2p3_path = scratch2_p2p3_directory.resourceattribute_set.get(
+    p2p3_path = p2p3_directory.resourceattribute_set.get(
         resource_attribute_type__name='path')
 
-    groups_allocation.resources.add(groups_p2p3_directory)
-    scratch2_allocation.resources.add(scratch2_p2p3_directory)
+    allocation.resources.add(p2p3_directory)
 
     allocation_attribute_type = AllocationAttributeType.objects.get(
         name='Cluster Directory Access')
 
-    groups_p2p3_subdirectory = AllocationAttribute.objects.create(
+    p2p3_subdirectory = AllocationAttribute.objects.create(
         allocation_attribute_type=allocation_attribute_type,
-        allocation=groups_allocation,
-        value=os.path.join(groups_p2p3_path.value, subdirectory_name))
+        allocation=allocation,
+        value=os.path.join(p2p3_path.value, subdirectory_name))
 
-    scratch2_p2p3_subdirectory = AllocationAttribute.objects.create(
-        allocation_attribute_type=allocation_attribute_type,
-        allocation=scratch2_allocation,
-        value=os.path.join(scratch2_p2p3_path.value, subdirectory_name))
-
-    return groups_allocation, scratch2_allocation
+    return allocation
 
 
 def get_secure_dir_manage_user_request_objects(self, action):
@@ -147,9 +138,7 @@ def secure_dir_request_state_status(secure_dir_request):
         return SecureDirRequestStatusChoice.objects.get(
             name='Under Review')
 
-    # The request has been approved, and is processing, scheduled, or complete.
-    # The states 'Approved - Scheduled' and 'Approved - Complete' should only
-    # be set once the request is scheduled for activation or activated.
+    # The request has been approved and is processing.
     return SecureDirRequestStatusChoice.objects.get(
         name='Approved - Processing')
 
@@ -216,6 +205,7 @@ class SecureDirRequestApprovalRunner(object):
         self.approve_request()
         groups_alloc, scratch_alloc = self.create_secure_dir()
         if groups_alloc and scratch_alloc:
+            # self.create_pi_alloc_users(groups_alloc, scratch_alloc)
             self.send_email()
 
     def approve_request(self):
@@ -232,7 +222,8 @@ class SecureDirRequestApprovalRunner(object):
         try:
             groups_alloc = \
                 create_secure_dirs(self.request_obj.project,
-                                   self.request_obj.state['paths']['groups'])
+                                   self.request_obj.state['setup']['groups'],
+                                   'groups')
         except Exception as e:
             message = f'Failed to create groups secure directory for ' \
                       f'{self.request_obj.project.name}.'
@@ -242,7 +233,8 @@ class SecureDirRequestApprovalRunner(object):
         try:
             scratch_alloc = \
                 create_secure_dirs(self.request_obj.project,
-                                   self.request_obj.state['paths']['scratch'])
+                                   self.request_obj.state['setup']['scratch'],
+                                   'scratch')
         except Exception as e:
             message = f'Failed to create scratch secure directory for ' \
                       f'{self.request_obj.project.name}.'
@@ -250,6 +242,23 @@ class SecureDirRequestApprovalRunner(object):
             logger.exception(e)
 
         return groups_alloc, scratch_alloc
+
+    def create_pi_alloc_users(self, groups_alloc, scratch_alloc):
+        """Creates active AllocationUsers for PIs of the project."""
+
+        pis = ProjectUser.objects.get(
+            project=self.request_obj.project,
+            status__name='Active',
+            role__name='Principal Investigator'
+        ).values_list('user', flat=True)
+
+        for pi in pis:
+            for alloc in [groups_alloc, scratch_alloc]:
+                AllocationUser.objects.create(
+                    allocation=alloc,
+                    user=pi,
+                    status=AllocationUserStatusChoice.objects.get(name='Active')
+                )
 
     def send_email(self):
         """Send a notification email to the requester and PI."""
@@ -268,8 +277,8 @@ class SecureDirRequestApprovalRunner(object):
                         'user_first_name': user.first_name,
                         'user_last_name': user.last_name,
                         'project': self.request_obj.project.name,
-                        'groups': self.request_obj.state['paths']['groups'],
-                        'scratch': self.request_obj.state['paths']['scratch'],
+                        'groups': self.request_obj.state['setup']['groups'],
+                        'scratch': self.request_obj.state['setup']['scratch'],
                         'signature': settings.EMAIL_SIGNATURE,
                         'support_email': settings.CENTER_HELP_EMAIL,
                     }
