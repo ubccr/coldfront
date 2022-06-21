@@ -808,10 +808,9 @@ class SecureDirRequestWizard(LoginRequiredMixin,
     def test_func(self):
         if self.request.user.is_superuser:
             return True
+
         signed_date = (
             self.request.user.userprofile.access_agreement_signed_date)
-        if signed_date is not None:
-            return True
 
         eligible_project = Q(project__name__startswith='fc_') | \
                            Q(project__name__startswith='ic_') | \
@@ -825,7 +824,7 @@ class SecureDirRequestWizard(LoginRequiredMixin,
             status__name='Active',
         ).exists()
 
-        if eligible_pi:
+        if eligible_pi and signed_date is not None:
             return True
 
         message = (
@@ -1034,7 +1033,7 @@ class SecureDirRequestWizard(LoginRequiredMixin,
 
         send_email_template(
             f'New Secure Directory Request',
-            'email/secure_dir_request/secure_dir_new_request_admin.txt',
+            'email/secure_dir_request/secure_dir_new_request_pi.txt',
             context,
             settings.EMAIL_SENDER,
             [pi.email])
