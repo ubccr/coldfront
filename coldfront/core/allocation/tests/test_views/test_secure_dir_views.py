@@ -311,53 +311,6 @@ class TestSecureDirManageUsersView(TestSecureDirBase):
         self.assertNotIn(self.user4.username, html)
         self.assertNotIn(self.admin.username, html)
 
-    def test_disabled_users(self):
-        """Test that users that are part of another scratch secure directory
-        are greyed out and cannot be added."""
-        # Create a second set of secure directories.
-        groups_allocation2 = \
-            create_secure_dirs(self.project0,
-                               'groups_test',
-                               'groups')
-        scratch_allocation2 = \
-            create_secure_dirs(self.project0,
-                               'scratch_test',
-                               'scratch')
-
-        # Add user to scratch directory.
-        alloc_user = \
-            AllocationUser.objects.create(
-                allocation=scratch_allocation2,
-                user=self.user1,
-                status=AllocationUserStatusChoice.objects.get(name='Active')
-            )
-
-        # Testing that user1 is greyed out in add users page for
-        # scratch directory.
-        kwargs = {'pk': self.scratch_allocation.pk, 'action': 'add'}
-        response = self.get_response(self.pi,
-                                     self.url,
-                                     kwargs=kwargs)
-
-        html = response.content.decode('utf-8')
-        self.assertIn('<td>user0</td>', html)
-        self.assertNotIn('<td>user1</td>', html)
-        self.assertNotIn('<td><div class="text-muted">user0</div></td>', html)
-        self.assertIn('<td><div class="text-muted">user1</div></td>', html)
-
-        # Testing that user1 is not greyed out in add users page for
-        # groups directory.
-        kwargs = {'pk': self.groups_allocation.pk, 'action': 'add'}
-        response = self.get_response(self.pi,
-                                     self.url,
-                                     kwargs=kwargs)
-
-        html = response.content.decode('utf-8')
-        self.assertIn('<td>user0</td>', html)
-        self.assertIn('<td>user1</td>', html)
-        self.assertNotIn('<td><div class="text-muted">user0</div></td>', html)
-        self.assertNotIn('<td><div class="text-muted">user1</div></td>', html)
-
     def test_add_users(self):
         """Test that the correct SecureDirAddUserRequest is created"""
 
