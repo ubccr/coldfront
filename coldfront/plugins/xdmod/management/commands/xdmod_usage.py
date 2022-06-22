@@ -13,10 +13,13 @@ from coldfront.plugins.xdmod.utils import (XDMOD_ACCOUNT_ATTRIBUTE_NAME,
                                            XDMOD_CLOUD_CORE_TIME_ATTRIBUTE_NAME,
                                            XDMOD_CLOUD_PROJECT_ATTRIBUTE_NAME,
                                            XDMOD_CPU_HOURS_ATTRIBUTE_NAME,
+                                           XDMOD_ACC_HOURS_ATTRIBUTE_NAME,
                                            XDMOD_RESOURCE_ATTRIBUTE_NAME,
+                                           XDMOD_STORAGE_ATTRIBUTE_NAME,
+                                           XDMOD_STORAGE_GROUP_ATTRIBUTE_NAME,
                                            XdmodError, XdmodNotFoundError,
                                            xdmod_fetch_cloud_core_time,
-                                           xdmod_fetch_total_cpu_hours)
+                                           xdmod_fetch_total_cpu_hours, xdmod_fetch_total_storage)
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +50,204 @@ class Command(BaseCommand):
             devnull = os.open(os.devnull, os.O_WRONLY)
             os.dup2(devnull, sys.stdout.fileno())
             sys.exit(1)
+
+    def process_total_storage(self):
+        header = [
+            'allocation_id',
+            'pi',
+            'account',
+            'resources',
+            'max_quota',
+            'total_storage',
+        ]
+
+        if self.print_header:
+            self.write('\t'.join(header))
+
+        allocations = Allocation.objects.prefetch_related(
+            'project',
+            'resources',
+            'allocationattribute_set',
+            'allocationuser_set'
+        ).filter(
+            allocationattribute__allocation_attribute_type__name__in=[
+                XDMOD_STORAGE_GROUP_ATTRIBUTE_NAME,
+                XDMOD_STORAGE_ATTRIBUTE_NAME,
+            ]
+        )
+
+        if self.fetch_expired:
+            allocations = allocations.filter(
+                ~Q(status__name='Active'),
+            )       
+        else:
+            allocations = allocations.filter(
+                status__name='Active',
+            )            
+            
+        if self.filter_user:
+            allocations = allocations.filter(project__pi__username=self.filter_user)
+
+        if self.filter_account:
+            allocations = allocations.filter(
+                Q(allocationattribute__allocation_attribute_type__name=XDMOD_STORAGE_GROUP_ATTRIBUTE_NAME) &
+                Q(allocationattribute__value=self.filter_account)
+            )
+
+        for s in allocations.distinct():
+            account_name = s.get_attribute(XDMOD_STORAGE_GROUP_ATTRIBUTE_NAME)
+            if not account_name:
+                logger.warn("%s attribute not found for allocation: %s",
+                            XDMOD_STORAGE_GROUP_ATTRIBUTE_NAME, s)
+                continue
+
+            cpu_hours = s.get_attribute(XDMOD_STORAGE_ATTRIBUTE_NAME)
+            if not cpu_hours:
+                logger.warn("%s attribute not found for allocation: %s",
+                            XDMOD_STORAGE_ATTRIBUTE_NAME, s)
+                continue
+
+            resources = []
+            for r in s.resources.all():
+                rname = r.get_attribute(XDMOD_RESOURCE_ATTRIBUTE_NAME)
+                if not rname and r.parent_resource:
+                    rname = r.parent_resource.get_attribute(
+                        XDMOD_RESOURCE_ATTRIBUTE_NAME)
+
+                if not rname:
+                    continue
+
+                if self.filter_resource and self.filter_resource != rname:
+                    continue
+
+                resources.append(rname)
+
+            if len(resources) == 0:
+                logger.warn("%s attribute not found on any resouces for allocation: %s",
+                            XDMOD_RESOURCE_ATTRIBUTE_NAME, s)
+                continue
+
+            try:
+                usage = xdmod_fetch_total_storage(
+                    s.start_date, s.end_date, account_name, resources=resources, statistics='avg_physical_usage')
+            except XdmodNotFoundError:
+                logger.warn(
+                    "No data in XDMoD found for allocation %s account %s resources %s", s, account_name, resources)
+                continue
+
+            logger.warn("Total GB = %s for allocation %s account %s GB %s resources %s",
+                        usage, s, account_name, cpu_hours, resources)
+            if self.sync:
+                s.set_usage(XDMOD_STORAGE_ATTRIBUTE_NAME, usage)
+
+            self.write('\t'.join([
+                str(s.id),
+                s.project.pi.username,
+                account_name,
+                ','.join(resources),
+                str(cpu_hours),
+                str(usage),
+            ]))
+
+
+
+    def process_total_gpu_hours(self):
+        header = [
+            'allocation_id',
+            'pi',
+            'account',
+            'resources',
+            'max_gpu_hours',
+            'total_cpu_hours',
+        ]
+
+        if self.print_header:
+            self.write('\t'.join(header))
+
+        allocations = Allocation.objects.prefetch_related(
+            'project',
+            'resources',
+            'allocationattribute_set',
+            'allocationuser_set'
+        ).filter(
+            allocationattribute__allocation_attribute_type__name__in=[
+                XDMOD_ACCOUNT_ATTRIBUTE_NAME,
+                XDMOD_ACC_HOURS_ATTRIBUTE_NAME,
+            ]
+        )
+
+        if self.fetch_expired:
+            allocations = allocations.filter(
+                ~Q(status__name='Active'),
+            )       
+        else:
+            allocations = allocations.filter(
+                status__name='Active',
+            )            
+            
+        if self.filter_user:
+            allocations = allocations.filter(project__pi__username=self.filter_user)
+
+        if self.filter_account:
+            allocations = allocations.filter(
+                Q(allocationattribute__allocation_attribute_type__name=XDMOD_ACCOUNT_ATTRIBUTE_NAME) &
+                Q(allocationattribute__value=self.filter_account)
+            )
+
+        for s in allocations.distinct():
+            account_name = s.get_attribute(XDMOD_ACCOUNT_ATTRIBUTE_NAME)
+            if not account_name:
+                logger.warn("%s attribute not found for allocation: %s",
+                            XDMOD_ACCOUNT_ATTRIBUTE_NAME, s)
+                continue
+
+            cpu_hours = s.get_attribute(XDMOD_ACC_HOURS_ATTRIBUTE_NAME)
+            if not cpu_hours:
+                logger.warn("%s attribute not found for allocation: %s",
+                            XDMOD_ACC_HOURS_ATTRIBUTE_NAME, s)
+                continue
+
+            resources = []
+            for r in s.resources.all():
+                rname = r.get_attribute(XDMOD_RESOURCE_ATTRIBUTE_NAME)
+                if not rname and r.parent_resource:
+                    rname = r.parent_resource.get_attribute(
+                        XDMOD_RESOURCE_ATTRIBUTE_NAME)
+
+                if not rname:
+                    continue
+
+                if self.filter_resource and self.filter_resource != rname:
+                    continue
+
+                resources.append(rname)
+
+            if len(resources) == 0:
+                logger.warn("%s attribute not found on any resouces for allocation: %s",
+                            XDMOD_RESOURCE_ATTRIBUTE_NAME, s)
+                continue
+
+            try:
+                usage = xdmod_fetch_total_storage(
+                    s.start_date, s.end_date, account_name, resources=resources, statistics='physical_usage')
+            except XdmodNotFoundError:
+                logger.warn(
+                    "No data in XDMoD found for allocation %s account %s resources %s", s, account_name, resources)
+                continue
+
+            logger.warn("Total Accelerator hours = %s for allocation %s account %s gpu_hours %s resources %s",
+                        usage, s, account_name, cpu_hours, resources)
+            if self.sync:
+                s.set_usage(XDMOD_ACC_HOURS_ATTRIBUTE_NAME, usage)
+
+            self.write('\t'.join([
+                str(s.id),
+                s.project.pi.username,
+                account_name,
+                ','.join(resources),
+                str(cpu_hours),
+                str(usage),
+            ]))
 
     def process_total_cpu_hours(self):
         header = [
@@ -276,6 +477,10 @@ class Command(BaseCommand):
             self.process_total_cpu_hours()
         elif statistic == 'cloud_core_time':
             self.process_cloud_core_time()
+        elif statistic == 'total_acc_hours':
+            self.process_total_gpu_hours()
+        elif statistic == 'total_storage':
+            self.process_total_storage()          
         else:
             logger.error("Unsupported XDMoD statistic")
             sys.exit(1)
