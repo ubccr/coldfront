@@ -14,12 +14,12 @@ Project Detail
 {% if is_allowed_to_update_project %}
   {% if project.needs_review %}
     <div class="alert alert-warning">
-      You need to review this project. <a href="{% url 'project-review' project.pk %}">Review Project</a>
+      You need to <a href="{% url 'project-review' project.pk %}">review this project</a>.
     </div>
   {% elif project.can_be_reviewed and project.status.name == 'Expired' %}
     <div class="alert alert-warning">
-      This project has expired. You cannot make any changes. You have {{ project.expires_in|add:'30' }} days left to renew.
-      <a href="{% url 'project-review' project.pk %}">Review Project</a>
+      This project has expired. You cannot make any changes. You have {{ project.expires_in|add:'30' }} days left to
+      <a href="{% url 'project-review' project.pk %}">review your project</a>.
     </div>
   {% elif project.can_be_reviewed %}
     <div class="alert alert-warning">

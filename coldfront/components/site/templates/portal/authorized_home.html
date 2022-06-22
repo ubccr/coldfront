@@ -9,9 +9,9 @@
     <h2><a href="{% url 'project-list' %}">Projects &raquo;</a></h2>
     <hr>
     <p>
-      If you are a faculty/staff member you can submit a project request using <a href="{% url 'project-create' %}">this form</a>. Once submitted you can add
-      any additional users to your project and request a resource allocation. If you are a student you do not have access
-      to submitting a project request. You can, however, search you PI's username <a href="{% url 'project-list' %}">here</a> and request access to a project
+      If you are a faculty/staff member you can submit a <a href="{% url 'project-create' %}">project request</a>. Graduate students must have a PI to submit a project request.
+      Once submitted you can add any additional users to your project and request a resource allocation. If you are an undergraduate student you do not have access
+      to submitting a project request. You can, however, search for your <a href="{% url 'project-list' %}">PI's username</a> and request access to a project
       they already have.
     </p>
     
@@ -93,7 +93,7 @@
     <hr>
     <p>
       Resource allocations are required if you want to gain access to IU's resources. You must have a project to request an allocation.
-      A list of what is available can be found <a href="{% url 'resource-list' %}">here</a>. Users must be added to an allocation in
+      Be sure to review the <a href="{% url 'resource-list' %}">list of available resources</a>. Users must be added to an allocation in
       order to gain access to its resource. A project can have multiple allocations.
     </p>
 
