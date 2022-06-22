@@ -174,9 +174,9 @@ class SecureDirManageUsersView(LoginRequiredMixin,
 
             # Users that are part of an existing secure scratch directory
             # cannot be added to another secure scratch directory.
-            scratch2_p2p3_directory = Resource.objects.get(
-                name='Scratch2 P2/P3 Directory')
-            if self.add_bool and alloc_obj.resources.filter(name='Scratch2 P2/P3 Directory').exists():
+            scratch_p2p3_directory = Resource.objects.get(
+                name='Scratch P2/P3 Directory')
+            if self.add_bool and alloc_obj.resources.filter(name='Scratch P2/P3 Directory').exists():
                 context['add_scratch'] = True
 
                 for i, form in enumerate(formset):
@@ -186,7 +186,7 @@ class SecureDirManageUsersView(LoginRequiredMixin,
                         AllocationUser.objects.filter(user=user,
                                                       status__name='Active',
                                                       allocation__resources__in=[
-                                                          scratch2_p2p3_directory])
+                                                          scratch_p2p3_directory])
 
                     if allocation_user.exists():
                         form.fields.pop('selected')

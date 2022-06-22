@@ -47,16 +47,16 @@ class TestCreateSecureDir(TestBase):
 
     def test_allocation_objects_created(self):
         """Testing that allocation objects are created"""
-        scratch2_p2p3_directory = Resource.objects.get(
-            name='Scratch2 P2/P3 Directory')
+        scratch_p2p3_directory = Resource.objects.get(
+            name='Scratch P2/P3 Directory')
         groups_p2p3_directory = Resource.objects.get(
             name='Groups P2/P3 Directory')
 
         groups_p2p3_path = \
             groups_p2p3_directory.resourceattribute_set.get(
                 resource_attribute_type__name='path')
-        scratch2_p2p3_path = \
-            scratch2_p2p3_directory.resourceattribute_set.get(
+        scratch_p2p3_path = \
+            scratch_p2p3_directory.resourceattribute_set.get(
                 resource_attribute_type__name='path')
 
         groups_allocation = Allocation.objects.filter(
@@ -64,16 +64,16 @@ class TestCreateSecureDir(TestBase):
             status=AllocationStatusChoice.objects.get(name='Active'),
             resources=groups_p2p3_directory)
 
-        scratch2_allocation = Allocation.objects.filter(
+        scratch_allocation = Allocation.objects.filter(
             project=self.project1,
             status=AllocationStatusChoice.objects.get(name='Active'),
-            resources=scratch2_p2p3_directory)
+            resources=scratch_p2p3_directory)
 
         self.assertTrue(groups_allocation.exists())
-        self.assertTrue(scratch2_allocation.exists())
+        self.assertTrue(scratch_allocation.exists())
 
         groups_allocation = groups_allocation.first()
-        scratch2_allocation = scratch2_allocation.first()
+        scratch_allocation = scratch_allocation.first()
 
         allocation_attribute_type = AllocationAttributeType.objects.get(
             name='Cluster Directory Access')
@@ -83,14 +83,14 @@ class TestCreateSecureDir(TestBase):
             value=os.path.join(groups_p2p3_path.value,
                                self.groups_subdirectory_name))
 
-        scratch2_p2p3_subdirectory = AllocationAttribute.objects.filter(
+        scratch_p2p3_subdirectory = AllocationAttribute.objects.filter(
             allocation_attribute_type=allocation_attribute_type,
-            allocation=scratch2_allocation,
-            value=os.path.join(scratch2_p2p3_path.value,
+            allocation=scratch_allocation,
+            value=os.path.join(scratch_p2p3_path.value,
                                self.scratch_subdirectory_name))
 
         self.assertTrue(groups_p2p3_subdirectory.exists())
-        self.assertTrue(scratch2_p2p3_subdirectory.exists())
+        self.assertTrue(scratch_p2p3_subdirectory.exists())
 
 
 class TestGetSecureDirManageUserRequestObjects(TestBase):
