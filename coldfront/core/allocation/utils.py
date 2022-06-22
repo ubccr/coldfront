@@ -235,7 +235,7 @@ def review_cluster_access_requests_url():
 def create_secure_dirs(project, subdirectory_name, scratch_or_groups):
     """
     Creates one secure directory allocation: either a group directory or a
-    scratch2 directory, depending on scratch_or_groups. Additionally creates
+    scratch directory, depending on scratch_or_groups. Additionally creates
     an AllocationAttribute for the new allocation that corresponds to the
     directory path on the cluster.
 
@@ -263,7 +263,7 @@ def create_secure_dirs(project, subdirectory_name, scratch_or_groups):
         raise ValueError(f'Invalid scratch_or_groups arg {scratch_or_groups}.')
 
     if scratch_or_groups == 'scratch':
-        p2p3_directory = Resource.objects.get(name='Scratch2 P2/P3 Directory')
+        p2p3_directory = Resource.objects.get(name='Scratch P2/P3 Directory')
     else:
         p2p3_directory = Resource.objects.get(name='Groups P2/P3 Directory')
 
