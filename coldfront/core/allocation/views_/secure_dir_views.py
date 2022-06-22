@@ -169,26 +169,6 @@ class SecureDirManageUsersView(LoginRequiredMixin,
             formset = formset_factory(
                 SecureDirManageUsersForm, max_num=len(user_list))
             formset = formset(initial=user_list, prefix='userform')
-
-            # Users that are part of an existing secure scratch directory
-            # cannot be added to another secure scratch directory.
-            scratch_p2p3_directory = Resource.objects.get(
-                name='Scratch P2/P3 Directory')
-            if self.add_bool and alloc_obj.resources.filter(name='Scratch P2/P3 Directory').exists():
-                context['add_scratch'] = True
-
-                for i, form in enumerate(formset):
-                    user = User.objects.get(username=user_list[i]['username'])
-
-                    allocation_user = \
-                        AllocationUser.objects.filter(user=user,
-                                                      status__name='Active',
-                                                      allocation__resources__in=[
-                                                          scratch_p2p3_directory])
-
-                    if allocation_user.exists():
-                        form.fields.pop('selected')
-
             context['formset'] = formset
 
         context['allocation'] = alloc_obj
