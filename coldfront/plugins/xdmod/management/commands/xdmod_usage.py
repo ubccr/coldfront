@@ -228,8 +228,8 @@ class Command(BaseCommand):
                 continue
 
             try:
-                usage = xdmod_fetch_total_storage(
-                    s.start_date, s.end_date, account_name, resources=resources, statistics='physical_usage')
+                usage = xdmod_fetch_total_cpu_hours(
+                    s.start_date, s.end_date, account_name, resources=resources, statistics='total_gpu_hours')
             except XdmodNotFoundError:
                 logger.warn(
                     "No data in XDMoD found for allocation %s account %s resources %s", s, account_name, resources)
