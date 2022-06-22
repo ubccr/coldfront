@@ -2,9 +2,7 @@ import datetime
 import json
 from decimal import Decimal
 
-import pytz
 import sys
-import os
 from csv import DictReader
 from io import StringIO
 
@@ -13,11 +11,11 @@ from django.core.management import call_command, CommandError
 
 from coldfront.api.statistics.utils import get_accounting_allocation_objects, \
     create_project_allocation, create_user_project_allocation
-from coldfront.config import settings
 from coldfront.core.allocation.models import AllocationAttributeType, \
     AllocationUserAttribute
 from coldfront.core.statistics.models import Job
 from coldfront.core.user.models import UserProfile
+from coldfront.core.utils.common import display_time_zone_date_to_utc_datetime
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 from coldfront.core.project.models import Project, ProjectStatusChoice, \
@@ -258,14 +256,6 @@ class TestNewClusterAccounts(TestBaseExportData):
         self.pre_time = utc_now_offset_aware().replace(tzinfo=None,
                                                        microsecond=0)
 
-    def convert_time_to_utc(self, time):
-        """Convert naive LA time to UTC time"""
-        local_tz = pytz.timezone('America/Los_Angeles')
-        tz = pytz.timezone(settings.TIME_ZONE)
-        naive_dt = datetime.datetime.combine(time, datetime.datetime.min.time())
-        new_time = local_tz.localize(naive_dt).astimezone(tz)
-        return new_time
-
     def test_json_no_date(self):
         """Testing new_cluster_accounts subcommand with NO date arg passed,
         exporting as JSON"""
@@ -291,8 +281,8 @@ class TestNewClusterAccounts(TestBaseExportData):
         start_date = datetime.datetime.strftime(
             self.pre_time - datetime.timedelta(days=4), ABR_DATE_FORMAT)
 
-        new_date = self.convert_time_to_utc(self.pre_time -
-                                            datetime.timedelta(days=10))
+        new_date = display_time_zone_date_to_utc_datetime(
+            (self.pre_time - datetime.timedelta(days=10)).date())
 
         allocation_user_attr_obj = AllocationUserAttribute.objects.get(
             allocation_attribute_type=self.cluster_account_status,
@@ -349,8 +339,8 @@ class TestNewClusterAccounts(TestBaseExportData):
         start_date = datetime.datetime.strftime(
             self.pre_time - datetime.timedelta(days=4), ABR_DATE_FORMAT)
 
-        new_date = self.convert_time_to_utc(self.pre_time -
-                                            datetime.timedelta(days=10))
+        new_date = display_time_zone_date_to_utc_datetime(
+            (self.pre_time - datetime.timedelta(days=10)).date())
 
         allocation_user_attr_obj = AllocationUserAttribute.objects.get(
             allocation_attribute_type=self.cluster_account_status,
@@ -695,8 +685,8 @@ class TestNewProjectRequests(TestBase):
                     project=project,
                     survey_answers={'abcd': 'bcda'},
                     pi=test_user,
-                    created=self.convert_time_to_utc(
-                        datetime.datetime.strptime('05-05-2022', '%m-%d-%Y')),
+                    created=display_time_zone_date_to_utc_datetime(
+                        datetime.date(2022, 5, 5)),
                     status=ProjectAllocationRequestStatusChoice.objects.get(
                         name='Approved - Complete'))
 
@@ -707,8 +697,8 @@ class TestNewProjectRequests(TestBase):
                     project=project,
                     survey_answers={'abcd': 'bcda'},
                     pi=test_user,
-                    created=self.convert_time_to_utc(
-                        datetime.datetime.strptime('01-01-2021', '%m-%d-%Y')),
+                    created=display_time_zone_date_to_utc_datetime(
+                        datetime.date(2021, 1, 1)),
                     status=ProjectAllocationRequestStatusChoice.objects.get(
                         name='Approved - Complete'))
 
@@ -734,8 +724,9 @@ class TestNewProjectRequests(TestBase):
             request.extend([project, project_status, requester, pi])
             savio_queryset.append(request)
 
-        self.threashold = '01-01-2022'
-        date = self.convert_time_to_utc(datetime.datetime.strptime(self.threashold, '%m-%d-%Y'))
+        self.threshold = '01-01-2022'
+        date = display_time_zone_date_to_utc_datetime(
+            datetime.datetime.strptime(self.threshold, '%m-%d-%Y').date())
 
         savio_newqueryset = []
         savio_newrequests = SavioProjectAllocationRequest.objects.all().\
@@ -830,7 +821,7 @@ class TestNewProjectRequests(TestBase):
         # NOTE: csv is tested in other tests, only check json here
         out, err = StringIO(''), StringIO('')
         call_command('export_data', 'new_project_requests',
-                     '--format=json', '--type=savio', '--start_date=' + self.threashold,
+                     '--format=json', '--type=savio', '--start_date=' + self.threshold,
                      stdout=out, stderr=err)
 
         sys.stdout = sys.__stdout__
@@ -850,16 +841,6 @@ class TestNewProjectRequests(TestBase):
                 self.assertEqual(str(compare[key]), str(item[key]))
 
         self.assertEqual(len(query_set), count)
-
-    @staticmethod
-    def convert_time_to_utc(time):
-        """Convert naive LA time to UTC time"""
-        local_tz = pytz.timezone('America/Los_Angeles')
-        tz = pytz.timezone(settings.TIME_ZONE)
-        naive_dt = datetime.datetime.combine(time, datetime.datetime.min.time())
-        new_time = local_tz.localize(naive_dt).astimezone(tz).isoformat()
-
-        return new_time
 
 
 class TestSurveyResponses(TestBase):

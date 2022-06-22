@@ -23,6 +23,7 @@ from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.statistics.models import Job
 from coldfront.core.user.models import ExpiringToken
 from coldfront.core.user.models import UserProfile
+from coldfront.core.utils.common import utc_datetime_to_display_time_zone_date
 
 from django.contrib.auth.models import User
 from django.db.models import Sum
@@ -69,8 +70,10 @@ class TestJobList(TestJobBase):
                 name=f'PROJECT_{i}', status=project_status)
             allocation_objects = create_project_allocation(
                 project, allocation_amount)
-            allocation_objects.allocation.start_date = self.default_start
-            allocation_objects.allocation.end_date = self.default_end
+            allocation_objects.allocation.start_date = \
+                utc_datetime_to_display_time_zone_date(self.default_start)
+            allocation_objects.allocation.end_date = \
+                utc_datetime_to_display_time_zone_date(self.default_end)
             allocation_objects.allocation.save()
             allocation_pks[project.pk] = allocation_objects.allocation.pk
 

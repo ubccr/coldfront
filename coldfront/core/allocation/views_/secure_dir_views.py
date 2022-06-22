@@ -4,13 +4,11 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
-from django.core.mail import send_mail
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
 from django.forms import formset_factory
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
-from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views.generic import ListView, FormView
 from django.views.generic.base import TemplateView, View
@@ -28,6 +26,7 @@ from coldfront.core.allocation.models import (Allocation,
 from coldfront.core.allocation.utils import \
     get_secure_dir_manage_user_request_objects
 from coldfront.core.project.models import ProjectUser
+from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.mail import send_email_template
 
@@ -261,25 +260,20 @@ class SecureDirManageUsersView(LoginRequiredMixin,
                 }
 
                 try:
-                    msg_plain = \
-                        render_to_string(
-                            ('email/secure_dir_request/'
-                             'pending_secure_dir_manage_user_requests.txt'),
-                            context)
-                    msg_html = \
-                        render_to_string(
-                            ('email/secure_dir_request/'
-                             'pending_secure_dir_manage_user_requests.html'),
-                            context)
-
-                    send_mail(
-                        f'Pending Secure Directory '
-                        f'{self.language_dict["noun"]} Requests',
-                        msg_plain,
-                        settings.EMAIL_SENDER,
-                        settings.EMAIL_ADMIN_LIST,
-                        html_message=msg_html,
-                    )
+                    subject = f'Pending Secure Directory '\
+                              f'{self.language_dict["noun"]} Requests'
+                    plain_template = 'email/secure_dir_request/'\
+                                     'pending_secure_dir_manage_' \
+                                     'user_requests.txt'
+                    html_template = 'email/secure_dir_request/' \
+                                    'pending_secure_dir_manage_' \
+                                    'user_requests.html'
+                    send_email_template(subject,
+                                        plain_template,
+                                        context,
+                                        settings.EMAIL_SENDER,
+                                        settings.EMAIL_ADMIN_LIST,
+                                        html_template=html_template)
 
                 except Exception as e:
                     message = f'Failed to send notification email.'
@@ -315,8 +309,10 @@ class SecureDirManageUsersRequestListView(LoginRequiredMixin,
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('allocation.view_securediradduserrequest') and \
-                self.request.user.has_perm('allocation.view_securedirremoveuserrequest'):
+        if self.request.user.has_perm(
+                'allocation.view_securediradduserrequest') and \
+                self.request.user.has_perm(
+                    'allocation.view_securedirremoveuserrequest'):
             return True
 
         message = (
