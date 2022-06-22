@@ -232,22 +232,26 @@ def review_cluster_access_requests_url():
     return urljoin(domain, view)
 
 
-def create_secure_dirs(project, subdirectory_name):
+def create_secure_dirs(project, subdirectory_name, scratch_or_groups):
     """
-    Creates two secure directory allocations: group directory and
-    scratch2 directory. Additionally creates an AllocationAttribute for each
-    new allocation that corresponds to the directory path on the cluster.
+    Creates one secure directory allocation: either a group directory or a
+    scratch directory, depending on scratch_or_groups. Additionally creates
+    an AllocationAttribute for the new allocation that corresponds to the
+    directory path on the cluster.
 
     Parameters:
         - project (Project): a Project object to create a secure directory
                             allocation for
-        - subdirectory_name (str): the name of the subdirectories on the cluster
+        - subdirectory_name (str): the name of the subdirectory on the cluster
+        - scratch_or_groups (str): one of either 'scratch' or 'groups'
+
 
     Returns:
-        - Tuple of (groups_allocation, scratch2_allocation)
+        - allocation
 
     Raises:
-        - TypeError, if either argument has an invalid type
+        - TypeError, if subdirectory_name has an invalid type
+        - ValueError, if scratch_or_groups does not have a valid value
         - ValidationError, if the Allocations already exist
     """
 
@@ -255,48 +259,39 @@ def create_secure_dirs(project, subdirectory_name):
         raise TypeError(f'Invalid Project {project}.')
     if not isinstance(subdirectory_name, str):
         raise TypeError(f'Invalid subdirectory_name {subdirectory_name}.')
+    if scratch_or_groups not in ['scratch', 'groups']:
+        raise ValueError(f'Invalid scratch_or_groups arg {scratch_or_groups}.')
 
-    scratch2_p2p3_directory = Resource.objects.get(name='Scratch2 P2/P3 Directory')
-    groups_p2p3_directory = Resource.objects.get(name='Groups P2/P3 Directory')
+    if scratch_or_groups == 'scratch':
+        p2p3_directory = Resource.objects.get(name='Scratch P2/P3 Directory')
+    else:
+        p2p3_directory = Resource.objects.get(name='Groups P2/P3 Directory')
 
     query = Allocation.objects.filter(project=project,
-                                      resources__in=[scratch2_p2p3_directory,
-                                                     groups_p2p3_directory])
+                                      resources__in=[p2p3_directory])
+
     if query.exists():
-        raise ValidationError('Allocations already exist')
+        raise ValidationError('Allocation already exist')
 
-    groups_allocation = Allocation.objects.create(
+    allocation = Allocation.objects.create(
         project=project,
         status=AllocationStatusChoice.objects.get(name='Active'),
         start_date=utc_now_offset_aware())
 
-    scratch2_allocation = Allocation.objects.create(
-        project=project,
-        status=AllocationStatusChoice.objects.get(name='Active'),
-        start_date=utc_now_offset_aware())
-
-    groups_p2p3_path = groups_p2p3_directory.resourceattribute_set.get(
-        resource_attribute_type__name='path')
-    scratch2_p2p3_path = scratch2_p2p3_directory.resourceattribute_set.get(
+    p2p3_path = p2p3_directory.resourceattribute_set.get(
         resource_attribute_type__name='path')
 
-    groups_allocation.resources.add(groups_p2p3_directory)
-    scratch2_allocation.resources.add(scratch2_p2p3_directory)
+    allocation.resources.add(p2p3_directory)
 
     allocation_attribute_type = AllocationAttributeType.objects.get(
         name='Cluster Directory Access')
 
-    groups_p2p3_subdirectory = AllocationAttribute.objects.create(
+    p2p3_subdirectory = AllocationAttribute.objects.create(
         allocation_attribute_type=allocation_attribute_type,
-        allocation=groups_allocation,
-        value=os.path.join(groups_p2p3_path.value, subdirectory_name))
+        allocation=allocation,
+        value=os.path.join(p2p3_path.value, subdirectory_name))
 
-    scratch2_p2p3_subdirectory = AllocationAttribute.objects.create(
-        allocation_attribute_type=allocation_attribute_type,
-        allocation=scratch2_allocation,
-        value=os.path.join(scratch2_p2p3_path.value, subdirectory_name))
-
-    return groups_allocation, scratch2_allocation
+    return allocation
 
 
 def get_secure_dir_manage_user_request_objects(self, action):

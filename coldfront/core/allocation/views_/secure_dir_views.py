@@ -26,6 +26,7 @@ from coldfront.core.allocation.models import (Allocation,
 from coldfront.core.allocation.utils import \
     get_secure_dir_manage_user_request_objects
 from coldfront.core.project.models import ProjectUser
+from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.mail import send_email_template
 
@@ -308,8 +309,10 @@ class SecureDirManageUsersRequestListView(LoginRequiredMixin,
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('allocation.view_securediradduserrequest') and \
-                self.request.user.has_perm('allocation.view_securedirremoveuserrequest'):
+        if self.request.user.has_perm(
+                'allocation.view_securediradduserrequest') and \
+                self.request.user.has_perm(
+                    'allocation.view_securedirremoveuserrequest'):
             return True
 
         message = (
