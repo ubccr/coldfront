@@ -26,6 +26,7 @@ from coldfront.core.allocation.models import (Allocation,
 from coldfront.core.allocation.utils import \
     get_secure_dir_manage_user_request_objects
 from coldfront.core.project.models import ProjectUser
+from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.mail import send_email_template
 
@@ -168,6 +169,26 @@ class SecureDirManageUsersView(LoginRequiredMixin,
             formset = formset_factory(
                 SecureDirManageUsersForm, max_num=len(user_list))
             formset = formset(initial=user_list, prefix='userform')
+
+            # Users that are part of an existing secure scratch directory
+            # cannot be added to another secure scratch directory.
+            scratch_p2p3_directory = Resource.objects.get(
+                name='Scratch P2/P3 Directory')
+            if self.add_bool and alloc_obj.resources.filter(name='Scratch P2/P3 Directory').exists():
+                context['add_scratch'] = True
+
+                for i, form in enumerate(formset):
+                    user = User.objects.get(username=user_list[i]['username'])
+
+                    allocation_user = \
+                        AllocationUser.objects.filter(user=user,
+                                                      status__name='Active',
+                                                      allocation__resources__in=[
+                                                          scratch_p2p3_directory])
+
+                    if allocation_user.exists():
+                        form.fields.pop('selected')
+
             context['formset'] = formset
 
         context['allocation'] = alloc_obj
@@ -308,8 +329,10 @@ class SecureDirManageUsersRequestListView(LoginRequiredMixin,
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('allocation.view_securediradduserrequest') and \
-                self.request.user.has_perm('allocation.view_securedirremoveuserrequest'):
+        if self.request.user.has_perm(
+                'allocation.view_securediradduserrequest') and \
+                self.request.user.has_perm(
+                    'allocation.view_securedirremoveuserrequest'):
             return True
 
         message = (
