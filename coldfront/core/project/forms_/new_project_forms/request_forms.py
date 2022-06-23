@@ -9,6 +9,7 @@ from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils_.new_project_utils import non_denied_new_project_request_statuses
 from coldfront.core.project.utils_.renewal_utils import non_denied_renewal_request_statuses
 from coldfront.core.user.models import EmailAddress
+from coldfront.core.user.utils import is_lbl_employee
 from coldfront.core.utils.common import utc_now_offset_aware
 
 from django import forms
@@ -187,19 +188,8 @@ class SavioProjectExistingPIForm(forms.Form):
 
         if flag_enabled('LRC_ONLY'):
             # Exclude users with non-LBL emails.
-            users_with_non_lbl_primary_emails = set(ProjectUser.objects.exclude(
-                user__email__endswith='@lbl.gov'
-            ).values_list('user__pk', flat=True))
-
-            # Checking if users have a non-primary LBL email.
-            users_with_lbl_nonprimary_emails = set(EmailAddress.objects.filter(
-                email__endswith='@lbl.gov',
-                is_verified=True
-            ).values_list('user__pk', flat=True))
-
             users_with_non_lbl_email = \
-                users_with_non_lbl_primary_emails.difference(
-                    users_with_lbl_nonprimary_emails)
+                set([user.pk for user in User.objects.all() if not is_lbl_employee(user)])
 
             exclude_user_pks.update(users_with_non_lbl_email)
 
