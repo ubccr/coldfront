@@ -53,7 +53,7 @@ class LocalUserSearch(UserSearch):
         elif user_search_string and search_by == 'username_only':
             entries = get_user_model().objects.filter(username=user_search_string, is_active=True)
         else:
-            get_user_model().objects.all()[:size_limit]
+            entries = get_user_model().objects.all()[:size_limit]
 
         users = []
         for idx, user in enumerate(entries, 1):

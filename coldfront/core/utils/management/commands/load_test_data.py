@@ -100,6 +100,8 @@ resources = [
     ('Cluster', None, 'Chemistry', 'Chemistry Cluster', True, False, False),
     ('Cluster', None, 'Physics', 'Physics Cluster', True, False, False),
     ('Cluster', None, 'Industry', 'Industry Cluster', True, False, False),
+    ('Cluster', None, 'University Metered HPC', 'SU metered Cluster',
+        True, True, True),
 
     # Cluster Partitions scavengers
     ('Cluster Partition', 'Chemistry', 'Chemistry-scavenger',
@@ -322,6 +324,37 @@ class Command(BaseCommand):
             status=AllocationUserStatusChoice.objects.get(name='Active')
         )
         pi2 = get_user_model().objects.get(username='sfoster')
+
+        # Add metered allocation
+        allocation_obj, _ = Allocation.objects.get_or_create(
+            project=project_obj,
+            status=AllocationStatusChoice.objects.get(name='Active'),
+            start_date=start_date,
+            end_date=end_date,
+            justification='I need compute time on metered cluster.'
+        )
+        allocation_obj.resources.add(
+            Resource.objects.get(name='University Metered HPC'))
+        allocation_obj.save()
+        allocation_attribute_type_obj = AllocationAttributeType.objects.get(
+            name='slurm_account_name')
+        AllocationAttribute.objects.get_or_create(
+            allocation_attribute_type=allocation_attribute_type_obj,
+            allocation=allocation_obj,
+            value='cgray-metered')
+        allocation_attribute_type_obj = AllocationAttributeType.objects.get(
+            name='Core Usage (Hours)')
+        AllocationAttribute.objects.get_or_create(
+            allocation_attribute_type=allocation_attribute_type_obj,
+            allocation=allocation_obj,
+            value='150000')
+        allocation_user_obj = AllocationUser.objects.create(
+            allocation=allocation_obj,
+            user=pi1,
+            status=AllocationUserStatusChoice.objects.get(name='Active')
+        )
+
+
         pi2.userprofile.is_pi = True
         pi2.save()
         project_obj, _ = Project.objects.get_or_create(
@@ -476,6 +509,7 @@ class Command(BaseCommand):
             status=AllocationUserStatusChoice.objects.get(name='Active')
         )
 
+        # Set attributes for resources
         ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
             name='quantity_default_value'), resource=Resource.objects.get(name='University Cloud Storage'), value=1)
         ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
@@ -502,6 +536,9 @@ class Command(BaseCommand):
             name='slurm_cluster'), resource=Resource.objects.get(name='Industry'), value='industry')
         ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
             name='slurm_cluster'), resource=Resource.objects.get(name='University HPC'), value='university-hpc')
+        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
+            name='slurm_cluster'), resource=Resource.objects.get(name='University Metered HPC'), 
+            value='metered-hpc')
 
         ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
             name='slurm_specs'), resource=Resource.objects.get(name='Chemistry-scavenger'), value='QOS+=scavenger:Fairshare=100')
@@ -513,6 +550,21 @@ class Command(BaseCommand):
             name='slurm_specs'), resource=Resource.objects.get(name='Chemistry-cgray'), value='QOS+=cgray:Fairshare=100')
         ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
             name='slurm_specs'), resource=Resource.objects.get(name='Physics-sfoster'), value='QOS+=sfoster:Fairshare=100')
+        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
+            name='slurm_specs'), resource=Resource.objects.get(name='University Metered HPC'), 
+            value='GrpTRESMins=cpu={cpumin}')
+
+        #slurm_specs_attrib_list for University Metered HPC
+        attriblist_list = [ '#Set cpumin from Core Usage attribute',
+            'cpumin := :Core Usage (Hours)',
+            '#Default to 1 SU',
+            'cpumin |= 1',
+            '#Convert to cpumin',
+            'cpumin *= 60'
+        ]
+        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
+            name='slurm_specs_attriblist'), resource=Resource.objects.get(name='University Metered HPC'), 
+            value="\n".join(attriblist_list))
 
         # call_command('loaddata', 'test_data.json')
 

@@ -28,3 +28,25 @@ class GrantDeleteForm(forms.Form):
         max_length=30, required=False, disabled=True)
     grant_end = forms.CharField(max_length=150, required=False, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
+
+
+class GrantDownloadForm(forms.Form):
+    pk = forms.IntegerField(required=False, disabled=True)
+    title = forms.CharField(required=False, disabled=True)
+    project_pk = forms.IntegerField(required=False, disabled=True)
+    pi_first_name = forms.CharField(required=False, disabled=True)
+    pi_last_name = forms.CharField(required=False, disabled=True)
+    role = forms.CharField(required=False, disabled=True)
+    grant_pi = forms.CharField(required=False, disabled=True)
+    total_amount_awarded = forms.FloatField(required=False, disabled=True)
+    funding_agency = forms.CharField(required=False, disabled=True)
+    grant_number = forms.CharField(required=False, disabled=True)
+    grant_start = forms.DateField(required=False, disabled=True)
+    grant_end = forms.DateField(required=False, disabled=True)
+    percent_credit = forms.FloatField(required=False, disabled=True)
+    direct_funding = forms.FloatField(required=False, disabled=True)
+    selected = forms.BooleanField(initial=False, required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['pk'].widget = forms.HiddenInput()

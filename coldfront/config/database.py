@@ -13,7 +13,7 @@ from coldfront.config.env import ENV
 #  DB_URL=mysql://user:password@127.0.0.1:3306/database
 #
 # Postgresql:
-#  DB_URL=psql://user:password@127.0.0.1:8458/database
+#  DB_URL=psql://user:password@127.0.0.1:5432/database
 #------------------------------------------------------------------------------
 
 DATABASES = {
@@ -25,6 +25,10 @@ DATABASES = {
          'HOST': ENV.str('DB_HOST', default="127.0.0.1"),
          'PORT': '3306',
      },
+#     'default': ENV.db_url(
+#         var='DB_URL',
+#         default='sqlite:///' + os.path.join(os.getcwd(), 'coldfront.db')
+#     )
 }
 
 # Covers regular testing and django-coverage
@@ -55,7 +59,7 @@ if 'test' in sys.argv or 'test_coverage' in sys.argv:
 #
 # DATABASES = {
 #     'default': {
-#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
+#         'ENGINE': 'django.db.backends.postgresql',
 #         'NAME': 'coldfront',
 #         'USER': '',
 #         'PASSWORD': '',
