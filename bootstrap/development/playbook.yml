@@ -333,6 +333,15 @@
         virtualenv: "{{ git_prefix }}/venv"
       become_user: "{{ djangooperator }}"
 
+    - name: Run Django management command - create_allocation_periods
+      django_manage:
+        command: create_allocation_periods
+        app_path: "{{ git_prefix }}/{{ reponame }}"
+        settings: "config.settings"
+        pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+        virtualenv: "{{ git_prefix }}/venv"
+      become_user: "{{ djangooperator }}"
+
     - name: Run Django management command - create_staff_group
       django_manage:
         command: create_staff_group

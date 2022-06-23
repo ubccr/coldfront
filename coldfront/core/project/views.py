@@ -1349,7 +1349,7 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             form_data.get('email_body'),
             EMAIL_DIRECTOR_EMAIL_ADDRESS,
             receiver_list,
-            cc
+            cc=cc
         )
 
         if receiver_list:
