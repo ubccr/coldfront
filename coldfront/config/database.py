@@ -25,10 +25,10 @@ DATABASES = {
          'HOST': ENV.str('DB_HOST', default="127.0.0.1"),
          'PORT': '3306',
      },
-    'default': ENV.db_url(
-        var='DB_URL',
-        default='sqlite:///' + os.path.join(os.getcwd(), 'coldfront.db')
-    )
+#     'default': ENV.db_url(
+#         var='DB_URL',
+#         default='sqlite:///' + os.path.join(os.getcwd(), 'coldfront.db')
+#     )
 }
 
 # Covers regular testing and django-coverage

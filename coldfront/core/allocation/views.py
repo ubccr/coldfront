@@ -1914,8 +1914,9 @@ class DownloadPDF(View):
 def index(request):
 	context = {}
 	return render(request, 'app/index.html', context)
-    def get_queryset(self):
-        return AllocationAccount.objects.filter(user=self.request.user)
+
+def get_queryset(self):
+    return AllocationAccount.objects.filter(user=self.request.user)
 
 
 class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormView):

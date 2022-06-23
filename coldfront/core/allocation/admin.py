@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 from simple_history.admin import SimpleHistoryAdmin
 
-from coldfront.core.allocation.models import (Allocation,
+from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationAdminNote,
                                               AllocationAttribute,
                                               AllocationAttributeType,
