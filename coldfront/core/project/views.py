@@ -69,6 +69,15 @@ PROJECT_CLASS_PROJECT_END_DATES = import_from_settings(
 PROJECT_DEFAULT_MAX_MANAGERS = import_from_settings(
     'PROJECT_DEFAULT_MAX_MANAGERS', 3
 )
+PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING = import_from_settings(
+    'PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING', 60
+)
+PROJECT_END_DATE_CARRYOVER_DAYS = import_from_settings(
+    'PROJECT_END_DATE_CARRYOVER_DAYS',  90
+)
+PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING = import_from_settings(
+    'PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING', 30
+)
 
 if EMAIL_ENABLED:
     EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
@@ -159,6 +168,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['allocations'] = allocations
         context['project_users'] = project_users
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
+        context['PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING'] = PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING
 
         try:
             context['ondemand_url'] = settings.ONDEMAND_URL
@@ -704,9 +714,13 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
             project_obj.end_date = end_date
         else:
-            form.instance.end_date = datetime.datetime.today() + datetime.timedelta(
-                days=PROJECT_DEFAULT_PROJECT_LENGTH
+            actual_date = datetime.date(datetime.date.today().year, 6, 30)
+            end_date = get_new_end_date_from_list(
+                [actual_date, ],
+                datetime.date.today(),
+                PROJECT_END_DATE_CARRYOVER_DAYS
             )
+            form.instance.end_date = end_date
 
         form.instance.max_managers = PROJECT_DEFAULT_MAX_MANAGERS
         project_obj.save()
@@ -1968,9 +1982,13 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
 
             project_obj.end_date = end_date
         else:
-            project_obj.end_date += datetime.timedelta(
-                days=PROJECT_DEFAULT_PROJECT_LENGTH
+            actual_date = datetime.date(datetime.date.today().year, 6, 30)
+            end_date = get_new_end_date_from_list(
+                [actual_date, ],
+                datetime.date.today(),
+                PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING
             )
+            project_obj.end_date = end_date
 
         project_review_obj.status = project_review_status_obj
         project_obj.status = project_status_obj

@@ -13,6 +13,14 @@ from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.utils.common import import_from_settings
 
 PROJECT_ENABLE_PROJECT_REVIEW = import_from_settings('PROJECT_ENABLE_PROJECT_REVIEW', False)
+PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING = import_from_settings(
+    'PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING',
+    60
+)
+PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING = import_from_settings(
+    'PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING',
+    30
+)
 
 
 class ProjectStatusChoice(TimeStampedModel):
@@ -146,10 +154,10 @@ characters long and cannot contain numbers or special characters. Once set it ca
         if self.requires_review is False:
             return False
 
-        if self.expires_in <= 30:
+        if self.expires_in <= PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING:
             return True
 
-        if self.status.name == 'Expired' and self.expires_in >= -30:
+        if self.status.name == 'Expired' and self.expires_in >= -PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING:
             return True
 
         return False

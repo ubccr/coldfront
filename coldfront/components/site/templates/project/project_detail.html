@@ -18,7 +18,7 @@ Project Detail
     </div>
   {% elif project.can_be_reviewed and project.status.name == 'Expired' %}
     <div class="alert alert-warning">
-      This project has expired. You cannot make any changes. You have {{ project.expires_in|add:'30' }} days left to
+      This project has expired. You cannot make any changes. You have {{ project.expires_in|add:PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING }} days left to
       <a href="{% url 'project-review' project.pk %}">review your project</a>.
     </div>
   {% elif project.can_be_reviewed %}
@@ -278,7 +278,7 @@ Project Detail
                 {% elif is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Expired' and allocation.expires_in > -30 %}
                   <a href="{% url 'allocation-renew' allocation.pk %}">
                     <span class="badge badge-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>
-                      {{ allocation.expires_in|add:'30' }} days left to renew
+                      {{ allocation.expires_in|add:PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING }} days left to renew
                     </span>
                   </a>
                 {% endif %}
