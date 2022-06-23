@@ -359,6 +359,7 @@ def is_lbl_employee(user):
 
     # Check all emails associated with the user.
     email_addresses = EmailAddress.objects.filter(user=user,
+                                                  is_verified=True,
                                                   email__endswith='@lbl.gov')
 
     return email_addresses.exists()
