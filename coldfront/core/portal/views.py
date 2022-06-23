@@ -16,6 +16,13 @@ from coldfront.core.portal.utils import (generate_allocations_chart_data,
 from coldfront.core.project.models import Project
 from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
+from coldfront.core.utils.common import import_from_settings
+
+
+PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING = import_from_settings(
+    'PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING',
+    30
+)
 
 
 def home(request):
@@ -53,6 +60,7 @@ def home(request):
         context['user'] = request.user
         context['project_list'] = project_list
         context['allocation_list'] = allocation_list
+        context['PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING'] = PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING
         try:
             context['ondemand_url'] = settings.ONDEMAND_URL
         except AttributeError:

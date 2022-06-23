@@ -318,6 +318,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
 
         context['filter_parameters'] = filter_parameters
         context['filter_parameters_with_order_by'] = filter_parameters_with_order_by
+        context['PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING'] = PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING
 
         project_list = context.get('project_list')
         paginator = Paginator(project_list, self.paginate_by)
