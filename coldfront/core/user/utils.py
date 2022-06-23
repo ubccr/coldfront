@@ -337,3 +337,51 @@ def update_user_primary_email_address(email_address):
 
         email_address.is_primary = True
         email_address.save()
+
+def is_lbl_employee(user):
+    """Returns True if the user has any @lbl.gov emails and False otherwise.
+
+    Parameters:
+        - user (User): the user to check if they are an LBL employee or not
+
+    Returns:
+        - Bool: True if the user is an LBL employee, False otherwise
+
+    Raises:
+        - TypeError, if the provided user has an invalid type
+    """
+    if not isinstance(user, User):
+        raise TypeError(f'Invalid User {user}.')
+
+    # Check the user's primary email.
+    if user.email.endswith('@lbl.gov'):
+        return True
+
+    # Check all emails associated with the user.
+    email_addresses = EmailAddress.objects.filter(user=user,
+                                                  email__endswith='@lbl.gov')
+
+    return email_addresses.exists()
+
+
+def needs_host(user):
+    """Returns True if the user needs a host user and false otherwise.
+
+    Parameters:
+        - user (User): the user to check if they need a host user.
+
+    Returns:
+        - Bool: True if the user needs a host user, False otherwise
+
+    Raises:
+        - TypeError, if the provided user has an invalid type
+    """
+    if not isinstance(user, User):
+        raise TypeError(f'Invalid User {user}.')
+
+    # If the user has an LBL email, they do not need a host user.
+    if is_lbl_employee(user):
+        return False
+    else:
+        # Check if the user has a host user already.
+        return user.userprofile.host_user is None
