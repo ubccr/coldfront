@@ -23,3 +23,15 @@ class Command(BaseCommand):
         schedule('coldfront.core.allocation.tasks.send_expiry_emails',
                  schedule_type=Schedule.DAILY,
                  next_run=date)
+
+        # if plugins are installed, add their tasks
+        kwargs = {  "repeats":-1,
+                    "next_run":date,
+                    "schedule_type": Schedule.WEEKLY }
+        if 'coldfront.plugins.sftocf' in settings.INSTALLED_APPS:
+            schedule('coldfront.plugins.sftocf.tasks.pull_sf_push_cf',
+                    **kwargs)
+        
+        if 'coldfront.plugins.fasrc' in settings.INSTALLED_APPS:
+            schedule('coldfront.plugins.fasrc.tasks.import_quotas',
+                    **kwargs)
