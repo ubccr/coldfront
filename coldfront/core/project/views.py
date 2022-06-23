@@ -55,7 +55,8 @@ from coldfront.core.project.utils_.renewal_utils import get_current_allowance_ye
 from coldfront.core.project.utils_.renewal_utils import is_any_project_pi_renewable
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.models import UserProfile
-from coldfront.core.user.utils import CombinedUserSearch
+from coldfront.core.user.utils import CombinedUserSearch, is_lbl_employee, \
+    needs_host
 from coldfront.core.utils.common import (get_domain_url, import_from_settings)
 from coldfront.core.utils.mail import send_email, send_email_template
 
@@ -1644,8 +1645,7 @@ class ProjectJoinListView(ProjectListView, UserPassesTestMixin):
         context['need_host'] = False
         pending_status = ProjectUserStatusChoice.objects.get(name='Pending - Add')
         if flag_enabled('LRC_ONLY') \
-                and not self.request.user.email.endswith('@lbl.gov') \
-                and not self.request.user.userprofile.host_user \
+                and needs_host(self.request.user) \
                 and not ProjectUser.objects.filter(user=self.request.user,
                                                    status=pending_status).exists():
             context['need_host'] = True
@@ -1745,9 +1745,9 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
             for user in users_to_review:
                 username = user.get('username')
                 host_dict[username] = \
-                    ProjectUserJoinRequest.objects.get(
+                    ProjectUserJoinRequest.objects.filter(
                         project_user__project=project_obj,
-                        project_user__user__username=username).host_user
+                        project_user__user__username=username).latest('modified').host_user
             context['host_dict'] = host_dict
 
         return render(request, self.template_name, context)
@@ -1840,15 +1840,14 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
                         # Set the host user if one is provided.
                         if flag_enabled('LRC_ONLY'):
                             host_user = \
-                                ProjectUserJoinRequest.objects.get(
+                                ProjectUserJoinRequest.objects.filter(
                                     project_user__project=project_obj,
-                                    project_user=project_user_obj).host_user
+                                    project_user=project_user_obj).latest('modified').host_user
 
-                            user_profile = \
-                                UserProfile.objects.get(user=user_obj)
+                            user_profile = user_obj.userprofile
 
                             if host_user:
-                                if user_obj.email.endswith('@lbl.gov') or user_profile.host_user:
+                                if is_lbl_employee(user_obj) or not needs_host(user_obj):
                                     message = (
                                         f'User {user_obj.username} requested '
                                         f'a host user but already has '
