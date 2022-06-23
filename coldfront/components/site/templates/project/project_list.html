@@ -173,7 +173,7 @@ Project List
               <td class="text-danger">
                 {{ project.status.name }}
                   {% if user.username in project.list_of_manager_usernames %}
-                    {% if project.status.name == 'Expired' %}
+                    {% if project.status.name == 'Expired' and project.can_be_reviewed %}
                       <a href="{% url 'project-review' project.pk %}">
                         <span class="badge badge-warning">
                           <i class="fas fa-redo-alt" aria-hidden="true"></i>

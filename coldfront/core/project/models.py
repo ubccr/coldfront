@@ -154,7 +154,7 @@ characters long and cannot contain numbers or special characters. Once set it ca
         if self.requires_review is False:
             return False
 
-        if self.expires_in <= PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING:
+        if self.status.name == 'Active' and self.expires_in <= PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING:
             return True
 
         if self.status.name == 'Expired' and self.expires_in >= -PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING:
