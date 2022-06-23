@@ -265,7 +265,6 @@ class ProjectSelectHostUserForm(forms.Form):
             project = Project.objects.get(name=project_name)
 
             eligible_PIs = project.projectuser_set.filter(
-                user__email__endswith='@lbl.gov',
                 role__name='Principal Investigator',
                 status__name='Active')
 
