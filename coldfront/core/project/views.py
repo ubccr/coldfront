@@ -40,8 +40,7 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectStatusChoice, ProjectUser,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice,
-                                           ProjectUserMessage,
-                                           ProjectAddUserEmailTemplate)
+                                           ProjectUserMessage)
 from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.user.forms import UserSearchForm
@@ -59,6 +58,11 @@ if EMAIL_ENABLED:
     EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
         'EMAIL_DIRECTOR_EMAIL_ADDRESS')
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
+    EMAIL_ADDED_PROJECT_USERS = import_from_settings('EMAIL_ADDED_PROJECT_USERS', False)
+    CENTER_NAME = import_from_settings('CENTER_NAME')
+    CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
+    EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
+
 
 
 class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
@@ -677,16 +681,25 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                         allocation_activate_user.send(sender=self.__class__,
                                                       allocation_user_pk=allocation_user_obj.pk)
 
-                    custom_template = ProjectAddUserEmailTemplate.objects.get(pk=1).first()
-                    if custom_template:
-                        send_email(
-                        f'{user_obj.username} ' + custom_template.subject,
-                        custom_template.body,
-                        EMAIL_SENDER,
-                        user_obj.email,
-                        [EMAIL_DIRECTOR_EMAIL_ADDRESS, ]
-                        )
+                    project_url = f'{CENTER_BASE_URL.strip("/")}/{"project"}/{project_obj.pk}/'
 
+                    template_context = {
+                        'center_name': CENTER_NAME,
+                        'project': project_obj,
+                        'user': user_obj,
+                        'project_url': project_url,
+                        'signature': EMAIL_SIGNATURE
+                    }
+
+                    if EMAIL_ADDED_PROJECT_USERS:
+                        send_email_template(
+                            'You have been added to a project',
+                            'email/project_add_user.txt',
+                            template_context,
+                            EMAIL_SENDER,
+                            user_obj.email
+                        )
+                        
             messages.success(
                 request, 'Added {} users to project.'.format(added_users_count))
         else:

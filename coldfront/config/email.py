@@ -4,6 +4,7 @@ from coldfront.config.env import ENV
 # Email/Notification settings
 #------------------------------------------------------------------------------
 EMAIL_ENABLED = ENV.bool('EMAIL_ENABLED', default=False)
+EMAIL_ADDED_PROJECT_USERS = ENV.bool('EMAIL_ADDED_PROJECT_USERS', default=False)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = ENV.str('EMAIL_HOST', default='localhost')
 EMAIL_PORT = ENV.int('EMAIL_PORT', default=25)

@@ -7,8 +7,7 @@ from coldfront.core.project.models import (Project, ProjectAdminComment,
                                             ProjectReview, ProjectStatusChoice,
                                             ProjectUser, ProjectUserMessage,
                                             ProjectUserRoleChoice,
-                                            ProjectUserStatusChoice,
-                                            ProjectAddUserEmailTemplate)
+                                            ProjectUserStatusChoice)
 
 
 @admin.register(ProjectStatusChoice)
@@ -140,12 +139,5 @@ class ProjectReviewAdmin(SimpleHistoryAdmin):
     def PI(self, obj):
         return '{} {} ({})'.format(obj.project.pi.first_name, obj.project.pi.last_name, obj.project.pi.username)
 
-@admin.register(ProjectAddUserEmailTemplate)
-class ProjectAddUserEmailTemplateAdmin(admin.ModelAdmin):
-    inline = ProjectAddUserEmailTemplate
-    def get_inline_instances(self, request, obj=None):
-        if obj is None:
-            # We are adding an object
-            return []
-        else:
-            return super().get_inline_instances(request)
+
+    

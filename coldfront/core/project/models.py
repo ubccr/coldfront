@@ -192,22 +192,3 @@ class ProjectUser(TimeStampedModel):
         unique_together = ('user', 'project')
         verbose_name_plural = "Project User Status"
 
-class ProjectAddUserEmailTemplate(TimeStampedModel):
-    subject = models.CharField(max_length=255, default='You have been added to Project')
-    cc = models.CharField(max_length=255, blank=True)
-    body = models.TextField(default='You have been added as a user to the Project')
-    history = HistoricalRecords()
-
-    def save(self, *args, **kwargs):
-        self.pk = 1
-        super().save(*args, **kwargs)
-
-    def has_add_permissions(self, request):
-        if self.pk == None:
-            True
-        else:
-            False 
-        
-    def __str__(self):
-        return 'Email Template'
-    
