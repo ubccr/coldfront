@@ -125,10 +125,12 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
           </tr>
           {% if viewed_user.userprofile.host_user %}
             <tr>
-            <th>Host User:</th>
-            <td>{{ viewed_user.userprofile.host_user.first_name }}
-              {{ viewed_user.userprofile.host_user.last_name }}
-              ({{ viewed_user.userprofile.host_user }})</td>
+              <th>Host User:</th>
+              <td>
+                {{ viewed_user.userprofile.host_user.first_name }}
+                {{ viewed_user.userprofile.host_user.last_name }}
+                ({{ viewed_user.userprofile.host_user }})
+              </td>
             </tr>
           {% endif %}
         {% endif %}
