@@ -1,6 +1,7 @@
 {% extends "common/base.html" %}
 {% load crispy_forms_tags %}
 {% load static %}
+{% load common_tags %}
 
 
 {% block title %}
@@ -231,20 +232,20 @@ Allocation Detail
                 {{ allocation.end_date }}
               {% endif %}
 
-              {% if allocation.is_locked and allocation.status.name == 'Active' and allocation.expires_in <= 30 and allocation.expires_in >= 0 %}
+              {% if allocation.is_locked and allocation.status.name == 'Active' and allocation.expires_in <= ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING and allocation.expires_in >= 0 %}
               <span class="badge badge-warning"><i class="far fa-clock" aria-hidden="true"></i>
                 Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} - Not renewable
               </span>
-              {% elif is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 30 and allocation.expires_in >= 0 %}
+              {% elif is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING and allocation.expires_in >= 0 %}
                 <a href="{% url 'allocation-renew' allocation.pk %}">
                   <span class="badge badge-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>
                     Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} - Click to renew
                   </span>
                 </a>
-              {% elif is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Expired' and allocation.expires_in > -30 %}
+              {% elif is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Expired' and allocation.expires_in > ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING|change_sign %}
                 <a href="{% url 'allocation-renew' allocation.pk %}">
                   <span class="badge badge-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>
-                    {{ allocation.expires_in|add:'30' }} days left to renew
+                    {{ allocation.expires_in|add:ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING }} days left to renew
                   </span>
                 </a>
               {% endif %}

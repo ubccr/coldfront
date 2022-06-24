@@ -23,6 +23,14 @@ PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING = import_from_settings(
     'PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING',
     30
 )
+ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING = import_from_settings(
+    'ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING',
+    30
+)
+ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING = import_from_settings(
+    'ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING',
+    60
+)
 
 
 def home(request):
@@ -61,6 +69,8 @@ def home(request):
         context['project_list'] = project_list
         context['allocation_list'] = allocation_list
         context['PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING'] = PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING
+        context['ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING'] = ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING
+        context['ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING'] = ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING
         try:
             context['ondemand_url'] = settings.ONDEMAND_URL
         except AttributeError:

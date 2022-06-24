@@ -116,10 +116,10 @@
               <a href = "{{ondemand_url}}"> {% load static %}  <img src="/static/core/portal/imgs/ondemand.png" alt="ondemand cta" width="25" height="25"></a>
             {% endif %} 
             </td>
-            {%  if allocation.status.name == "Expired" and allocation.expires_in > -30 %}
+            {%  if allocation.status.name == "Expired" and allocation.expires_in > ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING|change_sign %}
               <td>
                 <a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-danger btn-block">
-                  <span class="badge badge-light">{{ allocation.expires_in|add:'30' }}</span>  days left to renew
+                  <span class="badge badge-light">{{ allocation.expires_in|add:ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING }}</span>  days left to renew
                 </a>
               </td>
             {%  elif allocation.status.name == "Renewal Requested" %}
@@ -129,7 +129,7 @@
             <td><a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-danger btn-block">Expires in <span
                   class="badge badge-light">{{allocation.expires_in}}</span> day{{allocation.expires_in|pluralize }}</a>
             </td>
-            {% elif allocation.expires_in > 7 and allocation.expires_in <= 30 %}
+            {% elif allocation.expires_in > 7 and allocation.expires_in <= ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING %}
             <td><a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-warning btn-block">Expires in <span
                   class="badge badge-light">{{allocation.expires_in}}</span> day{{allocation.expires_in|pluralize }}</a>
             </td>
