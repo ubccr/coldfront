@@ -43,4 +43,4 @@ COPY . .
 ENV PYTHONPATH /usr/src/app
 
 CMD ./manage.py collectstatic --no-input && ./manage.py makemigrations && ./manage.py migrate && /usr/bin/supervisord -n
-
+RUN ./manage.py qcluster &
