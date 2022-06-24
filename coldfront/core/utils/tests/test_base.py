@@ -1,21 +1,35 @@
+from copy import deepcopy
+from http import HTTPStatus
+from io import StringIO
+import os
+import sys
+
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.messages import get_messages
 from django.core.management import call_command
+from django.test import Client
+from django.test import override_settings
+from django.test import TestCase
+
+from flags.state import enable_flag
+
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.utils.common import utc_now_offset_aware
-from django.test import Client
-from django.test import TestCase
-from flags.state import enable_flag
-from http import HTTPStatus
-from io import StringIO
-import os
-import sys
 
 
+# TODO: Because FLAGS is set directly in settings, the disable_flag method has
+# TODO: no effect. A better approach is to have a dedicated test_settings
+# TODO: module that is used exclusively for testing.
+FLAGS_COPY = deepcopy(settings.FLAGS)
+FLAGS_COPY.pop('LRC_ONLY')
+
+
+@override_settings(FLAGS=FLAGS_COPY)
 class TestBase(TestCase):
     """A base class for testing the application."""
 
