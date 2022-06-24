@@ -209,6 +209,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         if self.request.user.is_superuser:
             context['user_has_permissions'] = True
 
+        context['project'] = allocation_obj.project
         context['notes'] = notes
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
         context['ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING'] = ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING
@@ -850,7 +851,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             form_class = self.get_form_class()
         return form_class(self.request.user, self.kwargs.get('project_pk'), **self.get_form_kwargs())
 
-    def calculate_end_date(self, month, day, license_term):
+    def calculate_end_date(self, month, day, license_term='current'):
         current_date = datetime.date.today()
         license_end_date = datetime.date(current_date.year, month, day)
         if current_date > license_end_date:
@@ -927,13 +928,14 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         if end_date is None:
             end_date = project_obj.end_date
+            expiry_date = resource_obj.get_attribute('expiry_date')
+            if expiry_date is not None:
+                month, day, year = expiry_date.split('/')
+                end_date = self.calculate_end_date(int(month), int(day))
+                if resource_obj.name == 'RStudio Connect':
+                    end_date = self.calculate_end_date(int(month), int(day), license_term)
 
-        if resource_obj.name == 'RStudio Connect':
-            license_end_date = resource_obj.get_attribute('license_end_date')
-            if license_end_date is not None:
-                month, day, year = license_end_date.split('/')
-                end_date = self.calculate_end_date(int(month), int(day), license_term)
-        elif resource_obj.name == 'Geode-Projects':
+        if resource_obj.name == 'Geode-Projects':
             storage_space_with_unit = str(storage_space_with_unit) + unit
             if use_indefinitely:
                 end_date = None
@@ -2074,10 +2076,18 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
                 allocation_obj.status.name))
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
-        if allocation_obj.project.needs_review:
+        if allocation_obj.project.status.name in ['Review Pending', 'Denied', 'Expired', ]:
             messages.error(
-                request, 'You cannot renew your allocation because you have to review your project first.')
-            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': allocation_obj.project.pk}))
+                request, 'You cannot renew an allocation with project status "{}".'.format(
+                    allocation_obj.project.status.name
+                )
+            )
+            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
+
+        if allocation_obj.project.needs_review or allocation_obj.project.can_be_reviewed:
+            messages.error(
+                request, 'You cannot renew your allocation until you review your project first.')
+            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
         if allocation_obj.expires_in > ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING:
             messages.error(

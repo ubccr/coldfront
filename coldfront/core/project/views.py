@@ -148,24 +148,52 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             ','.join([user.user.email for user in project_users])
 
         if self.request.user.is_superuser or self.request.user.has_perm('allocation.can_view_all_allocations'):
-            allocations = Allocation.objects.prefetch_related(
-                'resources').filter(project=self.object).order_by('-end_date')
+            free_allocations = Allocation.objects.prefetch_related(
+                'resources'
+            ).filter(
+                project=self.object,
+                resources__requires_payment=False
+            ).order_by('-end_date')
+
+            priced_allocations = Allocation.objects.prefetch_related(
+                'resources'
+            ).filter(
+                project=self.object,
+                resources__requires_payment=True
+            )
         else:
             if self.object.status.name in ['Active', 'New', 'Waiting For Admin Approval', ]:
-                allocations = Allocation.objects.filter(
+                free_allocations = Allocation.objects.filter(
                     Q(project=self.object) &
                     Q(project__projectuser__user=self.request.user) &
                     Q(project__projectuser__status__name__in=['Active', ]) &
-                    Q(status__name__in=['Active', 'Expired',
-                                        'New', 'Renewal Requested',
-                                        'Payment Pending', 'Payment Requested',
-                                        'Payment Declined', 'Paid', 'Denied']) &
+                    Q(resources__requires_payment=False) &
                     Q(allocationuser__user=self.request.user) &
-                    Q(allocationuser__status__name__in=['Active', 'Pending - Remove'])
+                    Q(allocationuser__status__name__in=['Active', ])
+                ).distinct().order_by('-end_date')
+
+                priced_allocations = Allocation.objects.filter(
+                    Q(project=self.object) &
+                    Q(project__projectuser__user=self.request.user) &
+                    Q(project__projectuser__status__name__in=['Active', ]) &
+                    Q(resources__requires_payment=True) &
+                    Q(allocationuser__user=self.request.user) &
+                    Q(allocationuser__status__name__in=['Active', ])
                 ).distinct().order_by('-end_date')
             else:
-                allocations = Allocation.objects.prefetch_related(
-                    'resources').filter(project=self.object)
+                free_allocations = Allocation.objects.filter(
+                    'resources'
+                ).filter(
+                    project=self.object,
+                    resources__requires_payment=False
+                )
+
+                priced_allocations = Allocation.objects.prefetch_related(
+                    'resources'
+                ).filter(
+                    project=self.object,
+                    resources__requires_payment=True
+                )
 
         context['publications'] = Publication.objects.filter(
             project=self.object, status='Active').order_by('-year')
@@ -173,7 +201,8 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             project=self.object).order_by('-created')
         context['grants'] = Grant.objects.filter(
             project=self.object, status__name__in=['Active', 'Pending', 'Archived'])
-        context['allocations'] = allocations
+        context['free_allocations'] = free_allocations
+        context['priced_allocations'] = priced_allocations
         context['project_users'] = project_users
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
         context['PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING'] = PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING
@@ -1679,7 +1708,8 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
     def get_allocation_data(self, project_obj):
         allocations = project_obj.allocation_set.filter(
-            status__name__in=['Active', 'Expired', ]
+            status__name__in=['Active', 'Expired', ],
+            resources__requires_payment=False
         ).exclude(use_indefinitely=True)
         initial_data = []
         if allocations:
