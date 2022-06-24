@@ -63,5 +63,10 @@ def split(string, char):
 
 
 @register.filter
-def add(num1, num2):
-    return num1 + num2
+def change_sign(int):
+    return -int
+
+
+@register.filter
+def divide(int, divisor):
+    return int // divisor

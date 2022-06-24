@@ -1,0 +1,11 @@
+Dear {{ center_name }} user,
+
+You have been added as a PI to project {{ project_title }} by {{ requestor_first_name }} {{ requestor_last_name }}, ({{ requestor_username }}). You can view the details here:
+{{ project_url }}
+
+If you have any questions please email us at {{ help_email }}
+
+This is an unmonitored email, replies to this email will not be seen.
+
+Thank you,
+{{ signature }}

@@ -62,6 +62,7 @@ Resource List
             <a href="?order_by=resource_type__name&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Resource Type asc</span></a>
             <a href="?order_by=resource_type__name&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Resource Type desc</span></a>
           </th>
+          <th scope="col" class="text-nowrap">Requires Payment</th>
           <th scope="col" class="text-nowrap">Actions</th>
         </tr>
       </thead>
@@ -72,6 +73,7 @@ Resource List
             <td>{{ resource }}</td>
             <td>{{ resource.parent_resource }}</td>
             <td>{{ resource.resource_type.name }}</td>
+            <td>{{ resource.requires_payment|yesno:"Yes,No" }}</td>
             <td><a class="btn btn-primary" href="{% url 'resource-detail' resource.id %}" type="button">Details</a></td>
           </tr>
         {% endfor %}
