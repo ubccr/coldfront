@@ -437,6 +437,10 @@ class SavioProjectAllocationRequest(TimeStampedModel):
     allocation_type = models.CharField(
         max_length=16, choices=ALLOCATION_TYPE_CHOICES)
 
+    computing_allowance = models.ForeignKey(
+        'resource.Resource', blank=True, null=True, on_delete=models.SET_NULL,
+        related_name='computing_allowance')
+
     allocation_period = models.ForeignKey(
         'allocation.AllocationPeriod', blank=True, null=True,
         on_delete=models.CASCADE, related_name='allocation_period')
