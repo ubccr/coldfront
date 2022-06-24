@@ -27,11 +27,13 @@ class Command(BaseCommand):
         # if plugins are installed, add their tasks
         kwargs = {  "repeats":-1,
                     "next_run":date,
-                    "schedule_type": Schedule.WEEKLY }
+}
         if 'coldfront.plugins.sftocf' in settings.INSTALLED_APPS:
             schedule('coldfront.plugins.sftocf.tasks.pull_sf_push_cf',
+                    schedule_type=Schedule.WEEKLY,
                     **kwargs)
         
         if 'coldfront.plugins.fasrc' in settings.INSTALLED_APPS:
             schedule('coldfront.plugins.fasrc.tasks.import_quotas',
+                    schedule_type=Schedule.DAILY,
                     **kwargs)
