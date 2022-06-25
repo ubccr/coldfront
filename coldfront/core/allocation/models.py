@@ -120,9 +120,14 @@ class Allocation(TimeStampedModel):
         return (self.end_date - datetime.date.today()).days
 
     @property
-    def get_information(self):
+
+    def get_information(self, public_only=True):
         html_string = ''
-        for attribute in self.allocationattribute_set.all():
+        if public_only:
+            allocationattribute_set = self.allocationattribute_set.filter(allocation_attribute_type__is_private=False)
+        else:
+            allocationattribute_set = self.allocationattribute_set.all()
+        for attribute in allocationattribute_set:
             if attribute.allocation_attribute_type.name in ALLOCATION_ATTRIBUTE_VIEW_LIST:
                 html_string += '%s: %s <br>' % (
                     attribute.allocation_attribute_type.name, attribute.value)
