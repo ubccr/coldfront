@@ -93,7 +93,6 @@ Project Detail
               <th scope="col">Resource Type</th>
               <th scope="col">Information</th>
               <th scope="col">Status</th>
-              <th scope="col">End Date</th>
               <th scope="col" class="nosort">Actions</th>
             </tr>
           </thead>
@@ -110,7 +109,6 @@ Project Detail
               {% else %}
                 <td class="text-info">{{ allocation.status.name }}</td>
               {% endif %}
-              <td>{{allocation.end_date|date:"Y-m-d"}}</td>
               <td>
                 <a href="{% url 'allocation-detail' allocation.pk %}"><i class="far fa-folder-open" aria-hidden="true"></i><span class="sr-only">Details</span></a>
                 {% if is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
@@ -221,78 +219,6 @@ Project Detail
   </div>
 </div>
 <!-- End Project Users -->
-
-
-<!-- Start Project Allocations -->
-<div class="card mb-3">
-  <div class="card-header">
-    <h3 class="d-inline"><i class="fas fa-server" aria-hidden="true"></i> Allocations</h3> <span class="badge badge-secondary">{{allocations.count}}</span>
-    <div class="float-right">
-      {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
-        <a class="btn btn-success" href="{% url 'allocation-create' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Request Resource Allocation</a>
-      {% endif %}
-    </div>
-  </div>
-  <div class="card-body">
-    {% if allocations %}
-      <div class="table-responsive">
-        <table id="allocation_table" class="table table-hover">
-          <thead>
-            <tr>
-              <th scope="col">Resource Name</th>
-              <th scope="col">Resource Type</th>
-              <th scope="col">Information</th>
-              <th scope="col">Status</th>
-              <th scope="col">End Date</th>
-              <th scope="col" class="nosort">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for allocation in allocations %}
-            <tr>
-              <td>{{ allocation.get_parent_resource.name }}</td>
-              <td>{{ allocation.get_parent_resource.resource_type.name }}</td>
-              {% if allocation.get_information != '' %}
-              <td class="text-nowrap">{{allocation.get_information}}</td>
-              {% else %}
-              <td class="text-nowrap">{{allocation.description}}</td>
-              {% endif %}
-              {% if allocation.status.name == 'Active' %}
-                <td class="text-success">{{ allocation.status.name }}</td>
-              {% elif  allocation.status.name == 'Expired' or allocation.status.name == 'Denied' %}
-                <td class="text-danger">{{ allocation.status.name }}</td>
-              {% else %}
-                <td class="text-info">{{ allocation.status.name }}</td>
-              {% endif %}
-              <td>{{allocation.end_date|date:"Y-m-d"}}</td>
-              <td>
-                <a href="{% url 'allocation-detail' allocation.pk %}"><i class="far fa-folder-open" aria-hidden="true"></i><span class="sr-only">Details</span></a>
-                {% if allocation.is_locked and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
-                <span class="badge badge-warning"><i class="far fa-clock" aria-hidden="true"></i>
-                  Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} <br> Not renewable
-                </span>
-                {% elif is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
-                  <a href="{% url 'allocation-renew' allocation.pk %}">
-                  <span class="badge badge-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>
-                  Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} <br> Click to renew
-                  </span>
-                  </a>
-                {% endif %}
-                {% if allocation.get_parent_resource.get_ondemand_status == 'Yes' and ondemand_url %}
-                <a href = "{{ ondemand_url }}" target="_blank"> <img src="/static/core/portal/imgs/ondemand.png" alt="ondemand cta" width="25" height="25"></a>
-              {% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    {% else %}
-      <div class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> There are no allocations to display.</div>
-    {% endif %}
-  </div>
-</div>
-<!-- End Project Allocations -->
 
 
 <!-- Start Project Grants -->
