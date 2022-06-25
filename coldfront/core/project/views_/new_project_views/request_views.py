@@ -313,16 +313,11 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
         return data.get('allocation_period', None)
 
     def __get_allocation_type(self, form_data):
-        """Return the allocation type matching the provided input."""
+        """Return the allocation type (Resource object) matching the
+        provided input."""
         step_number = self.step_numbers_by_form_name['allocation_type']
         data = form_data[step_number]
-        allocation_type = data['allocation_type']
-        for choice, _ in SavioProjectAllocationRequest.ALLOCATION_TYPE_CHOICES:
-            if allocation_type == choice:
-                return allocation_type
-        self.logger.error(
-            f'Form received unexpected allocation type {allocation_type}.')
-        raise ValueError(f'Invalid allocation type {allocation_type}.')
+        return data['allocation_type']
 
     def __get_pooling_requested(self, form_data):
         """Return whether pooling was requested."""

@@ -38,7 +38,7 @@ class Command(BaseCommand):
         SavioProjectAllocationRequest. Optionally display the update
         instead of performing it."""
         allocation_type = request.allocation_type
-        allowance = self.interface.resource_from_name_short(allocation_type)
+        allowance = self.interface.allowance_from_name_short(allocation_type)
         message_template = (
             f'{{0}} computing allowance for SavioProjectAllocationRequest '
             f'{request.id} ({request.project.name}) to Resource '

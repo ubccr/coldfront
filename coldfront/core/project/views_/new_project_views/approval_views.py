@@ -20,6 +20,9 @@ from coldfront.core.project.utils_.new_project_utils import savio_request_state_
 from coldfront.core.project.utils_.new_project_utils import send_project_request_pooling_email
 from coldfront.core.project.utils_.new_project_utils import VectorProjectProcessingRunner
 from coldfront.core.project.utils_.new_project_utils import vector_request_state_status
+from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.constants import LRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import format_date_month_name_day_year
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -30,6 +33,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.mixins import UserPassesTestMixin
+from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Q
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
@@ -39,6 +43,8 @@ from django.views import View
 from django.views.generic import DetailView
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
+
+from flags.state import flag_enabled
 
 import iso8601
 import logging
@@ -100,21 +106,50 @@ class SavioProjectRequestMixin(object):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.interface = ComputingAllowanceInterface()
         self.request_obj = None
 
-    @staticmethod
-    def get_extra_fields_form(allocation_type, extra_fields):
+    def assert_request_set(self):
+        """Assert that the request_obj has been set."""
+        assert isinstance(self.request_obj, SavioProjectAllocationRequest)
+
+    def get_extra_fields_form(self):
+        """Return a form of extra fields for the request, based on its
+        computing allowance, and populated with initial data."""
+        self.assert_request_set()
+        computing_allowance = self.request_obj.computing_allowance
+        extra_fields = self.request_obj.extra_fields
+
         kwargs = {
             'initial': extra_fields,
             'disable_fields': True,
         }
-        if allocation_type == SavioProjectAllocationRequest.ICA:
-            form = SavioProjectICAExtraFieldsForm
-        elif allocation_type == SavioProjectAllocationRequest.RECHARGE:
-            form = SavioProjectRechargeExtraFieldsForm
-        else:
-            form = SavioProjectExtraFieldsForm
+
+        allowance_name = computing_allowance.name
+        form = SavioProjectExtraFieldsForm
+        if flag_enabled('BRC_ONLY'):
+            if allowance_name == BRCAllowances.ICA:
+                form = SavioProjectICAExtraFieldsForm
+            elif allowance_name == BRCAllowances.RECHARGE:
+                form = SavioProjectRechargeExtraFieldsForm
+        elif flag_enabled('LRC_ONLY'):
+            if allowance_name == LRCAllowances.RECHARGE:
+                # TODO
+                form = SavioProjectRechargeExtraFieldsForm
+
         return form(**kwargs)
+
+    def get_survey_form(self):
+        """Return a disabled form containing the survey answers for the
+        request."""
+        self.assert_request_set()
+        survey_answers = self.request_obj.survey_answers
+        kwargs = {
+            'initial': survey_answers,
+            'disable_fields': True,
+        }
+        # TODO
+        return SavioProjectSurveyForm(**kwargs)
 
     def redirect_if_disallowed_status(self, http_request,
                                       disallowed_status_names=(
@@ -123,10 +158,7 @@ class SavioProjectRequestMixin(object):
         project request if its status has one of the given disallowed
         names, after sending a message to the user. Otherwise, return
         None."""
-        if not isinstance(self.request_obj, SavioProjectAllocationRequest):
-            raise TypeError(
-                f'Request object has unexpected type '
-                f'{type(self.request_obj)}.')
+        self.assert_request_set()
         status_name = self.request_obj.status.name
         if status_name in disallowed_status_names:
             message = (
@@ -142,6 +174,31 @@ class SavioProjectRequestMixin(object):
         """Return the URL to the detail view for the request with the
         given primary key."""
         return reverse('savio-project-request-detail', kwargs={'pk': pk})
+
+    def requires_memorandum_of_understanding(self):
+        """Return whether this request requires an MOU to be signed."""
+        self.assert_request_set()
+        allowance_name = self.request_obj.computing_allowance.name
+        relevant_allowance_names = []
+        if flag_enabled('BRC_ONLY'):
+            relevant_allowance_names.append(BRCAllowances.ICA)
+            relevant_allowance_names.append(BRCAllowances.RECHARGE)
+        elif flag_enabled('LRC_ONLY'):
+            relevant_allowance_names.append(LRCAllowances.RECHARGE)
+        return allowance_name in relevant_allowance_names
+
+    def requires_service_unit_prorating(self):
+        """Return whether this request's service units should be
+        prorated."""
+        self.assert_request_set()
+        allowance_name = self.request_obj.computing_allowance.name
+        relevant_allowance_names = []
+        if flag_enabled('BRC_ONLY'):
+            relevant_allowance_names.append(BRCAllowances.FCA)
+            relevant_allowance_names.append(BRCAllowances.PCA)
+        elif flag_enabled('LRC_ONLY'):
+            relevant_allowance_names.append(LRCAllowances.PCA)
+        return allowance_name in relevant_allowance_names
 
     def set_request_obj(self, pk):
         """Set this instance's request_obj to be the
@@ -187,8 +244,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        context['extra_fields_form'] = self.get_extra_fields_form(
-            self.request_obj.allocation_type, self.request_obj.extra_fields)
+        context['extra_fields_form'] = self.get_extra_fields_form()
         context['survey_form'] = SavioProjectSurveyForm(
             initial=self.request_obj.survey_answers, disable_fields=True)
 
@@ -314,8 +370,8 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         return HttpResponseRedirect(self.redirect)
 
     def get_service_units_to_allocate(self):
-        """Return the number of service units to allocate to the
-        project, based on its request_time.
+        """Return the possibly-prorated number of service units to
+        allocate to the project.
 
         If the request was created as part of an allocation renewal, it
         may be associated with at most one AllocationRenewalRequest. If
@@ -325,39 +381,40 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
                 new_project_request=self.request_obj).exists():
             return settings.ALLOCATION_MIN
 
-        allocation_type = self.request_obj.allocation_type
-        if allocation_type == SavioProjectAllocationRequest.CO:
-            return settings.CO_DEFAULT_ALLOCATION
-        elif allocation_type == SavioProjectAllocationRequest.FCA:
-            return prorated_allocation_amount(
-                settings.FCA_DEFAULT_ALLOCATION, self.request_obj.request_time,
-                self.request_obj.allocation_period)
-        elif allocation_type == SavioProjectAllocationRequest.ICA:
-            return settings.ICA_DEFAULT_ALLOCATION
-        elif allocation_type == SavioProjectAllocationRequest.PCA:
-            return prorated_allocation_amount(
-                settings.PCA_DEFAULT_ALLOCATION, self.request_obj.request_time,
-                self.request_obj.allocation_period)
-        elif allocation_type == SavioProjectAllocationRequest.RECHARGE:
-            num_service_units = \
-                self.request_obj.extra_fields['num_service_units']
-            return Decimal(f'{num_service_units:.2f}')
+        # For RECHARGE, the user specifies the number of service units.
+        if flag_enabled('BRC_ONLY'):
+            recharge = BRCAllowances.RECHARGE
+        elif flag_enabled('LRC_ONLY'):
+            recharge = LRCAllowances.RECHARGE
         else:
-            raise ValueError(f'Invalid allocation_type {allocation_type}.')
+            raise ImproperlyConfigured(
+                'One of the following flags must be enabled: BRC_ONLY, '
+                'LRC_ONLY.')
+
+        allowance_name = self.request_obj.computing_allowance.name
+        if allowance_name == recharge:
+            num_service_units_int = self.request_obj.extra_fields[
+                'num_service_units']
+            num_service_units = Decimal(f'{num_service_units_int:.2f}')
+        else:
+            num_service_units = Decimal(
+                self.interface.service_units_from_name(allowance_name))
+            if self.requires_service_unit_prorating():
+                num_service_units = prorated_allocation_amount(
+                    num_service_units, self.request_obj.request_time,
+                    self.request_obj.allocation_period)
+        return num_service_units
 
     def get_setup_status(self):
         """Return one of the following statuses for the 'setup' step of
         the request: 'N/A', 'Pending', 'Complete'."""
-        allocation_type = self.request_obj.allocation_type
         state = self.request_obj.state
         if (state['eligibility']['status'] == 'Denied' or
                 state['readiness']['status'] == 'Denied'):
             return 'N/A'
         else:
             pending = 'Pending'
-            ica = SavioProjectAllocationRequest.ICA
-            recharge = SavioProjectAllocationRequest.RECHARGE
-            if allocation_type in (ica, recharge):
+            if self.requires_memorandum_of_understanding():
                 if state['memorandum_signed']['status'] == pending:
                     return pending
         return state['setup']['status']
@@ -428,8 +485,7 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['savio_request'] = self.request_obj
-        context['extra_fields_form'] = self.get_extra_fields_form(
-            self.request_obj.allocation_type, self.request_obj.extra_fields)
+        context['extra_fields_form'] = self.get_extra_fields_form()
         context['survey_form'] = SavioProjectSurveyForm(
             initial=self.request_obj.survey_answers, disable_fields=True)
         return context
@@ -507,8 +563,7 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['extra_fields_form'] = self.get_extra_fields_form(
-            self.request_obj.allocation_type, self.request_obj.extra_fields)
+        context['extra_fields_form'] = self.get_extra_fields_form()
         context['savio_request'] = self.request_obj
         context['survey_form'] = SavioProjectSurveyForm(
             initial=self.request_obj.survey_answers, disable_fields=True)
@@ -549,15 +604,10 @@ class SavioProjectReviewMemorandumSignedView(LoginRequiredMixin,
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         self.set_request_obj(pk)
-        allocation_type = self.request_obj.allocation_type
-        memorandum_types = (
-            SavioProjectAllocationRequest.ICA,
-            SavioProjectAllocationRequest.RECHARGE,
-        )
-        if allocation_type not in memorandum_types:
+        if not self.requires_memorandum_of_understanding():
             message = (
-                f'This view is not applicable for projects with allocation '
-                f'type {allocation_type}.')
+                'A memorandum of understanding does not need to be signed for '
+                'this request.')
             messages.error(request, message)
             return HttpResponseRedirect(
                 reverse('savio-project-request-detail', kwargs={'pk': pk}))
@@ -589,8 +639,7 @@ class SavioProjectReviewMemorandumSignedView(LoginRequiredMixin,
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['savio_request'] = self.request_obj
-        context['extra_fields_form'] = self.get_extra_fields_form(
-            self.request_obj.allocation_type, self.request_obj.extra_fields)
+        context['extra_fields_form'] = self.get_extra_fields_form()
         context['survey_form'] = SavioProjectSurveyForm(
             initial=self.request_obj.survey_answers, disable_fields=True)
         return context
@@ -668,8 +717,7 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['savio_request'] = self.request_obj
-        context['extra_fields_form'] = self.get_extra_fields_form(
-            self.request_obj.allocation_type, self.request_obj.extra_fields)
+        context['extra_fields_form'] = self.get_extra_fields_form()
         context['survey_form'] = SavioProjectSurveyForm(
             initial=self.request_obj.survey_answers, disable_fields=True)
         return context
@@ -743,8 +791,7 @@ class SavioProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['savio_request'] = self.request_obj
-        context['extra_fields_form'] = self.get_extra_fields_form(
-            self.request_obj.allocation_type, self.request_obj.extra_fields)
+        context['extra_fields_form'] = self.get_extra_fields_form()
         context['survey_form'] = SavioProjectSurveyForm(
             initial=self.request_obj.survey_answers, disable_fields=True)
         return context

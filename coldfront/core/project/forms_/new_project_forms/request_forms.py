@@ -530,6 +530,7 @@ class SavioProjectDetailsForm(forms.Form):
 
 
 class SavioProjectSurveyForm(forms.Form):
+    # TODO: Customize based on feature flags.
 
     # Question 3
     scope_and_intent = forms.CharField(

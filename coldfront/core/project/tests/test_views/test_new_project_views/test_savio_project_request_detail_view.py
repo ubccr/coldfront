@@ -3,6 +3,8 @@ from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.tests.utils import create_fca_project_and_request
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.project.utils_.renewal_utils import get_next_allowance_year_period
+from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import format_date_month_name_day_year
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -192,6 +194,8 @@ class TestSavioProjectRequestDetailView(TestBase):
         self.project.save()
         self.new_project_request.allocation_type = \
             SavioProjectAllocationRequest.CO
+        self.new_project_request.computing_allowance = Resource.objects.get(
+            name=BRCAllowances.CO)
         self.new_project_request.save()
 
         self.assertEqual(len(mail.outbox), 0)
@@ -261,6 +265,8 @@ class TestSavioProjectRequestDetailView(TestBase):
         self.project.save()
         self.new_project_request.allocation_type = \
             SavioProjectAllocationRequest.RECHARGE
+        self.new_project_request.computing_allowance = Resource.objects.get(
+            name=BRCAllowances.RECHARGE)
         self.new_project_request.extra_fields = {'num_service_units': 100000}
         self.new_project_request.save()
 

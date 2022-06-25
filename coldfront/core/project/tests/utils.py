@@ -2,6 +2,8 @@ from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
+from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
 
 
 def create_fca_project_and_request(project_name, project_status_name,
@@ -20,6 +22,7 @@ def create_fca_project_and_request(project_name, project_status_name,
     new_project_request = SavioProjectAllocationRequest.objects.create(
         requester=requester,
         allocation_type=SavioProjectAllocationRequest.FCA,
+        computing_allowance=Resource.objects.get(name=BRCAllowances.FCA),
         allocation_period=allocation_period,
         pi=pi,
         project=new_project,

@@ -140,6 +140,7 @@ class TestAPIBase(TestCase):
         call_command('add_resource_defaults')
         call_command('add_allocation_defaults')
         call_command('add_accounting_defaults')
+        call_command('add_allowance_defaults')
         call_command('create_allocation_periods')
         call_command('create_staff_group')
         sys.stdout = sys.__stdout__
