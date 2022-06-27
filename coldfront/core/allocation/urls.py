@@ -1,5 +1,7 @@
 from django.urls import path
 from django.views.generic import TemplateView
+from flags.state import flag_enabled
+from flags.urls import flagged_paths
 
 import coldfront.core.allocation.views as allocation_views
 import coldfront.core.allocation.views_.secure_dir_views as secure_dir_views
@@ -74,55 +76,60 @@ urlpatterns = [
          name='add-allocation-account'),
     path('allocation-account-list/',
          allocation_views.AllocationAccountListView.as_view(),
-         name='allocation-account-list'),
-    path('<int:pk>/secure-dir-<str:action>-users/',
-         secure_dir_views.SecureDirManageUsersView.as_view(),
-         name='secure-dir-manage-users'),
-    path('secure-dir-<str:action>-users-request-list/<str:status>',
-         secure_dir_views.SecureDirManageUsersRequestListView.as_view(),
-         name='secure-dir-manage-users-request-list'),
-    path('<int:pk>/secure-dir-<str:action>-user-update-status',
-         secure_dir_views.SecureDirManageUsersUpdateStatusView.as_view(),
-         name='secure-dir-manage-user-update-status'),
-    path('<int:pk>/secure-dir-<str:action>-user-complete-status',
-         secure_dir_views.SecureDirManageUsersCompleteStatusView.as_view(),
-         name='secure-dir-manage-user-complete-status'),
-    path('<int:pk>/secure-dir-<str:action>-user-deny-request',
-         secure_dir_views.SecureDirManageUsersDenyRequestView.as_view(),
-         name='secure-dir-manage-user-deny-request'),
-    path('secure-dir-request-landing/',
-         TemplateView.as_view(
-             template_name=
-             'secure_dir/secure_dir_request/secure_dir_request_landing.html'
-         ),
-         name='secure-dir-request-landing'),
-    path('secure-dir-request/',
-         secure_dir_views.SecureDirRequestWizard.as_view(
-             condition_dict=secure_dir_views.SecureDirRequestWizard.condition_dict(),
-         ),
-         name='secure-dir-request'),
-    path('secure-dir-pending-requests/',
-         secure_dir_views.SecureDirRequestListView.as_view(completed=False),
-         name='secure-dir-pending-request-list'),
-    path('secure-dir-completed-requests/',
-         secure_dir_views.SecureDirRequestListView.as_view(completed=True),
-         name='secure-dir-completed-request-list'),
-    path('secure-dir-request/<int:pk>',
-         secure_dir_views.SecureDirRequestDetailView.as_view(),
-         name='secure-dir-request-detail'),
-    path('secure-dir-request/<int:pk>/rdm_consultation',
-         secure_dir_views.SecureDirRequestReviewRDMConsultView.as_view(),
-         name='secure-dir-request-review-rdm-consultation'),
-    path('secure-dir-request/<int:pk>/mou',
-         secure_dir_views.SecureDirRequestReviewMOUView.as_view(),
-         name='secure-dir-request-review-mou'),
-    path('secure-dir-request/<int:pk>/setup',
-         secure_dir_views.SecureDirRequestReviewSetupView.as_view(),
-         name='secure-dir-request-review-setup'),
-    path('secure-dir-request/<int:pk>/deny',
-         secure_dir_views.SecureDirRequestReviewDenyView.as_view(),
-         name='secure-dir-request-review-deny'),
-    path('secure-dir-request/<int:pk>/undeny',
-         secure_dir_views.SecureDirRequestUndenyRequestView.as_view(),
-         name='secure-dir-request-undeny'),
-]
+         name='allocation-account-list')]
+
+with flagged_paths('SECURE_DIRS_REQUESTABLE') as path:
+    flagged_url_patterns = [
+        path('<int:pk>/secure-dir-<str:action>-users/',
+             secure_dir_views.SecureDirManageUsersView.as_view(),
+             name='secure-dir-manage-users'),
+        path('secure-dir-<str:action>-users-request-list/<str:status>',
+             secure_dir_views.SecureDirManageUsersRequestListView.as_view(),
+             name='secure-dir-manage-users-request-list'),
+        path('<int:pk>/secure-dir-<str:action>-user-update-status',
+             secure_dir_views.SecureDirManageUsersUpdateStatusView.as_view(),
+             name='secure-dir-manage-user-update-status'),
+        path('<int:pk>/secure-dir-<str:action>-user-complete-status',
+             secure_dir_views.SecureDirManageUsersCompleteStatusView.as_view(),
+             name='secure-dir-manage-user-complete-status'),
+        path('<int:pk>/secure-dir-<str:action>-user-deny-request',
+             secure_dir_views.SecureDirManageUsersDenyRequestView.as_view(),
+             name='secure-dir-manage-user-deny-request'),
+        path('secure-dir-request-landing/',
+             TemplateView.as_view(
+                 template_name=
+                 'secure_dir/secure_dir_request/secure_dir_request_landing.html'
+             ),
+             name='secure-dir-request-landing'),
+        path('secure-dir-request/',
+             secure_dir_views.SecureDirRequestWizard.as_view(
+                 condition_dict=secure_dir_views.SecureDirRequestWizard.condition_dict(),
+             ),
+             name='secure-dir-request'),
+        path('secure-dir-pending-requests/',
+             secure_dir_views.SecureDirRequestListView.as_view(completed=False),
+             name='secure-dir-pending-request-list'),
+        path('secure-dir-completed-requests/',
+             secure_dir_views.SecureDirRequestListView.as_view(completed=True),
+             name='secure-dir-completed-request-list'),
+        path('secure-dir-request/<int:pk>',
+             secure_dir_views.SecureDirRequestDetailView.as_view(),
+             name='secure-dir-request-detail'),
+        path('secure-dir-request/<int:pk>/rdm_consultation',
+             secure_dir_views.SecureDirRequestReviewRDMConsultView.as_view(),
+             name='secure-dir-request-review-rdm-consultation'),
+        path('secure-dir-request/<int:pk>/mou',
+             secure_dir_views.SecureDirRequestReviewMOUView.as_view(),
+             name='secure-dir-request-review-mou'),
+        path('secure-dir-request/<int:pk>/setup',
+             secure_dir_views.SecureDirRequestReviewSetupView.as_view(),
+             name='secure-dir-request-review-setup'),
+        path('secure-dir-request/<int:pk>/deny',
+             secure_dir_views.SecureDirRequestReviewDenyView.as_view(),
+             name='secure-dir-request-review-deny'),
+        path('secure-dir-request/<int:pk>/undeny',
+             secure_dir_views.SecureDirRequestUndenyRequestView.as_view(),
+             name='secure-dir-request-undeny'),
+    ]
+
+urlpatterns = urlpatterns + flagged_url_patterns
