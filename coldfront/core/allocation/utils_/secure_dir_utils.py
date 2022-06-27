@@ -125,10 +125,12 @@ def secure_dir_request_state_status(secure_dir_request):
     state = secure_dir_request.state
     rdm_consultation = state['rdm_consultation']
     mou = state['mou']
+    setup = state['setup']
     other = state['other']
 
     if (rdm_consultation['status'] == 'Denied' or
             mou['status'] == 'Denied' or
+            setup['status'] == 'Denied' or
             other['timestamp']):
         return SecureDirRequestStatusChoice.objects.get(name='Denied')
 
