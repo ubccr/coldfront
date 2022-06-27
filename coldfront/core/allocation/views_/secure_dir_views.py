@@ -24,7 +24,7 @@ from coldfront.core.allocation.forms_.secure_dir_forms import (
     SecureDirManageUsersRequestCompletionForm, SecureDirDataDescriptionForm,
     SecureDirRDMConsultationForm, SecureDirExistingPIForm,
     SecureDirExistingProjectForm, SecureDirReviewStatusForm,
-    SecureDirRequestReviewDenyForm, SecureDirRequestDirectoryNamesForm)
+    SecureDirRequestReviewDenyForm, SecureDirDirectoryNamesForm)
 from coldfront.core.allocation.models import (Allocation,
                                               SecureDirAddUserRequest,
                                               SecureDirRemoveUserRequest,
@@ -778,7 +778,8 @@ class SecureDirRequestWizard(LoginRequiredMixin,
         ('data_description', SecureDirDataDescriptionForm),
         ('rdm_consultation', SecureDirRDMConsultationForm),
         ('existing_pi', SecureDirExistingPIForm),
-        ('existing_project', SecureDirExistingProjectForm)
+        ('existing_project', SecureDirExistingProjectForm),
+        ('directory_name', SecureDirDirectoryNamesForm)
     ]
 
     TEMPLATES = {
@@ -789,14 +790,17 @@ class SecureDirRequestWizard(LoginRequiredMixin,
         'existing_pi':
             'secure_dir/secure_dir_request/existing_pi.html',
         'existing_project':
-            'secure_dir/secure_dir_request/existing_project.html'
+            'secure_dir/secure_dir_request/existing_project.html',
+        'directory_name':
+            'secure_dir/secure_dir_request/directory_name.html'
     }
 
     form_list = [
         SecureDirDataDescriptionForm,
         SecureDirRDMConsultationForm,
         SecureDirExistingPIForm,
-        SecureDirExistingProjectForm
+        SecureDirExistingProjectForm,
+        SecureDirDirectoryNamesForm
     ]
 
     logger = logging.getLogger(__name__)
@@ -874,12 +878,14 @@ class SecureDirRequestWizard(LoginRequiredMixin,
             rdm_consultation = self.__get_rdm_consultation(form_data)
             pi = self.__handle_pi_data(form_data)
             existing_project = self.__get_existing_project(form_data)
+            directory_name = self.__get_directory_name(form_data)
 
             # Store transformed form data in a request.
             request_kwargs['data_description'] = data_description
             request_kwargs['rdm_consultation'] = rdm_consultation
             request_kwargs['pi'] = pi
             request_kwargs['project'] = existing_project
+            request_kwargs['directory_name'] = directory_name
             request_kwargs['status'] = \
                 SecureDirRequestStatusChoice.objects.get(
                     name='Under Review')
@@ -956,6 +962,12 @@ class SecureDirRequestWizard(LoginRequiredMixin,
         step_number = self.step_numbers_by_form_name['rdm_consultation']
         data = form_data[step_number]
         return data.get('rdm_consultants', None)
+
+    def __get_directory_name(self, form_data):
+        """Return the name of the directory."""
+        step_number = self.step_numbers_by_form_name['directory_name']
+        data = form_data[step_number]
+        return data.get('directory_name', None)
 
     def __handle_pi_data(self, form_data):
         """Return the requested PI."""
@@ -1429,7 +1441,7 @@ class SecureDirRequestReviewSetupView(LoginRequiredMixin,
                                       UserPassesTestMixin,
                                       SecureDirRequestMixin,
                                       FormView):
-    form_class = SecureDirRequestDirectoryNamesForm
+    form_class = SecureDirReviewStatusForm
     template_name = (
         'secure_dir/secure_dir_request/secure_dir_setup.html')
     login_url = '/'
@@ -1453,28 +1465,23 @@ class SecureDirRequestReviewSetupView(LoginRequiredMixin,
     def form_valid(self, form):
         form_data = form.cleaned_data
         status = form_data['status']
-        groups_name = form_data['groups_name']
-        scratch_name = form_data['scratch_name']
+        justification = form_data['justification']
         timestamp = utc_now_offset_aware().isoformat()
         self.request_obj.state['setup'] = {
             'status': status,
-            'groups': groups_name,
-            'scratch': scratch_name,
+            'justification': justification,
             'timestamp': timestamp,
         }
         self.request_obj.status = secure_dir_request_state_status(self.request_obj)
         self.request_obj.save()
 
+        if status == 'Denied':
+            runner = SecureDirRequestDenialRunner(self.request_obj)
+            runner.run()
+
         message = (
             f'Setup status for {self.request_obj.project.name}\'s '
             f'secure directory request has been set to {status}.')
-        messages.success(self.request, message)
-
-        message = (
-            f'Group and scratch subdirectory names for '
-            f'{self.request_obj.project.name}\'s secure directory request '
-            f'have been set to "{self.request_obj.state["setup"]["groups"]}" '
-            f'and "{self.request_obj.state["setup"]["scratch"]}", respectively.')
         messages.success(self.request, message)
 
         return super().form_valid(form)
@@ -1488,8 +1495,7 @@ class SecureDirRequestReviewSetupView(LoginRequiredMixin,
         initial = super().get_initial()
         setup = self.request_obj.state['setup']
         initial['status'] = setup['status']
-        initial['groups_name'] = setup['groups']
-        initial['scratch_name'] = setup['scratch']
+        initial['justification'] = setup['justification']
         return initial
 
     def get_success_url(self):

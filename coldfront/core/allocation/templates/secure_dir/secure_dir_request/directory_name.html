@@ -4,7 +4,7 @@
 
 
 {% block title %}
-  Secure Directory Request: Project
+  Secure Directory Request: Directory Name
 {% endblock %}
 
 
@@ -15,10 +15,8 @@
 
 {% block content %}
   <script type="text/javascript" src="{% static 'common/js/leave_form_alert.js' %}"></script>
-  <script type='text/javascript' src="{% static 'selectize/selectize.min.js' %}"></script>
-  <link rel='stylesheet' type='text/css' href="{% static 'selectize/selectize.bootstrap3.css' %}"/>
 
-  <h1>Secure Directory: Project</h1><hr>
+  <h1>Secure Directory: Directory Name</h1><hr>
 
   <ol class="breadcrumb">
     <li>RDM Consult: {{ breadcrumb_rdm_consultation }}</li>
@@ -28,10 +26,22 @@
       <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>
       <li>Existing Allocation: {{ breadcrumb_existing_allocation }}</li>
     {% endif %}
+    {% if breadcrumb_project %}
+      <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>
+      <li>Project: {{ breadcrumb_project }}</li>
+    {% endif %}
   </ol>
 
-  <p>Please select the Savio project the PI ({{ breadcrumb_pi }}) has on Savio. You may search
-    for the project in the selection field.</p>
+  <p>Please provide the name of the secure directory you are requesting.</p>
+
+  <p>
+    For example, to request the secure directories "<em>/global/scratch/p2p3/pl1_example</em>" and
+    "<em>/global/home/groups/pl1_data/pl1_example</em>", you would provide "<strong>example</strong>".
+  </p>
+  <p>
+    Note that you will receive both a groups and a scratch secure directory upon approval of this request.
+    Both directories will have the same name on the cluster.
+  </p>
 
   <form action="" method="post">
     {% csrf_token %}
@@ -64,17 +74,10 @@
         Previous Step
       </button>
     {% endif %}
-    <input class="btn btn-primary" type="submit" value="Next Step"/>
+    <input class="btn btn-primary" type="submit" value="Submit"/>
   </form>
   <br>
 
   <p>Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
-
-  <script>
-      $('select').selectize({
-          create: false,
-          sortField: 'text'
-      })
-  </script>
 
 {% endblock %}

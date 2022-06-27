@@ -57,5 +57,10 @@
         {{ pi.first_name }} {{ pi.last_name }} ({{ pi.email }})
       {% endwith %}
     </p>
+
+    <p class="card-text text-justify">
+      <strong>Directory Name: </strong>
+      {{ secure_dir_request.directory_name }}
+    </p>
   </div>
 </div>
