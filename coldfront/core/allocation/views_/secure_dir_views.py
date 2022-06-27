@@ -1392,9 +1392,9 @@ class SecureDirRequestReviewMOUView(LoginRequiredMixin,
 
 
 class SecureDirRequestReviewSetupView(LoginRequiredMixin,
-                                     UserPassesTestMixin,
-                                     SecureDirRequestMixin,
-                                     FormView):
+                                      UserPassesTestMixin,
+                                      SecureDirRequestMixin,
+                                      FormView):
     form_class = SecureDirRequestDirectoryNamesForm
     template_name = (
         'secure_dir/secure_dir_request/secure_dir_setup.html')
@@ -1431,17 +1431,13 @@ class SecureDirRequestReviewSetupView(LoginRequiredMixin,
         self.request_obj.status = secure_dir_request_state_status(self.request_obj)
         self.request_obj.save()
 
-        if status == 'Denied':
-            runner = SecureDirRequestDenialRunner(self.request_obj)
-            runner.run()
-
         message = (
             f'Setup status for {self.request_obj.project.name}\'s '
             f'secure directory request has been set to {status}.')
         messages.success(self.request, message)
 
         message = (
-            f'Groups and scratch subdirectory names for '
+            f'Group and scratch subdirectory names for '
             f'{self.request_obj.project.name}\'s secure directory request '
             f'have been set to "{self.request_obj.state["setup"]["groups"]}" '
             f'and "{self.request_obj.state["setup"]["scratch"]}", respectively.')
@@ -1541,7 +1537,6 @@ class SecureDirRequestUndenyRequestView(LoginRequiredMixin,
         """UserPassesTestMixin tests."""
         if self.request.user.is_superuser:
             return True
-
         message = (
             'You do not have permission to undeny a secure directory request.')
         messages.error(self.request, message)
@@ -1566,22 +1561,26 @@ class SecureDirRequestUndenyRequestView(LoginRequiredMixin,
         rdm_consultation = state['rdm_consultation']
         if rdm_consultation['status'] == 'Denied':
             rdm_consultation['status'] = 'Pending'
+            rdm_consultation['timestamp'] = ''
+            rdm_consultation['justification'] = ''
 
         mou = state['mou']
         if mou['status'] == 'Denied':
             mou['status'] = 'Pending'
+            mou['timestamp'] = ''
+            mou['justification'] = ''
+
+        setup = state['setup']
+        if setup['status'] != 'Pending':
+            setup['status'] = 'Pending'
+            setup['timestamp'] = ''
+            setup['scratch'] = ''
+            setup['groups'] = ''
 
         other = state['other']
         if other['timestamp']:
             other['justification'] = ''
             other['timestamp'] = ''
-
-        paths = state['paths']
-        if paths['status'] == 'Denied':
-            paths['status'] = 'Pending'
-            paths['scratch'] = ''
-            paths['groups'] = ''
-            paths['timestamp'] = ''
 
         self.request_obj.status = secure_dir_request_state_status(self.request_obj)
         self.request_obj.save()

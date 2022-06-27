@@ -738,11 +738,7 @@ class SecureDirRequest(TimeStampedModel):
         DenialReason = namedtuple(
             'DenialReason', 'category justification timestamp')
 
-        if other['timestamp']:
-            category = 'Other'
-            justification = other['justification']
-            timestamp = other['timestamp']
-        elif rdm_consultation['status'] == 'Denied':
+        if rdm_consultation['status'] == 'Denied':
             category = 'RDM Consultation'
             justification = rdm_consultation['justification']
             timestamp = rdm_consultation['timestamp']
@@ -750,6 +746,10 @@ class SecureDirRequest(TimeStampedModel):
             category = 'Memorandum of Understanding'
             justification = mou['justification']
             timestamp = mou['timestamp']
+        elif other['timestamp']:
+            category = 'Other'
+            justification = other['justification']
+            timestamp = other['timestamp']
         else:
             raise ValueError('Provided request has an unexpected state.')
 

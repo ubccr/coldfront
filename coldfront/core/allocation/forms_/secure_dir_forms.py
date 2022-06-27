@@ -186,8 +186,7 @@ class SecureDirRequestDirectoryNamesForm(forms.Form):
         choices=(
             ('', 'Select one.'),
             ('Pending', 'Pending'),
-            ('Completed', 'Completed'),
-            ('Denied', 'Denied'),
+            ('Completed', 'Completed')
         ),
         help_text='If you are unsure, leave the status as "Pending".',
         label='Status',
@@ -199,6 +198,7 @@ class SecureDirRequestDirectoryNamesForm(forms.Form):
         label='Scratch Subdirectory Name',
         required=True,
         widget=forms.Textarea(attrs={'rows': 1}))
+
     groups_name = forms.CharField(
         help_text=(
             'Provide the name of the secure groups directory.'),
