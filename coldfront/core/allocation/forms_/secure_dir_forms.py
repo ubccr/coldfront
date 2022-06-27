@@ -144,7 +144,23 @@ class SecureDirExistingProjectForm(forms.Form):
         self.fields['project'].queryset = \
             Project.objects.\
                 filter(fc_co_ic_projects_cond, status__name='Active').\
-                exclude(project__pk__in=projects_with_secure_dirs)
+                exclude(pk__in=projects_with_secure_dirs)
+
+
+class SecureDirDirectoryNamesForm(forms.Form):
+
+    directory_name = forms.CharField(
+        help_text=(
+            'Provide the name of the requested secure directory on the cluster.'),
+        label='Scratch Subdirectory Name',
+        required=True,
+        widget=forms.Textarea(attrs={'rows': 1}))
+
+    def __init__(self, *args, **kwargs):
+        kwargs.pop('breadcrumb_rdm_consultation', None)
+        kwargs.pop('breadcrumb_pi', None)
+        kwargs.pop('breadcrumb_project', None)
+        super().__init__(*args, **kwargs)
 
 
 class SecureDirReviewStatusForm(forms.Form):
@@ -191,30 +207,3 @@ class SecureDirRequestReviewDenyForm(forms.Form):
         validators=[MinLengthValidator(10)],
         required=True,
         widget=forms.Textarea(attrs={'rows': 3}))
-
-
-class SecureDirRequestDirectoryNamesForm(forms.Form):
-
-    status = forms.ChoiceField(
-        choices=(
-            ('', 'Select one.'),
-            ('Pending', 'Pending'),
-            ('Completed', 'Completed')
-        ),
-        help_text='If you are unsure, leave the status as "Pending".',
-        label='Status',
-        required=True)
-
-    scratch_name = forms.CharField(
-        help_text=(
-            'Provide the name of the secure scratch directory.'),
-        label='Scratch Subdirectory Name',
-        required=True,
-        widget=forms.Textarea(attrs={'rows': 1}))
-
-    groups_name = forms.CharField(
-        help_text=(
-            'Provide the name of the secure groups directory.'),
-        label='Groups Subdirectory Name',
-        required=True,
-        widget=forms.Textarea(attrs={'rows': 1}))
