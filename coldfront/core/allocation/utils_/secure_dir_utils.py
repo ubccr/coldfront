@@ -205,7 +205,7 @@ class SecureDirRequestApprovalRunner(object):
 
     def run(self):
         self.approve_request()
-        groups_alloc, scratch_alloc = self.create_secure_dir()
+        groups_alloc, scratch_alloc = self.call_create_secure_dir()
         if groups_alloc and scratch_alloc:
             # self.create_pi_alloc_users(groups_alloc, scratch_alloc)
             self.send_email()
@@ -217,14 +217,15 @@ class SecureDirRequestApprovalRunner(object):
         self.request_obj.completion_time = utc_now_offset_aware()
         self.request_obj.save()
 
-    def create_secure_dir(self):
+    def call_create_secure_dir(self):
         """Creates the groups and scratch secure directories."""
 
         groups_alloc, scratch_alloc = None, None
+        subdirectory_name = f'pl1_{self.request_obj.directory_name}'
         try:
             groups_alloc = \
                 create_secure_dirs(self.request_obj.project,
-                                   self.request_obj.state['setup']['groups'],
+                                   subdirectory_name,
                                    'groups')
         except Exception as e:
             message = f'Failed to create groups secure directory for ' \
@@ -235,7 +236,7 @@ class SecureDirRequestApprovalRunner(object):
         try:
             scratch_alloc = \
                 create_secure_dirs(self.request_obj.project,
-                                   self.request_obj.state['setup']['scratch'],
+                                   subdirectory_name,
                                    'scratch')
         except Exception as e:
             message = f'Failed to create scratch secure directory for ' \
