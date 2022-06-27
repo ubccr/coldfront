@@ -1177,6 +1177,12 @@ class SecureDirRequestDetailView(LoginRequiredMixin,
         if self.request.user.has_perm('allocation.view_securedirrequest'):
             return True
 
+        pis = self.request_obj.project.projectuser_set.filter(
+            role__name='Principal Investigator',
+            status__name='Active').values_list('user__pk', flat=True)
+        if self.request.user.pk in pis:
+            return True
+
         message = 'You do not have permission to view the previous page.'
         messages.error(self.request, message)
 
