@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 from http import HTTPStatus
 
@@ -7,6 +8,7 @@ from django.contrib.messages import get_messages
 from django.core import mail
 from django.core.management import call_command
 from django.urls import reverse
+from iso8601 import iso8601
 
 from coldfront.api.statistics.utils import create_project_allocation, \
     create_user_project_allocation
@@ -453,3 +455,337 @@ class TestSecureDirRequestDetailView(TestSecureDirRequestBase):
             for section in email_body:
                 self.assertIn(section, email.body)
             self.assertEqual(settings.EMAIL_SENDER, email.from_email)
+
+
+class TestSecureDirRequestUndenyRequestView(TestSecureDirRequestBase):
+    """Testing class for SecureDirRequestUndenyRequestView"""
+
+    def setUp(self):
+        super().setUp()
+
+        # Create SecureDirRequest
+        self.request0 = SecureDirRequest.objects.create(
+            requester=self.pi0,
+            data_description='a'*20,
+            pi=self.pi0,
+            project=self.project0,
+            status=SecureDirRequestStatusChoice.objects.get(name='Denied'),
+            request_time=utc_now_offset_aware()
+        )
+
+        self.request0.state['rdm_consultation']['status'] = 'Denied'
+        self.request0.state['rdm_consultation']['timestamp'] = '1234'
+        self.request0.state['rdm_consultation']['justification'] = 'test reason'
+        self.request0.state['mou']['status'] = 'Denied'
+        self.request0.state['mou']['timestamp'] = '1234'
+        self.request0.state['mou']['justification'] = 'test reason'
+        self.request0.state['setup']['status'] = 'Completed'
+        self.request0.state['setup']['timestamp'] = '1234'
+        self.request0.state['setup']['groups'] = 'test_groups'
+        self.request0.state['setup']['scratch'] = 'test_scratch'
+        self.request0.state['other']['timestamp'] = '1234'
+        self.request0.state['other']['justification'] = 'test reason'
+        self.request0.save()
+
+        self.url = reverse('secure-dir-request-undeny',
+                           kwargs={'pk': self.request0.pk})
+        self.success_url = reverse('secure-dir-request-detail',
+                                   kwargs={'pk': self.request0.pk})
+
+    def assert_has_access(self, url, user, has_access):
+        """Assert that a user has or does not have access to a url."""
+        self.client.login(username=user.username, password=self.password)
+        status_code = HTTPStatus.FOUND if has_access else HTTPStatus.FORBIDDEN
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status_code)
+        self.client.logout()
+
+    def test_access(self):
+        self.assert_has_access(self.url, self.staff, False)
+        self.assert_has_access(self.url, self.user0, False)
+        self.assert_has_access(self.url, self.pi0, False)
+        self.assert_has_access(self.url, self.admin, True)
+
+    def test_get_request_denies_request(self):
+        """Test that a GET request undenies the SecureDirRequest."""
+        self.client.login(username=self.admin.username, password=self.password)
+        response = self.client.get(self.url)
+
+        self.request0.refresh_from_db()
+        self.assertRedirects(response, self.success_url)
+        self.assertEqual(self.request0.status.name, 'Under Review')
+
+        rdm_consultation = self.request0.state['rdm_consultation']
+        self.assertEqual(rdm_consultation['status'], 'Pending')
+        self.assertEqual(rdm_consultation['timestamp'], '')
+        self.assertEqual(rdm_consultation['justification'], '')
+
+        mou = self.request0.state['mou']
+        self.assertEqual(mou['status'], 'Pending')
+        self.assertEqual(mou['timestamp'], '')
+        self.assertEqual(mou['justification'], '')
+
+        setup = self.request0.state['setup']
+        self.assertEqual(setup['status'], 'Pending')
+        self.assertEqual(setup['timestamp'], '')
+        self.assertEqual(setup['scratch'], '')
+        self.assertEqual(setup['groups'], '')
+
+        other = self.request0.state['other']
+        self.assertEqual(other['timestamp'], '')
+        self.assertEqual(other['justification'], '')
+
+
+class TestSecureDirRequestReviewDenyView(TestSecureDirRequestBase):
+    """Testing class for SecureDirRequestReviewDenyView"""
+
+    def setUp(self):
+        super().setUp()
+
+        # Create SecureDirRequest
+        self.request0 = SecureDirRequest.objects.create(
+            requester=self.pi0,
+            data_description='a'*20,
+            pi=self.pi0,
+            project=self.project0,
+            status=SecureDirRequestStatusChoice.objects.get(name='Approved - Processing'),
+            request_time=utc_now_offset_aware()
+        )
+
+        self.request0.state['rdm_consultation']['status'] = 'Completed'
+        self.request0.state['mou']['status'] = 'Completed'
+        self.request0.state['other']['justification'] = \
+            'This is a test justification.'
+        self.request0.state['other']['timestamp'] = \
+            utc_now_offset_aware().isoformat()
+        self.request0.save()
+
+        self.url = reverse('secure-dir-request-review-deny',
+                           kwargs={'pk': self.request0.pk})
+        self.success_url = reverse('secure-dir-request-detail',
+                                   kwargs={'pk': self.request0.pk})
+
+    def test_access(self):
+        self.assert_has_access(self.url, self.admin, True)
+        self.assert_has_access(self.url, self.staff, False)
+        self.assert_has_access(self.url, self.user0, False)
+        self.assert_has_access(self.url, self.pi0, False)
+
+    def test_post_request_denies_request(self):
+        """Test that a POST request denies the SecureDirRequest."""
+        pre_time = utc_now_offset_aware()
+        self.client.login(username=self.admin.username, password=self.password)
+        data = {'justification': 'This is a test denial justification.'}
+        response = self.client.post(self.url, data)
+
+        self.request0.refresh_from_db()
+        self.assertRedirects(response, self.success_url)
+        self.assertEqual(self.request0.status.name, 'Denied')
+
+        timestamp = iso8601.parse_date(self.request0.state['other']['timestamp'])
+        self.assertTrue(pre_time < timestamp < utc_now_offset_aware())
+        self.assertEqual(self.request0.state['other']['justification'], data['justification'])
+
+    def test_post_request_sends_emails(self):
+        """Test that a POST request sends the correct emails."""
+        self.client.login(username=self.admin.username, password=self.password)
+        data = {'justification': 'This is a test denial justification.'}
+        response = self.client.post(self.url, data)
+
+        # Test that the correct emails are sent.
+        pi_emails = self.project0.projectuser_set.filter(
+            role__name='Principal Investigator'
+        ).values_list('user__email', flat=True)
+        email_body = [f'Your request for a secure directory for project '
+                      f'\'{self.project0.name}\' was denied for the '
+                      f'following reason:',
+                      data['justification'],
+                      'If you have any questions, please contact us at']
+
+        self.assertEqual(len(pi_emails), len(mail.outbox))
+        for email in mail.outbox:
+            self.assertIn(email.to[0], pi_emails)
+            for section in email_body:
+                self.assertIn(section, email.body)
+            self.assertEqual(settings.EMAIL_SENDER, email.from_email)
+
+
+class TestSecureDirRequestReviewRDMConsultView(TestSecureDirRequestBase):
+    """Testing class for SecureDirRequestReviewRDMConsultView."""
+
+    def setUp(self):
+        super().setUp()
+
+        # Create SecureDirRequest
+        self.request0 = SecureDirRequest.objects.create(
+            requester=self.pi0,
+            data_description='a'*20,
+            pi=self.pi0,
+            project=self.project0,
+            status=SecureDirRequestStatusChoice.objects.get(name='Under Review'),
+            request_time=utc_now_offset_aware()
+        )
+
+        self.url = reverse('secure-dir-request-review-rdm-consultation',
+                           kwargs={'pk': self.request0.pk})
+        self.success_url = reverse('secure-dir-request-detail',
+                                   kwargs={'pk': self.request0.pk})
+
+    def test_access(self):
+        self.assert_has_access(self.url, self.admin, True)
+        self.assert_has_access(self.url, self.staff, False)
+        self.assert_has_access(self.url, self.user0, False)
+        self.assert_has_access(self.url, self.pi0, False)
+
+    def test_post_updates_request(self):
+        """Test that a post request updates the request."""
+        pre_time = utc_now_offset_aware()
+        self.client.login(username=self.admin.username, password=self.password)
+        data = {'status': 'Completed',
+                'justification': 'This is a test rdm justification.'}
+        response = self.client.post(self.url, data)
+
+        self.request0.refresh_from_db()
+        self.assertRedirects(response, self.success_url)
+        self.assertEqual(self.request0.status.name, 'Under Review')
+        self.assertEqual(self.request0.state['rdm_consultation']['status'], 'Completed')
+
+        timestamp = iso8601.parse_date(self.request0.state['rdm_consultation']['timestamp'])
+        self.assertTrue(pre_time < timestamp < utc_now_offset_aware())
+        self.assertEqual(self.request0.state['rdm_consultation']['justification'],
+                         data['justification'])
+
+    def test_denied_status_denies_request(self):
+        """Tests that a Denied status denies the request."""
+        self.client.login(username=self.admin.username, password=self.password)
+        data = {'status': 'Denied',
+                'justification': 'This is a test denial justification.'}
+        response = self.client.post(self.url, data)
+
+        self.request0.refresh_from_db()
+        self.assertRedirects(response, self.success_url)
+        self.assertEqual(self.request0.status.name, 'Denied')
+
+        # Test that the correct justification is sent in the email to PIs.
+        for email in mail.outbox:
+            self.assertIn(data['justification'], email.body)
+
+
+class TestSecureDirRequestReviewMOUView(TestSecureDirRequestBase):
+    """Testing class for SecureDirRequestReviewMOUView."""
+
+    def setUp(self):
+        super().setUp()
+
+        # Create SecureDirRequest
+        self.request0 = SecureDirRequest.objects.create(
+            requester=self.pi0,
+            data_description='a'*20,
+            pi=self.pi0,
+            project=self.project0,
+            status=SecureDirRequestStatusChoice.objects.get(name='Under Review'),
+            request_time=utc_now_offset_aware()
+        )
+
+        self.request0.state['rdm_consultation']['status'] = 'Completed'
+        self.request0.state['rdm_consultation']['timestamp'] = \
+            utc_now_offset_aware().isoformat()
+        self.request0.save()
+
+        self.url = reverse('secure-dir-request-review-mou',
+                           kwargs={'pk': self.request0.pk})
+        self.success_url = reverse('secure-dir-request-detail',
+                                   kwargs={'pk': self.request0.pk})
+
+    def test_access(self):
+        self.assert_has_access(self.url, self.admin, True)
+        self.assert_has_access(self.url, self.staff, False)
+        self.assert_has_access(self.url, self.user0, False)
+        self.assert_has_access(self.url, self.pi0, False)
+
+    def test_post_updates_request(self):
+        """Test that a post request updates the request."""
+        pre_time = utc_now_offset_aware()
+        self.client.login(username=self.admin.username, password=self.password)
+        data = {'status': 'Completed',
+                'justification': 'This is a test mou justification.'}
+        response = self.client.post(self.url, data)
+
+        self.request0.refresh_from_db()
+        self.assertRedirects(response, self.success_url)
+        self.assertEqual(self.request0.status.name, 'Approved - Processing')
+        self.assertEqual(self.request0.state['mou']['status'], 'Completed')
+
+        timestamp = iso8601.parse_date(self.request0.state['mou']['timestamp'])
+        self.assertTrue(pre_time < timestamp < utc_now_offset_aware())
+        self.assertEqual(self.request0.state['mou']['justification'], data['justification'])
+
+    def test_denied_status_denies_request(self):
+        """Tests that a Denied status denies the request."""
+        self.client.login(username=self.admin.username, password=self.password)
+        data = {'status': 'Denied',
+                'justification': 'This is a test denial justification.'}
+        response = self.client.post(self.url, data)
+
+        self.request0.refresh_from_db()
+        self.assertRedirects(response, self.success_url)
+        self.assertEqual(self.request0.status.name, 'Denied')
+
+        # Test that the correct justification is sent in the email to PIs.
+        for email in mail.outbox:
+            self.assertIn(data['justification'], email.body)
+
+
+class TestSecureDirRequestReviewSetupView(TestSecureDirRequestBase):
+    """Testing class for SecureDirRequestReviewSetupView."""
+
+    def setUp(self):
+        super().setUp()
+
+        # Create SecureDirRequest
+        self.request0 = SecureDirRequest.objects.create(
+            requester=self.pi0,
+            data_description='a'*20,
+            pi=self.pi0,
+            project=self.project0,
+            status=SecureDirRequestStatusChoice.objects.get(name='Approved - Processing'),
+            request_time=utc_now_offset_aware()
+        )
+
+        self.request0.state['rdm_consultation']['status'] = 'Completed'
+        self.request0.state['rdm_consultation']['timestamp'] = \
+            utc_now_offset_aware().isoformat()
+        self.request0.state['mou']['status'] = 'Completed'
+        self.request0.state['mou']['timestamp'] = \
+            utc_now_offset_aware().isoformat()
+        self.request0.save()
+
+        self.url = reverse('secure-dir-request-review-setup',
+                           kwargs={'pk': self.request0.pk})
+        self.success_url = reverse('secure-dir-request-detail',
+                                   kwargs={'pk': self.request0.pk})
+
+    def test_access(self):
+        self.assert_has_access(self.url, self.admin, True)
+        self.assert_has_access(self.url, self.staff, False)
+        self.assert_has_access(self.url, self.user0, False)
+        self.assert_has_access(self.url, self.pi0, False)
+
+    def test_post_updates_request(self):
+        """Test that a post request updates the request."""
+        pre_time = utc_now_offset_aware()
+        self.client.login(username=self.admin.username, password=self.password)
+        data = {'status': 'Completed',
+                'scratch_name': 'scratch_path',
+                'groups_name': 'groups_path'}
+        response = self.client.post(self.url, data)
+
+        self.request0.refresh_from_db()
+        self.assertRedirects(response, self.success_url)
+        self.assertEqual(self.request0.status.name, 'Approved - Processing')
+        self.assertEqual(self.request0.state['setup']['status'], 'Completed')
+
+        timestamp = iso8601.parse_date(self.request0.state['setup']['timestamp'])
+        self.assertTrue(pre_time < timestamp < utc_now_offset_aware())
+        self.assertEqual(self.request0.state['setup']['scratch'], data['scratch_name'])
+        self.assertEqual(self.request0.state['setup']['groups'], data['groups_name'])
