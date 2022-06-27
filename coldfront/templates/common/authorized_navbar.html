@@ -1,5 +1,8 @@
 {% include 'common/navbar_brand.html' %}
 {% load common_tags %}
+{% load feature_flags %}
+{% flag_enabled 'SECURE_DIRS_REQUESTABLE' as secure_dirs_requestable %}
+
 <nav class="navbar navbar-expand-md navbar-dark bg-primary">
   <div class="container">
     <a class="navbar-brand d-block d-sm-none text-primary" href="#">MyBRC</a>
