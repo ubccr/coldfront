@@ -137,11 +137,16 @@ class TestSecureDirRequestWizard(TestSecureDirRequestBase):
             '3-project': self.project1.pk,
             current_step_key: '3',
         }
+        directory_name_data = {
+            '4-directory_name': 'test_dir',
+            current_step_key: '4',
+        }
         form_data = [
             data_description_form_data,
             rdm_consultation_form_data,
             existing_pi_form_data,
             existing_project_data,
+            directory_name_data
         ]
 
         return form_data
@@ -180,6 +185,9 @@ class TestSecureDirRequestWizard(TestSecureDirRequestBase):
         self.assertEqual(
             request.rdm_consultation,
             form_data[1]['1-rdm_consultants'])
+        self.assertEqual(
+            request.directory_name,
+            form_data[4]['4-directory_name'])
         self.assertEqual(request.pi, self.pi0)
         self.assertEqual(request.project, self.project1)
         self.assertTrue(
@@ -240,6 +248,7 @@ class TestSecureDirRequestListView(TestSecureDirRequestBase):
 
         # Create 2 SecureDirRequests
         self.request0 = SecureDirRequest.objects.create(
+            directory_name='test_dir0',
             requester=self.pi0,
             data_description='a'*20,
             pi=self.pi0,
@@ -249,6 +258,7 @@ class TestSecureDirRequestListView(TestSecureDirRequestBase):
         )
 
         self.request1 = SecureDirRequest.objects.create(
+            directory_name='test_dir1',
             requester=self.pi1,
             data_description='a'*20,
             pi=self.pi1,
@@ -358,6 +368,7 @@ class TestSecureDirRequestDetailView(TestSecureDirRequestBase):
 
         # Create SecureDirRequest
         self.request0 = SecureDirRequest.objects.create(
+            directory_name='test_dir',
             requester=self.pi0,
             data_description='a'*20,
             pi=self.pi0,
@@ -369,8 +380,6 @@ class TestSecureDirRequestDetailView(TestSecureDirRequestBase):
         self.request0.state['rdm_consultation']['status'] = 'Completed'
         self.request0.state['mou']['status'] = 'Completed'
         self.request0.state['setup']['status'] = 'Completed'
-        self.request0.state['setup']['groups'] = 'test_groups'
-        self.request0.state['setup']['scratch'] = 'test_scratch'
         self.request0.save()
 
         self.url0 = reverse('secure-dir-request-detail',
@@ -380,7 +389,22 @@ class TestSecureDirRequestDetailView(TestSecureDirRequestBase):
         self.assert_has_access(self.url0, self.admin, True)
         self.assert_has_access(self.url0, self.staff, True)
         self.assert_has_access(self.url0, self.user0, False)
-        self.assert_has_access(self.url0, self.pi0, False)
+        self.assert_has_access(self.url0, self.pi0, True)
+
+    def test_content(self):
+        """Test that the administrator checklist is only visible to admins."""
+        self.client.login(username=self.admin.username, password=self.password)
+        response = self.client.get(self.url0)
+        html = response.content.decode('utf-8')
+        self.assertIn('Administrator Checklist', html)
+        self.client.logout()
+
+        for user in [self.staff, self.pi0]:
+            self.client.login(username=user.username, password=self.password)
+            response = self.client.get(self.url0)
+            html = response.content.decode('utf-8')
+            self.assertNotIn('Administrator Checklist', html)
+            self.client.logout()
 
     def test_post_request_approves_request(self):
         """Test that a POST request approves the SecureDirRequest."""
@@ -465,6 +489,7 @@ class TestSecureDirRequestUndenyRequestView(TestSecureDirRequestBase):
 
         # Create SecureDirRequest
         self.request0 = SecureDirRequest.objects.create(
+            directory_name='test_dir',
             requester=self.pi0,
             data_description='a'*20,
             pi=self.pi0,
@@ -544,6 +569,7 @@ class TestSecureDirRequestReviewDenyView(TestSecureDirRequestBase):
 
         # Create SecureDirRequest
         self.request0 = SecureDirRequest.objects.create(
+            directory_name='test_dir',
             requester=self.pi0,
             data_description='a'*20,
             pi=self.pi0,
@@ -618,6 +644,7 @@ class TestSecureDirRequestReviewRDMConsultView(TestSecureDirRequestBase):
 
         # Create SecureDirRequest
         self.request0 = SecureDirRequest.objects.create(
+            directory_name='test_dir',
             requester=self.pi0,
             data_description='a'*20,
             pi=self.pi0,
@@ -679,6 +706,7 @@ class TestSecureDirRequestReviewMOUView(TestSecureDirRequestBase):
 
         # Create SecureDirRequest
         self.request0 = SecureDirRequest.objects.create(
+            directory_name='test_dir',
             requester=self.pi0,
             data_description='a'*20,
             pi=self.pi0,
@@ -744,6 +772,7 @@ class TestSecureDirRequestReviewSetupView(TestSecureDirRequestBase):
 
         # Create SecureDirRequest
         self.request0 = SecureDirRequest.objects.create(
+            directory_name='test_dir',
             requester=self.pi0,
             data_description='a'*20,
             pi=self.pi0,
@@ -776,8 +805,7 @@ class TestSecureDirRequestReviewSetupView(TestSecureDirRequestBase):
         pre_time = utc_now_offset_aware()
         self.client.login(username=self.admin.username, password=self.password)
         data = {'status': 'Completed',
-                'scratch_name': 'scratch_path',
-                'groups_name': 'groups_path'}
+                'justification': 'This is a test setup justification.'}
         response = self.client.post(self.url, data)
 
         self.request0.refresh_from_db()
@@ -787,5 +815,19 @@ class TestSecureDirRequestReviewSetupView(TestSecureDirRequestBase):
 
         timestamp = iso8601.parse_date(self.request0.state['setup']['timestamp'])
         self.assertTrue(pre_time < timestamp < utc_now_offset_aware())
-        self.assertEqual(self.request0.state['setup']['scratch'], data['scratch_name'])
-        self.assertEqual(self.request0.state['setup']['groups'], data['groups_name'])
+        self.assertEqual(self.request0.state['setup']['justification'], data['justification'])
+
+    def test_denied_status_denies_request(self):
+        """Tests that a Denied status denies the request."""
+        self.client.login(username=self.admin.username, password=self.password)
+        data = {'status': 'Denied',
+                'justification': 'This is a test denial justification.'}
+        response = self.client.post(self.url, data)
+
+        self.request0.refresh_from_db()
+        self.assertRedirects(response, self.success_url)
+        self.assertEqual(self.request0.status.name, 'Denied')
+
+        # Test that the correct justification is sent in the email to PIs.
+        for email in mail.outbox:
+            self.assertIn(data['justification'], email.body)
