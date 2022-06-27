@@ -1,6 +1,8 @@
 {% extends "common/base.html" %}
 {% load common_tags %}
 {% block content %}
+{% load feature_flags %}
+{% flag_enabled 'SECURE_DIRS_REQUESTABLE' as secure_dirs_requestable %}
 
   <h1>Request Hub</h1>
 
@@ -63,17 +65,19 @@
     {% include 'request_hub/request_section.html' %}
   {% endwith %}
 
-  {% with request_obj=secure_dir_request_obj %}
-    {% include 'request_hub/request_section.html' %}
-  {% endwith %}
+  {% if secure_dirs_requestable %}
+    {% with request_obj=secure_dir_request_obj %}
+      {% include 'request_hub/request_section.html' %}
+    {% endwith %}
 
-  {% with request_obj=secure_dir_join_request_obj %}
-    {% include 'request_hub/request_section.html' %}
-  {% endwith %}
+    {% with request_obj=secure_dir_join_request_obj %}
+      {% include 'request_hub/request_section.html' %}
+    {% endwith %}
 
-  {% with request_obj=secure_dir_remove_request_obj %}
-    {% include 'request_hub/request_section.html' %}
-  {% endwith %}
+    {% with request_obj=secure_dir_remove_request_obj %}
+      {% include 'request_hub/request_section.html' %}
+    {% endwith %}
+  {% endif %}
 
   {% with request_obj=su_purchase_request_obj %}
     {% include 'request_hub/request_section.html' %}

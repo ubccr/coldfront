@@ -2,6 +2,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.views.generic.base import TemplateView
+from flags.state import flag_enabled
 
 from coldfront.core.allocation.models import (AllocationAttributeType,
                                               AllocationUserAttribute,
@@ -584,10 +585,12 @@ class RequestHubView(LoginRequiredMixin,
                     'vector_project_request',
                     'project_join_request',
                     'project_renewal_request',
-                    'su_purchase_request',
-                    'secure_dir_request',
-                    'secure_dir_join_request',
-                    'secure_dir_remove_request']
+                    'su_purchase_request']
+
+        if flag_enabled('SECURE_DIRS_REQUESTABLE'):
+            requests += ['secure_dir_request',
+                         'secure_dir_join_request',
+                         'secure_dir_remove_request']
 
         context['show_all'] = ((self.request.user.is_superuser or
                                 self.request.user.is_staff) and
