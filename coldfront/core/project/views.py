@@ -679,19 +679,20 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                                 user=user_obj,
                                 status=allocation_user_active_status_choice)
                         allocation_activate_user.send(sender=self.__class__,
-                                                      allocation_user_pk=allocation_user_obj.pk)
-
-                    project_url = f'{CENTER_BASE_URL.strip("/")}/{"project"}/{project_obj.pk}/'
-
-                    template_context = {
-                        'center_name': CENTER_NAME,
-                        'project': project_obj,
-                        'user': user_obj,
-                        'project_url': project_url,
-                        'signature': EMAIL_SIGNATURE
-                    }
+                                                      allocation_user_pk=allocation_user_obj.pk)                
 
                     if EMAIL_ADDED_PROJECT_USERS:
+
+                        project_url = f'{CENTER_BASE_URL.strip("/")}/{"project"}/{project_obj.pk}/'
+
+                        template_context = {
+                            'center_name': CENTER_NAME,
+                            'project': project_obj,
+                            'user': user_obj,
+                            'project_url': project_url,
+                            'signature': EMAIL_SIGNATURE
+                        }
+
                         send_email_template(
                             'You have been added to a project',
                             'email/project_add_user.txt',
