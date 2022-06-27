@@ -4,6 +4,8 @@ from django.core.validators import MinLengthValidator
 from django.db.models import Q
 
 from coldfront.core.allocation.models import SecureDirRequest
+from coldfront.core.allocation.utils_.secure_dir_utils import \
+    get_secure_dir_allocations
 from coldfront.core.project.forms_.new_project_forms.request_forms import \
     PIChoiceField
 from coldfront.core.project.models import ProjectUserRoleChoice, ProjectUser, \
@@ -130,8 +132,19 @@ class SecureDirExistingProjectForm(forms.Form):
         fc_co_ic_projects_cond = Q(name__startswith='fc_') | \
                                  Q(name__startswith='co_') | \
                                  Q(name__startswith='ic_')
+
+        all_sec_dirs = get_secure_dir_allocations()
+        projects_with_secure_dirs = \
+            set(all_sec_dirs.values_list('project__pk', flat=True))
+
+        projects_with_secure_dirs.update(
+            set(SecureDirRequest.objects.exclude(status__name='Denied').
+                values_list('project__pk', flat=True)))
+
         self.fields['project'].queryset = \
-            Project.objects.filter(fc_co_ic_projects_cond, status__name='Active')
+            Project.objects.\
+                filter(fc_co_ic_projects_cond, status__name='Active').\
+                exclude(project__pk__in=projects_with_secure_dirs)
 
 
 class SecureDirReviewStatusForm(forms.Form):

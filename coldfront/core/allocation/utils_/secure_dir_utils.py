@@ -293,3 +293,15 @@ class SecureDirRequestApprovalRunner(object):
                 except Exception as e:
                     logger.error('Failed to send notification email. Details:\n')
                     logger.exception(e)
+
+
+def get_secure_dir_allocations():
+    """Returns a queryset of all active secure directory allocations."""
+    scratch_directory = Resource.objects.get(name='Scratch2 P2/P3 Directory')
+    groups_directory = Resource.objects.get(name='Groups P2/P3 Directory')
+
+    queryset = Allocation.objects.filter(
+        resources__in=[scratch_directory, groups_directory],
+        status__name='Active')
+
+    return queryset

@@ -34,8 +34,10 @@ from coldfront.core.allocation.models import (Allocation,
                                               SecureDirRequest)
 from coldfront.core.allocation.utils_.secure_dir_utils import \
     get_secure_dir_manage_user_request_objects, secure_dir_request_state_status, \
-    SecureDirRequestDenialRunner, SecureDirRequestApprovalRunner
+    SecureDirRequestDenialRunner, SecureDirRequestApprovalRunner, \
+    get_secure_dir_allocations
 from coldfront.core.project.models import ProjectUser
+from coldfront.core.resource.models import Resource
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import utc_now_offset_aware, \
     session_wizard_all_form_data
@@ -882,6 +884,22 @@ class SecureDirRequestWizard(LoginRequiredMixin,
                 SecureDirRequestStatusChoice.objects.get(
                     name='Under Review')
             request_kwargs['request_time'] = utc_now_offset_aware()
+
+            # Check that the project does not have an existing Secure
+            # Directory or Secure Directory Request.
+            sec_dir_allocations = \
+                get_secure_dir_allocations().filter(project=existing_project)
+            sec_dir_requests = \
+                SecureDirRequest.objects.\
+                    filter(project=existing_project).\
+                    exclude(status__name='Denied')
+
+            if sec_dir_allocations.exists() or sec_dir_requests.exists():
+                message = f'The project {existing_project.name} already has ' \
+                          f'a secure directory associated with it.'
+                messages.error(self.request, message)
+                return HttpResponseRedirect(redirect_url)
+
             request = SecureDirRequest.objects.create(
                 **request_kwargs)
 
