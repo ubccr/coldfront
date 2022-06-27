@@ -1250,6 +1250,16 @@ class SecureDirRequestDetailView(LoginRequiredMixin,
             return HttpResponseRedirect(
                 reverse('secure-dir-request-detail', kwargs={'pk': pk}))
 
+        # Check that the project does not have any Secure Directories yet.
+        sec_dir_allocations = get_secure_dir_allocations()
+        if sec_dir_allocations.filter(project=self.request_obj.project).exists():
+            message = f'The project {self.request_obj.project.name} already ' \
+                      f'has a secure directory associated with it.'
+            messages.error(self.request, message)
+            pk = self.request_obj.pk
+            return HttpResponseRedirect(
+                reverse('secure-dir-request-detail', kwargs={'pk': pk}))
+
         # Approve the request and send emails to the PI and requester.
         runner = SecureDirRequestApprovalRunner(self.request_obj)
         runner.run()
