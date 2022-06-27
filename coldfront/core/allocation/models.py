@@ -697,8 +697,7 @@ def secure_dir_request_state_schema():
         },
         'setup': {
             'status': 'Pending',
-            'scratch': '',
-            'groups': '',
+            'justification': '',
             'timestamp': ''
         },
         'other': {
@@ -710,6 +709,7 @@ def secure_dir_request_state_schema():
 
 class SecureDirRequest(TimeStampedModel):
     requester = models.ForeignKey(User, on_delete=models.CASCADE)
+    directory_name = models.TextField()
     data_description = models.TextField()
     rdm_consultation = models.TextField(null=True)
     pi = models.ForeignKey(User, on_delete=models.CASCADE, related_name='requested_pi')
@@ -722,6 +722,9 @@ class SecureDirRequest(TimeStampedModel):
 
     state = models.JSONField(default=secure_dir_request_state_schema)
 
+    def __str__(self):
+        return f'{self.directory_name} ({self.project.name})'
+
     def denial_reason(self):
         """Return the reason why the request was denied, based on its
         'state' field."""
@@ -733,6 +736,7 @@ class SecureDirRequest(TimeStampedModel):
         state = self.state
         rdm_consultation = state['rdm_consultation']
         mou = state['mou']
+        setup = state['setup']
         other = state['other']
 
         DenialReason = namedtuple(
@@ -746,6 +750,10 @@ class SecureDirRequest(TimeStampedModel):
             category = 'Memorandum of Understanding'
             justification = mou['justification']
             timestamp = mou['timestamp']
+        elif setup['status'] == 'Denied':
+            category = 'Cluster Setup'
+            justification = setup['justification']
+            timestamp = setup['timestamp']
         elif other['timestamp']:
             category = 'Other'
             justification = other['justification']
