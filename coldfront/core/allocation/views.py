@@ -474,8 +474,7 @@ class AllocationListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
                     Q(project__status__name='Active') &
                     Q(project__projectuser__user=self.request.user) &
                     Q(project__projectuser__status__name='Active') &
-                    Q(allocationuser__user=self.request.user) &
-                    Q(allocationuser__status__name='Active')
+                    Q(project__projectuser__role__name='Principal Investigator')
                 ).distinct().order_by(order_by)
 
             # Project Title
