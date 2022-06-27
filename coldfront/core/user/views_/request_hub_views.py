@@ -522,7 +522,7 @@ class RequestHubView(LoginRequiredMixin,
         user = self.request.user
 
         secure_dir_pending = SecureDirRequest.objects.filter(
-            status__name__in=['Pending', 'Approved - Processing']).order_by('modified')
+            status__name__in=['Under Review', 'Approved - Processing']).order_by('modified')
 
         secure_dir_complete = SecureDirRequest.objects.filter(
             status__name=['Approved - Complete', 'Denied']).order_by('modified')
