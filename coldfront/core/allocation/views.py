@@ -113,6 +113,14 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
 
+        is_pi = allocation_obj.project.projectuser_set.filter(
+            user=self.request.user,
+            role__name='Principal Investigator',
+            status__name='Active').exists()
+
+        if is_pi:
+            return True
+
         user_can_access_project = allocation_obj.project.projectuser_set.filter(
             user=self.request.user, status__name__in=['Active', 'New', ]).exists()
 
@@ -581,22 +589,6 @@ class AllocationListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
             allocation_list = paginator.page(1)
         except EmptyPage:
             allocation_list = paginator.page(paginator.num_pages)
-
-        context['is_pi'] = UserProfile.objects.get(user=self.request.user).is_pi
-
-        # Only active PIs of active FCAs, ICAs and Condos can request
-        # secure directories
-        eligible_project = Q(project__name__startswith='fc_') | \
-                           Q(project__name__startswith='ic_') | \
-                           Q(project__name__startswith='co_') & \
-                           Q(project__status__name='Active')
-
-        context['can_request_sec_dir'] = ProjectUser.objects.filter(
-            eligible_project,
-            user=self.request.user,
-            role__name='Principal Investigator',
-            status__name='Active',
-        ).exists()
 
         context['user_agreement_signed'] = \
             self.request.user.userprofile.access_agreement_signed_date is not None
