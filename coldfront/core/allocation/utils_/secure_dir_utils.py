@@ -177,7 +177,7 @@ class SecureDirRequestDenialRunner(object):
                         'user_first_name': user.first_name,
                         'user_last_name': user.last_name,
                         'project': self.request_obj.project.name,
-                        'reason': self.request_obj.denial_reason(),
+                        'reason': self.request_obj.denial_reason().justification,
                         'signature': settings.EMAIL_SIGNATURE,
                         'support_email': settings.CENTER_HELP_EMAIL,
                     }
