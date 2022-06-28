@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django import forms
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -293,10 +295,12 @@ class AllocationPeriodChoiceField(forms.ModelChoiceField):
         allowance_name = self.computing_allowance.name
         if flag_enabled('BRC_ONLY'):
             assert allowance_name in self._allowances_with_periods_brc()
-            return self.interface.service_units_from_name(allowance_name)
+            return Decimal(
+                self.interface.service_units_from_name(allowance_name))
         elif flag_enabled('LRC_ONLY'):
             assert allowance_name in self._allowances_with_periods_lrc()
-            return self.interface.service_units_from_name(allowance_name)
+            return Decimal(
+                self.interface.service_units_from_name(allowance_name))
         return settings.ALLOCATION_MIN
 
     @staticmethod
