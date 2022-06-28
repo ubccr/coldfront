@@ -1,0 +1,15 @@
+Dear System Administrator,
+
+Access to {{center_name}} resources has expired. Any accounts under these allocation(s) are now unable to
+access the associated resource. Below is a list of links to project(s) containing at least one expired allocation: 
+{% for project_key, project_url in project_dict.items %}
+Project Title: {{project_key}}
+Project URL: {{ project_url.0 }}
+Project PI: {{ project_url.1 }} 
+
+    {% spaceless %} {% for allocation_key, allocation_value in allocation_dict.items %}{% if allocation_key == project_url.0 %}Expired Allocation(s):{% for allocation in allocation_value %}{% for allocation_url, resource_name in allocation.items %}
+        {{ resource_name }}{% endfor %}{% endfor %}{% endif %}{% endfor %}{% endspaceless %}
+{% endfor %}
+
+Thank you,
+{{ signature }}

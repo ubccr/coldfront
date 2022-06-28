@@ -21,6 +21,7 @@ CENTER_NAME = import_from_settings('CENTER_NAME')
 CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
 CENTER_PROJECT_RENEWAL_HELP_URL = import_from_settings(
     'CENTER_PROJECT_RENEWAL_HELP_URL')
+EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
 EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
 EMAIL_OPT_OUT_INSTRUCTION_URL = import_from_settings(
     'EMAIL_OPT_OUT_INSTRUCTION_URL')
@@ -126,6 +127,8 @@ def send_expiry_emails():
             logger.debug(f'Allocation(s) expiring in soon, email sent to user {user}.')
 
     #Allocations expired
+    admin_projectdict = {}
+    admin_allocationdict = {}
     for user in User.objects.all():
         projectdict = {}
         allocationdict = {}
@@ -173,7 +176,21 @@ def send_expiry_emails():
                                 allocationdict[project_url].append({allocation_renew_url : resource_name})
 
                         if allocation.project.title not in projectdict:
-                            projectdict[allocation.project.title] = (project_url, allocation.project.pi.username, days_remaining)
+                            projectdict[allocation.project.title] = (project_url, allocation.project.pi.username)
+
+                        admin_expire_notification = allocation.allocationattribute_set.filter(
+                            allocation_attribute_type__name='ADMIN EXPIRE NOTIFICATION').first()
+                        if admin_expire_notification and admin_expire_notification.value == 'Yes':
+
+                            if project_url not in admin_allocationdict:
+                                    admin_allocationdict[project_url] = []
+                                    admin_allocationdict[project_url].append({allocation_renew_url : resource_name})
+                            else:
+                                if allocation_renew_url not in admin_allocationdict[project_url]:
+                                    admin_allocationdict[project_url].append({allocation_renew_url : resource_name})
+
+                            if allocation.project.title not in admin_projectdict:
+                                admin_projectdict[allocation.project.title] = (project_url, allocation.project.pi.username)
 
                             
         if email_receiver_list:
@@ -186,3 +203,16 @@ def send_expiry_emails():
                         ) 
 
             logger.debug(f'Allocation(s) expired email sent to user {user}.')
+
+    admin_template_context = {
+        'project_dict': admin_projectdict,
+        'allocation_dict': admin_allocationdict,
+        'signature': EMAIL_SIGNATURE
+    }  
+
+    send_email_template('Allocation(s) have expired',
+                        'email/allocation_expired.txt',
+                        admin_template_context,
+                        EMAIL_SENDER,
+                        [EMAIL_TICKET_SYSTEM_ADDRESS,]
+                        )
