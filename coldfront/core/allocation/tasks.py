@@ -172,7 +172,7 @@ def send_expiry_emails():
                                 allocationdict[project_url] = []
                                 allocationdict[project_url].append({allocation_renew_url : resource_name})
                         else:
-                            if allocation_renew_url not in allocationdict[project_url]:
+                            if {allocation_renew_url : resource_name} not in allocationdict[project_url]:
                                 allocationdict[project_url].append({allocation_renew_url : resource_name})
 
                         if allocation.project.title not in projectdict:
@@ -180,13 +180,13 @@ def send_expiry_emails():
 
                         admin_expire_notification = allocation.allocationattribute_set.filter(
                             allocation_attribute_type__name='ADMIN EXPIRE NOTIFICATION').first()
-                        if admin_expire_notification and admin_expire_notification.value == 'Yes':
-
+                        if not admin_expire_notification:
+                            
                             if project_url not in admin_allocationdict:
                                     admin_allocationdict[project_url] = []
                                     admin_allocationdict[project_url].append({allocation_renew_url : resource_name})
                             else:
-                                if allocation_renew_url not in admin_allocationdict[project_url]:
+                                if {allocation_renew_url : resource_name} not in admin_allocationdict[project_url]:
                                     admin_allocationdict[project_url].append({allocation_renew_url : resource_name})
 
                             if allocation.project.title not in admin_projectdict:
@@ -209,9 +209,9 @@ def send_expiry_emails():
         'allocation_dict': admin_allocationdict,
         'signature': EMAIL_SIGNATURE
     }  
-
+    
     send_email_template('Allocation(s) have expired',
-                        'email/allocation_expired.txt',
+                        'email/admin_allocation_expired.txt',
                         admin_template_context,
                         EMAIL_SENDER,
                         [EMAIL_TICKET_SYSTEM_ADDRESS,]
