@@ -130,14 +130,6 @@ class SavioProjectAllocationPeriodForm(forms.Form):
         return AllocationPeriod.objects.filter(f).order_by(*order_by)
 
 
-class SavioProjectAllocationTypeForm(forms.Form):
-
-    allocation_type = forms.ChoiceField(
-        choices=SavioProjectAllocationRequest.ALLOCATION_TYPE_CHOICES,
-        label='Allocation Type',
-        widget=forms.Select())
-
-
 class ComputingAllowanceForm(forms.Form):
 
     computing_allowance = forms.ModelChoiceField(
