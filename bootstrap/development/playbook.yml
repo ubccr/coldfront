@@ -295,6 +295,10 @@
         src: "{{ git_prefix }}/{{ reponame }}/bootstrap/ansible/settings_template.tmpl"
         dest: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/config/{{ deployment }}_settings.py"
 
+    - name: Create the deployment-specific password reset email subject text file from a template
+      template: src={{ git_prefix }}/{{ reponame }}/bootstrap/ansible/password_reset_subject_template.tmpl
+                dest={{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/core/user/templates/user/passwords/password_reset_subject.txt
+
     # Run Django management commands.
 
     - name: Run Django management command - initial_setup

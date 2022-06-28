@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
@@ -536,7 +537,7 @@ class RequestHubView(LoginRequiredMixin,
             request_obj = eval(f'self.get_{request}()')
             if context['show_all']:
                 request_obj.help_text = f'Showing all {request_obj.title} ' \
-                                        f'in MyBRC.'
+                                        f'in {settings.PORTAL_NAME}.'
             context[f'{request}_obj'] = request_obj
 
         context['admin_staff'] = (self.request.user.is_superuser or

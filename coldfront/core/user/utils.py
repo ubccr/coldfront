@@ -222,6 +222,7 @@ def send_account_activation_email(user):
     subject = 'Account Activation Required'
     template_name = 'email/account_activation_required.txt'
     context = {
+        'PORTAL_NAME': settings.PORTAL_NAME,
         'center_name': import_from_settings('CENTER_NAME', ''),
         'activation_url': account_activation_url(user),
         'signature': import_from_settings('EMAIL_SIGNATURE', ''),
@@ -253,6 +254,7 @@ def send_account_already_active_email(user):
         center_base_url, reverse('password-reset'))
 
     context = {
+        'PORTAL_NAME': settings.PORTAL_NAME,
         'login_url': login_url,
         'password_reset_url': password_reset_url,
     }
@@ -273,6 +275,7 @@ def send_email_verification_email(email_address):
     subject = 'Email Verification Required'
     template_name = 'email/email_verification_required.txt'
     context = {
+        'PORTAL_NAME': settings.PORTAL_NAME,
         'center_name': import_from_settings('CENTER_NAME', ''),
         'verification_url': __email_verification_url(email_address),
         'signature': import_from_settings('EMAIL_SIGNATURE', ''),

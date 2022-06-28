@@ -10,16 +10,16 @@
       <tr>
         <td>
           {% if show_all %}
-              Below are all of the requests in MyBRC. Click on a request
+              Below are all the requests in {{ PORTAL_NAME }}. Click on a request
               section to view requests of that type. To perform actions on a specific request,
               click the button to go to the request's main page and perform the actions there.
               Click <a href="{% url 'request-hub' %}">here</a> to view only your requests.
           {% else %}
-              Below are all of your requests in MyBRC. Click on a request
+              Below are all of your requests in {{ PORTAL_NAME }}. Click on a request
               section to view your requests of that type.
 
               {% if admin_staff %}
-                Click <a href="{% url 'request-hub-admin' %}">here</a> to view all requests in MyBRC.
+                Click <a href="{% url 'request-hub-admin' %}">here</a> to view all requests in {{ PORTAL_NAME }}.
               {% endif %}
           {% endif %}
         </td>

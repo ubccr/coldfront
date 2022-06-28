@@ -559,6 +559,7 @@ def send_new_project_request_pi_notification_email(request):
     password_reset_url = urljoin(center_base_url, reverse('password-reset'))
 
     context = {
+        'PORTAL_NAME': settings.PORTAL_NAME,
         'pooling': pooling,
         'project_name': request.project.name,
         'requester_str': requester_str,

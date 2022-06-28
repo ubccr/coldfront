@@ -285,8 +285,8 @@ class SecureDirManageUsersView(LoginRequiredMixin,
                 f'Successfully requested to {self.action} '
                 f'{reviewed_users_count} user'
                 f'{"s" if reviewed_users_count > 1 else ""} '
-                f'{self.language_dict["preposition"]} the secure '
-                f'directory {self.directory}. BRC staff have '
+                f'{self.language_dict["preposition"]} the secure directory '
+                f'{self.directory}. {settings.PROGRAM_NAME_SHORT} staff have '
                 f'been notified.')
             messages.success(request, message)
 

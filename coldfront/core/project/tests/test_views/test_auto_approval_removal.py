@@ -147,7 +147,8 @@ class TestProjectJoinView(TestBase):
         body_components = [
             (f'User {self.user1.first_name} {self.user1.last_name} '
              f'({self.user1.email}) has requested to join your project, '
-             f'{self.project1.name} via the MyBRC User Portal.'),
+             f'{self.project1.name} via the {settings.PORTAL_NAME} User '
+             f'Portal.'),
             f'Please approve/deny this request here: {review_url}.',
         ]
 
