@@ -37,7 +37,8 @@ from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationRemoveUserFormset,
                                              AllocationReviewUserForm,
                                              AllocationSearchForm,
-                                             AllocationUpdateForm)
+                                             AllocationUpdateForm,
+                                             AllocationInvoiceSearchForm)
 from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationAttribute,
                                               AllocationAttributeType,
@@ -49,7 +50,8 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationUserNote,
                                               AllocationUserRequestStatusChoice,
                                               AllocationUserRequest,
-                                              AllocationUserStatusChoice)
+                                              AllocationUserStatusChoice,
+                                              AllocationInvoice)
 from coldfront.core.allocation.utils import (compute_prorated_amount,
                                              generate_guauge_data_from_usage,
                                              get_user_resources,
@@ -191,6 +193,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                     context['is_allowed_to_update_project'] = True
 
         context['allocation_users'] = allocation_users
+        context['allocation_invoices'] = allocation_obj.allocationinvoice_set.all()
 
         if self.request.user.is_superuser:
             notes = allocation_obj.allocationusernote_set.all()
@@ -2243,7 +2246,7 @@ class AllocationInvoiceListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('allocation.can_manage_invoice'):
+        if self.request.user.is_staff and self.request.user.has_perm('allocation.can_manage_invoice'):
             return True
 
         messages.error(
@@ -2252,7 +2255,21 @@ class AllocationInvoiceListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['AllocationInvoiceExportForm'] = AllocationInvoiceExportForm()
+        if self.request.user.is_superuser:
+            resource_objs = Resource.objects.filter(
+                requires_payment=True
+            )
+        else:
+            resource_objs = Resource.objects.filter(
+                review_groups__in=list(self.request.user.groups.all()),
+                requires_payment=True
+            )
+        resources = []
+        for resource in resource_objs:
+            resources.append(
+                (resource.name, resource.name)
+            )
+        context['allocation_invoice_export_form'] = AllocationInvoiceExportForm(resources=resources)
         return context
 
     def get_queryset(self):
@@ -2268,17 +2285,6 @@ class AllocationInvoiceListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
         return allocations
 
 
-# class AllocationAllInvoicesListView(AllocationInvoiceListView):
-#     template_name = 'allocation/allocation_all_invoices_list.html'
-
-#     def get_queryset(self):
-#         allocations = Allocation.objects.filter(
-#             resources__requires_payment=True
-#         )
-
-#         return allocations
-
-
 class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     model = Allocation
     template_name = 'allocation/allocation_invoice_detail.html'
@@ -2289,8 +2295,11 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('allocation.can_manage_invoice'):
+        if self.request.user.is_staff and self.request.user.has_perm('allocation.can_manage_invoice'):
             return True
+
+        messages.error(
+            self.request, 'You do not have permission to manage invoices.')
 
     def get(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
@@ -2326,6 +2335,14 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
                 messages.error(request, 'Project must be approved first before you can update this allocation\'s status!')
                 return HttpResponseRedirect(reverse('allocation-invoice-detail', kwargs={'pk': pk}))
 
+            if initial_data.get('status') != status and status.name in ['Paid', ]:
+                AllocationInvoice.objects.create(
+                    allocation=allocation_obj,
+                    account_number=allocation_obj.account_number,
+                    sub_account_number=allocation_obj.sub_account_number,
+                    status=status
+                )
+
             allocation_obj.status = status
             allocation_obj.save()
             messages.success(request, 'Allocation updated!')
@@ -2333,6 +2350,319 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
             for error in form.errors:
                 messages.error(request, error)
         return HttpResponseRedirect(reverse('allocation-invoice-detail', kwargs={'pk': pk}))
+
+
+class AllocationAllInvoicesListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    model = AllocationInvoice
+    template_name = 'allocation/allocation_all_invoices_list.html'
+    context_object_name = 'allocation_invoice_list'
+    paginate_by = 25
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.is_staff and self.request.user.has_perm('allocation.can_manage_invoice'):
+            return True
+
+        messages.error(
+            self.request, 'You do not have permission to manage invoices.')
+        return False
+
+    def get_queryset(self):
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            if direction == 'asc':
+                direction = ''
+            elif direction == 'des':
+                direction = '-'
+            order_by = direction + order_by
+        else:
+            order_by = 'id'
+
+        allocation_invoice_search_form = AllocationInvoiceSearchForm(self.request.GET)
+
+        if allocation_invoice_search_form.is_valid():
+            data = allocation_invoice_search_form.cleaned_data
+
+            if self.request.user.is_superuser:
+                invoices = AllocationInvoice.objects.all().order_by(order_by)
+            else:
+                invoices = AllocationInvoice.objects.filter(
+                    allocation__resources__review_groups__in=list(self.request.user.groups.all())
+                ).order_by(order_by)
+
+            # Resource Type
+            if data.get('resource_type'):
+                invoices = invoices.filter(
+                    allocation__resources__resource_type=data.get('resource_type')
+                )
+
+            # Resource Name
+            if data.get('resource_name'):
+                invoices = invoices.filter(
+                    allocation__resources__in=data.get('resource_name')
+                )
+
+            # Start Date
+            if data.get('start_date'):
+                invoices = invoices.filter(
+                    created__gt=data.get('start_date')
+                ).order_by('created')
+
+            # End Date
+            if data.get('end_date'):
+                invoices = invoices.filter(
+                    created__lt=data.get('end_date')
+                ).order_by('created')
+
+        else:
+            if self.request.user.is_superuser:
+                invoices = AllocationInvoice.objects.all().order_by(order_by)
+            else:
+                invoices = AllocationInvoice.objects.filter(
+                    allocation__resources__review_groups__in=list(self.request.user.groups.all())
+                ).order_by(order_by)
+
+        return invoices
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        allocation_invoice_search_form = AllocationInvoiceSearchForm(self.request.GET)
+        if allocation_invoice_search_form.is_valid():
+            context['allocation_invoice_search_form'] = allocation_invoice_search_form
+            data = allocation_invoice_search_form.cleaned_data
+            filter_parameters = ''
+            for key, value in data.items():
+                if value:
+                    if isinstance(value, QuerySet):
+                        for ele in value:
+                            filter_parameters += '{}={}&'.format(key, ele.pk)
+                    elif hasattr(value, 'pk'):
+                        filter_parameters += '{}={}&'.format(key, value.pk)
+                    else:
+                        filter_parameters += '{}={}&'.format(key, value)
+        else:
+            filter_parameters = ''
+            context['allocation_invoice_search_form'] - AllocationInvoiceSearchForm()
+
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            filter_parameters_with_order_by = filter_parameters + \
+                'order_by={}&direction={}&'.format(order_by, direction)
+        else:
+            filter_parameters_with_order_by = filter_parameters
+
+        if filter_parameters:
+            context['expand_accordion'] = 'show'
+
+        context['filter_parameters'] = filter_parameters
+        context['filter_parameters_with_order_by'] = filter_parameters_with_order_by
+
+        allocation_invoice_list = context.get('allocation_invoice_list')
+        paginator = Paginator(allocation_invoice_list, self.paginate_by)
+
+        page = self.request.GET.get('page')
+
+        try:
+            allocation_invoice_list = paginator.page(page)
+        except PageNotAnInteger:
+            allocation_invoice_list = paginator.page(1)
+        except EmptyPage:
+            allocation_invoice_list = paginator.page(paginator.num_pages)
+
+        if self.request.user.is_superuser:
+            resource_objs = Resource.objects.filter(
+                requires_payment=True
+            )
+        else:
+            resource_objs = Resource.objects.filter(
+                review_groups__in=list(self.request.user.groups.all()),
+                requires_payment=True
+            )
+
+        resources = []
+        for resource in resource_objs:
+            resources.append(
+                (resource.name, resource.name)
+            )
+
+        context['allocation_invoice_export_form'] = AllocationInvoiceExportForm(resources=resources)
+
+        return context
+
+
+class AllocationAllInvoicesExportView(LoginRequiredMixin, UserPassesTestMixin, View):
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('allocation.can_manage_invoice'):
+            return True
+
+        messages.error(self.request, 'You do not have permission to download invoices.')
+
+    def post(self, request):
+        file_name = request.POST['file_name']
+        resource = request.POST['resource']
+        start_date = request.POST['start_date']
+        end_date = request.POST['end_date']
+
+        initial_data = {
+            'file_name': file_name,
+            'resource': resource,
+            'start_date': start_date,
+            'end_date': end_date
+        }
+
+        if self.request.user.is_superuser:
+            resource_objs = Resource.objects.filter(
+                requires_payment=True
+            )
+        else:
+            resource_objs = Resource.objects.filter(
+                review_groups__in=list(self.request.user.groups.all()),
+                requires_payment=True
+            )
+
+        resources = []
+        for resource_obj in resource_objs:
+            resources.append(
+                (resource_obj.name, resource_obj.name)
+            )
+
+        form = AllocationInvoiceExportForm(
+            request.POST,
+            initial=initial_data,
+            resources=resources
+        )
+
+        if form.is_valid():
+            data = form.cleaned_data
+            file_name = data.get('file_name')
+            resource = data.get('resource')
+            start_date = data.get('start_date')
+            end_date = data.get('end_date')
+
+            if file_name[-4:] != '.csv':
+                file_name += '.csv'
+
+            invoices = AllocationInvoice.objects.filter(
+                allocation__resources__review_groups__in=list(request.user.groups.all())
+            ).order_by('-created')
+
+            if start_date:
+                invoices = invoices.filter(
+                    created__gt=start_date
+                ).order_by('-created')
+
+            if end_date:
+                invoices = invoices.filter(
+                    created__lt=end_date
+                ).order_by('-created')
+
+            rows = []
+            if resource == 'RStudio Connect':
+                header = [
+                    'Name',
+                    'Account*',
+                    'Object*',
+                    'Sub-Acct',
+                    'Product',
+                    'Quantity',
+                    'Unit cost',
+                    'Amount*',
+                    'Invoice',
+                    'Line Description',
+                    'Income Account',
+                    'Income Sub-acct',
+                    'Income Object Code',
+                    'Income sub-object code',
+                    'Project',
+                    'Org Ref ID'
+                ]
+
+                for invoice in invoices:
+                    row = [
+                        ' '.join((invoice.project.pi.first_name, invoice.project.pi.last_name)),
+                        invoice.account_number,
+                        '4616',
+                        invoice.sub_account_number,
+                        '',
+                        1,
+                        '',
+                        invoice.total_cost,
+                        '',
+                        'RStudio Connect FY 22',
+                        '63-101-08',
+                        'SMSAL',
+                        1500,
+                        '',
+                        '',
+                        ''
+                    ]
+
+                    rows.append(row)
+                rows.insert(0, header)
+            elif resource == "Slate-Project":
+                header = [
+                    'Name',
+                    'Account*'
+                ]
+
+                for invoice in invoices:
+                    row = [
+                        ' '.join((invoice.allocation.project.pi.first_name, invoice.allocation.project.pi.last_name)),
+                        invoice.account_number
+                    ]
+
+                    rows.append(row)
+                rows.insert(0, header)
+
+            pseudo_buffer = Echo()
+            writer = csv.writer(pseudo_buffer)
+            response = StreamingHttpResponse(
+                (writer.writerow(row) for row in rows),
+                content_type='text/csv'
+            )
+            response['Content-Disposition'] = f'attachment; filename="{file_name}"'
+            return response
+        else:
+            messages.error(
+                request,
+                'Please correct the errors for the following fields: {}'
+                .format(' '.join(form.errors))
+            )
+            return HttpResponseRedirect(reverse('allocation-all-invoices-list'))
+
+
+class AllocationAllInvoicesDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'allocation/allocation_all_invoices_detail.html'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.is_staff and self.request.user.has_perm('allocation.can_manage_invoice'):
+            return True
+
+        messages.error(
+            self.request, 'You do not have permission to manage invoices.')
+        return False
+
+    def get_context_data(self, **kwargs):
+        pk = self.kwargs.get('pk')
+        invoice_obj = get_object_or_404(AllocationInvoice, pk=pk)
+
+        context = super().get_context_data(**kwargs)
+        context['invoice'] = invoice_obj
+        return context
 
 
 class AllocationAddInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
@@ -2526,28 +2856,63 @@ class AllocationInvoiceExportView(LoginRequiredMixin, UserPassesTestMixin, View)
         messages.error(self.request, 'You do not have permission to download invoices.')
 
     def post(self, request):
-        file_name = request.POST["file_name"]
-        resource = request.POST["resource"]
+        file_name = request.POST['file_name']
+        resource = request.POST['resource']
+        start_date = request.POST['start_date']
+        end_date = request.POST['end_date']
 
         initial_data = {
             'file_name': file_name,
-            'resource': resource
+            'resource': resource,
+            'start_date': start_date,
+            'end_date': end_date
         }
+
+        if self.request.user.is_superuser:
+            resource_objs = Resource.objects.filter(
+                requires_payment=True
+            )
+        else:
+            resource_objs = Resource.objects.filter(
+                review_groups__in=list(self.request.user.groups.all()),
+                requires_payment=True
+            )
+
+        resources = []
+        for resource_obj in resource_objs:
+            resources.append(
+                (resource_obj.name, resource_obj.name)
+            )
         form = AllocationInvoiceExportForm(
-            request.POST, initial=initial_data)
+            request.POST,
+            initial=initial_data,
+            resources=resources
+        )
 
         if form.is_valid():
             data = form.cleaned_data
             file_name = data.get('file_name')
             resource = data.get('resource')
+            start_date = data.get('start_date')
+            end_date = data.get('end_date')
 
             if file_name[-4:] != ".csv":
                 file_name += ".csv"
 
             invoices = Allocation.objects.prefetch_related('project', 'status').filter(
-                Q(status__name__in=['Payment Pending', ]) &
+                Q(status__name__in=['Payment Pending', 'Paid', ]) &
                 Q(resources__name=resource)
             ).order_by('-created')
+
+            if start_date:
+                invoices = invoices.filter(
+                    created__gt=start_date
+                ).order_by('-created')
+
+            if end_date:
+                invoices = invoices.filter(
+                    created__lt=end_date
+                ).order_by('-created')
 
             rows = []
             if resource == "RStudio Connect":
