@@ -1,7 +1,7 @@
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationStatusChoice
+from coldfront.core.project.forms_.new_project_forms.request_forms import ComputingAllowanceForm
 from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectAllocationPeriodForm
-from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectAllocationTypeForm
 from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectDetailsForm
 from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectExistingPIForm
 from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectICAExtraFieldsForm
@@ -23,6 +23,7 @@ from coldfront.core.project.models import VectorProjectAllocationRequest
 from coldfront.core.project.utils_.new_project_utils import send_new_project_request_admin_notification_email
 from coldfront.core.project.utils_.new_project_utils import send_new_project_request_pi_notification_email
 from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import session_wizard_all_form_data
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -33,7 +34,6 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.db import IntegrityError
-from django.db.models import Q
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
@@ -74,7 +74,7 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
                                 SessionWizardView):
 
     FORMS = [
-        ('allocation_type', SavioProjectAllocationTypeForm),
+        ('computing_allowance', ComputingAllowanceForm),
         ('allocation_period', SavioProjectAllocationPeriodForm),
         ('existing_pi', SavioProjectExistingPIForm),
         ('new_pi', SavioProjectNewPIForm),
@@ -87,8 +87,8 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
     ]
 
     TEMPLATES = {
-        'allocation_type':
-            'project/project_request/savio/project_allocation_type.html',
+        'computing_allowance':
+            'project/project_request/savio/project_computing_allowance.html',
         'allocation_period':
             'project/project_request/savio/project_allocation_period.html',
         'existing_pi':
@@ -109,7 +109,7 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
     }
 
     form_list = [
-        SavioProjectAllocationTypeForm,
+        ComputingAllowanceForm,
         SavioProjectAllocationPeriodForm,
         SavioProjectExistingPIForm,
         SavioProjectNewPIForm,
@@ -250,16 +250,13 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
     def show_allocation_period_form_condition(self):
         """Only show the form for selecting an AllocationPeriod for
         FCAs, ICAs, and PCAs."""
-        step_name = 'allocation_type'
+        step_name = 'computing_allowance'
         step = str(self.step_numbers_by_form_name[step_name])
         cleaned_data = self.get_cleaned_data_for_step(step) or {}
-        relevant_allocation_types = (
-            SavioProjectAllocationRequest.FCA,
-            SavioProjectAllocationRequest.ICA,
-            SavioProjectAllocationRequest.PCA,
-        )
-        allocation_type = cleaned_data.get('allocation_type', None)
-        return allocation_type in relevant_allocation_types
+        computing_allowance = cleaned_data.get('computing_allowance', None)
+        if not computing_allowance:
+            return False
+        return ComputingAllowance(computing_allowance).is_periodic()
 
     def show_details_form_condition(self):
         step_name = 'pool_allocations'
@@ -268,7 +265,7 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
         return not cleaned_data.get('pool', False)
 
     def show_ica_extra_fields_form_condition(self):
-        step_name = 'allocation_type'
+        step_name = 'computing_allowance'
         step = str(self.step_numbers_by_form_name[step_name])
         cleaned_data = self.get_cleaned_data_for_step(step) or {}
         ica_allocation_type = SavioProjectAllocationRequest.ICA
@@ -281,7 +278,7 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
         return cleaned_data.get('PI', None) is None
 
     def show_pool_allocations_form_condition(self):
-        step_name = 'allocation_type'
+        step_name = 'computing_allowance'
         step = str(self.step_numbers_by_form_name[step_name])
         cleaned_data = self.get_cleaned_data_for_step(step) or {}
         non_poolable_allocation_types = (
@@ -298,7 +295,7 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
         return cleaned_data.get('pool', False)
 
     def show_recharge_extra_fields_form_condition(self):
-        step_name = 'allocation_type'
+        step_name = 'computing_allowance'
         step = str(self.step_numbers_by_form_name[step_name])
         cleaned_data = self.get_cleaned_data_for_step(step) or {}
         recharge_allocation_type = SavioProjectAllocationRequest.RECHARGE
@@ -451,13 +448,13 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
 
     def __set_data_from_previous_steps(self, step, dictionary):
         """Update the given dictionary with data from previous steps."""
-        allocation_type_form_step = \
-            self.step_numbers_by_form_name['allocation_type']
-        if step > allocation_type_form_step:
-            allocation_type_form_data = self.get_cleaned_data_for_step(
-                str(allocation_type_form_step))
-            if allocation_type_form_data:
-                dictionary.update(allocation_type_form_data)
+        computing_allowance_form_step = \
+            self.step_numbers_by_form_name['computing_allowance']
+        if step > computing_allowance_form_step:
+            computing_allowance_form_data = self.get_cleaned_data_for_step(
+                str(computing_allowance_form_step))
+            if computing_allowance_form_data:
+                dictionary.update(computing_allowance_form_data)
 
         allocation_period_form_step = \
             self.step_numbers_by_form_name['allocation_period']

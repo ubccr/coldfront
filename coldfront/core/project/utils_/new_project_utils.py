@@ -1,6 +1,7 @@
 from coldfront.api.statistics.utils import set_project_user_allocation_value
 from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
+from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.utils import get_or_create_active_allocation_user
 from coldfront.core.allocation.utils import get_project_compute_allocation
@@ -15,6 +16,8 @@ from coldfront.core.project.models import VectorProjectAllocationRequest
 from coldfront.core.project.signals import new_project_request_denied
 from coldfront.core.project.utils import ProjectClusterAccessRequestRunner
 from coldfront.core.project.utils import send_added_to_project_notification_email
+from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.user.utils import account_activation_url
@@ -89,6 +92,69 @@ def non_denied_new_project_request_statuses():
     do not have the name 'Denied'."""
     return ProjectAllocationRequestStatusChoice.objects.filter(
         ~Q(name='Denied'))
+
+
+def pis_with_new_project_requests_pks(allocation_period,
+                                      computing_allowance=None,
+                                      request_status_names=[]):
+    """Return a list of primary keys of PIs of new project requests for
+    the given AllocationPeriod that match the given filters.
+
+    Parameters:
+        - allocation_period (AllocationPeriod): The AllocationPeriod to
+                                                filter with
+        - computing_allowance (Resource): An optional computing
+                                          allowance to filter with
+        - request_status_names (list[str]): A list of names of request
+                                            statuses to filter with
+
+    Returns:
+        - A list of integers representing primary keys of matching PIs.
+
+    Raises:
+        - AssertionError, if an input has an unexpected type.
+    """
+    assert isinstance(allocation_period, AllocationPeriod)
+    f = Q(allocation_period=allocation_period)
+    if computing_allowance is not None:
+        assert isinstance(computing_allowance, Resource)
+        f = f & Q(computing_allowance=computing_allowance)
+    if request_status_names:
+        f = f & Q(status__name__in=request_status_names)
+    return set(
+        SavioProjectAllocationRequest.objects.filter(
+            f).values_list('pi__pk', flat=True))
+
+
+def project_pi_pks(computing_allowance=None, project_status_names=[]):
+    """Return a list of primary keys of PI Users of Projects that match
+    the given filters.
+
+    Parameters:
+        - computing_allowance (Resource): An optional computing
+                                          allowance to filter with
+        - project_status_names (list[str]): A list of names of Project
+                                            statuses to filter with
+
+    Returns:
+        - A list of integers representing primary keys of matching PIs.
+
+    Raises:
+        - AssertionError, if an input has an unexpected type.
+        - ComputingAllowanceInterfaceError, if allowance-related values
+          cannot be retrieved.
+    """
+    project_prefix = ''
+    if computing_allowance is not None:
+        assert isinstance(computing_allowance, Resource)
+        interface = ComputingAllowanceInterface()
+        project_prefix = interface.code_from_name(computing_allowance.name)
+    return set(
+        ProjectUser.objects.filter(
+            role__name='Principal Investigator',
+            project__name__startswith=project_prefix,
+            project__status__name__in=project_status_names
+        ).values_list('user__pk', flat=True))
 
 
 class ProjectApprovalRunner(object):

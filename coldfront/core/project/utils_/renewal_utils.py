@@ -14,6 +14,8 @@ from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
+from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.utils.common import display_time_zone_current_date
@@ -210,6 +212,41 @@ def non_denied_renewal_request_statuses():
     do not have the name 'Denied'."""
     return AllocationRenewalRequestStatusChoice.objects.filter(
         ~Q(name='Denied'))
+
+
+def pis_with_renewal_requests_pks(allocation_period, computing_allowance=None,
+                                  request_status_names=[]):
+    """Return a list of primary keys of PIs of allocation renewal
+    requests for the given AllocationPeriod that match the given filters.
+
+    Parameters:
+        - allocation_period (AllocationPeriod): The AllocationPeriod to
+                                                filter with
+        - computing_allowance (Resource): An optional computing
+                                          allowance to filter with
+        - request_status_names (list[str]): A list of names of request
+                                            statuses to filter with
+
+    Returns:
+        - A list of integers representing primary keys of matching PIs.
+
+    Raises:
+        - AssertionError, if an input has an unexpected type.
+        - ComputingAllowanceInterfaceError, if allowance-related values
+          cannot be retrieved.
+    """
+    assert isinstance(allocation_period, AllocationPeriod)
+    f = Q(allocation_period=allocation_period)
+    if computing_allowance is not None:
+        assert isinstance(computing_allowance, Resource)
+        interface = ComputingAllowanceInterface()
+        project_prefix = interface.code_from_name(computing_allowance.name)
+        f = f & Q(post_project__name__startswith=project_prefix)
+    if request_status_names:
+        f = f & Q(status__name__in=request_status_names)
+    return set(
+        AllocationRenewalRequest.objects.filter(
+            f).values_list('pi__pk', flat=True))
 
 
 def send_allocation_renewal_request_approval_email(request, num_service_units):

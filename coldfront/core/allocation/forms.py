@@ -6,6 +6,8 @@ from django.core.validators import MinLengthValidator
 from django.core.validators import RegexValidator
 from django.shortcuts import get_object_or_404
 
+from flags.state import flag_enabled
+
 from coldfront.core.allocation.models import (AllocationAccount,
                                               AllocationAttributeType,
                                               AllocationStatusChoice,
@@ -13,8 +15,10 @@ from coldfront.core.allocation.models import (AllocationAccount,
 from coldfront.core.allocation.utils import get_user_resources
 from coldfront.core.allocation.utils import prorated_allocation_amount
 from coldfront.core.project.models import Project
-from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.resource.models import Resource, ResourceType
+from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.constants import LRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -272,7 +276,8 @@ class AllocationClusterAccountRequestActivationForm(forms.Form):
 class AllocationPeriodChoiceField(forms.ModelChoiceField):
 
     def __init__(self, *args, **kwargs):
-        self.allocation_type = kwargs.pop('allocation_type', None)
+        self.computing_allowance = kwargs.pop('computing_allowance', None)
+        self.interface = ComputingAllowanceInterface()
         super().__init__(*args, **kwargs)
 
     def label_from_instance(self, obj):
@@ -285,11 +290,23 @@ class AllocationPeriodChoiceField(forms.ModelChoiceField):
     def allocation_value(self):
         """Return the default allocation value (Decimal) to use based on
         the allocation type."""
-        if self.allocation_type == 'FCA':
-            return settings.FCA_DEFAULT_ALLOCATION
-        elif self.allocation_type == 'ICA':
-            return settings.ICA_DEFAULT_ALLOCATION
-        elif self.allocation_type == 'PCA':
-            return settings.PCA_DEFAULT_ALLOCATION
-        else:
-            return settings.ALLOCATION_MIN
+        allowance_name = self.computing_allowance.name
+        if flag_enabled('BRC_ONLY'):
+            assert allowance_name in self._allowances_with_periods_brc()
+            return self.interface.service_units_from_name(allowance_name)
+        elif flag_enabled('LRC_ONLY'):
+            assert allowance_name in self._allowances_with_periods_lrc()
+            return self.interface.service_units_from_name(allowance_name)
+        return settings.ALLOCATION_MIN
+
+    @staticmethod
+    def _allowances_with_periods_brc():
+        """Return a list of names of BRC allowances that are only valid
+        for a particular time period."""
+        return [BRCAllowances.FCA, BRCAllowances.ICA, BRCAllowances.PCA]
+
+    @staticmethod
+    def _allowances_with_periods_lrc():
+        """Return a list of names of LRC allowances that are only valid
+        for a particular time period."""
+        return [LRCAllowances.PCA]
