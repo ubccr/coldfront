@@ -32,6 +32,7 @@ from coldfront.core.allocation.models import (Allocation,
                                               AllocationUser,
                                               SecureDirRequestStatusChoice,
                                               SecureDirRequest)
+from coldfront.core.allocation.utils import has_cluster_access
 from coldfront.core.allocation.utils_.secure_dir_utils import \
     get_secure_dir_manage_user_request_objects, secure_dir_request_state_status, \
     SecureDirRequestDenialRunner, SecureDirRequestApprovalRunner, \
@@ -97,9 +98,11 @@ class SecureDirManageUsersView(LoginRequiredMixin,
                         Q(status__name='Active') &
                         Q(user__in=alloc_pis))]
 
+        # Users must have active cluster access to be added.
         users_to_add = set([proj_user.user for proj_user in
                             ProjectUser.objects.filter(project__in=projects,
-                                                       status__name='Active')])
+                                                       status__name='Active')
+                            if has_cluster_access(proj_user.user)])
 
         # Excluding active users that are already part of the allocation.
         users_to_exclude = set(alloc_user.user for alloc_user in
