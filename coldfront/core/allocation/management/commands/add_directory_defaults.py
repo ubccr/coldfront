@@ -58,7 +58,7 @@ class Command(BaseCommand):
         scratch2_path, _ = ResourceAttribute.objects.update_or_create(
             resource_attribute_type=path,
             resource=scratch2_directory,
-            value='/global/scratch2/')
+            value='/global/scratch/')
 
         groups_p2p3_directory, _ = Resource.objects.update_or_create(
             parent_resource=groups_directory,
@@ -82,7 +82,7 @@ class Command(BaseCommand):
         scratch2_p2p3_path, _ = ResourceAttribute.objects.update_or_create(
             resource_attribute_type=path,
             resource=scratch2_p2p3_directory,
-            value=os.path.join(scratch2_path.value, 'pl1data'))
+            value=os.path.join(scratch2_path.value, 'p2p3'))
 
         from coldfront.core.allocation.models import AttributeType
         attribute_type, _ = AttributeType.objects.get_or_create(name='Text')
