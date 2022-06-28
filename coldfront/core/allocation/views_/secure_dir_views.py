@@ -6,7 +6,6 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.db import IntegrityError
 from django.db.models import Q
 from django.forms import formset_factory
 from django.http import HttpResponseRedirect
@@ -38,8 +37,6 @@ from coldfront.core.allocation.utils_.secure_dir_utils import \
     SecureDirRequestDenialRunner, SecureDirRequestApprovalRunner, \
     get_secure_dir_allocations
 from coldfront.core.project.models import ProjectUser
-from coldfront.core.resource.models import Resource
-from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import utc_now_offset_aware, \
     session_wizard_all_form_data
 from coldfront.core.utils.mail import send_email_template

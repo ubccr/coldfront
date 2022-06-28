@@ -3,17 +3,12 @@ import os
 from django.contrib.auth.models import User
 from django.core.management import call_command
 
-from coldfront.api.allocation.tests.test_allocation_base import \
-    TestAllocationBase
 from coldfront.core.allocation.models import AllocationAttributeType, \
     Allocation, AllocationStatusChoice, AllocationAttribute, \
-    AllocationUserStatusChoice, SecureDirAddUserRequest, \
-    SecureDirAddUserRequestStatusChoice, SecureDirRemoveUserRequest, \
-    SecureDirRemoveUserRequestStatusChoice
+    SecureDirAddUserRequest, SecureDirAddUserRequestStatusChoice, \
+    SecureDirRemoveUserRequest, SecureDirRemoveUserRequestStatusChoice
 from coldfront.core.allocation.utils_.secure_dir_utils import \
     create_secure_dirs, get_secure_dir_manage_user_request_objects
-from coldfront.core.project.models import ProjectUser, ProjectUserRoleChoice, \
-    ProjectUserStatusChoice
 from coldfront.core.resource.models import Resource
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.tests.test_base import TestBase

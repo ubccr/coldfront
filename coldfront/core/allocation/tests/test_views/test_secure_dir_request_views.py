@@ -1,32 +1,19 @@
-from datetime import datetime
 from decimal import Decimal
 from http import HTTPStatus
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.contrib.messages import get_messages
 from django.core import mail
-from django.core.management import call_command
 from django.urls import reverse
 from iso8601 import iso8601
 
 from coldfront.api.statistics.utils import create_project_allocation, \
     create_user_project_allocation
 from coldfront.core.allocation.models import (Allocation,
-                                              AllocationStatusChoice,
-                                              SecureDirAddUserRequest,
-                                              SecureDirAddUserRequestStatusChoice,
-                                              SecureDirRemoveUserRequest,
-                                              SecureDirRemoveUserRequestStatusChoice,
-                                              AllocationUser,
-                                              AllocationUserStatusChoice,
                                               SecureDirRequest,
                                               SecureDirRequestStatusChoice,
                                               AllocationAttribute,
                                               AllocationAttributeType)
-from coldfront.core.allocation.tests.test_views.test_secure_dir_manage_users_views import \
-    TestSecureDirBase
-from coldfront.core.allocation.utils_.secure_dir_utils import create_secure_dirs
 from coldfront.core.project.models import (ProjectUser,
                                            ProjectUserStatusChoice,
                                            ProjectUserRoleChoice, Project,
