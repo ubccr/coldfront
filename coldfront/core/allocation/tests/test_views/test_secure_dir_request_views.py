@@ -436,7 +436,7 @@ class TestSecureDirRequestDetailView(TestSecureDirRequestBase):
         )
         self.assertTrue(alloc_attr.exists())
         alloc_attr = alloc_attr.first()
-        self.assertTrue(alloc_attr.value.endswith(self.request0.state['setup']['groups']))
+        self.assertTrue(alloc_attr.value.endswith(self.request0.directory_name))
 
         # Test that the scratch directory is created correctly.
         scratch_p2p3_directory = Resource.objects.get(name='Scratch2 P2/P3 Directory')
@@ -452,7 +452,7 @@ class TestSecureDirRequestDetailView(TestSecureDirRequestBase):
         )
         self.assertTrue(alloc_attr.exists())
         alloc_attr = alloc_attr.first()
-        self.assertTrue(alloc_attr.value.endswith(self.request0.state['setup']['scratch']))
+        self.assertTrue(alloc_attr.value.endswith(self.request0.directory_name))
 
     def test_post_request_emails_sent(self):
         """Test that a POST request sends the correct emails."""
@@ -467,10 +467,10 @@ class TestSecureDirRequestDetailView(TestSecureDirRequestBase):
                       f'\'{self.project0.name}\' was approved. Setup '
                       f'on the cluster is complete.',
                       f'The paths to your secure group and scratch directories '
-                      f'are \'/global/home/groups/pl1_data/'
-                      f'{self.request0.state["setup"]["groups"]}\' and '
-                      f'\'/global/scratch/pl1_data/'
-                      f'{self.request0.state["setup"]["scratch"]}\', '
+                      f'are \'/global/home/groups/pl1data/'
+                      f'pl1_{self.request0.directory_name}\' and '
+                      f'\'/global/scratch/p2p3/'
+                      f'pl1_{self.request0.directory_name}\', '
                       f'respectively.']
 
         self.assertEqual(len(pi_emails), len(mail.outbox))
