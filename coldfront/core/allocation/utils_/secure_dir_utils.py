@@ -208,7 +208,7 @@ class SecureDirRequestApprovalRunner(object):
         groups_alloc, scratch_alloc = self.call_create_secure_dir()
         if groups_alloc and scratch_alloc:
             # self.create_pi_alloc_users(groups_alloc, scratch_alloc)
-            self.send_email()
+            self.send_email(groups_alloc, scratch_alloc)
 
     def approve_request(self):
         """Set the status of the request to 'Approved - Complete'."""
@@ -263,7 +263,7 @@ class SecureDirRequestApprovalRunner(object):
                     status=AllocationUserStatusChoice.objects.get(name='Active')
                 )
 
-    def send_email(self):
+    def send_email(self, groups_alloc, scratch_alloc):
         """Send a notification email to the requester and PI."""
         if settings.EMAIL_ENABLED:
             pis = self.request_obj.project.projectuser_set.filter(
@@ -274,14 +274,25 @@ class SecureDirRequestApprovalRunner(object):
             users_to_notify.append(self.request_obj.requester)
             users_to_notify = set(users_to_notify)
 
+            allocation_attribute_type = AllocationAttributeType.objects.get(
+                name='Cluster Directory Access')
+
+            groups_dir = AllocationAttribute.objects.get(
+                allocation_attribute_type=allocation_attribute_type,
+                allocation=groups_alloc).value
+
+            scratch_dir = AllocationAttribute.objects.get(
+                allocation_attribute_type=allocation_attribute_type,
+                allocation=scratch_alloc).value
+
             for user in users_to_notify:
                 try:
                     context = {
                         'user_first_name': user.first_name,
                         'user_last_name': user.last_name,
                         'project': self.request_obj.project.name,
-                        'groups': self.request_obj.state['setup']['groups'],
-                        'scratch': self.request_obj.state['setup']['scratch'],
+                        'groups_dir': groups_dir,
+                        'scratch_dir': scratch_dir,
                         'signature': settings.EMAIL_SIGNATURE,
                         'support_email': settings.CENTER_HELP_EMAIL,
                     }
