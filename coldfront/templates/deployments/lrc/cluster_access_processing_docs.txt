@@ -1,0 +1,3 @@
+As you wait for your account to be processed and to get access to the cluster, we strongly recommend that you see and familiarize yourself with our extensive documentation here:
+
+https://it.lbl.gov/resource/hpc/

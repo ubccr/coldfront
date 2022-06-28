@@ -1,4 +1,5 @@
 from django.db import transaction
+from flags.state import flag_enabled
 
 from coldfront.api.statistics.utils import get_accounting_allocation_objects
 from coldfront.core.allocation.models import Allocation
@@ -58,6 +59,12 @@ def send_added_to_project_notification_email(project, project_user):
         'support_email': settings.CENTER_HELP_EMAIL,
         'signature': settings.EMAIL_SIGNATURE,
     }
+    if flag_enabled('BRC_ONLY'):
+        context['include_docs_txt'] = (
+            'deployments/brc/cluster_access_processing_docs.txt')
+    elif flag_enabled('LRC_ONLY'):
+        context['include_docs_txt'] = (
+            'deployments/lrc/cluster_access_processing_docs.txt')
 
     sender = settings.EMAIL_SENDER
     receiver_list = [user.email]
@@ -77,7 +84,8 @@ def send_project_join_notification_email(project, project_user):
     user = project_user.user
 
     subject = f'New request to join Project {project.name}'
-    context = {'project_name': project.name,
+    context = {'PORTAL_NAME': settings.PORTAL_NAME,
+               'project_name': project.name,
                'user_string': f'{user.first_name} {user.last_name} ({user.email})',
                'signature': import_from_settings('EMAIL_SIGNATURE', ''),
                'review_url': review_project_join_requests_url(project),
@@ -111,6 +119,12 @@ def send_project_join_request_approval_email(project, project_user):
         'support_email': settings.CENTER_HELP_EMAIL,
         'signature': settings.EMAIL_SIGNATURE,
     }
+    if flag_enabled('BRC_ONLY'):
+        context['include_docs_txt'] = (
+            'deployments/brc/cluster_access_processing_docs.txt')
+    elif flag_enabled('LRC_ONLY'):
+        context['include_docs_txt'] = (
+            'deployments/lrc/cluster_access_processing_docs.txt')
 
     sender = settings.EMAIL_SENDER
     receiver_list = [user.email]

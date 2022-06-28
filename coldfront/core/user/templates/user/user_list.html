@@ -1,6 +1,6 @@
 {% extends "common/base.html" %} {% load common_tags %} {% load crispy_forms_tags %} {% load static %} {% block title %} User List {% endblock %} {% block content %}
 
-<h1>My BRC Cluster Users</h1><hr>
+<h1>{{ PROGRAM_NAME_SHORT }} Cluster Users</h1><hr>
 {% if expand_accordion == "show" or user_list or user.is_superuser%}
 <div class="mb-3" id="accordion">
   <div class="card">
@@ -25,7 +25,7 @@
 <hr>
 {% endif %}
 {% if user_list %}
-<strong>My BRC Cluster Users: {{user_count}}  </strong>
+<strong>{{ PROGRAM_NAME_SHORT }} Cluster Users: {{user_count}}  </strong>
 <div class="table-responsive">
   <table class="table table-sm">
     <thead>
