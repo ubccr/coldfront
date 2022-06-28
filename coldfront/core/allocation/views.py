@@ -1080,7 +1080,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 AllocationAttribute.objects.create(
                     allocation_attribute_type=slurm_specs_attribute_type,
                     allocation=allocation_obj,
-                    value='coldfront'
+                    value='QOS=coldfront'
                 )
 
         if ALLOCATION_ACCOUNT_ENABLED and allocation_account and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING:
