@@ -9,10 +9,16 @@ from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.views.generic import TemplateView, ListView
 from django.views.generic.edit import CreateView
+from coldfront.core.utils.common import import_from_settings
 
 from coldfront.core.resource.forms import ResourceSearchForm, ResourceAttributeDeleteForm
 from coldfront.core.resource.models import Resource, ResourceAttribute
 
+EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
+if EMAIL_ENABLED:
+    EMAIL_RESOURCE_EXPIRING_NOTIFICATION_DAYS = import_from_settings(
+    'EMAIL_RESOURCE_EXPIRING_NOTIFICATION_DAYS', [7, ])
+    EMAIL_RESOURCE_NOTIFICATIONS_ENABLED = import_from_settings('EMAIL_RESOURCE_NOTIFICATIONS_ENABLED', False)
 
 class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     model = Resource
@@ -57,6 +63,19 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context['child_resources'] = child_resources
 
         return context
+
+    def post(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        resource_obj = get_object_or_404(Resource, pk=pk)
+
+        attributes = [attribute for attribute in resource_obj.resourceattribute_set.all(
+        ).order_by('resource_attribute_type__name')]
+
+        child_resources = self.get_child_resources(resource_obj)
+
+        
+
+        return HttpResponseRedirect(reverse('resource-detail', kwargs={'pk': pk}))
 
 class ResourceAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = ResourceAttribute
