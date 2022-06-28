@@ -148,20 +148,31 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
         return context
 
     def get_form_kwargs(self, step=None):
+        # For each step, a list of kwargs required by the corresponding form.
+        required_keys_by_step_name = {
+            'allocation_period': ['computing_allowance'],
+            'existing_pi': ['computing_allowance', 'allocation_period'],
+            'pooled_project_selection': ['computing_allowance'],
+            'details': ['computing_allowance'],
+            'survey': ['computing_allowance'],
+        }
+        # For each step number, the corresponding step name.
+        step_names_by_step_number = {
+            self.step_numbers_by_form_name[name]: name
+            for name in required_keys_by_step_name
+        }
+
+        step_number = int(step)
+        if step_number not in step_names_by_step_number:
+            return {}
+
+        data = {}
+        self.__set_data_from_previous_steps(step_number, data)
+
         kwargs = {}
-        step = int(step)
-        # The names of steps that require the past data.
-        step_names = [
-            'allocation_period',
-            'existing_pi',
-            'pooled_project_selection',
-            'details',
-            'survey',
-        ]
-        step_numbers = [
-            self.step_numbers_by_form_name[name] for name in step_names]
-        if step in step_numbers:
-            self.__set_data_from_previous_steps(step, kwargs)
+        step_name = step_names_by_step_number[step_number]
+        for key in required_keys_by_step_name[step_name]:
+            kwargs[key] = data.get(key, None)
         return kwargs
 
     def get_template_names(self):
@@ -268,8 +279,10 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
         step_name = 'computing_allowance'
         step = str(self.step_numbers_by_form_name[step_name])
         cleaned_data = self.get_cleaned_data_for_step(step) or {}
-        ica_allocation_type = SavioProjectAllocationRequest.ICA
-        return cleaned_data.get('allocation_type', None) == ica_allocation_type
+        computing_allowance = cleaned_data.get('computing_allowance', None)
+        if not computing_allowance:
+            return False
+        return ComputingAllowance(computing_allowance).is_instructional()
 
     def show_new_pi_form_condition(self):
         step_name = 'existing_pi'
@@ -281,12 +294,10 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
         step_name = 'computing_allowance'
         step = str(self.step_numbers_by_form_name[step_name])
         cleaned_data = self.get_cleaned_data_for_step(step) or {}
-        non_poolable_allocation_types = (
-            SavioProjectAllocationRequest.ICA,
-            SavioProjectAllocationRequest.RECHARGE,
-        )
-        allocation_type = cleaned_data.get('allocation_type', None)
-        return allocation_type not in non_poolable_allocation_types
+        computing_allowance = cleaned_data.get('computing_allowance', None)
+        if not computing_allowance:
+            return False
+        return ComputingAllowance(computing_allowance).is_poolable()
 
     def show_pooled_project_selection_form_condition(self):
         step_name = 'pool_allocations'
@@ -298,10 +309,10 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
         step_name = 'computing_allowance'
         step = str(self.step_numbers_by_form_name[step_name])
         cleaned_data = self.get_cleaned_data_for_step(step) or {}
-        recharge_allocation_type = SavioProjectAllocationRequest.RECHARGE
-        return (
-            cleaned_data.get('allocation_type', None) ==
-            recharge_allocation_type)
+        computing_allowance = cleaned_data.get('computing_allowance', None)
+        if not computing_allowance:
+            return False
+        return ComputingAllowance(computing_allowance).is_recharge()
 
     def __get_allocation_period(self, form_data):
         """Return the AllocationPeriod the user selected."""
@@ -489,12 +500,9 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
         pool_allocations_step = \
             self.step_numbers_by_form_name['pool_allocations']
         if step > pool_allocations_step:
-            allocation_type = dictionary['allocation_type']
-            non_poolable_allocation_types = (
-                SavioProjectAllocationRequest.ICA,
-                SavioProjectAllocationRequest.RECHARGE,
-            )
-            if allocation_type not in non_poolable_allocation_types:
+            computing_allowance = ComputingAllowance(
+                dictionary['computing_allowance'])
+            if computing_allowance.is_poolable():
                 pool_allocations_form_data = self.get_cleaned_data_for_step(
                     str(pool_allocations_step))
                 pooling_requested = pool_allocations_form_data['pool']

@@ -25,6 +25,13 @@ class ComputingAllowance(object):
             allowance_names.append(LRCAllowances.PCA)
         return self._name in allowance_names
 
+    def is_instructional(self):
+        """Return whether the allowance is for a course."""
+        allowance_names = []
+        if flag_enabled('BRC_ONLY'):
+            allowance_names.append(BRCAllowances.ICA)
+        return self._name in allowance_names
+
     def is_one_per_pi(self):
         """Return whether a PI may have at most one of the allowance."""
         allowance_names = []
@@ -45,6 +52,26 @@ class ComputingAllowance(object):
             allowance_names.append(BRCAllowances.PCA)
         elif flag_enabled('LRC_ONLY'):
             allowance_names.append(LRCAllowances.PCA)
+        return self._name in allowance_names
+
+    def is_poolable(self):
+        """Return whether the allowance may be pooled with another of
+        the same type."""
+        allowance_names = []
+        if flag_enabled('BRC_ONLY'):
+            allowance_names.append(BRCAllowances.FCA)
+            allowance_names.append(BRCAllowances.PCA)
+        elif flag_enabled('LRC_ONLY'):
+            allowance_names.append(LRCAllowances.PCA)
+        return self._name in allowance_names
+
+    def is_recharge(self):
+        """Return whether the allowance is paid for."""
+        allowance_names = []
+        if flag_enabled('BRC_ONLY'):
+            allowance_names.append(BRCAllowances.RECHARGE)
+        elif flag_enabled('LRC_ONLY'):
+            allowance_names.append(LRCAllowances.RECHARGE)
         return self._name in allowance_names
 
     def get_name(self):

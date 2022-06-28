@@ -12,6 +12,7 @@ from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
 from coldfront.core.resource.utils_.allowance_utils.constants import LRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.user.utils import is_lbl_employee
 from coldfront.core.utils.common import utc_now_offset_aware
 
@@ -460,23 +461,21 @@ class SavioProjectPooledProjectSelectionForm(forms.Form):
         widget=forms.Select())
 
     def __init__(self, *args, **kwargs):
-        self.allocation_type = kwargs.pop('allocation_type', None)
-        kwargs.pop('allocation_period', None)
-        kwargs.pop('breadcrumb_pi', None)
-        kwargs.pop('breadcrumb_pooling', None)
+        self.computing_allowance = kwargs.pop('computing_allowance', None)
+        self.interface = ComputingAllowanceInterface()
         super().__init__(*args, **kwargs)
-        projects = Project.objects.prefetch_related(
-            'projectuser_set__user'
-        ).filter(
-            status__name__in=['Pending - Add', 'New', 'Active']
-        )
-        if self.allocation_type == 'FCA':
-            projects = projects.filter(name__startswith='fc_')
-        elif self.allocation_type == 'CO':
-            projects = projects.filter(name__startswith='co_')
-        elif self.allocation_type == 'PCA':
-            projects = projects.filter(name__startswith='pc_')
-        self.fields['project'].queryset = projects
+
+        f = Q(status__name__in=['Pending - Add', 'New', 'Active'])
+
+        if self.computing_allowance is not None:
+            self.computing_allowance = ComputingAllowance(
+                self.computing_allowance)
+            prefix = self.interface.code_from_name(
+                self.computing_allowance.get_name())
+            f = f & Q(name__startswith=prefix)
+
+        self.fields['project'].queryset = Project.objects.prefetch_related(
+            'projectuser_set__user').filter(f)
 
     def clean(self):
         cleaned_data = super().clean()
@@ -521,35 +520,34 @@ class SavioProjectDetailsForm(forms.Form):
     #     queryset=FieldOfScience.objects.all())
 
     def __init__(self, *args, **kwargs):
-        self.allocation_type = kwargs.pop('allocation_type', None)
-        kwargs.pop('allocation_period', None)
-        kwargs.pop('breadcrumb_pi', None)
-        kwargs.pop('breadcrumb_pooling', None)
+        self.computing_allowance = kwargs.pop('computing_allowance', None)
+        self.interface = ComputingAllowanceInterface()
         super().__init__(*args, **kwargs)
-        if self.allocation_type == SavioProjectAllocationRequest.ICA:
-            self.fields['name'].help_text = (
-                'A unique name for the course, which must contain only '
-                'lowercase letters and numbers. This will be used to set up '
-                'the project\'s SLURM scheduler account. It may be the course '
-                'number (e.g., pmb220b, pht32, etc.).')
+        if self.computing_allowance is not None:
+            self.computing_allowance = ComputingAllowance(
+                self.computing_allowance)
+            self._update_field_attributes()
 
     def clean_name(self):
         cleaned_data = super().clean()
-        name = cleaned_data['name'].lower()
-        if self.allocation_type == SavioProjectAllocationRequest.CO:
-            name = f'co_{name}'
-        elif self.allocation_type == SavioProjectAllocationRequest.FCA:
-            name = f'fc_{name}'
-        elif self.allocation_type == SavioProjectAllocationRequest.ICA:
-            name = f'ic_{name}'
-        elif self.allocation_type == SavioProjectAllocationRequest.RECHARGE:
-            name = f'ac_{name}'
-        elif self.allocation_type == SavioProjectAllocationRequest.PCA:
-            name = f'pc_{name}'
+        prefix = self.interface.code_from_name(
+            self.computing_allowance.get_name())
+        suffix = cleaned_data['name'].lower()
+        name = f'{prefix}{suffix}'
         if Project.objects.filter(name=name):
             raise forms.ValidationError(
                 f'A project with name {name} already exists.')
         return name
+
+    def _update_field_attributes(self):
+        """Update fields for select allowances."""
+        field = self.fields['name']
+        if self.computing_allowance.is_instructional():
+            field.help_text = (
+                'A unique name for the course, which must contain only '
+                'lowercase letters and numbers. This will be used to set up '
+                'the project\'s SLURM scheduler account. It may be the course '
+                'number (e.g., pmb220b, pht32, etc.).')
 
 
 class SavioProjectSurveyForm(forms.Form):
@@ -680,14 +678,20 @@ class SavioProjectSurveyForm(forms.Form):
         required=False)
 
     def __init__(self, *args, **kwargs):
-        allocation_type = kwargs.pop('allocation_type', None)
-        kwargs.pop('allocation_period', None)
-        kwargs.pop('breadcrumb_pi', None)
-        kwargs.pop('breadcrumb_pooling', None)
-        kwargs.pop('breadcrumb_project', None)
+        self.computing_allowance = kwargs.pop('computing_allowance', None)
         disable_fields = kwargs.pop('disable_fields', False)
         super().__init__(*args, **kwargs)
-        if allocation_type == SavioProjectAllocationRequest.ICA:
+        if self.computing_allowance is not None:
+            self.computing_allowance = ComputingAllowance(
+                self.computing_allowance)
+            self._update_field_attributes()
+        if disable_fields:
+            for field in self.fields:
+                self.fields[field].disabled = True
+
+    def _update_field_attributes(self):
+        """Update fields for select allowances."""
+        if self.computing_allowance.is_instructional():
             self.fields['scope_and_intent'].label = (
                 'Scope and intent of coursework needing computation')
             self.fields['computational_aspects'].help_text = (
@@ -707,9 +711,6 @@ class SavioProjectSurveyForm(forms.Form):
             self.fields['processor_core_hours_year'].label = (
                 'Estimate how many processor-core-hrs your students will need '
                 'over the duration of the course.')
-        if disable_fields:
-            for field in self.fields:
-                self.fields[field].disabled = True
 
 
 # =============================================================================
