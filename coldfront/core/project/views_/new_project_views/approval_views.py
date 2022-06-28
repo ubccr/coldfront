@@ -20,6 +20,7 @@ from coldfront.core.project.utils_.new_project_utils import savio_request_state_
 from coldfront.core.project.utils_.new_project_utils import send_project_request_pooling_email
 from coldfront.core.project.utils_.new_project_utils import VectorProjectProcessingRunner
 from coldfront.core.project.utils_.new_project_utils import vector_request_state_status
+from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
 from coldfront.core.resource.utils_.allowance_utils.constants import LRCAllowances
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
@@ -108,15 +109,17 @@ class SavioProjectRequestMixin(object):
         super().__init__(*args, **kwargs)
         self.interface = ComputingAllowanceInterface()
         self.request_obj = None
+        self.computing_allowance_obj = None
 
-    def assert_request_set(self):
-        """Assert that the request_obj has been set."""
+    def assert_attributes_set(self):
+        """Assert that the attributes have been set."""
         assert isinstance(self.request_obj, SavioProjectAllocationRequest)
+        assert isinstance(self.computing_allowance_obj, ComputingAllowance)
 
     def get_extra_fields_form(self):
         """Return a form of extra fields for the request, based on its
         computing allowance, and populated with initial data."""
-        self.assert_request_set()
+        self.assert_attributes_set()
         computing_allowance = self.request_obj.computing_allowance
         extra_fields = self.request_obj.extra_fields
 
@@ -142,7 +145,7 @@ class SavioProjectRequestMixin(object):
     def get_survey_form(self):
         """Return a disabled form containing the survey answers for the
         request."""
-        self.assert_request_set()
+        self.assert_attributes_set()
         survey_answers = self.request_obj.survey_answers
         kwargs = {
             'initial': survey_answers,
@@ -158,7 +161,7 @@ class SavioProjectRequestMixin(object):
         project request if its status has one of the given disallowed
         names, after sending a message to the user. Otherwise, return
         None."""
-        self.assert_request_set()
+        self.assert_attributes_set()
         status_name = self.request_obj.status.name
         if status_name in disallowed_status_names:
             message = (
@@ -175,32 +178,7 @@ class SavioProjectRequestMixin(object):
         given primary key."""
         return reverse('savio-project-request-detail', kwargs={'pk': pk})
 
-    def requires_memorandum_of_understanding(self):
-        """Return whether this request requires an MOU to be signed."""
-        self.assert_request_set()
-        allowance_name = self.request_obj.computing_allowance.name
-        relevant_allowance_names = []
-        if flag_enabled('BRC_ONLY'):
-            relevant_allowance_names.append(BRCAllowances.ICA)
-            relevant_allowance_names.append(BRCAllowances.RECHARGE)
-        elif flag_enabled('LRC_ONLY'):
-            relevant_allowance_names.append(LRCAllowances.RECHARGE)
-        return allowance_name in relevant_allowance_names
-
-    def requires_service_unit_prorating(self):
-        """Return whether this request's service units should be
-        prorated."""
-        self.assert_request_set()
-        allowance_name = self.request_obj.computing_allowance.name
-        relevant_allowance_names = []
-        if flag_enabled('BRC_ONLY'):
-            relevant_allowance_names.append(BRCAllowances.FCA)
-            relevant_allowance_names.append(BRCAllowances.PCA)
-        elif flag_enabled('LRC_ONLY'):
-            relevant_allowance_names.append(LRCAllowances.PCA)
-        return allowance_name in relevant_allowance_names
-
-    def set_request_obj(self, pk):
+    def set_attributes(self, pk):
         """Set this instance's request_obj to be the
         SavioProjectAllocationRequest with the given primary key."""
         self.request_obj = get_object_or_404(
@@ -238,7 +216,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
+        self.set_attributes(pk)
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -399,7 +377,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         else:
             num_service_units = Decimal(
                 self.interface.service_units_from_name(allowance_name))
-            if self.requires_service_unit_prorating():
+            if self.computing_allowance_obj.are_service_units_prorated():
                 num_service_units = prorated_allocation_amount(
                     num_service_units, self.request_obj.request_time,
                     self.request_obj.allocation_period)
@@ -414,7 +392,8 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             return 'N/A'
         else:
             pending = 'Pending'
-            if self.requires_memorandum_of_understanding():
+            if self.computing_allowance_obj.\
+                    requires_memorandum_of_understanding():
                 if state['memorandum_signed']['status'] == pending:
                     return pending
         return state['setup']['status']
@@ -451,7 +430,7 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
+        self.set_attributes(pk)
         redirect = self.redirect_if_disallowed_status(request)
         if redirect is not None:
             return redirect
@@ -522,7 +501,7 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
+        self.set_attributes(pk)
         redirect = self.redirect_if_disallowed_status(request)
         if redirect is not None:
             return redirect
@@ -603,8 +582,9 @@ class SavioProjectReviewMemorandumSignedView(LoginRequiredMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
-        if not self.requires_memorandum_of_understanding():
+        self.set_attributes(pk)
+        if not self.computing_allowance_obj.\
+                requires_memorandum_of_understanding():
             message = (
                 'A memorandum of understanding does not need to be signed for '
                 'this request.')
@@ -672,7 +652,7 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
+        self.set_attributes(pk)
         redirect = self.redirect_if_disallowed_status(request)
         if redirect is not None:
             return redirect
@@ -760,7 +740,7 @@ class SavioProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
+        self.set_attributes(pk)
         redirect = self.redirect_if_disallowed_status(request)
         if redirect is not None:
             return redirect
@@ -823,7 +803,7 @@ class SavioProjectUndenyRequestView(LoginRequiredMixin, UserPassesTestMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
+        self.set_attributes(pk)
 
         disallowed_status_names = list(
             ProjectAllocationRequestStatusChoice.objects.filter(
@@ -948,7 +928,7 @@ class VectorProjectRequestMixin(object):
         given primary key."""
         return reverse('vector-project-request-detail', kwargs={'pk': pk})
 
-    def set_request_obj(self, pk):
+    def set_attributes(self, pk):
         """Set this instance's request_obj to be the
         VectorProjectAllocationRequest with the given primary key."""
         self.request_obj = get_object_or_404(
@@ -988,7 +968,7 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
+        self.set_attributes(pk)
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -1103,7 +1083,7 @@ class VectorProjectReviewEligibilityView(LoginRequiredMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
+        self.set_attributes(pk)
         redirect = self.redirect_if_disallowed_status(request)
         if redirect is not None:
             return redirect
@@ -1168,7 +1148,7 @@ class VectorProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
+        self.set_attributes(pk)
         redirect = self.redirect_if_disallowed_status(request)
         if redirect is not None:
             return redirect
@@ -1251,7 +1231,7 @@ class VectorProjectUndenyRequestView(LoginRequiredMixin, UserPassesTestMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
+        self.set_attributes(pk)
 
         disallowed_status_names = list(
             ProjectAllocationRequestStatusChoice.objects.filter(

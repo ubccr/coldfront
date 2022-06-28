@@ -14,6 +14,17 @@ class ComputingAllowance(object):
         self._resource = resource
         self._name = self._resource.name
 
+    def are_service_units_prorated(self):
+        """Return whether the allowance's service units should be
+        prorated."""
+        allowance_names = []
+        if flag_enabled('BRC_ONLY'):
+            allowance_names.append(BRCAllowances.FCA)
+            allowance_names.append(BRCAllowances.PCA)
+        elif flag_enabled('LRC_ONLY'):
+            allowance_names.append(LRCAllowances.PCA)
+        return self._name in allowance_names
+
     def is_one_per_pi(self):
         """Return whether a PI may have at most one of the allowance."""
         allowance_names = []
@@ -34,4 +45,14 @@ class ComputingAllowance(object):
             allowance_names.append(BRCAllowances.PCA)
         elif flag_enabled('LRC_ONLY'):
             allowance_names.append(LRCAllowances.PCA)
+        return self._name in allowance_names
+
+    def requires_memorandum_of_understanding(self):
+        """Return whether the allowance requires an MOU to be signed."""
+        allowance_names = []
+        if flag_enabled('BRC_ONLY'):
+            allowance_names.append(BRCAllowances.ICA)
+            allowance_names.append(BRCAllowances.RECHARGE)
+        elif flag_enabled('LRC_ONLY'):
+            allowance_names.append(LRCAllowances.RECHARGE)
         return self._name in allowance_names
