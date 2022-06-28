@@ -44,7 +44,7 @@ def create_secure_dirs(project, subdirectory_name, scratch_or_groups):
         raise ValueError(f'Invalid scratch_or_groups arg {scratch_or_groups}.')
 
     if scratch_or_groups == 'scratch':
-        p2p3_directory = Resource.objects.get(name='Scratch2 P2/P3 Directory')
+        p2p3_directory = Resource.objects.get(name='Scratch P2/P3 Directory')
     else:
         p2p3_directory = Resource.objects.get(name='Groups P2/P3 Directory')
 
@@ -311,7 +311,7 @@ class SecureDirRequestApprovalRunner(object):
 
 def get_secure_dir_allocations():
     """Returns a queryset of all active secure directory allocations."""
-    scratch_directory = Resource.objects.get(name='Scratch2 P2/P3 Directory')
+    scratch_directory = Resource.objects.get(name='Scratch P2/P3 Directory')
     groups_directory = Resource.objects.get(name='Groups P2/P3 Directory')
 
     queryset = Allocation.objects.filter(

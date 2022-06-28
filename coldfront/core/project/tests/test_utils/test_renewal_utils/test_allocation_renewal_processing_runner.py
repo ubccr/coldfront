@@ -617,8 +617,9 @@ class TestRunnerMixin(TestRunnerMixinBase):
         allocation = get_project_compute_allocation(project)
 
         # Set the end_date, but not the start_date.
+        today = display_time_zone_current_date()
         allocation.start_date = None
-        end_date = date.today() + timedelta(days=30)
+        end_date = today + timedelta(days=30)
         allocation.end_date = end_date
         allocation.save()
 
@@ -628,7 +629,7 @@ class TestRunnerMixin(TestRunnerMixinBase):
 
         # The start_date should have been updated, but not the end_date.
         allocation.refresh_from_db()
-        self.assertEqual(date.today(), allocation.start_date)
+        self.assertEqual(today, allocation.start_date)
         self.assertEqual(end_date, allocation.end_date)
 
     def test_runner_sets_allocation_type(self):

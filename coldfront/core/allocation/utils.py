@@ -248,7 +248,6 @@ def has_cluster_access(user):
     Returns:
     - Bool: True if the user has cluster access and False otherwise
     """
-
     if not isinstance(user, User):
         raise TypeError(f'Invalid User {user}.')
 

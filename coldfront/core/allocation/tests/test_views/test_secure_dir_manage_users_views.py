@@ -111,11 +111,10 @@ class TestSecureDirBase(TestBase):
         call_command('add_directory_defaults')
         self.groups_allocation = \
             create_secure_dirs(self.project1, self.subdirectory_name, 'groups')
-
-        self.scratch2_allocation = \
+        self.scratch_allocation = \
             create_secure_dirs(self.project1, self.subdirectory_name, 'scratch')
 
-        for alloc in [self.groups_allocation, self.scratch2_allocation]:
+        for alloc in [self.groups_allocation, self.scratch_allocation]:
             AllocationUser.objects.create(
                 allocation=alloc,
                 user=self.pi,
@@ -125,8 +124,8 @@ class TestSecureDirBase(TestBase):
         self.groups_path = self.groups_allocation.allocationattribute_set.get(
             allocation_attribute_type__name__icontains='Directory').value
 
-        self.scratch2_path = \
-            self.scratch2_allocation.allocationattribute_set.get(
+        self.scratch_path = \
+            self.scratch_allocation.allocationattribute_set.get(
                 allocation_attribute_type__name__icontains='Directory').value
 
         self.password = 'password'
@@ -176,7 +175,7 @@ class TestSecureDirManageUsersView(TestSecureDirBase):
         """Test that the correct users have access to
         SecureDirManageUsersView"""
         url = self.url
-        for allocation in [self.groups_allocation, self.scratch2_allocation]:
+        for allocation in [self.groups_allocation, self.scratch_allocation]:
             for action in ['add', 'remove']:
                 kwargs = {'pk': allocation.pk, 'action': action}
 
@@ -278,8 +277,8 @@ class TestSecureDirManageUsersView(TestSecureDirBase):
         self.assertNotIn(self.user5.username, html)
         self.assertNotIn(self.admin.username, html)
 
-        # Testing users shown on scratch2_allocation add users page
-        kwargs = {'pk': self.scratch2_allocation.pk, 'action': 'add'}
+        # Testing users shown on scratch_allocation add users page
+        kwargs = {'pk': self.scratch_allocation.pk, 'action': 'add'}
         response = self.get_response(self.pi,
                                      self.url,
                                      kwargs=kwargs)
@@ -327,8 +326,8 @@ class TestSecureDirManageUsersView(TestSecureDirBase):
         self.assertNotIn(self.user2.username, html)
         self.assertNotIn(self.admin.username, html)
 
-        # Testing users shown on scratch2_allocation remove users page
-        kwargs = {'pk': self.scratch2_allocation.pk, 'action': 'remove'}
+        # Testing users shown on scratch_allocation remove users page
+        kwargs = {'pk': self.scratch_allocation.pk, 'action': 'remove'}
         response = self.get_response(self.pi,
                                      self.url,
                                      kwargs=kwargs)
@@ -353,17 +352,17 @@ class TestSecureDirManageUsersView(TestSecureDirBase):
 
         pre_time = utc_now_offset_aware()
 
-        kwargs = {'pk': self.scratch2_allocation.pk, 'action': 'add'}
+        kwargs = {'pk': self.scratch_allocation.pk, 'action': 'add'}
         response = self.post_response(self.pi,
                                       self.url,
                                       kwargs=kwargs,
                                       data=form_data)
 
         request = SecureDirAddUserRequest.objects.filter(
-            allocation=self.scratch2_allocation,
+            allocation=self.scratch_allocation,
             status=SecureDirAddUserRequestStatusChoice.objects.get(
                 name='Pending'),
-            directory=self.scratch2_path)
+            directory=self.scratch_path)
         self.assertTrue(request.exists())
 
         request = request.first()
@@ -376,13 +375,13 @@ class TestSecureDirManageUsersView(TestSecureDirBase):
         self.assertRedirects(response,
                              reverse('allocation-detail',
                                      kwargs={
-                                         'pk': self.scratch2_allocation.pk}))
+                                         'pk': self.scratch_allocation.pk}))
 
         # Test that the correct email is sent.
         recipients = settings.EMAIL_ADMIN_LIST
         email_body = [f'There is 1 new secure '
                       f'directory user addition request for '
-                      f'{self.scratch2_path}.',
+                      f'{self.scratch_path}.',
                       'Please process this request here.']
 
         self.assertEqual(len(recipients), len(mail.outbox))
@@ -463,15 +462,15 @@ class TestSecureDirManageUsersView(TestSecureDirBase):
             f'Add users to: {self.groups_path}',
             html)
 
-        # Scratch2 allocation with no users to remove
-        kwargs = {'pk': self.scratch2_allocation.pk, 'action': 'remove'}
+        # scratch allocation with no users to remove
+        kwargs = {'pk': self.scratch_allocation.pk, 'action': 'remove'}
         response = self.get_response(self.pi,
                                      self.url,
                                      kwargs=kwargs)
         html = response.content.decode('utf-8')
 
         self.assertIn(
-            f'Remove users from: {self.scratch2_path}',
+            f'Remove users from: {self.scratch_path}',
             html)
 
 
@@ -543,10 +542,10 @@ class TestSecureDirManageUsersRequestListView(TestSecureDirBase):
 
         SecureDirAddUserRequest.objects.create(
             user=self.user2,
-            allocation=self.scratch2_allocation,
+            allocation=self.scratch_allocation,
             status=SecureDirAddUserRequestStatusChoice.objects.get(
                 name='Denied'),
-            directory=self.scratch2_allocation)
+            directory=self.scratch_allocation)
 
         # Testing pending requests
         kwargs = {'status': 'pending', 'action': 'add'}
@@ -592,10 +591,10 @@ class TestSecureDirManageUsersRequestListView(TestSecureDirBase):
 
         SecureDirRemoveUserRequest.objects.create(
             user=self.user2,
-            allocation=self.scratch2_allocation,
+            allocation=self.scratch_allocation,
             status=SecureDirRemoveUserRequestStatusChoice.objects.get(
                 name='Denied'),
-            directory=self.scratch2_path)
+            directory=self.scratch_path)
 
         # Testing pending requests
         kwargs = {'status': 'pending', 'action': 'remove'}
@@ -633,10 +632,10 @@ class TestSecureDirManageUsersDenyRequestView(TestSecureDirBase):
 
         self.remove_request = SecureDirRemoveUserRequest.objects.create(
             user=self.user1,
-            allocation=self.scratch2_allocation,
+            allocation=self.scratch_allocation,
             status=SecureDirRemoveUserRequestStatusChoice.objects.get(
                 name='Pending'),
-            directory=self.scratch2_path)
+            directory=self.scratch_path)
 
         for i, user in enumerate([self.user0, self.user1]):
             user.first_name = f'first{i}'
@@ -760,7 +759,7 @@ class TestSecureDirManageUsersDenyRequestView(TestSecureDirBase):
         # Test that the correct emails are sent
         recipients = [self.pi.email, self.user1.email]
         email_body = [f'The request to remove first1 last1 (user1) from '
-                      f'the secure directory {self.scratch2_path} has '
+                      f'the secure directory {self.scratch_path} has '
                       f'been denied for the following reason:',
                       f'"{data["reason"]}"',
                       'If you have any questions, please contact us at']
@@ -836,10 +835,10 @@ class TestSecureDirManageUsersUpdateStatusView(TestSecureDirBase):
 
         self.remove_request = SecureDirRemoveUserRequest.objects.create(
             user=self.user1,
-            allocation=self.scratch2_allocation,
+            allocation=self.scratch_allocation,
             status=SecureDirRemoveUserRequestStatusChoice.objects.get(
                 name='Pending'),
-            directory=self.scratch2_path)
+            directory=self.scratch_path)
 
         self.url = 'secure-dir-manage-user-update-status'
 
@@ -967,10 +966,10 @@ class TestSecureDirManageUsersCompleteStatusView(TestSecureDirBase):
 
         self.remove_request = SecureDirRemoveUserRequest.objects.create(
             user=self.user1,
-            allocation=self.scratch2_allocation,
+            allocation=self.scratch_allocation,
             status=SecureDirRemoveUserRequestStatusChoice.objects.get(
                 name='Processing'),
-            directory=self.scratch2_path)
+            directory=self.scratch_path)
 
         for i, user in enumerate([self.user0, self.user1]):
             user.first_name = f'first{i}'
@@ -1146,7 +1145,7 @@ class TestSecureDirManageUsersCompleteStatusView(TestSecureDirBase):
         messages = self.get_message_strings(response)
 
         expected_message = f'Secure directory removal request for user ' \
-                           f'user1 for {self.scratch2_path} has been ' \
+                           f'user1 for {self.scratch_path} has been ' \
                            f'marked as "Complete".'
 
         self.assertEqual(len(messages), 1)
@@ -1155,9 +1154,9 @@ class TestSecureDirManageUsersCompleteStatusView(TestSecureDirBase):
         # Test that the correct emails are sent.
         recipients = [self.pi.email, self.user1.email]
         email_body = [f'The request to remove first1 last1 (user1) from the '
-                      f'secure directory {self.scratch2_path} has been '
+                      f'secure directory {self.scratch_path} has been '
                       f'completed. first1 last1 no longer has access to '
-                      f'{self.scratch2_path} on the cluster.',
+                      f'{self.scratch_path} on the cluster.',
                       'If you have any questions, please contact us at']
         email_subject = 'Secure Directory Removal Request Complete'
 

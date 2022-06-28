@@ -1,7 +1,20 @@
+from copy import deepcopy
+from decimal import Decimal
+from io import StringIO
+import os
+import sys
+
+from django.conf import settings
+from django.contrib.auth.models import User
+from django.core import mail
+from django.core.management import call_command
+from django.test import override_settings
+
+from flags.state import enable_flag
+
 from coldfront.api.statistics.utils import create_project_allocation
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttributeType
-from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.models import AllocationUser
@@ -18,15 +31,13 @@ from coldfront.core.project.utils_.renewal_utils import get_current_allowance_ye
 from coldfront.core.resource.models import Resource
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import utc_now_offset_aware
-from datetime import date
-from decimal import Decimal
-from django.contrib.auth.models import User
-from django.core import mail
-from django.core.management import call_command
-from flags.state import enable_flag
-from io import StringIO
-import os
-import sys
+
+
+# TODO: Because FLAGS is set directly in settings, the disable_flag method has
+# TODO: no effect. A better approach is to have a dedicated test_settings
+# TODO: module that is used exclusively for testing.
+FLAGS_COPY = deepcopy(settings.FLAGS)
+FLAGS_COPY.pop('LRC_ONLY')
 
 
 class TestRunnerMixinBase(object):
@@ -48,8 +59,9 @@ class TestRunnerMixinBase(object):
             'create_staff_group',
         ]
         sys.stdout = open(os.devnull, 'w')
-        for command in commands:
-            call_command(command, stdout=out, stderr=err)
+        with override_settings(FLAGS=FLAGS_COPY):
+            for command in commands:
+                call_command(command, stdout=out, stderr=err)
         sys.stdout = sys.__stdout__
 
         self.allocation_period = get_current_allowance_year_period()

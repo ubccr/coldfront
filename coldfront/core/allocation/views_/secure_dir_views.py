@@ -325,8 +325,10 @@ class SecureDirManageUsersRequestListView(LoginRequiredMixin,
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('allocation.view_securediradduserrequest') and \
-                self.request.user.has_perm('allocation.view_securedirremoveuserrequest'):
+        if self.request.user.has_perm(
+                'allocation.view_securediradduserrequest') and \
+                self.request.user.has_perm(
+                    'allocation.view_securedirremoveuserrequest'):
             return True
 
         message = (

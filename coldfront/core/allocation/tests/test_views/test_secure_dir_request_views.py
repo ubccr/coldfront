@@ -439,7 +439,7 @@ class TestSecureDirRequestDetailView(TestSecureDirRequestBase):
         self.assertTrue(alloc_attr.value.endswith(self.request0.directory_name))
 
         # Test that the scratch directory is created correctly.
-        scratch_p2p3_directory = Resource.objects.get(name='Scratch2 P2/P3 Directory')
+        scratch_p2p3_directory = Resource.objects.get(name='Scratch P2/P3 Directory')
         scratch_alloc = Allocation.objects.filter(
             project=self.project0,
             resources__in=[scratch_p2p3_directory])
