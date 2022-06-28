@@ -47,6 +47,14 @@ class ComputingAllowance(object):
             allowance_names.append(LRCAllowances.PCA)
         return self._name in allowance_names
 
+    def get_name(self):
+        """Return the name of the underlying Resource."""
+        return self._name
+
+    def get_resource(self):
+        """Return the underlying Resource."""
+        return self._resource
+
     def requires_memorandum_of_understanding(self):
         """Return whether the allowance requires an MOU to be signed."""
         allowance_names = []

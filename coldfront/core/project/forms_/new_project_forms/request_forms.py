@@ -190,25 +190,28 @@ class SavioProjectExistingPIForm(forms.Form):
             #     (c) an allowance renewal request for a Project with the
             #         allowance during the AllocationPeriod*.
             # * Projects/requests must have ineligible statuses.
-            ineligible_project_status_names = ['New', 'Active', 'Inactive']
+            resource = self.computing_allowance.get_resource()
+            project_status_names = ['New', 'Active', 'Inactive']
             disable_user_pks.update(
                 project_pi_pks(
-                    computing_allowance=self.computing_allowance,
-                    project_status_names=ineligible_project_status_names))
-            ineligible_project_request_statuses = \
-                non_denied_new_project_request_statuses()
+                    computing_allowance=resource,
+                    project_status_names=project_status_names))
+            new_project_request_status_names = list(
+                non_denied_new_project_request_statuses().values_list(
+                    'name', flat=True))
             disable_user_pks.update(
                 pis_with_new_project_requests_pks(
                     self.allocation_period,
-                    computing_allowance=self.computing_allowance,
-                    request_status_names=ineligible_project_request_statuses))
-            ineligible_renewal_request_statuses = \
-                non_denied_renewal_request_statuses()
+                    computing_allowance=resource,
+                    request_status_names=new_project_request_status_names))
+            renewal_request_status_names = list(
+                non_denied_renewal_request_statuses().values_list(
+                    'name', flat=True))
             disable_user_pks.update(
                 pis_with_renewal_requests_pks(
                     self.allocation_period,
-                    computing_allowance=self.computing_allowance,
-                    request_status_names=ineligible_renewal_request_statuses))
+                    computing_allowance=resource,
+                    request_status_names=renewal_request_status_names))
 
         if flag_enabled('LRC_ONLY'):
             # On LRC, PIs must be LBL employees.
