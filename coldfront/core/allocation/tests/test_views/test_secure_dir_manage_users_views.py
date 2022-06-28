@@ -17,7 +17,9 @@ from coldfront.core.allocation.models import (Allocation,
                                               SecureDirRemoveUserRequest,
                                               SecureDirRemoveUserRequestStatusChoice,
                                               AllocationUser,
-                                              AllocationUserStatusChoice)
+                                              AllocationUserStatusChoice,
+                                              AllocationAttributeType,
+                                              AllocationUserAttribute)
 from coldfront.core.allocation.utils_.secure_dir_utils import create_secure_dirs
 from coldfront.core.project.models import (ProjectUser,
                                            ProjectUserStatusChoice,
@@ -72,12 +74,20 @@ class TestSecureDirBase(TestBase):
 
             # Create a compute allocation for the Project.
             allocation = Decimal(f'{i + 1}000.00')
-            create_project_allocation(project, allocation)
+            alloc_obj = create_project_allocation(project, allocation)
 
             # Create a compute allocation for each User on the Project.
+            # Give users cluster access.
             for j in range(2):
-                create_user_project_allocation(
+                alloc_user_obj = create_user_project_allocation(
                     getattr(self, f'user{j}'), project, allocation / 2)
+                allocation_attribute_type = AllocationAttributeType.objects.get(
+                    name='Cluster Account Status')
+                allocation_user_attribute = AllocationUserAttribute.objects.create(
+                    allocation_attribute_type=allocation_attribute_type,
+                    allocation=alloc_obj.allocation,
+                    allocation_user=alloc_user_obj.allocation_user,
+                    value='Active')
 
         # Make PI for project1
         pi = ProjectUser.objects.get(project=self.project1,
@@ -99,8 +109,11 @@ class TestSecureDirBase(TestBase):
 
         self.subdirectory_name = 'test_dir'
         call_command('add_directory_defaults')
-        self.groups_allocation, self.scratch2_allocation = \
-            create_secure_dirs(self.project1, self.subdirectory_name)
+        self.groups_allocation = \
+            create_secure_dirs(self.project1, self.subdirectory_name, 'groups')
+
+        self.scratch2_allocation = \
+            create_secure_dirs(self.project1, self.subdirectory_name, 'scratch')
 
         for alloc in [self.groups_allocation, self.scratch2_allocation]:
             AllocationUser.objects.create(
@@ -189,14 +202,31 @@ class TestSecureDirManageUsersView(TestSecureDirBase):
             role=ProjectUserRoleChoice.objects.get(
                 name='Principal Investigator'))
 
-        for i in range(2, 5):
+        alloc_obj = create_project_allocation(temp_project, Decimal('1000.00'))
+
+        # Create users and associated project and allocation users
+        for i in range(2, 6):
             temp_user = User.objects.create(username=f'user{i}',
                                             email=f'email{i}@email.com')
+
             ProjectUser.objects.create(
                 project=temp_project,
                 user=temp_user,
                 status=ProjectUserStatusChoice.objects.get(name='Active'),
                 role=ProjectUserRoleChoice.objects.get(name='User'))
+
+            alloc_user_obj = create_user_project_allocation(
+                temp_user, temp_project, Decimal('1000.00') / 2)
+
+            allocation_attribute_type = AllocationAttributeType.objects.get(
+                name='Cluster Account Status')
+
+            allocation_user_attribute = AllocationUserAttribute.objects.create(
+                allocation_attribute_type=allocation_attribute_type,
+                allocation=alloc_obj.allocation,
+                allocation_user=alloc_user_obj.allocation_user,
+                value='Active')
+
             setattr(self, f'user{i}', temp_user)
 
         # Users with a pending SecureDirAddUserRequest should not be shown
@@ -223,8 +253,15 @@ class TestSecureDirManageUsersView(TestSecureDirBase):
         # Users that are already part of the allocation should not be shown.
         AllocationUser.objects.create(
             allocation=self.groups_allocation,
-            user=self.user3,
+            user=self.user4,
             status=AllocationUserStatusChoice.objects.get(name='Active'))
+
+        # Users without active cluster access should not be shown.
+        AllocationUserAttribute.objects.get(
+            allocation_attribute_type__name='Cluster Account Status',
+            allocation=alloc_obj.allocation,
+            allocation_user__user=self.user5,
+            value='Active').delete()
 
         # Testing users shown on groups_allocation add users page
         kwargs = {'pk': self.groups_allocation.pk, 'action': 'add'}
@@ -233,11 +270,12 @@ class TestSecureDirManageUsersView(TestSecureDirBase):
                                      kwargs=kwargs)
         html = response.content.decode('utf-8')
         self.assertIn(self.user0.username, html)
-        self.assertIn(self.user4.username, html)
+        self.assertIn(self.user3.username, html)
 
         self.assertNotIn(self.user1.username, html)
         self.assertNotIn(self.user2.username, html)
-        self.assertNotIn(self.user3.username, html)
+        self.assertNotIn(self.user4.username, html)
+        self.assertNotIn(self.user5.username, html)
         self.assertNotIn(self.admin.username, html)
 
         # Testing users shown on scratch2_allocation add users page
@@ -253,6 +291,7 @@ class TestSecureDirManageUsersView(TestSecureDirBase):
         self.assertIn(self.user4.username, html)
 
         self.assertNotIn(self.admin.username, html)
+        self.assertNotIn(self.user5.username, html)
 
     def test_correct_users_to_remove(self):
         """Test that the correct users to be removed are displayed by
