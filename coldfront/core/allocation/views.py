@@ -1073,6 +1073,16 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     value=value
                 )
 
+                slurm_specs_attribute_type = AllocationAttributeType.objects.get(
+                    name='slurm_specs'
+                )
+
+                AllocationAttribute.objects.create(
+                    allocation_attribute_type=slurm_specs_attribute_type,
+                    allocation=allocation_obj,
+                    value='coldfront'
+                )
+
         if ALLOCATION_ACCOUNT_ENABLED and allocation_account and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING:
 
             allocation_attribute_type_obj = AllocationAttributeType.objects.get(
