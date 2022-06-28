@@ -3,6 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db.models import BooleanField
 from django.db.models import Case
@@ -232,3 +233,26 @@ def review_cluster_access_requests_url():
     domain = settings.CENTER_BASE_URL
     view = reverse('allocation-cluster-account-request-list')
     return urljoin(domain, view)
+
+
+def has_cluster_access(user):
+    """
+    Returns True if the user has cluster access, False otherwise
+
+    Parameters:
+    - user (User): the user to check
+
+    Raises:
+    - TypeError, if user is not a User object
+
+    Returns:
+    - Bool: True if the user has cluster access and False otherwise
+    """
+
+    if not isinstance(user, User):
+        raise TypeError(f'Invalid User {user}.')
+
+    return AllocationUserAttribute.objects.filter(
+        allocation_user__user=user,
+        allocation_attribute_type__name='Cluster Account Status',
+        value='Active').exists()
