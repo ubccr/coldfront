@@ -184,6 +184,8 @@ class SavioProjectRequestMixin(object):
         self.request_obj = get_object_or_404(
             SavioProjectAllocationRequest.objects.prefetch_related(
                 'pi', 'project', 'requester'), pk=pk)
+        self.computing_allowance_obj = ComputingAllowance(
+            self.request_obj.computing_allowance)
 
 
 class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
@@ -358,23 +360,12 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         if AllocationRenewalRequest.objects.filter(
                 new_project_request=self.request_obj).exists():
             return settings.ALLOCATION_MIN
-
-        # For RECHARGE, the user specifies the number of service units.
-        if flag_enabled('BRC_ONLY'):
-            recharge = BRCAllowances.RECHARGE
-        elif flag_enabled('LRC_ONLY'):
-            recharge = LRCAllowances.RECHARGE
-        else:
-            raise ImproperlyConfigured(
-                'One of the following flags must be enabled: BRC_ONLY, '
-                'LRC_ONLY.')
-
-        allowance_name = self.request_obj.computing_allowance.name
-        if allowance_name == recharge:
+        if self.computing_allowance_obj.are_service_units_user_specified():
             num_service_units_int = self.request_obj.extra_fields[
                 'num_service_units']
             num_service_units = Decimal(f'{num_service_units_int:.2f}')
         else:
+            allowance_name = self.request_obj.computing_allowance.name
             num_service_units = Decimal(
                 self.interface.service_units_from_name(allowance_name))
             if self.computing_allowance_obj.are_service_units_prorated():
@@ -622,6 +613,7 @@ class SavioProjectReviewMemorandumSignedView(LoginRequiredMixin,
         context['extra_fields_form'] = self.get_extra_fields_form()
         context['survey_form'] = SavioProjectSurveyForm(
             initial=self.request_obj.survey_answers, disable_fields=True)
+        context['instructions'] = self._get_instructions()
         return context
 
     def get_initial(self):
@@ -634,6 +626,18 @@ class SavioProjectReviewMemorandumSignedView(LoginRequiredMixin,
         return reverse(
             'savio-project-request-detail',
             kwargs={'pk': self.kwargs.get('pk')})
+
+    def _get_instructions(self):
+        """Return the instruction text that should be displayed for the
+        administrator."""
+        instructions = (
+            'Please confirm that the Memorandum of Understanding has been '
+            'signed.')
+        if flag_enabled('BRC_ONLY'):
+            if self.computing_allowance_obj.is_recharge():
+                instructions += (
+                    ' Additionally, confirm that funds have been transferred.')
+        return instructions
 
 
 class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,

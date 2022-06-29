@@ -12,16 +12,7 @@ Savio Project Request - Confirm MOU Signed
 <h1>Confirm Memorandum of Understanding Signed</h1>
 <hr>
 
-{% if savio_request.allocation_type == 'ICA' %}
-  <p>
-    Please confirm that the Memorandum of Understanding has been signed.
-  </p>
-{% else %}
-  <p>
-    Please confirm that the Memorandum of Understanding has been signed and
-    that funds have been transferred.
-  </p>
-{% endif %}
+<p>{{ instructions }}</p>
 
 {% include 'project/project_request/savio/project_request_card.html' with savio_request=savio_request %}
 

@@ -17,6 +17,7 @@ from coldfront.core.project.signals import new_project_request_denied
 from coldfront.core.project.utils import ProjectClusterAccessRequestRunner
 from coldfront.core.project.utils import send_added_to_project_notification_email
 from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
@@ -423,11 +424,16 @@ class SavioProjectProcessingRunner(ProjectProcessingRunner):
         if self.request_obj.allocation_period:
             self.request_obj.allocation_period.assert_started()
             self.request_obj.allocation_period.assert_not_ended()
+        self.computing_allowance_interface = ComputingAllowanceInterface()
+        self.computing_allowance_wrapper = ComputingAllowance(
+            self.request_obj.computing_allowance)
 
     def update_allocation(self):
         """Perform allocation-related handling."""
         project = self.request_obj.project
-        allocation_type = self.request_obj.allocation_type
+        allocation_type = \
+            self.computing_allowance_interface.name_short_from_name(
+                self.computing_allowance_wrapper.get_name())
         allocation_period = self.request_obj.allocation_period
         pool = self.request_obj.pool
 
@@ -455,8 +461,8 @@ class SavioProjectProcessingRunner(ProjectProcessingRunner):
             AllocationAttribute.objects.get_or_create(
                 allocation_attribute_type=allocation_attribute_type,
                 allocation=allocation)
-        if allocation_type == SavioProjectAllocationRequest.CO:
-            # For Condo, set the value manually.
+
+        if self.computing_allowance_wrapper.has_infinite_service_units():
             new_value = settings.ALLOCATION_MAX
         else:
             if pool:
@@ -514,12 +520,10 @@ def savio_request_state_status(savio_request):
             other['timestamp']):
         return ProjectAllocationRequestStatusChoice.objects.get(name='Denied')
 
-    ica = SavioProjectAllocationRequest.ICA
-    recharge = SavioProjectAllocationRequest.RECHARGE
-
-    # For ICA and Recharge projects, retrieve the signed status of the
-    # Memorandum of Understanding.
-    if savio_request.allocation_type in (ica, recharge):
+    # If an MOU is required, retrieve its signed status.
+    computing_allowance_wrapper = ComputingAllowance(
+        savio_request.computing_allowance)
+    if computing_allowance_wrapper.requires_memorandum_of_understanding():
         memorandum_signed = state['memorandum_signed']
         memorandum_not_signed = memorandum_signed['status'] == 'Pending'
     else:
