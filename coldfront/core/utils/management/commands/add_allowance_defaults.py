@@ -182,7 +182,9 @@ class Command(BaseCommand):
                     'name': LRCAllowances.RECHARGE,
                     'description': 'A paid computing allowance.',
                     'attributes': [
-                        (self.name_long, 'Recharge Allocation (Buy Time)'),
+                        (self.service_units, f'{settings.ALLOCATION_MAX}'),
+                        (self.name_long,
+                            'Recharge Allocation (Pay for Used Time)'),
                         (self.name_short, 'RECHARGE'),
                         (self.code, 'ac_'),
                     ],
