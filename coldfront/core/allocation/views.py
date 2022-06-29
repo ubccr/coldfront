@@ -1088,6 +1088,49 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     value=value
                 )
 
+        if storage_space:
+            storage_quota_attribute_type = AllocationAttributeType.objects.get(
+                name='Storage Quota (TB)'
+            )
+            AllocationAttribute.objects.create(
+                allocation_attribute_type=storage_quota_attribute_type,
+                allocation=allocation_obj,
+                value=storage_space
+            )
+
+        if resource_obj.requires_payment:
+            account_number_attribute_type = AllocationAttributeType.objects.get(
+                name='Account Number'
+            )
+            if not account_number:
+                AllocationAttribute.objects.create(
+                    allocation_attribute_type=account_number_attribute_type,
+                    allocation=allocation_obj,
+                    value='N/A'
+                )
+            else:
+                AllocationAttribute.objects.create(
+                    allocation_attribute_type=account_number_attribute_type,
+                    allocation=allocation_obj,
+                    value=account_number
+                )
+
+            sub_account_number_attribute_type = AllocationAttributeType.objects.get(
+                name='Sub-Account Number'
+            )
+            if not sub_account_number:
+                AllocationAttribute.objects.create(
+                    allocation_attribute_type=sub_account_number_attribute_type,
+                    allocation=allocation_obj,
+                    value='N/A'
+                )
+            else:
+                AllocationAttribute.objects.create(
+                    allocation_attribute_type=sub_account_number_attribute_type,
+                    allocation=allocation_obj,
+                    value=sub_account_number
+                )
+
         if ALLOCATION_ACCOUNT_ENABLED and allocation_account and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING:
 
             allocation_attribute_type_obj = AllocationAttributeType.objects.get(
