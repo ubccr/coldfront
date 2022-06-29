@@ -49,6 +49,7 @@ of variables used by Ansible to configure the system.
 that quotes should not be provided, except in the list variable.
    ```
    db_admin_passwd: password_here
+   redis_passwd: password_here
    from_email: you@email.com
    admin_email: you@email.com
    request_approval_cc_list: ["you@email.com"]
