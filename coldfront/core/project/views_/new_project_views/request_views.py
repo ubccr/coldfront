@@ -198,11 +198,10 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
             allocation_period = self.__get_allocation_period(form_data)
             pi = self.__handle_pi_data(form_data)
 
-            if flag_enabled('BRC_ONLY'):
-                if computing_allowance_wrapper.is_instructional():
-                    self.__handle_ica_allowance(form_data, request_kwargs)
-                elif computing_allowance_wrapper.is_recharge():
-                    self.__handle_recharge_allowance(form_data, request_kwargs)
+            if computing_allowance_wrapper.is_instructional():
+                self.__handle_ica_allowance(form_data, request_kwargs)
+            if computing_allowance_wrapper.is_recharge():
+                self.__handle_recharge_allowance(form_data, request_kwargs)
 
             pooling_requested = self.__get_pooling_requested(form_data)
             if pooling_requested:
@@ -324,7 +323,9 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
         computing_allowance = cleaned_data.get('computing_allowance', None)
         if not computing_allowance:
             return False
-        return ComputingAllowance(computing_allowance).is_recharge()
+        return (
+            ComputingAllowance(computing_allowance).is_recharge() and
+            self.__recharge_extra_fields_required())
 
     def __get_allocation_period(self, form_data):
         """Return the AllocationPeriod the user selected."""
@@ -406,15 +407,16 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
         """Perform Recharge-specific handling.
 
         In particular, set fields in the given dictionary to be used
-        during request creation. Set the extra_fields field from the
-        given form data and set the state field to include an additional
-        step."""
+        during request creation. If required, set the extra_fields field
+        from the given form data. In general, set the state field to
+        include an additional step."""
         step_number = self.step_numbers_by_form_name['recharge_extra_fields']
         data = form_data[step_number]
-        extra_fields = savio_project_request_recharge_extra_fields_schema()
-        for field in extra_fields:
-            extra_fields[field] = data[field]
-        request_kwargs['extra_fields'] = extra_fields
+        if self.__recharge_extra_fields_required():
+            extra_fields = savio_project_request_recharge_extra_fields_schema()
+            for field in extra_fields:
+                extra_fields[field] = data[field]
+            request_kwargs['extra_fields'] = extra_fields
         request_kwargs['state'] = savio_project_request_recharge_state_schema()
 
     def __handle_create_new_project(self, form_data):
@@ -468,6 +470,12 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
             raise e
 
         return project
+
+    @staticmethod
+    def __recharge_extra_fields_required():
+        """Return whether extra fields need to be requested from the
+        user in the case of a Recharge allowance."""
+        return flag_enabled('BRC_ONLY')
 
     def __set_data_from_previous_steps(self, step, dictionary):
         """Update the given dictionary with data from previous steps."""
