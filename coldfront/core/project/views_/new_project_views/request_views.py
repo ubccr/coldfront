@@ -24,6 +24,7 @@ from coldfront.core.project.utils_.new_project_utils import send_new_project_req
 from coldfront.core.project.utils_.new_project_utils import send_new_project_request_pi_notification_email
 from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import session_wizard_all_form_data
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -40,6 +41,7 @@ from django.urls import reverse
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 
+from flags.state import flag_enabled
 from formtools.wizard.views import SessionWizardView
 
 import logging
@@ -189,14 +191,19 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
             request_kwargs = {
                 'requester': self.request.user,
             }
-            allocation_type = self.__get_allocation_type(form_data)
+            computing_allowance = self.__get_computing_allowance(form_data)
+            computing_allowance_wrapper = ComputingAllowance(
+                computing_allowance)
+
             allocation_period = self.__get_allocation_period(form_data)
             pi = self.__handle_pi_data(form_data)
-            if allocation_type == SavioProjectAllocationRequest.ICA:
-                self.__handle_ica_allocation_type(form_data, request_kwargs)
-            if allocation_type == SavioProjectAllocationRequest.RECHARGE:
-                self.__handle_recharge_allocation_type(
-                    form_data, request_kwargs)
+
+            if flag_enabled('BRC_ONLY'):
+                if computing_allowance_wrapper.is_instructional():
+                    self.__handle_ica_allowance(form_data, request_kwargs)
+                elif computing_allowance_wrapper.is_recharge():
+                    self.__handle_recharge_allowance(form_data, request_kwargs)
+
             pooling_requested = self.__get_pooling_requested(form_data)
             if pooling_requested:
                 project = self.__handle_pool_with_existing_project(form_data)
@@ -205,7 +212,12 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
             survey_data = self.__get_survey_data(form_data)
 
             # Store transformed form data in a request.
-            request_kwargs['allocation_type'] = allocation_type
+            # TODO: allocation_type will eventually be removed from the model.
+            computing_allowance_interface = ComputingAllowanceInterface()
+            request_kwargs['allocation_type'] = \
+                computing_allowance_interface.name_short_from_name(
+                    computing_allowance_wrapper.get_name())
+            request_kwargs['computing_allowance'] = computing_allowance
             request_kwargs['allocation_period'] = allocation_period
             request_kwargs['pi'] = pi
             request_kwargs['project'] = project
@@ -320,12 +332,12 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
         data = form_data[step_number]
         return data.get('allocation_period', None)
 
-    def __get_allocation_type(self, form_data):
-        """Return the allocation type (Resource object) matching the
-        provided input."""
-        step_number = self.step_numbers_by_form_name['allocation_type']
+    def __get_computing_allowance(self, form_data):
+        """Return the computing allowance (Resource) the user
+        selected."""
+        step_number = self.step_numbers_by_form_name['computing_allowance']
         data = form_data[step_number]
-        return data['allocation_type']
+        return data['computing_allowance']
 
     def __get_pooling_requested(self, form_data):
         """Return whether pooling was requested."""
@@ -338,7 +350,7 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
         step_number = self.step_numbers_by_form_name['survey']
         return form_data[step_number]
 
-    def __handle_ica_allocation_type(self, form_data, request_kwargs):
+    def __handle_ica_allowance(self, form_data, request_kwargs):
         """Perform ICA-specific handling.
 
         In particular, set fields in the given dictionary to be used
@@ -390,7 +402,7 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
 
         return pi
 
-    def __handle_recharge_allocation_type(self, form_data, request_kwargs):
+    def __handle_recharge_allowance(self, form_data, request_kwargs):
         """Perform Recharge-specific handling.
 
         In particular, set fields in the given dictionary to be used

@@ -18,6 +18,8 @@ class ComputingAllowanceInterface(object):
         self._name_short_to_object = {}
         # A mapping from allowance Resource objects to code values.
         self._object_to_code = {}
+        # A mapping from allowance Resource objects to name_short values.
+        self._object_to_name_short = {}
         # A mapping from allowance Resource objects to Service Units values.
         self._object_to_service_units = {}
         self.set_up_data_structures(allowances)
@@ -32,6 +34,7 @@ class ComputingAllowanceInterface(object):
                     self._object_to_code[allowance] = attribute.value
                 elif attribute_type_name == 'name_short':
                     self._name_short_to_object[attribute.value] = allowance
+                    self._object_to_name_short[allowance] = attribute.value
                 elif attribute_type_name == 'Service Units':
                     self._object_to_service_units[allowance] = attribute.value
 
@@ -47,6 +50,14 @@ class ComputingAllowanceInterface(object):
         """Given a name, return the corresponding allowance's code."""
         try:
             return self._object_to_code[self._name_to_object[name]]
+        except KeyError as e:
+            raise ComputingAllowanceInterfaceError(e)
+
+    def name_short_from_name(self, name):
+        """Given a name, return the corresponding allowance's
+        name_short."""
+        try:
+            return self._object_to_name_short[self._name_to_object[name]]
         except KeyError as e:
             raise ComputingAllowanceInterfaceError(e)
 

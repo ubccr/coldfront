@@ -1,7 +1,8 @@
-from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
+from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
 from coldfront.core.utils.tests.test_base import TestBase
 from django.urls import reverse
 from http import HTTPStatus
@@ -29,12 +30,13 @@ class TestSavioProjectRequestWizard(TestBase):
         self.assertEqual(SavioProjectAllocationRequest.objects.count(), 0)
         self.assertEqual(Project.objects.count(), 0)
 
+        computing_allowance = Resource.objects.get(name=BRCAllowances.FCA)
         allocation_period = get_current_allowance_year_period()
 
         view_name = 'savio_project_request_wizard'
         current_step_key = f'{view_name}-current_step'
-        allocation_type_form_data = {
-            '0-allocation_type': 'FCA',
+        computing_allowance_form_data = {
+            '0-computing_allowance': computing_allowance.pk,
             current_step_key: '0',
         }
         allocation_period_form_data = {
@@ -61,7 +63,7 @@ class TestSavioProjectRequestWizard(TestBase):
             current_step_key: '9',
         }
         form_data = [
-            allocation_type_form_data,
+            computing_allowance_form_data,
             allocation_period_form_data,
             existing_pi_form_data,
             pool_allocations_data,
@@ -85,9 +87,8 @@ class TestSavioProjectRequestWizard(TestBase):
         request = requests.first()
         project = projects.first()
         self.assertEqual(request.requester, self.user)
-        self.assertEqual(
-            request.allocation_type,
-            allocation_type_form_data['0-allocation_type'])
+        self.assertEqual(request.allocation_type, 'FCA')
+        self.assertEqual(request.computing_allowance, computing_allowance)
         self.assertEqual(request.allocation_period, allocation_period)
         self.assertEqual(request.pi, self.user)
         self.assertEqual(request.project, project)
