@@ -56,7 +56,7 @@ class ComputingAllowance(object):
         allowance_names = []
         if flag_enabled('BRC_ONLY'):
             allowance_names.append(BRCAllowances.FCA)
-            allowance_names.append(BRCAllowances.ICA)
+            allowance_names.append(BRCAllowances.PCA)
         elif flag_enabled('LRC_ONLY'):
             allowance_names.append(LRCAllowances.PCA)
         return self._name in allowance_names
