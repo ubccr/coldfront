@@ -273,8 +273,8 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         context['has_allocation_period_started'] = \
             self.has_request_allocation_period_started()
         context['setup_status'] = self.get_setup_status()
+        context['checklist'] = self.get_checklist()
         context['is_checklist_complete'] = self.is_checklist_complete()
-
         context['is_allowed_to_manage_request'] = \
             self.request.user.is_superuser
 
@@ -345,6 +345,76 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
                 pass
 
         return HttpResponseRedirect(self.redirect)
+
+    def get_checklist(self):
+        """Return a nested list, where each row contains the details of
+        one item on the checklist.
+
+        Each row is of the form: [task text, status name, latest update
+        timestamp, is "Manage" button available, URL of "Manage"
+        button.]"""
+        pk = self.request_obj.pk
+        state = self.request_obj.state
+        checklist = []
+
+        eligibility = state['eligibility']
+        checklist.append([
+            (f'Confirm that the requested PI is eligible for a new '
+             f'{self.computing_allowance_obj.get_name()}.'),
+            eligibility['status'],
+            eligibility['timestamp'],
+            True,
+            reverse(
+                'savio-project-request-review-eligibility', kwargs={'pk': pk})
+        ])
+        is_eligible = eligibility['status'] == 'Approved'
+
+        readiness = state['readiness']
+        checklist.append([
+            ('Confirm that the project satisfies the readiness status '
+             'criteria.'),
+            readiness['status'],
+            readiness['timestamp'],
+            True,
+            reverse(
+                'savio-project-request-review-readiness', kwargs={'pk': pk})
+        ])
+        is_ready = readiness['status'] == 'Approved'
+
+        mou_required = \
+            self.computing_allowance_obj.requires_memorandum_of_understanding()
+        if mou_required:
+            memorandum_signed = state['memorandum_signed']
+            task_text = (
+                'Confirm that the Memorandum of Understanding has been '
+                'signed.')
+            if (self.computing_allowance_obj.is_recharge() and
+                    self.computing_allowance_obj.requires_extra_information()):
+                task_text += (
+                    ' Additionally, confirm that funds have been transferred.')
+            checklist.append([
+                task_text,
+                memorandum_signed['status'],
+                memorandum_signed['timestamp'],
+                is_eligible and is_ready,
+                reverse(
+                    'savio-project-request-review-memorandum-signed',
+                    kwargs={'pk': pk})
+            ])
+        is_memorandum_signed = (
+            not mou_required or
+            state['memorandum_signed']['status'] == 'Complete')
+
+        setup = state['setup']
+        checklist.append([
+            'Perform project setup on the cluster.',
+            self.get_setup_status(),
+            setup['timestamp'],
+            is_eligible and is_ready and is_memorandum_signed,
+            reverse('savio-project-request-review-setup', kwargs={'pk': pk})
+        ])
+
+        return checklist
 
     def get_service_units_to_allocate(self):
         """Return the possibly-prorated number of service units to
