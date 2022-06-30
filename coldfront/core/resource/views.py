@@ -10,16 +10,22 @@ from django.urls import reverse
 from django.views.generic import TemplateView, ListView
 from django.views.generic.edit import CreateView
 from coldfront.core.utils.common import import_from_settings
+from coldfront.core.utils.mail import send_email_template
 import datetime
 
 from coldfront.core.resource.forms import ResourceSearchForm, ResourceAttributeDeleteForm
 from coldfront.core.resource.models import Resource, ResourceAttribute
+from coldfront.core.allocation.models import Allocation
 
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 EMAIL_RESOURCE_EXPIRING_NOTIFICATION_DAYS = import_from_settings(
     'EMAIL_RESOURCE_EXPIRING_NOTIFICATION_DAYS', [7, ])
 if EMAIL_ENABLED:
+    CENTER_NAME = import_from_settings('CENTER_NAME')
+    CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
     EMAIL_RESOURCE_NOTIFICATIONS_ENABLED = import_from_settings('EMAIL_RESOURCE_NOTIFICATIONS_ENABLED', False)
+    EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
+    EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
 
 class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     model = Resource
@@ -100,18 +106,26 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     if service_day >= 0 and service_day <= days_remaining:
                         child_day[resource['object']][1] = days_remaining
 
-        if (attribute_warranty_day != -1):
-            messages.warning(self.request, f'{resource_obj.name} warranty is expiring within {attribute_warranty_day} day(s)')
+        if (attribute_warranty_day != -1 and attribute_service_day != -1):
+                messages.warning(self.request, f'{resource_obj.name} warranty is expiring within {attribute_warranty_day} day(s)' +
+                                                f' and service expiring within {attribute_service_day} day(s)')
+        else:
+            if (attribute_warranty_day != -1):
+                messages.warning(self.request, f'{resource_obj.name} warranty is expiring within {attribute_warranty_day} day(s)')
 
-        if (attribute_service_day != -1):
-            messages.warning(self.request, f'{resource_obj.name} service is expiring within {attribute_service_day} day(s)')  
+            if (attribute_service_day != -1):
+                messages.warning(self.request, f'{resource_obj.name} service is expiring within {attribute_service_day} day(s)')  
 
         for resource_key, resource_value in child_day.items():
-            if (resource_value[0] != -1):
-                messages.warning(self.request, f'{resource_key} warranty is expiring within {resource_value[0]} day(s)')
+            if (resource_value[0] != -1 and resource_value[1] != -1):
+                messages.warning(self.request, f'{resource_key} warranty is expiring within {resource_value[0]} day(s)' +
+                                                f' and service expiring within {resource_value[1]} day(s)')
+            else:
+                if (resource_value[0] != -1):
+                    messages.warning(self.request, f'{resource_key} warranty is expiring within {resource_value[0]} day(s)')
 
-            if (resource_value[1] != -1):
-                messages.warning(self.request, f'{resource_key} service is expiring within {resource_value[1]} day(s)')
+                if (resource_value[1] != -1):
+                    messages.warning(self.request, f'{resource_key} service is expiring within {resource_value[1]} day(s)')
 
         return context
 
