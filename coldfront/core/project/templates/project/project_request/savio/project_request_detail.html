@@ -50,14 +50,12 @@ Savio Project Request Detail
                   <p>
                     This request is currently under review. Administrators must
                     determine if the requested PI is eligible for an allowance,
-                    and if the project is appropriate for Savio.
-                    {% if savio_request.allocation_type in 'ICA,RECHARGE' %}
-                      {% if savio_request.allocation_type == 'ICA' %}
-                        They must also confirm that the Memorandum of
-                        Understanding has been signed.
-                      {% else %}
-                        They must also confirm that the Memorandum of
-                        Understanding has been signed and that funds have been
+                    and if the project is appropriate for the cluster.
+                    {% if allowance_requires_mou %}
+                      They must also confirm that the Memorandum of
+                      Understanding has been signed.
+                      {% if allowance_requires_funds_transfer %}
+                        Additionally, they must confirm that funds have been
                         transferred.
                       {% endif %}
                     {% endif %}
@@ -214,20 +212,16 @@ Savio Project Request Detail
                   {% endif %}
                 </td>
               </tr>
-              {% if savio_request.allocation_type in 'ICA,RECHARGE' %}
+              {% if allowance_requires_mou %}
                 {% with memorandum_signed=savio_request.state.memorandum_signed %}
                   <tr>
-                    {% if savio_request.allocation_type == 'ICA' %}
-                      <td>
-                        Confirm that the Memorandum of Understanding has been
-                        signed.
-                      </td>
-                    {% else %}
-                      <td>
-                        Confirm that the Memorandum of Understanding has been
-                        signed and that funds have been transferred.
-                      </td>
-                    {% endif %}
+                    <td>
+                      Confirm that the Memorandum of Understanding has been
+                      signed.
+                      {% if allowance_requires_funds_transfer %}
+                        Additionally, confirm that funds have been transferred.
+                      {% endif %}
+                    </td>
                     <td>
                       {% if eligibility.status == 'Denied' or readiness.status == 'Denied' %}
                         <span class="badge badge-danger">

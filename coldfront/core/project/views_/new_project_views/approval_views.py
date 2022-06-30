@@ -180,6 +180,11 @@ class SavioProjectRequestMixin(object):
             self.computing_allowance_obj.requires_extra_information()
         if context['allowance_has_extra_fields']:
             context['extra_fields_form'] = self.get_extra_fields_form()
+        context['allowance_requires_mou'] = \
+            self.computing_allowance_obj.requires_memorandum_of_understanding()
+        context['allowance_requires_funds_transfer'] = (
+            self.computing_allowance_obj.is_recharge() and
+            context['allowance_has_extra_fields'])
         context['survey_form'] = SavioProjectSurveyForm(
             initial=self.request_obj.survey_answers, disable_fields=True)
 
@@ -597,7 +602,6 @@ class SavioProjectReviewMemorandumSignedView(LoginRequiredMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['instructions'] = self._get_instructions()
         self.set_common_context_data(context)
         return context
 
@@ -611,18 +615,6 @@ class SavioProjectReviewMemorandumSignedView(LoginRequiredMixin,
         return reverse(
             'savio-project-request-detail',
             kwargs={'pk': self.kwargs.get('pk')})
-
-    def _get_instructions(self):
-        """Return the instruction text that should be displayed for the
-        administrator."""
-        instructions = (
-            'Please confirm that the Memorandum of Understanding has been '
-            'signed.')
-        if flag_enabled('BRC_ONLY'):
-            if self.computing_allowance_obj.is_recharge():
-                instructions += (
-                    ' Additionally, confirm that funds have been transferred.')
-        return instructions
 
 
 class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,

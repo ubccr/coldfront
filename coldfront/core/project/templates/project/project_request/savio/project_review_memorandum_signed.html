@@ -12,7 +12,12 @@ Savio Project Request - Confirm MOU Signed
 <h1>Confirm Memorandum of Understanding Signed</h1>
 <hr>
 
-<p>{{ instructions }}</p>
+<p>
+  Please confirm that the Memorandum of Understanding has been signed.
+  {% if allowance_requires_funds_transfer %}
+    Additionally, confirm that funds have been transferred.
+  {% endif %}
+</p>
 
 {% include 'project/project_request/savio/project_request_card.html' with savio_request=savio_request %}
 
