@@ -3,6 +3,7 @@ from django.core.management.base import BaseCommand
 from coldfront.core.resource.models import (AttributeType,
                                             ResourceAttributeType,
                                             ResourceType)
+                                            
 
 
 class Command(BaseCommand):
@@ -38,7 +39,7 @@ class Command(BaseCommand):
             ('WarrantyExpirationDate', 'Date'),
         ):
             ResourceAttributeType.objects.get_or_create(
-                name=resource_attribute_type, attribute_type=AttributeType.objects.get(name=attribute_type))
+                name=resource_attribute_type, attribute_type=AttributeType.objects.get(name=attribute_type)).order_by(Lower(resource_attribute_type))
 
         for resource_type, description in (
             ('Cloud', 'Cloud Computing'),

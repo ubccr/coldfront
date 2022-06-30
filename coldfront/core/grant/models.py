@@ -3,6 +3,8 @@ from django.core.validators import (MaxLengthValidator, MaxValueValidator,
 from django.db import models
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
+from django.db.models.functions import Lower
+
 
 from coldfront.core.project.models import Project
 
@@ -21,7 +23,7 @@ class GrantStatusChoice(TimeStampedModel):
         return self.name
 
     class Meta:
-        ordering = ('name',)
+        ordering = (Lower('name'),)
 
 
 class Grant(TimeStampedModel):

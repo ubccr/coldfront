@@ -4,6 +4,7 @@ import textwrap
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import MinLengthValidator
+from django.db.models.functions import Lower
 from django.db import models
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
@@ -20,7 +21,7 @@ class ProjectStatusChoice(TimeStampedModel):
         return self.name
 
     class Meta:
-        ordering = ('name',)
+        ordering = (Lower('name'),)
 
 
 class Project(TimeStampedModel):
@@ -145,7 +146,7 @@ class ProjectReviewStatusChoice(TimeStampedModel):
         return self.name
 
     class Meta:
-        ordering = ['name', ]
+        ordering = [Lower('name'), ]
 
 
 class ProjectReview(TimeStampedModel):
@@ -162,7 +163,7 @@ class ProjectUserRoleChoice(TimeStampedModel):
         return self.name
 
     class Meta:
-        ordering = ['name', ]
+        ordering = [Lower('name'), ]
 
 
 class ProjectUserStatusChoice(TimeStampedModel):
@@ -172,7 +173,7 @@ class ProjectUserStatusChoice(TimeStampedModel):
         return self.name
 
     class Meta:
-        ordering = ['name', ]
+        ordering = [Lower('name'), ]
 
 
 class ProjectUser(TimeStampedModel):

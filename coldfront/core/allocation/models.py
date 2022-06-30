@@ -5,6 +5,7 @@ from ast import literal_eval
 
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.db.models.functions import Lower
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.html import mark_safe
@@ -35,7 +36,7 @@ class AllocationStatusChoice(TimeStampedModel):
         return self.name
 
     class Meta:
-        ordering = ['name', ]
+        ordering = [Lower('name'), ]
 
 
 class Allocation(TimeStampedModel):
@@ -264,7 +265,7 @@ class AttributeType(TimeStampedModel):
         return self.name
 
     class Meta:
-        ordering = ['name', ]
+        ordering = [Lower('name'), ]
 
 
 class AllocationAttributeType(TimeStampedModel):
@@ -282,7 +283,7 @@ class AllocationAttributeType(TimeStampedModel):
         return '%s (%s)' % (self.name, self.attribute_type.name)
 
     class Meta:
-        ordering = ['name', ]
+        ordering = [Lower('name'), ]
 
 
 class AllocationAttribute(TimeStampedModel):
@@ -418,7 +419,7 @@ class AllocationUserStatusChoice(TimeStampedModel):
         return self.name
 
     class Meta:
-        ordering = ['name', ]
+        ordering = [Lower('name'), ]
 
 
 class AllocationUser(TimeStampedModel):
@@ -445,7 +446,7 @@ class AllocationAccount(TimeStampedModel):
         return self.name
 
     class Meta:
-        ordering = ['name', ]
+        ordering = [Lower('name'), ]
 
 
 class AllocationChangeStatusChoice(TimeStampedModel):
@@ -455,7 +456,7 @@ class AllocationChangeStatusChoice(TimeStampedModel):
         return self.name
 
     class Meta:
-        ordering = ['name', ]
+        ordering = [Lower('name'), ]
 
 
 class AllocationChangeRequest(TimeStampedModel):

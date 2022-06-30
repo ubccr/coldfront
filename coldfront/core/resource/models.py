@@ -2,6 +2,7 @@ from datetime import datetime
 
 from django.contrib.auth.models import Group, User
 from django.core.exceptions import ValidationError
+from django.db.models.functions import Lower
 from django.db import models
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
@@ -14,7 +15,7 @@ class AttributeType(TimeStampedModel):
         return self.name
 
     class Meta:
-        ordering = ['name', ]
+        ordering = [Lower('name'), ]
 
 
 class ResourceType(TimeStampedModel):
@@ -36,7 +37,7 @@ class ResourceType(TimeStampedModel):
         return self.name
 
     class Meta:
-        ordering = ['name', ]
+        ordering = [Lower('name'), ]
 
 
 class ResourceAttributeType(TimeStampedModel):
@@ -51,7 +52,7 @@ class ResourceAttributeType(TimeStampedModel):
         return self.name
 
     class Meta:
-        ordering = ['name', ]
+        ordering = [Lower('name'), ]
 
 
 class Resource(TimeStampedModel):
@@ -173,7 +174,7 @@ class Resource(TimeStampedModel):
         return '%s (%s)' % (self.name, self.resource_type.name)
 
     class Meta:
-        ordering = ['name', ]
+        ordering = [Lower('name'), ]
 
 
 class ResourceAttribute(TimeStampedModel):
