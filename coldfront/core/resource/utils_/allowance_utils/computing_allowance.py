@@ -101,6 +101,15 @@ class ComputingAllowance(object):
         """Return the underlying Resource."""
         return self._resource
 
+    def requires_extra_information(self):
+        """Return whether the allowance requires extra user-specified
+        information."""
+        allowance_names = []
+        if flag_enabled('BRC_ONLY'):
+            allowance_names.append(BRCAllowances.ICA)
+            allowance_names.append(BRCAllowances.RECHARGE)
+        return self._name in allowance_names
+
     def requires_memorandum_of_understanding(self):
         """Return whether the allowance requires an MOU to be signed."""
         allowance_names = []

@@ -246,7 +246,8 @@ class SavioProjectNewPIForm(forms.Form):
 
 
 class SavioProjectExtraFieldsForm(forms.Form):
-    """A placeholder for extra fields for non-ICA/Recharge projects."""
+    """A base form for retrieving additional information for the
+    requested allowance."""
 
     def __init__(self, *args, **kwargs):
         disable_fields = kwargs.pop('disable_fields', False)
@@ -254,6 +255,31 @@ class SavioProjectExtraFieldsForm(forms.Form):
         if disable_fields:
             for field in self.fields:
                 self.fields[field].disabled = True
+
+
+class NewProjectExtraFieldsFormFactory(object):
+    """A factory for returning a form to acquire additional information
+    about a particular allowance."""
+
+    def get_form(self, computing_allowance, *args, **kwargs):
+        """Return an instantiated form for the given allowance with the
+        given arguments and keyword arguments."""
+        assert isinstance(computing_allowance, ComputingAllowance)
+        return self._get_form_class(computing_allowance)(*args, **kwargs)
+
+    @staticmethod
+    def _get_form_class(computing_allowance):
+        """Return the appropriate form class for the given allowance. If
+        none are applicable, raise a ValueError."""
+        allowance_name = computing_allowance.get_name()
+        if flag_enabled('BRC_ONLY'):
+            if allowance_name == BRCAllowances.ICA:
+                return SavioProjectICAExtraFieldsForm
+            elif allowance_name == BRCAllowances.RECHARGE:
+                return SavioProjectRechargeExtraFieldsForm
+        raise ValueError(
+            f'Computing Allowance {allowance_name} does not require extra '
+            f'fields.')
 
 
 class SavioProjectICAExtraFieldsForm(SavioProjectExtraFieldsForm):

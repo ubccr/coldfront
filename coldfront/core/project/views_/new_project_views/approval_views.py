@@ -4,11 +4,9 @@ from coldfront.core.allocation.utils import prorated_allocation_amount
 from coldfront.core.project.forms import MemorandumSignedForm
 from coldfront.core.project.forms import ReviewDenyForm
 from coldfront.core.project.forms import ReviewStatusForm
+from coldfront.core.project.forms_.new_project_forms.request_forms import NewProjectExtraFieldsFormFactory
 from coldfront.core.project.forms_.new_project_forms.approval_forms import SavioProjectReviewSetupForm
 from coldfront.core.project.forms_.new_project_forms.approval_forms import VectorProjectReviewSetupForm
-from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectExtraFieldsForm
-from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectICAExtraFieldsForm
-from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectRechargeExtraFieldsForm
 from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectSurveyForm
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
@@ -21,8 +19,6 @@ from coldfront.core.project.utils_.new_project_utils import send_project_request
 from coldfront.core.project.utils_.new_project_utils import VectorProjectProcessingRunner
 from coldfront.core.project.utils_.new_project_utils import vector_request_state_status
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
-from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
-from coldfront.core.resource.utils_.allowance_utils.constants import LRCAllowances
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import format_date_month_name_day_year
@@ -34,7 +30,6 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.mixins import UserPassesTestMixin
-from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Q
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
@@ -120,27 +115,14 @@ class SavioProjectRequestMixin(object):
         """Return a form of extra fields for the request, based on its
         computing allowance, and populated with initial data."""
         self.assert_attributes_set()
-        computing_allowance = self.request_obj.computing_allowance
+        computing_allowance = self.computing_allowance_obj
         extra_fields = self.request_obj.extra_fields
-
         kwargs = {
             'initial': extra_fields,
             'disable_fields': True,
         }
-
-        allowance_name = computing_allowance.name
-        form = SavioProjectExtraFieldsForm
-        if flag_enabled('BRC_ONLY'):
-            if allowance_name == BRCAllowances.ICA:
-                form = SavioProjectICAExtraFieldsForm
-            elif allowance_name == BRCAllowances.RECHARGE:
-                form = SavioProjectRechargeExtraFieldsForm
-        elif flag_enabled('LRC_ONLY'):
-            if allowance_name == LRCAllowances.RECHARGE:
-                # TODO
-                form = SavioProjectRechargeExtraFieldsForm
-
-        return form(**kwargs)
+        factory = NewProjectExtraFieldsFormFactory()
+        return factory.get_form(computing_allowance, **kwargs)
 
     def get_survey_form(self):
         """Return a disabled form containing the survey answers for the
@@ -194,7 +176,10 @@ class SavioProjectRequestMixin(object):
         context['savio_request'] = self.request_obj
         context['computing_allowance_name'] = \
             self.computing_allowance_obj.get_name()
-        context['extra_fields_form'] = self.get_extra_fields_form()
+        context['allowance_has_extra_fields'] = \
+            self.computing_allowance_obj.requires_extra_information()
+        if context['allowance_has_extra_fields']:
+            context['extra_fields_form'] = self.get_extra_fields_form()
         context['survey_form'] = SavioProjectSurveyForm(
             initial=self.request_obj.survey_answers, disable_fields=True)
 
