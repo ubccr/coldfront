@@ -42,7 +42,7 @@ class XdmodNotFoundError(XdmodError):
 def xdmod_fetch_total_cpu_hours(start, end, account, resources=None, statistics='total_cpu_hours'):
     if resources is None:
         resources = []
-
+    
     url = '{}{}'.format(XDMOD_API_URL, _ENDPOINT_CORE_HOURS)
     payload = _DEFAULT_PARAMS
     payload['pi_filter'] = '"{}"'.format(account)
@@ -64,6 +64,8 @@ def xdmod_fetch_total_cpu_hours(start, end, account, resources=None, statistics=
         # expecting xml but XDMoD should just return json always. 
         raise XdmodNotFoundError('Got json response but expected XML: {}'.format(error))
     except json.decoder.JSONDecodeError as e:
+        pass
+    except requests.exceptions.JSONDecodeError:
         pass
 
     try:

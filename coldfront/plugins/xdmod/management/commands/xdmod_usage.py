@@ -42,6 +42,8 @@ class Command(BaseCommand):
             "-x", "--header", help="Include header in output", action="store_true")
         parser.add_argument(
             "-m", "--statistic", help="XDMoD statistic (default total_cpu_hours)", required=True)
+        parser.add_argument(
+            "--expired", help="XDMoD statistic for archived projects", action="store_true")
 
     def write(self, data):
         try:
@@ -454,6 +456,8 @@ class Command(BaseCommand):
         self.filter_resource = ''
         self.filter_account = ''
         self.print_header = False
+        self.fetch_expired = False
+        
         if options['username']:
             logger.info("Filtering output by username: %s",
                         options['username'])
@@ -470,6 +474,10 @@ class Command(BaseCommand):
             self.filter_resource = options['resource']
         if options['header']:
             self.print_header = True
+        
+        if options['expired']:
+            self.fetch_expired = True
+
         if options['statistic']:
             statistic = options['statistic']
 
