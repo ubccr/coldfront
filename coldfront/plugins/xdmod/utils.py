@@ -13,9 +13,9 @@ XDMOD_ACCOUNT_ATTRIBUTE_NAME = import_from_settings('XDMOD_ACCOUNT_ATTRIBUTE_NAM
 XDMOD_RESOURCE_ATTRIBUTE_NAME = import_from_settings('XDMOD_RESOURCE_ATTRIBUTE_NAME', 'xdmod_resource')
 
 XDMOD_CPU_HOURS_ATTRIBUTE_NAME = import_from_settings('XDMOD_CPU_HOURS_ATTRIBUTE_NAME', 'Core Usage (Hours)')
-XDMOD_ACC_HOURS_ATTRIBUTE_NAME = import_from_settings('XDMOD_ACC_HOURS_ATTRIBUTE    _NAME', 'Accelerator Usage (Hours)')
+XDMOD_ACC_HOURS_ATTRIBUTE_NAME = import_from_settings('XDMOD_ACC_HOURS_ATTRIBUTE_NAME', 'Accelerator Usage (Hours)')
 
-XDMOD_STORAGE_ATTRIBUTE_NAME = import_from_settings('XDMOD_ACC_HOURS_ATTRIBUTE_NAME', 'Storage Quota (GB)')
+XDMOD_STORAGE_ATTRIBUTE_NAME = import_from_settings('XDMOD_STORAGE_ATTRIBUTE_NAME', 'Storage Quota (GB)')
 XDMOD_STORAGE_GROUP_ATTRIBUTE_NAME = import_from_settings('XDMOD_STORAGE_GROUP_ATTRIBUTE_NAME', 'Storage_Group_Name')
 
 XDMOD_API_URL = import_from_settings('XDMOD_API_URL')
