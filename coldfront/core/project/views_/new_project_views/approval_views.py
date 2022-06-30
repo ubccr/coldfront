@@ -187,13 +187,23 @@ class SavioProjectRequestMixin(object):
         self.computing_allowance_obj = ComputingAllowance(
             self.request_obj.computing_allowance)
 
+    def set_common_context_data(self, context):
+        """Given a dictionary of context variables to include in the
+        template, add additional, commonly-used variables."""
+        self.assert_attributes_set()
+        context['savio_request'] = self.request_obj
+        context['computing_allowance_name'] = \
+            self.computing_allowance_obj.get_name()
+        context['extra_fields_form'] = self.get_extra_fields_form()
+        context['survey_form'] = SavioProjectSurveyForm(
+            initial=self.request_obj.survey_answers, disable_fields=True)
+
 
 class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
                                     SavioProjectRequestMixin, DetailView):
     model = SavioProjectAllocationRequest
     template_name = 'project/project_request/savio/project_request_detail.html'
     login_url = '/'
-    context_object_name = 'savio_request'
 
     logger = logging.getLogger(__name__)
 
@@ -223,10 +233,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
-        context['extra_fields_form'] = self.get_extra_fields_form()
-        context['survey_form'] = SavioProjectSurveyForm(
-            initial=self.request_obj.survey_answers, disable_fields=True)
+        self.set_common_context_data(context)
 
         try:
             context['allocation_amount'] = self.get_service_units_to_allocate()
@@ -454,10 +461,9 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['savio_request'] = self.request_obj
-        context['extra_fields_form'] = self.get_extra_fields_form()
-        context['survey_form'] = SavioProjectSurveyForm(
-            initial=self.request_obj.survey_answers, disable_fields=True)
+        self.set_common_context_data(context)
+        context['is_allowance_one_per_pi'] = \
+            self.computing_allowance_obj.is_one_per_pi()
         return context
 
     def get_initial(self):
@@ -533,10 +539,7 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['extra_fields_form'] = self.get_extra_fields_form()
-        context['savio_request'] = self.request_obj
-        context['survey_form'] = SavioProjectSurveyForm(
-            initial=self.request_obj.survey_answers, disable_fields=True)
+        self.set_common_context_data(context)
         return context
 
     def get_initial(self):
@@ -609,11 +612,8 @@ class SavioProjectReviewMemorandumSignedView(LoginRequiredMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['savio_request'] = self.request_obj
-        context['extra_fields_form'] = self.get_extra_fields_form()
-        context['survey_form'] = SavioProjectSurveyForm(
-            initial=self.request_obj.survey_answers, disable_fields=True)
         context['instructions'] = self._get_instructions()
+        self.set_common_context_data(context)
         return context
 
     def get_initial(self):
@@ -700,10 +700,7 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['savio_request'] = self.request_obj
-        context['extra_fields_form'] = self.get_extra_fields_form()
-        context['survey_form'] = SavioProjectSurveyForm(
-            initial=self.request_obj.survey_answers, disable_fields=True)
+        self.set_common_context_data(context)
         return context
 
     def get_form_kwargs(self):
@@ -774,10 +771,7 @@ class SavioProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['savio_request'] = self.request_obj
-        context['extra_fields_form'] = self.get_extra_fields_form()
-        context['survey_form'] = SavioProjectSurveyForm(
-            initial=self.request_obj.survey_answers, disable_fields=True)
+        self.set_common_context_data(context)
         return context
 
     def get_initial(self):
