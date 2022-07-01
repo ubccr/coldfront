@@ -137,6 +137,7 @@ TEMPLATES = [
                 'coldfront.core.utils.context_processors.current_allowance_year_allocation_period',
                 'coldfront.core.utils.context_processors.display_time_zone',
                 'coldfront.core.utils.context_processors.portal_and_program_names',
+                'coldfront.core.utils.context_processors.primary_cluster_name',
             ],
         },
     },

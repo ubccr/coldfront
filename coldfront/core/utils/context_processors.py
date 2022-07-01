@@ -62,3 +62,9 @@ def portal_and_program_names(request):
         'PROGRAM_NAME_LONG': settings.PROGRAM_NAME_LONG,
         'PROGRAM_NAME_SHORT': settings.PROGRAM_NAME_SHORT,
     }
+
+
+def primary_cluster_name(request):
+    return {
+        'PRIMARY_CLUSTER_NAME': settings.PRIMARY_CLUSTER_NAME,
+    }
