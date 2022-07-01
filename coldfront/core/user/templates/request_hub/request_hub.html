@@ -1,5 +1,6 @@
 {% extends "common/base.html" %}
 {% load common_tags %}
+{% load feature_flags %}
 {% block content %}
 
   <h1>Request Hub</h1>
@@ -75,9 +76,12 @@
     {% include 'request_hub/request_section.html' %}
   {% endwith %}
 
-  {% with request_obj=vector_project_request_obj %}
-    {% include 'request_hub/request_section.html' %}
-  {% endwith %}
+  {% flag_enabled 'BRC_ONLY' as brc_only %}
+  {% if brc_only %}
+    {% with request_obj=vector_project_request_obj %}
+      {% include 'request_hub/request_section.html' %}
+    {% endwith %}
+  {% endif %}
 
   <script>
     {# set variables to be used for scroll position #}

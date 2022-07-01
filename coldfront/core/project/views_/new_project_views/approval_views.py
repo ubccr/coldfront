@@ -158,7 +158,7 @@ class SavioProjectRequestMixin(object):
     def request_detail_url(pk):
         """Return the URL to the detail view for the request with the
         given primary key."""
-        return reverse('savio-project-request-detail', kwargs={'pk': pk})
+        return reverse('new-project-request-detail', kwargs={'pk': pk})
 
     def set_attributes(self, pk):
         """Set this instance's request_obj to be the
@@ -199,7 +199,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
     error_message = 'Unexpected failure. Please contact an administrator.'
 
-    redirect = reverse_lazy('savio-project-pending-request-list')
+    redirect = reverse_lazy('new-project-pending-request-list')
 
     def test_func(self):
         """UserPassesTestMixin tests."""
@@ -289,14 +289,14 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             pk = self.request_obj.pk
 
             return HttpResponseRedirect(
-                reverse('savio-project-request-detail', kwargs={'pk': pk}))
+                reverse('new-project-request-detail', kwargs={'pk': pk}))
 
         if not self.is_checklist_complete():
             message = 'Please complete the checklist before final activation.'
             messages.error(request, message)
             pk = self.request_obj.pk
             return HttpResponseRedirect(
-                reverse('savio-project-request-detail', kwargs={'pk': pk}))
+                reverse('new-project-request-detail', kwargs={'pk': pk}))
 
         processing_runner = None
         project = self.request_obj.project
@@ -365,7 +365,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             eligibility['timestamp'],
             True,
             reverse(
-                'savio-project-request-review-eligibility', kwargs={'pk': pk})
+                'new-project-request-review-eligibility', kwargs={'pk': pk})
         ])
         is_eligible = eligibility['status'] == 'Approved'
 
@@ -377,7 +377,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             readiness['timestamp'],
             True,
             reverse(
-                'savio-project-request-review-readiness', kwargs={'pk': pk})
+                'new-project-request-review-readiness', kwargs={'pk': pk})
         ])
         is_ready = readiness['status'] == 'Approved'
 
@@ -398,7 +398,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
                 memorandum_signed['timestamp'],
                 is_eligible and is_ready,
                 reverse(
-                    'savio-project-request-review-memorandum-signed',
+                    'new-project-request-review-memorandum-signed',
                     kwargs={'pk': pk})
             ])
         is_memorandum_signed = (
@@ -411,7 +411,7 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             self.get_setup_status(),
             setup['timestamp'],
             is_eligible and is_ready and is_memorandum_signed,
-            reverse('savio-project-request-review-setup', kwargs={'pk': pk})
+            reverse('new-project-request-review-setup', kwargs={'pk': pk})
         ])
 
         return checklist
@@ -535,7 +535,7 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
 
     def get_success_url(self):
         return reverse(
-            'savio-project-request-detail',
+            'new-project-request-detail',
             kwargs={'pk': self.kwargs.get('pk')})
 
 
@@ -611,7 +611,7 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_success_url(self):
         return reverse(
-            'savio-project-request-detail',
+            'new-project-request-detail',
             kwargs={'pk': self.kwargs.get('pk')})
 
 
@@ -644,7 +644,7 @@ class SavioProjectReviewMemorandumSignedView(LoginRequiredMixin,
                 'this request.')
             messages.error(request, message)
             return HttpResponseRedirect(
-                reverse('savio-project-request-detail', kwargs={'pk': pk}))
+                reverse('new-project-request-detail', kwargs={'pk': pk}))
         redirect = self.redirect_if_disallowed_status(request)
         if redirect is not None:
             return redirect
@@ -683,7 +683,7 @@ class SavioProjectReviewMemorandumSignedView(LoginRequiredMixin,
 
     def get_success_url(self):
         return reverse(
-            'savio-project-request-detail',
+            'new-project-request-detail',
             kwargs={'pk': self.kwargs.get('pk')})
 
 
@@ -767,7 +767,7 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_success_url(self):
         return reverse(
-            'savio-project-request-detail',
+            'new-project-request-detail',
             kwargs={'pk': self.kwargs.get('pk')})
 
 
@@ -829,7 +829,7 @@ class SavioProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_success_url(self):
         return reverse(
-            'savio-project-request-detail',
+            'new-project-request-detail',
             kwargs={'pk': self.kwargs.get('pk')})
 
 
@@ -886,7 +886,7 @@ class SavioProjectUndenyRequestView(LoginRequiredMixin, UserPassesTestMixin,
 
         return HttpResponseRedirect(
             reverse(
-                'savio-project-request-detail',
+                'new-project-request-detail',
                 kwargs={'pk': kwargs.get('pk')}))
 
 

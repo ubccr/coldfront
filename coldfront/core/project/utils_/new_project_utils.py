@@ -566,7 +566,7 @@ def send_new_project_request_admin_notification_email(request):
     pi_str = f'{pi.first_name} {pi.last_name} ({pi.email})'
 
     if isinstance(request, SavioProjectAllocationRequest):
-        detail_view_name = 'savio-project-request-detail'
+        detail_view_name = 'new-project-request-detail'
     elif isinstance(request, VectorProjectAllocationRequest):
         detail_view_name = 'vector-project-request-detail'
     else:
@@ -616,7 +616,7 @@ def send_new_project_request_pi_notification_email(request):
     pi_str = f'{pi.first_name} {pi.last_name}'
 
     if isinstance(request, SavioProjectAllocationRequest):
-        detail_view_name = 'savio-project-request-detail'
+        detail_view_name = 'new-project-request-detail'
     elif isinstance(request, VectorProjectAllocationRequest):
         detail_view_name = 'vector-project-request-detail'
     else:

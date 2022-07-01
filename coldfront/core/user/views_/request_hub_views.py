@@ -193,16 +193,16 @@ class RequestHubView(LoginRequiredMixin,
 
         savio_proj_request_object.num_pending = project_request_pending.count()
 
-        savio_proj_request_object.title = 'Savio Project Requests'
+        savio_proj_request_object.title = 'New Project Requests'
         savio_proj_request_object.table = \
             'project/project_request/savio/project_request_list_table.html'
         savio_proj_request_object.button_path = \
-            'savio-project-pending-request-list'
+            'new-project-pending-request-list'
         savio_proj_request_object.button_text = \
-            'Go To Savio Project Requests Main Page'
-        savio_proj_request_object.id = 'savio_project_request_section'
+            'Go To New Project Requests Main Page'
+        savio_proj_request_object.id = 'new_project_request_section'
         savio_proj_request_object.help_text = \
-            'Showing Savio project requests that you requested or requests ' \
+            'Showing new project requests that you requested or requests ' \
             'in which you are the PI for the associated project.'
 
         return savio_proj_request_object

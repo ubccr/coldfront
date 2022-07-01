@@ -1,3 +1,6 @@
+{% load feature_flags %}
+
+
 <li id="navbar-admin" class="nav-item dropdown">
     <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">Admin</a>
     <ul class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
@@ -19,12 +22,15 @@
                 <li><a id="navbar-allocation-cluster-account-requests" class="dropdown-item" href="{% url 'allocation-cluster-account-request-list' %}?show_all_requests=on">
                   Cluster Account Requests
                 </a></li>
-                <li><a id="navbar-project-savio-project-requests" class="dropdown-item" href="{% url 'savio-project-pending-request-list' %}">
-                  New Savio Project Requests
+                <li><a id="navbar-project-new-project-requests" class="dropdown-item" href="{% url 'new-project-pending-request-list' %}">
+                  New Project Requests
                 </a></li>
+                {% flag_enabled 'BRC_ONLY' as brc_only %}
+                {% if brc_only %}
                 <li><a id="navbar-project-vector-project-requests" class="dropdown-item" href="{% url 'vector-project-pending-request-list' %}">
                   New Vector Project Requests
                 </a></li>
+                {% endif %}
                 <li><a id="navbar-project-join-request-list" class="dropdown-item" href="{% url 'project-join-request-list' %}">
                   Project Join Requests
                 </a></li>

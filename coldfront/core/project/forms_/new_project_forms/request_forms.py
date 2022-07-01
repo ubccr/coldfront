@@ -2,7 +2,6 @@ from coldfront.core.allocation.forms import AllocationPeriodChoiceField
 from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.project.forms import DisabledChoicesSelectWidget
 from coldfront.core.project.models import Project
-from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils_.new_project_utils import non_denied_new_project_request_statuses
 from coldfront.core.project.utils_.new_project_utils import pis_with_new_project_requests_pks
 from coldfront.core.project.utils_.new_project_utils import project_pi_pks

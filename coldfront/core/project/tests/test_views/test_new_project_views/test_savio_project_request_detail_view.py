@@ -46,13 +46,13 @@ class TestSavioProjectRequestDetailView(TestBase):
     def detail_view_url(pk):
         """Return the URL for the detail view for the
         SavioProjectAllocationRequest with the given primary key."""
-        return reverse('savio-project-request-detail', kwargs={'pk': pk})
+        return reverse('new-project-request-detail', kwargs={'pk': pk})
 
     @staticmethod
     def list_view_url():
         """Return the URL for the list view for pending
         SavioProjectAllocationRequests."""
-        return reverse('savio-project-pending-request-list')
+        return reverse('new-project-pending-request-list')
 
     def test_post_approves_and_processes_request_for_started_period(self):
         """Test that a POST request for a new project request under an

@@ -142,7 +142,7 @@ class TestStaffViewPermissions(TestBase):
                                reverse('vector-project-completed-request-list'))
 
     def test_savio_project_request(self):
-        # savio-project-request-detail
+        # new-project-request-detail
         # Create a new Project.
         new_project_name = 'fc_new_project'
         new_project_status = ProjectStatusChoice.objects.get(name='New')
@@ -164,18 +164,18 @@ class TestStaffViewPermissions(TestBase):
             survey_answers={},
             status=under_review_request_status)
 
-        # savio-project-request-detail
+        # new-project-request-detail
         self.assert_has_access(self.staff1, True,
-                               reverse('savio-project-request-detail',
+                               reverse('new-project-request-detail',
                                        kwargs={'pk': request.pk}))
 
-        # savio-project-pending-request-list
+        # new-project-pending-request-list
         self.assert_has_access(self.staff1, True,
-                               reverse('savio-project-pending-request-list'))
+                               reverse('new-project-pending-request-list'))
 
-        # savio-project-completed-request-list
+        # new-project-completed-request-list
         self.assert_has_access(self.staff1, True,
-                               reverse('savio-project-completed-request-list'))
+                               reverse('new-project-completed-request-list'))
 
     def test_allocation_cluster_account_request_lists(self):
         # allocation-cluster-account-request-list

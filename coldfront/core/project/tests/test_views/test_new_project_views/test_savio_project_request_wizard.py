@@ -25,7 +25,7 @@ class TestSavioProjectRequestWizard(TestBase):
     def request_url():
         """Return the URL for requesting to create a new Savio
         project."""
-        return reverse('savio-project-request')
+        return reverse('new-project-request')
 
     def test_post_creates_request(self):
         """Test that a POST request creates a

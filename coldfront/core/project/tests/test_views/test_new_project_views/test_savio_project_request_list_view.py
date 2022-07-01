@@ -9,8 +9,8 @@ from django.urls import reverse
 class TestViewMixin(object):
     """A mixin for testing SavioProjectRequestListView."""
 
-    completed_url = reverse('savio-project-completed-request-list')
-    pending_url = reverse('savio-project-pending-request-list')
+    completed_url = reverse('new-project-completed-request-list')
+    pending_url = reverse('new-project-pending-request-list')
     url = None
 
     def setUp(self):
@@ -125,7 +125,7 @@ class TestSavioProjectRequestCompletedListView(TestViewMixin, TestBase):
     def test_type(self):
         """Test that the correct type is displayed on the page."""
         response = self.client.get(self.url)
-        self.assertContains(response, 'Completed Savio Project Requests')
+        self.assertContains(response, 'Completed New Project Requests')
 
 
 class TestSavioProjectRequestPendingListView(TestViewMixin, TestBase):
@@ -153,9 +153,9 @@ class TestSavioProjectRequestPendingListView(TestViewMixin, TestBase):
         """Test that no requests appear in the completed view, since all
         requests have a pending status."""
         response = self.client.get(self.completed_url)
-        self.assertContains(response, 'No completed Savio project requests!')
+        self.assertContains(response, 'No completed new project requests!')
 
     def test_type(self):
         """Test that the correct type is displayed on the page."""
         response = self.client.get(self.url)
-        self.assertContains(response, 'Pending Savio Project Requests')
+        self.assertContains(response, 'Pending New Project Requests')

@@ -36,7 +36,7 @@
       {% csrf_token %}
       {{ form|crispy }}
       <input class="btn btn-primary" type="submit" value="Submit" />
-      <a href="{% url 'savio-project-request-detail' savio_request.pk %}" class="btn btn-secondary">
+      <a href="{% url 'new-project-request-detail' savio_request.pk %}" class="btn btn-secondary">
         Cancel
       </a>
     </form>

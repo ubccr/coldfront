@@ -92,7 +92,7 @@
                     {% if user.is_superuser %}
                     <p>
                     <strong>Un-deny Request:</strong>
-                    <a href="{% url 'savio-project-undeny-request' savio_request.pk %}" class="btn btn-primary">
+                    <a href="{% url 'new-project-undeny-request' savio_request.pk %}" class="btn btn-primary">
                         Un-deny
                     </a>
                     </p>
@@ -192,18 +192,18 @@
       </div>
       <hr>
       {% if is_checklist_complete %}
-        <form action="{% url 'savio-project-request-detail' savio_request.pk %}" method="post">
+        <form action="{% url 'new-project-request-detail' savio_request.pk %}" method="post">
           {% csrf_token %}
           <button type="submit" class="btn btn-primary">Submit</button>
-          <a href="{% url 'savio-project-pending-request-list' %}" class="btn btn-secondary">Cancel</a>
-          <a href="{% url 'savio-project-request-review-deny' savio_request.pk %}" class="btn btn-danger" style="float: right;">
+          <a href="{% url 'new-project-pending-request-list' %}" class="btn btn-secondary">Cancel</a>
+          <a href="{% url 'new-project-request-review-deny' savio_request.pk %}" class="btn btn-danger" style="float: right;">
             Deny For Other Reason
           </a>
         </form>
       {% else %}
         <button type="button" class="btn btn-primary" disabled>Submit</button>
-        <a href="{% url 'savio-project-pending-request-list' %}" class="btn btn-secondary">Cancel</a>
-        <a href="{% url 'savio-project-request-review-deny' savio_request.pk %}" class="btn btn-danger" style="float: right;">
+        <a href="{% url 'new-project-pending-request-list' %}" class="btn btn-secondary">Cancel</a>
+        <a href="{% url 'new-project-request-review-deny' savio_request.pk %}" class="btn btn-danger" style="float: right;">
           Deny For Other Reason
         </a>
       {% endif %}

@@ -258,7 +258,7 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
                 new_project_request.latest_update_timestamp(),
                 True,
                 reverse(
-                    'savio-project-request-detail',
+                    'new-project-request-detail',
                     kwargs={'pk': new_project_request.pk}),
             ])
         else:

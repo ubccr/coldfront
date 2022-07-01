@@ -29,7 +29,7 @@ class TestProjectRequestSavioLanding(TestBase):
         feature flag is enabled."""
         flag_name = 'ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE'
 
-        alert_text = 'The allowance year for FCAs is ending soon'
+        alert_text = 'The allowance year for FCAs, PCAs is ending soon'
 
         enable_flag(flag_name)
         url = self.view_url()
