@@ -4,7 +4,7 @@
 
 
 {% block title %}
-Savio Project Request - Instructional Compute Allowance Details
+{{ PRIMARY_CLUSTER_NAME }} Project Request - Instructional Compute Allowance Details
 {% endblock %}
 
 
@@ -15,7 +15,7 @@ Savio Project Request - Instructional Compute Allowance Details
 
 {% block content %}
 <script type="text/javascript" src="{% static 'common/js/leave_form_alert.js' %}"></script>
-<h1>Savio: Instructional Compute Allowance Details</h1><hr>
+<h1>{{ PRIMARY_CLUSTER_NAME }}: Instructional Compute Allowance Details</h1><hr>
 
 <ol class="breadcrumb">
   <li>Allowance: {{ computing_allowance.name }}</li>
@@ -25,7 +25,10 @@ Savio Project Request - Instructional Compute Allowance Details
   <li>{{ breadcrumb_pi }}</li>
 </ol>
 
-<p>Please provide the following details to acquire an Instructional Compute Allowance on Savio.</p>
+<p>
+  Please provide the following details to acquire an Instructional Compute
+  Allowance on {{ PRIMARY_CLUSTER_NAME }}.
+</p>
 
 <form action="" method="post">
   {% csrf_token %}

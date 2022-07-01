@@ -4,7 +4,7 @@
 
 
 {% block title %}
-Savio Project Request - Recharge Details
+{{ PRIMARY_CLUSTER_NAME }} Project Request - Recharge Details
 {% endblock %}
 
 
@@ -15,7 +15,7 @@ Savio Project Request - Recharge Details
 
 {% block content %}
 <script type="text/javascript" src="{% static 'common/js/leave_form_alert.js' %}"></script>
-<h1>Savio: Recharge Details</h1><hr>
+<h1>{{ PRIMARY_CLUSTER_NAME }}: Recharge Details</h1><hr>
 
 <ol class="breadcrumb">
   <li>Allowance: {{ computing_allowance.name }}</li>
@@ -26,9 +26,9 @@ Savio Project Request - Recharge Details
 </ol>
 
 <p>
-  Please provide the following details to purchase time on Savio. You will also
-  need to return a signed copy of a Memorandum of Understanding that will be
-  sent to you.
+  Please provide the following details to purchase time on
+  {{ PRIMARY_CLUSTER_NAME }}. You will also need to return a signed copy of a
+  Memorandum of Understanding that will be sent to you.
 </p>
 
 <form action="" method="post">

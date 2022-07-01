@@ -22,19 +22,13 @@ Project Request
 
 <div class="row">
   <div class="col-lg-6 mt-2">
+    <a class="btn btn-primary" href="{% url 'project-request-landing' %}" role="button">
+      {{ PRIMARY_CLUSTER_NAME }}
+    </a>
     {% flag_enabled 'BRC_ONLY' as brc_only %}
     {% if brc_only %}
-    <a class="btn btn-primary" href="{% url 'project-request-landing' %}" role="button">
-      Savio
-    </a>
     <a class="btn btn-primary" href="{% url 'project-request-vector-landing' %}" role="button">
       Vector
-    </a>
-    {% endif %}
-    {% flag_enabled 'LRC_ONLY' as lrc_only %}
-    {% if lrc_only %}
-    <a class="btn btn-primary" href="{% url 'project-request-landing' %}" role="button">
-      Lawrencium
     </a>
     {% endif %}
   </div>

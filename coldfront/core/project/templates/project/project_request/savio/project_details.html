@@ -4,7 +4,7 @@
 
 
 {% block title %}
-Savio Project Request - Project Details
+{{ PRIMARY_CLUSTER_NAME }} Project Request - Project Details
 {% endblock %}
 
 
@@ -16,7 +16,7 @@ Savio Project Request - Project Details
 {% block content %}
 <script type="text/javascript" src="{% static 'common/js/leave_form_alert.js' %}"></script>
 
-<h1>Savio: New Project Details</h1><hr>
+<h1>{{ PRIMARY_CLUSTER_NAME }}: New Project Details</h1><hr>
 
 <ol class="breadcrumb">
   <li>Allowance: {{ computing_allowance.name }}</li>

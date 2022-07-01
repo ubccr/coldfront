@@ -6,13 +6,13 @@
 
 
 {% block title %}
-Savio Project Request Detail
+{{ PRIMARY_CLUSTER_NAME }} Project Request Detail
 {% endblock %}
 
 
 {% block content %}
 <h1>
-  Savio: {{ savio_request }}
+  {{ PRIMARY_CLUSTER_NAME }}: {{ savio_request }}
   {% with status=savio_request.status.name %}
     {% if status == 'Under Review' %}
       <span class="badge badge-warning" style="float: right;">{{ status }}</span>

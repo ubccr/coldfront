@@ -5,7 +5,7 @@
 
 
 {% block title %}
-Savio Project Request - Existing PI
+{{ PRIMARY_CLUSTER_NAME }} Project Request - Existing PI
 {% endblock %}
 
 
@@ -19,7 +19,7 @@ Savio Project Request - Existing PI
 <script type='text/javascript' src="{% static 'selectize/selectize.min.js' %}"></script>
 <link rel='stylesheet' type='text/css' href="{% static 'selectize/selectize.bootstrap3.css' %}"/>
 
-<h1>Savio: Principal Investigator</h1><hr>
+<h1>{{ PRIMARY_CLUSTER_NAME }}: Principal Investigator</h1><hr>
 
 <ol class="breadcrumb">
   <li>Allowance: {{ computing_allowance.name }}</li>

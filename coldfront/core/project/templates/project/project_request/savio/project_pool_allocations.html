@@ -4,7 +4,7 @@
 
 
 {% block title %}
-Savio Project Request - Allocation Pooling
+{{ PRIMARY_CLUSTER_NAME }} Project Request - Allocation Pooling
 {% endblock %}
 
 
@@ -15,7 +15,7 @@ Savio Project Request - Allocation Pooling
 
 {% block content %}
 <script type="text/javascript" src="{% static 'common/js/leave_form_alert.js' %}"></script>
-<h1>Savio: Allocation Pooling</h1><hr>
+<h1>{{ PRIMARY_CLUSTER_NAME }}: Allocation Pooling</h1><hr>
 
 <ol class="breadcrumb">
   <li>Allowance: {{ computing_allowance.name }}</li>
