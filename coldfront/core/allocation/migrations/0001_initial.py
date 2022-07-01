@@ -3,6 +3,7 @@
 from django.conf import settings
 from django.db import migrations, models
 import django.db.models.deletion
+from django.db.models.functions import Lower
 import django.utils.timezone
 import model_utils.fields
 import simple_history.models
@@ -62,7 +63,7 @@ class Migration(migrations.Migration):
                 ('is_private', models.BooleanField(default=True)),
             ],
             options={
-                'ordering': ['name'],
+                'ordering': [Lower('name')],
             },
         ),
         migrations.CreateModel(
@@ -74,7 +75,7 @@ class Migration(migrations.Migration):
                 ('name', models.CharField(max_length=64)),
             ],
             options={
-                'ordering': ['name'],
+                'ordering': [Lower('name')],
             },
         ),
         migrations.CreateModel(
@@ -86,7 +87,7 @@ class Migration(migrations.Migration):
                 ('name', models.CharField(max_length=64)),
             ],
             options={
-                'ordering': ['name'],
+                'ordering': [Lower('name')],
             },
         ),
         migrations.CreateModel(
@@ -98,7 +99,7 @@ class Migration(migrations.Migration):
                 ('name', models.CharField(max_length=64)),
             ],
             options={
-                'ordering': ['name'],
+                'ordering': [Lower('name')],
             },
         ),
         migrations.CreateModel(
@@ -291,7 +292,7 @@ class Migration(migrations.Migration):
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
             ],
             options={
-                'ordering': ['name'],
+                'ordering': [Lower('name')],
             },
         ),
     ]

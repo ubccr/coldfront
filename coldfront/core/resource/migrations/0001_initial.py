@@ -5,6 +5,8 @@ from django.db import migrations, models
 import django.db.models.deletion
 import django.utils.timezone
 import model_utils.fields
+from django.db.models.functions import Lower
+
 import simple_history.models
 
 
@@ -27,7 +29,7 @@ class Migration(migrations.Migration):
                 ('name', models.CharField(max_length=128, unique=True)),
             ],
             options={
-                'ordering': ['name'],
+                'ordering': [Lower('name')],
             },
         ),
         migrations.CreateModel(
@@ -40,7 +42,7 @@ class Migration(migrations.Migration):
                 ('description', models.CharField(max_length=255)),
             ],
             options={
-                'ordering': ['name'],
+                'ordering': [Lower('name')],
             },
         ),
         migrations.CreateModel(
@@ -56,7 +58,7 @@ class Migration(migrations.Migration):
                 ('attribute_type', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='resource.AttributeType')),
             ],
             options={
-                'ordering': ['name'],
+                'ordering': [Lower('name')],
             },
         ),
         migrations.CreateModel(
@@ -78,7 +80,7 @@ class Migration(migrations.Migration):
                 ('resource_type', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='resource.ResourceType')),
             ],
             options={
-                'ordering': ['name'],
+                'ordering': [Lower('name')],
             },
         ),
         migrations.CreateModel(

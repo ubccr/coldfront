@@ -6,6 +6,8 @@ import django.db.models.deletion
 import django.utils.timezone
 import model_utils.fields
 import simple_history.models
+from django.db.models.functions import Lower
+
 
 
 class Migration(migrations.Migration):
@@ -39,7 +41,7 @@ class Migration(migrations.Migration):
                 ('name', models.CharField(max_length=64)),
             ],
             options={
-                'ordering': ['name'],
+                'ordering': [Lower('name')],
             },
         ),
         migrations.AddField(
