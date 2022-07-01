@@ -491,6 +491,10 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
                 str(computing_allowance_form_step))
             if computing_allowance_form_data:
                 dictionary.update(computing_allowance_form_data)
+                computing_allowance_wrapper = ComputingAllowance(
+                    computing_allowance_form_data['computing_allowance'])
+                dictionary['allowance_is_one_per_pi'] = \
+                    computing_allowance_wrapper.is_one_per_pi()
 
         allocation_period_form_step = \
             self.step_numbers_by_form_name['allocation_period']
