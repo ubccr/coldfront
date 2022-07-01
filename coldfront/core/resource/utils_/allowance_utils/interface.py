@@ -18,13 +18,15 @@ class ComputingAllowanceInterface(object):
         self._name_short_to_object = {}
         # A mapping from allowance Resource objects to code values.
         self._object_to_code = {}
+        # A mapping from allowance Resource objects to name_long values.
+        self._object_to_name_long = {}
         # A mapping from allowance Resource objects to name_short values.
         self._object_to_name_short = {}
         # A mapping from allowance Resource objects to Service Units values.
         self._object_to_service_units = {}
-        self.set_up_data_structures(allowances)
+        self._set_up_data_structures(allowances)
 
-    def set_up_data_structures(self, allowances):
+    def _set_up_data_structures(self, allowances):
         """Fill in data structures."""
         for allowance in allowances:
             self._name_to_object[allowance.name] = allowance
@@ -32,6 +34,8 @@ class ComputingAllowanceInterface(object):
                 attribute_type_name = attribute.resource_attribute_type.name
                 if attribute_type_name == 'code':
                     self._object_to_code[allowance] = attribute.value
+                elif attribute_type_name == 'name_long':
+                    self._object_to_name_long[allowance] = attribute.value
                 elif attribute_type_name == 'name_short':
                     self._name_short_to_object[attribute.value] = allowance
                     self._object_to_name_short[allowance] = attribute.value
@@ -46,10 +50,22 @@ class ComputingAllowanceInterface(object):
         except KeyError as e:
             raise ComputingAllowanceInterfaceError(e)
 
+    def allowances(self):
+        """Return a list of allowances (Resource objects)."""
+        return list(self._name_to_object.values())
+
     def code_from_name(self, name):
         """Given a name, return the corresponding allowance's code."""
         try:
             return self._object_to_code[self._name_to_object[name]]
+        except KeyError as e:
+            raise ComputingAllowanceInterfaceError(e)
+
+    def name_long_from_name(self, name):
+        """Given a name, return the corresponding allowance's
+        name_long."""
+        try:
+            return self._object_to_name_long[self._name_to_object[name]]
         except KeyError as e:
             raise ComputingAllowanceInterfaceError(e)
 

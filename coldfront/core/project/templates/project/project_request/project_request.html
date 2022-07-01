@@ -24,7 +24,7 @@ Project Request
   <div class="col-lg-6 mt-2">
     {% flag_enabled 'BRC_ONLY' as brc_only %}
     {% if brc_only %}
-    <a class="btn btn-primary" href="{% url 'project-request-savio-landing' %}" role="button">
+    <a class="btn btn-primary" href="{% url 'project-request-landing' %}" role="button">
       Savio
     </a>
     <a class="btn btn-primary" href="{% url 'project-request-vector-landing' %}" role="button">
@@ -33,7 +33,7 @@ Project Request
     {% endif %}
     {% flag_enabled 'LRC_ONLY' as lrc_only %}
     {% if lrc_only %}
-    <a class="btn btn-primary" href="{% url 'project-request-savio-landing' %}" role="button">
+    <a class="btn btn-primary" href="{% url 'project-request-landing' %}" role="button">
       Lawrencium
     </a>
     {% endif %}

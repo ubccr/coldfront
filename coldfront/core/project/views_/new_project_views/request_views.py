@@ -26,6 +26,7 @@ from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.user.models import UserProfile
+from coldfront.core.user.utils import access_agreement_signed
 from coldfront.core.utils.common import session_wizard_all_form_data
 from coldfront.core.utils.common import utc_now_offset_aware
 
@@ -54,9 +55,7 @@ class ProjectRequestView(LoginRequiredMixin, UserPassesTestMixin,
     def test_func(self):
         if self.request.user.is_superuser:
             return True
-        signed_date = (
-            self.request.user.userprofile.access_agreement_signed_date)
-        if signed_date is not None:
+        if access_agreement_signed(self.request.user):
             return True
         message = (
             'You must sign the User Access Agreement before you can create a '
@@ -71,6 +70,46 @@ class ProjectRequestView(LoginRequiredMixin, UserPassesTestMixin,
 # =============================================================================
 # BRC: SAVIO
 # =============================================================================
+
+class NewProjectRequestLandingView(LoginRequiredMixin, UserPassesTestMixin,
+                                   TemplateView):
+    template_name = (
+        'project/project_request/savio/project_request_landing.html')
+
+    def test_func(self):
+        if self.request.user.is_superuser:
+            return True
+        if access_agreement_signed(self.request.user):
+            return True
+        message = (
+            'You must sign the User Access Agreement before you can create a '
+            'new project.')
+        messages.error(self.request, message)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        allowances = []
+        yearly_allowance_names = []
+        interface = ComputingAllowanceInterface()
+        for allowance in sorted(interface.allowances(), key=lambda a: a.pk):
+            wrapper = ComputingAllowance(allowance)
+            allowance_name = wrapper.get_name()
+            entry = {
+                'name_long': interface.name_long_from_name(allowance_name),
+                'is_poolable': wrapper.is_poolable(),
+                'requires_mou': wrapper.requires_memorandum_of_understanding(),
+            }
+            allowances.append(entry)
+            if wrapper.is_yearly():
+                name_short = interface.name_short_from_name(allowance_name)
+                yearly_allowance_names.append(f'{name_short}s')
+
+        context['allowances'] = allowances
+        context['yearly_allowance_names'] = ', '.join(yearly_allowance_names)
+
+        return context
+
 
 class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
                                 SessionWizardView):

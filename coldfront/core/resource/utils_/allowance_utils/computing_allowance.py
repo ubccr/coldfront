@@ -93,6 +93,17 @@ class ComputingAllowance(object):
             allowance_names.append(LRCAllowances.RECHARGE)
         return self._name in allowance_names
 
+    def is_yearly(self):
+        """Return whether the allowance conforms to the allowance
+        year."""
+        allowance_names = []
+        if flag_enabled('BRC_ONLY'):
+            allowance_names.append(BRCAllowances.FCA)
+            allowance_names.append(BRCAllowances.PCA)
+        elif flag_enabled('LRC_ONLY'):
+            allowance_names.append(LRCAllowances.PCA)
+        return self._name in allowance_names
+
     def get_name(self):
         """Return the name of the underlying Resource."""
         return self._name

@@ -42,12 +42,9 @@ urlpatterns += [
     path('project-request/',
          new_project_request_views.ProjectRequestView.as_view(),
          name='project-request'),
-    path('project-request-savio-landing/',
-         TemplateView.as_view(
-             template_name=(
-                 'project/project_request/savio/project_request_landing.html')
-         ),
-         name='project-request-savio-landing'),
+    path('project-request-landing/',
+         new_project_request_views.NewProjectRequestLandingView.as_view(),
+         name='project-request-landing'),
     path('savio-project-request/',
          new_project_request_views.SavioProjectRequestWizard.as_view(
              condition_dict=new_project_request_views.SavioProjectRequestWizard.condition_dict(),
