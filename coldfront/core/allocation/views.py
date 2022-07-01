@@ -738,9 +738,9 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 'type': 'int',
             },
             {
-                'storage_space_with_unit': {},
-                'storage_space_with_unit_label': {},
-                'type': 'int',
+                'storage_space_unit': {},
+                'storage_space_unit_label': {},
+                'type': 'radio',
             },
             {
                 'cost': {},
@@ -873,7 +873,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         justification = form_data.get('justification')
         quantity = form_data.get('quantity', 1)
         storage_space = form_data.get('storage_space')
-        storage_space_with_unit = form_data.get('storage_space_with_unit')
+        storage_space_unit = form.data.get('storage_space_unit')
         leverage_multiple_gpus = form_data.get('leverage_multiple_gpus')
         dl_workflow = form_data.get('dl_workflow')
         applications_list = form_data.get('applications_list')
@@ -888,7 +888,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         phi_association = form_data.get('phi_association')
         access_level = form_data.get('access_level')
         confirm_understanding = form_data.get('confirm_understanding')
-        unit = form_data.get('unit')
         primary_contact = form_data.get('primary_contact')
         secondary_contact = form_data.get('secondary_contact')
         department_full_name = form_data.get('department_full_name')
@@ -938,8 +937,9 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 if resource_obj.name == 'RStudio Connect':
                     end_date = self.calculate_end_date(int(month), int(day), license_term)
 
-        if resource_obj.name == 'Geode-Projects':
-            storage_space_with_unit = str(storage_space_with_unit) + unit
+        if resource_obj.name == 'Slate-Project':
+            storage_space_unit = 'TB'
+        elif resource_obj.name == 'Geode-Projects':
             if use_indefinitely:
                 end_date = None
         elif resource_obj.name == 'Priority Boost':
@@ -1027,7 +1027,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             justification=justification,
             quantity=quantity,
             storage_space=storage_space,
-            storage_space_with_unit=storage_space_with_unit,
+            storage_space_unit=storage_space_unit,
             leverage_multiple_gpus=leverage_multiple_gpus,
             dl_workflow=dl_workflow,
             applications_list=applications_list,

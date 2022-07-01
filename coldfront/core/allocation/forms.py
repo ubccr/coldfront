@@ -61,6 +61,10 @@ class AllocationForm(forms.Form):
         ('envchange', 'Prepared for Environmental Change'),
         ('addiction', 'Responding to the Addiction Crisis')
     )
+    STORAGE_UNIT_CHOICES = (
+        ('GB', 'GB'),
+        ('TB', 'TB')
+    )
     SYSTEM_CHOICES = (
         ('Carbonate', 'Carbonate'),
         ('BigRed3', 'Big Red 3')
@@ -84,7 +88,7 @@ class AllocationForm(forms.Form):
     project_directory_name = forms.CharField(max_length=10, required=False)
     quantity = forms.IntegerField(required=False)
     storage_space = forms.IntegerField(required=False)
-    storage_space_with_unit = forms.IntegerField(required=False)
+    storage_space_unit = forms.ChoiceField(choices=STORAGE_UNIT_CHOICES, required=False, widget=RadioSelect)
     leverage_multiple_gpus = forms.ChoiceField(choices=YES_NO_CHOICES, required=False, widget=RadioSelect)
     dl_workflow = forms.ChoiceField(choices=YES_NO_CHOICES, required=False, widget=RadioSelect)
     applications_list = forms.CharField(max_length=150, required=False)
@@ -98,7 +102,6 @@ class AllocationForm(forms.Form):
     use_indefinitely = forms.BooleanField(required=False)
     phi_association = forms.ChoiceField(choices=YES_NO_CHOICES, required=False, widget=RadioSelect)
     access_level = forms.ChoiceField(choices=ACCESS_LEVEL_CHOICES, required=False, widget=RadioSelect)
-    unit = forms.CharField(max_length=10, required=False)
     primary_contact = forms.CharField(max_length=20, required=False)
     secondary_contact = forms.CharField(max_length=20, required=False)
     department_full_name = forms.CharField(max_length=30, required=False)
@@ -152,7 +155,6 @@ class AllocationForm(forms.Form):
         self.fields['justification'].help_text = '<br/>Justification for requesting this allocation.'
         self.fields['start_date'].help_text = 'Format: mm/dd/yyyy'
         self.fields['end_date'].help_text = 'Format: mm/dd/yyyy'
-        self.fields['storage_space_with_unit'].help_text = 'Amount must be greater than or equal to 200GB.'
         self.fields['account_number'].help_text = 'Format: 00-000-00'
         self.fields['applications_list'].help_text = 'Format: app1,app2,app3,etc'
         self.fields['it_pros'].help_text = 'Format: name1,name2,name3,etc'
@@ -183,7 +185,7 @@ class AllocationForm(forms.Form):
             'project_directory_name',
             'quantity',
             'storage_space',
-            'storage_space_with_unit',
+            InlineRadios('storage_space_unit'),
             InlineRadios('leverage_multiple_gpus'),
             InlineRadios('dl_workflow'),
             'applications_list',
@@ -197,7 +199,6 @@ class AllocationForm(forms.Form):
             'use_indefinitely',
             InlineRadios('phi_association'),
             InlineRadios('access_level'),
-            'unit',
             'primary_contact',
             'secondary_contact',
             'data_manager',
@@ -254,8 +255,8 @@ class AllocationForm(forms.Form):
                 'confirm_understanding': cleaned_data.get('confirm_understanding'),
             },
             'Geode-Projects': {
-                'storage_space_with_unit': cleaned_data.get('storage_space_with_unit'),
-                'unit': cleaned_data.get('unit'),
+                'storage_space': cleaned_data.get('storage_space'),
+                'storage_space_unit': cleaned_data.get('storage_space_unit'),
                 'start_date': cleaned_data.get('start_date'),
                 'primary_contact': cleaned_data.get('primary_contact'),
                 'secondary_contact': cleaned_data.get('secondary_contact'),
@@ -307,13 +308,6 @@ class AllocationForm(forms.Form):
                 # Handle special cases for missing required fields here before continuing.
                 if resource_name == 'Geode-Projects':
                     if key == 'end_date' and resources[resource_name]['use_indefinitely']:
-                        continue
-                    elif key == 'unit' and not resources[resource_name]['storage_space_with_unit']:
-                        raise_error = True
-                        self.add_error(
-                            'storage_space_with_unit',
-                            'Storage space is missing its unit. Please use the drop down on the right to select it'
-                        )
                         continue
                     elif key == 'use_indefinitely':
                         continue
@@ -397,8 +391,8 @@ class AllocationForm(forms.Form):
 
             # Value checks for a specific resource's required fields should go here.
             if resource_name == 'Geode-Projects':
-                if key == 'storage_space_with_unit':
-                    unit = resources[resource_name]['unit']
+                if key == 'storage_space':
+                    unit = resources[resource_name]['storage_space_unit']
                     if value <= 0 and unit == 'TB' or value < 200 and unit == 'GB':
                         raise_error = True
                         self.add_error(key, 'Please enter a storage amount greater than or equal to 200GB')
