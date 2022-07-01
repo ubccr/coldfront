@@ -3,6 +3,7 @@ from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.tests.test_base import TestBase
 from django.urls import reverse
 from http import HTTPStatus
@@ -17,6 +18,8 @@ class TestSavioProjectRequestWizard(TestBase):
         self.create_test_user()
         self.sign_user_access_agreement(self.user)
         self.client.login(username=self.user.username, password=self.password)
+
+        self.interface = ComputingAllowanceInterface()
 
     @staticmethod
     def request_url():
@@ -87,7 +90,9 @@ class TestSavioProjectRequestWizard(TestBase):
         request = requests.first()
         project = projects.first()
         self.assertEqual(request.requester, self.user)
-        self.assertEqual(request.allocation_type, 'FCA')
+        self.assertEqual(
+            request.allocation_type,
+            self.interface.name_short_from_name(computing_allowance.name))
         self.assertEqual(request.computing_allowance, computing_allowance)
         self.assertEqual(request.allocation_period, allocation_period)
         self.assertEqual(request.pi, self.user)

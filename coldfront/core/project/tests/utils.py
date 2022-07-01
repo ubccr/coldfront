@@ -4,6 +4,7 @@ from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 
 
 def create_fca_project_and_request(project_name, project_status_name,
@@ -11,6 +12,9 @@ def create_fca_project_and_request(project_name, project_status_name,
                                    request_status_name):
     """Create an FCA project and a corresponding new project request
     with the given parameters. Return both."""
+    computing_allowance = Resource.objects.get(name=BRCAllowances.FCA)
+    interface = ComputingAllowanceInterface()
+
     project_status = ProjectStatusChoice.objects.get(name=project_status_name)
     new_project = Project.objects.create(
         name=project_name,
@@ -21,8 +25,9 @@ def create_fca_project_and_request(project_name, project_status_name,
         name=request_status_name)
     new_project_request = SavioProjectAllocationRequest.objects.create(
         requester=requester,
-        allocation_type=SavioProjectAllocationRequest.FCA,
-        computing_allowance=Resource.objects.get(name=BRCAllowances.FCA),
+        allocation_type=interface.name_short_from_name(
+            computing_allowance.name),
+        computing_allowance=computing_allowance,
         allocation_period=allocation_period,
         pi=pi,
         project=new_project,

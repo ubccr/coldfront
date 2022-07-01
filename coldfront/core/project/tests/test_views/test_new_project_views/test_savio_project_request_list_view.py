@@ -1,9 +1,6 @@
-from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
-from coldfront.core.project.models import ProjectStatusChoice
-from coldfront.core.project.models import SavioProjectAllocationRequest
+from coldfront.core.project.tests.utils import create_fca_project_and_request
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
-from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 from django.contrib.auth.models import User
 from django.urls import reverse
@@ -50,35 +47,16 @@ class TestViewMixin(object):
         self.user_c.save()
 
         # Create three requests.
-        self.project_a, self.request_a = self.create_project_and_request(
-            'project_a', self.user_a)
-        self.project_b, self.request_b = self.create_project_and_request(
-            'project_b', self.user_b)
-        self.project_c, self.request_c = self.create_project_and_request(
-            'project_c', self.user_c)
-
-    @staticmethod
-    def create_project_and_request(project_name, requester_and_pi):
-        """Create a new Project with the given name, and create a new
-        project request with 'Under Review' status. Return both."""
-        new_project_status = ProjectStatusChoice.objects.get(name='New')
-        project = Project.objects.create(
-            name=project_name, title=project_name, status=new_project_status)
         allocation_period = get_current_allowance_year_period()
-        under_review_request_status = \
-            ProjectAllocationRequestStatusChoice.objects.get(
-                name='Under Review')
-        new_project_request = SavioProjectAllocationRequest.objects.create(
-            requester=requester_and_pi,
-            allocation_type=SavioProjectAllocationRequest.FCA,
-            allocation_period=allocation_period,
-            pi=requester_and_pi,
-            project=project,
-            pool=False,
-            survey_answers={},
-            status=under_review_request_status,
-            request_time=utc_now_offset_aware())
-        return project, new_project_request
+        self.project_a, self.request_a = create_fca_project_and_request(
+            'project_a', 'New', allocation_period, self.user_a, self.user_a,
+            'Under Review')
+        self.project_b, self.request_b = create_fca_project_and_request(
+            'project_b', 'New', allocation_period, self.user_b, self.user_b,
+            'Under Review')
+        self.project_c, self.request_c = create_fca_project_and_request(
+            'project_c', 'New', allocation_period, self.user_c, self.user_c,
+            'Under Review')
 
     def test_all_requests_visible_to_superusers(self):
         """Test that superusers can see all requests, even if they are
