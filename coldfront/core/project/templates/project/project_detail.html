@@ -111,13 +111,7 @@ Project Detail
     <p class="card-text text-justify"><strong>Description: </strong>{{ project.description }}</p>
     <p class="card-text text-justify">
       <strong>Cluster: </strong>
-      {% if project.name == "abc" %}
-        ABC
-      {% elif project.name|slice:":1" == "v" %}
-        Vector
-      {% else %}
-        Savio
-      {% endif %}
+      {{ cluster_name }}
     </p>
 <!--    <p class="card-text text-justify"><strong>UCB Campus Division or Department: </strong>{{ project.field_of_science }}</p>-->
     <p class="card-text text-justify"><strong>Project Status: </strong>{{ project.status }}

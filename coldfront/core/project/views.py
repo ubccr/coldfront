@@ -24,6 +24,7 @@ from coldfront.core.allocation.models import (Allocation,
 from coldfront.core.allocation.signals import allocation_activate_user
 from coldfront.core.allocation.utils import get_allocation_user_cluster_access_status
 from coldfront.core.allocation.utils import get_project_compute_allocation
+from coldfront.core.allocation.utils import get_project_compute_resource_name
 # from coldfront.core.grant.models import Grant
 from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectAddUsersToAllocationForm,
@@ -253,6 +254,9 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['purchase_sus_visible'] = (
             can_project_purchase_service_units(self.object) and
             context.get('is_allowed_to_update_project', False))
+
+        context['cluster_name'] = get_project_compute_resource_name(
+            self.object).replace(' Compute', '')
 
         return context
 
