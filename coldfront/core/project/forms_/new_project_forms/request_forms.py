@@ -156,8 +156,7 @@ class SavioProjectExistingPIForm(forms.Form):
         self.computing_allowance = kwargs.pop('computing_allowance', None)
         self.allocation_period = kwargs.pop('allocation_period', None)
         super().__init__(*args, **kwargs)
-        if (self.computing_allowance is not None and
-                self.allocation_period is not None):
+        if self.computing_allowance is not None:
             self.computing_allowance = ComputingAllowance(
                 self.computing_allowance)
             self.disable_pi_choices()
@@ -175,7 +174,7 @@ class SavioProjectExistingPIForm(forms.Form):
         selected as PIs."""
         disable_user_pks = set()
 
-        if self.computing_allowance.is_one_per_pi():
+        if self.computing_allowance.is_one_per_pi() and self.allocation_period:
             # Disable any PI who has:
             #     (a) an existing Project with the allowance*,
             #     (b) a new project request for a Project with the allowance

@@ -364,7 +364,7 @@ def savio_project_request_ica_extra_fields_schema():
 
 def savio_project_request_ica_state_schema():
     """Return the schema for the SavioProjectAllocationRequest.state
-    field for Instructional Compute Allowance (ICA) projects."""
+    field for Instructional Computing Allowance (ICA) projects."""
     schema = savio_project_request_state_schema()
     schema['memorandum_signed'] = {
         'status': 'Pending',
