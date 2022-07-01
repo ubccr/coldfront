@@ -1614,11 +1614,8 @@ class ProjectJoinListView(ProjectListView, UserPassesTestMixin):
 
         join_requests = Project.objects.filter(Q(projectuser__user=self.request.user)
                                                & Q(status__name__in=['New', 'Active', ])
-                                               & Q(projectuser__status__name__in=['Pending - Add']))\
-            .annotate(cluster_name=Case(When(name='abc', then=Value('ABC')),
-                                        When(name__startswith='vector_', then=Value('Vector')),
-                                        default=Value('Savio'),
-                                        output_field=CharField()))
+                                               & Q(projectuser__status__name__in=['Pending - Add']))
+        join_requests = annotate_queryset_with_cluster_name(join_requests)
 
         context['join_requests'] = join_requests
         context['not_joinable'] = not_joinable
