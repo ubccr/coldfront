@@ -196,7 +196,7 @@ def send_expiry_emails():
 
         for allocation_obj in Allocation.objects.all():
 
-            resource_list = allocation_obj.get_resources_as_list()
+            resource_list = allocation_obj.get_resources_as_list
 
             for resource in resource_list:
 
@@ -206,24 +206,28 @@ def send_expiry_emails():
                         ) + datetime.timedelta(days=days_remaining)).date()
 
                     warranty_expiry_date = resource.get_attribute('WarrantyExpirationDate')
-                    warranty_expiry_date = datetime.datetime.strptime(warranty_expiry_date, '%m/%d/%Y').date()
+                    if warranty_expiry_date: 
+                        warranty_expiry_date = datetime.datetime.strptime(warranty_expiry_date, '%m/%d/%Y').date()
+
                     service_expiry_date = resource.get_attribute('ServiceEnd')
-                    service_expiry_date = datetime.datetime.strptime(service_expiry_date, '%m/%d/%Y').date()
+                    if service_expiry_date:
+                        service_expiry_date = datetime.datetime.strptime(service_expiry_date, '%m/%d/%Y').date()
 
                     resource_url = f'{CENTER_BASE_URL.strip("/")}/{"resource"}/{resource.pk}'
 
-                    if resource.name not in resource_dict:
-                        resource_dict[resource.name] = []
-
                     if warranty_expiry_date == expring_in_days or service_expiry_date == expring_in_days:
+                        
+                        if (resource.name, resource_url) not in resource_dict:
+                            resource_dict[(resource.name, resource_url)] = []
+
                         if allocation_obj.project.pi.email not in email_receiver_list:
                             email_receiver_list.append(allocation_obj.project.pi.email)
 
-                        if warranty_expiry_date == expring_in_days:
-                            resource_dict[resource.name].append(('Warranty', resource_url, days_remaining))
+                        if warranty_expiry_date == expring_in_days and ('Warranty', days_remaining) not in resource_dict[(resource.name, resource_url)]:
+                            resource_dict[(resource.name, resource_url)].append(('Warranty', days_remaining))
 
-                        if service_expiry_date == expring_in_days:
-                            resource_dict[resource.name].append(('Service', resource_url, days_remaining))
+                        if service_expiry_date == expring_in_days and ('Service', days_remaining) not in resource_dict[(resource.name, resource_url)]:
+                            resource_dict[(resource.name, resource_url)].append(('Service', days_remaining))
 
         template_context = {
             'center_name': CENTER_NAME,
@@ -232,9 +236,11 @@ def send_expiry_emails():
             'signature': EMAIL_SIGNATURE
         }
 
-        send_email_template('Allocation to {} expiring in {} days'.format(resource_name, days_remaining),
-                        'email/allocation_expiring.txt',
+        send_email_template('Resource(s) are expiring soon',
+                        'email/resource_expiring.txt',
                         template_context,
                         EMAIL_SENDER,
                         email_receiver_list
                     )
+
+        logger.debug(f'Resource expiring soon email sent to PI(s) {email_receiver_list}.')

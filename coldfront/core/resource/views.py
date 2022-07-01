@@ -74,58 +74,58 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         attribute_warranty_day = -1 
         attribute_service_day = -1
-        child_day = {}
+        child_expiry = {}
 
         for days_remaining in sorted(set(EMAIL_RESOURCE_EXPIRING_NOTIFICATION_DAYS), reverse=True):
 
             expring_in_days = datetime.datetime.today().date()
 
-            if attributes_warranty != None:
+            if attributes_warranty:
                 warranty_day = (datetime.datetime.strptime(attributes_warranty, '%m/%d/%Y').date() - expring_in_days).days
                 if warranty_day >= 0 and warranty_day <= days_remaining:
                     attribute_warranty_day = days_remaining
 
-            if attributes_service != None:
+            if attributes_service:
                 service_day = (datetime.datetime.strptime(attributes_service, '%m/%d/%Y').date() - expring_in_days).days
                 if service_day >= 0 and service_day <= days_remaining:
                     attribute_service_day = days_remaining
 
             for resource in child_resources:
-                if resource['object'] not in child_day:
-                    child_day[resource['object']] = [-1,-1]
+                if resource['object'] not in child_expiry:
+                    child_expiry[resource['object']] = [-1,-1]
 
-                if resource['WarrantyExpirationDate'] != None:
+                if resource['WarrantyExpirationDate']:
                     warranty_day = (datetime.datetime.strptime(resource['WarrantyExpirationDate'], '%m/%d/%Y').date() - expring_in_days).days
 
                     if warranty_day >= 0 and warranty_day <= days_remaining:
-                        child_day[resource['object']][0] = days_remaining
+                        child_expiry[resource['object']][0] = days_remaining
 
-                if resource['ServiceEnd'] != None:
+                if resource['ServiceEnd']:
                     service_day = (datetime.datetime.strptime(resource['ServiceEnd'], '%m/%d/%Y').date() - expring_in_days).days
 
                     if service_day >= 0 and service_day <= days_remaining:
-                        child_day[resource['object']][1] = days_remaining
+                        child_expiry[resource['object']][1] = days_remaining
 
         if (attribute_warranty_day != -1 and attribute_service_day != -1):
-                messages.warning(self.request, f'{resource_obj.name} warranty is expiring within {attribute_warranty_day} day(s)' +
-                                                f' and service expiring within {attribute_service_day} day(s)')
+                messages.warning(self.request, f'{resource_obj.name}: Warranty is expiring within {attribute_warranty_day} day(s)' +
+                                                f' and Service expiring within {attribute_service_day} day(s)')
         else:
             if (attribute_warranty_day != -1):
-                messages.warning(self.request, f'{resource_obj.name} warranty is expiring within {attribute_warranty_day} day(s)')
+                messages.warning(self.request, f'{resource_obj.name}: Warranty is expiring within {attribute_warranty_day} day(s)')
 
             if (attribute_service_day != -1):
-                messages.warning(self.request, f'{resource_obj.name} service is expiring within {attribute_service_day} day(s)')  
+                messages.warning(self.request, f'{resource_obj.name}: Service is expiring within {attribute_service_day} day(s)')  
 
-        for resource_key, resource_value in child_day.items():
+        for resource_key, resource_value in child_expiry.items():
             if (resource_value[0] != -1 and resource_value[1] != -1):
-                messages.warning(self.request, f'{resource_key} warranty is expiring within {resource_value[0]} day(s)' +
-                                                f' and service expiring within {resource_value[1]} day(s)')
+                messages.warning(self.request, f'{resource_key}: Warranty is expiring within {resource_value[0]} day(s)' +
+                                                f' and Service expiring within {resource_value[1]} day(s)')
             else:
                 if (resource_value[0] != -1):
-                    messages.warning(self.request, f'{resource_key} warranty is expiring within {resource_value[0]} day(s)')
+                    messages.warning(self.request, f'{resource_key}: Warranty is expiring within {resource_value[0]} day(s)')
 
                 if (resource_value[1] != -1):
-                    messages.warning(self.request, f'{resource_key} service is expiring within {resource_value[1]} day(s)')
+                    messages.warning(self.request, f'{resource_key}: Service is expiring within {resource_value[1]} day(s)')
 
         return context
 
