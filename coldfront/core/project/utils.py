@@ -15,6 +15,7 @@ from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserStatusChoice
+from coldfront.core.resource.utils import get_compute_resource_names
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import project_detail_url
@@ -23,10 +24,27 @@ from collections import namedtuple
 from django.conf import settings
 from django.core.exceptions import MultipleObjectsReturned
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Case, CharField, F, Value, When
 from django.urls import reverse
 from urllib.parse import urljoin
 
 import logging
+
+
+def annotate_queryset_with_cluster_name(queryset):
+    """Given a queryset of Projects, annotate each instance with a
+    character field named 'cluster_name', which denotes its parent
+    cluster."""
+    cluster_names = [name.lower() for name in get_compute_resource_names()]
+    whens = [When(name__in=cluster_names, then=F('name'))]
+    if flag_enabled('BRC_ONLY'):
+        whens.append(
+            When(name__startswith='vector_', then=Value('Vector')))
+    return queryset.annotate(
+        cluster_name=Case(
+            *whens,
+            default=Value(settings.PRIMARY_CLUSTER_NAME),
+            output=CharField()))
 
 
 def project_join_list_url():

@@ -158,7 +158,7 @@
                       </a>
                     {% endif %}
                   </td>
-                  <td>{{ project.cluster_name }}</td>
+                  <td>{{ project.cluster_name|upper }}</td>
                   <td>
                     {% if project.name in pending_removal_request_projects %}
                         <span class="badge badge-danger">Pending Removal</span>

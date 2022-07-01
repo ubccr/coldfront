@@ -6,7 +6,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db.models import Case, CharField, F, Q, Value, When
+from django.db.models import Case, CharField, Q, Value, When
 from django.forms import formset_factory
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
@@ -46,7 +46,8 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserRemovalRequestStatusChoice,
                                            SavioProjectAllocationRequest,
                                            VectorProjectAllocationRequest)
-from coldfront.core.project.utils import (ProjectClusterAccessRequestRunner,
+from coldfront.core.project.utils import (annotate_queryset_with_cluster_name,
+                                          ProjectClusterAccessRequestRunner,
                                           send_added_to_project_notification_email,
                                           send_project_join_notification_email,
                                           send_project_join_request_approval_email,
@@ -290,14 +291,14 @@ class ProjectListView(LoginRequiredMixin, ListView):
                 projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
                     status__name__in=['New', 'Active', 'Inactive', ]
                 ).order_by(order_by)
-                projects = self._annotate_queryset_with_cluster_name(projects)
+                projects = annotate_queryset_with_cluster_name(projects)
             else:
                 projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
                     Q(status__name__in=['New', 'Active', 'Inactive', ]) &
                     Q(projectuser__user=self.request.user) &
                     Q(projectuser__status__name__in=['Active',  'Pending - Remove'])
                 ).order_by(order_by)
-                projects = self._annotate_queryset_with_cluster_name(projects)
+                projects = annotate_queryset_with_cluster_name(projects)
 
             # Last Name
             if data.get('last_name'):
@@ -341,7 +342,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
                 Q(projectuser__user=self.request.user) &
                 Q(projectuser__status__name__in=['Active', 'Pending - Remove'])
             ).order_by(order_by)
-            projects = self._annotate_queryset_with_cluster_name(projects)
+            projects = annotate_queryset_with_cluster_name(projects)
 
         return projects.distinct()
 
@@ -408,22 +409,6 @@ class ProjectListView(LoginRequiredMixin, ListView):
                 status=status)
 
         return context
-
-    @staticmethod
-    def _annotate_queryset_with_cluster_name(queryset):
-        """Given a queryset of Projects, annotate each instance with a
-        character field named 'cluster_name', which denotes its parent
-        cluster."""
-        cluster_names = [name.lower() for name in get_compute_resource_names()]
-        whens = [When(name__in=cluster_names, then=F('name'))]
-        if flag_enabled('BRC_ONLY'):
-            whens.append(
-                When(name__startswith='vector_', then=Value('Vector')))
-        return queryset.annotate(
-            cluster_name=Case(
-                *whens,
-                default=Value(settings.PRIMARY_CLUSTER_NAME),
-                output=CharField()))
 
 
 class ProjectArchivedListView(LoginRequiredMixin, UserPassesTestMixin,
@@ -1538,14 +1523,8 @@ class ProjectJoinListView(ProjectListView, UserPassesTestMixin):
         projects = Project.objects.prefetch_related(
             'field_of_science', 'status').filter(
                 status__name__in=['New', 'Active', ]
-        ).annotate(
-            cluster_name=Case(
-                When(name='abc', then=Value('ABC')),
-                When(name__startswith='vector_', then=Value('Vector')),
-                default=Value('Savio'),
-                output_field=CharField(),
-            ),
         ).order_by(order_by)
+        projects = annotate_queryset_with_cluster_name(projects)
 
         if project_search_form.is_valid():
             data = project_search_form.cleaned_data
