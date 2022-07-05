@@ -138,22 +138,6 @@ Request New Allocation
       $('#id_end_date').val('')
     }
 
-    // We want to set up some custom HTML for unit so it will be placed inline with storage_space_with_unit.
-    // Save the value of unit so it is not lost after we recreate its HTML.
-    var unit = $('#id_unit').val();
-    $('#div_id_unit').remove()
-    $('#id_storage_space_with_unit')
-      .wrap('<div class="input-group">')
-      .after(
-        '<div id="div_id_unit">\
-          <select id="id_unit" class="select form-control" name="unit">\
-            <option value="GB">GB</option>\
-            <option value="TB">TB</option>\
-          </select>\
-         </div>'
-      );
-    $('#id_unit').val(unit)
-
     // Add button for date picker on date fields.
     var date = new Date();
     var currentYear = date.getFullYear();
@@ -188,18 +172,6 @@ Request New Allocation
       can assist you in receiving a short-term priority boost up to your required deadline.</p>'
     );
 
-    $('#div_id_justification').after(
-      '<p id="id_rstudio_connect_info">The annual license expires on Thursday, June 30. The full \
-      term price is $5000 and is prorated accordingly from the time of purchase. There cannot be \
-      more than 10 users on a project.</p>'
-    )
-
-    $('#div_id_sub_account_number').after(
-      '<p id="additional_info_4">This account and sub account will be billed the total cost at \
-      the next monthly billing cycle. By filling in this account number you verify you are \
-      authorized to use funds from this account for this purpose.</p>'
-    )
-
     $('#div_id_store_ephi').append(
       '<p id="id_ephi_info">If you use the Slate-Project file system for storing electronic protected health \
       information (ePHI), please note that <strong>you and/or the Principal Investigator (PI) \
@@ -230,10 +202,14 @@ Request New Allocation
     })
 
     $('#id_storage_space').change(function (e) {
-      if (e.target.value > 15) {
-        $('#div_id_account_number').show()
-      } else {
-        $('#div_id_account_number').hide()
+      var resource_text = $("#id_resource option:selected").text();
+      var resource_name = resource_text.slice(0, resource_text.indexOf('(') - 1)
+      if (resource_name === 'Slate-Project') {
+        if (e.target.value > 15) {
+          $('#div_id_account_number').show()
+        } else {
+          $('#div_id_account_number').hide()
+        }
       }
     })
 
@@ -475,7 +451,6 @@ Request New Allocation
 
     if (resource_name === 'RStudio Connect') {
       $('#id_rstudio_connect_info').show();
-      $('#additional_info_4').show();
       if (checkDate(5, 10)) {
         $('#div_id_license_term').show();
       } else {
@@ -483,7 +458,6 @@ Request New Allocation
       }
     } else {
       $('#id_rstudio_connect_info').hide();
-      $('#additional_info_4').hide();
       $('#div_id_license_term').hide();
       $('#div_id_total_cost').hide();
     }
@@ -607,6 +581,10 @@ Request New Allocation
         if ($('#id_storage_space').val() <= 15) {
           $('#div_id_account_number').hide();
         }
+    }
+
+    if (resource_name === 'Geode-Projects') {
+      
     }
 
     if (resources_with_accounts.includes(parseInt(resource_id))) {

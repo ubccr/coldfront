@@ -84,6 +84,10 @@ class Allocation(TimeStampedModel):
         ('current', 'Current license'),
         ('current_and_next_year', 'Current license + next annual license')
     )
+    STORAGE_UNIT_CHOICES = (
+        ('GB', 'GB'),
+        ('TB', 'TB')
+    )
 
     """ Allocation to a system Resource. """
     project = models.ForeignKey(Project, on_delete=models.CASCADE,)
@@ -92,7 +96,12 @@ class Allocation(TimeStampedModel):
         AllocationStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
     quantity = models.IntegerField(blank=True, null=True)
     storage_space = models.IntegerField(blank=True, null=True)
-    storage_space_with_unit = models.CharField(max_length=10, blank=True, null=True)
+    storage_space_unit = models.CharField(
+        max_length=2,
+        choices=STORAGE_UNIT_CHOICES,
+        blank=True,
+        null=True
+    )
     leverage_multiple_gpus = models.CharField(
         max_length=4,
         choices=YES_NO_CHOICES,
@@ -380,6 +389,16 @@ class Allocation(TimeStampedModel):
 
     def __str__(self):
         return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
+
+
+class AllocationInvoice(TimeStampedModel):
+    allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
+    account_number = models.CharField(max_length=9)
+    sub_account_number = models.CharField(max_length=20, blank=True, null=True)
+    status = models.ForeignKey(AllocationStatusChoice, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return "{} Invoice".format(self.allocation.get_parent_resource.name)
 
 
 class AllocationAdminNote(TimeStampedModel):

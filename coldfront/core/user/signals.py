@@ -31,6 +31,9 @@ def create_user_profile(sender, instance, created, **kwargs):
                     'Max projects not set for title: {}'.format(title)
                 )
                 max_projects = -1
+            is_pi = False
+            if title in ['Faculty', 'Staff', ]:
+                is_pi = True
 
             department = ''
             if attributes['department']:
@@ -40,7 +43,8 @@ def create_user_profile(sender, instance, created, **kwargs):
                 user=instance,
                 title=title,
                 department=department,
-                max_projects=max_projects
+                max_projects=max_projects,
+                is_pi=is_pi
             )
         else:
             UserProfile.objects.create(

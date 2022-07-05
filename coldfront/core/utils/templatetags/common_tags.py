@@ -60,3 +60,13 @@ def get_value_from_dict(dict_data, key):
 @register.filter
 def split(string, char):
     return string.split(char)
+
+
+@register.filter
+def change_sign(int):
+    return -int
+
+
+@register.filter
+def divide(int, divisor):
+    return int // divisor

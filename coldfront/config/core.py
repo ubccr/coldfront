@@ -23,6 +23,9 @@ PROJECT_CLASS_PROJECT_END_DATES = ENV.list(
     default=[(1, 19), (5, 11), (8, 23)]
 )
 PROJECT_DEFAULT_MAX_MANAGERS = ENV.int('PROJECT_DEFAULT_MAX_MANAGERS', default=3)
+PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING = ENV.int('PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING', default=60)
+PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING = ENV.int('PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING', default=30)
+PROJECT_END_DATE_CARRYOVER_DAYS = ENV.int('PROJECT_END_DATE_CARRYOVER_DAYS', default=90)
 
 #------------------------------------------------------------------------------
 # Allocation related
@@ -31,6 +34,8 @@ ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT = ENV.bool('ALLOCATION_ENABLE_CHANG
 ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS = ENV.list('ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS', cast=int, default=[30, 60, 90])
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = ENV.bool('ALLOCATION_ENABLE_ALLOCATION_RENEWAL', default=True)
 ALLOCATION_FUNCS_ON_EXPIRE = ['coldfront.core.allocation.utils.test_allocation_function', ]
+ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING = ENV.int('ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING', default=60)
+ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING = ENV.int('ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING', default=30)
 #------------------------------------------------------------------------------
 # Resource related
 #------------------------------------------------------------------------------

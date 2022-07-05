@@ -48,6 +48,7 @@ from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
+from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email, send_email_template
 from coldfront.core.project.utils import get_new_end_date_from_list
@@ -62,11 +63,28 @@ ALLOCATION_DEFAULT_ALLOCATION_LENGTH = import_from_settings(
 PROJECT_DEFAULT_PROJECT_LENGTH = import_from_settings(
     'PROJECT_DEFAULT_PROJECT_LENGTH', 365
 )
+ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING = import_from_settings(
+    'ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING',
+    30
+)
+ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING = import_from_settings(
+    'ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING',
+    60
+)
 PROJECT_CLASS_PROJECT_END_DATES = import_from_settings(
     'PROJECT_CLASS_PROJECT_END_DATES', [(1, 19), (5, 11), (8, 23)]
 )
 PROJECT_DEFAULT_MAX_MANAGERS = import_from_settings(
     'PROJECT_DEFAULT_MAX_MANAGERS', 3
+)
+PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING = import_from_settings(
+    'PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING', 60
+)
+PROJECT_END_DATE_CARRYOVER_DAYS = import_from_settings(
+    'PROJECT_END_DATE_CARRYOVER_DAYS',  90
+)
+PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING = import_from_settings(
+    'PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING', 30
 )
 
 if EMAIL_ENABLED:
@@ -130,24 +148,52 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             ','.join([user.user.email for user in project_users])
 
         if self.request.user.is_superuser or self.request.user.has_perm('allocation.can_view_all_allocations'):
-            allocations = Allocation.objects.prefetch_related(
-                'resources').filter(project=self.object).order_by('-end_date')
+            free_allocations = Allocation.objects.prefetch_related(
+                'resources'
+            ).filter(
+                project=self.object,
+                resources__requires_payment=False
+            ).order_by('-end_date')
+
+            priced_allocations = Allocation.objects.prefetch_related(
+                'resources'
+            ).filter(
+                project=self.object,
+                resources__requires_payment=True
+            )
         else:
             if self.object.status.name in ['Active', 'New', 'Waiting For Admin Approval', ]:
-                allocations = Allocation.objects.filter(
+                free_allocations = Allocation.objects.filter(
                     Q(project=self.object) &
                     Q(project__projectuser__user=self.request.user) &
                     Q(project__projectuser__status__name__in=['Active', ]) &
-                    Q(status__name__in=['Active', 'Expired',
-                                        'New', 'Renewal Requested',
-                                        'Payment Pending', 'Payment Requested',
-                                        'Payment Declined', 'Paid', 'Denied']) &
+                    Q(resources__requires_payment=False) &
                     Q(allocationuser__user=self.request.user) &
-                    Q(allocationuser__status__name__in=['Active', 'Pending - Remove'])
+                    Q(allocationuser__status__name__in=['Active', ])
+                ).distinct().order_by('-end_date')
+
+                priced_allocations = Allocation.objects.filter(
+                    Q(project=self.object) &
+                    Q(project__projectuser__user=self.request.user) &
+                    Q(project__projectuser__status__name__in=['Active', ]) &
+                    Q(resources__requires_payment=True) &
+                    Q(allocationuser__user=self.request.user) &
+                    Q(allocationuser__status__name__in=['Active', ])
                 ).distinct().order_by('-end_date')
             else:
-                allocations = Allocation.objects.prefetch_related(
-                    'resources').filter(project=self.object)
+                free_allocations = Allocation.objects.filter(
+                    'resources'
+                ).filter(
+                    project=self.object,
+                    resources__requires_payment=False
+                )
+
+                priced_allocations = Allocation.objects.prefetch_related(
+                    'resources'
+                ).filter(
+                    project=self.object,
+                    resources__requires_payment=True
+                )
 
         context['publications'] = Publication.objects.filter(
             project=self.object, status='Active').order_by('-year')
@@ -155,9 +201,13 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             project=self.object).order_by('-created')
         context['grants'] = Grant.objects.filter(
             project=self.object, status__name__in=['Active', 'Pending', 'Archived'])
-        context['allocations'] = allocations
+        context['free_allocations'] = free_allocations
+        context['priced_allocations'] = priced_allocations
         context['project_users'] = project_users
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
+        context['PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING'] = PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING
+        context['ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING'] = ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING
+        context['ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING'] = ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING
 
         try:
             context['ondemand_url'] = settings.ONDEMAND_URL
@@ -271,7 +321,8 @@ class ProjectListView(LoginRequiredMixin, ListView):
             Q(projectuser__status__name='Active') &
             Q(status__name__in=['New', 'Active', 'Review Pending', 'Waiting For Admin Approval', ])
         ).distinct().count()
-        context['project_requests_remaining'] = max(0, max_projects - project_count)
+        # Not being used.
+        context['project_requests_remaining'] = 10  # max(0, max_projects - project_count)
 
         project_pi_search_form = ProjectPISearchForm()
         context['project_pi_search_form'] = project_pi_search_form
@@ -306,6 +357,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
 
         context['filter_parameters'] = filter_parameters
         context['filter_parameters_with_order_by'] = filter_parameters_with_order_by
+        context['PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING'] = PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING
 
         project_list = context.get('project_list')
         paginator = Paginator(project_list, self.paginate_by)
@@ -623,7 +675,7 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
 class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Project
     template_name_suffix = '_create_form'
-    fields = ['title', 'description', 'slurm_account_name', 'field_of_science', 'type', ]
+    fields = ['title', 'description', 'pi_username', 'slurm_account_name', 'field_of_science', 'type', ]
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -637,7 +689,8 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.userprofile.is_pi and max_projects - project_count > 0:
+        # Number of projects are not being checked.
+        if self.request.user.userprofile.is_pi:  # and max_projects - project_count > 0:
             return True
 
     def form_valid(self, form):
@@ -650,7 +703,24 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
                 return self.form_invalid(form)
 
         project_obj = form.save(commit=False)
-        form.instance.pi = self.request.user
+        if not form.instance.pi_username:
+            user_profile = UserProfile.objects.get(user=self.request.user)
+            if user_profile.title not in ['Faculty', 'Staff', ]:
+                messages.error(self.request, 'Only faculty and staff can be the PI')
+                return super().form_invalid(form)
+            form.instance.pi = self.request.user
+        else:
+            user = User.objects.filter(username=form.instance.pi_username).first()
+            if user is None:
+                messages.error(self.request, 'This username does not exist in ColdFront')
+                return super().form_invalid(form)
+            user_profile = UserProfile.objects.get(user=user)
+            if user_profile.title not in ['Faculty', 'Staff', ]:
+                messages.error(self.request, 'Only faculty and staff can be the PI')
+                return super().form_invalid(form)
+            form.instance.pi = user
+
+        form.instance.requestor = self.request.user
         form.instance.status = ProjectStatusChoice.objects.get(name='Waiting For Admin Approval')
         if form.instance.type.name == 'Class':
             if not isinstance(PROJECT_CLASS_PROJECT_END_DATES[0], tuple):
@@ -684,9 +754,13 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
             project_obj.end_date = end_date
         else:
-            form.instance.end_date = datetime.datetime.today() + datetime.timedelta(
-                days=PROJECT_DEFAULT_PROJECT_LENGTH
+            actual_date = datetime.date(datetime.date.today().year, 6, 30)
+            end_date = get_new_end_date_from_list(
+                [actual_date, ],
+                datetime.date.today(),
+                PROJECT_END_DATE_CARRYOVER_DAYS
             )
+            form.instance.end_date = end_date
 
         form.instance.max_managers = PROJECT_DEFAULT_MAX_MANAGERS
         project_obj.save()
@@ -698,6 +772,13 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
             role=ProjectUserRoleChoice.objects.get(name='Manager'),
             status=ProjectUserStatusChoice.objects.get(name='Active')
         )
+        if form.instance.pi != form.instance.requestor:
+            project_user_pi_user = ProjectUser.objects.create(
+                user=form.instance.pi,
+                project=project_obj,
+                role=ProjectUserRoleChoice.objects.get(name='Manager'),
+                status=ProjectUserStatusChoice.objects.get(name='Active')
+            )
 
         if EMAIL_ENABLED:
             domain_url = get_domain_url(self.request)
@@ -713,6 +794,27 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
                 EMAIL_SENDER,
                 [EMAIL_DIRECTOR_EMAIL_ADDRESS, ],
             )
+
+            if form.instance.pi != form.instance.requestor:
+                project_url = reverse('project-detail', kwargs={'pk': project_obj.pk})
+                template_context = {
+                    'center_name': EMAIL_CENTER_NAME,
+                    'project_title': project_obj.title,
+                    'requestor_first_name': form.instance.requestor.first_name,
+                    'requestor_last_name': form.instance.requestor.last_name,
+                    'requestor_username': form.instance.requestor.username,
+                    'project_url': '{}{}'.format(domain_url, project_url),
+                    'help_email': 'radl@iu.edu',
+                    'signature': EMAIL_SIGNATURE
+                }
+
+                send_email_template(
+                    'PI For Project Request',
+                    'email/pi_project_request.txt',
+                    template_context,
+                    EMAIL_SENDER,
+                    [project_user_pi_user.user.email, ]
+                )
 
         return super().form_valid(form)
 
@@ -1606,11 +1708,15 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
     def get_allocation_data(self, project_obj):
         allocations = project_obj.allocation_set.filter(
-            status__name__in=['Active', 'Expired', ]
+            status__name__in=['Active', 'Expired', ],
+            resources__requires_payment=False
         ).exclude(use_indefinitely=True)
         initial_data = []
         if allocations:
             for allocation in allocations:
+                if allocation.expires_in < -ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING:
+                    continue
+
                 data = {
                     'pk': allocation.pk,
                     'resource': allocation.get_resources_as_string,
@@ -1920,9 +2026,13 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
 
             project_obj.end_date = end_date
         else:
-            project_obj.end_date += datetime.timedelta(
-                days=PROJECT_DEFAULT_PROJECT_LENGTH
+            actual_date = datetime.date(datetime.date.today().year, 6, 30)
+            end_date = get_new_end_date_from_list(
+                [actual_date, ],
+                datetime.date.today(),
+                PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING
             )
+            project_obj.end_date = end_date
 
         project_review_obj.status = project_review_status_obj
         project_obj.status = project_status_obj

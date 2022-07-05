@@ -18,6 +18,7 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationUserStatusChoice,
                                               AllocationUserRequestStatusChoice,
                                               AllocationUserRequest,
+                                              AllocationInvoice,
                                               AttributeType)
 
 
@@ -94,7 +95,7 @@ class AllocationAdmin(SimpleHistoryAdmin):
         'last_name',
         'store_ephi',
         'url',
-        'storage_space_with_unit',
+        'storage_space_unit',
         'storage_space',
         'status',
         'start_date',
@@ -144,7 +145,7 @@ class AllocationAdmin(SimpleHistoryAdmin):
         'last_name',
         'store_ephi',
         'url',
-        'storage_space_with_unit',
+        'storage_space_unit',
         'storage_space',
         'start_date',
         'end_date',
@@ -529,3 +530,13 @@ class AllocationChangeRequestAdmin(admin.ModelAdmin):
 class AllocationChangeStatusChoiceAdmin(admin.ModelAdmin):
     list_display = ('pk', 'allocation_change_request', 'allocation_attribute', 'new_value', )
 
+
+@admin.register(AllocationInvoice)
+class AllocationInvoice(SimpleHistoryAdmin):
+    list_display = ('allocation_pk', 'resource', 'status', 'created', )
+
+    def allocation_pk(self, obj):
+        return obj.allocation.pk
+
+    def resource(self, obj):
+        return obj.allocation.get_parent_resource.name
