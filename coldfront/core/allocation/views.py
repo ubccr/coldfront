@@ -1087,6 +1087,16 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     allocation=allocation_obj,
                     value=value
                 )
+                
+                slurm_specs_attribute_type = AllocationAttributeType.objects.get(
+                    name='slurm_specs'
+                )
+
+                AllocationAttribute.objects.create(
+                    allocation_attribute_type=slurm_specs_attribute_type,
+                    allocation=allocation_obj,
+                    value='QOS=coldfront'
+                )
 
         if storage_space:
             storage_quota_attribute_type = AllocationAttributeType.objects.get(
