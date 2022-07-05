@@ -232,6 +232,29 @@ class Allocation(TimeStampedModel):
                 return [a.typed_value() for a in attr]
             else:
                 return [a.value for a in attr]
+    @property
+    def all_public_attributes_as_list(self):
+        attr = self.allocationattribute_set.filter(
+            allocation_attribute_type__is_private=False)
+
+        ret = list()
+        
+        for a in attr.all():
+            if a.allocation_attribute_type.has_usage:
+                usage = str( a.allocationattributeusage.value )
+            else:
+                usage = ''            
+            atrib = {
+            'id': a.allocation_attribute_type.pk, 
+            'name': a.allocation_attribute_type.name, 
+            'value': str(a.expanded_value(typed=True,extra_allocations=[])),
+            'usage': usage
+            } 
+
+
+            ret.append(atrib)
+        return ret
+
 
     def __str__(self):
         return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)

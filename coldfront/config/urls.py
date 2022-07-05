@@ -36,3 +36,7 @@ if 'mozilla_django_oidc' in settings.INSTALLED_APPS:
 
 if 'django_su.backends.SuBackend' in settings.AUTHENTICATION_BACKENDS:
     urlpatterns.append(path('su/', include('django_su.urls')))
+
+if 'coldfront.plugins.rest_api' in settings.INSTALLED_APPS:
+    urlpatterns.append(path('users-api/', include('coldfront.plugins.rest_api.users-urls')))
+    urlpatterns.append(path('users-api/o/', include('oauth2_provider.urls', namespace='oauth2_provider')))
