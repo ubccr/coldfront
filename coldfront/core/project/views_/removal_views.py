@@ -24,7 +24,8 @@ from coldfront.core.project.models import (Project,
                                            ProjectUserStatusChoice,
                                            ProjectUserRemovalRequest,
                                            ProjectUserRemovalRequestStatusChoice)
-from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestRunner
+from coldfront.core.project.utils_.removal_utils import \
+    ProjectRemovalRequestRunner, ProjectRemovalRequestUpdateRunner
 from coldfront.core.utils.common import (import_from_settings,
                                          utc_now_offset_aware)
 from coldfront.core.utils.mail import send_email_template
@@ -379,11 +380,8 @@ class ProjectRemovalRequestUpdateStatusView(LoginRequiredMixin,
         form_data = form.cleaned_data
         status = form_data.get('status')
 
-        project_removal_status_choice, _ = \
-            ProjectUserRemovalRequestStatusChoice.objects.get_or_create(
-                name=status)
-        self.project_removal_request_obj.status = project_removal_status_choice
-        self.project_removal_request_obj.save()
+        runner = ProjectRemovalRequestUpdateRunner(self.project_removal_request_obj)
+        runner.update_request(status)
 
         message = (
             f'Project removal request initiated by '
@@ -443,87 +441,18 @@ class ProjectRemovalRequestCompleteStatusView(LoginRequiredMixin,
         form_data = form.cleaned_data
         status = form_data.get('status')
 
-        project_removal_status_choice, _ = \
-            ProjectUserRemovalRequestStatusChoice.objects.get_or_create(
-                name=status)
-
-        project_obj = self.project_removal_request_obj.project_user.project
-        removed_user = self.project_removal_request_obj.project_user
-        requester = self.project_removal_request_obj.requester
-
-        self.project_removal_request_obj.status = project_removal_status_choice
-        if status == 'Complete':
-            self.project_removal_request_obj.completion_time = utc_now_offset_aware()
-
-        self.project_removal_request_obj.save()
+        runner = ProjectRemovalRequestUpdateRunner(self.project_removal_request_obj)
+        runner.update_request(status)
 
         if status == 'Complete':
-            project_user_status_removed, _ = \
-                ProjectUserStatusChoice.objects.get_or_create(
-                    name='Removed')
-            removed_user.status = project_user_status_removed
-            removed_user.save()
+            runner.complete_request(completion_time=utc_now_offset_aware())
+            runner.send_emails()
 
-            try:
-                allocation_obj = Allocation.objects.get(project=project_obj)
-                allocation_user = \
-                    allocation_obj.allocationuser_set.get(user=removed_user.user)
-                allocation_user_status_choice_removed = \
-                    AllocationUserStatusChoice.objects.get(name='Removed')
-                allocation_user.status = allocation_user_status_choice_removed
-                allocation_user.save()
-
-                cluster_account_status = \
-                    allocation_user.allocationuserattribute_set.get(
-                        allocation_attribute_type=AllocationAttributeType.objects.get(
-                            name='Cluster Account Status'))
-                cluster_account_status.value = 'Denied'
-                cluster_account_status.save()
-
-            except Exception as e:
-                message = f'Unexpected error setting AllocationAttributeType' \
-                          f'Cluster Account Status to "Denied" and ' \
-                          f'AllocationUserStatusChoice to "Removed" ' \
-                          f'for user {removed_user.user.username}.'
-                messages.error(self.request, message)
-
-        message = (
-            f'Project removal request initiated by '
-            f'{self.project_removal_request_obj.requester.username} for User '
-            f'{self.user_obj.username} under '
-            f'Project {self.project_removal_request_obj.project_user.project.name} '
-            f'has been marked as {status}.')
-        messages.success(self.request, message)
-
-        if EMAIL_ENABLED and status == 'Complete':
-            pi_condition = Q(
-                role__name='Principal Investigator', status__name='Active',
-                enable_notifications=True)
-            manager_condition = Q(role__name='Manager', status__name='Active')
-            manager_pi_queryset = project_obj.projectuser_set.filter(
-                pi_condition | manager_condition)
-
-            for proj_user in list(chain(manager_pi_queryset, [removed_user])):
-                curr_user = proj_user.user
-                template_context = {
-                    'user_first_name': curr_user.first_name,
-                    'user_last_name': curr_user.last_name,
-                    'removed_user_first_name': removed_user.user.first_name,
-                    'removed_user_last_name': removed_user.user.last_name,
-                    'requester_first_name': requester.first_name,
-                    'requester_last_name': requester.last_name,
-                    'project_name': project_obj.name,
-                    'signature': EMAIL_SIGNATURE,
-                    'support_email': SUPPORT_EMAIL,
-                }
-
-                send_email_template(
-                    'Project Removal Request Completed',
-                    'email/project_removal/project_removal_complete.txt',
-                    template_context,
-                    EMAIL_SENDER,
-                    [curr_user.email]
-                )
+        success_messages, error_messages = runner.get_messages()
+        for message in error_messages:
+            messages.error(self.request, message)
+        for message in success_messages:
+            messages.success(self.request, message)
 
         return super().form_valid(form)
 
