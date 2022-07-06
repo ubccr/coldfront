@@ -250,9 +250,11 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             is_any_project_pi_renewable(self.object, allocation_period) or
             flag_enabled('ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE'))
 
-        # Display the "Purchase Service Units" button for eligible allocation
-        # types, for those allowed to update the project.
+        # Display the "Purchase Service Units" button when the functionality is
+        # enabled, for eligible allocation types, for those allowed to update
+        # the project.
         context['purchase_sus_visible'] = (
+            flag_enabled('SERVICE_UNITS_PURCHASABLE') and
             can_project_purchase_service_units(self.object) and
             context.get('is_allowed_to_update_project', False))
 

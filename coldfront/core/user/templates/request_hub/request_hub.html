@@ -72,9 +72,12 @@
     {% include 'request_hub/request_section.html' %}
   {% endwith %}
 
-  {% with request_obj=su_purchase_request_obj %}
-    {% include 'request_hub/request_section.html' %}
-  {% endwith %}
+  {% flag_enabled 'SERVICE_UNITS_PURCHASABLE' as service_units_purchasable %}
+  {% if service_units_purchasable %}
+    {% with request_obj=su_purchase_request_obj %}
+      {% include 'request_hub/request_section.html' %}
+    {% endwith %}
+  {% endif %}
 
   {% flag_enabled 'BRC_ONLY' as brc_only %}
   {% if brc_only %}

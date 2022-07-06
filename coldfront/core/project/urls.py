@@ -179,28 +179,29 @@ urlpatterns += [
 
 
 # Purchase Service Units
-urlpatterns += [
-    path('<int:pk>/purchase-service-units-landing/',
-         addition_request_views.AllocationAdditionRequestLandingView.as_view(),
-         name='purchase-service-units-landing'),
-    path('<int:pk>/purchase-service-units/',
-         addition_request_views.AllocationAdditionRequestView.as_view(),
-         name='purchase-service-units'),
-    path('service-units-purchase-pending-request-list/',
-         addition_approval_views.AllocationAdditionRequestListView.as_view(
-             completed=False),
-         name='service-units-purchase-pending-request-list'),
-    path('service-units-purchase-completed-request-list/',
-         addition_approval_views.AllocationAdditionRequestListView.as_view(
-             completed=True),
-         name='service-units-purchase-completed-request-list'),
-    path('service-units-purchase-request/<int:pk>/',
-         addition_approval_views.AllocationAdditionRequestDetailView.as_view(),
-         name='service-units-purchase-request-detail'),
-    path('service-units-purchase-request/<int:pk>/memorandum-signed',
-         addition_approval_views.AllocationAdditionReviewMemorandumSignedView.as_view(),
-         name='service-units-purchase-request-review-memorandum-signed'),
-    path('service-units-purchase-request/<int:pk>/deny',
-         addition_approval_views.AllocationAdditionReviewDenyView.as_view(),
-         name='service-units-purchase-request-review-deny'),
-]
+with flagged_paths('SERVICE_UNITS_PURCHASABLE'):
+    urlpatterns += [
+        f_path('<int:pk>/purchase-service-units-landing/',
+               addition_request_views.AllocationAdditionRequestLandingView.as_view(),
+               name='purchase-service-units-landing'),
+        f_path('<int:pk>/purchase-service-units/',
+               addition_request_views.AllocationAdditionRequestView.as_view(),
+               name='purchase-service-units'),
+        f_path('service-units-purchase-pending-request-list/',
+               addition_approval_views.AllocationAdditionRequestListView.as_view(
+                   completed=False),
+               name='service-units-purchase-pending-request-list'),
+        f_path('service-units-purchase-completed-request-list/',
+               addition_approval_views.AllocationAdditionRequestListView.as_view(
+                   completed=True),
+               name='service-units-purchase-completed-request-list'),
+        f_path('service-units-purchase-request/<int:pk>/',
+               addition_approval_views.AllocationAdditionRequestDetailView.as_view(),
+               name='service-units-purchase-request-detail'),
+        f_path('service-units-purchase-request/<int:pk>/memorandum-signed',
+               addition_approval_views.AllocationAdditionReviewMemorandumSignedView.as_view(),
+               name='service-units-purchase-request-review-memorandum-signed'),
+        f_path('service-units-purchase-request/<int:pk>/deny',
+               addition_approval_views.AllocationAdditionReviewDenyView.as_view(),
+               name='service-units-purchase-request-review-deny'),
+    ]

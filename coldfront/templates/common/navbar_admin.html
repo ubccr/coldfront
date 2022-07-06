@@ -46,9 +46,12 @@
                 <li><a id="navbar-secure-dir-remove-user-requests" class="dropdown-item" href="{% url 'secure-dir-manage-users-request-list' 'remove' 'pending' %}">
                   Secure Directory Remove User Requests
                 </a></li>
+                {% flag_enabled 'SERVICE_UNITS_PURCHASABLE' as service_units_purchasable %}
+                {% if service_units_purchasable %}
                 <li><a id="navbar-service-units-purchase-requests" class="dropdown-item" href="{% url 'service-units-purchase-pending-request-list' %}">
                   Service Units Purchase Requests
                 </a></li>
+                {% endif %}
             </ul>
         </li>
     </ul>
