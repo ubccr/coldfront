@@ -37,7 +37,7 @@ class Command(BaseCommand):
         """Set the computing allowance (Resource) for the given
         AllocationRenewalRequest. Optionally display the update instead
         of performing it."""
-        code = request.post_project.split('_')[0]
+        code = request.post_project.name[:3]
         allowance = self.interface.allowance_from_code(code)
         message_template = (
             f'{{0}} computing allowance for AllocationRenewalRequest '
