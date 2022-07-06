@@ -12,6 +12,8 @@ class ComputingAllowanceInterface(object):
         allowances = Resource.objects.prefetch_related(
             'resourceattribute_set').filter(resource_type=resource_type)
 
+        # A mapping from code values to allowance Resource objects.
+        self._code_to_object = {}
         # A mapping from allowance names to allowance Resource objects.
         self._name_to_object = {}
         # A mapping from name_short values to allowance Resource objects.
@@ -33,6 +35,7 @@ class ComputingAllowanceInterface(object):
             for attribute in allowance.resourceattribute_set.all():
                 attribute_type_name = attribute.resource_attribute_type.name
                 if attribute_type_name == 'code':
+                    self._code_to_object[attribute.value] = allowance
                     self._object_to_code[allowance] = attribute.value
                 elif attribute_type_name == 'name_long':
                     self._object_to_name_long[allowance] = attribute.value
@@ -41,6 +44,14 @@ class ComputingAllowanceInterface(object):
                     self._object_to_name_short[allowance] = attribute.value
                 elif attribute_type_name == 'Service Units':
                     self._object_to_service_units[allowance] = attribute.value
+
+    def allowance_from_code(self, code):
+        """Given a code, return the corresponding allowance (Resource
+        object)."""
+        try:
+            return self._code_to_object[code]
+        except KeyError as e:
+            raise ComputingAllowanceInterfaceError(e)
 
     def allowance_from_name_short(self, name_short):
         """Given a name_short, return the corresponding allowance

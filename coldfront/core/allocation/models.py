@@ -451,6 +451,9 @@ class AllocationRenewalRequest(TimeStampedModel):
         related_name='allocation_renewal_requester')
     pi = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='allocation_renewal_pi')
+    computing_allowance = models.ForeignKey(
+        'resource.Resource', blank=True, null=True, on_delete=models.SET_NULL,
+        related_name='renewal_computing_allowance')
     allocation_period = models.ForeignKey(
         AllocationPeriod, on_delete=models.CASCADE)
     status = models.ForeignKey(
