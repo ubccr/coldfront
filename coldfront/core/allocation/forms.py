@@ -251,7 +251,6 @@ class AllocationForm(forms.Form):
             },
             'RStudio Connect': {
                 'project_directory_name': cleaned_data.get('project_directory_name'),
-                'account_number': cleaned_data.get('account_number'),
                 'confirm_understanding': cleaned_data.get('confirm_understanding'),
             },
             'Geode-Projects': {
