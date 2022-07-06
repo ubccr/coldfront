@@ -430,7 +430,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
             if data.get('allocation_attribute_name') and data.get('allocation_attribute_value'):
                 allocations = allocations.filter(
                     Q(allocationattribute__allocation_attribute_type=data.get('allocation_attribute_name')) &
-                    Q(allocationattribute__value=data.get(
+                    Q(allocationattribute__value__contains=data.get(
                         'allocation_attribute_value'))
                 )
 
