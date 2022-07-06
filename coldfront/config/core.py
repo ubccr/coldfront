@@ -8,7 +8,7 @@ from coldfront.config.env import ENV
 #------------------------------------------------------------------------------
 # General Center Information
 #------------------------------------------------------------------------------
-CENTER_NAME = ENV.str('CENTER_NAME', default='HPC Resources')
+CENTER_NAME = ENV.str('CENTER_NAME', default='HPC Center')
 CENTER_HELP_URL = ENV.str('CENTER_HELP_URL', default='')
 CENTER_PROJECT_RENEWAL_HELP_URL = ENV.str('CENTER_PROJECT_RENEWAL_HELP_URL', default='')
 CENTER_BASE_URL = ENV.str('CENTER_BASE_URL', default='')

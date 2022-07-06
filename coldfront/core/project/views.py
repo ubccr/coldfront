@@ -791,8 +791,12 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                             allocation_remove_user.send(sender=self.__class__,
                                                         allocation_user_pk=allocation_user_obj.pk)
 
-            messages.success(
-                request, 'Removed {} users from project.'.format(remove_users_count))
+            if remove_users_count == 1:
+                messages.success(
+                    request, 'Removed {} user from project.'.format(remove_users_count))
+            else:
+                messages.success(
+                    request, 'Removed {} users from project.'.format(remove_users_count))
         else:
             for error in formset.errors:
                 messages.error(request, error)
