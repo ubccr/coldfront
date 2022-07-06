@@ -1,5 +1,8 @@
+from coldfront.api.statistics.utils import create_project_allocation, \
+    create_user_project_allocation
 from coldfront.core.project.models import *
-from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestRunner
+from coldfront.core.project.utils_.removal_utils import \
+    ProjectRemovalRequestRunner, ProjectRemovalRequestUpdateRunner
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.user.models import *
 from coldfront.core.allocation.models import *
@@ -9,43 +12,35 @@ from django.contrib.auth.models import User
 from django.core import mail
 
 
-class TestProjectRemovalRequestRunner(TestBase):
-    """A testing class for ProjectRemovalRequestRunner."""
+class TestRemovalRequestRunnerBase(TestBase):
+    """A base testing class for removal request runners."""
 
     def setUp(self):
         """Set up test data."""
         super().setUp()
 
-        # Create a requester user and multiple PI users.
-        self.user1 = User.objects.create(
-            email='user1@email.com',
-            first_name='Normal',
-            last_name='User1',
-            username='user1')
+        # Create three normal users.
+        for i in range(3):
+            user = User.objects.create(
+                email=f'user{i+1}@email.com',
+                first_name='Normal',
+                last_name=f'User{i+1}',
+                username=f'user{i+1}'
+            )
+            setattr(self, f'user{i+1}', user)
 
-        self.user2 = User.objects.create(
-            email='user2@email.com',
-            first_name='Normal',
-            last_name='User2',
-            username='user2')
+        # Create two PIs.
 
-        self.pi1 = User.objects.create(
-            email='pi1@email.com',
-            first_name='Pi1',
-            last_name='User',
-            username='pi1')
-        user_profile = UserProfile.objects.get(user=self.pi1)
-        user_profile.is_pi = True
-        user_profile.save()
-
-        self.pi2 = User.objects.create(
-            email='pi2@email.com',
-            first_name='Pi2',
-            last_name='User',
-            username='pi2')
-        user_profile = UserProfile.objects.get(user=self.pi2)
-        user_profile.is_pi = True
-        user_profile.save()
+        for i in range(2):
+            pi = User.objects.create(
+                email=f'pi{i+1}@email.com',
+                first_name=f'Pi{i+1}',
+                last_name=f'User',
+                username=f'pi{i+1}')
+            setattr(self, f'pi{i+1}', pi)
+            user_profile = UserProfile.objects.get(user=pi)
+            user_profile.is_pi = True
+            user_profile.save()
 
         self.manager = User.objects.create(
             email='manager@email.com',
@@ -53,7 +48,7 @@ class TestProjectRemovalRequestRunner(TestBase):
             last_name='User',
             username='manager')
 
-        for user in [self.user1, self.user2, self.pi1, self.pi2, self.manager]:
+        for user in User.objects.all():
             user_profile = UserProfile.objects.get(user=user)
             user_profile.access_agreement_signed_date = utc_now_offset_aware()
             user_profile.save()
@@ -87,16 +82,40 @@ class TestProjectRemovalRequestRunner(TestBase):
             role=manager_project_role,
             status=active_project_user_status)
 
-        # add users to project
-        for user in [self.user1, self.user2]:
+        # Create a compute allocation for the Project.
+        sus = Decimal('1000.00')
+        create_project_allocation(self.project1, sus)
+
+        # Add users to project and create allocation users.
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Cluster Account Status')
+        for user in [self.user1, self.user2, self.user3]:
             ProjectUser.objects.create(
                 project=self.project1,
                 user=user,
                 role=user_project_role,
                 status=active_project_user_status)
 
+            objects = create_user_project_allocation(
+                user, self.project1, sus)
+            allocation = objects.allocation
+            allocation_user = objects.allocation_user
+            AllocationUserAttribute.objects.create(
+                allocation_attribute_type=allocation_attribute_type,
+                allocation=allocation,
+                allocation_user=allocation_user,
+                value='Active')
+
         # Clear the mail outbox.
         mail.outbox = []
+
+
+class TestProjectRemovalRequestRunner(TestRemovalRequestRunnerBase):
+    """A testing class for ProjectRemovalRequestRunner."""
+
+    def setUp(self):
+        """Set up test data."""
+        super().setUp()
 
     def test_normal_user_self_removal_request(self):
         """
@@ -531,4 +550,102 @@ class TestProjectRemovalRequestRunner(TestBase):
                 self.assertIn(email_body, email.body)
                 self.assertIn(email.to[0], email_to_list)
             self.assertNotEqual(email.to, self.pi1.email)
+            self.assertEqual(settings.EMAIL_SENDER, email.from_email)
+
+
+class TestProjectRemovalRequestUpdateRunner(TestRemovalRequestRunnerBase):
+    """Testing class for ProjectRemovalRequestUpdateRunner"""
+
+    def setUp(self):
+        """Set up test data."""
+        super().setUp()
+
+        status_choices = ProjectUserRemovalRequestStatusChoice.objects.all()
+        for i in range(3):
+            kwargs = {
+                'project_user': ProjectUser.objects.get(user__username=f'user{i+1}',
+                                                        project__name='project1'),
+                'requester': self.pi1,
+                'request_time': utc_now_offset_aware(),
+                'status': status_choices[i],
+            }
+            if i == 2:
+                kwargs['completion_time'] = utc_now_offset_aware()
+            request = ProjectUserRemovalRequest.objects.create(**kwargs)
+            setattr(self, f'{status_choices[i].name.lower()}_request_{i+1}', request)
+
+    def test_update_request(self):
+        """Test that the update_request function works properly."""
+        runner = ProjectRemovalRequestUpdateRunner(self.pending_request_1)
+
+        runner.update_request('Pending')
+        self.pending_request_1.refresh_from_db()
+        self.assertEqual(self.pending_request_1.status.name, 'Pending')
+
+        runner.update_request('Processing')
+        self.pending_request_1.refresh_from_db()
+        self.assertEqual(self.pending_request_1.status.name, 'Processing')
+
+        runner.update_request('Complete')
+        self.pending_request_1.refresh_from_db()
+        self.assertEqual(self.pending_request_1.status.name, 'Complete')
+
+    def test_complete_request_time_given(self):
+        """Test that the complete_request function works properly."""
+
+        runner = ProjectRemovalRequestUpdateRunner(self.processing_request_2)
+        runner.update_request('Complete')
+
+        completion_time = utc_now_offset_aware()
+        runner.complete_request(completion_time)
+
+        self.processing_request_2.refresh_from_db()
+        self.assertEqual(self.processing_request_2.completion_time, completion_time)
+
+        proj_user = self.project1.projectuser_set.get(user=self.user2)
+        self.assertEqual(proj_user.status.name, 'Removed')
+
+        allocation_obj = Allocation.objects.get(project=self.project1)
+        allocation_user = \
+            allocation_obj.allocationuser_set.get(user=self.user2)
+        allocation_user_status_choice_removed = \
+            AllocationUserStatusChoice.objects.get(name='Removed')
+
+        allocation_user.refresh_from_db()
+        self.assertEquals(allocation_user.status,
+                          allocation_user_status_choice_removed)
+
+        cluster_account_status = \
+            allocation_user.allocationuserattribute_set.get(
+                allocation_attribute_type=AllocationAttributeType.objects.get(
+                    name='Cluster Account Status'))
+
+        self.assertEquals(cluster_account_status.value, 'Denied')
+
+    def test_emails_sent(self):
+        """Test that send_emails function works properly."""
+
+        runner = ProjectRemovalRequestUpdateRunner(self.processing_request_2)
+        runner.update_request('Complete')
+        completion_time = utc_now_offset_aware()
+        runner.complete_request(completion_time)
+        runner.send_emails()
+
+        email_to_list = [proj_user.user.email for proj_user in
+                         self.project1.projectuser_set.filter(
+                             role__name__in=['Manager', 'Principal Investigator'],
+                             status__name='Active',
+                             enable_notifications=True)] + [self.user2.email]
+        self.assertEqual(len(mail.outbox), len(email_to_list))
+
+        email_body = f'The request to remove {self.user2.first_name} ' \
+                     f'{self.user2.last_name} of Project ' \
+                     f'{self.project1.name} initiated by {self.pi1.first_name}' \
+                     f' {self.pi1.last_name} has been completed. ' \
+                     f'{self.user2.first_name} {self.user2.last_name}' \
+                     f' is no longer a user of Project {self.project1.name}.'
+
+        for email in mail.outbox:
+            self.assertIn(email_body, email.body)
+            self.assertIn(email.to[0], email_to_list)
             self.assertEqual(settings.EMAIL_SENDER, email.from_email)
