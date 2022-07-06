@@ -127,6 +127,4 @@ class ComputingAllowance(object):
         if flag_enabled('BRC_ONLY'):
             allowance_names.append(BRCAllowances.ICA)
             allowance_names.append(BRCAllowances.RECHARGE)
-        elif flag_enabled('LRC_ONLY'):
-            allowance_names.append(LRCAllowances.RECHARGE)
         return self._name in allowance_names
