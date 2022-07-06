@@ -131,10 +131,6 @@ Allocation Detail
           {% endif %}
           {% if allocation.get_resources_as_string == "Geode-Projects" %}
             <tr>
-              <th scope="row" class="text-nowrap">Storage Space:</th>
-              <td>{{ allocation.storage_space_with_unit }}</td>
-            </tr>
-            <tr>
               <th scope="row" class="text-nowrap">Primary Contact:</th>
               <td>{{ allocation.primary_contact }}</td>
             </tr>
@@ -154,15 +150,6 @@ Allocation Detail
               <th scope="row" class="text-nowrap">Fiscal Officer Username:</th>
               <td>{{ allocation.fiscal_officer }}</td>
             </tr>
-            <tr>
-              <th scope="row" class="text-nowrap">Account Number:</th>
-              <td>{{ allocation.account_number }}</td>
-            </tr>
-            <tr>
-              <th scope="row" class="text-nowrap">Sub-Account Number:</th>
-              <td>{{ allocation.sub_account_number }}</td>
-            </tr>
-            <tr>
               <th scope="row" class="text-nowrap">IT Pro(s)'s Username:</th>
               <td>{{ allocation.it_pros }}</td>
             </tr>
