@@ -146,8 +146,7 @@ urlpatterns += [
          renewal_request_views.AllocationRenewalRequestUnderProjectView.as_view(),
          name='project-renew'),
     path('renew-pi-allocation-landing/',
-         TemplateView.as_view(
-             template_name='project/project_renewal/request_landing.html'),
+         renewal_request_views.AllocationRenewalLandingView.as_view(),
          name='renew-pi-allocation-landing'),
     path('renew-pi-allocation/',
          renewal_request_views.AllocationRenewalRequestView.as_view(

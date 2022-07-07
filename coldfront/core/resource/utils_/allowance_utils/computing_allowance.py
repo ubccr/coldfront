@@ -93,6 +93,20 @@ class ComputingAllowance(object):
             allowance_names.append(LRCAllowances.RECHARGE)
         return self._name in allowance_names
 
+    def is_renewable(self):
+        """Return whether the allowance may theoretically be renewed."""
+        return self.is_periodic()
+
+    def is_renewal_supported(self):
+        """Return whether there is support for renewing the
+        allowance."""
+        allowance_names = []
+        if flag_enabled('BRC_ONLY'):
+            allowance_names.append(BRCAllowances.FCA)
+        elif flag_enabled('LRC_ONLY'):
+            allowance_names.append(LRCAllowances.PCA)
+        return self._name in allowance_names
+
     def is_yearly(self):
         """Return whether the allowance conforms to the allowance
         year."""
