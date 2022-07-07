@@ -252,7 +252,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
     <div class="card">
       <div class="card-header">
         <i class="far fa-user-circle"></i>
-        Link Your Personal Account
+        Request Linking Email for OTP Management
         <div class="float-right">
           {% if not has_cluster_access or linking_request and linking_request.status.name == 'Pending' %}
             <a class="btn btn-secondary float-right disabled" id="request-linking-email-button">
