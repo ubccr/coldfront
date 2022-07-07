@@ -62,9 +62,13 @@ main {
   color: #ffffff;
 }
 
+.banner-name {
+    padding-top: 25px;
+}
+
 .banner-logo {
     margin-top: 5px;
-    max-height: 58px !important;
+    max-height: 75px !important;
     margin-bottom: 5px;
 }
 
