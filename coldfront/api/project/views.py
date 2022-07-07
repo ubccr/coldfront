@@ -82,8 +82,16 @@ class ProjectUserRemovalRequestViewSet(mixins.ListModelMixin,
                 ProjectRemovalRequestUpdateRunner(instance)
             runner.update_request(status)
             if status == 'Complete':
+                runner.update_request(status)
                 runner.complete_request(completion_time=completion_time)
                 runner.send_emails()
+            elif status in ['Pending', 'Processing']:
+                runner.update_request(status)
+            else:
+                message = f'Failed to udapte the status of the removal '\
+                          f'request {kwargs["pk"]}. An invalid status of '\
+                          f'{status} was passed.'
+                raise ValueError(message)
 
             return Response(serializer.data,
                             status=rest_framework.status.HTTP_200_OK)
