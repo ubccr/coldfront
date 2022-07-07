@@ -2204,6 +2204,7 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         allocation_attributes_to_change = self.get_allocation_attributes_to_change(
             allocation_obj)
 
+        # TODO: this logic is a mess. Needs to be cleaned up
         if allocation_attributes_to_change: 
             formset = formset_factory(self.formset_class, max_num=len(
                 allocation_attributes_to_change))
@@ -2213,7 +2214,8 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             if form.is_valid() and formset.is_valid():
                 form_data = form.cleaned_data
 
-                if form_data.get('end_date_extension') != 0: change_requested = True
+                if form_data.get('end_date_extension') != 0:
+                    change_requested = True
 
                 for entry in formset:
                     formset_data = entry.cleaned_data
@@ -2307,30 +2309,29 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     messages.success(
                         request, 'Allocation change request successfully submitted.')
 
-                pi_name = '{} {} ({})'.format(allocation_obj.project.pi.first_name,
-                                            allocation_obj.project.pi.last_name, allocation_obj.project.pi.username)
-                resource_name = allocation_obj.get_parent_resource
-                domain_url = get_domain_url(self.request)
-                url = '{}{}'.format(domain_url, reverse('allocation-change-list'))
+                    pi_name = '{} {} ({})'.format(allocation_obj.project.pi.first_name,
+                                                allocation_obj.project.pi.last_name, allocation_obj.project.pi.username)
+                    resource_name = allocation_obj.get_parent_resource
+                    domain_url = get_domain_url(self.request)
+                    url = '{}{}'.format(domain_url, reverse('allocation-change-list'))
 
-                if EMAIL_ENABLED:
-                    template_context = {
-                        'pi': pi_name,
-                        'resource': resource_name,
-                        'url': url
-                    }
+                    if EMAIL_ENABLED:
+                        template_context = {
+                            'pi': pi_name,
+                            'resource': resource_name,
+                            'url': url
+                        }
 
-                    send_email_template(
-                        'New Allocation Change Request: {} - {}'.format(
-                            pi_name, resource_name),
-                        'email/new_allocation_change_request.txt',
-                        template_context,
-                        EMAIL_SENDER,
-                        [EMAIL_TICKET_SYSTEM_ADDRESS, ]
-                    )
+                        send_email_template(
+                            'New Allocation Change Request: {} - {}'.format(
+                                pi_name, resource_name),
+                            'email/new_allocation_change_request.txt',
+                            template_context,
+                            EMAIL_SENDER,
+                            [EMAIL_TICKET_SYSTEM_ADDRESS, ]
+                        )
 
                     return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
-
                 else:
                     messages.error(request, 'You must request a change.')
                     return HttpResponseRedirect(reverse('allocation-change', kwargs={'pk': pk}))
