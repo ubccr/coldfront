@@ -1,15 +1,8 @@
 from django import forms
-from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator
-from django.db.models import Q
 
-from coldfront.core.allocation.models import SecureDirRequest
 from coldfront.core.allocation.utils_.secure_dir_utils import \
-    get_secure_dir_allocations, get_all_secure_dir_paths
-from coldfront.core.project.forms_.new_project_forms.request_forms import \
-    PIChoiceField
-from coldfront.core.project.models import ProjectUserRoleChoice, ProjectUser, \
-    Project
+    get_all_secure_dir_paths
 
 
 class SecureDirManageUsersForm(forms.Form):
@@ -90,78 +83,6 @@ class SecureDirRDMConsultationForm(forms.Form):
         kwargs.pop('breadcrumb_project', None)
         super().__init__(*args, **kwargs)
 
-#
-# class SecureDirExistingPIForm(forms.Form):
-#     PI = PIChoiceField(
-#         label='Principal Investigator',
-#         queryset=User.objects.none(),
-#         required=True)
-#
-#     def __init__(self, *args, **kwargs):
-#         kwargs.pop('breadcrumb_rdm_consultation', None)
-#         super().__init__(*args, **kwargs)
-#
-#         queryset = User.objects.all()
-#         pi_role = ProjectUserRoleChoice.objects.get(
-#             name='Principal Investigator')
-#
-#         # Only include active PIs that are apart of active projects.
-#         eligible_project = Q(project__name__startswith='fc_') | \
-#                            Q(project__name__startswith='ic_') | \
-#                            Q(project__name__startswith='co_')
-#         pi_set = \
-#             set(ProjectUser.objects.filter(eligible_project,
-#                                            role=pi_role,
-#                                            project__status__name='Active',
-#                                            status__name='Active'
-#                                            ).values_list('user__pk', flat=True))
-#         queryset = queryset.filter(pk__in=pi_set)
-#         self.fields['PI'].queryset = queryset
-#
-#     def clean(self):
-#         cleaned_data = super().clean()
-#         pi = self.cleaned_data['PI']
-#         if pi is not None and pi not in self.fields['PI'].queryset:
-#             raise forms.ValidationError(f'Invalid selection {pi.username}.')
-#         return cleaned_data
-#
-#
-# class SecureDirExistingProjectForm(forms.Form):
-#     project = forms.ModelChoiceField(
-#         label='Project',
-#         queryset=Project.objects.none(),
-#         required=True)
-#
-#     def __init__(self, *args, **kwargs):
-#         kwargs.pop('breadcrumb_rdm_consultation', None)
-#         kwargs.pop('breadcrumb_project', None)
-#         pi = kwargs.pop('pi', None)
-#         super().__init__(*args, **kwargs)
-#
-#         fc_co_ic_projects_cond = Q(name__startswith='fc_') | \
-#                                  Q(name__startswith='co_') | \
-#                                  Q(name__startswith='ic_')
-#
-#         all_sec_dirs = get_secure_dir_allocations()
-#         projects_with_secure_dirs = \
-#             set(all_sec_dirs.values_list('project__pk', flat=True))
-#
-#         projects_with_secure_dirs.update(
-#             set(SecureDirRequest.objects.exclude(status__name='Denied').
-#                 values_list('project__pk', flat=True)))
-#
-#         pis_projects = \
-#             ProjectUser.objects.filter(user=pi,
-#                                        role__name='Principal Investigator').\
-#                 values_list('project__pk', flat=True)
-#
-#         self.fields['project'].queryset = \
-#             Project.objects.\
-#                 filter(fc_co_ic_projects_cond,
-#                        status__name='Active',
-#                        pk__in=pis_projects).\
-#                 exclude(pk__in=projects_with_secure_dirs)
-#
 
 class SecureDirDirectoryNamesForm(forms.Form):
 
