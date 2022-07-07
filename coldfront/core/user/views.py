@@ -35,7 +35,7 @@ from coldfront.core.user.forms import UserProfileUpdateForm
 from coldfront.core.user.forms import UserRegistrationForm
 from coldfront.core.user.forms import UserSearchForm, UserSearchListForm
 from coldfront.core.user.models import EmailAddress
-from coldfront.core.user.utils import CombinedUserSearch
+from coldfront.core.user.utils import CombinedUserSearch, is_lbl_employee
 from coldfront.core.user.utils import ExpiringTokenGenerator
 from coldfront.core.user.utils import send_account_activation_email
 from coldfront.core.user.utils import send_account_already_active_email
@@ -117,6 +117,8 @@ class UserProfile(TemplateView):
                 if billing_activity:
                     billing_id = billing_activity.full_id()
             context['monthly_user_account_fee_billing_id'] = billing_id
+
+        context['is_lbl_employee'] = is_lbl_employee(viewed_user)
 
         return context
 

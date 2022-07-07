@@ -248,85 +248,81 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
   </div>
 
   <br>
-
-  <div class="card">
-    <div class="card-header">
-      <i class="far fa-user-circle"></i>
-      Link Your Personal Account
-      <div class="float-right">
-        {% if not has_cluster_access or linking_request and linking_request.status.name == 'Pending' %}
-          <a class="btn btn-secondary float-right disabled" id="request-linking-email-button">
-            <i class="fas fa-paper-plane"></i>
-            Request Linking Email
-          </a>
-        {% else %}
-          <form action="{% url 'identity-linking-request' %}" method="post">
-            {% csrf_token %}
-            <button class="btn btn-success float-right" type="submit">
+  {% if not is_lbl_employee %}
+    <div class="card">
+      <div class="card-header">
+        <i class="far fa-user-circle"></i>
+        Request Linking Email for OTP Management
+        <div class="float-right">
+          {% if not has_cluster_access or linking_request and linking_request.status.name == 'Pending' %}
+            <a class="btn btn-secondary float-right disabled" id="request-linking-email-button">
               <i class="fas fa-paper-plane"></i>
               Request Linking Email
-            </button>
-          </form>
+            </a>
+          {% else %}
+            <form action="{% url 'identity-linking-request' %}" method="post">
+              {% csrf_token %}
+              <button class="btn btn-success float-right" type="submit">
+                <i class="fas fa-paper-plane"></i>
+                Request Linking Email
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+      <div class="card-body">
+        <p>
+          If you have an active cluster account, you may request a new invitation
+          to link an external identity (e.g., your personal email account or
+          institutional account) to your cluster account, allowing you to manage
+          one-time password (OTP) tokens. Once requested, you will receive an
+          email containing instructions on how to link your accounts.
+        </p>
+        <p>
+          Emails are sent periodically. If you have not received the email after
+          an hour, please submit a support ticket by emailing
+          <a href="mailto:{{ help_email }}">{{ help_email }}</a>.
+        </p>
+        {% if linking_request %}
+          <p>
+            Below is your latest request. If it is pending, you cannot make a new
+            one until it has been processed.
+          </p>
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th scope="col">Time Requested</th>
+                  <th scope="col">Time Sent</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td id="time-requested-timestamp">
+                    <span class="badge badge-success">
+                      {{ linking_request.request_time }}
+                    </span>
+                  </td>
+                  <td id="time-sent-timestamp">
+                    {% with status=linking_request.status.name %}
+                      {% if status == 'Pending' %}
+                        <span class="badge badge-warning">
+                          {{ status }}
+                        </span>
+                      {% else %}
+                        <span class="badge badge-success">
+                          {{ linking_request.completion_time }}
+                        </span>
+                      {% endif %}
+                    {% endwith %}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         {% endif %}
       </div>
     </div>
-    <div class="card-body">
-      <p>
-        If you have an active cluster account, you may request a new invitation
-        to link an external identity (e.g., your personal email account or
-        CalNet account) to it, allowing you to manage one-time password (OTP)
-        tokens. Once requested, you will receive an email containing
-        instructions on how to link your accounts.
-      </p>
-      <p>
-        If you have an LBL account, you do not need to link an external
-        identity. Instead, you can manage OTP tokens by logging into LBL
-        <a href="https://identity.lbl.gov/otptokens/hpccluster">here</a>.
-      </p>
-      <p>
-        Emails are sent periodically. If you have not received the email after
-        an hour, please submit a support ticket by emailing
-        <a href="mailto:{{ help_email }}">{{ help_email }}</a>.
-      </p>
-      {% if linking_request %}
-        <p>
-          Below is your latest request. If it is pending, you cannot make a new
-          one until it has been processed.
-        </p>
-        <div class="table-responsive">
-          <table class="table table-sm">
-            <thead>
-              <tr>
-                <th scope="col">Time Requested</th>
-                <th scope="col">Time Sent</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td id="time-requested-timestamp">
-                  <span class="badge badge-success">
-                    {{ linking_request.request_time }}
-                  </span>
-                </td>
-                <td id="time-sent-timestamp">
-                  {% with status=linking_request.status.name %}
-                    {% if status == 'Pending' %}
-                      <span class="badge badge-warning">
-                        {{ status }}
-                      </span>
-                    {% else %}
-                      <span class="badge badge-success">
-                        {{ linking_request.completion_time }}
-                      </span>
-                    {% endif %}
-                  {% endwith %}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      {% endif %}
-    </div>
-  </div>
+  {% endif %}
 
 {% endblock %}
