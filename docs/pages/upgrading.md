@@ -21,7 +21,8 @@ $ coldfront collectstatic
 ## v1.1.2
 
 This release includes a new notes field on projects which will require database
-migrations. Before upgrading, be sure to backup your database and any custom
+migrations. See [PR #403](https://github.com/ubccr/coldfront/pull/403) for
+details. Before upgrading, be sure to backup your database and any custom
 changes. 
 
 To upgrade via pip, following these steps:
