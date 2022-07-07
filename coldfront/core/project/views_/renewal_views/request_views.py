@@ -31,7 +31,8 @@ from coldfront.core.user.utils import access_agreement_signed
 from coldfront.core.utils.common import session_wizard_all_form_data
 from coldfront.core.utils.common import utc_now_offset_aware
 
-from django.conf import settings
+from decimal import Decimal
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.mixins import UserPassesTestMixin
@@ -122,6 +123,9 @@ class AllocationRenewalMixin(object):
                 'One of the following flags must be enabled: BRC_ONLY, '
                 'LRC_ONLY.')
         self.interface = ComputingAllowanceInterface()
+        self.num_service_units = Decimal(
+            self.interface.service_units_from_name(
+                self.computing_allowance.name))
 
     @staticmethod
     def create_allocation_renewal_request(requester, pi, computing_allowance,
@@ -448,7 +452,7 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
                 dictionary.update(data)
                 # TODO: Set this dynamically when supporting other types.
                 dictionary['allocation_amount'] = prorated_allocation_amount(
-                    settings.FCA_DEFAULT_ALLOCATION, utc_now_offset_aware(),
+                    self.num_service_units, utc_now_offset_aware(),
                     data['allocation_period'])
 
         pi_selection_form_step = self.step_numbers_by_form_name['pi_selection']
@@ -645,7 +649,7 @@ class AllocationRenewalRequestUnderProjectView(LoginRequiredMixin,
                 dictionary.update(data)
                 # TODO: Set this dynamically when supporting other types.
                 dictionary['allocation_amount'] = prorated_allocation_amount(
-                    settings.FCA_DEFAULT_ALLOCATION, utc_now_offset_aware(),
+                    self.num_service_units, utc_now_offset_aware(),
                     data['allocation_period'])
 
         pi_selection_form_step = self.step_numbers_by_form_name['pi_selection']

@@ -185,8 +185,7 @@ def prorated_allocation_amount(amount, dt, allocation_period):
     return zero.
 
     Parameters:
-        - amount (Decimal): a number of service units (e.g.,
-                            settings.FCA_DEFAULT_ALLOCATION).
+        - amount (Decimal): a base number of service units.
         - dt (datetime): a datetime object whose month is used in the
                          calculation, based on its position relative to
                          the start month of the given AllocationPeriod.
