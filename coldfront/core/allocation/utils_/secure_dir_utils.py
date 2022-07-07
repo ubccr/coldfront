@@ -2,6 +2,7 @@ import os
 import logging
 
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 
 from coldfront.config import settings
 from coldfront.core.allocation.models import Allocation, AllocationStatusChoice, \
@@ -10,7 +11,7 @@ from coldfront.core.allocation.models import Allocation, AllocationStatusChoice,
     SecureDirRemoveUserRequestStatusChoice, SecureDirRequest, \
     SecureDirRequestStatusChoice, AllocationUser, AllocationUserStatusChoice
 from coldfront.core.project.models import Project, ProjectUser
-from coldfront.core.resource.models import Resource
+from coldfront.core.resource.models import Resource, ResourceAttribute
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.mail import send_email_template
 
@@ -202,6 +203,11 @@ class SecureDirRequestApprovalRunner(object):
 
     def __init__(self, request_obj):
         self.request_obj = request_obj
+        self.success_messages = []
+        self.error_messages = []
+
+    def get_messages(self):
+        return self.success_messages, self.error_messages
 
     def run(self):
         self.approve_request()
@@ -209,6 +215,10 @@ class SecureDirRequestApprovalRunner(object):
         if groups_alloc and scratch_alloc:
             # self.create_pi_alloc_users(groups_alloc, scratch_alloc)
             self.send_email(groups_alloc, scratch_alloc)
+            message = f'The secure directory for ' \
+                      f'{self.request_obj.project.name} ' \
+                      f'was successfully created.'
+            self.success_messages.append(message)
 
     def approve_request(self):
         """Set the status of the request to 'Approved - Complete'."""
@@ -230,6 +240,7 @@ class SecureDirRequestApprovalRunner(object):
         except Exception as e:
             message = f'Failed to create groups secure directory for ' \
                       f'{self.request_obj.project.name}.'
+            self.error_messages.append(message)
             logger.error(message)
             logger.exception(e)
 
@@ -241,6 +252,7 @@ class SecureDirRequestApprovalRunner(object):
         except Exception as e:
             message = f'Failed to create scratch secure directory for ' \
                       f'{self.request_obj.project.name}.'
+            self.error_messages.append(message)
             logger.error(message)
             logger.exception(e)
 
@@ -319,3 +331,55 @@ def get_secure_dir_allocations():
         status__name='Active')
 
     return queryset
+
+
+def get_default_secure_dir_paths():
+    """Returns the default Groups and Scratch secure directory paths."""
+
+    groups_path = \
+        ResourceAttribute.objects.get(
+            resource_attribute_type__name='path',
+            resource__name='Groups P2/P3 Directory').value
+    scratch_path = \
+        ResourceAttribute.objects.get(
+            resource_attribute_type__name='path',
+            resource__name='Scratch P2/P3 Directory').value
+
+    return groups_path, scratch_path
+
+
+def pi_eligible_to_request_secure_dir(user):
+    """Returns True if the user is eligible to request a secure directory."""
+
+    projects_with_existing_requests = \
+        set(SecureDirRequest.objects.exclude(
+            status__name='Denied').values_list('project__pk', flat=True))
+
+    eligible_project = Q(project__name__startswith='fc_') | \
+                       Q(project__name__startswith='ic_') | \
+                       Q(project__name__startswith='co_') & \
+                       Q(project__status__name='Active')
+
+    eligible_pi = ProjectUser.objects.filter(
+        eligible_project,
+        user=user,
+        role__name='Principal Investigator',
+        status__name='Active',
+    ).exclude(project__pk__in=projects_with_existing_requests)
+
+    return eligible_pi.exists()
+
+
+def get_all_secure_dir_paths():
+    """Returns a set of all secure directory paths."""
+
+    group_resource = Resource.objects.get(name='Groups P2/P3 Directory')
+    scratch_resource = Resource.objects.get(name='Scratch P2/P3 Directory')
+
+    paths = \
+        set(AllocationAttribute.objects.filter(
+            allocation_attribute_type__name='Cluster Directory Access',
+            allocation__resources__in=[scratch_resource, group_resource]).
+            values_list('value', flat=True))
+
+    return paths

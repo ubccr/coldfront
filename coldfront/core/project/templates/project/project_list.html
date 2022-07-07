@@ -2,7 +2,6 @@
 {% load common_tags %}
 {% load crispy_forms_tags %}
 {% load static %}
-{% load feature_flags %}
 
 {% block title %}
   Project List
@@ -25,13 +24,6 @@
         <a class="btn btn-primary" href="{% url 'renew-pi-allocation-landing' %}" role="button">
           <i class="fas fa-plus" aria-hidden="true"></i>
           Renew a PI's Allowance
-        </a>
-      {% endif %}
-      {% flag_enabled 'SECURE_DIRS_REQUESTABLE' as secure_dirs_requestable %}
-      {% if secure_dirs_requestable and can_request_sec_dir %}
-        <a class="btn btn-primary" href="{% url 'secure-dir-request-landing' %}" role="button">
-          <i class="fas fa-lock" aria-hidden="true"></i>
-          Request a Secure Directory
         </a>
       {% endif %}
     {% else %}

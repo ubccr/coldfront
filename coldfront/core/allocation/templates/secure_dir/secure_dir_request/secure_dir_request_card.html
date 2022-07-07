@@ -7,7 +7,7 @@
   </div>
   <div class="card-body">
     <p class="card-text text-justify">
-      <strong>Request #: </strong>
+      <strong>Request ID: </strong>
       {{ secure_dir_request.pk }}
     </p>
     <p class="card-text text-justify">
@@ -33,8 +33,8 @@
       {% endwith %}
     </p>
     <p class="card-text text-justify">
-      <strong>Title: </strong>
-      {{ secure_dir_request.project.title }}
+      <strong>Name: </strong>
+      {{ secure_dir_request.project.name }}
     </p>
     <p class="card-text text-justify">
       <strong>Description: </strong>
@@ -49,13 +49,6 @@
       {% else %}
         Requester has not consulted with RDM.
       {% endif %}
-    </p>
-
-    <p class="card-text text-justify">
-      <strong>PI: </strong>
-      {% with pi=secure_dir_request.pi %}
-        {{ pi.first_name }} {{ pi.last_name }} ({{ pi.email }})
-      {% endwith %}
     </p>
 
     <p class="card-text text-justify">

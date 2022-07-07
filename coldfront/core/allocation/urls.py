@@ -95,13 +95,10 @@ with flagged_paths('SECURE_DIRS_REQUESTABLE') as path:
         path('<int:pk>/secure-dir-<str:action>-user-deny-request',
              secure_dir_views.SecureDirManageUsersDenyRequestView.as_view(),
              name='secure-dir-manage-user-deny-request'),
-        path('secure-dir-request-landing/',
-             TemplateView.as_view(
-                 template_name=
-                 'secure_dir/secure_dir_request/secure_dir_request_landing.html'
-             ),
+        path('secure-dir-request-landing/<str:project_name>',
+             secure_dir_views.SecureDirRequestLandingView.as_view(),
              name='secure-dir-request-landing'),
-        path('secure-dir-request/',
+        path('secure-dir-request/<str:project_name>',
              secure_dir_views.SecureDirRequestWizard.as_view(
                  condition_dict=secure_dir_views.SecureDirRequestWizard.condition_dict(),
              ),
@@ -112,7 +109,7 @@ with flagged_paths('SECURE_DIRS_REQUESTABLE') as path:
         path('secure-dir-completed-requests/',
              secure_dir_views.SecureDirRequestListView.as_view(completed=True),
              name='secure-dir-completed-request-list'),
-        path('secure-dir-request/<int:pk>',
+        path('secure-dir-request-detail/<int:pk>',
              secure_dir_views.SecureDirRequestDetailView.as_view(),
              name='secure-dir-request-detail'),
         path('secure-dir-request/<int:pk>/rdm_consultation',

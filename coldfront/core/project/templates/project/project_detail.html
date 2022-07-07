@@ -2,6 +2,7 @@
 {% load crispy_forms_tags %}
 {% load humanize %}
 {% load static %}
+{% load feature_flags %}
 
 
 {% block title %}
@@ -45,6 +46,13 @@ Project Detail
             {% if is_allowed_to_archive_project %}
                 <a class="btn btn-primary" href="{% url 'project-archive' project.pk %}" role="button"><i class="fas fa-file-archive" aria-hidden="true"></i> Archive Project</a>
             {% endif %}
+          {% endif %}
+          {% flag_enabled 'SECURE_DIRS_REQUESTABLE' as secure_dirs_requestable %}
+          {% if secure_dirs_requestable and can_request_sec_dir %}
+            <a class="btn btn-primary" href="{% url 'secure-dir-request-landing' project.name %}" role="button">
+              <i class="fas fa-lock" aria-hidden="true"></i>
+              Request a Secure Directory
+            </a>
           {% endif %}
       </div>
     </div>

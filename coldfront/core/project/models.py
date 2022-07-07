@@ -194,6 +194,18 @@ We do not have information about your research. Please provide a detailed descri
                 pi_condition | manager_condition
             ).distinct().values_list('user__email', flat=True))
 
+    def pis_emails(self):
+        """Returns a list of emails belonging to active PIs that have
+        enable_notifications=True."""
+        pi_condition = Q(
+            role__name='Principal Investigator', status__name='Active',
+            enable_notifications=True)
+
+        return list(
+            self.projectuser_set.filter(
+                pi_condition
+            ).distinct().values_list('user__email', flat=True))
+
     def __str__(self):
         return self.name
 

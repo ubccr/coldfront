@@ -47,8 +47,8 @@ Secure Directory Request Detail
                 {% if status == 'Under Review' %}
                   <p>
                     <strong>Status:</strong>
-                    This request is currently under review. The requester must first consult with
-                    Research Data Management consultants before proceeding.
+                    This request is currently under review. Administrators must
+                    confirm that the requester has consulted with RDM and signed the MOU.
                   </p>
                 {% elif status == 'Approved - Processing' %}
                   <p>
@@ -126,99 +126,38 @@ Secure Directory Request Detail
             </tr>
           </thead>
           <tbody>
-            {% with rdm_consultation=secure_dir_request.state.rdm_consultation mou=secure_dir_request.state.mou setup=secure_dir_request.state.setup other=secure_dir_request.state.other paths=secure_dir_request.state.paths %}
-              <tr>
-                <td>Confirm that the requester has consulted with RDM.</td>
-                <td>
-                  {% if rdm_consultation.status == 'Pending' %}
+          {% for item in checklist %}
+            <tr>
+              <td>{{ item.0 }}</td>
+              <td>
+                {% with status=item.1 latest_update_timestamp=item.2 %}
+                  {% if status == 'Pending' %}
                     <span class="badge badge-warning">
-                      {{ rdm_consultation.status }}
-                    </span>
-                  {% elif rdm_consultation.status == 'Completed' %}
+                  {% elif status in 'Approved,Complete' %}
                     <span class="badge badge-success">
-                      {{ rdm_consultation.status }} {{ rdm_consultation.timestamp|iso8601_to_datetime }}
-                    </span>
                   {% else %}
                     <span class="badge badge-danger">
-                      {{ rdm_consultation.status }} {{ rdm_consultation.timestamp|iso8601_to_datetime }}
-                    </span>
                   {% endif %}
-                </td>
-                <td>
-                  {% if rdm_consultation.status not in 'Completed,Denied' and not other.timestamp %}
-                    <a href="{% url 'secure-dir-request-review-rdm-consultation' secure_dir_request.pk %}" class="btn btn-primary">
-                      Manage
-                    </a>
-                  {% else %}
-                    <button class="btn btn-primary" disabled="true">
-                      Manage
-                    </button>
-                  {% endif %}
-
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  Confirm that the Memorandum of Understanding has been
-                  signed.
-                </td>
-                <td>
-                  {% if rdm_consultation.status == 'Denied'%}
-                    <span class="badge badge-danger">
-                      N/A
-                    </span>
-                  {% elif mou.status == 'Pending' %}
-                    <span class="badge badge-warning">
-                      {{ mou.status }}
-                    </span>
-                  {% else %}
-                    <span class="badge badge-success">
-                      {{ mou.status }} {{ mou.timestamp|iso8601_to_datetime }}
-                    </span>
-                  {% endif %}
-                </td>
-                <td>
-                  {% if rdm_consultation.status == 'Completed' and mou.status not in 'Completed,Denied' %}
-                    <a href="{% url 'secure-dir-request-review-mou' secure_dir_request.pk %}" class="btn btn-primary">
-                      Manage
-                    </a>
-                  {% else %}
-                    <button class="btn btn-primary" disabled="true">
-                      Manage
-                    </button>
-                  {% endif %}
-                </td>
-              </tr>
-              <tr>
-                <td>Perform secure directory setup on the cluster.</td>
-                <td>
-                  {% if setup_status == 'N/A' %}
-                    <span class="badge badge-danger">
-                      N/A
-                    </span>
-                  {% elif setup_status == 'Pending' %}
-                    <span class="badge badge-warning">
-                      Pending
-                    </span>
-                  {% else %}
-                    <span class="badge badge-success">
-                      {{ setup.status }} {{ setup.timestamp|iso8601_to_datetime }}
-                    </span>
-                  {% endif %}
-                </td>
-                <td>
-                  {% if rdm_consultation.status == 'Completed' and mou.status == 'Completed' and setup.status not in 'Completed,Denied' %}
-                    <a href="{% url 'secure-dir-request-review-setup' secure_dir_request.pk %}" class="btn btn-primary">
-                      Manage
-                    </a>
-                  {% else %}
-                    <button class="btn btn-primary" disabled="true">
-                      Manage
-                    </button>
-                  {% endif %}
-                </td>
-              </tr>
-            {% endwith %}
+                {{ status }}
+                {% if latest_update_timestamp %}
+                  {{ latest_update_timestamp|iso8601_to_datetime }}
+                {% endif %}
+                </span>
+                {% endwith %}
+              </td>
+              <td>
+                {% if item.3 %}
+                  <a href="{{ item.4 }}" class="btn btn-primary">
+                    Manage
+                  </a>
+                {% else %}
+                  <button class="btn btn-primary" disabled="true">
+                    Manage
+                  </button>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
           </tbody>
         </table>
       </div>

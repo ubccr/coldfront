@@ -1,6 +1,6 @@
-Dear {{ pi_str }},
+Dear PI of {{ project_name }},
 
-There is a new secure directory request for project {{ project_name }} from requester {{ requester_str }}.
+There is a new secure directory request for project {{ project_name }} requested by {{ requester_str }}.
 
 You may view the details of the request here: {{ review_url }}.
 

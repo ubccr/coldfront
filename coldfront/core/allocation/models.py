@@ -17,6 +17,7 @@ from django.utils.module_loading import import_string
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
+from coldfront.core.billing.models import BillingActivity
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.resource.models import Resource
@@ -712,7 +713,6 @@ class SecureDirRequest(TimeStampedModel):
     directory_name = models.TextField()
     data_description = models.TextField()
     rdm_consultation = models.TextField(null=True)
-    pi = models.ForeignKey(User, on_delete=models.CASCADE, related_name='requested_pi')
     project = models.ForeignKey(Project, null=True, on_delete=models.CASCADE)
     status = models.ForeignKey(SecureDirRequestStatusChoice, on_delete=models.CASCADE)
 

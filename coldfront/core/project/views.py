@@ -24,6 +24,8 @@ from coldfront.core.allocation.signals import allocation_activate_user
 from coldfront.core.allocation.utils import get_allocation_user_cluster_access_status
 from coldfront.core.allocation.utils import get_project_compute_allocation
 # from coldfront.core.grant.models import Grant
+from coldfront.core.allocation.utils_.secure_dir_utils import \
+    pi_eligible_to_request_secure_dir
 from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectAddUsersToAllocationForm,
                                           ProjectReviewEmailForm,
@@ -56,7 +58,7 @@ from coldfront.core.project.utils_.renewal_utils import is_any_project_pi_renewa
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.models import UserProfile
 from coldfront.core.user.utils import CombinedUserSearch, is_lbl_employee, \
-    needs_host
+    needs_host, access_agreement_signed
 from coldfront.core.utils.common import (get_domain_url, import_from_settings)
 from coldfront.core.utils.mail import send_email, send_email_template
 
@@ -252,6 +254,14 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             can_project_purchase_service_units(self.object) and
             context.get('is_allowed_to_update_project', False))
 
+        # Only active PIs of active FCAs, ICAs and Condos can request
+        # secure directories
+        context['can_request_sec_dir'] = \
+            pi_eligible_to_request_secure_dir(self.request.user)
+
+        context['user_agreement_signed'] = \
+            access_agreement_signed(self.request.user)
+
         return context
 
 
@@ -419,22 +429,8 @@ class ProjectListView(LoginRequiredMixin, ListView):
                 user=self.request.user, role__name__in=role_names,
                 status=status)
 
-        # Only active PIs of active FCAs, ICAs and Condos can request
-        # secure directories
-        eligible_project = Q(project__name__startswith='fc_') | \
-                           Q(project__name__startswith='ic_') | \
-                           Q(project__name__startswith='co_') & \
-                           Q(project__status__name='Active')
-
-        context['can_request_sec_dir'] = ProjectUser.objects.filter(
-            eligible_project,
-            user=self.request.user,
-            role__name='Principal Investigator',
-            status__name='Active',
-        ).exists()
-
         context['user_agreement_signed'] = \
-            self.request.user.userprofile.access_agreement_signed_date is not None
+            access_agreement_signed(self.request.user)
 
         return context
 

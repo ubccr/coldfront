@@ -20,6 +20,12 @@
 
   <h1>Secure Directory: Data Description</h1><hr>
 
+  {% if breadcrumb_project %}
+    <ol class="breadcrumb">
+        <li>{{ breadcrumb_project }}</li>
+    </ol>
+  {% endif %}
+
   <p>Please respond to the following questions to provide us with more information about your data.</p>
 
   <form action="" method="post">

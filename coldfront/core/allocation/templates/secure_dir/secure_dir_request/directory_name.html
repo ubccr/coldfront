@@ -19,24 +19,20 @@
   <h1>Secure Directory: Directory Name</h1><hr>
 
   <ol class="breadcrumb">
-    <li>RDM Consult: {{ breadcrumb_rdm_consultation }}</li>
-    <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>
-    <li>{{ breadcrumb_pi }}</li>
-    {% if breadcrumb_existing_allocation %}
-      <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>
-      <li>Existing Allocation: {{ breadcrumb_existing_allocation }}</li>
-    {% endif %}
     {% if breadcrumb_project %}
+      <li>{{ breadcrumb_project }}</li>
       <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>
-      <li>Project: {{ breadcrumb_project }}</li>
     {% endif %}
+    <li>Data Description: Submitted</li>
+    <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>
+    <li>RDM Consult: {{ breadcrumb_rdm_consultation }}</li>
   </ol>
 
   <p>Please provide the name of the secure directory you are requesting.</p>
 
   <p>
-    For example, to request the secure directories "<em>/global/scratch/p2p3/pl1_example</em>" and
-    "<em>/global/home/groups/pl1_data/pl1_example</em>", you would provide "<strong>example</strong>".
+    For example, to request the secure directories <em>{{ scratch_path }}/pl1_example</em> and
+    <em>{{ groups_path }}/pl1_example</em>, you would provide <strong>example</strong>.
   </p>
   <p>
     Note that you will receive both a groups and a scratch secure directory upon approval of this request.

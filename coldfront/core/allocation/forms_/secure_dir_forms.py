@@ -5,7 +5,7 @@ from django.db.models import Q
 
 from coldfront.core.allocation.models import SecureDirRequest
 from coldfront.core.allocation.utils_.secure_dir_utils import \
-    get_secure_dir_allocations
+    get_secure_dir_allocations, get_all_secure_dir_paths
 from coldfront.core.project.forms_.new_project_forms.request_forms import \
     PIChoiceField
 from coldfront.core.project.models import ProjectUserRoleChoice, ProjectUser, \
@@ -72,6 +72,10 @@ class SecureDirDataDescriptionForm(forms.Form):
               'the Information Security and Policy team) about your data?',
         required=False)
 
+    def __init__(self, *args, **kwargs):
+        kwargs.pop('breadcrumb_project', None)
+        super().__init__(*args, **kwargs)
+
 
 class SecureDirRDMConsultationForm(forms.Form):
     rdm_consultants = forms.CharField(
@@ -82,99 +86,132 @@ class SecureDirRDMConsultationForm(forms.Form):
         required=True,
         widget=forms.Textarea(attrs={'rows': 3}))
 
-
-class SecureDirExistingPIForm(forms.Form):
-    PI = PIChoiceField(
-        label='Principal Investigator',
-        queryset=User.objects.none(),
-        required=True)
-
     def __init__(self, *args, **kwargs):
-        kwargs.pop('breadcrumb_rdm_consultation', None)
+        kwargs.pop('breadcrumb_project', None)
         super().__init__(*args, **kwargs)
 
-        queryset = User.objects.all()
-        pi_role = ProjectUserRoleChoice.objects.get(
-            name='Principal Investigator')
-
-        # Only include active PIs that are apart of active projects.
-        eligible_project = Q(project__name__startswith='fc_') | \
-                           Q(project__name__startswith='ic_') | \
-                           Q(project__name__startswith='co_')
-        pi_set = \
-            set(ProjectUser.objects.filter(eligible_project,
-                                           role=pi_role,
-                                           project__status__name='Active',
-                                           status__name='Active'
-                                           ).values_list('user__pk', flat=True))
-        queryset = queryset.filter(pk__in=pi_set)
-        self.fields['PI'].queryset = queryset
-
-    def clean(self):
-        cleaned_data = super().clean()
-        pi = self.cleaned_data['PI']
-        if pi is not None and pi not in self.fields['PI'].queryset:
-            raise forms.ValidationError(f'Invalid selection {pi.username}.')
-        return cleaned_data
-
-
-class SecureDirExistingProjectForm(forms.Form):
-    project = forms.ModelChoiceField(
-        label='Project',
-        queryset=Project.objects.none(),
-        required=True)
-
-    def __init__(self, *args, **kwargs):
-        kwargs.pop('breadcrumb_rdm_consultation', None)
-        kwargs.pop('breadcrumb_pi', None)
-        super().__init__(*args, **kwargs)
-
-        fc_co_ic_projects_cond = Q(name__startswith='fc_') | \
-                                 Q(name__startswith='co_') | \
-                                 Q(name__startswith='ic_')
-
-        all_sec_dirs = get_secure_dir_allocations()
-        projects_with_secure_dirs = \
-            set(all_sec_dirs.values_list('project__pk', flat=True))
-
-        projects_with_secure_dirs.update(
-            set(SecureDirRequest.objects.exclude(status__name='Denied').
-                values_list('project__pk', flat=True)))
-
-        self.fields['project'].queryset = \
-            Project.objects.\
-                filter(fc_co_ic_projects_cond, status__name='Active').\
-                exclude(pk__in=projects_with_secure_dirs)
-
+#
+# class SecureDirExistingPIForm(forms.Form):
+#     PI = PIChoiceField(
+#         label='Principal Investigator',
+#         queryset=User.objects.none(),
+#         required=True)
+#
+#     def __init__(self, *args, **kwargs):
+#         kwargs.pop('breadcrumb_rdm_consultation', None)
+#         super().__init__(*args, **kwargs)
+#
+#         queryset = User.objects.all()
+#         pi_role = ProjectUserRoleChoice.objects.get(
+#             name='Principal Investigator')
+#
+#         # Only include active PIs that are apart of active projects.
+#         eligible_project = Q(project__name__startswith='fc_') | \
+#                            Q(project__name__startswith='ic_') | \
+#                            Q(project__name__startswith='co_')
+#         pi_set = \
+#             set(ProjectUser.objects.filter(eligible_project,
+#                                            role=pi_role,
+#                                            project__status__name='Active',
+#                                            status__name='Active'
+#                                            ).values_list('user__pk', flat=True))
+#         queryset = queryset.filter(pk__in=pi_set)
+#         self.fields['PI'].queryset = queryset
+#
+#     def clean(self):
+#         cleaned_data = super().clean()
+#         pi = self.cleaned_data['PI']
+#         if pi is not None and pi not in self.fields['PI'].queryset:
+#             raise forms.ValidationError(f'Invalid selection {pi.username}.')
+#         return cleaned_data
+#
+#
+# class SecureDirExistingProjectForm(forms.Form):
+#     project = forms.ModelChoiceField(
+#         label='Project',
+#         queryset=Project.objects.none(),
+#         required=True)
+#
+#     def __init__(self, *args, **kwargs):
+#         kwargs.pop('breadcrumb_rdm_consultation', None)
+#         kwargs.pop('breadcrumb_project', None)
+#         pi = kwargs.pop('pi', None)
+#         super().__init__(*args, **kwargs)
+#
+#         fc_co_ic_projects_cond = Q(name__startswith='fc_') | \
+#                                  Q(name__startswith='co_') | \
+#                                  Q(name__startswith='ic_')
+#
+#         all_sec_dirs = get_secure_dir_allocations()
+#         projects_with_secure_dirs = \
+#             set(all_sec_dirs.values_list('project__pk', flat=True))
+#
+#         projects_with_secure_dirs.update(
+#             set(SecureDirRequest.objects.exclude(status__name='Denied').
+#                 values_list('project__pk', flat=True)))
+#
+#         pis_projects = \
+#             ProjectUser.objects.filter(user=pi,
+#                                        role__name='Principal Investigator').\
+#                 values_list('project__pk', flat=True)
+#
+#         self.fields['project'].queryset = \
+#             Project.objects.\
+#                 filter(fc_co_ic_projects_cond,
+#                        status__name='Active',
+#                        pk__in=pis_projects).\
+#                 exclude(pk__in=projects_with_secure_dirs)
+#
 
 class SecureDirDirectoryNamesForm(forms.Form):
 
     directory_name = forms.CharField(
         help_text=(
             'Provide the name of the requested secure directory on the cluster.'),
-        label='Scratch Subdirectory Name',
+        label='Subdirectory Name',
         required=True,
         widget=forms.Textarea(attrs={'rows': 1}))
 
     def __init__(self, *args, **kwargs):
         kwargs.pop('breadcrumb_rdm_consultation', None)
-        kwargs.pop('breadcrumb_pi', None)
         kwargs.pop('breadcrumb_project', None)
         super().__init__(*args, **kwargs)
 
+    def clean(self):
+        cleaned_data = super().clean()
+        directory_name = cleaned_data.get('directory_name', None)
 
-class SecureDirReviewStatusForm(forms.Form):
+        # Fetch all existing directory names.
+        paths = get_all_secure_dir_paths()
+        cleaned_dir_names = set([path.strip().split('_')[-1] for path in paths])
+
+        # Provided directory name must be unique.
+        if directory_name in cleaned_dir_names:
+            raise forms.ValidationError(
+                'This directory name is already taken. Please choose another.')
+        return cleaned_data
+
+
+class SecureDirSetupForm(forms.Form):
 
     status = forms.ChoiceField(
         choices=(
             ('', 'Select one.'),
             ('Pending', 'Pending'),
-            ('Completed', 'Completed'),
+            ('Approved', 'Approved'),
             ('Denied', 'Denied'),
         ),
         help_text='If you are unsure, leave the status as "Pending".',
         label='Status',
         required=True)
+
+    directory_name = forms.CharField(
+        help_text=(
+            'Edit the provided directory name if necessary.'),
+        label='Subdirectory Name',
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 1}))
+
     justification = forms.CharField(
         help_text=(
             'Provide reasoning for your decision. This field is only required '
@@ -185,25 +222,33 @@ class SecureDirReviewStatusForm(forms.Form):
         required=False,
         widget=forms.Textarea(attrs={'rows': 3}))
 
+    def __init__(self, *args, **kwargs):
+        dir_name = kwargs.pop('dir_name', None)
+        super().__init__(*args, **kwargs)
+
+        self.fields['directory_name'].initial = dir_name
+
     def clean(self):
         cleaned_data = super().clean()
         status = cleaned_data.get('status', 'Pending')
+        directory_name = cleaned_data.get('directory_name', None)
+
         # Require justification for denials.
         if status == 'Denied':
             justification = cleaned_data.get('justification', '')
             if not justification.strip():
                 raise forms.ValidationError(
                     'Please provide a justification for your decision.')
+
+            return cleaned_data
+
+        # Fetch all existing directory names.
+        paths = get_all_secure_dir_paths()
+        cleaned_dir_names = set([path.strip().split('_')[-1] for path in paths])
+
+        # Provided directory name must be unique.
+        if directory_name in cleaned_dir_names:
+            raise forms.ValidationError(
+                'This directory name is already taken. Please choose another.')
+
         return cleaned_data
-
-
-class SecureDirRequestReviewDenyForm(forms.Form):
-
-    justification = forms.CharField(
-        help_text=(
-            'Provide reasoning for your decision. It will be included in the '
-            'notification email.'),
-        label='Justification',
-        validators=[MinLengthValidator(10)],
-        required=True,
-        widget=forms.Textarea(attrs={'rows': 3}))

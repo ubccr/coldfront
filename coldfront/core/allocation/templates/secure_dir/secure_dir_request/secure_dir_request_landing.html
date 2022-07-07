@@ -4,12 +4,12 @@
 
 
 {% block title %}
-  New Secure Directory
+  New Secure Directories
 {% endblock %}
 
 
 {% block content %}
-  <h1>New Secure Directory</h1><hr>
+  <h1>New Secure Directories</h1><hr>
 
   <p>
     UC Berkeley's institutional Linux cluster, Savio is certified by the
@@ -40,7 +40,7 @@
     by can found <a href="http://research-it.berkeley.edu">here</a>.
   </p>
 
-  <a class="btn btn-primary" href="{% url 'secure-dir-request' %}">
+  <a class="btn btn-primary" href="{% url 'secure-dir-request' project_name %}">
     Continue
   </a>
 

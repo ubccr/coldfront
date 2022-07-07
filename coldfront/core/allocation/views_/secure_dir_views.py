@@ -21,9 +21,8 @@ from coldfront.core.allocation.forms_.secure_dir_forms import (
     SecureDirManageUsersSearchForm,
     SecureDirManageUsersRequestUpdateStatusForm,
     SecureDirManageUsersRequestCompletionForm, SecureDirDataDescriptionForm,
-    SecureDirRDMConsultationForm, SecureDirExistingPIForm,
-    SecureDirExistingProjectForm, SecureDirReviewStatusForm,
-    SecureDirRequestReviewDenyForm, SecureDirDirectoryNamesForm)
+    SecureDirRDMConsultationForm, SecureDirDirectoryNamesForm,
+    SecureDirSetupForm)
 from coldfront.core.allocation.models import (Allocation,
                                               SecureDirAddUserRequest,
                                               SecureDirRemoveUserRequest,
@@ -35,8 +34,11 @@ from coldfront.core.allocation.utils import has_cluster_access
 from coldfront.core.allocation.utils_.secure_dir_utils import \
     get_secure_dir_manage_user_request_objects, secure_dir_request_state_status, \
     SecureDirRequestDenialRunner, SecureDirRequestApprovalRunner, \
-    get_secure_dir_allocations
-from coldfront.core.project.models import ProjectUser
+    get_secure_dir_allocations, get_default_secure_dir_paths, \
+    pi_eligible_to_request_secure_dir
+from coldfront.core.project.forms import ReviewStatusForm, ReviewDenyForm
+from coldfront.core.project.models import ProjectUser, Project
+from coldfront.core.user.utils import access_agreement_signed
 from coldfront.core.utils.common import utc_now_offset_aware, \
     session_wizard_all_form_data
 from coldfront.core.utils.mail import send_email_template
@@ -772,6 +774,38 @@ class SecureDirManageUsersDenyRequestView(LoginRequiredMixin,
                     kwargs={'action': self.action, 'status': 'pending'}))
 
 
+
+class SecureDirRequestLandingView(LoginRequiredMixin,
+                                  UserPassesTestMixin,
+                                  TemplateView):
+    """A view for the secure directory request landing page."""
+
+    template_name = \
+        'secure_dir/secure_dir_request/secure_dir_request_landing.html'
+    login_url = '/'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['project_name'] = kwargs.get('project_name', None)
+        return context
+
+    def test_func(self):
+        if self.request.user.is_superuser:
+            return True
+
+        access_agreement = access_agreement_signed(self.request.user)
+
+        eligible_pi = pi_eligible_to_request_secure_dir(self.request.user)
+
+        if eligible_pi and access_agreement:
+            return True
+
+        message = (
+            'You must be an eligible PI and sign the User Access Agreement '
+            'before you can request a new secure directory.')
+        messages.error(self.request, message)
+
+
 class SecureDirRequestWizard(LoginRequiredMixin,
                              UserPassesTestMixin,
                              SessionWizardView):
@@ -779,8 +813,8 @@ class SecureDirRequestWizard(LoginRequiredMixin,
     FORMS = [
         ('data_description', SecureDirDataDescriptionForm),
         ('rdm_consultation', SecureDirRDMConsultationForm),
-        ('existing_pi', SecureDirExistingPIForm),
-        ('existing_project', SecureDirExistingProjectForm),
+        # ('existing_pi', SecureDirExistingPIForm),
+        # ('existing_project', SecureDirExistingProjectForm),
         ('directory_name', SecureDirDirectoryNamesForm)
     ]
 
@@ -789,10 +823,10 @@ class SecureDirRequestWizard(LoginRequiredMixin,
             'secure_dir/secure_dir_request/data_description.html',
         'rdm_consultation':
             'secure_dir/secure_dir_request/rdm_consultation.html',
-        'existing_pi':
-            'secure_dir/secure_dir_request/existing_pi.html',
-        'existing_project':
-            'secure_dir/secure_dir_request/existing_project.html',
+        # 'existing_pi':
+        #     'secure_dir/secure_dir_request/existing_pi.html',
+        # 'existing_project':
+        #     'secure_dir/secure_dir_request/existing_project.html',
         'directory_name':
             'secure_dir/secure_dir_request/directory_name.html'
     }
@@ -800,8 +834,8 @@ class SecureDirRequestWizard(LoginRequiredMixin,
     form_list = [
         SecureDirDataDescriptionForm,
         SecureDirRDMConsultationForm,
-        SecureDirExistingPIForm,
-        SecureDirExistingProjectForm,
+        # SecureDirExistingPIForm,
+        # SecureDirExistingProjectForm,
         SecureDirDirectoryNamesForm
     ]
 
@@ -812,38 +846,37 @@ class SecureDirRequestWizard(LoginRequiredMixin,
         # Define a lookup table from form name to step number.
         self.step_numbers_by_form_name = {
             name: i for i, (name, _) in enumerate(self.FORMS)}
+        self.project_name = None
 
     def test_func(self):
         if self.request.user.is_superuser:
             return True
 
-        signed_date = (
-            self.request.user.userprofile.access_agreement_signed_date)
+        access_agreement = access_agreement_signed(self.request.user)
 
-        eligible_project = Q(project__name__startswith='fc_') | \
-                           Q(project__name__startswith='ic_') | \
-                           Q(project__name__startswith='co_') & \
-                           Q(project__status__name='Active')
+        eligible_pi = pi_eligible_to_request_secure_dir(self.request.user)
 
-        eligible_pi = ProjectUser.objects.filter(
-            eligible_project,
-            user=self.request.user,
-            role__name='Principal Investigator',
-            status__name='Active',
-        ).exists()
-
-        if eligible_pi and signed_date is not None:
+        if eligible_pi and access_agreement:
             return True
 
         message = (
-            'You must sign the User Access Agreement before you can request a '
-            'new secure directory.')
+            'You must be an eligible PI and sign the User Access Agreement '
+            'before you can request a new secure directory.')
         messages.error(self.request, message)
+
+    def dispatch(self, request, *args, **kwargs):
+        self.project_name = kwargs.get('project_name', None)
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, form, **kwargs):
         context = super().get_context_data(form=form, **kwargs)
         current_step = int(self.steps.current)
         self.__set_data_from_previous_steps(current_step, context)
+
+        groups_path, scratch_path = get_default_secure_dir_paths()
+        context['groups_path'] = groups_path
+        context['scratch_path'] = scratch_path
+
         return context
 
     def get_form_kwargs(self, step=None):
@@ -851,14 +884,13 @@ class SecureDirRequestWizard(LoginRequiredMixin,
         step = int(step)
         # The names of steps that require the past data.
         step_names = [
-            'rdm_consultation',
-            'existing_pi',
-            'existing_project'
+            'rdm_consultation'
         ]
         step_numbers = [
             self.step_numbers_by_form_name[name] for name in step_names]
         if step in step_numbers:
             self.__set_data_from_previous_steps(step, kwargs)
+
         return kwargs
 
     def get_template_names(self):
@@ -878,14 +910,12 @@ class SecureDirRequestWizard(LoginRequiredMixin,
 
             data_description = self.__get_data_description(form_data)
             rdm_consultation = self.__get_rdm_consultation(form_data)
-            pi = self.__handle_pi_data(form_data)
-            existing_project = self.__get_existing_project(form_data)
+            existing_project = self.__get_existing_project()
             directory_name = self.__get_directory_name(form_data)
 
             # Store transformed form data in a request.
             request_kwargs['data_description'] = data_description
             request_kwargs['rdm_consultation'] = rdm_consultation
-            request_kwargs['pi'] = pi
             request_kwargs['project'] = existing_project
             request_kwargs['directory_name'] = directory_name
             request_kwargs['status'] = \
@@ -919,14 +949,13 @@ class SecureDirRequestWizard(LoginRequiredMixin,
                     self.logger.error(
                         'Failed to send notification email. Details:\n')
                     self.logger.exception(e)
-                # Send a notification email to the PI if the requester differs.
-                if request.requester != request.pi:
-                    try:
-                        self.send_pi_notification_email(request)
-                    except Exception as e:
-                        self.logger.error(
-                            'Failed to send notification email. Details:\n')
-                        self.logger.exception(e)
+                # Send a notification email to the PIs.
+                try:
+                    self.send_pi_notification_email(request)
+                except Exception as e:
+                    self.logger.error(
+                        'Failed to send notification email. Details:\n')
+                    self.logger.exception(e)
 
         except Exception as e:
             self.logger.exception(e)
@@ -971,17 +1000,9 @@ class SecureDirRequestWizard(LoginRequiredMixin,
         data = form_data[step_number]
         return data.get('directory_name', None)
 
-    def __handle_pi_data(self, form_data):
-        """Return the requested PI."""
-        step_number = self.step_numbers_by_form_name['existing_pi']
-        data = form_data[step_number]
-        return data.get('PI', None)
-
-    def __get_existing_project(self, form_data):
+    def __get_existing_project(self):
         """Return the project the user selected."""
-        step_number = self.step_numbers_by_form_name['existing_project']
-        data = form_data[step_number]
-        return data.get('project', None)
+        return Project.objects.get(name=self.project_name)
 
     def __set_data_from_previous_steps(self, step, dictionary):
         """Update the given dictionary with data from previous steps."""
@@ -994,37 +1015,12 @@ class SecureDirRequestWizard(LoginRequiredMixin,
                                    'Yes' if rdm_consultation_form_data
                                    else 'No'})
 
-        existing_pi_step = self.step_numbers_by_form_name['existing_pi']
-        if step > existing_pi_step:
-            existing_pi_form_data = self.get_cleaned_data_for_step(
-                str(existing_pi_step))
-            if existing_pi_form_data:
-                if existing_pi_form_data['PI'] is not None:
-                    pi = existing_pi_form_data['PI']
-                    dictionary.update({
-                        'breadcrumb_pi': (
-                            f'PI: {pi.first_name} {pi.last_name} '
-                            f'({pi.email})')
-                    })
-
-        existing_project_step = \
-            self.step_numbers_by_form_name['existing_project']
-        if step > existing_project_step:
-            existing_project_form_data = self.get_cleaned_data_for_step(
-                str(existing_project_step))
-            if existing_project_form_data:
-                project = existing_project_form_data['project']
-
-                dictionary.update({'breadcrumb_project':
-                                       f'Project: {project.name}'})
+        dictionary.update({'breadcrumb_project': f'Project: {self.project_name}'})
 
     def send_admin_notification_email(self, request):
         requester = request.requester
         requester_str = (
             f'{requester.first_name} {requester.last_name} ({requester.email})')
-
-        pi = request.pi
-        pi_str = f'{pi.first_name} {pi.last_name} ({pi.email})'
 
         review_url = urljoin(
             settings.CENTER_BASE_URL,
@@ -1033,7 +1029,6 @@ class SecureDirRequestWizard(LoginRequiredMixin,
         context = {
             'project_name': request.project.name,
             'requester_str': requester_str,
-            'pi_str': pi_str,
             'review_url': review_url,
         }
 
@@ -1049,17 +1044,16 @@ class SecureDirRequestWizard(LoginRequiredMixin,
         requester_str = (
             f'{requester.first_name} {requester.last_name} ({requester.email})')
 
-        pi = request.pi
-        pi_str = f'{pi.first_name} {pi.last_name} ({pi.email})'
-
         review_url = urljoin(
             settings.CENTER_BASE_URL,
             reverse('secure-dir-request-detail', kwargs={'pk': request.pk}))
 
+        pi_emails = request.project.pis_emails()
+        pi_emails.remove(requester.email)
+
         context = {
             'project_name': request.project.name,
             'requester_str': requester_str,
-            'pi_str': pi_str,
             'review_url': review_url,
         }
 
@@ -1068,7 +1062,7 @@ class SecureDirRequestWizard(LoginRequiredMixin,
             'email/secure_dir_request/secure_dir_new_request_pi.txt',
             context,
             settings.EMAIL_SENDER,
-            [pi.email])
+            pi_emails)
 
 
 class SecureDirRequestListView(LoginRequiredMixin,
@@ -1173,7 +1167,8 @@ class SecureDirRequestDetailView(LoginRequiredMixin,
                                  SecureDirRequestMixin,
                                  DetailView):
     model = SecureDirRequest
-    template_name = 'secure_dir/secure_dir_request/secure_dir_request_detail.html'
+    template_name = \
+        'secure_dir/secure_dir_request/secure_dir_request_detail.html'
     login_url = '/'
     context_object_name = 'secure_dir_request'
 
@@ -1245,6 +1240,7 @@ class SecureDirRequestDetailView(LoginRequiredMixin,
             }
             context['support_email'] = settings.CENTER_HELP_EMAIL
 
+        context['checklist'] = self.get_checklist()
         context['setup_status'] = self.get_setup_status()
         context['is_checklist_complete'] = self.is_checklist_complete()
 
@@ -1252,6 +1248,49 @@ class SecureDirRequestDetailView(LoginRequiredMixin,
             self.request.user.is_superuser
 
         return context
+
+    def get_checklist(self):
+        """Return a nested list, where each row contains the details of
+        one item on the checklist.
+        Each row is of the form: [task text, status name, latest update
+        timestamp, is "Manage" button available, URL of "Manage"
+        button.]"""
+        pk = self.request_obj.pk
+        state = self.request_obj.state
+        checklist = []
+
+        rdm = state['rdm_consultation']
+        checklist.append([
+            'Confirm that the PI has consulted with RDM.',
+            rdm['status'],
+            rdm['timestamp'],
+            True,
+            reverse(
+                'secure-dir-request-review-rdm-consultation', kwargs={'pk': pk})
+        ])
+        rdm_consulted = rdm['status'] == 'Approved'
+
+        mou = state['mou']
+        checklist.append([
+            'Confirm that the PI has signed the Memorandum of Understanding.',
+            mou['status'],
+            mou['timestamp'],
+            True,
+            reverse(
+                'secure-dir-request-review-mou', kwargs={'pk': pk})
+        ])
+        mou_signed = mou['status'] == 'Approved'
+
+        setup = state['setup']
+        checklist.append([
+            'Perform secure directory setup on the cluster.',
+            self.get_setup_status(),
+            setup['timestamp'],
+            rdm_consulted and mou_signed,
+            reverse('secure-dir-request-review-setup', kwargs={'pk': pk})
+        ])
+
+        return checklist
 
     def post(self, request, *args, **kwargs):
         """Approve the request."""
@@ -1284,9 +1323,12 @@ class SecureDirRequestDetailView(LoginRequiredMixin,
         runner = SecureDirRequestApprovalRunner(self.request_obj)
         runner.run()
 
-        message = f'The secure directory for {self.request_obj.project.name} ' \
-                  f'was successfully created.'
-        messages.success(request, message)
+        success_messages, error_messages = runner.get_messages()
+
+        for message in success_messages:
+            messages.success(self.request, message)
+        for message in error_messages:
+            messages.error(self.request, message)
 
         return HttpResponseRedirect(self.redirect)
 
@@ -1302,14 +1344,14 @@ class SecureDirRequestDetailView(LoginRequiredMixin,
     def is_checklist_complete(self):
         status_choice = secure_dir_request_state_status(self.request_obj)
         return (status_choice.name == 'Approved - Processing' and
-                self.request_obj.state['setup']['status'] == 'Completed')
+                self.request_obj.state['setup']['status'] == 'Approved')
 
 
 class SecureDirRequestReviewRDMConsultView(LoginRequiredMixin,
                                            UserPassesTestMixin,
                                            SecureDirRequestMixin,
                                            FormView):
-    form_class = SecureDirReviewStatusForm
+    form_class = ReviewStatusForm
     template_name = (
         'secure_dir/secure_dir_request/secure_dir_mou.html')
     login_url = '/'
@@ -1340,7 +1382,8 @@ class SecureDirRequestReviewRDMConsultView(LoginRequiredMixin,
             'justification': justification,
             'timestamp': timestamp,
         }
-        self.request_obj.status = secure_dir_request_state_status(self.request_obj)
+        self.request_obj.status = \
+            secure_dir_request_state_status(self.request_obj)
         self.request_obj.save()
 
         if status == 'Denied':
@@ -1376,7 +1419,7 @@ class SecureDirRequestReviewMOUView(LoginRequiredMixin,
                                     UserPassesTestMixin,
                                     SecureDirRequestMixin,
                                     FormView):
-    form_class = SecureDirReviewStatusForm
+    form_class = ReviewStatusForm
     template_name = (
         'secure_dir/secure_dir_request/secure_dir_mou.html')
     login_url = '/'
@@ -1407,7 +1450,8 @@ class SecureDirRequestReviewMOUView(LoginRequiredMixin,
             'justification': justification,
             'timestamp': timestamp,
         }
-        self.request_obj.status = secure_dir_request_state_status(self.request_obj)
+        self.request_obj.status = \
+            secure_dir_request_state_status(self.request_obj)
         self.request_obj.save()
 
         if status == 'Denied':
@@ -1443,7 +1487,7 @@ class SecureDirRequestReviewSetupView(LoginRequiredMixin,
                                       UserPassesTestMixin,
                                       SecureDirRequestMixin,
                                       FormView):
-    form_class = SecureDirReviewStatusForm
+    form_class = SecureDirSetupForm
     template_name = (
         'secure_dir/secure_dir_request/secure_dir_setup.html')
     login_url = '/'
@@ -1464,17 +1508,26 @@ class SecureDirRequestReviewSetupView(LoginRequiredMixin,
             return redirect
         return super().dispatch(request, *args, **kwargs)
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['dir_name'] = self.request_obj.directory_name
+        return kwargs
+
     def form_valid(self, form):
         form_data = form.cleaned_data
         status = form_data['status']
         justification = form_data['justification']
+        directory_name = form_data['directory_name']
         timestamp = utc_now_offset_aware().isoformat()
         self.request_obj.state['setup'] = {
             'status': status,
             'justification': justification,
             'timestamp': timestamp,
         }
-        self.request_obj.status = secure_dir_request_state_status(self.request_obj)
+        self.request_obj.status = \
+            secure_dir_request_state_status(self.request_obj)
+        if directory_name:
+            self.request_obj.directory_name = directory_name
         self.request_obj.save()
 
         if status == 'Denied':
@@ -1508,7 +1561,7 @@ class SecureDirRequestReviewSetupView(LoginRequiredMixin,
 
 class SecureDirRequestReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
                                      SecureDirRequestMixin, FormView):
-    form_class = SecureDirRequestReviewDenyForm
+    form_class = ReviewDenyForm
     template_name = (
         'secure_dir/secure_dir_request/secure_dir_review_deny.html')
     login_url = '/'
@@ -1537,7 +1590,8 @@ class SecureDirRequestReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
             'justification': justification,
             'timestamp': timestamp,
         }
-        self.request_obj.status = secure_dir_request_state_status(self.request_obj)
+        self.request_obj.status = \
+            secure_dir_request_state_status(self.request_obj)
 
         runner = SecureDirRequestDenialRunner(self.request_obj)
         runner.run()
@@ -1616,15 +1670,15 @@ class SecureDirRequestUndenyRequestView(LoginRequiredMixin,
         if setup['status'] != 'Pending':
             setup['status'] = 'Pending'
             setup['timestamp'] = ''
-            setup['scratch'] = ''
-            setup['groups'] = ''
+            setup['justification'] = ''
 
         other = state['other']
         if other['timestamp']:
             other['justification'] = ''
             other['timestamp'] = ''
 
-        self.request_obj.status = secure_dir_request_state_status(self.request_obj)
+        self.request_obj.status = \
+            secure_dir_request_state_status(self.request_obj)
         self.request_obj.save()
 
         message = (

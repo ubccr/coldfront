@@ -20,6 +20,14 @@
 
   <h1>Secure Directory: Research Data Management Team</h1><hr>
 
+  <ol class="breadcrumb">
+    {% if breadcrumb_project %}
+      <li>{{ breadcrumb_project }}</li>
+      <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>
+    {% endif %}
+    <li>Data Description: Submitted</li>
+  </ol>
+
   <form action="" method="post">
     {% csrf_token %}
     <table>
