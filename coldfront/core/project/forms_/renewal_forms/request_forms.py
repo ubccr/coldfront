@@ -109,21 +109,21 @@ class ProjectRenewalPoolingPreferenceForm(forms.Form):
 
     non_pooled_choices = [
         (UNPOOLED_TO_UNPOOLED,
-            'Renew the PI\'s allocation under the same project.'),
+            'Renew the PI\'s allowance under the same project.'),
         (UNPOOLED_TO_POOLED,
-            'Pool the PI\'s allocation under a different project.'),
+            'Pool the PI\'s allowance under a different project.'),
     ]
 
     pooled_choices = [
         (POOLED_TO_POOLED_SAME,
-            'Continuing pooling the PI\'s allocation under the same project.'),
+            'Continue pooling the PI\'s allowance under the same project.'),
         (POOLED_TO_POOLED_DIFFERENT,
-            'Pool the PI\'s allocation under a different project.'),
+            'Pool the PI\'s allowance under a different project.'),
         (POOLED_TO_UNPOOLED_OLD,
-            ('Stop pooling the PI\'s allocation. Select another project owned '
+            ('Stop pooling the PI\'s allowance. Select another project owned '
              'by the PI to renew under.')),
         (POOLED_TO_UNPOOLED_NEW,
-            ('Stop pooling the PI\'s allocation. Create a new project to '
+            ('Stop pooling the PI\'s allowance. Create a new project to '
              'renew under.')),
     ]
 
