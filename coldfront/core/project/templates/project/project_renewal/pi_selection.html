@@ -30,12 +30,12 @@ Project Renewal - PI Selection
   Manager or PI.
 </p>
 
-<!-- TODO: Account for other allocation types. -->
-<!-- TODO: Add "during this allocation period" when they become relevant. -->
+{% if allowance_is_one_per_pi %}
 <p>
-  Note: Each PI may only have one FCA at a time, so any that have pending or
-  approved renewal requests are not selectable.
+  Note: Each PI may only have one {{ computing_allowance.name }} at a time, so
+  any that have pending or approved renewal requests are not selectable.
 </p>
+{% endif %}
 
 <form action="" method="post">
   {% csrf_token %}

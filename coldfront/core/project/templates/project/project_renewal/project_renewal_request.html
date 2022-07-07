@@ -19,10 +19,12 @@ Renew Project {{ project.name }} Allocation
   Select the PI whose allocation should be renewed under this project.
 </p>
 
+{% if allowance_is_one_per_pi %}
 <p>
-  Note: Each PI may only have one FCA at a time, so any that have pending or
-  approved renewal requests are not selectable.
+  Note: Each PI may only have one {{ computing_allowance.name }} at a time, so
+  any that have pending or approved renewal requests are not selectable.
 </p>
+{% endif %}
 
 <form action="" method="post">
   {% csrf_token %}

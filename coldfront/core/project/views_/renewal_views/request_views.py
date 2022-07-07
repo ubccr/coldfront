@@ -23,6 +23,10 @@ from coldfront.core.project.utils_.renewal_utils import send_new_allocation_rene
 from coldfront.core.project.utils_.renewal_utils import send_new_allocation_renewal_request_pi_notification_email
 from coldfront.core.project.utils_.renewal_utils import send_new_allocation_renewal_request_pooling_notification_email
 from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
+from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.constants import LRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import session_wizard_all_form_data
 from coldfront.core.utils.common import utc_now_offset_aware
 
@@ -30,11 +34,13 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.mixins import UserPassesTestMixin
+from django.core.exceptions import ImproperlyConfigured
 from django.db import IntegrityError
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 
+from flags.state import flag_enabled
 from formtools.wizard.views import SessionWizardView
 
 import logging
@@ -52,15 +58,29 @@ class AllocationRenewalMixin(object):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # TODO: Set this dynamically when supporting other types.
+        if flag_enabled('BRC_ONLY'):
+            self.computing_allowance = Resource.objects.get(
+                name=BRCAllowances.FCA)
+        elif flag_enabled('LRC_ONLY'):
+            self.computing_allowance = Resource.objects.get(
+                name=LRCAllowances.PCA)
+        else:
+            raise ImproperlyConfigured(
+                'One of the following flags must be enabled: BRC_ONLY, '
+                'LRC_ONLY.')
+        self.interface = ComputingAllowanceInterface()
 
     @staticmethod
-    def create_allocation_renewal_request(requester, pi, allocation_period,
-                                          pre_project, post_project,
+    def create_allocation_renewal_request(requester, pi, computing_allowance,
+                                          allocation_period, pre_project,
+                                          post_project,
                                           new_project_request=None):
         """Create a new AllocationRenewalRequest."""
         request_kwargs = dict()
         request_kwargs['requester'] = requester
         request_kwargs['pi'] = pi
+        request_kwargs['computing_allowance'] = computing_allowance
         request_kwargs['allocation_period'] = allocation_period
         request_kwargs['status'] = \
             AllocationRenewalRequestStatusChoice.objects.get(
@@ -179,13 +199,12 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
         return context
 
     def get_form_kwargs(self, step=None):
-        # TODO: Set this dynamically when supporting other types.
-        allocation_type = SavioProjectAllocationRequest.FCA
         kwargs = {}
         step = int(step)
         if step == self.step_numbers_by_form_name['allocation_period']:
-            kwargs['allocation_type'] = allocation_type
+            kwargs['computing_allowance'] = self.computing_allowance
         elif step == self.step_numbers_by_form_name['pi_selection']:
+            kwargs['computing_allowance'] = self.computing_allowance
             tmp = {}
             self.__set_data_from_previous_steps(step, tmp)
             kwargs['allocation_period_pk'] = getattr(
@@ -219,7 +238,9 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
             if 'current_project' in tmp:
                 kwargs['exclude_project_pk'] = tmp['current_project'].pk
         elif step == self.step_numbers_by_form_name['new_project_details']:
-            kwargs['allocation_type'] = allocation_type
+            kwargs['computing_allowance'] = self.computing_allowance
+        elif step == self.step_numbers_by_form_name['new_project_survey']:
+            kwargs['computing_allowance'] = self.computing_allowance
         return kwargs
 
     def get_template_names(self):
@@ -260,8 +281,8 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
                 requested_project = tmp['requested_project']
 
             request = self.create_allocation_renewal_request(
-                self.request.user, pi, allocation_period,
-                tmp['current_project'], requested_project,
+                self.request.user, pi, self.computing_allowance,
+                allocation_period, tmp['current_project'], requested_project,
                 new_project_request=new_project_request)
 
             self.send_emails(request)
@@ -343,9 +364,12 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
     def __handle_create_new_project_request(self, pi, project, survey_data):
         """Create a new SavioProjectAllocationRequest. This method
         should only be invoked if a new Project is requested."""
+        # TODO: allocation_type will eventually be removed from the model.
         request_kwargs = dict()
         request_kwargs['requester'] = self.request.user
-        request_kwargs['allocation_type'] = SavioProjectAllocationRequest.FCA
+        request_kwargs['allocation_type'] = \
+            self.interface.name_short_from_name(self.computing_allowance.name)
+        request_kwargs['computing_allowance'] = self.computing_allowance
         request_kwargs['pi'] = pi
         request_kwargs['project'] = project
         request_kwargs['pool'] = False
@@ -357,6 +381,12 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
 
     def __set_data_from_previous_steps(self, step, dictionary):
         """Update the given dictionary with data from previous steps."""
+        dictionary['computing_allowance'] = self.computing_allowance
+        computing_allowance_wrapper = ComputingAllowance(
+            self.computing_allowance)
+        dictionary['allowance_is_one_per_pi'] = \
+            computing_allowance_wrapper.is_one_per_pi()
+
         allocation_period_form_step = self.step_numbers_by_form_name[
             'allocation_period']
         if step > allocation_period_form_step:
@@ -495,8 +525,8 @@ class AllocationRenewalRequestUnderProjectView(LoginRequiredMixin,
                     f'{allocation_period.name}.')
 
             request = self.create_allocation_renewal_request(
-                self.request.user, pi, allocation_period, self.project_obj,
-                self.project_obj)
+                self.request.user, pi, self.computing_allowance,
+                allocation_period, self.project_obj, self.project_obj)
 
             self.send_emails(request)
         except Exception as e:
@@ -514,12 +544,10 @@ class AllocationRenewalRequestUnderProjectView(LoginRequiredMixin,
         return context
 
     def get_form_kwargs(self, step=None):
-        # TODO: Set this dynamically when supporting other types.
-        allocation_type = SavioProjectAllocationRequest.FCA
         kwargs = {}
         step = int(step)
         if step == self.step_numbers_by_form_name['allocation_period']:
-            kwargs['allocation_type'] = allocation_type
+            kwargs['computing_allowance'] = self.computing_allowance
         elif step == self.step_numbers_by_form_name['pi_selection']:
             tmp = {}
             self.__set_data_from_previous_steps(step, tmp)

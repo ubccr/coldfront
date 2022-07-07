@@ -6,9 +6,11 @@ from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
-from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils_.new_project_utils import non_denied_new_project_request_statuses
+from coldfront.core.project.utils_.new_project_utils import pis_with_new_project_requests_pks
 from coldfront.core.project.utils_.renewal_utils import non_denied_renewal_request_statuses
+from coldfront.core.project.utils_.renewal_utils import pis_with_renewal_requests_pks
+from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 
 from django import forms
 
@@ -29,15 +31,18 @@ class ProjectRenewalPISelectionForm(forms.Form):
         widget=DisabledChoicesSelectWidget())
 
     def __init__(self, *args, **kwargs):
-        # TODO: Set this dynamically when supporting other types.
-        self.allocation_type = SavioProjectAllocationRequest.FCA
+        self.computing_allowance = kwargs.pop('computing_allowance', None)
         self.allocation_period_pk = kwargs.pop('allocation_period_pk', None)
         self.project_pks = kwargs.pop('project_pks', None)
         super().__init__(*args, **kwargs)
 
-        if not (self.allocation_type and self.allocation_period_pk
+        if not (self.computing_allowance and self.allocation_period_pk
                 and self.project_pks):
             return
+
+        self.computing_allowance = ComputingAllowance(self.computing_allowance)
+        self.allocation_period = AllocationPeriod.objects.get(
+            pk=self.allocation_period_pk)
 
         role = ProjectUserRoleChoice.objects.get(name='Principal Investigator')
         status = ProjectUserStatusChoice.objects.get(name='Active')
@@ -45,49 +50,42 @@ class ProjectRenewalPISelectionForm(forms.Form):
         pi_project_users = ProjectUser.objects.prefetch_related('user').filter(
             project__pk__in=self.project_pks, role=role, status=status
         ).order_by('user__last_name', 'user__first_name')
-        users = list(pi_project_users.values_list('user', flat=True))
-
-        allocation_period = AllocationPeriod.objects.get(
-            pk=self.allocation_period_pk)
-        renewal_request_statuses = non_denied_renewal_request_statuses()
-        project_request_statuses = non_denied_new_project_request_statuses()
-
-        exclude_project_user_pks = set()
-
-        if self.allocation_type == SavioProjectAllocationRequest.FCA:
-
-            # PIs may only have one FCA, so disable any PIs who:
-            #     (a) have non-denied AllocationRenewalRequests during the
-            #         specified AllocationPeriod, or
-            #     (b) have non-denied SavioProjectAllocationRequests during
-            #         the specified AllocationPeriod.
-
-            pis_with_non_denied_renewal_requests_this_period = set(list(
-                AllocationRenewalRequest.objects.filter(
-                    pi__in=users,
-                    allocation_period=allocation_period,
-                    status__in=renewal_request_statuses
-                ).values_list('pi', flat=True)))
-            pis_with_non_denied_project_requests = set(list(
-                SavioProjectAllocationRequest.objects.filter(
-                    allocation_type=self.allocation_type,
-                    allocation_period=allocation_period,
-                    status__in=project_request_statuses
-                ).values_list('pi', flat=True)))
-            for project_user in pi_project_users:
-                if (project_user.user.pk in
-                        pis_with_non_denied_renewal_requests_this_period):
-                    exclude_project_user_pks.add(project_user.pk)
-                if (project_user.user.pk in
-                        pis_with_non_denied_project_requests):
-                    exclude_project_user_pks.add(project_user.pk)
-
-        else:
-            raise ValueError(
-                f'Unsupported allocation type: {self.allocation_type}.')
 
         self.fields['PI'].queryset = pi_project_users
-        self.fields['PI'].widget.disabled_choices = exclude_project_user_pks
+        self.disable_pi_choices(pi_project_users)
+
+    def disable_pi_choices(self, pi_project_users):
+        """Prevent certain of the given ProjectUsers, who should be
+        displayed, from being selected for renewal."""
+        disable_project_user_pks = set()
+        if self.computing_allowance.is_one_per_pi():
+            # Disable any PI who has:
+            #    (a) a new project request for a Project during the
+            #        AllocationPeriod*, or
+            #    (b) an AllocationRenewalRequest during the AllocationPeriod*.
+            # * Requests must have ineligible statuses.
+            resource = self.computing_allowance.get_resource()
+            disable_user_pks = set()
+            new_project_request_status_names = list(
+                non_denied_new_project_request_statuses().values_list(
+                    'name', flat=True))
+            disable_user_pks.update(
+                pis_with_new_project_requests_pks(
+                    self.allocation_period,
+                    computing_allowance=resource,
+                    request_status_names=new_project_request_status_names))
+            renewal_request_status_names = list(
+                non_denied_renewal_request_statuses().values_list(
+                    'name', flat=True))
+            disable_user_pks.update(
+                pis_with_renewal_requests_pks(
+                    self.allocation_period,
+                    computing_allowance=resource,
+                    request_status_names=renewal_request_status_names))
+            for project_user in pi_project_users:
+                if project_user.user.pk in disable_user_pks:
+                    disable_project_user_pks.add(project_user.pk)
+        self.fields['PI'].widget.disabled_choices = disable_project_user_pks
 
 
 class ProjectRenewalPoolingPreferenceForm(forms.Form):
