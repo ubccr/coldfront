@@ -601,6 +601,7 @@ class AllocationRenewalRequestUnderProjectView(LoginRequiredMixin,
         if step == self.step_numbers_by_form_name['allocation_period']:
             kwargs['computing_allowance'] = self.computing_allowance
         elif step == self.step_numbers_by_form_name['pi_selection']:
+            kwargs['computing_allowance'] = self.computing_allowance
             tmp = {}
             self.__set_data_from_previous_steps(step, tmp)
             kwargs['allocation_period_pk'] = getattr(

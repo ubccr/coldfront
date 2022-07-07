@@ -10,6 +10,7 @@ from coldfront.core.project.utils_.renewal_utils import AllocationRenewalProcess
 from coldfront.core.project.utils_.renewal_utils import allocation_renewal_request_denial_reason
 from coldfront.core.project.utils_.renewal_utils import allocation_renewal_request_latest_update_timestamp
 from coldfront.core.project.utils_.renewal_utils import allocation_renewal_request_state_status
+from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import format_date_month_name_day_year
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -105,11 +106,20 @@ class AllocationRenewalRequestMixin(object):
             settings.FCA_DEFAULT_ALLOCATION, self.request_obj.request_time,
             self.allocation_period_obj)
 
+    def set_common_context_data(self, context):
+        """Given a dictionary of context variables to include in the
+        template, add additional, commonly-used variables."""
+        context['renewal_request'] = self.request_obj
+        context['computing_allowance_name'] = \
+            self.computing_allowance_obj.get_name()
+
     def set_objs(self, pk):
         self.request_obj = get_object_or_404(
             AllocationRenewalRequest.objects.prefetch_related(
                 'pi', 'post_project', 'pre_project', 'requester'), pk=pk)
         self.allocation_period_obj = self.request_obj.allocation_period
+        self.computing_allowance_obj = ComputingAllowance(
+            self.request_obj.computing_allowance)
 
 
 class AllocationRenewalRequestDetailView(LoginRequiredMixin,
@@ -120,7 +130,6 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
     template_name = (
         'project/project_renewal/project_renewal_request_detail.html')
     login_url = '/'
-    context_object_name = 'renewal_request'
 
     error_message = 'Unexpected failure. Please contact an administrator.'
     request_obj = None
@@ -148,6 +157,8 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        self.set_common_context_data(context)
+
         is_superuser = self.request.user.is_superuser
 
         try:
@@ -264,8 +275,8 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
         else:
             eligibility = self.request_obj.state['eligibility']
             checklist.append([
-                ('Confirm that the requested PI is eligible for a Savio '
-                 'allowance.'),
+                (f'Confirm that the requested PI is still eligible for a  '
+                 f'{self.computing_allowance_obj.get_name()}.'),
                 eligibility['status'],
                 eligibility['timestamp'],
                 True,
@@ -356,7 +367,9 @@ class AllocationRenewalRequestReviewEligibilityView(LoginRequiredMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['renewal_request'] = self.request_obj
+        self.set_common_context_data(context)
+        context['is_allowance_one_per_pi'] = \
+            self.computing_allowance_obj.is_one_per_pi()
         return context
 
     def get_initial(self):
@@ -433,7 +446,7 @@ class AllocationRenewalRequestReviewDenyView(LoginRequiredMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['renewal_request'] = self.request_obj
+        self.set_common_context_data(context)
         return context
 
     def get_initial(self):
