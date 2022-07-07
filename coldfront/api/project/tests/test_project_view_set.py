@@ -177,7 +177,10 @@ class TestUpdatePatchProjectUserRemovalRequests(TestProjectUserRemovalRequestsBa
         data = {
             'id': pre_project_user_removal_request.id + 1,
             'status': 'Complete',
-            'project_user': ProjectUser.objects.exclude(pk=pre_project_user_removal_request.project_user.pk).first()
+            'completion_time': utc_now_offset_aware(),
+            'project_user':
+                ProjectUser.objects.exclude(
+                    pk=pre_project_user_removal_request.project_user.pk).first()
         }
         response = self.client.patch(url, data)
 
@@ -188,12 +191,18 @@ class TestUpdatePatchProjectUserRemovalRequests(TestProjectUserRemovalRequestsBa
         assert_project_user_removal_request_serialization(
             post_project_user_removal_request, json, SERIALIZER_FIELDS)
 
-        self.assertEqual(pre_project_user_removal_request.id, post_project_user_removal_request.id)
-        self.assertEqual(pre_project_user_removal_request.status.name, 'Pending')
-        self.assertEqual(pre_project_user_removal_request.project_user, post_project_user_removal_request.project_user)
-        self.assertEqual(post_project_user_removal_request.status.name, 'Complete')
+        self.assertEqual(pre_project_user_removal_request.id,
+                         post_project_user_removal_request.id)
+        self.assertEqual(pre_project_user_removal_request.status.name,
+                         'Pending')
+        self.assertEqual(pre_project_user_removal_request.project_user,
+                         post_project_user_removal_request.project_user)
+        self.assertEqual(post_project_user_removal_request.status.name,
+                         'Complete')
         self.assertIsNone(pre_project_user_removal_request.completion_time)
-        self.assertTrue(pre_time < post_project_user_removal_request.completion_time < utc_now_offset_aware())
+        self.assertTrue(pre_time <
+                        post_project_user_removal_request.completion_time <
+                        utc_now_offset_aware())
 
     def test_valid_data_complete(self):
         """Test that updating an object with valid PATCH data
