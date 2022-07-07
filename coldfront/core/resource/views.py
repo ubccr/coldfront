@@ -183,18 +183,12 @@ class ResourceListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
 
-        order_by = self.request.GET.get('order_by')
-        if order_by == "name":
-            order_by = "name"
-        elif order_by != "name" and order_by != None:
-            direction = self.request.GET.get('direction')
-            if direction == 'asc':
-                direction = ''
-            else:
+        order_by = self.request.GET.get('order_by', 'id')
+        direction = self.request.GET.get('direction', 'des')
+        if order_by != "name":
+            if direction == 'des':
                 direction = '-'
             order_by = direction + order_by
-        else:
-            order_by = 'id'
 
         resource_search_form = ResourceSearchForm(self.request.GET)
 
