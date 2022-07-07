@@ -41,7 +41,7 @@
         {% if request.user.is_superuser or perms.allocation.can_manage_invoice %}
           {% include 'common/navbar_invoice.html' %}
         {% endif %}
-        {% if "settings_value 'CENTER_HELP_URL'"|length == 0 %}
+        {% if settings.CENTER_HELP_URL %}
           {% include 'common/navbar_help.html' %}
         {% endif %}
       </ul>
