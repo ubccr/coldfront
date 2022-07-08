@@ -265,3 +265,86 @@ class TestUpdatePatchProjectUserRemovalRequests(TestProjectUserRemovalRequestsBa
         self.assertIn('status', json)
         self.assertEqual(
             json['status'], ['Object with name=Invalid does not exist.'])
+
+
+class TestDestroyProjectUserRemovalRequests(TestProjectUserRemovalRequestsBase):
+    """A class for testing DELETE /project_user_removal_requests/
+    {project_user_removal_request_id}/."""
+
+    def test_authorization_token_required(self):
+        """Test that an authorization token is required."""
+        url = self.pk_url(BASE_URL, '1')
+        method = 'DELETE'
+        self.assert_authorization_token_required(url, method)
+
+    def test_method_not_allowed(self):
+        """Test that this method is not allowed."""
+        url = self.pk_url(BASE_URL, '1')
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, HTTPStatus.METHOD_NOT_ALLOWED)
+
+    def test_permissions_by_role(self):
+        """Test permissions for regular users, staff, and superusers."""
+        url = self.pk_url(BASE_URL, '1')
+        method = 'DELETE'
+        users = [
+            (self.user0, False),
+            (self.staff_user, False),
+            (self.superuser, True)
+        ]
+        self.assert_permissions_by_user(url, method, users)
+
+
+class TestUpdatePutProjectUserRemovalRequests(TestProjectUserRemovalRequestsBase):
+    """A class for testing PUT /project_user_removal_requests/
+    {project_user_removal_request_id}/."""
+
+    def test_authorization_token_required(self):
+        """Test that an authorization token is required."""
+        url = self.pk_url(BASE_URL, '1')
+        method = 'PUT'
+        self.assert_authorization_token_required(url, method)
+
+    def test_method_not_allowed(self):
+        """Test that this method is not allowed."""
+        url = self.pk_url(BASE_URL, '1')
+        response = self.client.put(url)
+        self.assertEqual(response.status_code, HTTPStatus.METHOD_NOT_ALLOWED)
+
+    def test_permissions_by_role(self):
+        """Test permissions for regular users, staff, and superusers."""
+        url = self.pk_url(BASE_URL, '1')
+        method = 'PUT'
+        users = [
+            (self.user0, False),
+            (self.staff_user, False),
+            (self.superuser, True)
+        ]
+        self.assert_permissions_by_user(url, method, users)
+
+
+class TestCreateProjectUserRemovalRequests(TestProjectUserRemovalRequestsBase):
+    """A class for testing POST /project_user_removal_requests/."""
+
+    def test_authorization_token_required(self):
+        """Test that an authorization token is required."""
+        url = BASE_URL
+        method = 'POST'
+        self.assert_authorization_token_required(url, method)
+
+    def test_method_not_allowed(self):
+        """Test that this method is not allowed."""
+        url = BASE_URL
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, HTTPStatus.METHOD_NOT_ALLOWED)
+
+    def test_permissions_by_role(self):
+        """Test permissions for regular users, staff, and superusers."""
+        url = BASE_URL
+        method = 'POST'
+        users = [
+            (self.user0, False),
+            (self.staff_user, False),
+            (self.superuser, True)
+        ]
+        self.assert_permissions_by_user(url, method, users)
