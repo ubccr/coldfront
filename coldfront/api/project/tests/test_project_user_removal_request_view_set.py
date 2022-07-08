@@ -14,7 +14,7 @@ BASE_URL = '/api/project_user_removal_requests/'
 
 
 class TestProjectUserRemovalRequestsBase(TestProjectBase):
-    """A base class for tests of the /project_user_removal_request/
+    """A base class for tests of the /project_user_removal_requests/
     endpoints."""
 
     def setUp(self):
@@ -47,7 +47,7 @@ class TestProjectUserRemovalRequestsBase(TestProjectBase):
 
 
 class TestListProjectUserRemovalRequests(TestProjectUserRemovalRequestsBase):
-    """A class for testing GET /project_user_removal_request/."""
+    """A class for testing GET /project_user_removal_requests/."""
 
     def test_authorization_token_required(self):
         """Test that an authorization token is required."""
@@ -102,7 +102,7 @@ class TestListProjectUserRemovalRequests(TestProjectUserRemovalRequestsBase):
 
 
 class TestRetrieveProjectUserRemovalRequests(TestProjectUserRemovalRequestsBase):
-    """A class for testing GET /project_user_removal_request/
+    """A class for testing GET /project_user_removal_requests/
     {project_user_removal_request_id}/."""
 
     def test_authorization_token_required(self):
@@ -148,7 +148,7 @@ class TestRetrieveProjectUserRemovalRequests(TestProjectUserRemovalRequestsBase)
 
 
 class TestUpdatePatchProjectUserRemovalRequests(TestProjectUserRemovalRequestsBase):
-    """A class for testing PATCH /project_user_removal_request/
+    """A class for testing PATCH /project_user_removal_requests/
     {project_user_removal_request_id}/."""
 
     def test_authorization_token_required(self):
