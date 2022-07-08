@@ -18,8 +18,6 @@ def assert_project_user_removal_request_serialization(removal_request,
                                               result['project_user'],
                                               ('id', 'user', 'project', 'role', 'status'))
             continue
-        else:
-            raise AssertionError('Invalid Field Passed')
         actual = str(result[field])
         assert expected == actual
 
