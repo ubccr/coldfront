@@ -11,9 +11,12 @@ from coldfront.core.project.utils_.renewal_utils import allocation_renewal_reque
 from coldfront.core.project.utils_.renewal_utils import allocation_renewal_request_latest_update_timestamp
 from coldfront.core.project.utils_.renewal_utils import allocation_renewal_request_state_status
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import format_date_month_name_day_year
 from coldfront.core.utils.common import utc_now_offset_aware
+
+from decimal import Decimal
 
 from django.conf import settings
 from django.contrib import messages
@@ -102,8 +105,11 @@ class AllocationRenewalRequestMixin(object):
     def get_service_units_to_allocate(self):
         """Return the number of service units to allocate to the project
         if it were to be approved now."""
+        num_service_units = Decimal(
+            ComputingAllowanceInterface().service_units_from_name(
+                self.computing_allowance_obj.get_name()))
         return prorated_allocation_amount(
-            settings.FCA_DEFAULT_ALLOCATION, self.request_obj.request_time,
+            num_service_units, self.request_obj.request_time,
             self.allocation_period_obj)
 
     def set_common_context_data(self, context):

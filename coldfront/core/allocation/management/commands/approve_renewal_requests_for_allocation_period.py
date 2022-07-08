@@ -1,12 +1,15 @@
+from decimal import Decimal
 import logging
 
-from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
 
 from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.project.utils_.renewal_utils import AllocationRenewalApprovalRunner
+from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import add_argparse_dry_run_argument
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import display_time_zone_date_to_utc_datetime
@@ -71,7 +74,10 @@ class Command(BaseCommand):
 
         # TODO: If supporting other allocation types, choose the appropriate
         # TODO: base value.
-        num_service_units = settings.FCA_DEFAULT_ALLOCATION
+        computing_allowance = Resource.objects.get(name=BRCAllowances.FCA)
+        num_service_units = Decimal(
+            ComputingAllowanceInterface().service_units_from_name(
+                computing_allowance.name))
 
         message_template = (
             f'{{0}} AllocationRenewalRequest {{1}} for PI {{2}}, scheduling '

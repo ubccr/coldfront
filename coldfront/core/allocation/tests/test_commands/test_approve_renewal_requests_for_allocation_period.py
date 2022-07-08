@@ -1,8 +1,8 @@
 from datetime import timedelta
+from decimal import Decimal
 from io import StringIO
 import iso8601
 
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import mail
 from django.core.management import call_command
@@ -15,6 +15,9 @@ from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.project.utils_.renewal_utils import get_next_allowance_year_period
+from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import display_time_zone_date_to_utc_datetime
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -29,6 +32,10 @@ class TestApproveRenewalRequestsForAllocationPeriod(TestBase):
     def setUp(self):
         """Set up test data."""
         super().setUp()
+        computing_allowance = Resource.objects.get(name=BRCAllowances.FCA)
+        self.num_service_units = Decimal(
+            ComputingAllowanceInterface().service_units_from_name(
+                computing_allowance.name))
 
     @staticmethod
     def call_command(allocation_period_id, dry_run=False):
@@ -120,7 +127,7 @@ class TestApproveRenewalRequestsForAllocationPeriod(TestBase):
         expected_message = (
             f'Would automatically approve AllocationRenewalRequest '
             f'{request.id} for PI {request.pi}, scheduling '
-            f'{settings.FCA_DEFAULT_ALLOCATION} to be granted to '
+            f'{self.num_service_units} to be granted to '
             f'{request.post_project.name} on {allocation_period.start_date}, '
             f'and emailing the requester and/or PI.')
         self.assertIn(expected_message, output)
@@ -225,8 +232,8 @@ class TestApproveRenewalRequestsForAllocationPeriod(TestBase):
 
         expected_message_template = (
             f'{{0}} AllocationRenewalRequest {request.id} for PI '
-            f'{request.pi}, scheduling {settings.FCA_DEFAULT_ALLOCATION} to '
-            f'be granted to {request.post_project.name} on '
+            f'{request.pi}, scheduling {self.num_service_units} to be granted '
+            f'to {request.post_project.name} on '
             f'{allocation_period.start_date}, and emailing the requester '
             f'and/or PI.')
 
