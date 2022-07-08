@@ -1,5 +1,7 @@
 from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.project.models import SavioProjectAllocationRequest
+from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import add_argparse_dry_run_argument
 from django.core.management import CommandError
 from django.core.management.base import BaseCommand
@@ -59,15 +61,22 @@ class Command(BaseCommand):
 
     def handle_auto(self, *args, **options):
         """Handle the 'auto' subcommand."""
-        fca_pca_types = (
-            SavioProjectAllocationRequest.FCA,
-            SavioProjectAllocationRequest.PCA)
+        computing_allowance_interface = ComputingAllowanceInterface()
+        yearly_allowances, instructional_allowances = [], []
+        for allowance in computing_allowance_interface.allowances():
+            wrapper = ComputingAllowance(allowance)
+            if not wrapper.is_periodic():
+                continue
+            if wrapper.is_yearly():
+                yearly_allowances.append(allowance)
+            elif wrapper.is_instructional():
+                instructional_allowances.append(allowance)
         requests_and_allocation_periods = []
         requests_without_periods = \
             SavioProjectAllocationRequest.objects.filter(
                 allocation_period=None).order_by('id')
         for request in requests_without_periods:
-            if request.allocation_type in fca_pca_types:
+            if request.computing_allowance in yearly_allowances:
                 allocation_periods = AllocationPeriod.objects.filter(
                     name__startswith='Allowance Year',
                     start_date__lte=request.created,
@@ -76,8 +85,9 @@ class Command(BaseCommand):
                 if num_allocation_periods == 0:
                     raise CommandError(
                         f'Unexpectedly found no AllocationPeriod enclosing '
-                        f'{request.allocation_type} request {request.id}, '
-                        f'created at {request.created}.')
+                        f'request {request.id} for allowance '
+                        f'"{request.computing_allowance.name}", created at '
+                        f'{request.created}.')
                 elif num_allocation_periods == 1:
                     requests_and_allocation_periods.append(
                         (request, allocation_periods.first()))
@@ -87,9 +97,10 @@ class Command(BaseCommand):
                     raise CommandError(
                         f'Unexpectedly found multiple AllocationPeriods '
                         f'({", ".join(allocation_period_names)}) enclosing '
-                        f'{request.allocation_type} request {request.id}, '
-                        f'created at {request.created}.')
-            elif request.allocation_type == SavioProjectAllocationRequest.ICA:
+                        f'request {request.id} for allowance '
+                        f'"{request.computing_allowance.name}", created at '
+                        f'{request.created}.')
+            elif request.computing_allowance in instructional_allowances:
                 year = request.extra_fields['year']
                 semester = request.extra_fields['semester']
                 # TODO: This filter handles the Fall and Spring semesters, but
@@ -100,8 +111,9 @@ class Command(BaseCommand):
                 num_allocation_periods = allocation_periods.count()
                 if num_allocation_periods == 0:
                     raise CommandError(
-                        f'Unexpectedly found no AllocationPeriod for '
-                        f'{request.allocation_type} request {request.id}, for '
+                        f'Unexpectedly found no AllocationPeriod for request '
+                        f'{request.id} for allowance '
+                        f'"{request.computing_allowance.name}", for '
                         f'{semester} {year}.')
                 elif num_allocation_periods == 1:
                     requests_and_allocation_periods.append(
@@ -112,7 +124,8 @@ class Command(BaseCommand):
                     raise CommandError(
                         f'Unexpectedly found multiple AllocationPeriods '
                         f'({", ".join(allocation_period_names)}) for '
-                        f'{request.allocation_type} request {request.id}, for '
+                        f'request {request.id} for allowance '
+                        f'"{request.computing_allowance.name}", for '
                         f'{semester} {year}.')
 
         for request, allocation_period in requests_and_allocation_periods:
