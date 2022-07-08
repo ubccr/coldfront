@@ -1,16 +1,9 @@
-from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
-from coldfront.core.project.models import Project
-from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
-from coldfront.core.project.models import ProjectStatusChoice
-from coldfront.core.project.models import ProjectUser
-from coldfront.core.project.models import ProjectUserRoleChoice
-from coldfront.core.project.models import ProjectUserStatusChoice
-from coldfront.core.project.models import SavioProjectAllocationRequest
+from coldfront.core.project.tests.test_views.test_renewal_views.utils import TestRenewalViewsMixin
+from coldfront.core.project.tests.utils import create_fca_project_and_request
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
-from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 from django.urls import reverse
@@ -18,7 +11,8 @@ from http import HTTPStatus
 import iso8601
 
 
-class TestAllocationRenewalRequestReviewEligibilityView(TestBase):
+class TestAllocationRenewalRequestReviewEligibilityView(TestBase,
+                                                        TestRenewalViewsMixin):
     """A class for testing
     AllocationRenewalRequestReviewEligibilityView."""
 
@@ -32,39 +26,12 @@ class TestAllocationRenewalRequestReviewEligibilityView(TestBase):
         self.user.is_superuser = True
         self.user.save()
 
-        # Create a Project for the user to renew.
+        # Create a Project and an associated renewal request.
         project_name = 'fc_project'
-        active_project_status = ProjectStatusChoice.objects.get(name='Active')
-        project = Project.objects.create(
-            name=project_name,
-            title=project_name,
-            status=active_project_status)
-        pi_role = ProjectUserRoleChoice.objects.get(
-            name='Principal Investigator')
-        active_project_user_status = ProjectUserStatusChoice.objects.get(
-            name='Active')
-        ProjectUser.objects.create(
-            project=project,
-            role=pi_role,
-            status=active_project_user_status,
-            user=self.user)
-
-        # Create an AllocationRenewalRequest.
-        allocation_period = get_current_allowance_year_period()
-        under_review_request_status = \
-            AllocationRenewalRequestStatusChoice.objects.get(
-                name='Under Review')
-        self.allocation_renewal_request = \
-            AllocationRenewalRequest.objects.create(
-                requester=self.user,
-                pi=self.user,
-                computing_allowance=Resource.objects.get(
-                    name=BRCAllowances.FCA),
-                allocation_period=allocation_period,
-                status=under_review_request_status,
-                pre_project=project,
-                post_project=project,
-                request_time=utc_now_offset_aware())
+        computing_allowance = Resource.objects.get(name=BRCAllowances.FCA)
+        project, self.allocation_renewal_request = \
+            self.create_project_and_request(
+                project_name, computing_allowance, self.user)
 
     @staticmethod
     def pi_allocation_renewal_request_review_eligibility_url(pk):
@@ -166,31 +133,11 @@ class TestAllocationRenewalRequestReviewEligibilityView(TestBase):
             self.allocation_renewal_request.pk)
         data = {}
 
-        # Create a new Project.
+        # Create a new Project and associated request.
         new_project_name = 'fc_new_project'
-        new_project_status = ProjectStatusChoice.objects.get(name='New')
-        new_project = Project.objects.create(
-            name=new_project_name,
-            status=new_project_status,
-            title=new_project_name,
-            description=f'Description of {new_project_name}.')
-
-        # Create an 'Under Review' SavioProjectAllocationRequest for the new
-        # Project.
-        computing_allowance = Resource.objects.get(name=BRCAllowances.FCA)
-        allocation_type = ComputingAllowanceInterface().name_short_from_name(
-            computing_allowance.name)
-        under_review_request_status = \
-            ProjectAllocationRequestStatusChoice.objects.get(
-                name='Under Review')
-        new_project_request = SavioProjectAllocationRequest.objects.create(
-            requester=self.user,
-            allocation_type=allocation_type,
-            computing_allowance=computing_allowance,
-            pi=self.user,
-            project=new_project,
-            survey_answers={},
-            status=under_review_request_status)
+        new_project, new_project_request = create_fca_project_and_request(
+            new_project_name, 'New', get_current_allowance_year_period(),
+            self.user, self.user, 'Under Review')
 
         self.allocation_renewal_request.new_project_request = \
             new_project_request
