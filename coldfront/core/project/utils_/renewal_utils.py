@@ -15,6 +15,7 @@ from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
@@ -100,25 +101,24 @@ def get_previous_allowance_year_period():
     return allocation_periods.latest('end_date')
 
 
-def get_pi_current_active_fca_project(pi_user):
-    """Given a User object representing a PI, return its current,
-    active fc_ Project.
+def get_pi_active_unique_project(pi_user, computing_allowance,
+                                 allocation_period):
+    """Given a User object representing a PI, return its active, unique
+    Project having the given allowance during the given period.
 
-    A Project is considered "active" if it has a completed
-    AllocationRenewalRequest for the current "Allowance Year"
-    AllocationPeriod or if it has a completed
-    SavioProjectAllocationRequest during the period.
+    The allowance is expected to be one which a PI may have at most one
+    of during a single period.
+
+    A Project is considered active during the period if it was exactly
+    one of the following: (a) successfully created or (b) successfully
+    renewed during the period.
 
     Parameters:
-        - pi_user: a User object.
-
-    Returns:
-        - A Project object.
+        - pi_user: A user object.
+        - computing_allowance: A ComputingAllowance object.
+        - allocation_period: An AllocationPeriod object.
 
     Raises:
-        - AllocationPeriod.DoesNotExist, if no such period is found.
-        - AllocationPeriod.MultipleObjectsReturned, if multiple such
-          periods are found.
         - AllocationRenewalRequest.MultipleObjectsReturned, if the PI
           has more than one 'Complete' renewal request during the
           current AllocationPeriod.
@@ -128,55 +128,70 @@ def get_pi_current_active_fca_project(pi_user):
           PI has more than one 'Approved - Complete' request.
         - Exception, if any other errors occur.
     """
+    assert isinstance(pi_user, User)
+    assert isinstance(computing_allowance, ComputingAllowance)
+    assert isinstance(allocation_period, AllocationPeriod)
+    assert computing_allowance.is_one_per_pi()
+
     project = None
-    allocation_period = get_current_allowance_year_period()
+
+    allowance_name = computing_allowance.get_name()
+    allowance_resource = computing_allowance.get_resource()
 
     # Check AllocationRenewalRequests.
     renewal_request_status = AllocationRenewalRequestStatusChoice.objects.get(
         name='Complete')
     renewal_requests = AllocationRenewalRequest.objects.filter(
+        computing_allowance=allowance_resource,
         allocation_period=allocation_period,
         pi=pi_user,
-        status=renewal_request_status,
-        post_project__name__startswith='fc_')
+        status=renewal_request_status)
     if renewal_requests.exists():
         if renewal_requests.count() > 1:
             message = (
                 f'PI {pi_user.username} unexpectedly has more than one '
-                f'completed FCA AllocationRenewalRequest during '
-                f'AllocationPeriod "{allocation_period.name}".')
+                f'completed AllocationRenewalRequest for allowance '
+                f'"{allowance_name}" during AllocationPeriod '
+                f'"{allocation_period.name}".')
             logger.error(message)
             raise AllocationRenewalRequest.MultipleObjectsReturned(message)
         project = renewal_requests.first().post_project
 
-    # Check SavioProjectAllocationRequests.
-    project_request_status = ProjectAllocationRequestStatusChoice.objects.get(
-        name='Approved - Complete')
-    project_requests = SavioProjectAllocationRequest.objects.filter(
-        allocation_type=SavioProjectAllocationRequest.FCA,
+    # Check new project requests.
+    new_project_request_status = \
+        ProjectAllocationRequestStatusChoice.objects.get(
+            name='Approved - Complete')
+    new_project_requests = SavioProjectAllocationRequest.objects.filter(
+        computing_allowance=allowance_resource,
         allocation_period=allocation_period,
         pi=pi_user,
-        status=project_request_status)
-    if project_requests.exists():
-        if project_requests.count() > 1:
+        status=new_project_request_status)
+    if new_project_requests.exists():
+        if new_project_requests.count() > 1:
             message = (
                 f'PI {pi_user.username} unexpectedly has more than one '
-                f'completed FCA SavioProjectAllocationRequest during '
-                f'AllocationPeriod "{allocation_period.name}".')
+                f'completed new project request for allowance '
+                f'"{allowance_name}" during AllocationPeriod '
+                f'"{allocation_period.name}".')
             logger.error(message)
             raise SavioProjectAllocationRequest.MultipleObjectsReturned(
                 message)
-        # The PI should not have both a renewal request and a project request.
+        # The PI should not have both a completed renewal request and a
+        # completed new project request.
         if project:
             message = (
-                f'PI {pi_user.username} unexpectedly has both an FCA '
-                f'AllocationRenewalRequest and an FCA'
-                f'SavioProjectAllocationRequest.')
+                f'PI {pi_user.username} unexpectedly has both a completed '
+                f'AllocationRenewalRequest and a completed new project '
+                f'request for allowance "{allowance_name}" during '
+                f'AllocationPeriod "{allocation_period.name}".')
             raise Exception(message)
-        project = project_requests.first().project
+        project = new_project_requests.first().project
 
     if not project:
-        message = f'PI {pi_user.username} has no active FCA Project.'
+        message = (
+            f'PI {pi_user.username} has no active Project with allowance '
+            f'"{allowance_name}" during AllocationPeriod '
+            f'"{allocation_period.name}".')
         raise Project.DoesNotExist(message)
 
     return project

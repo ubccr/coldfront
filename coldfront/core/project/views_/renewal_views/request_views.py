@@ -17,7 +17,8 @@ from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils_.permissions_utils import is_user_manager_or_pi_of_project
-from coldfront.core.project.utils_.renewal_utils import get_pi_current_active_fca_project
+from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
+from coldfront.core.project.utils_.renewal_utils import get_pi_active_unique_project
 from coldfront.core.project.utils_.renewal_utils import has_non_denied_renewal_request
 from coldfront.core.project.utils_.renewal_utils import send_new_allocation_renewal_request_admin_notification_email
 from coldfront.core.project.utils_.renewal_utils import send_new_allocation_renewal_request_pi_notification_email
@@ -435,6 +436,39 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
                 name='Under Review')
         return SavioProjectAllocationRequest.objects.create(**request_kwargs)
 
+    def __infer_pi_current_project(self, pi_user, computing_allowance):
+        """Retrieve the PI's current Project with the given
+        allowance."""
+        # TODO: Set this dynamically when supporting other types.
+        allocation_period = get_current_allowance_year_period()
+        try:
+            # TODO: When supporting renewals of allowances that PIs may have
+            # TODO: multiple of, relax the uniqueness constraint.
+            return get_pi_active_unique_project(
+                pi_user, computing_allowance, allocation_period)
+        except Project.DoesNotExist:
+            # If the PI has no active Project with the allowance, fall back on
+            # one shared by the requester and the PI.
+            project_name_prefix = self.interface.code_from_name(
+                computing_allowance.get_name())
+            requester_projects = set(list(
+                ProjectUser.objects.filter(
+                    project__name__startswith=project_name_prefix,
+                    user=self.request.user,
+                    role__name__in=[
+                        'Manager', 'Principal Investigator']
+                ).values_list('project', flat=True)))
+            pi_projects = set(list(
+                ProjectUser.objects.filter(
+                    project__name__startswith=project_name_prefix,
+                    user=pi_user,
+                    role__name='Principal Investigator'
+                ).values_list('project', flat=True)))
+            intersection = set.intersection(
+                requester_projects, pi_projects)
+            project_pk = sorted(list(intersection))[0]
+            return Project.objects.get(pk=project_pk)
+
     def __set_data_from_previous_steps(self, step, dictionary):
         """Update the given dictionary with data from previous steps."""
         dictionary['computing_allowance'] = self.computing_allowance
@@ -450,7 +484,6 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
                 str(allocation_period_form_step))
             if data:
                 dictionary.update(data)
-                # TODO: Set this dynamically when supporting other types.
                 dictionary['allocation_amount'] = prorated_allocation_amount(
                     self.num_service_units, utc_now_offset_aware(),
                     data['allocation_period'])
@@ -461,29 +494,8 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
             if data:
                 dictionary.update(data)
                 pi_user = data['PI'].user
-                try:
-                    current_project = get_pi_current_active_fca_project(
-                        pi_user)
-                except Project.DoesNotExist:
-                    # If the PI has no active FCA Project, fall back on one
-                    # shared by the requester and the PI.
-                    requester_projects = set(list(
-                        ProjectUser.objects.filter(
-                            project__name__startswith='fc_',
-                            user=self.request.user,
-                            role__name__in=[
-                                'Manager', 'Principal Investigator']
-                        ).values_list('project', flat=True)))
-                    pi_projects = set(list(
-                        ProjectUser.objects.filter(
-                            project__name__startswith='fc_',
-                            user=pi_user,
-                            role__name='Principal Investigator'
-                        ).values_list('project', flat=True)))
-                    intersection = set.intersection(
-                        requester_projects, pi_projects)
-                    project_pk = sorted(list(intersection))[0]
-                    current_project = Project.objects.get(pk=project_pk)
+                current_project = self.__infer_pi_current_project(
+                    pi_user, computing_allowance_wrapper)
                 dictionary['current_project'] = current_project
 
         pooling_preference_form_step = self.step_numbers_by_form_name[
