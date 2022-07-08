@@ -42,7 +42,7 @@ class ProjectUserRemovalRequestViewSet(mixins.ListModelMixin,
                                        mixins.RetrieveModelMixin,
                                        mixins.UpdateModelMixin,
                                        viewsets.GenericViewSet):
-    """A ViewSet for the IdentityLinkingRequest model."""
+    """A ViewSet for the ProjectUserRemovalRequestViewSet model."""
 
     filterset_class = ProjectUserRemovalRequestFilter
     http_method_names = ['get', 'patch']
@@ -80,7 +80,7 @@ class ProjectUserRemovalRequestViewSet(mixins.ListModelMixin,
             completion_time = serializer.validated_data.get('completion_time', None)
             runner = \
                 ProjectRemovalRequestUpdateRunner(instance)
-            runner.update_request(status_name)
+
             if status_name == 'Complete':
                 runner.update_request(status_name)
                 runner.complete_request(completion_time=completion_time)
