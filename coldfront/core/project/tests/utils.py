@@ -7,12 +7,11 @@ from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowanc
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 
 
-def create_fca_project_and_request(project_name, project_status_name,
-                                   allocation_period, requester, pi,
-                                   request_status_name):
+def create_project_and_request(project_name, project_status_name,
+                               computing_allowance, allocation_period,
+                               requester, pi, request_status_name):
     """Create an FCA project and a corresponding new project request
     with the given parameters. Return both."""
-    computing_allowance = Resource.objects.get(name=BRCAllowances.FCA)
     interface = ComputingAllowanceInterface()
 
     project_status = ProjectStatusChoice.objects.get(name=project_status_name)

@@ -1,5 +1,5 @@
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
-from coldfront.core.project.tests.utils import create_fca_project_and_request
+from coldfront.core.project.tests.utils import create_project_and_request
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.utils.tests.test_base import TestBase
 from django.contrib.auth.models import User
@@ -47,16 +47,17 @@ class TestViewMixin(object):
         self.user_c.save()
 
         # Create three requests.
+        computing_allowance = TestBase.get_fca_computing_allowance()
         allocation_period = get_current_allowance_year_period()
-        self.project_a, self.request_a = create_fca_project_and_request(
-            'project_a', 'New', allocation_period, self.user_a, self.user_a,
-            'Under Review')
-        self.project_b, self.request_b = create_fca_project_and_request(
-            'project_b', 'New', allocation_period, self.user_b, self.user_b,
-            'Under Review')
-        self.project_c, self.request_c = create_fca_project_and_request(
-            'project_c', 'New', allocation_period, self.user_c, self.user_c,
-            'Under Review')
+        self.project_a, self.request_a = create_project_and_request(
+            'project_a', 'New', computing_allowance, allocation_period,
+            self.user_a, self.user_a, 'Under Review')
+        self.project_b, self.request_b = create_project_and_request(
+            'project_b', 'New', computing_allowance, allocation_period,
+            self.user_b, self.user_b, 'Under Review')
+        self.project_c, self.request_c = create_project_and_request(
+            'project_c', 'New', computing_allowance, allocation_period,
+            self.user_c, self.user_c, 'Under Review')
 
     def test_all_requests_visible_to_superusers(self):
         """Test that superusers can see all requests, even if they are

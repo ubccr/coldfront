@@ -1,5 +1,5 @@
 from coldfront.api.statistics.utils import create_project_allocation
-from coldfront.core.project.tests.utils import create_fca_project_and_request
+from coldfront.core.project.tests.utils import create_project_and_request
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.project.utils_.renewal_utils import get_next_allowance_year_period
 from coldfront.core.resource.models import Resource
@@ -29,7 +29,7 @@ class TestSavioProjectRequestDetailView(TestBase):
         # Create a Project and a corresponding new project request.
         allocation_period = get_current_allowance_year_period()
         self.project, self.new_project_request = \
-            create_fca_project_and_request(
+            create_project_and_request(
                 'fc_project', 'New', allocation_period, self.user, self.user,
                 'Approved - Processing')
         # Create a 'CLUSTER_NAME Compute' Allocation for the Project.

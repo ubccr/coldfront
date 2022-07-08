@@ -1,7 +1,7 @@
 from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.tests.test_views.test_renewal_views.utils import TestRenewalViewsMixin
-from coldfront.core.project.tests.utils import create_fca_project_and_request
+from coldfront.core.project.tests.utils import create_project_and_request
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
@@ -119,10 +119,12 @@ class TestAllocationRenewalRequestReviewDenyView(TestBase,
         data = {}
 
         # Create a new Project and associated request.
+        computing_allowance = self.get_fca_computing_allowance()
         new_project_name = 'fc_new_project'
-        new_project, new_project_request = create_fca_project_and_request(
-            new_project_name, 'New', get_current_allowance_year_period(),
-            self.user, self.user, 'Under Review')
+        new_project, new_project_request = create_project_and_request(
+            new_project_name, 'New', computing_allowance,
+            get_current_allowance_year_period(), self.user, self.user,
+            'Under Review')
 
         self.allocation_renewal_request.new_project_request = \
             new_project_request

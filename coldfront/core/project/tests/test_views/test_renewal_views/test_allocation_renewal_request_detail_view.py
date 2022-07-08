@@ -2,7 +2,7 @@ from coldfront.api.statistics.utils import create_project_allocation
 from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.tests.test_views.test_renewal_views.utils import TestRenewalViewsMixin
-from coldfront.core.project.tests.utils import create_fca_project_and_request
+from coldfront.core.project.tests.utils import create_project_and_request
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.project.utils_.renewal_utils import get_next_allowance_year_period
 from coldfront.core.resource.models import Resource
@@ -351,10 +351,12 @@ class TestAllocationRenewalRequestDetailView(TestBase, TestRenewalViewsMixin):
         self.user.save()
 
         # Create a new Project and associated request.
+        computing_allowance = self.get_fca_computing_allowance()
         new_project_name = 'fc_new_project'
-        new_project, new_project_request = create_fca_project_and_request(
-            new_project_name, 'New', get_current_allowance_year_period(),
-            self.user, self.user, 'Under Review')
+        new_project, new_project_request = create_project_and_request(
+            new_project_name, 'New', computing_allowance,
+            get_current_allowance_year_period(), self.user, self.user,
+            'Under Review')
 
         # Update the renewal request so that it references the new objects.
         self.allocation_renewal_request.post_project = new_project

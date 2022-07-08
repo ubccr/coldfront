@@ -19,6 +19,8 @@ from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
+from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
 from coldfront.core.utils.common import utc_now_offset_aware
 
 
@@ -118,6 +120,11 @@ class TestBase(TestCase):
         self.user.set_password(self.password)
         self.user.save()
         return self.user
+
+    @staticmethod
+    def get_fca_computing_allowance():
+        """Return the FCA Resource."""
+        return Resource.objects.get(name=BRCAllowances.FCA)
 
     @staticmethod
     def get_message_strings(response):

@@ -7,7 +7,7 @@ from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
-from coldfront.core.project.tests.utils import create_fca_project_and_request
+from coldfront.core.project.tests.utils import create_project_and_request
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.project.utils_.renewal_utils import get_next_allowance_year_period
 from coldfront.core.resource.models import Resource
@@ -31,12 +31,13 @@ class TestSavioProjectExistingPIForm(TestBase):
     def test_eligibility_based_on_requests_in_specific_allocation_period(self):
         """Test that PI eligibility for a particular AllocationPeriod is
         only based on existing requests under the same period."""
+        computing_allowance = self.get_fca_computing_allowance()
         allocation_period = get_current_allowance_year_period()
 
         # Create a new project request.
-        new_project, new_project_request = create_fca_project_and_request(
-            'fc_new_project', 'Denied', allocation_period, self.user,
-            self.user, 'Under Review')
+        new_project, new_project_request = create_project_and_request(
+            'fc_new_project', 'Denied', computing_allowance, allocation_period,
+            self.user, self.user, 'Under Review')
 
         # Create a Project for the user to renew.
         project_name = 'fc_project'
@@ -133,11 +134,12 @@ class TestSavioProjectExistingPIForm(TestBase):
         """Test that PIs with non-'Denied'
         SavioProjectAllocationRequests are disabled in the 'PI'
         field."""
+        computing_allowance = self.get_fca_computing_allowance()
         allocation_period = get_current_allowance_year_period()
         # Create a new project request.
-        new_project, new_project_request = create_fca_project_and_request(
-            'fc_new_project', 'Denied', allocation_period, self.user,
-            self.user, 'Under Review')
+        new_project, new_project_request = create_project_and_request(
+            'fc_new_project', 'Denied', computing_allowance, allocation_period,
+            self.user, self.user, 'Under Review')
 
         # For every status except 'Denied', the PI should be disabled.
         kwargs = {

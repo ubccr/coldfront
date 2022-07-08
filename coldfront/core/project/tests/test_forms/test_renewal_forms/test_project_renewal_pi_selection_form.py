@@ -7,7 +7,7 @@ from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
-from coldfront.core.project.tests.utils import create_fca_project_and_request
+from coldfront.core.project.tests.utils import create_project_and_request
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.project.utils_.renewal_utils import get_next_allowance_year_period
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -47,9 +47,10 @@ class TestProjectRenewalPISelectionForm(TestBase):
         allocation_period = get_current_allowance_year_period()
 
         # Create a new project request.
-        new_project, new_project_request = create_fca_project_and_request(
-            'fc_new_project', 'New', allocation_period, self.user, self.user,
-            'Under Review')
+        computing_allowance = self.get_fca_computing_allowance()
+        new_project, new_project_request = create_project_and_request(
+            'fc_new_project', 'New', computing_allowance, allocation_period,
+            self.user, self.user, 'Under Review')
         self.assertNotEqual(new_project_request.status.name, 'Denied')
 
         # Create a renewal request.
@@ -99,11 +100,12 @@ class TestProjectRenewalPISelectionForm(TestBase):
         """Test that PIs with non-'Denied'
         SavioProjectAllocationRequests are disabled in the 'PI'
         field."""
+        computing_allowance = self.get_fca_computing_allowance()
         allocation_period = get_current_allowance_year_period()
         # Create a new project request.
-        new_project, new_project_request = create_fca_project_and_request(
-            'fc_new_project', 'New', allocation_period, self.user, self.user,
-            'Under Review')
+        new_project, new_project_request = create_project_and_request(
+            'fc_new_project', 'New', computing_allowance, allocation_period,
+            self.user, self.user, 'Under Review')
 
         # For every status except 'Denied', the PI should be disabled.
         kwargs = {
