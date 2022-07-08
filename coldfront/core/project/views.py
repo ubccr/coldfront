@@ -56,9 +56,9 @@ from coldfront.core.project.utils_.addition_utils import can_project_purchase_se
 from coldfront.core.project.utils_.new_project_utils import add_vector_user_to_designated_savio_project
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.project.utils_.renewal_utils import is_any_project_pi_renewable
-from coldfront.core.resource.utils import get_compute_resource_names
+from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.user.forms import UserSearchForm
-from coldfront.core.user.models import UserProfile
 from coldfront.core.user.utils import CombinedUserSearch, is_lbl_employee, \
     needs_host
 from coldfront.core.utils.common import (get_domain_url, import_from_settings)
@@ -231,14 +231,11 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['cluster_accounts_tooltip'] = cluster_accounts_tooltip
 
         # Display the "Renew Allowance" button for eligible allocation types.
-        eligible_project_prefixes = (
-            'fc_'
-            # TODO: Include these when ready.
-            # 'ic_',
-            # 'pc_',
-        )
-        context['renew_allowance_visible'] = self.object.name.startswith(
-            eligible_project_prefixes)
+        computing_allowance_interface = ComputingAllowanceInterface()
+        computing_allowance = ComputingAllowance(
+            computing_allowance_interface.allowance_from_project(self.object))
+        context['renew_allowance_visible'] = \
+            computing_allowance.is_renewal_supported()
         # Only allow the "Renew Allowance" button to be clickable if
         #     (a) any PIs do not have pending/approved renewal requests for the
         #         current period, or

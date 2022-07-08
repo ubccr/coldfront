@@ -82,6 +82,7 @@ class TestProjectDetailView(TestBase):
         for Projects that are eligible to do so."""
         computing_allowance_interface = ComputingAllowanceInterface()
         expected_num_eligible, actual_num_eligible = 1, 0
+        ineligible_found = False
         for allowance in computing_allowance_interface.allowances():
             project_name_prefix = computing_allowance_interface.code_from_name(
                 allowance.name)
@@ -92,11 +93,13 @@ class TestProjectDetailView(TestBase):
             response = self.client.get(url)
             button_text = 'Purchase Service Units'
             if wrapper.is_recharge():
-                actual_num_eligible += 1
                 self.assertContains(response, button_text)
+                actual_num_eligible += 1
             else:
                 self.assertNotContains(response, button_text)
+                ineligible_found = True
         self.assertEqual(expected_num_eligible, actual_num_eligible)
+        self.assertTrue(ineligible_found)
 
     def test_purchase_sus_button_invisible_for_user_roles(self):
         """Test that the 'Purchase Service Units' button only appears
@@ -224,14 +227,28 @@ class TestProjectDetailView(TestBase):
         all_roles = ProjectUserRoleChoice.objects.distinct()
         eligible_role_names = {'Manager', 'Principal Investigator'}
 
-        all_project_prefixes = ('ac_', 'co_', 'fc_', 'ic_', 'pc_')
-        eligible_project_prefixes = {'fc_'}
+        computing_allowance_interface = ComputingAllowanceInterface()
+        all_allowances = computing_allowance_interface.allowances()
+        eligible_allowance_names, ineligible_allowance_names = set(), set()
+        for allowance in all_allowances:
+            wrapper = ComputingAllowance(allowance)
+            if wrapper.is_renewal_supported():
+                eligible_allowance_names.add(allowance.name)
+            else:
+                ineligible_allowance_names.add(allowance.name)
+        self.assertGreater(len(eligible_allowance_names), 0)
+        self.assertGreater(len(ineligible_allowance_names), 0)
 
-        expected_num_successes = len(eligible_role_names)
+        project_name_prefixes_by_allowance_name = {
+            allowance.name: \
+                computing_allowance_interface.code_from_name(allowance.name)
+            for allowance in all_allowances}
+
+        expected_num_successes = (
+             len(eligible_role_names) * len(eligible_allowance_names))
         actual_num_successes = 0
         expected_num_failures = (
-            all_roles.count() * len(all_project_prefixes) -
-            expected_num_successes)
+            all_roles.count() * len(all_allowances) - expected_num_successes)
         actual_num_failures = 0
 
         # Non-superuser, project member.
@@ -239,12 +256,14 @@ class TestProjectDetailView(TestBase):
         for role in all_roles:
             project_user.role = role
             project_user.save()
-            for prefix in all_project_prefixes:
-                project.name = f'{prefix}_project'
+            for allowance in all_allowances:
+                project_name_prefix = project_name_prefixes_by_allowance_name[
+                    allowance.name]
+                project.name = f'{project_name_prefix}_project'
                 project.save()
                 response = self.client.get(url)
                 if (role.name in eligible_role_names and
-                        prefix in eligible_project_prefixes):
+                        allowance.name in eligible_allowance_names):
                     self.assertContains(response, button_text)
                     actual_num_successes = actual_num_successes + 1
                 else:
@@ -257,11 +276,13 @@ class TestProjectDetailView(TestBase):
         # Superuser, non-(project member).
         self.user.is_superuser = True
         self.user.save()
-        for prefix in all_project_prefixes:
-            project.name = f'{prefix}_project'
+        for allowance in all_allowances:
+            project_name_prefix = project_name_prefixes_by_allowance_name[
+                allowance.name]
+            project.name = f'{project_name_prefix}_project'
             project.save()
             response = self.client.get(url)
-            if prefix in eligible_project_prefixes:
+            if allowance.name in eligible_allowance_names:
                 self.assertContains(response, button_text)
             else:
                 self.assertNotContains(response, button_text)
@@ -271,8 +292,10 @@ class TestProjectDetailView(TestBase):
         # Staff, non-(project member).
         self.user.is_staff = True
         self.user.save()
-        for prefix in all_project_prefixes:
-            project.name = f'{prefix}_project'
+        for allowance in all_allowances:
+            project_name_prefix = project_name_prefixes_by_allowance_name[
+                allowance.name]
+            project.name = f'{project_name_prefix}_project'
             project.save()
             response = self.client.get(url)
             self.assertNotContains(response, button_text)

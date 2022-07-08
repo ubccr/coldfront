@@ -755,6 +755,7 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
         kwargs['project_pk'] = self.request_obj.project.pk
         kwargs['requested_name'] = (
             self.request_obj.state['setup']['name_change']['requested_name'])
+        kwargs['computing_allowance'] = self.request_obj.computing_allowance
         return kwargs
 
     def get_initial(self):
