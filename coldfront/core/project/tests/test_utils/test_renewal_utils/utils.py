@@ -29,6 +29,8 @@ from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils import ProjectClusterAccessRequestRunner
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import utc_now_offset_aware
 
@@ -219,12 +221,16 @@ class TestRunnerMixinBase(object):
 
         # Create an 'Under Review' SavioProjectAllocationRequest for the new
         # Project.
+        computing_allowance = Resource.objects.get(name=BRCAllowances.FCA)
+        allocation_type = ComputingAllowanceInterface().name_short_from_name(
+            computing_allowance.name)
         under_review_request_status = \
             ProjectAllocationRequestStatusChoice.objects.get(
                 name='Under Review')
         new_project_request = SavioProjectAllocationRequest.objects.create(
             requester=self.requester,
-            allocation_type=SavioProjectAllocationRequest.FCA,
+            allocation_type=allocation_type,
+            computing_allowance=computing_allowance,
             pi=self.pi0,
             project=new_project,
             survey_answers={},

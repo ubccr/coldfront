@@ -8,6 +8,9 @@ from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
+from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 from django.urls import reverse
@@ -55,6 +58,8 @@ class TestAllocationRenewalRequestReviewEligibilityView(TestBase):
             AllocationRenewalRequest.objects.create(
                 requester=self.user,
                 pi=self.user,
+                computing_allowance=Resource.objects.get(
+                    name=BRCAllowances.FCA),
                 allocation_period=allocation_period,
                 status=under_review_request_status,
                 pre_project=project,
@@ -172,12 +177,16 @@ class TestAllocationRenewalRequestReviewEligibilityView(TestBase):
 
         # Create an 'Under Review' SavioProjectAllocationRequest for the new
         # Project.
+        computing_allowance = Resource.objects.get(name=BRCAllowances.FCA)
+        allocation_type = ComputingAllowanceInterface().name_short_from_name(
+            computing_allowance.name)
         under_review_request_status = \
             ProjectAllocationRequestStatusChoice.objects.get(
                 name='Under Review')
         new_project_request = SavioProjectAllocationRequest.objects.create(
             requester=self.user,
-            allocation_type=SavioProjectAllocationRequest.FCA,
+            allocation_type=allocation_type,
+            computing_allowance=computing_allowance,
             pi=self.user,
             project=new_project,
             survey_answers={},

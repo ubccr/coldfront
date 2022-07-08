@@ -5,6 +5,9 @@ from coldfront.core.project.models import *
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.allocation.models import *
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
+from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.tests.test_base import TestBase as AllTestsBase
 
 from django.contrib.auth.models import User
@@ -82,6 +85,7 @@ class TestStaffViewPermissions(TestBase):
             user=self.user1)
 
         # Create an AllocationRenewalRequest.
+        computing_allowance = Resource.objects.get(name=BRCAllowances.FCA)
         allocation_period = get_current_allowance_year_period()
         under_review_request_status = \
             AllocationRenewalRequestStatusChoice.objects.get(
@@ -90,6 +94,7 @@ class TestStaffViewPermissions(TestBase):
             AllocationRenewalRequest.objects.create(
                 requester=self.user1,
                 pi=self.user1,
+                computing_allowance=computing_allowance,
                 allocation_period=allocation_period,
                 status=under_review_request_status,
                 pre_project=self.project,
@@ -152,12 +157,17 @@ class TestStaffViewPermissions(TestBase):
             title=new_project_name,
             description=f'Description of {new_project_name}.')
 
+        interface = ComputingAllowanceInterface()
+        computing_allowance = Resource.objects.get(name=BRCAllowances.FCA)
+
         under_review_request_status = \
             ProjectAllocationRequestStatusChoice.objects.get(
                 name='Under Review')
         request = SavioProjectAllocationRequest.objects.create(
             requester=self.user1,
-            allocation_type=SavioProjectAllocationRequest.FCA,
+            allocation_type=interface.name_short_from_name(
+                computing_allowance.name),
+            computing_allowance=computing_allowance,
             allocation_period=get_current_allowance_year_period(),
             pi=self.user1,
             project=new_project,

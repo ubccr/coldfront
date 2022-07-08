@@ -1,16 +1,9 @@
-from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
-from coldfront.core.allocation.models import AllocationStatusChoice
-from coldfront.core.project.models import Project
-from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
-from coldfront.core.project.models import ProjectStatusChoice
-from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.tests.test_utils.test_renewal_utils.utils import TestRunnerMixinBase
 from coldfront.core.project.utils_.renewal_utils import AllocationRenewalApprovalRunner
 from coldfront.core.project.utils_.renewal_utils import get_next_allowance_year_period
-from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import utc_now_offset_aware
 from decimal import Decimal
@@ -274,37 +267,7 @@ class TestPooledToUnpooledNew(TestRunnerMixin, TestCase):
     def simulate_new_project_allocation_request_processing(self):
         """Create a new Project and simulate its processing. Return the
         created SavioProjectAllocationRequest."""
-        # Create a new Project.
-        new_project_name = 'unpooled_project2'
-        new_project_status = ProjectStatusChoice.objects.get(name='New')
-        new_project = Project.objects.create(
-            name=new_project_name,
-            status=new_project_status,
-            title=new_project_name,
-            description=f'Description of {new_project_name}.')
-
-        # Create a compute Allocation for the new Project.
-        new_allocation_status = AllocationStatusChoice.objects.get(name='New')
-        allocation = Allocation.objects.create(
-            project=new_project, status=new_allocation_status)
-        resource = Resource.objects.get(name='Savio Compute')
-        allocation.resources.add(resource)
-        allocation.save()
-
-        # Create an 'Under Review' SavioProjectAllocationRequest for the new
-        # Project.
-        under_review_request_status = \
-            ProjectAllocationRequestStatusChoice.objects.get(
-                name='Under Review')
-        new_project_request = SavioProjectAllocationRequest.objects.create(
-            requester=self.requester,
-            allocation_type=SavioProjectAllocationRequest.FCA,
-            pi=self.pi0,
-            project=new_project,
-            survey_answers={},
-            status=under_review_request_status)
-
-        return new_project_request
+        return self.create_under_review_new_project_request()
 
     def test_pooling_preference_case(self):
         """Test that the pooling preference case for the class' renewal
