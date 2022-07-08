@@ -56,8 +56,7 @@ class ProjectUserRemovalRequestViewSet(mixins.ListModelMixin,
         manual_parameters=[authorization_parameter],
         operation_description=(
             'Updates one or more fields of the ProjectUserRemovalRequest '
-            'identified by the given ID.'),
-        auto_schema=None)
+            'identified by the given ID.'))
     @transaction.atomic
     def partial_update(self, request, *args, **kwargs):
         """The method for PATCH (partial update) requests."""
