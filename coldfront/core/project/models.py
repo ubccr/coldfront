@@ -422,21 +422,8 @@ class SavioProjectAllocationRequest(TimeStampedModel):
     requester = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='savio_requester')
 
-    FCA = 'FCA'
-    CO = 'CO'
-    ICA = 'ICA'
-    PCA = 'PCA'
-    RECHARGE = 'RECHARGE'
-    ALLOCATION_TYPE_CHOICES = (
-        (FCA, 'Faculty Compute Allowance (FCA)'),
-        (CO, 'Condo Allocation'),
-        (ICA, 'Instructional Compute Allowance (ICA)'),
-        (PCA, 'Partner Compute Allowance (PCA)'),
-        (RECHARGE, 'Recharge Allocation'),
-    )
-    allocation_type = models.CharField(
-        max_length=16, choices=ALLOCATION_TYPE_CHOICES)
-
+    # TODO: Retire allocation_type eventually.
+    allocation_type = models.CharField(max_length=16, blank=True, null=True)
     computing_allowance = models.ForeignKey(
         'resource.Resource', blank=True, null=True, on_delete=models.SET_NULL,
         related_name='computing_allowance')
