@@ -27,11 +27,12 @@ class TestSavioProjectRequestDetailView(TestBase):
         self.client.login(username=self.user.username, password=self.password)
 
         # Create a Project and a corresponding new project request.
+        computing_allowance = self.get_fca_computing_allowance()
         allocation_period = get_current_allowance_year_period()
         self.project, self.new_project_request = \
             create_project_and_request(
-                'fc_project', 'New', allocation_period, self.user, self.user,
-                'Approved - Processing')
+                'fc_project', 'New', computing_allowance, allocation_period,
+                self.user, self.user, 'Approved - Processing')
         # Create a 'CLUSTER_NAME Compute' Allocation for the Project.
         self.existing_service_units = Decimal('0.00')
         accounting_allocation_objects = create_project_allocation(

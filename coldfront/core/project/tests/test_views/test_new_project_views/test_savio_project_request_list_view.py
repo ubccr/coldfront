@@ -121,7 +121,7 @@ class TestSavioProjectRequestCompletedListView(TestViewMixin, TestBase):
         """Test that no requests appear in the pending view, since all
         requests have a completed status."""
         response = self.client.get(self.pending_url)
-        self.assertContains(response, 'No pending Savio project requests!')
+        self.assertContains(response, 'No pending new project requests!')
 
     def test_type(self):
         """Test that the correct type is displayed on the page."""

@@ -5,6 +5,8 @@ from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
+from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 
@@ -78,16 +80,23 @@ class TestProjectDetailView(TestBase):
     def test_purchase_sus_button_invisible_for_ineligible_projects(self):
         """Test that the 'Purchase Service Units' button only appears
         for Projects that are eligible to do so."""
-        for prefix in ('ac_', 'co_', 'fc_', 'ic_', 'pc_'):
+        computing_allowance_interface = ComputingAllowanceInterface()
+        expected_num_eligible, actual_num_eligible = 1, 0
+        for allowance in computing_allowance_interface.allowances():
+            project_name_prefix = computing_allowance_interface.code_from_name(
+                allowance.name)
+            wrapper = ComputingAllowance(allowance)
             project = self.create_active_project_with_pi(
-                f'{prefix}project', self.user)
+                f'{project_name_prefix}project', self.user)
             url = self.project_detail_url(project.pk)
             response = self.client.get(url)
             button_text = 'Purchase Service Units'
-            if prefix == 'ac_':
+            if wrapper.is_recharge():
+                actual_num_eligible += 1
                 self.assertContains(response, button_text)
             else:
                 self.assertNotContains(response, button_text)
+        self.assertEqual(expected_num_eligible, actual_num_eligible)
 
     def test_purchase_sus_button_invisible_for_user_roles(self):
         """Test that the 'Purchase Service Units' button only appears

@@ -60,6 +60,7 @@ class TestProjectRenewalPISelectionForm(TestBase):
         allocation_renewal_request = AllocationRenewalRequest.objects.create(
             requester=self.user,
             pi=self.user,
+            computing_allowance=computing_allowance,
             allocation_period=allocation_period,
             status=under_review_request_status,
             pre_project=self.project,
@@ -72,6 +73,7 @@ class TestProjectRenewalPISelectionForm(TestBase):
             get_next_allowance_year_period()
         self.assertIsNotNone(next_allowance_year_allocation_period)
         kwargs = {
+            'computing_allowance': computing_allowance,
             'allocation_period_pk': next_allowance_year_allocation_period.pk,
             'project_pks': [self.project.pk],
         }
@@ -109,6 +111,7 @@ class TestProjectRenewalPISelectionForm(TestBase):
 
         # For every status except 'Denied', the PI should be disabled.
         kwargs = {
+            'computing_allowance': computing_allowance,
             'allocation_period_pk': allocation_period.pk,
             'project_pks': [self.project.pk],
         }
@@ -130,6 +133,7 @@ class TestProjectRenewalPISelectionForm(TestBase):
     def test_pis_with_non_denied_allocation_renewal_requests_disabled(self):
         """Test that PIs with non-'Denied' AllocationRenewalRequests are
         disabled in the 'PI' field."""
+        computing_allowance = self.get_fca_computing_allowance()
         allocation_period = get_current_allowance_year_period()
         # Create a renewal request.
         under_review_request_status = \
@@ -138,6 +142,7 @@ class TestProjectRenewalPISelectionForm(TestBase):
         allocation_renewal_request = AllocationRenewalRequest.objects.create(
             requester=self.user,
             pi=self.user,
+            computing_allowance=computing_allowance,
             allocation_period=allocation_period,
             status=under_review_request_status,
             pre_project=self.project,
@@ -146,6 +151,7 @@ class TestProjectRenewalPISelectionForm(TestBase):
 
         # For every status except 'Denied', the PI should be disabled.
         kwargs = {
+            'computing_allowance': computing_allowance,
             'allocation_period_pk': allocation_period.pk,
             'project_pks': [self.project.pk],
         }

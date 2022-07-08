@@ -61,6 +61,15 @@ class ComputingAllowanceInterface(object):
         except KeyError as e:
             raise ComputingAllowanceInterfaceError(e)
 
+    def allowance_from_project(self, project):
+        """Given a Project, return the corresponding allowance (Resource
+        object)."""
+        try:
+            code = project.name[:3]
+            return self.allowance_from_code(code)
+        except Exception as e:
+            raise ComputingAllowanceInterfaceError(e)
+
     def allowances(self):
         """Return a list of allowances (Resource objects)."""
         return list(self._name_to_object.values())
