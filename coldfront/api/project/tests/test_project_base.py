@@ -11,7 +11,7 @@ from django.core.management import call_command
 
 
 class TestProjectBase(TestAPIBase):
-    """A base class for testing User-related functionality."""
+    """A base class for testing Project-related functionality."""
 
     def setUp(self):
         """Set up test data."""

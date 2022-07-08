@@ -4,7 +4,7 @@ from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
 router.register(r'projects', ProjectViewSet, basename='projects')
-router.register(r'project_user_removal_request',
+router.register(r'project_user_removal_requests',
                 ProjectUserRemovalRequestViewSet,
-                basename='project_user_removal_request')
+                basename='project_user_removal_requests')
 urlpatterns = router.urls

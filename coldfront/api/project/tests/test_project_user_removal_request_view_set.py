@@ -5,12 +5,12 @@ from coldfront.core.project.models import ProjectUserRemovalRequestStatusChoice,
 from coldfront.core.utils.common import utc_now_offset_aware
 from http import HTTPStatus
 
-"""A test suite for the /project_user_removal_request/ endpoints, divided
+"""A test suite for the /project_user_removal_requests/ endpoints, divided
 by method."""
 
 SERIALIZER_FIELDS = (
     'id', 'completion_time', 'status', 'project_user')
-BASE_URL = '/api/project_user_removal_request/'
+BASE_URL = '/api/project_user_removal_requests/'
 
 
 class TestProjectUserRemovalRequestsBase(TestProjectBase):
@@ -178,11 +178,13 @@ class TestUpdatePatchProjectUserRemovalRequests(TestProjectUserRemovalRequestsBa
             'id': pre_project_user_removal_request.id + 1,
             'status': 'Complete',
             'completion_time': utc_now_offset_aware(),
-            'project_user':
-                ProjectUser.objects.exclude(
-                    pk=pre_project_user_removal_request.project_user.pk).first()
+            'project_user': {'id': 7,
+                             'user': 'user2',
+                             'project': 'fc_project1',
+                             'role': 'User',
+                             'status': 'Active'}
         }
-        response = self.client.patch(url, data)
+        response = self.client.patch(url, data, format='json')
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
         json = response.json()

@@ -213,18 +213,12 @@ class ProjectRemovalRequestUpdateRunner(object):
             email_signature = import_from_settings('EMAIL_SIGNATURE')
             support_email = import_from_settings('CENTER_HELP_EMAIL')
 
-            pi_condition = Q(
-                role__name='Principal Investigator', status__name='Active',
-                enable_notifications=True)
-            manager_condition = Q(role__name='Manager', status__name='Active')
-            manager_pi_queryset = self.project.projectuser_set.filter(
-                pi_condition | manager_condition)
-
-            for proj_user in list(chain(manager_pi_queryset, [self.request_obj.project_user])):
-                curr_user = proj_user.user
+            for user in list(chain(self.project.pis(),
+                                   self.project.managers(),
+                                   [self.request_obj.project_user.user])):
                 template_context = {
-                    'user_first_name': curr_user.first_name,
-                    'user_last_name': curr_user.last_name,
+                    'user_first_name': user.first_name,
+                    'user_last_name': user.last_name,
                     'removed_user_first_name': self.removed_user.first_name,
                     'removed_user_last_name': self.removed_user.last_name,
                     'requester_first_name': self.request_obj.requester.first_name,
@@ -239,5 +233,5 @@ class ProjectRemovalRequestUpdateRunner(object):
                     'email/project_removal/project_removal_complete.txt',
                     template_context,
                     email_sender,
-                    [curr_user.email]
+                    [user.email]
                 )

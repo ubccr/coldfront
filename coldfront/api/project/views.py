@@ -55,8 +55,8 @@ class ProjectUserRemovalRequestViewSet(mixins.ListModelMixin,
     @swagger_auto_schema(
         manual_parameters=[authorization_parameter],
         operation_description=(
-                'Updates one or more fields of the ProjectUserRemovalRequest '
-                'identified by the given ID.'),
+            'Updates one or more fields of the ProjectUserRemovalRequest '
+            'identified by the given ID.'),
         auto_schema=None)
     @transaction.atomic
     def partial_update(self, request, *args, **kwargs):
@@ -74,24 +74,19 @@ class ProjectUserRemovalRequestViewSet(mixins.ListModelMixin,
                 data=request.data, partial=partial)
 
         try:
-            serializer.is_valid(raise_exception=False)
+            serializer.is_valid(raise_exception=True)
 
-            status = serializer.validated_data['status'].name
+            status_name = serializer.validated_data['status'].name
             completion_time = serializer.validated_data.get('completion_time', None)
             runner = \
                 ProjectRemovalRequestUpdateRunner(instance)
-            runner.update_request(status)
-            if status == 'Complete':
-                runner.update_request(status)
+            runner.update_request(status_name)
+            if status_name == 'Complete':
+                runner.update_request(status_name)
                 runner.complete_request(completion_time=completion_time)
                 runner.send_emails()
-            elif status in ['Pending', 'Processing']:
-                runner.update_request(status)
-            else:
-                message = f'Failed to udapte the status of the removal '\
-                          f'request {kwargs["pk"]}. An invalid status of '\
-                          f'{status} was passed.'
-                raise ValueError(message)
+            elif status_name in ['Pending', 'Processing']:
+                runner.update_request(status_name)
 
             return Response(serializer.data,
                             status=rest_framework.status.HTTP_200_OK)
@@ -102,3 +97,34 @@ class ProjectUserRemovalRequestViewSet(mixins.ListModelMixin,
 
         return Response(serializer.errors,
                         status=rest_framework.status.HTTP_400_BAD_REQUEST)
+
+    @swagger_auto_schema(
+        manual_parameters=[authorization_parameter],
+        operation_description=(
+                'Updates all fields of the ProjectUserRemovalRequest '
+                'identified by the given ID.'),
+        auto_schema=None)
+    @transaction.atomic
+    def update(self, request, *args, **kwargs):
+        """The method for PUT (update) requests."""
+        return Response({'failure': 'This method is not supported.'})
+
+    @swagger_auto_schema(
+        manual_parameters=[authorization_parameter],
+        operation_description=(
+                'Creates a new ProjectUserRemovalRequest identified by the '
+                'given ID.'))
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        """The method for POST (create) requests."""
+        return Response({'failure': 'This method is not supported.'})
+
+    @swagger_auto_schema(
+        manual_parameters=[authorization_parameter],
+        operation_description=(
+                'Deletes a ProjectUserRemovalRequest identified by the '
+                'given ID.'))
+    @transaction.atomic
+    def destroy(self, request, *args, **kwargs):
+        """The method for DELETE (destroy) requests."""
+        return Response({'failure': 'This method is not supported.'})
