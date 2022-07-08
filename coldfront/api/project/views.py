@@ -97,34 +97,3 @@ class ProjectUserRemovalRequestViewSet(mixins.ListModelMixin,
 
         return Response(serializer.errors,
                         status=rest_framework.status.HTTP_400_BAD_REQUEST)
-
-    @swagger_auto_schema(
-        manual_parameters=[authorization_parameter],
-        operation_description=(
-                'Updates all fields of the ProjectUserRemovalRequest '
-                'identified by the given ID.'),
-        auto_schema=None)
-    @transaction.atomic
-    def update(self, request, *args, **kwargs):
-        """The method for PUT (update) requests."""
-        return Response({'failure': 'This method is not supported.'})
-
-    @swagger_auto_schema(
-        manual_parameters=[authorization_parameter],
-        operation_description=(
-                'Creates a new ProjectUserRemovalRequest identified by the '
-                'given ID.'))
-    @transaction.atomic
-    def create(self, request, *args, **kwargs):
-        """The method for POST (create) requests."""
-        return Response({'failure': 'This method is not supported.'})
-
-    @swagger_auto_schema(
-        manual_parameters=[authorization_parameter],
-        operation_description=(
-                'Deletes a ProjectUserRemovalRequest identified by the '
-                'given ID.'))
-    @transaction.atomic
-    def destroy(self, request, *args, **kwargs):
-        """The method for DELETE (destroy) requests."""
-        return Response({'failure': 'This method is not supported.'})
