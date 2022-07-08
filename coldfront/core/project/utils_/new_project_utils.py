@@ -424,16 +424,12 @@ class SavioProjectProcessingRunner(ProjectProcessingRunner):
         if self.request_obj.allocation_period:
             self.request_obj.allocation_period.assert_started()
             self.request_obj.allocation_period.assert_not_ended()
-        self.computing_allowance_interface = ComputingAllowanceInterface()
         self.computing_allowance_wrapper = ComputingAllowance(
             self.request_obj.computing_allowance)
 
     def update_allocation(self):
         """Perform allocation-related handling."""
         project = self.request_obj.project
-        allocation_type = \
-            self.computing_allowance_interface.name_short_from_name(
-                self.computing_allowance_wrapper.get_name())
         allocation_period = self.request_obj.allocation_period
         pool = self.request_obj.pool
 
@@ -445,14 +441,6 @@ class SavioProjectProcessingRunner(ProjectProcessingRunner):
             allocation.start_date = display_time_zone_current_date()
         allocation.end_date = getattr(allocation_period, 'end_date', None)
         allocation.save()
-
-        # Set the allocation's allocation type.
-        allocation_attribute_type = AllocationAttributeType.objects.get(
-            name='Savio Allocation Type')
-        allocation_attribute, _ = \
-            AllocationAttribute.objects.get_or_create(
-                allocation_attribute_type=allocation_attribute_type,
-                allocation=allocation, defaults={'value': allocation_type})
 
         # Set or increase the allocation's service units.
         allocation_attribute_type = AllocationAttributeType.objects.get(

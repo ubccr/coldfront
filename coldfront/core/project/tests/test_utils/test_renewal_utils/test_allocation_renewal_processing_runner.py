@@ -632,35 +632,6 @@ class TestRunnerMixin(TestRunnerMixinBase):
         self.assertEqual(today, allocation.start_date)
         self.assertEqual(end_date, allocation.end_date)
 
-    def test_runner_sets_allocation_type(self):
-        """Test that the runner sets an AllocationAttribute with type
-        'Savio Allocation Type' on the post_project's compute
-        Allocation."""
-        request = self.request_obj
-        project = request.post_project
-        allocation = get_project_compute_allocation(project)
-        # Delete any that already exist.
-        allocation_attribute_type = AllocationAttributeType.objects.get(
-            name='Savio Allocation Type')
-        kwargs = {
-            'allocation_attribute_type': allocation_attribute_type,
-        }
-        allocation.allocationattribute_set.filter(**kwargs).delete()
-
-        num_service_units = Decimal('1000.00')
-        runner = AllocationRenewalProcessingRunner(request, num_service_units)
-        runner.run()
-
-        allocation.refresh_from_db()
-        try:
-            allocation_attribute = allocation.allocationattribute_set.get(
-                **kwargs)
-        except AllocationAttribute.DoesNotExist:
-            self.fail('An AllocationAttribute should have been created.')
-        else:
-            self.assertEqual(
-                allocation_attribute.value, SavioProjectAllocationRequest.FCA)
-
     def test_runner_sets_is_pi_field_of_pi_user_profile(self):
         """Test that the User designated as the PI on the request has
         the is_pi field set to True in its UserProfile."""

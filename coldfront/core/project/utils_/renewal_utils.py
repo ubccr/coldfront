@@ -1032,8 +1032,6 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         ProjectStatusChoice, which the post_project had prior to being
         activated, to potentially set the start and end dates."""
         project = self.request_obj.post_project
-        # TODO: Set this dynamically when supporting other types.
-        allocation_type = SavioProjectAllocationRequest.FCA
         allocation_period = self.request_obj.allocation_period
 
         allocation = get_project_compute_allocation(project)
@@ -1045,14 +1043,6 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         if old_project_status.name != 'Active' or not allocation.end_date:
             allocation.end_date = getattr(allocation_period, 'end_date', None)
         allocation.save()
-
-        # Set the allocation's allocation type.
-        allocation_attribute_type = AllocationAttributeType.objects.get(
-            name='Savio Allocation Type')
-        allocation_attribute, _ = \
-            AllocationAttribute.objects.get_or_create(
-                allocation_attribute_type=allocation_attribute_type,
-                allocation=allocation, defaults={'value': allocation_type})
 
         # Increase the allocation's service units.
         allocation_attribute_type = AllocationAttributeType.objects.get(
