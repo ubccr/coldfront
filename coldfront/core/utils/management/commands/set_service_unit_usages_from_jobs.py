@@ -2,6 +2,7 @@ from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttributeUsage
 from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.project.models import Project
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.statistics.models import Job
 from collections import defaultdict
 from decimal import Decimal
@@ -21,7 +22,13 @@ class Command(BaseCommand):
     logger = logging.getLogger(__name__)
 
     def handle(self, *args, **options):
-        prefixes = ('ac_', 'co_', 'fc_', 'ic_', 'pc_')
+        computing_allowance_interface = ComputingAllowanceInterface()
+        prefixes = []
+        for allowance in computing_allowance_interface.allowances():
+            prefixes.append(
+                computing_allowance_interface.code_from_name(allowance.name))
+        prefixes = tuple(prefixes)
+
         projects = Project.objects.prefetch_related('projectuser_set')
         for project in projects.iterator():
             if not project.name.startswith(prefixes):
