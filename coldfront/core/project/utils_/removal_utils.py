@@ -159,14 +159,19 @@ class ProjectRemovalRequestUpdateRunner(object):
         self.request_obj.save()
 
     def complete_request(self, completion_time):
-        self.request_obj.completion_time = completion_time
-        self.request_obj.save()
+        try:
+            self.request_obj.completion_time = completion_time
+            self.request_obj.save()
 
-        project_user_status_removed, _ = \
-            ProjectUserStatusChoice.objects.get_or_create(
-                name='Removed')
-        self.request_obj.project_user.status = project_user_status_removed
-        self.request_obj.project_user.save()
+            project_user_status_removed, _ = \
+                ProjectUserStatusChoice.objects.get_or_create(
+                    name='Removed')
+            self.request_obj.project_user.status = project_user_status_removed
+            self.request_obj.project_user.save()
+        except Exception as e:
+            message = f'Unexpected error setting fields for project removal ' \
+                      f'request {self.request_obj.pk}.'
+            self.error_messages.append(message)
 
         try:
             allocation_obj = Allocation.objects.get(project=self.project)

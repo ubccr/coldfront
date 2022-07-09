@@ -72,10 +72,10 @@ class ProjectUserRemovalRequestViewSet(mixins.ListModelMixin,
             serializer = self.get_serializer(
                 data=request.data, partial=partial)
 
-        try:
-            serializer.is_valid(raise_exception=True)
+        serializer.is_valid(raise_exception=True)
 
-            status_name = serializer.validated_data['status'].name
+        try:
+            status_name = serializer.validated_data.get('status', None).name
             completion_time = serializer.validated_data.get('completion_time', None)
             runner = \
                 ProjectRemovalRequestUpdateRunner(instance)
@@ -87,6 +87,12 @@ class ProjectUserRemovalRequestViewSet(mixins.ListModelMixin,
             elif status_name in ['Pending', 'Processing']:
                 runner.update_request(status_name)
 
+            success_messages, error_messages = runner.get_messages()
+
+            if error_messages:
+                raise Exception(f'Failed to update the status of the removal '
+                                f'request {kwargs["pk"]}.')
+
             return Response(serializer.data,
                             status=rest_framework.status.HTTP_200_OK)
 
@@ -95,4 +101,4 @@ class ProjectUserRemovalRequestViewSet(mixins.ListModelMixin,
                              f'request {kwargs["pk"]}.')
 
         return Response(serializer.errors,
-                        status=rest_framework.status.HTTP_400_BAD_REQUEST)
+                        status=rest_framework.status.HTTP_500_INTERNAL_SERVER_ERROR)

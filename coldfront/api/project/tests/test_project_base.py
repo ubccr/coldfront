@@ -3,6 +3,8 @@ from decimal import Decimal
 from coldfront.api.statistics.utils import create_project_allocation, \
     create_user_project_allocation
 from coldfront.api.utils.tests.test_api_base import TestAPIBase
+from coldfront.core.allocation.models import AllocationAttributeType, \
+    AllocationUserAttribute
 from coldfront.core.project.models import ProjectStatusChoice, \
     ProjectUserStatusChoice, ProjectUserRoleChoice, Project, ProjectUser
 from coldfront.core.user.models import UserProfile, ExpiringToken
@@ -68,12 +70,22 @@ class TestProjectBase(TestAPIBase):
 
             # Create a compute allocation for the Project.
             allocation = Decimal(f'{i + 1}000.00')
-            create_project_allocation(project, allocation)
+            alloc_obj = create_project_allocation(project, allocation)
 
             # Create a compute allocation for each User on the Project.
             for j in range(3):
-                create_user_project_allocation(
+                alloc_user_obj = create_user_project_allocation(
                     getattr(self, f'user{j}'), project, allocation / 2)
+
+                allocation_attribute_type = AllocationAttributeType.objects.get(
+                    name='Cluster Account Status')
+                allocation_user_attribute, _ = \
+                    AllocationUserAttribute.objects.get_or_create(
+                        allocation_attribute_type=allocation_attribute_type,
+                        allocation=alloc_user_obj.allocation,
+                        allocation_user=alloc_user_obj.allocation_user)
+                allocation_user_attribute.value = 'Active'
+                allocation_user_attribute.save()
 
         # Create an ExpiringToken for each User.
         for user in User.objects.all():
