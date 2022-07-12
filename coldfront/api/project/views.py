@@ -75,17 +75,17 @@ class ProjectUserRemovalRequestViewSet(mixins.ListModelMixin,
         serializer.is_valid(raise_exception=True)
 
         try:
-            status_name = serializer.validated_data.get('status', None).name
-            completion_time = serializer.validated_data.get('completion_time', None)
-            runner = \
-                ProjectRemovalRequestUpdateRunner(instance)
+            # Because the data are valid, the status is guaranteed to be both
+            # present and one of the valid choices.
+            status_name = serializer.validated_data['status'].name
+            completion_time = serializer.validated_data.get(
+                'completion_time', None)
+            runner = ProjectRemovalRequestUpdateRunner(instance)
 
+            runner.update_request(status_name)
             if status_name == 'Complete':
-                runner.update_request(status_name)
                 runner.complete_request(completion_time=completion_time)
                 runner.send_emails()
-            elif status_name in ['Pending', 'Processing']:
-                runner.update_request(status_name)
 
             success_messages, error_messages = runner.get_messages()
 
