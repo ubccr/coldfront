@@ -168,14 +168,14 @@ class Command(BaseCommand):
                     ],
                 },
                 {
-                    'name': LRCAllowances.CO,
+                    'name': LRCAllowances.LR,
                     'description': (
                         'A computing allowance available to Condo partners.'),
                     'attributes': [
                         (self.service_units, f'{settings.ALLOCATION_MAX}'),
                         (self.name_long, 'Condo Allocation'),
-                        (self.name_short, 'CO'),
-                        (self.code, 'co_'),
+                        (self.name_short, 'LR'),
+                        (self.code, 'lr_'),
                     ],
                 },
                 {
