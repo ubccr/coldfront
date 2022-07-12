@@ -1,9 +1,11 @@
+from datetime import datetime
+
 from django.contrib.auth.models import User
+from rest_framework import serializers
 
 from coldfront.core.project.models import Project, \
     ProjectUserRemovalRequestStatusChoice, ProjectUserRemovalRequest, \
     ProjectUser, ProjectUserStatusChoice, ProjectUserRoleChoice
-from rest_framework import serializers
 
 
 class ProjectSerializer(serializers.ModelSerializer):
@@ -47,9 +49,18 @@ class ProjectUserRemovalRequestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProjectUserRemovalRequest
-        fields = (
-            'id', 'completion_time', 'status', 'project_user')
+        fields = ('id', 'completion_time', 'status', 'project_user')
         extra_kwargs = {
             'id': {'read_only': True},
             'completion_time': {'required': False, 'allow_null': True},
         }
+
+    def validate(self, data):
+        """If the status is being changed to 'Complete', ensure that a
+        completion_time is given."""
+        status_name = data['status']
+        if (status_name == 'Complete' and
+                not isinstance(data.get('completion_time', None), datetime)):
+            message = 'No completion time is given.'
+            raise serializers.ValidationError(message)
+        return data

@@ -16,6 +16,7 @@ from coldfront.core.project.models import Project, ProjectUserRemovalRequest
 
 from coldfront.core.project.utils_.removal_utils import \
     ProjectRemovalRequestUpdateRunner
+from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestProcessingRunner
 
 authorization_parameter = openapi.Parameter(
     'Authorization',
@@ -52,53 +53,17 @@ class ProjectUserRemovalRequestViewSet(mixins.ListModelMixin,
     def get_queryset(self):
         return ProjectUserRemovalRequest.objects.order_by('id')
 
+    @transaction.atomic
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        runner = ProjectRemovalRequestProcessingRunner(instance)
+        runner.run()
+
     @swagger_auto_schema(
         manual_parameters=[authorization_parameter],
         operation_description=(
             'Updates one or more fields of the ProjectUserRemovalRequest '
             'identified by the given ID.'))
-    @transaction.atomic
     def partial_update(self, request, *args, **kwargs):
         """The method for PATCH (partial update) requests."""
-        logger = logging.getLogger(__name__)
-
-        partial = kwargs.pop('partial', False)
-        try:
-            instance = self.get_object()
-            serializer = self.get_serializer(
-                instance, data=request.data, partial=partial)
-
-        except Http404:
-            serializer = self.get_serializer(
-                data=request.data, partial=partial)
-
-        serializer.is_valid(raise_exception=True)
-
-        try:
-            # Because the data are valid, the status is guaranteed to be both
-            # present and one of the valid choices.
-            status_name = serializer.validated_data['status'].name
-            completion_time = serializer.validated_data.get(
-                'completion_time', None)
-            runner = ProjectRemovalRequestUpdateRunner(instance)
-
-            runner.update_request(status_name)
-            if status_name == 'Complete':
-                runner.complete_request(completion_time=completion_time)
-                runner.send_emails()
-
-            success_messages, error_messages = runner.get_messages()
-
-            if error_messages:
-                raise Exception(f'Failed to update the status of the removal '
-                                f'request {kwargs["pk"]}.')
-
-            return Response(serializer.data,
-                            status=rest_framework.status.HTTP_200_OK)
-
-        except Exception as e:
-            logger.exception(f'Failed to update the status of the removal '
-                             f'request {kwargs["pk"]}.')
-
-        return Response(serializer.errors,
-                        status=rest_framework.status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return super().partial_update(request, *args, **kwargs)

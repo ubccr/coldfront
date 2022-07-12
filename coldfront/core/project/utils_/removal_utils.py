@@ -1,14 +1,21 @@
 from itertools import chain
+import logging
+
+from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
+from django.db import transaction
 
 from coldfront.core.allocation.models import Allocation, \
     AllocationUserStatusChoice, AllocationAttributeType
+from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.project.models import (ProjectUserRemovalRequestStatusChoice,
                                            ProjectUserRemovalRequest,
                                            ProjectUserStatusChoice)
 from coldfront.core.utils.mail import send_email_template
-from coldfront.core.utils.common import import_from_settings, \
-    utc_now_offset_aware
-from django.db.models import Q
+from coldfront.core.utils.common import import_from_settings
+
+
+logger = logging.getLogger(__name__)
 
 
 class ProjectRemovalRequestRunner(object):
@@ -137,6 +144,172 @@ class ProjectRemovalRequestRunner(object):
                 template_context,
                 email_sender,
                 email_admin_list)
+
+
+class ProjectRemovalRequestProcessingRunner(object):
+    """An object that performs necessary database changes after a project
+    removal request has been completed."""
+
+    def __init__(self, request_obj):
+        assert isinstance(request_obj, ProjectUserRemovalRequest)
+        self._request_obj = request_obj
+        self._removed_user = self._request_obj.project_user.user
+        self._project = self._request_obj.project_user.project
+        self._allocation = get_project_compute_allocation(self._project)
+        # A list of messages to display to the user.
+        self._success_messages = []
+        self._warning_messages = []
+
+    def run(self):
+        """Apply database changes in a transaction. Log success messages
+        and send emails separately to prevent failures from rolling it
+        back."""
+        with transaction.atomic():
+            self._remove_user_from_project()
+            self._remove_user_from_project_compute_allocation()
+        self._log_success_messages()
+        self._send_emails_safe()
+
+    def _log_success_messages(self):
+        """Write success messages to the log.
+
+        Catch all exceptions to prevent rolling back any enclosing
+        transaction.
+        """
+        try:
+            for message in self._success_messages:
+                logger.info(message)
+        except Exception:
+            pass
+
+    def _remove_user_from_project(self):
+        """Set the ProjectUser's status to 'Removed'."""
+        removed_status = ProjectUserStatusChoice.objects.get(name='Removed')
+        project_user = self._request_obj.project_user
+        project_user.status = removed_status
+        project_user.save()
+
+        message = (
+            f'Set ProjectUser {project_user.pk} status to '
+            f'"{removed_status.name}".')
+        self._success_messages.append(message)
+
+    def _remove_user_from_project_compute_allocation(self):
+        """Set the AllocationUser's status to 'Removed', if it exists.
+        Set the corresponding 'Cluster Account Status' to 'Denied', if
+        it exists."""
+        allocation_users = \
+            self._allocation.allocationuser_set.prefetch_related(
+                'allocationuserattribute_set').filter(user=self._removed_user)
+        if not allocation_users.exists():
+            # Allow the ProjectUser to not have a corresponding AllocationUser,
+            # but log an error message and store a warning.
+            message = (
+                f'Failed to retrieve an AllocationUser for removed User '
+                f'{self._removed_user.pk} under compute Allocation '
+                f'{self._allocation.pk}.')
+            self._warning_messages.append(message)
+            logger.error(message)
+            return
+
+        removed_status = AllocationUserStatusChoice.objects.get(
+            name='Removed')
+        allocation_user = allocation_users.first()
+        allocation_user.status = removed_status
+        allocation_user.save()
+
+        message = (
+            f'Set AllocationUser {allocation_user.pk} status to '
+            f'"{removed_status.name}".')
+        self._success_messages(message)
+
+        cluster_account_status_type = AllocationAttributeType.objects.get(
+            name='Cluster Account Status')
+        try:
+            cluster_account_status = \
+                allocation_user.allocationuserattribute_set.get(
+                    allocation_attribute_type=cluster_account_status_type)
+        except ObjectDoesNotExist:
+            # Allow the AllocationUser to not have a "Cluster Account Status",
+            # but log an error message and store a warning message.
+            message = (
+                f'Failed to retrieve a "Cluster Account Status"'
+                f' AllocationAttributeType for AllocationUser '
+                f'{allocation_user.pk}.')
+            self._warning_messages.append(message)
+            logger.error(message)
+            return
+        else:
+            cluster_account_status.value = 'Denied'
+            cluster_account_status.save()
+            message = (
+                f'Set AllocationAttribute {cluster_account_status_type.pk} '
+                f'value to "Denied".')
+            self._success_messages(message)
+
+    def _send_emails(self):
+        """Try to send emails. If one send fails, continue with the
+        rest. Return the number of failures."""
+        email_enabled = import_from_settings('EMAIL_ENABLED', False)
+        if not email_enabled:
+            return
+
+        email_sender = import_from_settings('EMAIL_SENDER')
+        email_signature = import_from_settings('EMAIL_SIGNATURE')
+        support_email = import_from_settings('CENTER_HELP_EMAIL')
+
+        template_context = {
+            'removed_user_first_name': self._removed_user.first_name,
+            'removed_user_last_name': self._removed_user.last_name,
+            'requester_first_name': self._request_obj.requester.first_name,
+            'requester_last_name': self._request_obj.requester.last_name,
+            'project_name': self._project.name,
+            'signature': email_signature,
+            'support_email': support_email,
+        }
+        unique_users_to_email = set(
+            chain(
+                self._project.pis(),
+                self._project.managers(),
+                [self._removed_user]))
+        num_failures = []
+        for user in unique_users_to_email:
+            template_context['user_first_name'] = user.first_name
+            template_context['user_last_name'] = user.last_name
+            try:
+                send_email_template(
+                    'Project Removal Request Completed',
+                    'email/project_removal/project_removal_complete.txt',
+                    template_context,
+                    email_sender,
+                    [user.email])
+            except Exception as e:
+                message = (
+                    f'Failed to send a notification email to {user.email}. '
+                    f'Details: \n{e}')
+                logger.exception(message)
+                num_failures += 1
+        return num_failures == 0
+
+    def _send_emails_safe(self):
+        """Send emails.
+
+        Catch all exceptions to prevent rolling back any
+        enclosing transaction.
+
+        If send failures occur, store a warning message.
+        """
+        try:
+            num_failures = self._send_emails()
+        except Exception as e:
+            message = (
+                f'Encountered unexpected exception when sending notification '
+                f'emails. Details: \n{e}')
+            logger.exception(message)
+        else:
+            if num_failures > 0:
+                message = f'Failed to send {num_failures} notification emails.'
+                self._warning_messages.append(message)
 
 
 class ProjectRemovalRequestUpdateRunner(object):
