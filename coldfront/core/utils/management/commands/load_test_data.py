@@ -273,6 +273,7 @@ class Command(BaseCommand):
             status=AllocationStatusChoice.objects.get(name='Active'),
             start_date=start_date,
             end_date=end_date,
+            is_changeable=True,
             justification='I need access to my nodes.'
         )
 
@@ -305,6 +306,7 @@ class Command(BaseCommand):
             status=AllocationStatusChoice.objects.get(name='Active'),
             start_date=start_date,
             end_date=datetime.datetime.now() + relativedelta(days=10),
+            is_changeable=True,
             justification='I need access to university cluster.'
         )
 
@@ -359,6 +361,7 @@ class Command(BaseCommand):
             start_date=start_date,
             end_date=end_date,
             quantity=10,
+            is_changeable=True,
             justification='I need extra storage.'
         )
 
@@ -378,6 +381,7 @@ class Command(BaseCommand):
             status=AllocationStatusChoice.objects.get(name='Active'),
             start_date=start_date,
             end_date=end_date,
+            is_changeable=True,
             justification='I need compute time on metered cluster.'
         )
         allocation_obj.resources.add(
@@ -484,6 +488,7 @@ class Command(BaseCommand):
             status=AllocationStatusChoice.objects.get(name='Active'),
             start_date=start_date,
             end_date=end_date,
+            is_changeable=True,
             justification='Need to host my own site.'
         )
 
@@ -520,6 +525,7 @@ class Command(BaseCommand):
             status=AllocationStatusChoice.objects.get(name='Active'),
             start_date=start_date,
             end_date=end_date,
+            is_changeable=True,
             justification='Need extra storage for webserver.'
         )
 

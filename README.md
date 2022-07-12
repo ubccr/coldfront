@@ -1,3 +1,5 @@
+![ColdFront](docs/pages/images/logo-lg.png)
+
 # ColdFront - Resource Allocation System
 
 [![Documentation Status](https://readthedocs.org/projects/coldfront/badge/?version=latest)](https://coldfront.readthedocs.io/en/latest/?badge=latest)
