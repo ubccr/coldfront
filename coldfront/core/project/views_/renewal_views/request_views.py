@@ -268,10 +268,12 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
                 tmp.get('allocation_period', None), 'pk', None)
             project_pks = []
             user = self.request.user
+            project_name_prefix = self.interface.code_from_name(
+                self.computing_allowance.name)
             role_names = ['Manager', 'Principal Investigator']
             status = ProjectUserStatusChoice.objects.get(name='Active')
             project_users = user.projectuser_set.filter(
-                project__name__startswith='fc_',
+                project__name__startswith=project_name_prefix,
                 role__name__in=role_names,
                 status=status)
             for project_user in project_users:

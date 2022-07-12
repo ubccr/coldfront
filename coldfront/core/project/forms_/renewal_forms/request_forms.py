@@ -11,6 +11,7 @@ from coldfront.core.project.utils_.new_project_utils import pis_with_new_project
 from coldfront.core.project.utils_.renewal_utils import non_denied_renewal_request_statuses
 from coldfront.core.project.utils_.renewal_utils import pis_with_renewal_requests_pks
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 
 from django import forms
 
@@ -149,13 +150,19 @@ class ProjectRenewalProjectSelectionForm(forms.Form):
         widget=forms.Select())
 
     def __init__(self, *args, **kwargs):
-        # Raise an exception if any kwargs are not provided.
+        self.computing_allowance = kwargs.pop('computing_allowance', None)
+        # Raise an exception if certain kwargs are not provided.
         for key in ('pi_pk', 'non_owned_projects', 'exclude_project_pk'):
             if key not in kwargs:
                 raise KeyError(f'No {key} is provided.')
             else:
                 setattr(self, key, kwargs.pop(key))
         super().__init__(*args, **kwargs)
+
+        if not self.computing_allowance:
+            return
+        computing_allowance_interface = ComputingAllowanceInterface()
+        self.computing_allowance = ComputingAllowance(self.computing_allowance)
 
         role = ProjectUserRoleChoice.objects.get(name='Principal Investigator')
         status = ProjectUserStatusChoice.objects.get(name='Active')
@@ -167,7 +174,10 @@ class ProjectRenewalProjectSelectionForm(forms.Form):
                 user__pk=self.pi_pk, role=role, status=status
             ).values_list('project__pk', flat=True))
 
-        _filter = {'name__startswith': 'fc_'}
+        _filter = {
+            'name__startswith': computing_allowance_interface.code_from_name(
+                self.computing_allowance.get_name()),
+        }
         exclude = {'pk': self.exclude_project_pk}
         if self.non_owned_projects:
             # # Only include Projects where this user is not a PI.
