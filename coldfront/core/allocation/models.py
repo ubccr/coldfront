@@ -152,9 +152,9 @@ class Allocation(TimeStampedModel):
                 # string = '{} : {}/{} ({} %) <br>'.format(
                 string = '{}: {}/{} ({} %) <br>'.format(
                     attribute.allocation_attribute_type.name,
-                    # quota,
-                    attribute.allocationattributeusage.value,
                     # usage,
+                    round(attribute.allocationattributeusage.value, 2),
+                    # quota,
                     attribute.value,
                     percent
                 )
