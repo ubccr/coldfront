@@ -52,7 +52,7 @@ class Command(BaseCommand):
             ('slurm_user_specs', 'Attribute Expanded Text', False, True),
             ('slurm_user_specs_attriblist', 'Text', False, True),
             ('Storage Quota (GB)', 'Int', False, False),
-            ('Storage Quota (TB)', 'Int', False, False)
+            ('Storage Quota (TB)', 'Int', False, False),
             ('Storage_Group_Name', 'Text', False, False),
             ('SupportersQOS', 'Yes/No', False, False),
             ('SupportersQOSExpireDate', 'Date', False, False),
