@@ -77,6 +77,7 @@ class TestApproveRenewalRequestsForAllocationPeriod(TestBase):
         request = AllocationRenewalRequest.objects.create(
             requester=requester,
             pi=pi,
+            computing_allowance=Resource.objects.get(name=BRCAllowances.FCA),
             allocation_period=allocation_period,
             status=AllocationRenewalRequestStatusChoice.objects.get(
                 name='Under Review'),
@@ -149,15 +150,35 @@ class TestApproveRenewalRequestsForAllocationPeriod(TestBase):
         self.assertIn(expected_message, output)
         self.assertFalse(error)
 
-        # Non-FCA project
+        # Non-FCA/PCA project
         project = request.post_project
         tmp_project_name = project.name
-        for prefix in ('ac_', 'co_', 'ic_', 'pc_'):
+        tmp_computing_allowance = request.computing_allowance
+        computing_allowance_interface = ComputingAllowanceInterface()
+        allowance_names = (
+            BRCAllowances.CO,
+            BRCAllowances.ICA,
+            BRCAllowances.PCA,
+            BRCAllowances.RECHARGE,
+        )
+        for allowance_name in allowance_names:
+            prefix = computing_allowance_interface.code_from_name(
+                allowance_name)
             project.name = prefix + project.name[3:]
             project.save()
-            self.assertFalse(any(self.call_command(_id, dry_run=True)))
+            request.computing_allowance = Resource.objects.get(
+                name=allowance_name)
+            request.save()
+            output, error = self.call_command(_id, dry_run=True)
+            if allowance_name == BRCAllowances.PCA:
+                self.assertTrue(output)
+                self.assertFalse(error)
+            else:
+                self.assertFalse(output or error)
         project.name = tmp_project_name
         project.save()
+        request.computing_allowance = tmp_computing_allowance
+        request.save()
 
         output, error = self.call_command(_id, dry_run=True)
         self.assertIn(expected_message, output)
