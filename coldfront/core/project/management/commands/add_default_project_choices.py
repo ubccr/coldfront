@@ -16,7 +16,7 @@ class Command(BaseCommand):
             ProjectStatusChoice.objects.get_or_create(name=choice)
 
         ProjectReviewStatusChoice.objects.all().delete()
-        for choice in ['Approved', 'Pending', 'Denied', ]:
+        for choice in ['Approved', 'Pending', 'Denied', 'Completed', ]:
             ProjectReviewStatusChoice.objects.get_or_create(name=choice)
 
         ProjectUserRoleChoice.objects.all().delete()
